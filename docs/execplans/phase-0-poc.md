@@ -68,8 +68,9 @@ running `make all` and seeing it pass.
     - [x] (2025-12-17) Implement viewport input mapping (scroll wheel pan +
           Ctrl/Cmd-wheel zoom) with a headless `#[gpui::test]` asserting pan
           and cursor-centred zoom behaviour.
-    - [ ] Implement Draw mode (place points, Tab toggle edge mode, close, Esc
-          commit) with document history.
+    - [x] (2025-12-17) Implement Draw mode (click to place points, Tab toggle
+          edge mode, close, Esc commit) with document history and a headless
+          `#[gpui::test]` asserting point placement and undo behaviour.
     - [ ] Implement Manipulate mode hit-testing + drags + operations.
     - [ ] Implement selection history + Shift-modified undo/redo.
     - [ ] Add behavioural tests (BDD) with `rstest-bdd` exercising the
@@ -125,6 +126,13 @@ running `make all` and seeing it pass.
       does.
       Impact: Headless integration tests that need precise hit-testing (for
       example, scroll wheel events on the canvas) should use `debug_selector`.
+
+    - Observation: Having both `src/ui/phase0_shell.rs` and
+      `src/ui/phase0_shell/*` triggers `clippy::self-named-module-files`.
+      Evidence: `make lint` fails with a suggestion to move
+      `src/ui/phase0_shell.rs` to `src/ui/phase0_shell/mod.rs`.
+      Impact: When introducing submodules under `src/ui/phase0_shell`, convert
+      `phase0_shell` into a directory module and keep `mod.rs` under 400 lines.
 
 ## Decision log
 

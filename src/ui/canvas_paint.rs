@@ -33,8 +33,6 @@ pub(super) fn canvas_for_document(
         },
     )
     .flex_1()
-    .border_1()
-    .rounded_md()
 }
 
 fn paint_document(bounds: Bounds<Pixels>, doc: &Document, viewport: Viewport, window: &mut Window) {
