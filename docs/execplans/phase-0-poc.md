@@ -72,9 +72,10 @@ running `make all` and seeing it pass.
           edge mode, close, Esc commit) with document history and a headless
           `#[gpui::test]` asserting point placement and undo behaviour.
     - [ ] Implement Manipulate mode hit-testing + drags + operations
-          (completed: shape hit-testing, selection, drag-to-move, and undo via
-          a headless `#[gpui::test]`; remaining: anchor/handle hit-testing and
-          drags, segment toggling, reordering, insert/delete anchor).
+          (completed: shape + anchor hit-testing, selection, drag-to-move,
+          drag-anchor, and undo via headless `#[gpui::test]`; remaining:
+          handle hit-testing/drags, segment toggling, reordering, insert/delete
+          anchor).
     - [ ] Implement selection history + Shift-modified undo/redo.
     - [ ] Add behavioural tests (BDD) with `rstest-bdd` exercising the
           controller layer via observable outcomes (SVG output).
@@ -735,3 +736,9 @@ Revision (2025-12-17):
   and drag-to-move.
 - Added a headless `#[gpui::test]` asserting that dragging a shape translates
   anchors and that undo restores the original geometry.
+
+Revision (2025-12-17):
+
+- Extended manipulate mode with anchor hit-testing and drag-to-move-anchor.
+- Added a headless `#[gpui::test]` asserting anchor drag updates the path and
+  that undo restores the original anchor position.

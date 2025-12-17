@@ -24,6 +24,7 @@ pub(super) struct DragState {
 #[derive(Clone, Debug)]
 enum DragKind {
     MoveShape(ShapeDragState),
+    MoveAnchor(AnchorDragState),
 }
 
 #[derive(Clone, Debug)]
@@ -32,6 +33,22 @@ struct ShapeDragState {
     index: usize,
     start_cursor_world: Vec2,
     original_anchors: Vec<Anchor>,
+}
+
+#[derive(Clone, Debug)]
+struct AnchorDragState {
+    shape: ShapeId,
+    shape_index: usize,
+    anchor_index: usize,
+    start_cursor_world: Vec2,
+    original_anchor: Anchor,
+}
+
+#[derive(Clone, Copy)]
+struct AnchorHit {
+    shape_index: usize,
+    shape_id: ShapeId,
+    anchor_index: usize,
 }
 
 impl Phase0Shell {
@@ -46,21 +63,38 @@ impl Phase0Shell {
 
         let cursor_world = cursor_world(&self.viewport, event.position);
         let tolerance_world = 4.0 / self.viewport.zoom;
-        let hit = hit_test_topmost_shape(&self.document, cursor_world, tolerance_world);
+        let hit_anchor = hit_test_topmost_anchor(&self.document, cursor_world, tolerance_world);
+        let hit_shape = hit_test_topmost_shape(&self.document, cursor_world, tolerance_world);
 
         let previous_selection = self.selection.clone();
-        self.selection = match hit {
-            Some((_, shape_id)) => Selection {
+        self.selection = match (hit_anchor, hit_shape) {
+            (Some(hit), _) => Selection {
+                items: vec![SelItem::Anchor {
+                    shape: hit.shape_id,
+                    anchor: hit.anchor_index,
+                }],
+            },
+            (None, Some((_, shape_id))) => Selection {
                 items: vec![SelItem::Shape(shape_id)],
             },
-            None => Selection::empty(),
+            (None, None) => Selection::empty(),
         };
 
-        self.drag_state = hit.and_then(|(index, shape_id)| {
-            start_shape_drag(&self.document, index, shape_id, cursor_world).map(|drag| DragState {
-                kind: DragKind::MoveShape(drag),
-            })
-        });
+        self.drag_state = match (hit_anchor, hit_shape) {
+            (Some(hit), _) => {
+                start_anchor_drag(&self.document, hit, cursor_world).map(|drag| DragState {
+                    kind: DragKind::MoveAnchor(drag),
+                })
+            }
+            (None, Some((shape_index, shape_id))) => {
+                start_shape_drag(&self.document, shape_index, shape_id, cursor_world).map(|drag| {
+                    DragState {
+                        kind: DragKind::MoveShape(drag),
+                    }
+                })
+            }
+            (None, None) => None,
+        };
 
         self.selection != previous_selection || self.drag_state.is_some()
     }
@@ -83,6 +117,9 @@ impl Phase0Shell {
             DragKind::MoveShape(shape_drag) => {
                 apply_shape_drag_preview(&mut self.document, shape_drag, cursor_world)
             }
+            DragKind::MoveAnchor(anchor_drag) => {
+                apply_anchor_drag_preview(&mut self.document, anchor_drag, cursor_world)
+            }
         }
     }
 
@@ -102,6 +139,9 @@ impl Phase0Shell {
         let cursor_world = cursor_world(&self.viewport, event.position);
         match drag_state.kind {
             DragKind::MoveShape(shape_drag) => self.finish_shape_drag(&shape_drag, cursor_world),
+            DragKind::MoveAnchor(anchor_drag) => {
+                self.finish_anchor_drag(&anchor_drag, cursor_world)
+            }
         }
     }
 
@@ -126,6 +166,49 @@ impl Phase0Shell {
             }],
         };
         self.document_history.push(DocHistoryItem::new(change));
+        true
+    }
+
+    fn finish_anchor_drag(&mut self, drag: &AnchorDragState, cursor_world: Vec2) -> bool {
+        let delta = cursor_world.sub(drag.start_cursor_world);
+
+        if delta.x.abs() <= f32::EPSILON && delta.y.abs() <= f32::EPSILON {
+            let _did_restore = apply_anchor_drag_to_doc(&mut self.document, drag, Vec2::ZERO);
+            return false;
+        }
+
+        let did_update = apply_anchor_drag_to_doc(&mut self.document, drag, delta);
+        if !did_update {
+            return false;
+        }
+
+        let mut ops = vec![DocOp::MoveAnchor {
+            shape: drag.shape,
+            anchor: drag.anchor_index,
+            from: drag.original_anchor.pos,
+            to: drag.original_anchor.pos.add(delta),
+        }];
+
+        if drag.original_anchor.handle_in.is_some() {
+            ops.push(DocOp::MoveHandleIn {
+                shape: drag.shape,
+                anchor: drag.anchor_index,
+                from: drag.original_anchor.handle_in,
+                to: drag.original_anchor.handle_in.map(|p| p.add(delta)),
+            });
+        }
+
+        if drag.original_anchor.handle_out.is_some() {
+            ops.push(DocOp::MoveHandleOut {
+                shape: drag.shape,
+                anchor: drag.anchor_index,
+                from: drag.original_anchor.handle_out,
+                to: drag.original_anchor.handle_out.map(|p| p.add(delta)),
+            });
+        }
+
+        self.document_history
+            .push(DocHistoryItem::new(DocChange { ops }));
         true
     }
 }
@@ -154,6 +237,26 @@ fn start_shape_drag(
     })
 }
 
+fn start_anchor_drag(
+    doc: &Document,
+    hit: AnchorHit,
+    cursor_world: Vec2,
+) -> Option<AnchorDragState> {
+    let shape = doc.shapes.get(hit.shape_index)?;
+    if shape.id != hit.shape_id {
+        return None;
+    }
+    let anchor = shape.path.anchors.get(hit.anchor_index)?.clone();
+
+    Some(AnchorDragState {
+        shape: hit.shape_id,
+        shape_index: hit.shape_index,
+        anchor_index: hit.anchor_index,
+        start_cursor_world: cursor_world,
+        original_anchor: anchor,
+    })
+}
+
 fn apply_shape_drag_preview(doc: &mut Document, drag: &ShapeDragState, cursor_world: Vec2) -> bool {
     let delta = cursor_world.sub(drag.start_cursor_world);
     apply_shape_drag_to_doc(doc, drag, delta)
@@ -168,6 +271,32 @@ fn apply_shape_drag_to_doc(doc: &mut Document, drag: &ShapeDragState, delta: Vec
     }
 
     restore_shape_anchors(shape, &drag.original_anchors, delta)
+}
+
+fn apply_anchor_drag_preview(
+    doc: &mut Document,
+    drag: &AnchorDragState,
+    cursor_world: Vec2,
+) -> bool {
+    let delta = cursor_world.sub(drag.start_cursor_world);
+    apply_anchor_drag_to_doc(doc, drag, delta)
+}
+
+fn apply_anchor_drag_to_doc(doc: &mut Document, drag: &AnchorDragState, delta: Vec2) -> bool {
+    let Some(shape) = doc.shapes.get_mut(drag.shape_index) else {
+        return false;
+    };
+    if shape.id != drag.shape {
+        return false;
+    }
+    let Some(anchor) = shape.path.anchors.get_mut(drag.anchor_index) else {
+        return false;
+    };
+
+    anchor.pos = drag.original_anchor.pos.add(delta);
+    anchor.handle_in = drag.original_anchor.handle_in.map(|p| p.add(delta));
+    anchor.handle_out = drag.original_anchor.handle_out.map(|p| p.add(delta));
+    true
 }
 
 fn restore_shape_anchors(shape: &mut Shape, original: &[Anchor], delta: Vec2) -> bool {
@@ -195,6 +324,34 @@ fn hit_test_topmost_shape(
         .rev()
         .find_map(|(index, shape)| {
             hit_test_shape_bbox(shape, cursor_world, tolerance_world).then_some((index, shape.id))
+        })
+}
+
+fn hit_test_topmost_anchor(
+    doc: &Document,
+    cursor_world: Vec2,
+    tolerance_world: f32,
+) -> Option<AnchorHit> {
+    let tolerance_squared = tolerance_world * tolerance_world;
+    doc.shapes
+        .iter()
+        .enumerate()
+        .rev()
+        .find_map(|(shape_index, shape)| {
+            shape
+                .path
+                .anchors
+                .iter()
+                .enumerate()
+                .find_map(|(anchor_index, anchor)| {
+                    (anchor.pos.distance_squared(cursor_world) <= tolerance_squared).then_some(
+                        AnchorHit {
+                            shape_index,
+                            shape_id: shape.id,
+                            anchor_index,
+                        },
+                    )
+                })
         })
 }
 

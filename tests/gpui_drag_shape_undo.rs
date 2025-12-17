@@ -11,7 +11,6 @@ use uuid::Uuid;
 struct CanvasDragScenario {
     first: gpui::Point<gpui::Pixels>,
     second: gpui::Point<gpui::Pixels>,
-    drag_end: gpui::Point<gpui::Pixels>,
     delta: Vec2,
 }
 
@@ -35,11 +34,9 @@ fn canvas_drag_scenario(visual_cx: &mut VisualTestContext) -> CanvasDragScenario
     let horizontal_delta = max_horizontal_delta.min(20.0);
     let vertical_delta = max_vertical_delta.min(10.0);
 
-    let drag_end = point(first.x + px(horizontal_delta), first.y + px(vertical_delta));
     CanvasDragScenario {
         first,
         second,
-        drag_end,
         delta: Vec2::new(horizontal_delta, vertical_delta),
     }
 }
@@ -143,7 +140,17 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
         "escape should switch to manipulate mode, where clicks do not add points"
     );
 
-    visual_cx.simulate_mouse_down(scenario.first, MouseButton::Left, Modifiers::none());
+    let drag_start = {
+        let start_x = f32::midpoint(f32::from(scenario.first.x), f32::from(scenario.second.x));
+        let start_y = f32::midpoint(f32::from(scenario.first.y), f32::from(scenario.second.y));
+        point(px(start_x), px(start_y))
+    };
+    let drag_end = point(
+        drag_start.x + px(scenario.delta.x),
+        drag_start.y + px(scenario.delta.y),
+    );
+
+    visual_cx.simulate_mouse_down(drag_start, MouseButton::Left, Modifiers::none());
     let selected_shape = SelItem::Shape(original_shape.id);
     let did_select = visual_cx.read(|app| view.read(app).selection().contains(&selected_shape));
     assert!(did_select, "expected mouse down to select the draw shape");
@@ -151,8 +158,8 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
     assert!(is_dragging, "expected mouse down to start a drag gesture");
 
-    visual_cx.simulate_mouse_move(scenario.drag_end, MouseButton::Left, Modifiers::none());
-    visual_cx.simulate_mouse_up(scenario.drag_end, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_move(drag_end, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_up(drag_end, MouseButton::Left, Modifiers::none());
 
     let stopped_dragging = visual_cx.read(|app| !view.read(app).is_dragging());
     assert!(
