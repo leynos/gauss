@@ -6,17 +6,12 @@
 
 use std::path::{Path, PathBuf};
 
-use camino::{Utf8Path, Utf8PathBuf};
-use cap_std::{ambient_authority, fs_utf8::Dir};
 use futures::channel::oneshot;
 use gpui::{AsyncWindowContext, PathPromptOptions, WeakEntity, Window, div, prelude::*};
-use uuid::Uuid;
 
-use crate::{
-    model::{Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2},
-    svg::export::export_svg,
-    svg::import::import_svg,
-};
+use crate::{model::Document, svg::export::export_svg};
+
+use super::phase0_support::{demo_document, load_document_from_path, write_svg_to_path};
 
 /// Trigger an “Open…” workflow for loading a document from disk.
 #[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
@@ -154,7 +149,7 @@ impl Phase0Shell {
 
         let svg = export_svg(&doc, 100.0, 100.0);
         let save_result = write_svg_to_path(&path, &svg);
-        let error = save_result.err().map(|err| err.to_string());
+        let error = save_result.err();
 
         drop(this.update(&mut cx, move |view, view_cx| {
             if error.is_none() {
@@ -177,7 +172,7 @@ impl Phase0Shell {
         let load_result = load_document_from_path(&first_path);
         let (loaded_doc, error) = match load_result {
             Ok(doc) => (Some(doc), None),
-            Err(err) => (None, Some(err.to_string())),
+            Err(err) => (None, Some(err)),
         };
 
         drop(this.update(&mut cx, move |view, view_cx| {
@@ -293,6 +288,10 @@ impl Phase0Shell {
             (None, None) => "Last opened path: (none)".to_owned(),
         }
     }
+
+    fn canvas_area(&self) -> impl gpui::IntoElement {
+        super::canvas_paint::canvas_for_document(&self.document)
+    }
 }
 
 impl Render for Phase0Shell {
@@ -320,103 +319,11 @@ impl Render for Phase0Shell {
                 }),
             )
             .child(
-                "This view validates action wiring and platform save dialogs, and provides a \
-                 minimal manual Save… affordance.",
+                "This view validates action wiring, native open/save prompts, and canvas \
+                 painting, while Phase 0 assembles the real editor UI.",
             )
+            .child(self.canvas_area())
             .child(self.save_status_line())
             .child(self.open_status_line())
-    }
-}
-
-#[derive(Debug)]
-enum SaveSvgError {
-    NonUtf8Path,
-    MissingFileName,
-    Io(std::io::Error),
-}
-
-impl std::fmt::Display for SaveSvgError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NonUtf8Path => write!(f, "path is not valid UTF-8"),
-            Self::MissingFileName => write!(f, "path does not include a file name"),
-            Self::Io(err) => write!(f, "io error: {err}"),
-        }
-    }
-}
-
-impl std::error::Error for SaveSvgError {}
-
-fn write_svg_to_path(path: &Path, svg: &str) -> Result<(), SaveSvgError> {
-    let utf8_path =
-        Utf8PathBuf::from_path_buf(path.to_path_buf()).map_err(|_| SaveSvgError::NonUtf8Path)?;
-    let directory = utf8_path.parent().unwrap_or_else(|| Utf8Path::new("."));
-    let file_name = utf8_path.file_name().ok_or(SaveSvgError::MissingFileName)?;
-
-    Dir::create_ambient_dir_all(directory, ambient_authority()).map_err(SaveSvgError::Io)?;
-    let dir = Dir::open_ambient_dir(directory, ambient_authority()).map_err(SaveSvgError::Io)?;
-
-    dir.write(Utf8Path::new(file_name), svg.as_bytes())
-        .map_err(SaveSvgError::Io)
-}
-
-#[derive(Debug)]
-enum OpenSvgError {
-    NonUtf8Path,
-    MissingFileName,
-    Io(std::io::Error),
-    Parse(crate::svg::import::SvgImportError),
-}
-
-impl std::fmt::Display for OpenSvgError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NonUtf8Path => write!(f, "path is not valid UTF-8"),
-            Self::MissingFileName => write!(f, "path does not include a file name"),
-            Self::Io(err) => write!(f, "io error: {err}"),
-            Self::Parse(err) => write!(f, "SVG parse error: {err}"),
-        }
-    }
-}
-
-impl std::error::Error for OpenSvgError {}
-
-fn load_document_from_path(path: &Path) -> Result<Document, OpenSvgError> {
-    let utf8_path =
-        Utf8PathBuf::from_path_buf(path.to_path_buf()).map_err(|_| OpenSvgError::NonUtf8Path)?;
-    let directory = utf8_path.parent().unwrap_or_else(|| Utf8Path::new("."));
-    let file_name = utf8_path.file_name().ok_or(OpenSvgError::MissingFileName)?;
-
-    let dir = Dir::open_ambient_dir(directory, ambient_authority()).map_err(OpenSvgError::Io)?;
-    let svg = dir
-        .read_to_string(Utf8Path::new(file_name))
-        .map_err(OpenSvgError::Io)?;
-
-    import_svg(&svg).map_err(OpenSvgError::Parse)
-}
-
-fn demo_document() -> Document {
-    let shape = Shape {
-        id: ShapeId::from(Uuid::from_u128(0x6d3c_0fb4_43a8_48f1_9f14_623a_70d5_2e1a)),
-        z: 0,
-        style: PaintStyle::new(
-            Some(Rgba::new(0, 0, 0, 255)),
-            2.0,
-            Some(Rgba::new(0, 0, 255, 96)),
-        ),
-        path: PathGeom {
-            anchors: vec![
-                Anchor::new(Vec2::new(10.0, 10.0)),
-                Anchor::new(Vec2::new(90.0, 10.0)),
-                Anchor::new(Vec2::new(90.0, 90.0)),
-                Anchor::new(Vec2::new(10.0, 90.0)),
-            ],
-            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
-            closed: true,
-        },
-    };
-
-    Document {
-        shapes: vec![shape],
     }
 }

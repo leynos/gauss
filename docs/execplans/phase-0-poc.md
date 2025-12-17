@@ -61,6 +61,8 @@ running `make all` and seeing it pass.
           doc op inversion tests; remaining: any missing model invariants).
     - [x] (2025-12-17) Implement SVG export + minimal import with unit tests and
           round-trip tests.
+    - [x] (2025-12-17) Paint the current document to a GPUI `Canvas` using
+          `PathBuilder`, so Phase 0 visibly renders shapes.
     - [ ] Implement UI rendering (toolbar + canvas) with a shared GPUI `Entity`
           state.
     - [ ] Implement viewport input mapping (scroll wheel pan + Ctrl/Cmd-wheel
