@@ -9,7 +9,8 @@ use std::path::{Path, PathBuf};
 use futures::channel::oneshot;
 use gpui::{AsyncWindowContext, PathPromptOptions, WeakEntity, Window, div, prelude::*};
 
-use crate::{model::Document, svg::export::export_svg};
+use crate::model::{Document, Viewport};
+use crate::svg::export::export_svg;
 
 use super::phase0_support::{demo_document, load_document_from_path, write_svg_to_path};
 
@@ -37,6 +38,7 @@ pub struct Phase0Shell {
     did_focus: bool,
     open_prompt_mode: OpenPromptMode,
     document: Document,
+    viewport: Viewport,
     last_saved_path: Option<PathBuf>,
     last_save_error: Option<String>,
     last_opened_path: Option<PathBuf>,
@@ -75,6 +77,7 @@ impl Phase0Shell {
             did_focus: false,
             open_prompt_mode: OpenPromptMode::Native,
             document: demo_document(),
+            viewport: Viewport::new(),
             last_saved_path: None,
             last_save_error: None,
             last_opened_path: None,
@@ -113,6 +116,15 @@ impl Phase0Shell {
     #[must_use]
     pub const fn document(&self) -> &Document {
         &self.document
+    }
+
+    /// Return the current viewport.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI.
+    #[must_use]
+    pub const fn viewport(&self) -> Viewport {
+        self.viewport
     }
 
     async fn receive_save_path(rx: SavePathPromptReceiver) -> Option<PathBuf> {
@@ -289,8 +301,31 @@ impl Phase0Shell {
         }
     }
 
-    fn canvas_area(&self) -> impl gpui::IntoElement {
-        super::canvas_paint::canvas_for_document(&self.document)
+    fn canvas_area(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        div()
+            .id("phase0-canvas")
+            .debug_selector(|| "#phase0-canvas".to_owned())
+            .flex()
+            .flex_1()
+            .on_scroll_wheel(cx.listener(
+                |shell: &mut Self, event: &gpui::ScrollWheelEvent, window, view_cx| {
+                    let line_height = window.line_height();
+                    let did_change = super::viewport_input::apply_scroll_wheel_event(
+                        &mut shell.viewport,
+                        event,
+                        line_height,
+                    );
+
+                    if did_change {
+                        view_cx.notify();
+                        view_cx.stop_propagation();
+                    }
+                },
+            ))
+            .child(super::canvas_paint::canvas_for_document(
+                &self.document,
+                self.viewport,
+            ))
     }
 }
 
@@ -322,7 +357,7 @@ impl Render for Phase0Shell {
                 "This view validates action wiring, native open/save prompts, and canvas \
                  painting, while Phase 0 assembles the real editor UI.",
             )
-            .child(self.canvas_area())
+            .child(self.canvas_area(cx))
             .child(self.save_status_line())
             .child(self.open_status_line())
     }

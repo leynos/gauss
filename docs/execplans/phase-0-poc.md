@@ -65,8 +65,9 @@ running `make all` and seeing it pass.
           `PathBuilder`, so Phase 0 visibly renders shapes.
     - [ ] Implement UI rendering (toolbar + canvas) with a shared GPUI `Entity`
           state.
-    - [ ] Implement viewport input mapping (scroll wheel pan + Ctrl/Cmd-wheel
-          zoom) and manual smoke checks.
+    - [x] (2025-12-17) Implement viewport input mapping (scroll wheel pan +
+          Ctrl/Cmd-wheel zoom) with a headless `#[gpui::test]` asserting pan
+          and cursor-centred zoom behaviour.
     - [ ] Implement Draw mode (place points, Tab toggle edge mode, close, Esc
           commit) with document history.
     - [ ] Implement Manipulate mode hit-testing + drags + operations.
@@ -116,6 +117,14 @@ running `make all` and seeing it pass.
       Impact: Phase 0 “Open…” tests use a test-only prompt mode that routes open
       selection through `prompt_for_new_path`, so we can still cover action
       dispatch and async wiring.
+
+    - Observation: `VisualTestContext::debug_bounds` only works for elements
+      that set an explicit debug selector.
+      Evidence: GPUI’s `div().id("...")` sets an element ID, but does not
+      populate the debug bounds map; `div().debug_selector(|| "...".to_owned())`
+      does.
+      Impact: Headless integration tests that need precise hit-testing (for
+      example, scroll wheel events on the canvas) should use `debug_selector`.
 
 ## Decision log
 
@@ -428,8 +437,9 @@ Implement:
   - vertical wheel pans vertically,
   - horizontal wheel pans horizontally,
   - Shift+wheel uses horizontal pan when only vertical wheel input exists.
-- Ctrl/Cmd-wheel zoom around cursor position, using `Viewport::zoom_around`.
-- Middle mouse drag pan (optional if supported cleanly by GPUI events).
+- Ctrl/Cmd-wheel zoom around cursor position, using
+  `Viewport::zoom_around_screen_point`.
+- Middle mouse drag pan is deferred (the user scoped Phase 0 to scroll wheel).
 
 Acceptance:
 
@@ -686,3 +696,10 @@ Revision (2025-12-17):
 - Added Phase 0 “Open…” wiring and a headless GPUI test that loads an SVG file.
 - Documented the `prompt_for_paths` limitation in GPUI 0.2.2 test support and
   the corresponding test-only prompt-mode workaround.
+
+Revision (2025-12-17):
+
+- Implemented Phase 0 viewport navigation with scroll wheel pan and
+  Ctrl/Cmd-wheel zoom around the cursor.
+- Added a headless `#[gpui::test]` that simulates `ScrollWheelEvent` and
+  asserts both pan updates and cursor-centred zoom (world point stability).

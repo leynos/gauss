@@ -8,15 +8,28 @@ use gpui::{
     App, Bounds, Path, PathBuilder, Pixels, Styled as _, Window, canvas, fill, point, px, rgba,
 };
 
-use crate::model::{Document, Rgba as ModelRgba, SegmentKind, Shape};
+use crate::model::{Document, Rgba as ModelRgba, SegmentKind, Shape, Viewport};
 
-pub(super) fn canvas_for_document(document: &Document) -> impl gpui::IntoElement {
+#[derive(Clone, Debug)]
+struct CanvasState {
+    document: Document,
+    viewport: Viewport,
+}
+
+pub(super) fn canvas_for_document(
+    document: &Document,
+    viewport: Viewport,
+) -> impl gpui::IntoElement {
     let document_clone = document.clone();
+    let viewport_copy = viewport;
 
     canvas(
-        move |_bounds: Bounds<Pixels>, _window: &mut Window, _app: &mut App| document_clone,
-        |bounds: Bounds<Pixels>, doc_to_paint: Document, window: &mut Window, _app: &mut App| {
-            paint_document(bounds, &doc_to_paint, window);
+        move |_bounds: Bounds<Pixels>, _window: &mut Window, _app: &mut App| CanvasState {
+            document: document_clone,
+            viewport: viewport_copy,
+        },
+        |bounds: Bounds<Pixels>, state: CanvasState, window: &mut Window, _app: &mut App| {
+            paint_document(bounds, &state.document, state.viewport, window);
         },
     )
     .flex_1()
@@ -24,16 +37,16 @@ pub(super) fn canvas_for_document(document: &Document) -> impl gpui::IntoElement
     .rounded_md()
 }
 
-fn paint_document(bounds: Bounds<Pixels>, doc: &Document, window: &mut Window) {
+fn paint_document(bounds: Bounds<Pixels>, doc: &Document, viewport: Viewport, window: &mut Window) {
     window.paint_quad(fill(bounds, rgba(0xf8f8_f8ff)));
 
     for shape in &doc.shapes {
-        paint_shape(shape, window);
+        paint_shape(shape, viewport, window);
     }
 }
 
-fn paint_shape(shape: &Shape, window: &mut Window) {
-    let (fill_path, stroke_path) = build_paths(shape);
+fn paint_shape(shape: &Shape, viewport: Viewport, window: &mut Window) {
+    let (fill_path, stroke_path) = build_paths(shape, viewport);
 
     if let (Some(path), Some(fill)) = (fill_path, shape.style.fill) {
         window.paint_path(path, rgba(model_rgba_to_hex(fill)));
@@ -44,15 +57,19 @@ fn paint_shape(shape: &Shape, window: &mut Window) {
     }
 }
 
-fn build_paths(shape: &Shape) -> (Option<Path<Pixels>>, Option<Path<Pixels>>) {
+fn build_paths(shape: &Shape, viewport: Viewport) -> (Option<Path<Pixels>>, Option<Path<Pixels>>) {
     let fill_path = if shape.path.closed && shape.style.fill.is_some() {
-        build_path(shape, PathBuilder::fill())
+        build_path(shape, viewport, PathBuilder::fill())
     } else {
         None
     };
 
     let stroke_path = if shape.style.stroke.is_some() {
-        build_path(shape, PathBuilder::stroke(px(shape.style.stroke_width)))
+        build_path(
+            shape,
+            viewport,
+            PathBuilder::stroke(px(shape.style.stroke_width * viewport.zoom)),
+        )
     } else {
         None
     };
@@ -60,9 +77,10 @@ fn build_paths(shape: &Shape) -> (Option<Path<Pixels>>, Option<Path<Pixels>>) {
     (fill_path, stroke_path)
 }
 
-fn build_path(shape: &Shape, mut builder: PathBuilder) -> Option<Path<Pixels>> {
+fn build_path(shape: &Shape, viewport: Viewport, mut builder: PathBuilder) -> Option<Path<Pixels>> {
     let first = shape.path.anchors.first()?;
-    builder.move_to(point(px(first.pos.x), px(first.pos.y)));
+    let first_screen = viewport.world_to_screen(first.pos);
+    builder.move_to(point(px(first_screen.x), px(first_screen.y)));
 
     for (index, kind) in shape.path.segments.iter().enumerate() {
         let Some(start) = shape.path.anchors.get(index) else {
@@ -72,17 +90,20 @@ fn build_path(shape: &Shape, mut builder: PathBuilder) -> Option<Path<Pixels>> {
             break;
         };
 
+        let end_pos = viewport.world_to_screen(end.pos);
         match kind {
             SegmentKind::Line => {
-                builder.line_to(point(px(end.pos.x), px(end.pos.y)));
+                builder.line_to(point(px(end_pos.x), px(end_pos.y)));
             }
             SegmentKind::Cubic => {
                 let c1 = start.handle_out.unwrap_or(start.pos);
                 let c2 = end.handle_in.unwrap_or(end.pos);
+                let c1_screen = viewport.world_to_screen(c1);
+                let c2_screen = viewport.world_to_screen(c2);
                 builder.cubic_bezier_to(
-                    point(px(end.pos.x), px(end.pos.y)),
-                    point(px(c1.x), px(c1.y)),
-                    point(px(c2.x), px(c2.y)),
+                    point(px(end_pos.x), px(end_pos.y)),
+                    point(px(c1_screen.x), px(c1_screen.y)),
+                    point(px(c2_screen.x), px(c2_screen.y)),
                 );
             }
         }
