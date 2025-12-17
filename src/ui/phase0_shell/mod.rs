@@ -7,13 +7,14 @@
 mod draw;
 mod file_dialogs;
 mod input;
+mod manipulate;
 
 use std::path::{Path, PathBuf};
 
 use gpui::{Window, div, prelude::*};
 use gpui_component::history::History;
 
-use crate::model::{Document, ShapeId, Vec2, Viewport};
+use crate::model::{Document, Selection, ShapeId, Vec2, Viewport};
 
 use super::phase0_support::demo_document;
 
@@ -48,6 +49,8 @@ pub struct Phase0Shell {
     edge_mode: DrawEdgeMode,
     draw_active_shape: Option<ShapeId>,
     document_history: History<draw::DocHistoryItem>,
+    selection: Selection,
+    drag_state: Option<manipulate::DragState>,
     last_canvas_click_screen: Option<Vec2>,
     last_saved_path: Option<PathBuf>,
     last_save_error: Option<String>,
@@ -69,6 +72,8 @@ impl Phase0Shell {
             edge_mode: DrawEdgeMode::Line,
             draw_active_shape: None,
             document_history: History::new(),
+            selection: Selection::empty(),
+            drag_state: None,
             last_canvas_click_screen: None,
             last_saved_path: None,
             last_save_error: None,
@@ -119,6 +124,24 @@ impl Phase0Shell {
         self.viewport
     }
 
+    /// Return the current selection.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI.
+    #[must_use]
+    pub const fn selection(&self) -> &Selection {
+        &self.selection
+    }
+
+    /// Return whether a drag gesture is currently active.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI.
+    #[must_use]
+    pub const fn is_dragging(&self) -> bool {
+        self.drag_state.is_some()
+    }
+
     /// Return the last canvas click position in screen coordinates.
     ///
     /// This is intended for tests and debugging while Phase 0 is still
@@ -164,35 +187,84 @@ impl Phase0Shell {
             .border_1()
             .rounded_md()
             .occlude()
-            .on_mouse_move(cx.listener(|_shell: &mut Self, _event: &gpui::MouseMoveEvent, _, _| {}))
-            .on_click(
-                cx.listener(|shell: &mut Self, event: &gpui::ClickEvent, _, view_cx| {
-                    let changed = shell.handle_canvas_click(event.position());
-                    if changed {
-                        view_cx.notify();
-                        view_cx.stop_propagation();
-                    }
-                }),
+            .on_mouse_down(
+                gpui::MouseButton::Left,
+                cx.listener(Self::canvas_mouse_down),
             )
-            .on_scroll_wheel(cx.listener(
-                |shell: &mut Self, event: &gpui::ScrollWheelEvent, window, view_cx| {
-                    let line_height = window.line_height();
-                    let did_change = super::viewport_input::apply_scroll_wheel_event(
-                        &mut shell.viewport,
-                        event,
-                        line_height,
-                    );
-
-                    if did_change {
-                        view_cx.notify();
-                        view_cx.stop_propagation();
-                    }
-                },
-            ))
+            .on_mouse_move(cx.listener(Self::canvas_mouse_move))
+            .on_mouse_up(gpui::MouseButton::Left, cx.listener(Self::canvas_mouse_up))
+            .on_mouse_up_out(gpui::MouseButton::Left, cx.listener(Self::canvas_mouse_up))
+            .on_click(cx.listener(Self::canvas_click))
+            .on_scroll_wheel(cx.listener(Self::canvas_scroll_wheel))
             .child(super::canvas_paint::canvas_for_document(
                 &self.document,
+                &self.selection,
                 self.viewport,
             ))
+    }
+
+    fn canvas_mouse_down(
+        shell: &mut Self,
+        event: &gpui::MouseDownEvent,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if shell.handle_canvas_mouse_down(event) {
+            cx.notify();
+        }
+    }
+
+    fn canvas_mouse_move(
+        shell: &mut Self,
+        event: &gpui::MouseMoveEvent,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if shell.handle_canvas_mouse_move(event) {
+            cx.notify();
+        }
+    }
+
+    fn canvas_mouse_up(
+        shell: &mut Self,
+        event: &gpui::MouseUpEvent,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if shell.handle_canvas_mouse_up(event) {
+            cx.notify();
+        }
+    }
+
+    fn canvas_click(
+        shell: &mut Self,
+        event: &gpui::ClickEvent,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if shell.handle_canvas_click(event.position()) {
+            cx.notify();
+            cx.stop_propagation();
+        }
+    }
+
+    fn canvas_scroll_wheel(
+        shell: &mut Self,
+        event: &gpui::ScrollWheelEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let line_height = window.line_height();
+        let did_change = super::viewport_input::apply_scroll_wheel_event(
+            &mut shell.viewport,
+            event,
+            line_height,
+        );
+
+        if did_change {
+            cx.notify();
+            cx.stop_propagation();
+        }
     }
 
     fn header_row(cx: &mut Context<Self>) -> impl gpui::IntoElement {

@@ -71,7 +71,10 @@ running `make all` and seeing it pass.
     - [x] (2025-12-17) Implement Draw mode (click to place points, Tab toggle
           edge mode, close, Esc commit) with document history and a headless
           `#[gpui::test]` asserting point placement and undo behaviour.
-    - [ ] Implement Manipulate mode hit-testing + drags + operations.
+    - [ ] Implement Manipulate mode hit-testing + drags + operations
+          (completed: shape hit-testing, selection, drag-to-move, and undo via
+          a headless `#[gpui::test]`; remaining: anchor/handle hit-testing and
+          drags, segment toggling, reordering, insert/delete anchor).
     - [ ] Implement selection history + Shift-modified undo/redo.
     - [ ] Add behavioural tests (BDD) with `rstest-bdd` exercising the
           controller layer via observable outcomes (SVG output).
@@ -134,6 +137,14 @@ running `make all` and seeing it pass.
       Impact: When introducing submodules under `src/ui/phase0_shell`, convert
       `phase0_shell` into a directory module and keep `mod.rs` under 400 lines.
 
+    - Observation: Ending a drag gesture can require handling both “mouse up
+      while hovered” and “mouse up outside” events.
+      Evidence: Phase 0 binds both `on_mouse_up` and `on_mouse_up_out` for the
+      canvas container to ensure the drag state is cleared even if the pointer
+      leaves the element between down and up.
+      Impact: Manipulate-mode drag handling should not assume the pointer stays
+      within the canvas bounds for the full gesture.
+
 ## Decision log
 
     - Decision: Target stable Rust for Phase 0 (goal state).
@@ -171,6 +182,12 @@ running `make all` and seeing it pass.
       Rationale: `clippy::self_named_module_files` is denied in this repo and
       forbids `src/model/ops.rs` from having submodules without converting it
       into `src/model/ops/mod.rs`.
+      Date/Author: 2025-12-17 / Codex
+
+    - Decision: Bind both `on_mouse_up` and `on_mouse_up_out` on the canvas
+      container for Phase 0 drag gestures.
+      Rationale: Drag gestures should end cleanly even if the pointer leaves
+      the canvas between down and up, and this also improves test robustness.
       Date/Author: 2025-12-17 / Codex
 
 ## Outcomes & retrospective
@@ -711,3 +728,10 @@ Revision (2025-12-17):
   Ctrl/Cmd-wheel zoom around the cursor.
 - Added a headless `#[gpui::test]` that simulates `ScrollWheelEvent` and
   asserts both pan updates and cursor-centred zoom (world point stability).
+
+Revision (2025-12-17):
+
+- Started Milestone 7 by adding manipulate-mode shape hit-testing, selection,
+  and drag-to-move.
+- Added a headless `#[gpui::test]` asserting that dragging a shape translates
+  anchors and that undo restores the original geometry.

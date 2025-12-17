@@ -8,39 +8,45 @@ use gpui::{
     App, Bounds, Path, PathBuilder, Pixels, Styled as _, Window, canvas, fill, point, px, rgba,
 };
 
-use crate::model::{Document, Rgba as ModelRgba, SegmentKind, Shape, Viewport};
+use crate::model::{Document, Rgba as ModelRgba, SegmentKind, SelItem, Selection, Shape, Viewport};
 
 #[derive(Clone, Debug)]
 struct CanvasState {
     document: Document,
+    selection: Selection,
     viewport: Viewport,
 }
 
 pub(super) fn canvas_for_document(
     document: &Document,
+    selection: &Selection,
     viewport: Viewport,
 ) -> impl gpui::IntoElement {
     let document_clone = document.clone();
+    let selection_clone = selection.clone();
     let viewport_copy = viewport;
 
     canvas(
         move |_bounds: Bounds<Pixels>, _window: &mut Window, _app: &mut App| CanvasState {
             document: document_clone,
+            selection: selection_clone,
             viewport: viewport_copy,
         },
         |bounds: Bounds<Pixels>, state: CanvasState, window: &mut Window, _app: &mut App| {
-            paint_document(bounds, &state.document, state.viewport, window);
+            paint_document(bounds, &state, window);
         },
     )
     .flex_1()
 }
 
-fn paint_document(bounds: Bounds<Pixels>, doc: &Document, viewport: Viewport, window: &mut Window) {
+fn paint_document(bounds: Bounds<Pixels>, state: &CanvasState, window: &mut Window) {
     window.paint_quad(fill(bounds, rgba(0xf8f8_f8ff)));
 
-    for shape in &doc.shapes {
-        paint_shape(shape, viewport, window);
+    for shape in &state.document.shapes {
+        paint_shape(shape, state.viewport, window);
     }
+
+    paint_selection_overlays(&state.document, &state.selection, state.viewport, window);
 }
 
 fn paint_shape(shape: &Shape, viewport: Viewport, window: &mut Window) {
@@ -53,6 +59,33 @@ fn paint_shape(shape: &Shape, viewport: Viewport, window: &mut Window) {
     if let (Some(path), Some(stroke)) = (stroke_path, shape.style.stroke) {
         window.paint_path(path, rgba(model_rgba_to_hex(stroke)));
     }
+}
+
+fn paint_selection_overlays(
+    doc: &Document,
+    selection: &Selection,
+    viewport: Viewport,
+    window: &mut Window,
+) {
+    for shape_id in selected_shape_ids(selection) {
+        let Some(shape) = doc.shapes.iter().find(|shape| shape.id == shape_id) else {
+            continue;
+        };
+
+        let (_, stroke_path) = build_paths(shape, viewport);
+        let Some(path) = stroke_path else {
+            continue;
+        };
+
+        window.paint_path(path, rgba(0x1d4e_d8ff));
+    }
+}
+
+fn selected_shape_ids(selection: &Selection) -> impl Iterator<Item = crate::model::ShapeId> + '_ {
+    selection.items.iter().filter_map(|item| match item {
+        SelItem::Shape(id) => Some(*id),
+        _ => None,
+    })
 }
 
 fn build_paths(shape: &Shape, viewport: Viewport) -> (Option<Path<Pixels>>, Option<Path<Pixels>>) {
