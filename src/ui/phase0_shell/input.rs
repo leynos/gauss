@@ -26,15 +26,29 @@ impl Phase0Shell {
             return;
         }
 
-        if is_undo(&event.keystroke) {
+        if is_document_undo(&event.keystroke) {
             self.undo_document();
             cx.notify();
             cx.stop_propagation();
             return;
         }
 
-        if is_redo(&event.keystroke) {
+        if is_selection_undo(&event.keystroke) {
+            self.undo_selection();
+            cx.notify();
+            cx.stop_propagation();
+            return;
+        }
+
+        if is_document_redo(&event.keystroke) {
             self.redo_document();
+            cx.notify();
+            cx.stop_propagation();
+            return;
+        }
+
+        if is_selection_redo(&event.keystroke) {
+            self.redo_selection();
             cx.notify();
             cx.stop_propagation();
         }
@@ -63,13 +77,18 @@ fn is_toggle_edge_mode(keystroke: &Keystroke) -> bool {
     keystroke.key == "tab" && !keystroke.modifiers.modified()
 }
 
-fn is_undo(keystroke: &Keystroke) -> bool {
+fn is_document_undo(keystroke: &Keystroke) -> bool {
     keystroke.key == "z" && keystroke.modifiers.secondary() && !keystroke.modifiers.shift
 }
 
-fn is_redo(keystroke: &Keystroke) -> bool {
-    let is_ctrl_y = keystroke.key == "y" && keystroke.modifiers.secondary();
-    let is_cmd_shift_z =
-        keystroke.key == "z" && keystroke.modifiers.secondary() && keystroke.modifiers.shift;
-    is_ctrl_y || is_cmd_shift_z
+fn is_selection_undo(keystroke: &Keystroke) -> bool {
+    keystroke.key == "z" && keystroke.modifiers.secondary() && keystroke.modifiers.shift
+}
+
+fn is_document_redo(keystroke: &Keystroke) -> bool {
+    keystroke.key == "y" && keystroke.modifiers.secondary() && !keystroke.modifiers.shift
+}
+
+fn is_selection_redo(keystroke: &Keystroke) -> bool {
+    keystroke.key == "y" && keystroke.modifiers.secondary() && keystroke.modifiers.shift
 }

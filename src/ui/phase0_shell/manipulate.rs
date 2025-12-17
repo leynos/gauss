@@ -67,7 +67,7 @@ impl Phase0Shell {
         let hit_shape = hit_test_topmost_shape(&self.document, cursor_world, tolerance_world);
 
         let previous_selection = self.selection.clone();
-        self.selection = match (hit_anchor, hit_shape) {
+        let new_selection = match (hit_anchor, hit_shape) {
             (Some(hit), _) => Selection {
                 items: vec![SelItem::Anchor {
                     shape: hit.shape_id,
@@ -79,6 +79,11 @@ impl Phase0Shell {
             },
             (None, None) => Selection::empty(),
         };
+        let did_change_selection = new_selection != previous_selection;
+        if did_change_selection {
+            self.record_selection_change(previous_selection, new_selection.clone());
+        }
+        self.selection = new_selection;
 
         self.drag_state = match (hit_anchor, hit_shape) {
             (Some(hit), _) => {
@@ -96,7 +101,7 @@ impl Phase0Shell {
             (None, None) => None,
         };
 
-        self.selection != previous_selection || self.drag_state.is_some()
+        did_change_selection || self.drag_state.is_some()
     }
 
     pub(super) fn handle_canvas_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {

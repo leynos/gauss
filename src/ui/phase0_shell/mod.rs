@@ -8,6 +8,7 @@ mod draw;
 mod file_dialogs;
 mod input;
 mod manipulate;
+mod selection_history;
 
 use std::path::{Path, PathBuf};
 
@@ -49,6 +50,7 @@ pub struct Phase0Shell {
     edge_mode: DrawEdgeMode,
     draw_active_shape: Option<ShapeId>,
     document_history: History<draw::DocHistoryItem>,
+    selection_history: History<selection_history::SelectionHistoryItem>,
     selection: Selection,
     drag_state: Option<manipulate::DragState>,
     last_canvas_click_screen: Option<Vec2>,
@@ -72,6 +74,7 @@ impl Phase0Shell {
             edge_mode: DrawEdgeMode::Line,
             draw_active_shape: None,
             document_history: History::new(),
+            selection_history: History::new(),
             selection: Selection::empty(),
             drag_state: None,
             last_canvas_click_screen: None,

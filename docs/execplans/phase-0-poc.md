@@ -76,7 +76,8 @@ running `make all` and seeing it pass.
           drag-anchor, and undo via headless `#[gpui::test]`; remaining:
           handle hit-testing/drags, segment toggling, reordering, insert/delete
           anchor).
-    - [ ] Implement selection history + Shift-modified undo/redo.
+    - [x] (2025-12-17) Implement selection history + Shift-modified undo/redo
+          with a headless `#[gpui::test]`.
     - [ ] Add behavioural tests (BDD) with `rstest-bdd` exercising the
           controller layer via observable outcomes (SVG output).
     - [ ] Run all gates (`make all`) and document how to run the PoC.
@@ -145,6 +146,14 @@ running `make all` and seeing it pass.
       leaves the element between down and up.
       Impact: Manipulate-mode drag handling should not assume the pointer stays
       within the canvas bounds for the full gesture.
+
+    - Observation: In GPUI’s headless test harness, `simulate_click` triggers
+      `ClickEvent` handlers but does not exercise `MouseDownEvent` handlers.
+      Evidence: Selection is driven by `on_mouse_down` and required
+      `simulate_mouse_down` / `simulate_mouse_up` in the selection history
+      integration test.
+      Impact: Prefer explicit mouse down/up simulation in `#[gpui::test]` cases
+      that validate hit-testing or drag behaviour.
 
 ## Decision log
 
@@ -742,3 +751,11 @@ Revision (2025-12-17):
 - Extended manipulate mode with anchor hit-testing and drag-to-move-anchor.
 - Added a headless `#[gpui::test]` asserting anchor drag updates the path and
   that undo restores the original anchor position.
+
+Revision (2025-12-17):
+
+- Implemented selection history as a separate undo/redo stack.
+- Updated keyboard mapping so Shift selects the selection stack
+  (Ctrl-Shift-Z/Y).
+- Added a headless `#[gpui::test]` that selects an item, clears selection, and
+  asserts Shift-undo/redo restores the selection without mutating the document.
