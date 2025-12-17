@@ -72,9 +72,9 @@ running `make all` and seeing it pass.
           edge mode, close, Esc commit) with document history and a headless
           `#[gpui::test]` asserting point placement and undo behaviour.
     - [ ] Implement Manipulate mode hit-testing + drags + operations
-          (completed: shape + anchor hit-testing, selection, drag-to-move,
-          drag-anchor, and undo via headless `#[gpui::test]`; remaining:
-          handle hit-testing/drags, segment toggling, reordering, insert/delete
+          (completed: shape + anchor + handle hit-testing, selection,
+          drag-to-move, drag-anchor, drag-handle, and undo via headless
+          `#[gpui::test]`; remaining: segment toggling, reordering, insert/delete
           anchor).
     - [x] (2025-12-17) Implement selection history + Shift-modified undo/redo
           with a headless `#[gpui::test]`.
@@ -765,3 +765,11 @@ Revision (2025-12-17):
 - Extended the `rstest-bdd` harness with an SVG export scenario that models
   drawing a closed triangle and asserts the exported `d` attribute contains a
   close (`Z`) command.
+
+Revision (2025-12-17):
+
+- Refactored Phase 0 manipulate mode into submodules to stay under the
+  repository’s per-file line limit.
+- Added handle hit-testing and drag-to-move-handle support, along with a
+  headless `#[gpui::test]` asserting handle drag mutates only the handle and
+  Ctrl/Cmd-Z restores the original geometry.

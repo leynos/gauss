@@ -1,5 +1,8 @@
 //! Manipulate-mode behaviour for the Phase 0 shell.
 //!
+//! This module is split into submodules to stay under the repository’s
+//! per-file line limit.
+//!
 //! Phase 0 starts with just enough manipulation support to validate the
 //! end-to-end wiring:
 //!
@@ -16,6 +19,17 @@ use super::{
     draw::{DocHistoryItem, ToolMode},
 };
 
+mod handle_drag;
+mod hit_test;
+
+use self::handle_drag::{
+    HandleDragState, apply_handle_drag_preview, finish_handle_drag, start_handle_drag,
+};
+use self::hit_test::{
+    AnchorHit, HandleHitKind, hit_test_topmost_anchor, hit_test_topmost_handle,
+    hit_test_topmost_shape,
+};
+
 #[derive(Clone, Debug)]
 pub(super) struct DragState {
     kind: DragKind,
@@ -23,8 +37,9 @@ pub(super) struct DragState {
 
 #[derive(Clone, Debug)]
 enum DragKind {
-    MoveShape(ShapeDragState),
-    MoveAnchor(AnchorDragState),
+    Shape(ShapeDragState),
+    Anchor(AnchorDragState),
+    Handle(HandleDragState),
 }
 
 #[derive(Clone, Debug)]
@@ -44,13 +59,6 @@ struct AnchorDragState {
     original_anchor: Anchor,
 }
 
-#[derive(Clone, Copy)]
-struct AnchorHit {
-    shape_index: usize,
-    shape_id: ShapeId,
-    anchor_index: usize,
-}
-
 impl Phase0Shell {
     pub(super) fn handle_canvas_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
         if self.tool_mode != ToolMode::Manipulate {
@@ -63,21 +71,34 @@ impl Phase0Shell {
 
         let cursor_world = cursor_world(&self.viewport, event.position);
         let tolerance_world = 4.0 / self.viewport.zoom;
+        let hit_handle = hit_test_topmost_handle(&self.document, cursor_world, tolerance_world);
         let hit_anchor = hit_test_topmost_anchor(&self.document, cursor_world, tolerance_world);
         let hit_shape = hit_test_topmost_shape(&self.document, cursor_world, tolerance_world);
 
         let previous_selection = self.selection.clone();
-        let new_selection = match (hit_anchor, hit_shape) {
-            (Some(hit), _) => Selection {
+        let new_selection = match (hit_handle, hit_anchor, hit_shape) {
+            (Some(hit), _, _) => Selection {
+                items: vec![match hit.kind {
+                    HandleHitKind::In => SelItem::HandleIn {
+                        shape: hit.shape_id,
+                        anchor: hit.anchor_index,
+                    },
+                    HandleHitKind::Out => SelItem::HandleOut {
+                        shape: hit.shape_id,
+                        anchor: hit.anchor_index,
+                    },
+                }],
+            },
+            (None, Some(hit), _) => Selection {
                 items: vec![SelItem::Anchor {
                     shape: hit.shape_id,
                     anchor: hit.anchor_index,
                 }],
             },
-            (None, Some((_, shape_id))) => Selection {
+            (None, None, Some((_, shape_id))) => Selection {
                 items: vec![SelItem::Shape(shape_id)],
             },
-            (None, None) => Selection::empty(),
+            (None, None, None) => Selection::empty(),
         };
         let did_change_selection = new_selection != previous_selection;
         if did_change_selection {
@@ -85,20 +106,25 @@ impl Phase0Shell {
         }
         self.selection = new_selection;
 
-        self.drag_state = match (hit_anchor, hit_shape) {
-            (Some(hit), _) => {
-                start_anchor_drag(&self.document, hit, cursor_world).map(|drag| DragState {
-                    kind: DragKind::MoveAnchor(drag),
+        self.drag_state = match (hit_handle, hit_anchor, hit_shape) {
+            (Some(hit), _, _) => {
+                start_handle_drag(&self.document, hit, cursor_world).map(|drag| DragState {
+                    kind: DragKind::Handle(drag),
                 })
             }
-            (None, Some((shape_index, shape_id))) => {
+            (None, Some(hit), _) => {
+                start_anchor_drag(&self.document, hit, cursor_world).map(|drag| DragState {
+                    kind: DragKind::Anchor(drag),
+                })
+            }
+            (None, None, Some((shape_index, shape_id))) => {
                 start_shape_drag(&self.document, shape_index, shape_id, cursor_world).map(|drag| {
                     DragState {
-                        kind: DragKind::MoveShape(drag),
+                        kind: DragKind::Shape(drag),
                     }
                 })
             }
-            (None, None) => None,
+            (None, None, None) => None,
         };
 
         did_change_selection || self.drag_state.is_some()
@@ -119,11 +145,14 @@ impl Phase0Shell {
 
         let cursor_world = cursor_world(&self.viewport, event.position);
         match &drag_state.kind {
-            DragKind::MoveShape(shape_drag) => {
+            DragKind::Shape(shape_drag) => {
                 apply_shape_drag_preview(&mut self.document, shape_drag, cursor_world)
             }
-            DragKind::MoveAnchor(anchor_drag) => {
+            DragKind::Anchor(anchor_drag) => {
                 apply_anchor_drag_preview(&mut self.document, anchor_drag, cursor_world)
+            }
+            DragKind::Handle(handle_drag) => {
+                apply_handle_drag_preview(&mut self.document, handle_drag, cursor_world)
             }
         }
     }
@@ -143,9 +172,16 @@ impl Phase0Shell {
 
         let cursor_world = cursor_world(&self.viewport, event.position);
         match drag_state.kind {
-            DragKind::MoveShape(shape_drag) => self.finish_shape_drag(&shape_drag, cursor_world),
-            DragKind::MoveAnchor(anchor_drag) => {
-                self.finish_anchor_drag(&anchor_drag, cursor_world)
+            DragKind::Shape(shape_drag) => self.finish_shape_drag(&shape_drag, cursor_world),
+            DragKind::Anchor(anchor_drag) => self.finish_anchor_drag(&anchor_drag, cursor_world),
+            DragKind::Handle(handle_drag) => {
+                finish_handle_drag(&mut self.document, &handle_drag, cursor_world).is_some_and(
+                    |op| {
+                        self.document_history
+                            .push(DocHistoryItem::new(DocChange { ops: vec![op] }));
+                        true
+                    },
+                )
             }
         }
     }
@@ -316,69 +352,4 @@ fn restore_shape_anchors(shape: &mut Shape, original: &[Anchor], delta: Vec2) ->
     }
 
     true
-}
-
-fn hit_test_topmost_shape(
-    doc: &Document,
-    cursor_world: Vec2,
-    tolerance_world: f32,
-) -> Option<(usize, ShapeId)> {
-    doc.shapes
-        .iter()
-        .enumerate()
-        .rev()
-        .find_map(|(index, shape)| {
-            hit_test_shape_bbox(shape, cursor_world, tolerance_world).then_some((index, shape.id))
-        })
-}
-
-fn hit_test_topmost_anchor(
-    doc: &Document,
-    cursor_world: Vec2,
-    tolerance_world: f32,
-) -> Option<AnchorHit> {
-    let tolerance_squared = tolerance_world * tolerance_world;
-    doc.shapes
-        .iter()
-        .enumerate()
-        .rev()
-        .find_map(|(shape_index, shape)| {
-            shape
-                .path
-                .anchors
-                .iter()
-                .enumerate()
-                .find_map(|(anchor_index, anchor)| {
-                    (anchor.pos.distance_squared(cursor_world) <= tolerance_squared).then_some(
-                        AnchorHit {
-                            shape_index,
-                            shape_id: shape.id,
-                            anchor_index,
-                        },
-                    )
-                })
-        })
-}
-
-fn hit_test_shape_bbox(shape: &Shape, cursor_world: Vec2, tolerance_world: f32) -> bool {
-    let mut min_x = f32::INFINITY;
-    let mut min_y = f32::INFINITY;
-    let mut max_x = f32::NEG_INFINITY;
-    let mut max_y = f32::NEG_INFINITY;
-
-    for anchor in &shape.path.anchors {
-        min_x = min_x.min(anchor.pos.x);
-        min_y = min_y.min(anchor.pos.y);
-        max_x = max_x.max(anchor.pos.x);
-        max_y = max_y.max(anchor.pos.y);
-    }
-
-    if !min_x.is_finite() || !min_y.is_finite() || !max_x.is_finite() || !max_y.is_finite() {
-        return false;
-    }
-
-    cursor_world.x >= (min_x - tolerance_world)
-        && cursor_world.x <= (max_x + tolerance_world)
-        && cursor_world.y >= (min_y - tolerance_world)
-        && cursor_world.y <= (max_y + tolerance_world)
 }
