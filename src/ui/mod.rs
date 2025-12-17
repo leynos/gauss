@@ -6,4 +6,4 @@
 
 pub mod phase0_shell;
 
-pub use phase0_shell::{Phase0Shell, SaveSvg};
+pub use phase0_shell::{OpenSvg, Phase0Shell, SaveSvg};

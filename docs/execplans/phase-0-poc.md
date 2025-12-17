@@ -53,6 +53,9 @@ running `make all` and seeing it pass.
           inversion restores the document.
     - [x] (2025-12-17) Implement a Phase 0 “Save…” workflow that writes an SVG
           file, with a `#[gpui::test]` verifying the saved contents.
+    - [x] (2025-12-17) Implement a Phase 0 “Open…” workflow that loads an SVG
+          document from disk, with a `#[gpui::test]` verifying the loaded
+          document state.
     - [ ] Implement model layer (document/path/selection/viewport/ops) with
           unit tests using `rstest` (completed: core types + viewport test +
           doc op inversion tests; remaining: any missing model invariants).
@@ -103,6 +106,14 @@ running `make all` and seeing it pass.
       widened to `r##"..."##`.
       Impact: Use `r##"..."##` for embedded SVG snippets that include hex
       colour attributes.
+
+    - Observation: GPUI 0.2.2's test platform does not implement
+      `prompt_for_paths`.
+      Evidence: `gpui::platform::test::platform::TestPlatform::prompt_for_paths`
+      is `unimplemented!()`.
+      Impact: Phase 0 “Open…” tests use a test-only prompt mode that routes open
+      selection through `prompt_for_new_path`, so we can still cover action
+      dispatch and async wiring.
 
 ## Decision log
 
@@ -667,3 +678,9 @@ Revision (2025-12-17):
   regression test).
 - Updated the Phase 0 “Save…” wiring to write an SVG file to disk and extended
   the headless GPUI test to assert that the saved SVG contains a demo shape.
+
+Revision (2025-12-17):
+
+- Added Phase 0 “Open…” wiring and a headless GPUI test that loads an SVG file.
+- Documented the `prompt_for_paths` limitation in GPUI 0.2.2 test support and
+  the corresponding test-only prompt-mode workaround.
