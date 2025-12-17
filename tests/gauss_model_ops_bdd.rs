@@ -3,7 +3,11 @@
 //! These tests use `rstest-bdd` to validate user-facing behaviour at the
 //! controller/model boundary, without a running GPUI window.
 
-use gauss::model::{DocChange, DocOp, Document, PaintStyle, PathGeom, Shape, ShapeId};
+use gauss::model::{
+    Anchor, DocChange, DocOp, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId,
+    Vec2,
+};
+use gauss::svg::export::export_svg;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 
@@ -11,6 +15,7 @@ use rstest_bdd_macros::{given, scenario, then, when};
 struct DocWorld {
     doc: Document,
     last_change: Option<DocChange>,
+    last_svg: Option<String>,
 }
 
 #[fixture]
@@ -22,6 +27,7 @@ fn world() -> DocWorld {
 fn empty_document(world: &mut DocWorld) {
     world.doc = Document::new();
     world.last_change = None;
+    world.last_svg = None;
 }
 
 #[when("I insert a shape")]
@@ -48,9 +54,46 @@ fn undo_insertion(world: &mut DocWorld) {
     change.apply_inverse(&mut world.doc);
 }
 
+#[when("I add a closed triangle path")]
+fn add_closed_triangle(world: &mut DocWorld) {
+    let shape = Shape {
+        id: ShapeId::new_v4(),
+        z: 0,
+        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None),
+        path: PathGeom {
+            anchors: vec![
+                Anchor::new(Vec2::new(1.0, 1.0)),
+                Anchor::new(Vec2::new(2.0, 1.0)),
+                Anchor::new(Vec2::new(2.0, 2.0)),
+            ],
+            segments: vec![SegmentKind::Line, SegmentKind::Line],
+            closed: true,
+        },
+    };
+    world.doc.shapes.push(shape);
+}
+
+#[when("I export the document as an SVG")]
+fn export_document_as_svg(world: &mut DocWorld) {
+    let svg = export_svg(&world.doc, 100.0, 100.0);
+    world.last_svg = Some(svg);
+}
+
 #[then("the document contains {count:usize} shapes")]
 fn document_contains_shapes(world: &DocWorld, count: usize) {
     assert_eq!(world.doc.shapes.len(), count);
+}
+
+#[then("the exported SVG contains {snippet}")]
+fn exported_svg_contains(world: &DocWorld, snippet: String) {
+    let Some(svg) = &world.last_svg else {
+        panic!("Expected SVG output to have been exported");
+    };
+
+    assert!(
+        svg.contains(&snippet),
+        "Expected exported SVG to contain snippet.\nSnippet: {snippet}\nSVG: {svg}"
+    );
 }
 
 #[scenario(
@@ -58,5 +101,13 @@ fn document_contains_shapes(world: &DocWorld, count: usize) {
     name = "Insert and undo a shape"
 )]
 fn insert_and_undo_shape(world: DocWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/gauss_model_ops.feature",
+    name = "Export a closed triangle path"
+)]
+fn export_closed_triangle_contains_close_command(world: DocWorld) {
     let _ = world;
 }

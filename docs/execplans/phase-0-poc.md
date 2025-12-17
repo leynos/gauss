@@ -78,8 +78,8 @@ running `make all` and seeing it pass.
           anchor).
     - [x] (2025-12-17) Implement selection history + Shift-modified undo/redo
           with a headless `#[gpui::test]`.
-    - [ ] Add behavioural tests (BDD) with `rstest-bdd` exercising the
-          controller layer via observable outcomes (SVG output).
+    - [x] (2025-12-17) Add behavioural tests (BDD) with `rstest-bdd` exercising
+          the controller boundary via observable SVG output.
     - [ ] Run all gates (`make all`) and document how to run the PoC.
 
 ## Surprises & discoveries
@@ -759,3 +759,9 @@ Revision (2025-12-17):
   (Ctrl-Shift-Z/Y).
 - Added a headless `#[gpui::test]` that selects an item, clears selection, and
   asserts Shift-undo/redo restores the selection without mutating the document.
+
+Revision (2025-12-17):
+
+- Extended the `rstest-bdd` harness with an SVG export scenario that models
+  drawing a closed triangle and asserts the exported `d` attribute contains a
+  close (`Z`) command.
