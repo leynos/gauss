@@ -16,6 +16,8 @@ fn canvas_position(visual_cx: &mut gpui::VisualTestContext) -> gpui::Point<gpui:
 
 #[gpui::test]
 fn scroll_wheel_pans_viewport(cx: &mut TestAppContext) {
+    cx.update(gpui_component::init);
+
     let view: gpui::Entity<Phase0Shell> = {
         let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
         visual_cx.update(|window, app| drop(window.draw(app)));
@@ -43,6 +45,8 @@ fn scroll_wheel_pans_viewport(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn secondary_scroll_wheel_zooms_around_cursor(cx: &mut TestAppContext) {
+    cx.update(gpui_component::init);
+
     let view: gpui::Entity<Phase0Shell> = {
         let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
         visual_cx.update(|window, app| drop(window.draw(app)));

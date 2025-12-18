@@ -165,6 +165,8 @@ fn assert_segment0_restores_line_without_handles(shape: &Shape) {
 
 #[gpui::test]
 fn tab_toggles_selected_segment_kind_and_undo_restores(cx: &mut TestAppContext) {
+    cx.update(gpui_component::init);
+
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 

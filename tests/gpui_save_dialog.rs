@@ -11,6 +11,8 @@ use uuid::Uuid;
 
 #[gpui::test]
 fn save_action_prompts_for_path(cx: &mut TestAppContext) {
+    cx.update(gpui_component::init);
+
     assert!(
         !cx.did_prompt_for_new_path(),
         "No save prompt should be visible before triggering Save"

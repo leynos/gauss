@@ -153,6 +153,8 @@ fn simulate_document_undo(visual_cx: &mut VisualTestContext) {
 
 #[gpui::test]
 fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
+    cx.update(gpui_component::init);
+
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     visual_cx.update(|window, app| drop(window.draw(app)));
     visual_cx.run_until_parked();

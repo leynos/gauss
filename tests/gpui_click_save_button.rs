@@ -5,6 +5,8 @@ use gpui::{Modifiers, TestAppContext, point, px};
 
 #[gpui::test]
 fn clicking_save_button_opens_save_prompt(cx: &mut TestAppContext) {
+    cx.update(gpui_component::init);
+
     assert!(
         !cx.did_prompt_for_new_path(),
         "save prompt should not be open before clicking Save…"

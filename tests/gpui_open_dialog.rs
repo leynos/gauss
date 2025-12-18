@@ -12,6 +12,8 @@ use uuid::Uuid;
 
 #[gpui::test]
 fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
+    cx.update(gpui_component::init);
+
     let svg_path = std::env::temp_dir().join(format!("gauss-test-open-{}.svg", Uuid::new_v4()));
     let svg = r##"
         <svg xmlns="http://www.w3.org/2000/svg">

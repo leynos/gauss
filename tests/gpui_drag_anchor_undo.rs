@@ -139,6 +139,8 @@ fn drag_first_anchor(
 
 #[gpui::test]
 fn dragging_anchor_moves_it_and_undo_restores(cx: &mut TestAppContext) {
+    cx.update(gpui_component::init);
+
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 

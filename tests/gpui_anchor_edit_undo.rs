@@ -147,6 +147,8 @@ fn read_draw_shape(
 
 #[gpui::test]
 fn insert_and_delete_anchor_are_doc_undoable(cx: &mut TestAppContext) {
+    cx.update(gpui_component::init);
+
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
     let Some(bounds) = visual_cx.debug_bounds("#phase0-canvas") else {

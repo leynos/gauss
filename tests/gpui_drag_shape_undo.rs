@@ -110,6 +110,8 @@ fn assert_shape_translated_by_delta(shape: &Shape, original: &Shape, delta: Vec2
 
 #[gpui::test]
 fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
+    cx.update(gpui_component::init);
+
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     visual_cx.update(|window, app| drop(window.draw(app)));
     visual_cx.run_until_parked();
