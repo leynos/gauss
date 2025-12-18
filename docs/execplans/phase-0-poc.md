@@ -75,11 +75,14 @@ running `make all` and seeing it pass.
           and allow Tab to toggle selected segment kind (line ↔ cubic) with a
           headless `#[gpui::test]` asserting undo restores the original
           geometry.
+    - [x] (2025-12-18) Implement raise/lower reordering in manipulate mode
+          (Ctrl/Cmd-`[` and Ctrl/Cmd-`]`) with a headless `#[gpui::test]`
+          asserting reordering and undo behaviour.
     - [ ] Implement Manipulate mode hit-testing + drags + operations
           (completed: shape + anchor + handle hit-testing, selection,
           drag-to-move, drag-anchor, drag-handle, segment hit-testing, segment
           selection, segment kind toggling, and undo via headless
-          `#[gpui::test]`; remaining: reordering and insert/delete anchor).
+          `#[gpui::test]`; remaining: insert/delete anchor).
     - [x] (2025-12-17) Implement selection history + Shift-modified undo/redo
           with a headless `#[gpui::test]`.
     - [x] (2025-12-17) Add behavioural tests (BDD) with `rstest-bdd` exercising
@@ -793,3 +796,10 @@ Revision (2025-12-18):
   segment’s kind (line ↔ cubic) and seeds/clears handles appropriately.
 - Added a headless `#[gpui::test]` that selects a segment, presses Tab, and
   asserts Ctrl/Cmd-Z restores the line segment and clears handles.
+
+Revision (2025-12-18):
+
+- Implemented raise/lower reordering in manipulate mode, bound to Ctrl/Cmd-`[`
+  and Ctrl/Cmd-`]`.
+- Added a headless `#[gpui::test]` that draws two overlapping shapes and
+  asserts lower/raise reorder within the document, plus undo behaviour.
