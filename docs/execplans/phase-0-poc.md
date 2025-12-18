@@ -84,6 +84,12 @@ running `make all` and seeing it pass.
           with headless `#[gpui::test]` coverage and doc undo/redo.
     - [x] (2025-12-17) Implement selection history + Shift-modified undo/redo
           with a headless `#[gpui::test]`.
+    - [x] (2025-12-18) Add stroke/fill colour controls via
+          `gpui-component`’s colour picker, and a headless `#[gpui::test]`
+          asserting style changes apply to selected shapes and are undoable.
+    - [x] (2025-12-18) Add a “Quit” button and configure the window to use
+          environment decorations (non-resizable), with a headless
+          `#[gpui::test]` asserting the quit request is recorded.
     - [x] (2025-12-17) Add behavioural tests (BDD) with `rstest-bdd` exercising
           the controller boundary via observable SVG output.
     - [x] (2025-12-18) Run all gates (`make all`) and document how to run the
@@ -831,3 +837,15 @@ Revision (2025-12-18):
   implementation (`Phase0Shell` as the root view containing editor state).
 - Marked the model layer and Phase 0 UI rendering progress items complete, and
   recorded that `make all` passes (logs captured under `target/logs/`).
+
+Revision (2025-12-18):
+
+- Added stroke/fill controls to the Phase 0 header via `gpui-component`’s
+  colour picker, including undoable style application when a shape is selected.
+- Added a headless `#[gpui::test]` that updates stroke and fill via the
+  `Phase0Shell` test hooks and asserts undo restores the original style.
+- Added a “Quit” button and configured the window to use environment
+  decorations while disabling user resizing.
+- Added a headless `#[gpui::test]` that clicks the Quit button and asserts the
+  shell recorded the quit request (the GPUI test platform does not necessarily
+  exit when `App::quit()` is invoked).
