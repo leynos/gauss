@@ -84,6 +84,9 @@ running `make all` and seeing it pass.
           with headless `#[gpui::test]` coverage and doc undo/redo.
     - [x] (2025-12-17) Implement selection history + Shift-modified undo/redo
           with a headless `#[gpui::test]`.
+    - [x] (2025-12-18) Map mouse navigation buttons (back/forward) to
+          undo/redo. Holding Shift selects the selection history stack. Cover
+          both behaviours with headless `#[gpui::test]` cases.
     - [x] (2025-12-18) Add stroke/fill colour controls via
           `gpui-component`’s colour picker, and a headless `#[gpui::test]`
           asserting style changes apply to selected shapes and are undoable.
@@ -849,3 +852,12 @@ Revision (2025-12-18):
 - Added a headless `#[gpui::test]` that clicks the Quit button and asserts the
   shell recorded the quit request (the GPUI test platform does not necessarily
   exit when `App::quit()` is invoked).
+
+Revision (2025-12-18):
+
+- Mapped mouse navigation buttons (back/forward) to undo/redo, mirroring the
+  keyboard shortcuts. Holding Shift selects the selection history stack.
+- Added headless `#[gpui::test]` coverage asserting both document and selection
+  navigation behaviour.
+- Refactored the Phase 0 header rendering helpers into a separate module to
+  keep `src/ui/phase0_shell/mod.rs` within the repository’s per-file line limit.
