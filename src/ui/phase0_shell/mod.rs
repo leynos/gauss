@@ -169,6 +169,17 @@ impl Phase0Shell {
         self.did_request_quit
     }
 
+    /// Force manipulate mode for headless tests.
+    ///
+    /// GPUI's headless harness does not always guarantee that keyboard focus is
+    /// established before the test sends synthetic key events. This helper
+    /// allows tests to set the tool mode explicitly without relying on
+    /// `Escape` dispatch.
+    pub const fn enter_manipulate_mode_for_tests(&mut self) {
+        self.tool_mode = draw::ToolMode::Manipulate;
+        self.draw_active_shape = None;
+    }
+
     /// Return the last canvas click position in screen coordinates.
     ///
     /// This is intended for tests and debugging while Phase 0 is still

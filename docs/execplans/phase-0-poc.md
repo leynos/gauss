@@ -87,6 +87,9 @@ running `make all` and seeing it pass.
     - [x] (2025-12-18) Map mouse navigation buttons (back/forward) to
           undo/redo. Holding Shift selects the selection history stack. Cover
           both behaviours with headless `#[gpui::test]` cases.
+    - [x] (2025-12-18) Add Shift+click multi-select in manipulate mode, with a
+          headless `#[gpui::test]` asserting selection toggling without
+          starting a drag gesture.
     - [x] (2025-12-18) Add stroke/fill colour controls via
           `gpui-component`’s colour picker, and a headless `#[gpui::test]`
           asserting style changes apply to selected shapes and are undoable.
@@ -147,6 +150,15 @@ running `make all` and seeing it pass.
       does.
       Impact: Headless integration tests that need precise hit-testing (for
       example, scroll wheel events on the canvas) should use `debug_selector`.
+
+    - Observation: GPUI headless tests do not always deliver key events (such
+      as `Escape`) unless focus is established via prior interaction.
+      Evidence: A `#[gpui::test]` that relied on `Escape` to switch into
+      manipulate mode was flaky until it instead set the mode via a test-only
+      helper on `Phase0Shell`.
+      Impact: Prefer direct state-setting helpers (or explicit focus actions)
+      for tests that need a specific tool mode, and keep keyboard-driven mode
+      switching covered by separate tests that already click into the canvas.
 
     - Observation: Having both `src/ui/phase0_shell.rs` and
       `src/ui/phase0_shell/*` triggers `clippy::self-named-module-files`.
@@ -566,6 +578,10 @@ Operations:
 - Drag selected anchors: `MoveAnchor` ops.
 - Drag handles: `MoveHandleIn` / `MoveHandleOut` ops.
 - Drag selected shape: translate all anchors/handles.
+- Multi-select:
+  - Shift+click toggles the selection item under the cursor (adds it when not
+    present, removes it when already selected).
+  - Shift+click is selection-only and must not start a drag gesture.
 - Toggle segment kind line ↔ cubic:
   - Line → cubic initial handles are 1/3 and 2/3 along the line.
   - Cubic → line clears relevant handles.
@@ -577,6 +593,7 @@ Acceptance:
 
 - The user can select a shape, drag it, and undo the move.
 - The user can drag an anchor and see the path update.
+- The user can Shift+click to multi-select and toggle selection items.
 
 ### Milestone 8: selection history (second undo stack)
 
@@ -713,6 +730,8 @@ The Phase 0 PoC is accepted when:
       - [ ] Clicking a segment selects the segment.
       - [ ] Clicking inside the shape’s loose bounding box selects the shape.
       - [ ] Clicking empty space clears selection.
+      - [ ] Shift+click toggles selection items for multi-select, and does not
+        start a drag gesture.
     - [ ] Drag the selected target and confirm editing:
       - [ ] Drag a selected shape to translate it.
       - [ ] Drag an anchor to move the point (and any associated handles)
@@ -902,3 +921,11 @@ Revision (2025-12-18):
   navigation behaviour.
 - Refactored the Phase 0 header rendering helpers into a separate module to
   keep `src/ui/phase0_shell/mod.rs` within the repository’s per-file line limit.
+
+Revision (2025-12-18):
+
+- Added Shift+click multi-select support in manipulate mode by toggling the
+  selection item under the cursor.
+- Ensured Shift+click is selection-only and does not start a drag gesture.
+- Added a headless `#[gpui::test]` covering selection toggling across two
+  shapes.

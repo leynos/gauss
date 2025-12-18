@@ -74,14 +74,23 @@ impl Phase0Shell {
         let hit = hit_under_cursor(&self.document, cursor_world, tolerance_world);
 
         let previous_selection = self.selection.clone();
-        let new_selection = selection_for_hit(hit);
+        let hit_selection = selection_for_hit(hit);
+        let new_selection = if event.modifiers.shift {
+            toggle_selection_item(previous_selection.clone(), &hit_selection)
+        } else {
+            hit_selection
+        };
         let did_change_selection = new_selection != previous_selection;
         if did_change_selection {
             self.record_selection_change(previous_selection, new_selection.clone());
         }
         self.selection = new_selection;
 
-        self.drag_state = drag_state_for_hit(&self.document, hit, cursor_world);
+        self.drag_state = if event.modifiers.shift {
+            None
+        } else {
+            drag_state_for_hit(&self.document, hit, cursor_world)
+        };
 
         did_change_selection || self.drag_state.is_some()
     }
@@ -269,6 +278,21 @@ fn selection_for_hit(hit: MouseDownHit) -> Selection {
         },
         MouseDownHit::None => Selection::empty(),
     }
+}
+
+fn toggle_selection_item(current: Selection, hit_selection: &Selection) -> Selection {
+    let Some(item) = hit_selection.items.first().cloned() else {
+        return current;
+    };
+
+    let mut items = current.items;
+    if let Some(pos) = items.iter().position(|existing| existing == &item) {
+        items.remove(pos);
+    } else {
+        items.push(item);
+    }
+
+    Selection { items }
 }
 
 fn drag_state_for_hit(doc: &Document, hit: MouseDownHit, cursor_world: Vec2) -> Option<DragState> {
