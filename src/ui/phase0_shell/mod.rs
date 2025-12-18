@@ -335,6 +335,7 @@ impl Render for Phase0Shell {
 
         div()
             .p_4()
+            .size_full()
             .track_focus(&self.focus_handle)
             .flex()
             .flex_col()
