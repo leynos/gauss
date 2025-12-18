@@ -7,6 +7,7 @@
 mod anchor_edit;
 mod draw;
 mod file_dialogs;
+mod header;
 mod input;
 mod manipulate;
 mod reorder;
@@ -217,6 +218,14 @@ impl Phase0Shell {
                 gpui::MouseButton::Left,
                 cx.listener(Self::canvas_mouse_down),
             )
+            .on_mouse_down(
+                gpui::MouseButton::Navigate(gpui::NavigationDirection::Back),
+                cx.listener(Self::canvas_navigate_mouse_down),
+            )
+            .on_mouse_down(
+                gpui::MouseButton::Navigate(gpui::NavigationDirection::Forward),
+                cx.listener(Self::canvas_navigate_mouse_down),
+            )
             .on_mouse_move(cx.listener(Self::canvas_mouse_move))
             .on_mouse_up(gpui::MouseButton::Left, cx.listener(Self::canvas_mouse_up))
             .on_mouse_up_out(gpui::MouseButton::Left, cx.listener(Self::canvas_mouse_up))
@@ -237,6 +246,18 @@ impl Phase0Shell {
     ) {
         if shell.handle_canvas_mouse_down(event) {
             cx.notify();
+        }
+    }
+
+    fn canvas_navigate_mouse_down(
+        shell: &mut Self,
+        event: &gpui::MouseDownEvent,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if shell.handle_navigation_mouse_down(event) {
+            cx.notify();
+            cx.stop_propagation();
         }
     }
 
@@ -291,71 +312,6 @@ impl Phase0Shell {
             cx.notify();
             cx.stop_propagation();
         }
-    }
-
-    fn header_row(
-        &mut self,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> impl gpui::IntoElement {
-        self.ensure_style_pickers(window, cx);
-
-        div()
-            .flex()
-            .items_center()
-            .justify_between()
-            .child("Gauss PoC: Phase 0 shell")
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .child(self.style_picker_row())
-                    .child(Self::open_button(cx))
-                    .child(Self::save_button(cx))
-                    .child(Self::quit_button(cx)),
-            )
-    }
-
-    fn open_button(cx: &mut Context<Self>) -> impl gpui::IntoElement {
-        Self::header_button_base("open-button")
-            .on_click(cx.listener(
-                |shell: &mut Self, _event: &gpui::ClickEvent, click_window, click_cx| {
-                    file_dialogs::request_open(shell.open_prompt_mode, click_window, click_cx);
-                },
-            ))
-            .child("Open…")
-    }
-
-    fn save_button(cx: &mut Context<Self>) -> impl gpui::IntoElement {
-        Self::header_button_base("save-button")
-            .on_click(cx.listener(
-                |_shell: &mut Self, _event: &gpui::ClickEvent, click_window, click_cx| {
-                    file_dialogs::request_save(click_window, click_cx);
-                },
-            ))
-            .child("Save…")
-    }
-
-    fn quit_button(cx: &mut Context<Self>) -> impl gpui::IntoElement {
-        Self::header_button_base("quit-button")
-            .on_click(cx.listener(
-                |shell: &mut Self, _event: &gpui::ClickEvent, _window, click_cx| {
-                    shell.did_request_quit = true;
-                    click_cx.quit();
-                },
-            ))
-            .child("Quit")
-    }
-
-    fn header_button_base(id: &'static str) -> gpui::Stateful<gpui::Div> {
-        div()
-            .id(id)
-            .debug_selector(move || format!("#{id}"))
-            .px_3()
-            .py_2()
-            .rounded_md()
-            .border_1()
     }
 }
 

@@ -3,7 +3,9 @@
 //! We keep input mapping separate from drawing to make it straightforward to
 //! locate and change keyboard shortcuts without wading through rendering code.
 
-use gpui::{Context, KeyDownEvent, Keystroke};
+use gpui::{
+    Context, KeyDownEvent, Keystroke, Modifiers, MouseButton, MouseDownEvent, NavigationDirection,
+};
 
 use super::{Phase0Shell, draw::ToolMode};
 
@@ -73,6 +75,45 @@ impl Phase0Shell {
             cx.notify();
         }
         cx.stop_propagation();
+    }
+
+    pub(super) fn handle_navigation_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
+        let MouseDownEvent {
+            button, modifiers, ..
+        } = event;
+
+        let MouseButton::Navigate(direction) = button else {
+            return false;
+        };
+
+        self.handle_navigation_button(*direction, *modifiers)
+    }
+
+    fn handle_navigation_button(
+        &mut self,
+        direction: NavigationDirection,
+        modifiers: Modifiers,
+    ) -> bool {
+        let use_selection_history = modifiers.shift;
+
+        match (direction, use_selection_history) {
+            (NavigationDirection::Back, true) => {
+                self.undo_selection();
+                true
+            }
+            (NavigationDirection::Back, false) => {
+                self.undo_document();
+                true
+            }
+            (NavigationDirection::Forward, true) => {
+                self.redo_selection();
+                true
+            }
+            (NavigationDirection::Forward, false) => {
+                self.redo_document();
+                true
+            }
+        }
     }
 
     fn apply_key_action(&mut self, action: KeyAction, cx: &mut Context<Self>) -> bool {
