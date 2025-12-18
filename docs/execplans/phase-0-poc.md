@@ -56,15 +56,16 @@ running `make all` and seeing it pass.
     - [x] (2025-12-17) Implement a Phase 0 “Open…” workflow that loads an SVG
           document from disk, with a `#[gpui::test]` verifying the loaded
           document state.
-    - [ ] Implement model layer (document/path/selection/viewport/ops) with
-          unit tests using `rstest` (completed: core types + viewport test +
-          doc op inversion tests; remaining: any missing model invariants).
+    - [x] (2025-12-18) Implement model layer (document/path/selection/viewport/
+          ops) with unit tests using `rstest` (core types, viewport test, and
+          doc op inversion tests).
     - [x] (2025-12-17) Implement SVG export + minimal import with unit tests and
           round-trip tests.
     - [x] (2025-12-17) Paint the current document to a GPUI `Canvas` using
           `PathBuilder`, so Phase 0 visibly renders shapes.
-    - [ ] Implement UI rendering (toolbar + canvas) with a shared GPUI `Entity`
-          state.
+    - [x] (2025-12-18) Implement Phase 0 UI rendering (header + canvas) with
+          state stored on the root view entity (`Phase0Shell`) and Canvas-based
+          painting.
     - [x] (2025-12-17) Implement viewport input mapping (scroll wheel pan +
           Ctrl/Cmd-wheel zoom) with a headless `#[gpui::test]` asserting pan
           and cursor-centred zoom behaviour.
@@ -85,7 +86,8 @@ running `make all` and seeing it pass.
           with a headless `#[gpui::test]`.
     - [x] (2025-12-17) Add behavioural tests (BDD) with `rstest-bdd` exercising
           the controller boundary via observable SVG output.
-    - [ ] Run all gates (`make all`) and document how to run the PoC.
+    - [x] (2025-12-18) Run all gates (`make all`) and document how to run the
+          PoC.
 
 ## Surprises & discoveries
 
@@ -279,19 +281,23 @@ you need an API detail, prefer that local rustdoc over the internet.
 GPUI has three “registers”, and this PoC maps them explicitly:
 
 1. State management and cross-view communication uses GPUI `Entity` values.
-   The editor’s mutable state (document, selection, viewport, histories, tool
-   mode) lives inside an `Entity<EditorState>`, shared by the toolbar and
-   canvas view.
+   For Phase 0 we keep the editor state directly on the root view entity,
+   `gauss::ui::Phase0Shell`. Because views are entities, this still gives us a
+   stable `Entity<Phase0Shell>` for headless tests, without introducing a
+   second “editor state” entity prematurely.
 
-2. High-level declarative UI uses views. The main window is a root view
-   (`GaussWindow`) implementing `Render` that composes:
+2. High-level declarative UI uses views. Phase 0 is deliberately a single view
+   (`Phase0Shell`) that renders:
 
-   - A toolbar view (mode toggle, stroke/fill pickers, open/save).
-   - A canvas view (paint + pointer/keyboard events).
+   - A header row (Open/Save buttons), and
+   - A canvas container that hosts the `Canvas` element.
+
+   Behaviour is implemented in `src/ui/phase0_shell/*` submodules (draw,
+   manipulate, input mapping, file dialogs, etc.) so the root view stays small.
 
 3. Low-level imperative UI uses elements where needed. The canvas itself uses
-   GPUI’s `Canvas` element to paint via the low-level paint API, without
-   building a bespoke custom element system.
+   GPUI’s `Canvas` element to paint via the low-level paint API (see
+   `src/ui/canvas_paint.rs`), without building a bespoke element system.
 
 This separation is important for testability: the “controller” logic lives in
 pure Rust modules and is called from GPUI event handlers, but it can also be
@@ -422,20 +428,17 @@ Acceptance:
 
 Goal: a functional shell with “Open…” and “Save…” actions.
 
-UI structure:
+UI structure (as implemented):
 
 - `src/ui/mod.rs`
-- `src/ui/window.rs`: root view composing toolbar and canvas.
-- `src/ui/toolbar.rs`: buttons and colour pickers via `gpui-component`.
-- `src/ui/canvas_view.rs`: canvas element, paint callback, and event handlers.
+- `src/ui/phase0_shell/mod.rs`: the Phase 0 root view (`Phase0Shell`).
+- `src/ui/phase0_shell/file_dialogs.rs`: Open/Save prompt wiring.
+- `src/ui/canvas_paint.rs`: `Canvas` rendering for a `Document`.
 
 State:
 
-- `EditorState` stored in a GPUI `Entity<EditorState>`:
-  - document, selection, viewport,
-  - current style for new shapes,
-  - tool mode and per-mode substate,
-  - `gpui_component::history::History` instances for document and selection.
+- Phase 0 state is stored directly on `Phase0Shell` (document, selection,
+  viewport, tool mode, and `gpui_component::history::History` instances).
 
 File dialogs:
 
@@ -821,3 +824,10 @@ Revision (2025-12-18):
   invertibility and undo/redo behaviour.
 - Added a headless `#[gpui::test]` asserting insert/delete behaviour and
   document undo/redo restores the expected anchor counts.
+
+Revision (2025-12-18):
+
+- Updated the Architecture and Milestone 3 notes to match the actual Phase 0
+  implementation (`Phase0Shell` as the root view containing editor state).
+- Marked the model layer and Phase 0 UI rendering progress items complete, and
+  recorded that `make all` passes (logs captured under `target/logs/`).
