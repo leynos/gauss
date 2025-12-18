@@ -108,6 +108,14 @@ running `make all` and seeing it pass.
           the controller boundary via observable SVG output.
     - [x] (2025-12-18) Run all gates (`make all`) and document how to run the
           PoC.
+    - [x] (2025-12-18) Fix cubic Bézier rendering in the canvas paint path
+          builder (control points must come before the end point), so closed
+          shapes render correctly in `Bezier (auto)` mode.
+    - [x] (2025-12-18) Fix multi-shape drag: dragging any selected shape moves
+          all selected shapes and preserves the selection, with a headless
+          `#[gpui::test]` guarding the behaviour.
+    - [x] (2025-12-18) Add a headless `#[gpui::test]` asserting that clicking
+          empty canvas space clears the current selection.
 
 ## Surprises & discoveries
 
@@ -710,7 +718,7 @@ Expected outcomes are described in each milestone’s acceptance criteria.
 
 The Phase 0 PoC is accepted when:
 
-- [ ] Quality gates: `make all` passes.
+- [x] Quality gates: `make all` passes. (Verified 2025-12-18.)
 - [ ] Manual behaviour:
   - [ ] A window opens and draws on a canvas.
   - [ ] Draw mode behaves as described:
@@ -759,11 +767,11 @@ The Phase 0 PoC is accepted when:
     - [ ] Press `Escape` to return to draw mode.
   - [ ] Open/Save show native dialogs and load/save SVG.
   - [ ] Undo/redo works for document edits and selection edits (Shift toggles).
-- [ ] Tests:
-  - [ ] Unit tests exist for viewport and ops behaviour.
-  - [ ] At least one BDD scenario exists and passes, asserting observable
+- [x] Tests:
+  - [x] Unit tests exist for viewport and ops behaviour.
+  - [x] At least one BDD scenario exists and passes, asserting observable
     output (SVG).
-  - [ ] At least one `#[gpui::test]` integration test exists and passes,
+  - [x] At least one `#[gpui::test]` integration test exists and passes,
     asserting platform prompt wiring (Save dialog).
 
 ## Idempotence and recovery
@@ -937,3 +945,15 @@ Revision (2025-12-18):
 - Ensured Shift+click is selection-only and does not start a drag gesture.
 - Added a headless `#[gpui::test]` covering selection toggling across two
   shapes.
+
+Revision (2025-12-18):
+
+- Fixed cubic Bézier rendering by correcting `PathBuilder::cubic_bezier_to`
+  argument ordering in the canvas paint pipeline (control points must precede
+  the end point).
+- Fixed multi-shape drag so dragging any selected shape moves all selected
+  shapes and preserves the selection, and added a headless regression test.
+- Added a headless `#[gpui::test]` asserting that clicking empty canvas space
+  clears selection.
+- Updated the acceptance criteria to mark the quality gates and tests as
+  verified.
