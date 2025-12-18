@@ -90,12 +90,17 @@ running `make all` and seeing it pass.
     - [x] (2025-12-18) Add Shift+click multi-select in manipulate mode, with a
           headless `#[gpui::test]` asserting selection toggling without
           starting a drag gesture.
+    - [x] (2025-12-18) Add a headless `#[gpui::test]` asserting that closing a
+          path via snap-to-first-anchor switches into manipulate mode and does
+          not allow further point placement.
     - [x] (2025-12-18) Add stroke/fill colour controls via
           `gpui-component`’s colour picker, and a headless `#[gpui::test]`
           asserting style changes apply to selected shapes and are undoable.
     - [x] (2025-12-18) Add a “Quit” button and configure the window to use
           environment decorations (non-resizable), with a headless
           `#[gpui::test]` asserting the quit request is recorded.
+    - [x] (2025-12-18) Ensure the canvas fills the window height (instead of
+          collapsing), and add a headless `#[gpui::test]` regression check.
     - [x] (2025-12-17) Add behavioural tests (BDD) with `rstest-bdd` exercising
           the controller boundary via observable SVG output.
     - [x] (2025-12-18) Run all gates (`make all`) and document how to run the
