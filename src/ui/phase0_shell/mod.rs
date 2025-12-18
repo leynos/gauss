@@ -12,13 +12,14 @@ mod manipulate;
 mod reorder;
 mod segment_toggle;
 mod selection_history;
+mod style_controls;
 
 use std::path::{Path, PathBuf};
 
 use gpui::{Window, div, prelude::*};
 use gpui_component::history::History;
 
-use crate::model::{Document, Selection, ShapeId, Vec2, Viewport};
+use crate::model::{Document, PaintStyle, Selection, ShapeId, Vec2, Viewport};
 
 use super::phase0_support::demo_document;
 
@@ -49,6 +50,7 @@ pub struct Phase0Shell {
     open_prompt_mode: OpenPromptMode,
     document: Document,
     viewport: Viewport,
+    current_style: PaintStyle,
     tool_mode: draw::ToolMode,
     edge_mode: DrawEdgeMode,
     draw_active_shape: Option<ShapeId>,
@@ -61,6 +63,9 @@ pub struct Phase0Shell {
     last_save_error: Option<String>,
     last_opened_path: Option<PathBuf>,
     last_open_error: Option<String>,
+    stroke_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
+    fill_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
+    style_picker_subscriptions: Vec<gpui::Subscription>,
 }
 
 impl Phase0Shell {
@@ -73,6 +78,7 @@ impl Phase0Shell {
             open_prompt_mode: OpenPromptMode::Native,
             document: demo_document(),
             viewport: Viewport::new(),
+            current_style: PaintStyle::new(Some(crate::model::Rgba::new(0, 0, 0, 255)), 2.0, None),
             tool_mode: draw::ToolMode::Draw,
             edge_mode: DrawEdgeMode::Line,
             draw_active_shape: None,
@@ -85,6 +91,9 @@ impl Phase0Shell {
             last_save_error: None,
             last_opened_path: None,
             last_open_error: None,
+            stroke_picker: None,
+            fill_picker: None,
+            style_picker_subscriptions: Vec::new(),
         }
     }
 
@@ -273,7 +282,13 @@ impl Phase0Shell {
         }
     }
 
-    fn header_row(cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn header_row(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl gpui::IntoElement {
+        self.ensure_style_pickers(window, cx);
+
         div()
             .flex()
             .items_center()
@@ -284,6 +299,7 @@ impl Phase0Shell {
                     .flex()
                     .items_center()
                     .gap_2()
+                    .child(self.style_picker_row())
                     .child(Self::open_button(cx))
                     .child(Self::save_button(cx)),
             )
@@ -340,7 +356,7 @@ impl Render for Phase0Shell {
                     shell.handle_key_down(event, view_cx);
                 }),
             )
-            .child(Self::header_row(cx))
+            .child(self.header_row(window, cx))
             .on_action(
                 cx.listener(|shell: &mut Self, _: &OpenSvg, action_window, action_cx| {
                     file_dialogs::request_open(shell.open_prompt_mode, action_window, action_cx);

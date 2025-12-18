@@ -99,7 +99,7 @@ impl Phase0Shell {
 
     fn draw_click_world(&mut self, cursor_world: Vec2) -> bool {
         let Some(active) = self.draw_active_shape else {
-            let shape = new_open_shape(cursor_world);
+            let shape = new_open_shape(cursor_world, self.current_style.clone());
             let index = self.document.shapes.len();
             self.apply_doc_change(DocChange {
                 ops: vec![DocOp::InsertShape {
@@ -161,11 +161,11 @@ impl Phase0Shell {
     }
 }
 
-fn new_open_shape(first_anchor: Vec2) -> Shape {
+fn new_open_shape(first_anchor: Vec2, style: PaintStyle) -> Shape {
     Shape {
         id: ShapeId::new_v4(),
         z: 0,
-        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
+        style,
         path: PathGeom {
             anchors: vec![Anchor::new(first_anchor)],
             segments: Vec::new(),
