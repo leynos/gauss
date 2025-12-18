@@ -78,11 +78,9 @@ running `make all` and seeing it pass.
     - [x] (2025-12-18) Implement raise/lower reordering in manipulate mode
           (Ctrl/Cmd-`[` and Ctrl/Cmd-`]`) with a headless `#[gpui::test]`
           asserting reordering and undo behaviour.
-    - [ ] Implement Manipulate mode hit-testing + drags + operations
-          (completed: shape + anchor + handle hit-testing, selection,
-          drag-to-move, drag-anchor, drag-handle, segment hit-testing, segment
-          selection, segment kind toggling, and undo via headless
-          `#[gpui::test]`; remaining: insert/delete anchor).
+    - [x] (2025-12-18) Implement manipulate-mode structural edits
+          (insert/delete anchor), encoded as PoC-quality “replace shape” ops,
+          with headless `#[gpui::test]` coverage and doc undo/redo.
     - [x] (2025-12-17) Implement selection history + Shift-modified undo/redo
           with a headless `#[gpui::test]`.
     - [x] (2025-12-17) Add behavioural tests (BDD) with `rstest-bdd` exercising
@@ -212,6 +210,16 @@ running `make all` and seeing it pass.
       Rationale: Segment selection is primarily needed for Tab-based segment
       toggling, and preserving the existing “grab anywhere on shape” drag
       behaviour keeps Phase 0 gestures intuitive.
+      Date/Author: 2025-12-18 / Codex
+
+    - Decision: Encode anchor insertion/deletion as “replace shape” document
+      edits in Phase 0, and bind them to `i` (insert on selected segment) and
+      `Backspace/Delete` (delete selected anchors).
+      Rationale: Structural edits are hard to encode as fine-grained ops
+      without building a more general patch format. Replacing a shape keeps
+      operations invertible and small-scope while still validating the user
+      workflow. The chosen shortcuts are easy to exercise in headless tests
+      and can be revisited once we have real menu/toolbar affordances.
       Date/Author: 2025-12-18 / Codex
 
 ## Outcomes & retrospective
@@ -803,3 +811,13 @@ Revision (2025-12-18):
   and Ctrl/Cmd-`]`.
 - Added a headless `#[gpui::test]` that draws two overlapping shapes and
   asserts lower/raise reorder within the document, plus undo behaviour.
+
+Revision (2025-12-18):
+
+- Added PoC-quality anchor insertion (press `i` on a selected segment) and
+  anchor deletion (press `Backspace`/`Delete` on selected anchors) in
+  manipulate mode.
+- Implemented both operations as “replace shape” document edits for simple
+  invertibility and undo/redo behaviour.
+- Added a headless `#[gpui::test]` asserting insert/delete behaviour and
+  document undo/redo restores the expected anchor counts.

@@ -4,6 +4,7 @@
 //! wired up correctly and to allow incremental integration tests using GPUI's
 //! `TestAppContext`.
 
+mod anchor_edit;
 mod draw;
 mod file_dialogs;
 mod input;
