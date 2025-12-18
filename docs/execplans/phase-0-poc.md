@@ -93,6 +93,9 @@ running `make all` and seeing it pass.
     - [x] (2025-12-18) Add a headless `#[gpui::test]` asserting that closing a
           path via snap-to-first-anchor switches into manipulate mode and does
           not allow further point placement.
+    - [x] (2025-12-18) Add a headless `#[gpui::test]` asserting `Tab` switches
+          draw mode into `Bezier (auto)` and the resulting path segments are
+          cubic with Catmull–Rom synthesised handles.
     - [x] (2025-12-18) Add stroke/fill colour controls via
           `gpui-component`’s colour picker, and a headless `#[gpui::test]`
           asserting style changes apply to selected shapes and are undoable.
