@@ -201,6 +201,7 @@ fn normalize_path_as_polyline(shape: &mut Shape) {
         shape.path.anchors.len().saturating_sub(1),
     )
     .collect();
+    shape.path.closing_segment = SegmentKind::Line;
 
     if shape.path.closed && shape.path.anchors.len() < 3 {
         shape.path.closed = false;

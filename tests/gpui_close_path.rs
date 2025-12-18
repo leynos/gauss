@@ -7,7 +7,7 @@
 //! - The editor switches to manipulate mode so subsequent clicks do not place
 //!   more points.
 
-use gauss::model::{Document, Shape, ShapeId, Vec2};
+use gauss::model::{Document, SegmentKind, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Bounds, Modifiers, Pixels, TestAppContext, VisualTestContext, point, px};
 use uuid::Uuid;
@@ -164,7 +164,7 @@ fn assert_click_does_not_place_points(
 
 #[gpui::test]
 fn clicking_near_first_anchor_closes_path_and_enters_manipulate(cx: &mut TestAppContext) {
-    cx.update(gpui_component::init);
+    cx.update(gauss::ui::init);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
@@ -189,4 +189,58 @@ fn clicking_near_first_anchor_closes_path_and_enters_manipulate(cx: &mut TestApp
 
     let after_close_click = point(bounds.origin.x + px(20.0), bounds.origin.y + px(20.0));
     assert_click_does_not_place_points(visual_cx, &view, after_close_click);
+}
+
+#[gpui::test]
+fn closing_in_bezier_mode_uses_cubic_closing_segment(cx: &mut TestAppContext) {
+    cx.update(gauss::ui::init);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    let bounds = canvas_bounds(visual_cx);
+    let (p1, p2, p3) = triangle_points(&bounds);
+
+    draw_point(visual_cx, p1);
+    visual_cx.simulate_keystrokes("tab");
+    visual_cx.run_until_parked();
+
+    draw_point(visual_cx, p2);
+    draw_point(visual_cx, p3);
+
+    let closed_shape_id = close_path_by_clicking_first_anchor(visual_cx, &view, &bounds, p1);
+
+    let doc_after_close = visual_cx.read(|app| view.read(app).document().clone());
+    let shape = require_draw_shape(&doc_after_close, "after bezier close");
+    assert_eq!(
+        shape.id, closed_shape_id,
+        "expected close to preserve the shape id"
+    );
+    assert!(
+        shape.path.closed,
+        "expected closing in bezier mode to still close the path"
+    );
+    assert_eq!(
+        shape.path.closing_segment,
+        SegmentKind::Cubic,
+        "expected bezier mode to use a cubic closing segment"
+    );
+    assert!(
+        shape
+            .path
+            .anchors
+            .first()
+            .and_then(|a| a.handle_in)
+            .is_some(),
+        "expected closing cubic segment to set handle_in on the first anchor"
+    );
+    assert!(
+        shape
+            .path
+            .anchors
+            .last()
+            .and_then(|a| a.handle_out)
+            .is_some(),
+        "expected closing cubic segment to set handle_out on the last anchor"
+    );
 }

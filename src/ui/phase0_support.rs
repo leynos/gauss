@@ -78,6 +78,7 @@ pub(super) fn demo_document() -> Document {
             ],
             segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
             closed: true,
+            closing_segment: SegmentKind::Line,
         },
     };
 

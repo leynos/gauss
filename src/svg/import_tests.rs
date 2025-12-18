@@ -51,6 +51,7 @@ fn round_trips_exported_svg() {
             ],
             segments: vec![SegmentKind::Line],
             closed: true,
+            closing_segment: SegmentKind::Line,
         },
     };
     let doc = Document {

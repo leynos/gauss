@@ -68,6 +68,7 @@ fn add_closed_triangle(world: &mut DocWorld) {
             ],
             segments: vec![SegmentKind::Line, SegmentKind::Line],
             closed: true,
+            closing_segment: SegmentKind::Line,
         },
     };
     world.doc.shapes.push(shape);

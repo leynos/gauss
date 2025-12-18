@@ -103,6 +103,21 @@ fn build_path_data(shape: &crate::model::Shape) -> Option<String> {
     }
 
     if shape.path.closed {
+        if shape.path.closing_segment == SegmentKind::Cubic
+            && let (Some(last_anchor), Some(first_anchor)) =
+                (shape.path.anchors.last(), shape.path.anchors.first())
+        {
+            let c1 = last_anchor.handle_out.unwrap_or(last_anchor.pos);
+            let c2 = first_anchor.handle_in.unwrap_or(first_anchor.pos);
+            write_fmt(
+                &mut d,
+                format_args!(
+                    " C {} {} {} {} {} {}",
+                    c1.x, c1.y, c2.x, c2.y, first_anchor.pos.x, first_anchor.pos.y
+                ),
+            );
+        }
+
         d.push_str(" Z");
     }
 
@@ -158,6 +173,7 @@ mod tests {
                 ],
                 segments: vec![SegmentKind::Line],
                 closed: false,
+                closing_segment: SegmentKind::Line,
             },
         };
 
@@ -189,6 +205,7 @@ mod tests {
                 ],
                 segments: vec![SegmentKind::Line],
                 closed: true,
+                closing_segment: SegmentKind::Line,
             },
         };
 

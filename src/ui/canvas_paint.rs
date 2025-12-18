@@ -141,6 +141,23 @@ fn build_path(shape: &Shape, viewport: Viewport, mut builder: PathBuilder) -> Op
     }
 
     if shape.path.closed {
+        if shape.path.closing_segment == SegmentKind::Cubic
+            && let (Some(last_anchor), Some(first_anchor)) =
+                (shape.path.anchors.last(), shape.path.anchors.first())
+        {
+            let end_pos = viewport.world_to_screen(first_anchor.pos);
+            let c1 = last_anchor.handle_out.unwrap_or(last_anchor.pos);
+            let c2 = first_anchor.handle_in.unwrap_or(first_anchor.pos);
+            let c1_screen = viewport.world_to_screen(c1);
+            let c2_screen = viewport.world_to_screen(c2);
+
+            builder.cubic_bezier_to(
+                point(px(end_pos.x), px(end_pos.y)),
+                point(px(c1_screen.x), px(c1_screen.y)),
+                point(px(c2_screen.x), px(c2_screen.y)),
+            );
+        }
+
         builder.close();
     }
 

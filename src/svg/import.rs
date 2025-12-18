@@ -254,6 +254,7 @@ fn parse_path_data(d: &str) -> Result<PathGeom, SvgImportError> {
     let mut it = tokens.into_iter().peekable();
 
     let mut geom = PathGeom::new();
+    geom.closing_segment = SegmentKind::Line;
 
     while let Some(token) = it.next() {
         let PathToken::Command(cmd) = token else {
@@ -293,6 +294,7 @@ fn parse_path_data(d: &str) -> Result<PathGeom, SvgImportError> {
             }
             'Z' => {
                 geom.closed = true;
+                geom.closing_segment = SegmentKind::Line;
             }
             other => return Err(SvgImportError::UnsupportedPathCommand(other)),
         }

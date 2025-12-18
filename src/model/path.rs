@@ -181,8 +181,8 @@ pub enum SegmentKind {
 ///
 /// - `segments.len()` should equal `anchors.len().saturating_sub(1)` for open
 ///   paths.
-/// - Closed paths may still use the same `segments` length, with the closing
-///   edge implied by `closed == true`.
+/// - Closed paths still use the same `segments` length, with the closing edge
+///   described by [`Self::closing_segment`].
 #[derive(Clone, Debug, PartialEq)]
 pub struct PathGeom {
     /// Path anchors in draw order.
@@ -191,6 +191,14 @@ pub struct PathGeom {
     pub segments: Vec<SegmentKind>,
     /// Whether the path is closed.
     pub closed: bool,
+    /// Segment kind for the closing edge (from the last anchor back to the
+    /// first anchor) when [`Self::closed`] is true.
+    ///
+    /// Note: the closing edge may be a cubic Bézier. In that case, the closing
+    /// segment uses:
+    /// - `handle_out` of the last anchor, and
+    /// - `handle_in` of the first anchor.
+    pub closing_segment: SegmentKind,
 }
 
 impl PathGeom {
@@ -201,6 +209,7 @@ impl PathGeom {
             anchors: Vec::new(),
             segments: Vec::new(),
             closed: false,
+            closing_segment: SegmentKind::Line,
         }
     }
 
