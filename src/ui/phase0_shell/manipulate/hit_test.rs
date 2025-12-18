@@ -32,7 +32,6 @@ pub(super) struct HandleHit {
 
 #[derive(Clone, Copy, Debug)]
 pub(super) struct SegmentHit {
-    pub(super) shape_index: usize,
     pub(super) shape_id: ShapeId,
     pub(super) seg_index: usize,
 }
@@ -89,53 +88,48 @@ pub(super) fn hit_test_topmost_segment(
     tolerance_world: f32,
 ) -> Option<SegmentHit> {
     let tolerance_squared = tolerance_world * tolerance_world;
-    doc.shapes
-        .iter()
-        .enumerate()
-        .rev()
-        .find_map(|(shape_index, shape)| {
-            let mut best_segment: Option<(usize, f32)> = None;
-            for (seg_index, kind) in shape.path.segments.iter().enumerate() {
-                let Some(start) = shape.path.anchors.get(seg_index) else {
-                    break;
-                };
-                let Some(end) = shape.path.anchors.get(seg_index + 1) else {
-                    break;
-                };
+    doc.shapes.iter().rev().find_map(|shape| {
+        let mut best_segment: Option<(usize, f32)> = None;
+        for (seg_index, kind) in shape.path.segments.iter().enumerate() {
+            let Some(start) = shape.path.anchors.get(seg_index) else {
+                break;
+            };
+            let Some(end) = shape.path.anchors.get(seg_index + 1) else {
+                break;
+            };
 
-                let distance_squared = match kind {
-                    SegmentKind::Line => {
-                        point_segment_distance_squared(cursor_world, start.pos, end.pos)
-                    }
-                    SegmentKind::Cubic => {
-                        let c1 = start.handle_out.unwrap_or(start.pos);
-                        let c2 = end.handle_in.unwrap_or(end.pos);
-                        cubic_distance_squared(
-                            cursor_world,
-                            CubicSegment::new(start.pos, c1, c2, end.pos),
-                        )
-                    }
-                };
-
-                if distance_squared > tolerance_squared {
-                    continue;
+            let distance_squared = match kind {
+                SegmentKind::Line => {
+                    point_segment_distance_squared(cursor_world, start.pos, end.pos)
                 }
-
-                match best_segment {
-                    None => best_segment = Some((seg_index, distance_squared)),
-                    Some((_, best)) if distance_squared < best => {
-                        best_segment = Some((seg_index, distance_squared));
-                    }
-                    Some(_) => {}
+                SegmentKind::Cubic => {
+                    let c1 = start.handle_out.unwrap_or(start.pos);
+                    let c2 = end.handle_in.unwrap_or(end.pos);
+                    cubic_distance_squared(
+                        cursor_world,
+                        CubicSegment::new(start.pos, c1, c2, end.pos),
+                    )
                 }
+            };
+
+            if distance_squared > tolerance_squared {
+                continue;
             }
 
-            best_segment.map(|(seg_index, _)| SegmentHit {
-                shape_index,
-                shape_id: shape.id,
-                seg_index,
-            })
+            match best_segment {
+                None => best_segment = Some((seg_index, distance_squared)),
+                Some((_, best)) if distance_squared < best => {
+                    best_segment = Some((seg_index, distance_squared));
+                }
+                Some(_) => {}
+            }
+        }
+
+        best_segment.map(|(seg_index, _)| SegmentHit {
+            shape_id: shape.id,
+            seg_index,
         })
+    })
 }
 
 pub(super) fn hit_test_topmost_anchor(
@@ -170,14 +164,10 @@ pub(super) fn hit_test_topmost_shape(
     doc: &Document,
     cursor_world: Vec2,
     tolerance_world: f32,
-) -> Option<(usize, ShapeId)> {
-    doc.shapes
-        .iter()
-        .enumerate()
-        .rev()
-        .find_map(|(index, shape)| {
-            hit_test_shape_bbox(shape, cursor_world, tolerance_world).then_some((index, shape.id))
-        })
+) -> Option<ShapeId> {
+    doc.shapes.iter().rev().find_map(|shape| {
+        hit_test_shape_bbox(shape, cursor_world, tolerance_world).then_some(shape.id)
+    })
 }
 
 fn hit_test_shape_bbox(shape: &Shape, cursor_world: Vec2, tolerance_world: f32) -> bool {

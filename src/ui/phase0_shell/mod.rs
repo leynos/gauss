@@ -179,6 +179,28 @@ impl Phase0Shell {
         &self.selection
     }
 
+    /// Replace the entire document.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI. It deliberately does not attempt to
+    /// preserve history; callers that need undo/redo should drive changes via
+    /// editor operations instead.
+    pub fn replace_document_for_tests(&mut self, document: Document) {
+        self.document = document;
+        self.drag_state = None;
+        self.draw_active_shape = None;
+    }
+
+    /// Replace the current selection.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI. Selection history is not updated by this
+    /// helper.
+    pub fn replace_selection_for_tests(&mut self, selection: Selection) {
+        self.selection = selection;
+        self.drag_state = None;
+    }
+
     /// Return whether a drag gesture is currently active.
     ///
     /// This is intended for tests and debugging while Phase 0 is still

@@ -37,16 +37,21 @@ pub(super) struct DragState {
 
 #[derive(Clone, Debug)]
 enum DragKind {
-    Shape(ShapeDragState),
+    Shapes(ShapesDragState),
     Anchor(AnchorDragState),
     Handle(HandleDragState),
 }
 
 #[derive(Clone, Debug)]
-struct ShapeDragState {
+struct ShapesDragState {
+    start_cursor_world: Vec2,
+    shapes: Vec<DraggedShape>,
+}
+
+#[derive(Clone, Debug)]
+struct DraggedShape {
     shape: ShapeId,
     index: usize,
-    start_cursor_world: Vec2,
     original_anchors: Vec<Anchor>,
 }
 
@@ -77,6 +82,14 @@ impl Phase0Shell {
         let hit_selection = selection_for_hit(hit);
         let new_selection = if event.modifiers.shift {
             toggle_selection_item(previous_selection.clone(), &hit_selection)
+        } else if hit_selection
+            .items
+            .first()
+            .is_some_and(|item| previous_selection.contains(item))
+        {
+            // Clicking an already-selected item should not collapse the current
+            // selection. This is critical for multi-select move gestures.
+            previous_selection.clone()
         } else {
             hit_selection
         };
@@ -89,7 +102,7 @@ impl Phase0Shell {
         self.drag_state = if event.modifiers.shift {
             None
         } else {
-            drag_state_for_hit(&self.document, hit, cursor_world)
+            drag_state_for_hit(&self.document, hit, cursor_world, &self.selection)
         };
 
         did_change_selection || self.drag_state.is_some()
@@ -110,8 +123,8 @@ impl Phase0Shell {
 
         let cursor_world = cursor_world(&self.viewport, event.position);
         match &drag_state.kind {
-            DragKind::Shape(shape_drag) => {
-                apply_shape_drag_preview(&mut self.document, shape_drag, cursor_world)
+            DragKind::Shapes(shape_drag) => {
+                apply_shapes_drag_preview(&mut self.document, shape_drag, cursor_world)
             }
             DragKind::Anchor(anchor_drag) => {
                 apply_anchor_drag_preview(&mut self.document, anchor_drag, cursor_world)
@@ -137,7 +150,7 @@ impl Phase0Shell {
 
         let cursor_world = cursor_world(&self.viewport, event.position);
         match drag_state.kind {
-            DragKind::Shape(shape_drag) => self.finish_shape_drag(&shape_drag, cursor_world),
+            DragKind::Shapes(shape_drag) => self.finish_shapes_drag(&shape_drag, cursor_world),
             DragKind::Anchor(anchor_drag) => self.finish_anchor_drag(&anchor_drag, cursor_world),
             DragKind::Handle(handle_drag) => {
                 finish_handle_drag(&mut self.document, &handle_drag, cursor_world).is_some_and(
@@ -151,26 +164,30 @@ impl Phase0Shell {
         }
     }
 
-    fn finish_shape_drag(&mut self, drag: &ShapeDragState, cursor_world: Vec2) -> bool {
+    fn finish_shapes_drag(&mut self, drag: &ShapesDragState, cursor_world: Vec2) -> bool {
         let delta = cursor_world.sub(drag.start_cursor_world);
 
         if delta.x.abs() <= f32::EPSILON && delta.y.abs() <= f32::EPSILON {
             // Restore the original geometry to avoid accumulating tiny deltas.
-            let _did_restore = apply_shape_drag_to_doc(&mut self.document, drag, Vec2::ZERO);
+            let _did_restore = apply_shapes_drag_to_doc(&mut self.document, drag, Vec2::ZERO);
             return false;
         }
 
-        let did_update = apply_shape_drag_to_doc(&mut self.document, drag, delta);
+        let did_update = apply_shapes_drag_to_doc(&mut self.document, drag, delta);
         if !did_update {
             return false;
         }
 
-        let change = DocChange {
-            ops: vec![DocOp::MoveShape {
-                shape: drag.shape,
+        let ops = drag
+            .shapes
+            .iter()
+            .map(|dragged| DocOp::MoveShape {
+                shape: dragged.shape,
                 delta,
-            }],
-        };
+            })
+            .collect();
+
+        let change = DocChange { ops };
         self.document_history.push(DocHistoryItem::new(change));
         true
     }
@@ -224,7 +241,7 @@ enum MouseDownHit {
     Handle(HandleHit),
     Anchor(AnchorHit),
     Segment(SegmentHit),
-    Shape { index: usize, id: ShapeId },
+    Shape { id: ShapeId },
     None,
 }
 
@@ -241,10 +258,8 @@ fn hit_under_cursor(doc: &Document, cursor_world: Vec2, tolerance_world: f32) ->
         return MouseDownHit::Segment(hit);
     }
 
-    hit_test_topmost_shape(doc, cursor_world, tolerance_world).map_or(
-        MouseDownHit::None,
-        |(index, id)| MouseDownHit::Shape { index, id },
-    )
+    hit_test_topmost_shape(doc, cursor_world, tolerance_world)
+        .map_or(MouseDownHit::None, |id| MouseDownHit::Shape { id })
 }
 
 fn selection_for_hit(hit: MouseDownHit) -> Selection {
@@ -273,7 +288,7 @@ fn selection_for_hit(hit: MouseDownHit) -> Selection {
                 seg: segment_hit.seg_index,
             }],
         },
-        MouseDownHit::Shape { id, .. } => Selection {
+        MouseDownHit::Shape { id } => Selection {
             items: vec![SelItem::Shape(id)],
         },
         MouseDownHit::None => Selection::empty(),
@@ -295,7 +310,29 @@ fn toggle_selection_item(current: Selection, hit_selection: &Selection) -> Selec
     Selection { items }
 }
 
-fn drag_state_for_hit(doc: &Document, hit: MouseDownHit, cursor_world: Vec2) -> Option<DragState> {
+fn selection_shape_ids(selection: &Selection) -> Vec<ShapeId> {
+    use std::collections::HashSet;
+
+    let mut seen = HashSet::new();
+    let mut ids = Vec::new();
+    for item in &selection.items {
+        let SelItem::Shape(id) = item else {
+            continue;
+        };
+        if seen.insert(*id) {
+            ids.push(*id);
+        }
+    }
+
+    ids
+}
+
+fn drag_state_for_hit(
+    doc: &Document,
+    hit: MouseDownHit,
+    cursor_world: Vec2,
+    selection: &Selection,
+) -> Option<DragState> {
     match hit {
         MouseDownHit::Handle(handle_hit) => {
             start_handle_drag(doc, handle_hit, cursor_world).map(|drag| DragState {
@@ -307,18 +344,20 @@ fn drag_state_for_hit(doc: &Document, hit: MouseDownHit, cursor_world: Vec2) -> 
                 kind: DragKind::Anchor(drag),
             })
         }
-        MouseDownHit::Segment(segment_hit) => start_shape_drag(
+        MouseDownHit::Segment(segment_hit) => start_shapes_drag(
             doc,
-            segment_hit.shape_index,
-            segment_hit.shape_id,
+            selection,
             cursor_world,
+            DraggedShapeHit::new(segment_hit.shape_id),
         )
         .map(|drag| DragState {
-            kind: DragKind::Shape(drag),
+            kind: DragKind::Shapes(drag),
         }),
-        MouseDownHit::Shape { index, id } => {
-            start_shape_drag(doc, index, id, cursor_world).map(|drag| DragState {
-                kind: DragKind::Shape(drag),
+        MouseDownHit::Shape { id } => {
+            start_shapes_drag(doc, selection, cursor_world, DraggedShapeHit::new(id)).map(|drag| {
+                DragState {
+                    kind: DragKind::Shapes(drag),
+                }
             })
         }
         MouseDownHit::None => None,
@@ -330,22 +369,46 @@ fn cursor_world(viewport: &crate::model::Viewport, position: gpui::Point<Pixels>
     viewport.screen_to_world(cursor_screen)
 }
 
-fn start_shape_drag(
+#[derive(Clone, Copy, Debug)]
+struct DraggedShapeHit {
+    shape: ShapeId,
+}
+
+impl DraggedShapeHit {
+    const fn new(shape: ShapeId) -> Self {
+        Self { shape }
+    }
+}
+
+fn start_shapes_drag(
     doc: &Document,
-    index: usize,
-    shape_id: ShapeId,
+    selection: &Selection,
     cursor_world: Vec2,
-) -> Option<ShapeDragState> {
-    let shape = doc.shapes.get(index)?;
-    if shape.id != shape_id {
-        return None;
+    hit: DraggedShapeHit,
+) -> Option<ShapesDragState> {
+    let drag_all_selected = selection.contains(&SelItem::Shape(hit.shape));
+    let shape_ids = if drag_all_selected {
+        selection_shape_ids(selection)
+    } else {
+        vec![hit.shape]
+    };
+
+    let mut shapes = Vec::new();
+    for shape_id in shape_ids {
+        let Some(index) = doc.find_index(shape_id) else {
+            continue;
+        };
+        let shape = doc.shapes.get(index)?;
+        shapes.push(DraggedShape {
+            shape: shape_id,
+            index,
+            original_anchors: shape.path.anchors.clone(),
+        });
     }
 
-    Some(ShapeDragState {
-        shape: shape_id,
-        index,
+    (!shapes.is_empty()).then_some(ShapesDragState {
         start_cursor_world: cursor_world,
-        original_anchors: shape.path.anchors.clone(),
+        shapes,
     })
 }
 
@@ -369,20 +432,30 @@ fn start_anchor_drag(
     })
 }
 
-fn apply_shape_drag_preview(doc: &mut Document, drag: &ShapeDragState, cursor_world: Vec2) -> bool {
+fn apply_shapes_drag_preview(
+    doc: &mut Document,
+    drag: &ShapesDragState,
+    cursor_world: Vec2,
+) -> bool {
     let delta = cursor_world.sub(drag.start_cursor_world);
-    apply_shape_drag_to_doc(doc, drag, delta)
+    apply_shapes_drag_to_doc(doc, drag, delta)
 }
 
-fn apply_shape_drag_to_doc(doc: &mut Document, drag: &ShapeDragState, delta: Vec2) -> bool {
-    let Some(shape) = doc.shapes.get_mut(drag.index) else {
-        return false;
-    };
-    if shape.id != drag.shape {
-        return false;
+fn apply_shapes_drag_to_doc(doc: &mut Document, drag: &ShapesDragState, delta: Vec2) -> bool {
+    let mut did_update_any = false;
+
+    for dragged in &drag.shapes {
+        let Some(shape) = doc.shapes.get_mut(dragged.index) else {
+            continue;
+        };
+        if shape.id != dragged.shape {
+            continue;
+        }
+
+        did_update_any |= restore_shape_anchors(shape, &dragged.original_anchors, delta);
     }
 
-    restore_shape_anchors(shape, &drag.original_anchors, delta)
+    did_update_any
 }
 
 fn apply_anchor_drag_preview(
