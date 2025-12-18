@@ -26,6 +26,18 @@ use super::phase0_support::demo_document;
 
 use self::{draw::DrawEdgeMode, file_dialogs::OpenPromptMode};
 
+/// Keymap context used for Phase 0 shell bindings.
+///
+/// GPUI key bindings are dispatched relative to an element's key context. Phase
+/// 0 sets this context on the root `div()` for the shell so global editor
+/// shortcuts (for example, `Tab` to toggle the draw edge mode) work even when a
+/// child element holds focus.
+///
+/// Note: this string must be valid `gpui::KeyContext` syntax, which accepts
+/// identifiers (letters/digits), plus `_` and `-`. Avoid `.` here: it is not a
+/// valid identifier character in GPUI key contexts.
+pub const KEY_CONTEXT: &str = "gauss-phase0";
+
 /// Trigger an “Open…” workflow for loading a document from disk.
 #[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
 #[action(no_json)]
@@ -40,6 +52,22 @@ pub struct OpenSvg;
 #[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
 #[action(no_json)]
 pub struct SaveSvg;
+
+/// Toggle the draw edge mode (Line vs Bézier auto) or, in manipulate mode,
+/// toggle the kind of any selected segments.
+#[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
+#[action(no_json)]
+pub struct ToggleEdgeMode;
+
+/// Register Phase 0 shell key bindings on the application keymap.
+///
+/// This is intentionally kept small and explicit so we can evolve from Phase 0
+/// "direct key handling" into more idiomatic GPUI keymaps as the editor grows.
+pub fn bind_keymap(app: &mut gpui::App) {
+    use gpui::KeyBinding;
+
+    app.bind_keys([KeyBinding::new("tab", ToggleEdgeMode, Some(KEY_CONTEXT))]);
+}
 
 /// Minimal root view for Phase 0.
 ///
@@ -336,6 +364,7 @@ impl Render for Phase0Shell {
         div()
             .p_4()
             .size_full()
+            .key_context(KEY_CONTEXT)
             .track_focus(&self.focus_handle)
             .flex()
             .flex_col()
@@ -354,6 +383,11 @@ impl Render for Phase0Shell {
             .on_action(
                 cx.listener(|_shell: &mut Self, _: &SaveSvg, action_window, action_cx| {
                     file_dialogs::request_save(action_window, action_cx);
+                }),
+            )
+            .on_action(
+                cx.listener(|shell: &mut Self, _: &ToggleEdgeMode, _, action_cx| {
+                    shell.handle_tab_action(action_cx);
                 }),
             )
             .child(

@@ -12,7 +12,6 @@ use super::{Phase0Shell, draw::ToolMode};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum KeyAction {
     Escape,
-    Tab,
     InsertAnchor,
     DeleteAnchors,
     Raise,
@@ -37,7 +36,6 @@ fn key_action_for(keystroke: &Keystroke) -> Option<KeyAction> {
 
 fn key_action_for_unmodified_key(key: &str) -> Option<KeyAction> {
     match key {
-        "tab" => Some(KeyAction::Tab),
         "i" => Some(KeyAction::InsertAnchor),
         "backspace" | "delete" => Some(KeyAction::DeleteAnchors),
         _ => None,
@@ -66,6 +64,19 @@ impl Phase0Shell {
             return;
         }
 
+        if event.keystroke.key.as_str() == "tab" && !event.keystroke.modifiers.modified() {
+            // Phase 0 uses `Tab` as an editor command. Without explicitly
+            // stopping propagation, focused children (for example, a colour
+            // picker control) can consume `Tab` for focus traversal before this
+            // view sees it.
+            //
+            // The actual edge-mode toggle is dispatched via the keymap to the
+            // `ToggleEdgeMode` action; we avoid also handling `Tab` here to
+            // prevent double-toggling.
+            cx.stop_propagation();
+            return;
+        }
+
         let Some(action) = key_action_for(&event.keystroke) else {
             return;
         };
@@ -75,6 +86,20 @@ impl Phase0Shell {
             cx.notify();
         }
         cx.stop_propagation();
+    }
+
+    pub(super) fn handle_tab_action(&mut self, cx: &mut Context<Self>) {
+        let did_change = match self.tool_mode {
+            ToolMode::Draw => {
+                self.edge_mode = self.edge_mode.toggle();
+                true
+            }
+            ToolMode::Manipulate => self.toggle_selected_segments_kind(),
+        };
+
+        if did_change {
+            cx.notify();
+        }
     }
 
     pub(super) fn handle_navigation_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
@@ -122,13 +147,6 @@ impl Phase0Shell {
                 self.handle_escape(cx);
                 false
             }
-            KeyAction::Tab => match self.tool_mode {
-                ToolMode::Draw => {
-                    self.edge_mode = self.edge_mode.toggle();
-                    true
-                }
-                ToolMode::Manipulate => self.toggle_selected_segments_kind(),
-            },
             KeyAction::InsertAnchor => self.insert_anchor_on_selected_segment(),
             KeyAction::DeleteAnchors => self.delete_selected_anchors(),
             KeyAction::Raise => self.raise_selected_shapes(),

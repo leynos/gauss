@@ -165,7 +165,7 @@ fn assert_segment0_restores_line_without_handles(shape: &Shape) {
 
 #[gpui::test]
 fn tab_toggles_selected_segment_kind_and_undo_restores(cx: &mut TestAppContext) {
-    cx.update(gpui_component::init);
+    cx.update(gauss::ui::init);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
@@ -198,7 +198,8 @@ fn tab_toggles_selected_segment_kind_and_undo_restores(cx: &mut TestAppContext) 
 
     select_segment0(visual_cx, &view, select_point, shape_before.id);
 
-    simulate_key(visual_cx, "tab", Modifiers::none());
+    visual_cx.simulate_keystrokes("tab");
+    visual_cx.run_until_parked();
 
     let doc_after_toggle = read_document(visual_cx, &view);
     let shape_after_toggle = require_draw_shape(&doc_after_toggle, "after toggle");

@@ -11,7 +11,7 @@
 
 use gauss::model::{Document, SegmentKind, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
-use gpui::{KeyDownEvent, Keystroke, Modifiers, TestAppContext, VisualTestContext, point, px};
+use gpui::{Modifiers, TestAppContext, VisualTestContext, point, px};
 use uuid::Uuid;
 
 const CATMULL_ROM_TENSION: f32 = 1.0;
@@ -31,18 +31,6 @@ fn require_draw_shape<'a>(doc: &'a Document, context: &'static str) -> &'a Shape
         panic!("expected draw shape to exist: {context}");
     };
     shape
-}
-
-fn simulate_key(visual_cx: &mut VisualTestContext, key: &str, modifiers: Modifiers) {
-    visual_cx.simulate_event(KeyDownEvent {
-        keystroke: Keystroke {
-            modifiers,
-            key: key.to_owned(),
-            key_char: None,
-        },
-        is_held: false,
-    });
-    visual_cx.run_until_parked();
 }
 
 fn draw_point(visual_cx: &mut VisualTestContext, position: gpui::Point<gpui::Pixels>) {
@@ -107,7 +95,7 @@ fn require_handle_in(shape: &Shape, anchor_index: usize, context: &'static str) 
 
 #[gpui::test]
 fn tab_switches_to_bezier_auto_and_synthesises_handles(cx: &mut TestAppContext) {
-    cx.update(gpui_component::init);
+    cx.update(gauss::ui::init);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
@@ -131,7 +119,8 @@ fn tab_switches_to_bezier_auto_and_synthesises_handles(cx: &mut TestAppContext) 
     );
 
     draw_point(visual_cx, p1);
-    simulate_key(visual_cx, "tab", Modifiers::none());
+    visual_cx.simulate_keystrokes("tab");
+    visual_cx.run_until_parked();
 
     draw_point(visual_cx, p2);
     draw_point(visual_cx, p3);

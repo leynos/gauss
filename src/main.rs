@@ -9,7 +9,7 @@ use gpui_component::Root;
 
 fn main() {
     Application::new().run(|app: &mut App| {
-        gpui_component::init(app);
+        gauss::ui::init(app);
 
         let window_options = WindowOptions {
             is_resizable: false,
