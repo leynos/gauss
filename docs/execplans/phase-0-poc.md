@@ -71,11 +71,15 @@ running `make all` and seeing it pass.
     - [x] (2025-12-17) Implement Draw mode (click to place points, Tab toggle
           edge mode, close, Esc commit) with document history and a headless
           `#[gpui::test]` asserting point placement and undo behaviour.
+    - [x] (2025-12-18) Add manipulate-mode segment hit-testing and selection,
+          and allow Tab to toggle selected segment kind (line ↔ cubic) with a
+          headless `#[gpui::test]` asserting undo restores the original
+          geometry.
     - [ ] Implement Manipulate mode hit-testing + drags + operations
           (completed: shape + anchor + handle hit-testing, selection,
-          drag-to-move, drag-anchor, drag-handle, and undo via headless
-          `#[gpui::test]`; remaining: segment toggling, reordering, insert/delete
-          anchor).
+          drag-to-move, drag-anchor, drag-handle, segment hit-testing, segment
+          selection, segment kind toggling, and undo via headless
+          `#[gpui::test]`; remaining: reordering and insert/delete anchor).
     - [x] (2025-12-17) Implement selection history + Shift-modified undo/redo
           with a headless `#[gpui::test]`.
     - [x] (2025-12-17) Add behavioural tests (BDD) with `rstest-bdd` exercising
@@ -199,6 +203,13 @@ running `make all` and seeing it pass.
       Rationale: Drag gestures should end cleanly even if the pointer leaves
       the canvas between down and up, and this also improves test robustness.
       Date/Author: 2025-12-17 / Codex
+
+    - Decision: Segment hit-testing selects the segment but dragging still
+      moves the shape.
+      Rationale: Segment selection is primarily needed for Tab-based segment
+      toggling, and preserving the existing “grab anywhere on shape” drag
+      behaviour keeps Phase 0 gestures intuitive.
+      Date/Author: 2025-12-18 / Codex
 
 ## Outcomes & retrospective
 
@@ -773,3 +784,12 @@ Revision (2025-12-17):
 - Added handle hit-testing and drag-to-move-handle support, along with a
   headless `#[gpui::test]` asserting handle drag mutates only the handle and
   Ctrl/Cmd-Z restores the original geometry.
+
+Revision (2025-12-18):
+
+- Added manipulate-mode segment hit-testing (line distance + sampled cubic) and
+  segment selection.
+- Updated Tab handling so, in manipulate mode, Tab toggles the selected
+  segment’s kind (line ↔ cubic) and seeds/clears handles appropriately.
+- Added a headless `#[gpui::test]` that selects a segment, presses Tab, and
+  asserts Ctrl/Cmd-Z restores the line segment and clears handles.

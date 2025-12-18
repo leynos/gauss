@@ -151,9 +151,16 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     );
 
     visual_cx.simulate_mouse_down(drag_start, MouseButton::Left, Modifiers::none());
-    let selected_shape = SelItem::Shape(original_shape.id);
-    let did_select = visual_cx.read(|app| view.read(app).selection().contains(&selected_shape));
-    assert!(did_select, "expected mouse down to select the draw shape");
+    let selection_after_down = visual_cx.read(|app| view.read(app).selection().clone());
+    let did_select = selection_after_down.items.iter().any(|item| match item {
+        SelItem::Shape(id) => *id == original_shape.id,
+        SelItem::Segment { shape, .. } => *shape == original_shape.id,
+        _ => false,
+    });
+    assert!(
+        did_select,
+        "expected mouse down to select the draw shape; selection={selection_after_down:?}"
+    );
 
     let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
     assert!(is_dragging, "expected mouse down to start a drag gesture");

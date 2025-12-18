@@ -26,8 +26,8 @@ use self::handle_drag::{
     HandleDragState, apply_handle_drag_preview, finish_handle_drag, start_handle_drag,
 };
 use self::hit_test::{
-    AnchorHit, HandleHitKind, hit_test_topmost_anchor, hit_test_topmost_handle,
-    hit_test_topmost_shape,
+    AnchorHit, HandleHit, HandleHitKind, SegmentHit, hit_test_topmost_anchor,
+    hit_test_topmost_handle, hit_test_topmost_segment, hit_test_topmost_shape,
 };
 
 #[derive(Clone, Debug)]
@@ -71,61 +71,17 @@ impl Phase0Shell {
 
         let cursor_world = cursor_world(&self.viewport, event.position);
         let tolerance_world = 4.0 / self.viewport.zoom;
-        let hit_handle = hit_test_topmost_handle(&self.document, cursor_world, tolerance_world);
-        let hit_anchor = hit_test_topmost_anchor(&self.document, cursor_world, tolerance_world);
-        let hit_shape = hit_test_topmost_shape(&self.document, cursor_world, tolerance_world);
+        let hit = hit_under_cursor(&self.document, cursor_world, tolerance_world);
 
         let previous_selection = self.selection.clone();
-        let new_selection = match (hit_handle, hit_anchor, hit_shape) {
-            (Some(hit), _, _) => Selection {
-                items: vec![match hit.kind {
-                    HandleHitKind::In => SelItem::HandleIn {
-                        shape: hit.shape_id,
-                        anchor: hit.anchor_index,
-                    },
-                    HandleHitKind::Out => SelItem::HandleOut {
-                        shape: hit.shape_id,
-                        anchor: hit.anchor_index,
-                    },
-                }],
-            },
-            (None, Some(hit), _) => Selection {
-                items: vec![SelItem::Anchor {
-                    shape: hit.shape_id,
-                    anchor: hit.anchor_index,
-                }],
-            },
-            (None, None, Some((_, shape_id))) => Selection {
-                items: vec![SelItem::Shape(shape_id)],
-            },
-            (None, None, None) => Selection::empty(),
-        };
+        let new_selection = selection_for_hit(hit);
         let did_change_selection = new_selection != previous_selection;
         if did_change_selection {
             self.record_selection_change(previous_selection, new_selection.clone());
         }
         self.selection = new_selection;
 
-        self.drag_state = match (hit_handle, hit_anchor, hit_shape) {
-            (Some(hit), _, _) => {
-                start_handle_drag(&self.document, hit, cursor_world).map(|drag| DragState {
-                    kind: DragKind::Handle(drag),
-                })
-            }
-            (None, Some(hit), _) => {
-                start_anchor_drag(&self.document, hit, cursor_world).map(|drag| DragState {
-                    kind: DragKind::Anchor(drag),
-                })
-            }
-            (None, None, Some((shape_index, shape_id))) => {
-                start_shape_drag(&self.document, shape_index, shape_id, cursor_world).map(|drag| {
-                    DragState {
-                        kind: DragKind::Shape(drag),
-                    }
-                })
-            }
-            (None, None, None) => None,
-        };
+        self.drag_state = drag_state_for_hit(&self.document, hit, cursor_world);
 
         did_change_selection || self.drag_state.is_some()
     }
@@ -251,6 +207,97 @@ impl Phase0Shell {
         self.document_history
             .push(DocHistoryItem::new(DocChange { ops }));
         true
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum MouseDownHit {
+    Handle(HandleHit),
+    Anchor(AnchorHit),
+    Segment(SegmentHit),
+    Shape { index: usize, id: ShapeId },
+    None,
+}
+
+fn hit_under_cursor(doc: &Document, cursor_world: Vec2, tolerance_world: f32) -> MouseDownHit {
+    if let Some(hit) = hit_test_topmost_handle(doc, cursor_world, tolerance_world) {
+        return MouseDownHit::Handle(hit);
+    }
+
+    if let Some(hit) = hit_test_topmost_anchor(doc, cursor_world, tolerance_world) {
+        return MouseDownHit::Anchor(hit);
+    }
+
+    if let Some(hit) = hit_test_topmost_segment(doc, cursor_world, tolerance_world) {
+        return MouseDownHit::Segment(hit);
+    }
+
+    hit_test_topmost_shape(doc, cursor_world, tolerance_world).map_or(
+        MouseDownHit::None,
+        |(index, id)| MouseDownHit::Shape { index, id },
+    )
+}
+
+fn selection_for_hit(hit: MouseDownHit) -> Selection {
+    match hit {
+        MouseDownHit::Handle(handle_hit) => Selection {
+            items: vec![match handle_hit.kind {
+                HandleHitKind::In => SelItem::HandleIn {
+                    shape: handle_hit.shape_id,
+                    anchor: handle_hit.anchor_index,
+                },
+                HandleHitKind::Out => SelItem::HandleOut {
+                    shape: handle_hit.shape_id,
+                    anchor: handle_hit.anchor_index,
+                },
+            }],
+        },
+        MouseDownHit::Anchor(anchor_hit) => Selection {
+            items: vec![SelItem::Anchor {
+                shape: anchor_hit.shape_id,
+                anchor: anchor_hit.anchor_index,
+            }],
+        },
+        MouseDownHit::Segment(segment_hit) => Selection {
+            items: vec![SelItem::Segment {
+                shape: segment_hit.shape_id,
+                seg: segment_hit.seg_index,
+            }],
+        },
+        MouseDownHit::Shape { id, .. } => Selection {
+            items: vec![SelItem::Shape(id)],
+        },
+        MouseDownHit::None => Selection::empty(),
+    }
+}
+
+fn drag_state_for_hit(doc: &Document, hit: MouseDownHit, cursor_world: Vec2) -> Option<DragState> {
+    match hit {
+        MouseDownHit::Handle(handle_hit) => {
+            start_handle_drag(doc, handle_hit, cursor_world).map(|drag| DragState {
+                kind: DragKind::Handle(drag),
+            })
+        }
+        MouseDownHit::Anchor(anchor_hit) => {
+            start_anchor_drag(doc, anchor_hit, cursor_world).map(|drag| DragState {
+                kind: DragKind::Anchor(drag),
+            })
+        }
+        MouseDownHit::Segment(segment_hit) => start_shape_drag(
+            doc,
+            segment_hit.shape_index,
+            segment_hit.shape_id,
+            cursor_world,
+        )
+        .map(|drag| DragState {
+            kind: DragKind::Shape(drag),
+        }),
+        MouseDownHit::Shape { index, id } => {
+            start_shape_drag(doc, index, id, cursor_world).map(|drag| DragState {
+                kind: DragKind::Shape(drag),
+            })
+        }
+        MouseDownHit::None => None,
     }
 }
 

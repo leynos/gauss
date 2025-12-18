@@ -19,9 +19,19 @@ impl Phase0Shell {
             return;
         }
 
-        if is_toggle_edge_mode(&event.keystroke) {
-            self.edge_mode = self.edge_mode.toggle();
-            cx.notify();
+        if is_tab(&event.keystroke) {
+            let did_change = match self.tool_mode {
+                ToolMode::Draw => {
+                    self.edge_mode = self.edge_mode.toggle();
+                    true
+                }
+                ToolMode::Manipulate => self.toggle_selected_segments_kind(),
+            };
+
+            if did_change {
+                cx.notify();
+            }
+
             cx.stop_propagation();
             return;
         }
@@ -73,7 +83,7 @@ fn is_escape(keystroke: &Keystroke) -> bool {
     keystroke.key == "escape"
 }
 
-fn is_toggle_edge_mode(keystroke: &Keystroke) -> bool {
+fn is_tab(keystroke: &Keystroke) -> bool {
     keystroke.key == "tab" && !keystroke.modifiers.modified()
 }
 

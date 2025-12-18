@@ -8,6 +8,7 @@ mod draw;
 mod file_dialogs;
 mod input;
 mod manipulate;
+mod segment_toggle;
 mod selection_history;
 
 use std::path::{Path, PathBuf};
