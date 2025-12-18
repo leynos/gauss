@@ -116,6 +116,8 @@ running `make all` and seeing it pass.
           `#[gpui::test]` guarding the behaviour.
     - [x] (2025-12-18) Add a headless `#[gpui::test]` asserting that clicking
           empty canvas space clears the current selection.
+    - [x] (2025-12-18) Add a headless `#[gpui::test]` asserting `Escape` in
+          manipulate mode returns to draw mode (clicks place points again).
 
 ## Surprises & discoveries
 
@@ -957,3 +959,8 @@ Revision (2025-12-18):
   clears selection.
 - Updated the acceptance criteria to mark the quality gates and tests as
   verified.
+
+Revision (2025-12-18):
+
+- Added a headless `#[gpui::test]` covering the `Escape` mode toggle from
+  manipulate mode back into draw mode.
