@@ -47,6 +47,7 @@ pub struct SaveSvg;
 pub struct Phase0Shell {
     focus_handle: gpui::FocusHandle,
     did_focus: bool,
+    did_request_quit: bool,
     open_prompt_mode: OpenPromptMode,
     document: Document,
     viewport: Viewport,
@@ -75,6 +76,7 @@ impl Phase0Shell {
         Self {
             focus_handle: cx.focus_handle(),
             did_focus: false,
+            did_request_quit: false,
             open_prompt_mode: OpenPromptMode::Native,
             document: demo_document(),
             viewport: Viewport::new(),
@@ -155,6 +157,15 @@ impl Phase0Shell {
     #[must_use]
     pub const fn is_dragging(&self) -> bool {
         self.drag_state.is_some()
+    }
+
+    /// Return whether a quit request has been triggered from the UI.
+    ///
+    /// This exists to keep `#[gpui::test]` assertions stable on the test
+    /// platform, which does not necessarily exit when `App::quit()` is invoked.
+    #[must_use]
+    pub const fn did_request_quit(&self) -> bool {
+        self.did_request_quit
     }
 
     /// Return the last canvas click position in screen coordinates.
@@ -301,18 +312,13 @@ impl Phase0Shell {
                     .gap_2()
                     .child(self.style_picker_row())
                     .child(Self::open_button(cx))
-                    .child(Self::save_button(cx)),
+                    .child(Self::save_button(cx))
+                    .child(Self::quit_button(cx)),
             )
     }
 
     fn open_button(cx: &mut Context<Self>) -> impl gpui::IntoElement {
-        div()
-            .id("open-button")
-            .debug_selector(|| "#open-button".to_owned())
-            .px_3()
-            .py_2()
-            .rounded_md()
-            .border_1()
+        Self::header_button_base("open-button")
             .on_click(cx.listener(
                 |shell: &mut Self, _event: &gpui::ClickEvent, click_window, click_cx| {
                     file_dialogs::request_open(shell.open_prompt_mode, click_window, click_cx);
@@ -322,19 +328,34 @@ impl Phase0Shell {
     }
 
     fn save_button(cx: &mut Context<Self>) -> impl gpui::IntoElement {
-        div()
-            .id("save-button")
-            .debug_selector(|| "#save-button".to_owned())
-            .px_3()
-            .py_2()
-            .rounded_md()
-            .border_1()
+        Self::header_button_base("save-button")
             .on_click(cx.listener(
                 |_shell: &mut Self, _event: &gpui::ClickEvent, click_window, click_cx| {
                     file_dialogs::request_save(click_window, click_cx);
                 },
             ))
             .child("Save…")
+    }
+
+    fn quit_button(cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        Self::header_button_base("quit-button")
+            .on_click(cx.listener(
+                |shell: &mut Self, _event: &gpui::ClickEvent, _window, click_cx| {
+                    shell.did_request_quit = true;
+                    click_cx.quit();
+                },
+            ))
+            .child("Quit")
+    }
+
+    fn header_button_base(id: &'static str) -> gpui::Stateful<gpui::Div> {
+        div()
+            .id(id)
+            .debug_selector(move || format!("#{id}"))
+            .px_3()
+            .py_2()
+            .rounded_md()
+            .border_1()
     }
 }
 

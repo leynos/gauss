@@ -4,15 +4,25 @@
 //! `gpui-component` integration builds on the pinned toolchain.
 
 use gauss::ui::Phase0Shell;
-use gpui::{App, AppContext as _, Application, WindowOptions};
+use gpui::{App, AppContext as _, Application, TitlebarOptions, WindowDecorations, WindowOptions};
 use gpui_component::Root;
 
 fn main() {
     Application::new().run(|app: &mut App| {
         gpui_component::init(app);
 
+        let window_options = WindowOptions {
+            is_resizable: false,
+            window_decorations: Some(WindowDecorations::Server),
+            titlebar: Some(TitlebarOptions {
+                title: Some("Gauss".into()),
+                ..TitlebarOptions::default()
+            }),
+            ..WindowOptions::default()
+        };
+
         if app
-            .open_window(WindowOptions::default(), |window, cx| {
+            .open_window(window_options, |window, cx| {
                 let shell = cx.new(Phase0Shell::new);
                 cx.new(|root_cx| Root::new(shell, window, root_cx))
             })
