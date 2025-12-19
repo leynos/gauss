@@ -121,6 +121,11 @@ running `make all` and seeing it pass.
     - [x] (2025-12-18) Add a headless `#[gpui::test]` asserting that clicking
           inside a shape’s bounding box selects the shape (bbox fallback hit
           test).
+    - [x] (2025-12-18) Add headless `#[gpui::test]` coverage for the mode
+          indicator line, asserting:
+          - initial `Mode: Draw (Line)`,
+          - `Tab` updates the edge label to `Bezier (auto)`, and
+          - manipulate mode reports `Mode: Manipulate`.
 
 ## Surprises & discoveries
 
@@ -972,3 +977,8 @@ Revision (2025-12-18):
 
 - Added a headless `#[gpui::test]` asserting that clicking inside a shape’s
   loose bounding box selects the shape (bbox fallback hit test).
+
+Revision (2025-12-18):
+
+- Added headless `#[gpui::test]` coverage for the mode indicator line,
+  including `Tab` toggling the edge label.
