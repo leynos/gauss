@@ -219,6 +219,15 @@ impl Phase0Shell {
         self.did_request_quit
     }
 
+    /// Return the current mode indicator line as shown in the UI.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI.
+    #[must_use]
+    pub fn mode_status_line_for_tests(&self) -> String {
+        self.mode_status_line()
+    }
+
     /// Force manipulate mode for headless tests.
     ///
     /// GPUI's headless harness does not always guarantee that keyboard focus is
