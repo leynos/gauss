@@ -118,6 +118,9 @@ running `make all` and seeing it pass.
           empty canvas space clears the current selection.
     - [x] (2025-12-18) Add a headless `#[gpui::test]` asserting `Escape` in
           manipulate mode returns to draw mode (clicks place points again).
+    - [x] (2025-12-18) Add a headless `#[gpui::test]` asserting that clicking
+          inside a shape’s bounding box selects the shape (bbox fallback hit
+          test).
 
 ## Surprises & discoveries
 
@@ -964,3 +967,8 @@ Revision (2025-12-18):
 
 - Added a headless `#[gpui::test]` covering the `Escape` mode toggle from
   manipulate mode back into draw mode.
+
+Revision (2025-12-18):
+
+- Added a headless `#[gpui::test]` asserting that clicking inside a shape’s
+  loose bounding box selects the shape (bbox fallback hit test).
