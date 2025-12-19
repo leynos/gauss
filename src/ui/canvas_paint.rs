@@ -8,7 +8,9 @@ use gpui::{
     App, Bounds, Path, PathBuilder, Pixels, Styled as _, Window, canvas, fill, point, px, rgba,
 };
 
-use crate::model::{Document, Rgba as ModelRgba, SegmentKind, SelItem, Selection, Shape, Viewport};
+use crate::model::{
+    Document, Rgba as ModelRgba, SegmentKind, SelItem, Selection, Shape, Vec2, Viewport,
+};
 
 #[derive(Clone, Debug)]
 struct CanvasState {
@@ -71,6 +73,8 @@ fn paint_selection_overlays(
         let Some(shape) = doc.shapes.iter().find(|shape| shape.id == shape_id) else {
             continue;
         };
+
+        paint_shape_bbox(shape, viewport, window);
 
         let (_, stroke_path) = build_paths(shape, viewport);
         let Some(path) = stroke_path else {
@@ -162,6 +166,92 @@ fn build_path(shape: &Shape, viewport: Viewport, mut builder: PathBuilder) -> Op
     }
 
     builder.build().ok()
+}
+
+fn paint_shape_bbox(shape: &Shape, viewport: Viewport, window: &mut Window) {
+    let Some((bbox_min, bbox_max)) = shape_screen_bbox(shape, viewport) else {
+        return;
+    };
+
+    let padding = 3.0;
+    let padded_min = Vec2::new(bbox_min.x - padding, bbox_min.y - padding);
+    let padded_max = Vec2::new(bbox_max.x + padding, bbox_max.y + padding);
+
+    let mut builder = PathBuilder::stroke(px(1.0));
+    add_dashed_rect(
+        &mut builder,
+        padded_min,
+        padded_max,
+        DashPattern::new(6.0, 4.0),
+    );
+    let Some(path) = builder.build().ok() else {
+        return;
+    };
+
+    window.paint_path(path, rgba(0xb0b0_b080));
+}
+
+fn shape_screen_bbox(shape: &Shape, viewport: Viewport) -> Option<(Vec2, Vec2)> {
+    let mut min_x = f32::INFINITY;
+    let mut min_y = f32::INFINITY;
+    let mut max_x = f32::NEG_INFINITY;
+    let mut max_y = f32::NEG_INFINITY;
+
+    for anchor in &shape.path.anchors {
+        let screen = viewport.world_to_screen(anchor.pos);
+        min_x = min_x.min(screen.x);
+        min_y = min_y.min(screen.y);
+        max_x = max_x.max(screen.x);
+        max_y = max_y.max(screen.y);
+    }
+
+    if !min_x.is_finite() || !min_y.is_finite() || !max_x.is_finite() || !max_y.is_finite() {
+        return None;
+    }
+
+    Some((Vec2::new(min_x, min_y), Vec2::new(max_x, max_y)))
+}
+
+#[derive(Clone, Copy, Debug)]
+struct DashPattern {
+    dash: f32,
+    gap: f32,
+}
+
+impl DashPattern {
+    const fn new(dash: f32, gap: f32) -> Self {
+        Self { dash, gap }
+    }
+}
+
+fn add_dashed_rect(builder: &mut PathBuilder, min: Vec2, max: Vec2, pattern: DashPattern) {
+    let top_left = min;
+    let top_right = Vec2::new(max.x, min.y);
+    let bottom_right = max;
+    let bottom_left = Vec2::new(min.x, max.y);
+
+    add_dashed_line(builder, top_left, top_right, pattern);
+    add_dashed_line(builder, top_right, bottom_right, pattern);
+    add_dashed_line(builder, bottom_right, bottom_left, pattern);
+    add_dashed_line(builder, bottom_left, top_left, pattern);
+}
+
+fn add_dashed_line(builder: &mut PathBuilder, start: Vec2, end: Vec2, pattern: DashPattern) {
+    let length = start.distance(end);
+    if length <= f32::EPSILON {
+        return;
+    }
+
+    let direction = end.sub(start).mul(1.0 / length);
+
+    let mut t = 0.0;
+    while t < length {
+        let segment_start = start.add(direction.mul(t));
+        let segment_end = start.add(direction.mul((t + pattern.dash).min(length)));
+        builder.move_to(point(px(segment_start.x), px(segment_start.y)));
+        builder.line_to(point(px(segment_end.x), px(segment_end.y)));
+        t += pattern.dash + pattern.gap;
+    }
 }
 
 fn model_rgba_to_hex(color: ModelRgba) -> u32 {

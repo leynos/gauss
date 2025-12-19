@@ -79,6 +79,7 @@ impl Phase0Shell {
         let hit = hit_under_cursor(&self.document, cursor_world, tolerance_world);
 
         let previous_selection = self.selection.clone();
+        let can_drag_shape_bbox = can_drag_shape_bbox(&previous_selection, hit);
         let hit_selection = selection_for_hit(hit);
         let new_selection = if event.modifiers.shift {
             toggle_selection_item(previous_selection.clone(), &hit_selection)
@@ -102,7 +103,15 @@ impl Phase0Shell {
         self.drag_state = if event.modifiers.shift {
             None
         } else {
-            drag_state_for_hit(&self.document, hit, cursor_world, &self.selection)
+            drag_state_for_hit(
+                &self.document,
+                hit,
+                DragStartContext {
+                    cursor_world,
+                    selection: &self.selection,
+                    can_drag_shape_bbox,
+                },
+            )
         };
 
         did_change_selection || self.drag_state.is_some()
@@ -330,38 +339,54 @@ fn selection_shape_ids(selection: &Selection) -> Vec<ShapeId> {
 fn drag_state_for_hit(
     doc: &Document,
     hit: MouseDownHit,
-    cursor_world: Vec2,
-    selection: &Selection,
+    ctx: DragStartContext<'_>,
 ) -> Option<DragState> {
     match hit {
-        MouseDownHit::Handle(handle_hit) => {
-            start_handle_drag(doc, handle_hit, cursor_world).map(|drag| DragState {
+        MouseDownHit::Handle(handle_hit) => start_handle_drag(doc, handle_hit, ctx.cursor_world)
+            .map(|drag| DragState {
                 kind: DragKind::Handle(drag),
-            })
-        }
-        MouseDownHit::Anchor(anchor_hit) => {
-            start_anchor_drag(doc, anchor_hit, cursor_world).map(|drag| DragState {
+            }),
+        MouseDownHit::Anchor(anchor_hit) => start_anchor_drag(doc, anchor_hit, ctx.cursor_world)
+            .map(|drag| DragState {
                 kind: DragKind::Anchor(drag),
-            })
-        }
+            }),
         MouseDownHit::Segment(segment_hit) => start_shapes_drag(
             doc,
-            selection,
-            cursor_world,
+            ctx.selection,
+            ctx.cursor_world,
             DraggedShapeHit::new(segment_hit.shape_id),
         )
         .map(|drag| DragState {
             kind: DragKind::Shapes(drag),
         }),
         MouseDownHit::Shape { id } => {
-            start_shapes_drag(doc, selection, cursor_world, DraggedShapeHit::new(id)).map(|drag| {
-                DragState {
-                    kind: DragKind::Shapes(drag),
-                }
+            ctx.can_drag_shape_bbox.then_some(())?;
+            start_shapes_drag(
+                doc,
+                ctx.selection,
+                ctx.cursor_world,
+                DraggedShapeHit::new(id),
+            )
+            .map(|drag| DragState {
+                kind: DragKind::Shapes(drag),
             })
         }
         MouseDownHit::None => None,
     }
+}
+
+fn can_drag_shape_bbox(previous_selection: &Selection, hit: MouseDownHit) -> bool {
+    match hit {
+        MouseDownHit::Shape { id } => previous_selection.contains(&SelItem::Shape(id)),
+        _ => true,
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct DragStartContext<'a> {
+    cursor_world: Vec2,
+    selection: &'a Selection,
+    can_drag_shape_bbox: bool,
 }
 
 fn cursor_world(viewport: &crate::model::Viewport, position: gpui::Point<Pixels>) -> Vec2 {
