@@ -126,6 +126,9 @@ running `make all` and seeing it pass.
           - initial `Mode: Draw (Line)`,
           - `Tab` updates the edge label to `Bezier (auto)`, and
           - manipulate mode reports `Mode: Manipulate`.
+    - [x] (2025-12-19) Update the acceptance checklist to record which items
+          are validated by automated headless tests, leaving only truly
+          platform-native affordances as manual checks.
 
 ## Surprises & discoveries
 
@@ -729,54 +732,87 @@ Expected outcomes are described in each milestone’s acceptance criteria.
 The Phase 0 PoC is accepted when:
 
 - [x] Quality gates: `make all` passes. (Verified 2025-12-18.)
-- [ ] Manual behaviour:
-  - [ ] A window opens and draws on a canvas.
-  - [ ] Draw mode behaves as described:
-    - [ ] On launch, the mode indicator shows `Mode: Draw (...)`.
-    - [ ] Click in the canvas to place a first point and create a new open
+- [x] Manual behaviour (validated by headless integration tests where
+      possible):
+  - [x] A window opens and draws on a canvas.
+    - Covered by `tests/gpui_canvas_layout.rs` and `tests/gpui_draw_undo.rs`.
+  - [x] Draw mode behaves as described:
+    - [x] On launch, the mode indicator shows `Mode: Draw (...)`.
+      - Covered by `tests/gpui_mode_indicator.rs`.
+    - [x] Click in the canvas to place a first point and create a new open
       path. A visible path appears on the canvas.
-    - [ ] Click again elsewhere in the canvas to add a second point. A segment
+      - Covered by `tests/gpui_draw_undo.rs`.
+    - [x] Click again elsewhere in the canvas to add a second point. A segment
       is added between the two points.
-    - [ ] Press `Tab` to toggle the draw edge mode (`Line` ↔ `Bezier (auto)`),
+      - Covered by `tests/gpui_draw_undo.rs`.
+    - [x] Press `Tab` to toggle the draw edge mode (`Line` ↔ `Bezier (auto)`),
       and confirm the mode indicator updates accordingly.
-    - [ ] In `Bezier (auto)` mode, add several points and confirm the
+      - Covered by `tests/gpui_mode_indicator.rs` and
+        `tests/gpui_draw_bezier_auto.rs`.
+    - [x] In `Bezier (auto)` mode, add several points and confirm the
       resulting curve is smooth (handles are synthesised using a
       Catmull–Rom-to-cubic conversion).
-    - [ ] Close the path by clicking near the first anchor (within the snap
+      - Covered by `tests/gpui_draw_bezier_auto.rs`.
+    - [x] Close the path by clicking near the first anchor (within the snap
       radius). The path becomes closed and the editor switches to manipulate
       mode.
-    - [ ] Press `Escape` while drawing an open path. The current open path
+      - Covered by `tests/gpui_close_path.rs`.
+    - [x] Press `Escape` while drawing an open path. The current open path
       remains in the document and the editor switches to manipulate mode (it
       does not discard the work).
-  - [ ] Manipulate mode behaves as described:
-    - [ ] The mode indicator shows `Mode: Manipulate`.
-    - [ ] Click on geometry and confirm selection behaviour:
-      - [ ] Clicking a handle selects the handle.
-      - [ ] Clicking an anchor selects the anchor.
-      - [ ] Clicking a segment selects the segment.
-      - [ ] Clicking inside the shape’s loose bounding box selects the shape.
-      - [ ] Clicking empty space clears selection.
-      - [ ] Shift+click toggles selection items for multi-select, and does not
+      - Covered by `tests/gpui_draw_escape_commits_open_path.rs`.
+  - [x] Manipulate mode behaves as described:
+    - [x] The mode indicator shows `Mode: Manipulate`.
+      - Covered by `tests/gpui_mode_indicator.rs`.
+    - [x] Click on geometry and confirm selection behaviour:
+      - [x] Clicking a handle selects the handle.
+        - Covered by `tests/gpui_drag_handle_undo.rs`.
+      - [x] Clicking an anchor selects the anchor.
+        - Covered by `tests/gpui_drag_anchor_undo.rs`.
+      - [x] Clicking a segment selects the segment.
+        - Covered by `tests/gpui_toggle_segment_kind.rs`.
+      - [x] Clicking inside the shape’s loose bounding box selects the shape.
+        - Covered by `tests/gpui_select_shape_by_bbox.rs`.
+      - [x] Clicking empty space clears selection.
+        - Covered by `tests/gpui_clear_selection.rs`.
+      - [x] Shift+click toggles selection items for multi-select, and does not
         start a drag gesture.
-    - [ ] Drag the selected target and confirm editing:
-      - [ ] Drag a selected shape to translate it.
-      - [ ] Drag an anchor to move the point (and any associated handles)
+        - Covered by `tests/gpui_multi_select.rs`.
+    - [x] Drag the selected target and confirm editing:
+      - [x] Drag a selected shape to translate it.
+        - Covered by `tests/gpui_drag_shape_undo.rs` and
+          `tests/gpui_multi_shape_drag.rs`.
+      - [x] Drag an anchor to move the point (and any associated handles)
         together.
-      - [ ] Drag a handle to adjust the curve without moving the anchor.
-    - [ ] With a segment selected, press `Tab` and confirm the segment toggles
+        - Covered by `tests/gpui_drag_anchor_undo.rs`.
+      - [x] Drag a handle to adjust the curve without moving the anchor.
+        - Covered by `tests/gpui_drag_handle_undo.rs`.
+    - [x] With a segment selected, press `Tab` and confirm the segment toggles
       between `Line` and `Cubic` (with appropriate handle seeding/clearing).
-    - [ ] With a segment selected, press `i` and confirm an anchor is inserted
+      - Covered by `tests/gpui_toggle_segment_kind.rs`.
+    - [x] With a segment selected, press `i` and confirm an anchor is inserted
       on that segment (PoC-quality structural edit).
-    - [ ] With one or more anchors selected, press `Backspace`/`Delete` and
+      - Covered by `tests/gpui_anchor_edit_undo.rs`.
+    - [x] With one or more anchors selected, press `Backspace`/`Delete` and
       confirm the selected anchors are removed (deleting the shape if it
       becomes degenerate).
-    - [ ] With a shape selected, use the stroke/fill controls to change its
+      - Covered by `tests/gpui_anchor_edit_undo.rs`.
+    - [x] With a shape selected, use the stroke/fill controls to change its
       style and confirm it updates immediately.
-    - [ ] With one or more shapes selected, press Ctrl/Cmd-`[` and Ctrl/Cmd-`]`
+      - Covered by `tests/gpui_style_controls.rs`.
+    - [x] With one or more shapes selected, press Ctrl/Cmd-`[` and Ctrl/Cmd-`]`
       and confirm the shapes reorder (lower/raise).
-    - [ ] Press `Escape` to return to draw mode.
-  - [ ] Open/Save show native dialogs and load/save SVG.
-  - [ ] Undo/redo works for document edits and selection edits (Shift toggles).
+      - Covered by `tests/gpui_reorder_undo.rs`.
+    - [x] Press `Escape` to return to draw mode.
+      - Covered by `tests/gpui_escape_returns_to_draw.rs`.
+  - [ ] Open/Save show native dialogs.
+    - Manual-only: cannot be asserted in GPUI headless tests.
+  - [x] Open/Save load/save SVG.
+    - Covered by `tests/gpui_open_dialog.rs`, `tests/gpui_save_dialog.rs`, and
+      `tests/gpui_click_save_button.rs`.
+  - [x] Undo/redo works for document edits and selection edits (Shift toggles).
+    - Covered by `tests/gpui_draw_undo.rs`, `tests/gpui_selection_history.rs`,
+      and `tests/gpui_navigation_buttons.rs`.
 - [x] Tests:
   - [x] Unit tests exist for viewport and ops behaviour.
   - [x] At least one BDD scenario exists and passes, asserting observable
@@ -982,3 +1018,10 @@ Revision (2025-12-18):
 
 - Added headless `#[gpui::test]` coverage for the mode indicator line,
   including `Tab` toggling the edge label.
+
+Revision (2025-12-19):
+
+- Updated the Validation and acceptance section to record which items are
+  validated by headless tests.
+- Split "native dialogs" from "load/save SVG", leaving only the platform UI
+  affordance itself as a manual check.
