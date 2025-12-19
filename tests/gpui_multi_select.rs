@@ -154,7 +154,7 @@ fn shift_click_toggles_multi_select_without_dragging(cx: &mut TestAppContext) {
     assert_eq!(
         selection_single,
         Selection {
-            items: vec![anchor0_item.clone()],
+            items: vec![SelItem::Shape(shape_id), anchor0_item.clone()],
         },
         "expected first click to select the first anchor"
     );
@@ -181,7 +181,7 @@ fn shift_click_toggles_multi_select_without_dragging(cx: &mut TestAppContext) {
     assert_eq!(
         selection_toggled,
         Selection {
-            items: vec![anchor1_item],
+            items: vec![SelItem::Shape(shape_id), anchor1_item],
         },
         "expected Shift+click to toggle the clicked item off"
     );

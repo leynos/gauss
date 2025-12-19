@@ -128,6 +128,25 @@ fn model_point_to_canvas_point(
     }
 }
 
+fn assert_handle_selection_includes_shape(
+    visual_cx: &VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    shape_id: ShapeId,
+) {
+    let selection = visual_cx.read(|app| view.read(app).selection().clone());
+    assert!(
+        selection.contains(&SelItem::Shape(shape_id)),
+        "expected handle interaction to keep the shape selected; selection={selection:?}"
+    );
+    assert!(
+        selection.contains(&SelItem::HandleOut {
+            shape: shape_id,
+            anchor: 0,
+        }),
+        "expected mouse down to select the handle; selection={selection:?}"
+    );
+}
+
 #[gpui::test]
 fn dragging_handle_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     cx.update(gauss::ui::init);
@@ -160,12 +179,7 @@ fn dragging_handle_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     visual_cx.simulate_mouse_down(handle_start, MouseButton::Left, Modifiers::none());
     visual_cx.run_until_parked();
 
-    let expected_selection = SelItem::HandleOut {
-        shape: original_shape.id,
-        anchor: 0,
-    };
-    let did_select = visual_cx.read(|app| view.read(app).selection().contains(&expected_selection));
-    assert!(did_select, "expected mouse down to select the handle");
+    assert_handle_selection_includes_shape(visual_cx, &view, original_shape.id);
 
     visual_cx.simulate_mouse_move(handle_end, MouseButton::Left, Modifiers::none());
     visual_cx.simulate_mouse_up(handle_end, MouseButton::Left, Modifiers::none());

@@ -93,6 +93,10 @@ fn select_segment0(
     visual_cx.run_until_parked();
 
     let selection = visual_cx.read(|app| view.read(app).selection().clone());
+    assert!(
+        selection.contains(&SelItem::Shape(shape_id)),
+        "expected shape to remain selected when selecting a segment; selection={selection:?}"
+    );
     let expected_segment = SelItem::Segment {
         shape: shape_id,
         seg: 0,

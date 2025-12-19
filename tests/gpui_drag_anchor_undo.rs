@@ -129,8 +129,15 @@ fn drag_first_anchor(
         shape: shape_id,
         anchor: 0,
     };
-    let did_select = visual_cx.read(|app| view.read(app).selection().contains(&selected_anchor));
-    assert!(did_select, "expected mouse down to select the first anchor");
+    let selection = visual_cx.read(|app| view.read(app).selection().clone());
+    assert!(
+        selection.contains(&SelItem::Shape(shape_id)),
+        "expected anchor interaction to keep the shape selected; selection={selection:?}"
+    );
+    assert!(
+        selection.contains(&selected_anchor),
+        "expected mouse down to select the first anchor; selection={selection:?}"
+    );
 
     visual_cx.simulate_mouse_move(scenario.drag_end, MouseButton::Left, Modifiers::none());
     visual_cx.simulate_mouse_up(scenario.drag_end, MouseButton::Left, Modifiers::none());

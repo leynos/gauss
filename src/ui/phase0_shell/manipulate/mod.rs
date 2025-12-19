@@ -80,19 +80,10 @@ impl Phase0Shell {
 
         let previous_selection = self.selection.clone();
         let can_drag_shape_bbox = can_drag_shape_bbox(&previous_selection, hit);
-        let hit_selection = selection_for_hit(hit);
         let new_selection = if event.modifiers.shift {
-            toggle_selection_item(previous_selection.clone(), &hit_selection)
-        } else if hit_selection
-            .items
-            .first()
-            .is_some_and(|item| previous_selection.contains(item))
-        {
-            // Clicking an already-selected item should not collapse the current
-            // selection. This is critical for multi-select move gestures.
-            previous_selection.clone()
+            toggle_selection_for_hit(&previous_selection, hit)
         } else {
-            hit_selection
+            selection_for_non_shift_hit(&previous_selection, hit)
         };
         let did_change_selection = new_selection != previous_selection;
         if did_change_selection {
@@ -271,52 +262,153 @@ fn hit_under_cursor(doc: &Document, cursor_world: Vec2, tolerance_world: f32) ->
         .map_or(MouseDownHit::None, |id| MouseDownHit::Shape { id })
 }
 
-fn selection_for_hit(hit: MouseDownHit) -> Selection {
-    match hit {
-        MouseDownHit::Handle(handle_hit) => Selection {
-            items: vec![match handle_hit.kind {
-                HandleHitKind::In => SelItem::HandleIn {
-                    shape: handle_hit.shape_id,
-                    anchor: handle_hit.anchor_index,
-                },
-                HandleHitKind::Out => SelItem::HandleOut {
-                    shape: handle_hit.shape_id,
-                    anchor: handle_hit.anchor_index,
-                },
-            }],
-        },
-        MouseDownHit::Anchor(anchor_hit) => Selection {
-            items: vec![SelItem::Anchor {
-                shape: anchor_hit.shape_id,
-                anchor: anchor_hit.anchor_index,
-            }],
-        },
-        MouseDownHit::Segment(segment_hit) => Selection {
-            items: vec![SelItem::Segment {
-                shape: segment_hit.shape_id,
-                seg: segment_hit.seg_index,
-            }],
-        },
-        MouseDownHit::Shape { id } => Selection {
-            items: vec![SelItem::Shape(id)],
-        },
-        MouseDownHit::None => Selection::empty(),
+fn toggle_selection_for_hit(current: &Selection, hit: MouseDownHit) -> Selection {
+    let Some(item) = toggle_item_for_hit(hit) else {
+        return current.clone();
+    };
+
+    toggle_item_with_parent(current, item)
+}
+
+fn toggle_item_in_selection(mut selection: Selection, item: SelItem) -> Selection {
+    if let Some(pos) = selection
+        .items
+        .iter()
+        .position(|existing| existing == &item)
+    {
+        selection.items.remove(pos);
+    } else {
+        selection.items.push(item);
+    }
+
+    selection
+}
+
+fn toggle_item_with_parent(current: &Selection, item: SelItem) -> Selection {
+    match item {
+        SelItem::Shape(shape_id) => toggle_shape_with_children(current, shape_id),
+        _ => toggle_detail_item(current, item),
     }
 }
 
-fn toggle_selection_item(current: Selection, hit_selection: &Selection) -> Selection {
-    let Some(item) = hit_selection.items.first().cloned() else {
-        return current;
-    };
-
-    let mut items = current.items;
-    if let Some(pos) = items.iter().position(|existing| existing == &item) {
-        items.remove(pos);
+fn toggle_shape_with_children(current: &Selection, shape_id: ShapeId) -> Selection {
+    if current.contains(&SelItem::Shape(shape_id)) {
+        Selection {
+            items: current
+                .items
+                .iter()
+                .filter(|item| shape_id_of_item(item) != shape_id)
+                .cloned()
+                .collect(),
+        }
     } else {
-        items.push(item);
+        toggle_item_in_selection(current.clone(), SelItem::Shape(shape_id))
+    }
+}
+
+fn toggle_detail_item(current: &Selection, item: SelItem) -> Selection {
+    let mut selection = current.clone();
+
+    let shape_id = shape_id_of_item(&item);
+    if !selection.contains(&SelItem::Shape(shape_id)) {
+        selection.items.push(SelItem::Shape(shape_id));
     }
 
+    toggle_item_in_selection(selection, item)
+}
+
+fn selection_for_non_shift_hit(previous_selection: &Selection, hit: MouseDownHit) -> Selection {
+    match hit {
+        MouseDownHit::None => Selection::empty(),
+        MouseDownHit::Shape { id } => {
+            // Clicking an already-selected shape should not collapse the current
+            // selection. This is critical for multi-select move gestures.
+            if previous_selection.contains(&SelItem::Shape(id)) {
+                previous_selection.clone()
+            } else {
+                Selection {
+                    items: vec![SelItem::Shape(id)],
+                }
+            }
+        }
+        MouseDownHit::Handle(handle_hit) => selection_for_shape_detail_hit(
+            previous_selection,
+            handle_hit.shape_id,
+            SelItem::from_handle_hit(handle_hit),
+        ),
+        MouseDownHit::Anchor(anchor_hit) => selection_for_shape_detail_hit(
+            previous_selection,
+            anchor_hit.shape_id,
+            SelItem::Anchor {
+                shape: anchor_hit.shape_id,
+                anchor: anchor_hit.anchor_index,
+            },
+        ),
+        MouseDownHit::Segment(segment_hit) => selection_for_shape_detail_hit(
+            previous_selection,
+            segment_hit.shape_id,
+            SelItem::Segment {
+                shape: segment_hit.shape_id,
+                seg: segment_hit.seg_index,
+            },
+        ),
+    }
+}
+
+fn selection_for_shape_detail_hit(
+    previous_selection: &Selection,
+    shape_id: ShapeId,
+    detail: SelItem,
+) -> Selection {
+    let previous_shapes = shapes_only(previous_selection);
+
+    let mut items = if previous_shapes.contains(&SelItem::Shape(shape_id)) {
+        // Preserve existing multi-select shape set when editing within one of
+        // the selected shapes.
+        previous_shapes.items
+    } else {
+        vec![SelItem::Shape(shape_id)]
+    };
+
+    items.push(detail);
     Selection { items }
+}
+
+fn shapes_only(selection: &Selection) -> Selection {
+    let mut items = Vec::new();
+    for item in &selection.items {
+        let SelItem::Shape(id) = item else {
+            continue;
+        };
+        items.push(SelItem::Shape(*id));
+    }
+    Selection { items }
+}
+
+const fn toggle_item_for_hit(hit: MouseDownHit) -> Option<SelItem> {
+    match hit {
+        MouseDownHit::Handle(handle_hit) => Some(SelItem::from_handle_hit(handle_hit)),
+        MouseDownHit::Anchor(anchor_hit) => Some(SelItem::Anchor {
+            shape: anchor_hit.shape_id,
+            anchor: anchor_hit.anchor_index,
+        }),
+        MouseDownHit::Segment(segment_hit) => Some(SelItem::Segment {
+            shape: segment_hit.shape_id,
+            seg: segment_hit.seg_index,
+        }),
+        MouseDownHit::Shape { id } => Some(SelItem::Shape(id)),
+        MouseDownHit::None => None,
+    }
+}
+
+const fn shape_id_of_item(item: &SelItem) -> ShapeId {
+    match item {
+        SelItem::Shape(id) => *id,
+        SelItem::Anchor { shape, .. }
+        | SelItem::HandleIn { shape, .. }
+        | SelItem::HandleOut { shape, .. }
+        | SelItem::Segment { shape, .. } => *shape,
+    }
 }
 
 fn selection_shape_ids(selection: &Selection) -> Vec<ShapeId> {
@@ -334,6 +426,21 @@ fn selection_shape_ids(selection: &Selection) -> Vec<ShapeId> {
     }
 
     ids
+}
+
+impl SelItem {
+    const fn from_handle_hit(hit: HandleHit) -> Self {
+        match hit.kind {
+            HandleHitKind::In => Self::HandleIn {
+                shape: hit.shape_id,
+                anchor: hit.anchor_index,
+            },
+            HandleHitKind::Out => Self::HandleOut {
+                shape: hit.shape_id,
+                anchor: hit.anchor_index,
+            },
+        }
+    }
 }
 
 fn drag_state_for_hit(
