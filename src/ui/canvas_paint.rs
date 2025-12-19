@@ -8,9 +8,8 @@ use gpui::{
     App, Bounds, Path, PathBuilder, Pixels, Styled as _, Window, canvas, fill, point, px, rgba,
 };
 
-use crate::model::{
-    Document, Rgba as ModelRgba, SegmentKind, SelItem, Selection, Shape, Vec2, Viewport,
-};
+use crate::model::{Document, Rgba as ModelRgba, SegmentKind, SelItem, Selection, Shape, Viewport};
+use crate::ui::selection_overlays::{OverlayMarker, SelectionOverlays, compute_selection_overlays};
 
 #[derive(Clone, Debug)]
 struct CanvasState {
@@ -69,12 +68,16 @@ fn paint_selection_overlays(
     viewport: Viewport,
     window: &mut Window,
 ) {
+    let overlays = compute_selection_overlays(doc, selection, viewport);
+    paint_bbox_overlays(window, &overlays, DashPattern::new(6.0, 4.0));
+    paint_handle_overlays(window, &overlays);
+    paint_anchor_markers(window, &overlays);
+
+    // Draw selection outlines last so the selection colour stays visible.
     for shape_id in selected_shape_ids(selection) {
         let Some(shape) = doc.shapes.iter().find(|shape| shape.id == shape_id) else {
             continue;
         };
-
-        paint_shape_bbox(shape, viewport, window);
 
         let (_, stroke_path) = build_paths(shape, viewport);
         let Some(path) = stroke_path else {
@@ -168,22 +171,13 @@ fn build_path(shape: &Shape, viewport: Viewport, mut builder: PathBuilder) -> Op
     builder.build().ok()
 }
 
-fn paint_shape_bbox(shape: &Shape, viewport: Viewport, window: &mut Window) {
-    let Some((bbox_min, bbox_max)) = shape_screen_bbox(shape, viewport) else {
-        return;
-    };
-
-    let padding = 3.0;
-    let padded_min = Vec2::new(bbox_min.x - padding, bbox_min.y - padding);
-    let padded_max = Vec2::new(bbox_max.x + padding, bbox_max.y + padding);
-
+fn paint_bbox_overlays(window: &mut Window, overlays: &SelectionOverlays, pattern: DashPattern) {
     let mut builder = PathBuilder::stroke(px(1.0));
-    add_dashed_rect(
-        &mut builder,
-        padded_min,
-        padded_max,
-        DashPattern::new(6.0, 4.0),
-    );
+
+    for edge in &overlays.bbox_edges {
+        add_dashed_line(&mut builder, edge.start, edge.end, pattern);
+    }
+
     let Some(path) = builder.build().ok() else {
         return;
     };
@@ -191,25 +185,50 @@ fn paint_shape_bbox(shape: &Shape, viewport: Viewport, window: &mut Window) {
     window.paint_path(path, rgba(0xb0b0_b080));
 }
 
-fn shape_screen_bbox(shape: &Shape, viewport: Viewport) -> Option<(Vec2, Vec2)> {
-    let mut min_x = f32::INFINITY;
-    let mut min_y = f32::INFINITY;
-    let mut max_x = f32::NEG_INFINITY;
-    let mut max_y = f32::NEG_INFINITY;
+fn paint_handle_overlays(window: &mut Window, overlays: &SelectionOverlays) {
+    let mut builder = PathBuilder::stroke(px(1.0));
 
-    for anchor in &shape.path.anchors {
-        let screen = viewport.world_to_screen(anchor.pos);
-        min_x = min_x.min(screen.x);
-        min_y = min_y.min(screen.y);
-        max_x = max_x.max(screen.x);
-        max_y = max_y.max(screen.y);
+    for line in &overlays.handle_lines {
+        builder.move_to(point(px(line.start.x), px(line.start.y)));
+        builder.line_to(point(px(line.end.x), px(line.end.y)));
     }
 
-    if !min_x.is_finite() || !min_y.is_finite() || !max_x.is_finite() || !max_y.is_finite() {
-        return None;
-    }
+    let Some(path) = builder.build().ok() else {
+        return;
+    };
 
-    Some((Vec2::new(min_x, min_y), Vec2::new(max_x, max_y)))
+    window.paint_path(path, rgba(0x6b72_80b0));
+
+    for marker in &overlays.handle_markers {
+        paint_square_marker(window, marker, 0x6b72_80ff);
+    }
+}
+
+fn paint_anchor_markers(window: &mut Window, overlays: &SelectionOverlays) {
+    for marker in &overlays.anchor_markers {
+        paint_square_marker(window, marker, 0x1d4e_d8ff);
+    }
+}
+
+fn paint_square_marker(window: &mut Window, marker: &OverlayMarker, colour: u32) {
+    let half = marker.size / 2.0;
+    let min_x = marker.centre.x - half;
+    let min_y = marker.centre.y - half;
+    let max_x = marker.centre.x + half;
+    let max_y = marker.centre.y + half;
+
+    let mut builder = PathBuilder::fill();
+    builder.move_to(point(px(min_x), px(min_y)));
+    builder.line_to(point(px(max_x), px(min_y)));
+    builder.line_to(point(px(max_x), px(max_y)));
+    builder.line_to(point(px(min_x), px(max_y)));
+    builder.close();
+
+    let Some(path) = builder.build().ok() else {
+        return;
+    };
+
+    window.paint_path(path, rgba(colour));
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -224,19 +243,12 @@ impl DashPattern {
     }
 }
 
-fn add_dashed_rect(builder: &mut PathBuilder, min: Vec2, max: Vec2, pattern: DashPattern) {
-    let top_left = min;
-    let top_right = Vec2::new(max.x, min.y);
-    let bottom_right = max;
-    let bottom_left = Vec2::new(min.x, max.y);
-
-    add_dashed_line(builder, top_left, top_right, pattern);
-    add_dashed_line(builder, top_right, bottom_right, pattern);
-    add_dashed_line(builder, bottom_right, bottom_left, pattern);
-    add_dashed_line(builder, bottom_left, top_left, pattern);
-}
-
-fn add_dashed_line(builder: &mut PathBuilder, start: Vec2, end: Vec2, pattern: DashPattern) {
+fn add_dashed_line(
+    builder: &mut PathBuilder,
+    start: crate::model::Vec2,
+    end: crate::model::Vec2,
+    pattern: DashPattern,
+) {
     let length = start.distance(end);
     if length <= f32::EPSILON {
         return;
