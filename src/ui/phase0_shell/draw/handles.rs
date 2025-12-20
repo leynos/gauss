@@ -99,12 +99,9 @@ fn clear_closing_line_handles(path: &mut PathGeom) {
             only.handle_out = None;
         }
         many => {
-            let last_index = many.len().saturating_sub(1);
+            let last_index = many.len() - 1;
             let (head, tail) = many.split_at_mut(last_index);
-            let Some(first) = head.first_mut() else {
-                return;
-            };
-            let Some(last) = tail.first_mut() else {
+            let (Some(first), Some(last)) = (head.first_mut(), tail.first_mut()) else {
                 return;
             };
 
