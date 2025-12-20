@@ -8,6 +8,11 @@
 //! still allowing explicit drags when the user has a selected shape (or a
 //! multi-selection).
 
+#![allow(
+    clippy::expect_used,
+    reason = "integration tests use expect for clear failure messages"
+)]
+
 mod common;
 
 use common::{canvas_bounds, ensure_initial_draw, init_test_app};
@@ -20,7 +25,7 @@ fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) {
     doc.shapes.push(Shape {
         id,
         z: i32::try_from(doc.shapes.len())
-            .unwrap_or_else(|_| panic!("expected shape count to fit in i32 for z-ordering")),
+            .expect("expected shape count to fit in i32 for z-ordering"),
         style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
         path: gauss::model::PathGeom {
             anchors: vec![
@@ -37,10 +42,11 @@ fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) {
 }
 
 fn require_shape<'a>(doc: &'a Document, id: ShapeId, context: &str) -> &'a Shape {
+    let message = format!("expected shape {id:?} to exist: {context}");
     doc.shapes
         .iter()
         .find(|shape| shape.id == id)
-        .unwrap_or_else(|| panic!("expected shape {id:?} to exist: {context}"))
+        .expect(&message)
 }
 
 fn shape_bbox_centre(shape: &Shape) -> Vec2 {

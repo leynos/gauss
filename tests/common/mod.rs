@@ -3,6 +3,10 @@
     dead_code,
     reason = "integration tests each use a subset of the shared helper module"
 )]
+#![allow(
+    clippy::expect_used,
+    reason = "integration test helpers use expect for clear failure messages"
+)]
 // Each integration test pulls in this module but only uses a subset of the
 // helpers, so allow dead code to keep the shared test surface in one place.
 
@@ -35,7 +39,7 @@ pub fn demo_shape_id() -> ShapeId {
 pub fn canvas_bounds(visual_cx: &mut VisualTestContext) -> Bounds<Pixels> {
     visual_cx
         .debug_bounds("#phase0-canvas")
-        .unwrap_or_else(|| panic!("phase0 canvas should have debug bounds after drawing"))
+        .expect("phase0 canvas should have debug bounds after drawing")
 }
 
 pub fn canvas_points(visual_cx: &mut VisualTestContext) -> (Point<Pixels>, Point<Pixels>) {
@@ -128,7 +132,8 @@ pub fn find_draw_shape(doc: &Document) -> Option<&Shape> {
 }
 
 pub fn require_draw_shape<'a>(doc: &'a Document, context: &str) -> &'a Shape {
-    find_draw_shape(doc).unwrap_or_else(|| panic!("expected draw shape to exist: {context}"))
+    let message = format!("expected draw shape to exist: {context}");
+    find_draw_shape(doc).expect(&message)
 }
 
 pub fn require_last_canvas_click(
@@ -136,9 +141,10 @@ pub fn require_last_canvas_click(
     view: &gpui::Entity<Phase0Shell>,
     context: &str,
 ) -> Vec2 {
+    let message = format!("expected Phase0Shell to observe a canvas click: {context}");
     visual_cx
         .read(|app| view.read(app).last_canvas_click_screen())
-        .unwrap_or_else(|| panic!("expected Phase0Shell to observe a canvas click: {context}"))
+        .expect(&message)
 }
 
 pub fn require_canvas_click_changed(

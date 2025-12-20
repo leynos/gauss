@@ -3,6 +3,11 @@
 //! These tests validate the core undo/redo invariant for the model layer:
 //! applying an operation and then applying its inverse restores the document.
 
+#![allow(
+    clippy::expect_used,
+    reason = "unit tests use expect for clear failure messages"
+)]
+
 use crate::model::{
     Anchor, DocChange, DocOp, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId,
     Vec2,
@@ -67,7 +72,7 @@ fn remove_shape_inverts() {
         .shapes
         .first()
         .cloned()
-        .unwrap_or_else(|| panic!("Expected sample document to contain a shape"));
+        .expect("expected sample document to contain a shape");
     assert_round_trip(doc, &DocOp::RemoveShape { index: 0, shape });
 }
 
