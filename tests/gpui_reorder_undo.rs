@@ -8,7 +8,7 @@ mod common;
 
 use common::{
     canvas_bounds, click_canvas_and_wait, demo_shape_id, ensure_initial_draw, init_test_app,
-    read_document, simulate_escape, simulate_key,
+    read_document, read_selection, simulate_escape, simulate_key,
 };
 use gauss::model::{Document, SelItem, Selection, ShapeId};
 use gauss::ui::Phase0Shell;
@@ -19,10 +19,6 @@ use test_support::{TestSupportError, TestSupportResult};
 struct LinePoints {
     start: gpui::Point<gpui::Pixels>,
     end: gpui::Point<gpui::Pixels>,
-}
-
-fn read_selection(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> Selection {
-    visual_cx.read(|app| view.read(app).selection().clone())
 }
 
 fn selected_shape_id(selection: &Selection) -> Option<ShapeId> {

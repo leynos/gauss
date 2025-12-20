@@ -10,10 +10,10 @@
 // Each integration test pulls in this module but only uses a subset of the
 // helpers, so allow dead code to keep the shared test surface in one place.
 
-use gauss::model::{Document, Shape, ShapeId, Vec2};
+use gauss::model::{Document, SelItem, Selection, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{
-    Bounds, KeyDownEvent, Keystroke, Modifiers, MouseButton, Pixels, Point, TestAppContext,
+    Bounds, Entity, KeyDownEvent, Keystroke, Modifiers, MouseButton, Pixels, Point, TestAppContext,
     VisualTestContext, point, px,
 };
 use test_support::{TestSupportError, TestSupportResult};
@@ -127,6 +127,17 @@ pub fn canvas_drag_scenario(
 
 pub fn read_document(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> Document {
     visual_cx.read(|app| view.read(app).document().clone())
+}
+
+pub fn read_selection(visual_cx: &VisualTestContext, view: &Entity<Phase0Shell>) -> Selection {
+    visual_cx.read(|app| view.read(app).selection().clone())
+}
+
+pub fn read_selection_items(
+    visual_cx: &VisualTestContext,
+    view: &Entity<Phase0Shell>,
+) -> Vec<SelItem> {
+    read_selection(visual_cx, view).items
 }
 
 pub fn find_draw_shape(doc: &Document) -> Option<&Shape> {

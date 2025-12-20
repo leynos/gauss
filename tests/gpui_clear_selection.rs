@@ -9,10 +9,10 @@
 
 mod common;
 
-use common::{click_left_and_wait, ensure_initial_draw, init_test_app};
+use common::{click_left_and_wait, ensure_initial_draw, init_test_app, read_selection_items};
 use gauss::model::{PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
-use gpui::{TestAppContext, VisualTestContext, point, px};
+use gpui::{TestAppContext, point, px};
 use uuid::Uuid;
 
 fn demo_square(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
@@ -32,10 +32,6 @@ fn demo_square(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
             closing_segment: SegmentKind::Line,
         },
     }
-}
-
-fn read_selection(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> Vec<SelItem> {
-    visual_cx.read(|app| view.read(app).selection().items.clone())
 }
 
 #[gpui::test]
@@ -72,7 +68,7 @@ fn clicking_empty_space_clears_selection(cx: &mut TestAppContext) {
     });
     visual_cx.run_until_parked();
 
-    let selection_before = read_selection(visual_cx, &view);
+    let selection_before = read_selection_items(visual_cx, &view);
     assert_eq!(
         selection_before,
         vec![SelItem::Shape(shape_id)],
@@ -85,7 +81,7 @@ fn clicking_empty_space_clears_selection(cx: &mut TestAppContext) {
 
     click_left_and_wait(visual_cx, empty_point);
 
-    let selection_after = read_selection(visual_cx, &view);
+    let selection_after = read_selection_items(visual_cx, &view);
     assert!(
         selection_after.is_empty(),
         "expected clicking empty space to clear selection; got {selection_after:?}"
