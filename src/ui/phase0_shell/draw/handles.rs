@@ -145,6 +145,8 @@ fn update_closed_catmull_rom_handles(path: &mut PathGeom) {
 
     let p1 = last_anchor.pos;
     let p2 = first_anchor.pos;
+    // If the path ever degenerates to two anchors, fall back to endpoints so
+    // the closing control points stay stable.
     let p0 = path.anchors.iter().rev().nth(1).map_or(p1, |a| a.pos);
     let p3 = path.anchors.get(1).map_or(p2, |a| a.pos);
 
