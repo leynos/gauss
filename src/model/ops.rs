@@ -259,7 +259,11 @@ fn apply_move_shape(doc: &mut Document, shape: ShapeId, delta: Vec2) {
     }
 }
 
-const fn translate_anchor(anchor: &mut crate::model::Anchor, delta: Vec2) {
+#[expect(
+    clippy::missing_const_for_fn,
+    reason = "anchor mutation is runtime-only and clearer as a non-const helper"
+)]
+fn translate_anchor(anchor: &mut crate::model::Anchor, delta: Vec2) {
     anchor.pos = anchor.pos.add(delta);
 
     if let Some(handle) = anchor.handle_in {
