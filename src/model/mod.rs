@@ -8,12 +8,14 @@
 //! by alternative frontends.
 
 pub mod document;
+pub(crate) mod geometry;
 pub mod ops;
 pub mod path;
 pub mod selection;
 pub mod viewport;
 
 pub use document::Document;
+pub(crate) use geometry::{CubicSegment, cubic_point, shape_world_bounds};
 pub use ops::{DocChange, DocOp};
 pub use path::{Anchor, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2};
 pub use selection::{SelItem, Selection};
