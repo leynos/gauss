@@ -7,6 +7,11 @@
 //! - drag to move the selected shape, and
 //! - undo restores the prior position.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "manipulate mode uses floating-point tolerances and deltas"
+)]
+
 use gpui::{MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels};
 
 use crate::model::Vec2;

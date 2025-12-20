@@ -4,6 +4,11 @@
 //! absolute commands (`M`, `L`, `C`, `Z`) and basic stroke/fill styling. This
 //! keeps the output easy to inspect and easy to round-trip.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "SVG export needs floating-point conversions for geometry"
+)]
+
 use std::fmt::{Arguments, Write as _};
 
 use crate::model::{Document, Rgba, SegmentKind, format_hex_rgb};

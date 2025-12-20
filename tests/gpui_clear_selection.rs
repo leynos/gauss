@@ -2,6 +2,10 @@
 //!
 //! Phase 0 uses `on_mouse_down` for selection. This test verifies that clicking
 //! empty canvas space clears the current selection.
+#![expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 
 mod common;
 

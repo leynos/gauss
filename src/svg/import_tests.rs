@@ -3,6 +3,11 @@
 //! These tests validate that we can import a small SVG subset and that
 //! Gauss-exported SVG round-trips through the importer.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "tests perform floating-point comparisons for imported values"
+)]
+
 use crate::{
     model::{Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2},
     svg::{export::export_svg, import::import_svg},

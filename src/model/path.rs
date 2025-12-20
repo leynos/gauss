@@ -5,6 +5,11 @@
 //! geometry in that editor-friendly form, while remaining straightforward to
 //! compile into SVG path strings or a GPUI `PathBuilder` later.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "vector operations require floating-point arithmetic"
+)]
+
 use std::ops::{Add, Mul, Sub};
 
 use uuid::Uuid;

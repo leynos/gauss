@@ -70,7 +70,7 @@ unneeded_field_pattern              = "deny"
 use_self                            = "deny"
 
 # 6. numerical foot-guns
-float_arithmetic                    = "allow"
+float_arithmetic                    = "deny"
 cast_possible_truncation            = "deny"
 cast_possible_wrap                  = "deny"
 cast_precision_loss                 = "deny"

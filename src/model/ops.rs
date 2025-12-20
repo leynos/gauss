@@ -1,5 +1,10 @@
 //! Invertible document and selection operations for undo/redo.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "document operations use vector maths for transforms"
+)]
+
 use crate::model::{Document, PaintStyle, SegmentKind, Shape, ShapeId, Vec2};
 
 /// A single invertible document operation.

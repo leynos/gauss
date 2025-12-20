@@ -8,6 +8,11 @@
 //! - When in "Bezier (auto)" mode, we synthesise cubic handles using a
 //!   Catmull–Rom-to-cubic conversion.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "draw mode operates on floating-point geometry and handles"
+)]
+
 use gpui_component::history::HistoryItem;
 
 use crate::model::{

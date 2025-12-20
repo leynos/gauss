@@ -10,6 +10,11 @@
 //! computed in a lightweight way, but they now account for cubic Bézier
 //! extrema so the box better matches the visible curve.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "selection overlays use floating-point layout and padding"
+)]
+
 use crate::model::{Document, Selection, Shape, Vec2, Viewport, shape_world_bounds};
 use crate::ui::selection_utils::selected_shape_ids;
 

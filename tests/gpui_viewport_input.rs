@@ -2,6 +2,10 @@
 //!
 //! These tests exercise scroll wheel event dispatch against the Phase 0 view,
 //! asserting the viewport pan/zoom state updates as expected.
+#![expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 
 mod common;
 

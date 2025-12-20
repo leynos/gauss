@@ -1,4 +1,8 @@
 //! Shared helpers for Phase 0 GPUI integration tests.
+#![expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 #![allow(
     dead_code,
     reason = "integration tests each use a subset of the shared helper module"

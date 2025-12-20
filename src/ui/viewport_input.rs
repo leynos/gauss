@@ -8,6 +8,11 @@
 //! This module is intentionally small and testable. It exposes a single helper
 //! that mutates a `crate::model::Viewport` based on a `gpui::ScrollWheelEvent`.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "viewport input maps scroll deltas into floating-point zoom/pan"
+)]
+
 use gpui::{Pixels, ScrollWheelEvent};
 
 use crate::model::{Vec2, Viewport};

@@ -4,6 +4,11 @@
 //! testing and selection overlays. The focus is on clarity and predictable
 //! bounds rather than high-performance tessellation.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "floating-point maths is required for geometry calculations"
+)]
+
 use crate::model::{SegmentKind, Shape, Vec2};
 
 const CUBIC_EXTREMA_EPSILON: f32 = 1.0e-6;

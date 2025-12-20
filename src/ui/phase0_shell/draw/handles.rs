@@ -3,6 +3,11 @@
 //! These helpers keep the Catmull–Rom conversion logic isolated from the
 //! event handling so draw mode remains easier to follow.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "Catmull–Rom handle synthesis is inherently floating-point"
+)]
+
 use crate::model::{Anchor, PathGeom, Rgba, SegmentKind, Shape, Vec2};
 
 const CATMULL_ROM_TENSION: f32 = 1.0;

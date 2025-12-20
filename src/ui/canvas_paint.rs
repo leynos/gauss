@@ -4,6 +4,11 @@
 //! module bridges the pure `crate::model` document types to GPUI primitives
 //! such as `PathBuilder` and `Window::paint_path`.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "canvas painting relies on floating-point layout and geometry"
+)]
+
 use gpui::{
     App, Bounds, Path, PathBuilder, Pixels, Styled as _, Window, canvas, fill, point, px, rgba,
 };

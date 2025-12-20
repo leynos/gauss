@@ -1,5 +1,10 @@
 //! Viewport transforms (pan/zoom) for mapping world to screen coordinates.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "viewport transforms require floating-point maths"
+)]
+
 use crate::model::Vec2;
 
 /// Viewport transform for mapping between world space and screen space.

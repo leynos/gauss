@@ -10,6 +10,11 @@
 //! - attributes: `d`, `stroke`, `stroke-width`, `stroke-opacity`, `fill`,
 //!   `fill-opacity`
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "SVG import requires floating-point parsing and scaling"
+)]
+
 use std::{error::Error, fmt};
 
 use crate::model::{

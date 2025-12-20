@@ -5,6 +5,11 @@
 //! operation: we synthesise initial handles for new cubic segments and clear
 //! the handles when converting back to lines.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "segment toggling uses floating-point geometry for handles"
+)]
+
 use crate::model::{DocChange, DocOp, SegmentKind, SelItem, ShapeId, Vec2};
 
 use super::Phase0Shell;

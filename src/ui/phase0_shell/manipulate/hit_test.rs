@@ -7,6 +7,11 @@
 //! - then anchors,
 //! - then a loose shape bounding-box check.
 
+#![expect(
+    clippy::float_arithmetic,
+    reason = "hit-testing relies on floating-point distance maths"
+)]
+
 use crate::model::{
     CubicSegment, Document, SegmentKind, Shape, ShapeId, Vec2, cubic_point, shape_world_bounds,
 };

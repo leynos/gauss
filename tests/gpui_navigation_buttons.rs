@@ -2,6 +2,10 @@
 //!
 //! Phase 0 maps mouse "back/forward" navigation buttons to undo/redo. Holding
 //! Shift switches to the selection history stack.
+#![expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 
 mod common;
 
