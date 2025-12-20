@@ -108,10 +108,11 @@ fn draw_overlapping_lines(visual_cx: &mut VisualTestContext, points: LinePoints)
     click_canvas_and_wait(visual_cx, points.end);
     simulate_escape(visual_cx);
 
-    // First escape commits the open path; second returns to draw mode.
+    // First escape commits the open path so it becomes a selectable shape.
     simulate_escape(visual_cx);
     click_canvas_and_wait(visual_cx, points.start);
     click_canvas_and_wait(visual_cx, points.end);
+    // Second escape clears selection state before we click to reorder.
     simulate_escape(visual_cx);
 }
 
