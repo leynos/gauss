@@ -149,10 +149,16 @@ fn parse_opacity_to_alpha(value: &str) -> Result<u8, SvgImportError> {
     }
 
     let scaled = (opacity * 255.0).round();
-    let alpha_text = format!("{scaled:.0}");
-    alpha_text
-        .parse::<u8>()
-        .map_err(|_| SvgImportError::InvalidOpacity)
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "opacity is validated to 0..=1 so the scaled value fits in u8"
+    )]
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "opacity is validated as non-negative before scaling"
+    )]
+    let alpha = scaled as u8;
+    Ok(alpha)
 }
 
 fn extract_path_tags(svg: &str) -> Vec<String> {
