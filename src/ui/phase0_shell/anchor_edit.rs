@@ -89,37 +89,35 @@ impl Phase0Shell {
 }
 
 fn first_selected_segment(items: &[SelItem]) -> Option<(ShapeId, usize)> {
-    for item in items {
-        if let SelItem::Segment { shape, seg } = item {
-            return Some((*shape, *seg));
-        }
-    }
-    None
+    items.iter().find_map(|item| match item {
+        SelItem::Segment { shape, seg } => Some((*shape, *seg)),
+        _ => None,
+    })
 }
 
 fn group_selected_anchors(items: &[SelItem]) -> Vec<(ShapeId, Vec<usize>)> {
-    let mut grouped = Vec::<(ShapeId, Vec<usize>)>::new();
+    use std::collections::HashMap;
+
+    let mut grouped = HashMap::<ShapeId, Vec<usize>>::new();
     for item in items {
         let SelItem::Anchor { shape, anchor } = item else {
             continue;
         };
 
-        let Some(existing) = grouped.iter_mut().find(|(id, _)| id == shape) else {
-            grouped.push((*shape, vec![*anchor]));
-            continue;
-        };
-
-        if existing.1.contains(anchor) {
-            continue;
+        let anchors = grouped.entry(*shape).or_default();
+        if !anchors.contains(anchor) {
+            anchors.push(*anchor);
         }
-        existing.1.push(*anchor);
     }
 
-    for (_, indices) in &mut grouped {
+    let mut grouped_items: Vec<(ShapeId, Vec<usize>)> = grouped.into_iter().collect();
+    grouped_items.sort_by_key(|(shape_id, _)| *shape_id.as_uuid().as_bytes());
+
+    for (_, indices) in &mut grouped_items {
         indices.sort_unstable_by(|a, b| b.cmp(a));
     }
 
-    grouped
+    grouped_items
 }
 
 fn apply_anchor_deletion_for_shape(
