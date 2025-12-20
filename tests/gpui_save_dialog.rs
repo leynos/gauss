@@ -1,6 +1,6 @@
-//! GPUI headless integration tests for Gauss.
+//! GPUI headless integration tests for the Save action.
 //!
-//! These tests validate GPUI wiring (actions, platform prompts) without needing
+//! These tests validate Save prompt wiring and SVG file output without needing
 //! a real window manager.
 
 use std::path::Path;
