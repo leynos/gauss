@@ -7,7 +7,7 @@ mod common;
 
 use common::{
     anchor_to_canvas_point, canvas_bounds, draw_point, ensure_initial_draw, init_test_app,
-    require_draw_shape, simulate_escape,
+    require_draw_shape, shift_secondary, simulate_escape,
 };
 use gauss::model::{Document, PaintStyle, Rgba, Vec2};
 use gauss::ui::Phase0Shell;
@@ -25,11 +25,6 @@ fn click_button(
     visual_cx.simulate_mouse_down(position, button, modifiers);
     visual_cx.simulate_mouse_up(position, button, modifiers);
     visual_cx.run_until_parked();
-}
-
-const fn with_shift(mut modifiers: Modifiers) -> Modifiers {
-    modifiers.shift = true;
-    modifiers
 }
 
 fn canvas_points(
@@ -200,7 +195,7 @@ fn navigation_buttons_undo_redo_selection_history_with_shift(cx: &mut TestAppCon
         visual_cx,
         p1,
         MouseButton::Navigate(NavigationDirection::Back),
-        with_shift(Modifiers::none()),
+        shift_secondary(Modifiers::none()),
     );
 
     let selection_after_undo = visual_cx.read(|app| view.read(app).selection().clone());
@@ -217,7 +212,7 @@ fn navigation_buttons_undo_redo_selection_history_with_shift(cx: &mut TestAppCon
         visual_cx,
         p1,
         MouseButton::Navigate(NavigationDirection::Forward),
-        with_shift(Modifiers::none()),
+        shift_secondary(Modifiers::none()),
     );
 
     let selection_after_redo = visual_cx.read(|app| view.read(app).selection().clone());

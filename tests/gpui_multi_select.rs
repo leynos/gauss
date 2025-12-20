@@ -8,6 +8,7 @@ mod common;
 
 use common::{
     anchor_to_canvas_point, draw_point, ensure_initial_draw, init_test_app, require_draw_shape,
+    shift_secondary,
 };
 use gauss::model::{SelItem, Selection, ShapeId};
 use gauss::ui::Phase0Shell;
@@ -37,11 +38,6 @@ fn mouse_up_left(
 ) {
     visual_cx.simulate_mouse_up(position, MouseButton::Left, modifiers);
     visual_cx.run_until_parked();
-}
-
-const fn with_shift(mut modifiers: Modifiers) -> Modifiers {
-    modifiers.shift = true;
-    modifiers
 }
 
 fn enter_manipulate_mode(visual_cx: &mut VisualTestContext, view: &gpui::Entity<Phase0Shell>) {
@@ -137,7 +133,7 @@ fn shift_click_toggles_multi_select_without_dragging(cx: &mut TestAppContext) {
     );
     mouse_up_left(visual_cx, selection_setup.anchor0_point, Modifiers::none());
 
-    let shift_mods = with_shift(Modifiers::none());
+    let shift_mods = shift_secondary(Modifiers::none());
     mouse_down_left(visual_cx, selection_setup.anchor1_point, shift_mods);
     let selection_multi = visual_cx.read(|app| view.read(app).selection().clone());
     assert!(
