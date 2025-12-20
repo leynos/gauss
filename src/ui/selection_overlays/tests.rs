@@ -1,7 +1,10 @@
 //! Tests for selection overlay geometry helpers.
 
 use super::*;
-use crate::model::{Anchor, PaintStyle, PathGeom, Rgba, SegmentKind, Shape};
+use crate::model::{
+    Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, SelItem, Selection, Shape, ShapeId,
+    Vec2, Viewport,
+};
 use rstest::rstest;
 use uuid::Uuid;
 

@@ -15,23 +15,8 @@ pub(crate) fn format_hex_rgb(colour: Rgba) -> String {
     format!("#{:02x}{:02x}{:02x}", colour.r, colour.g, colour.b)
 }
 
-pub(crate) fn format_hex_rgba_optional_alpha(colour: Rgba) -> String {
-    if colour.a == 255 {
-        return format_hex_rgb(colour);
-    }
-
-    format!(
-        "#{:02x}{:02x}{:02x}{:02x}",
-        colour.r, colour.g, colour.b, colour.a
-    )
-}
-
 pub(crate) fn parse_hex_rgb(hex: &str) -> Result<Rgba, HexColourParseError> {
     parse_hex_colour(hex, false)
-}
-
-pub(crate) fn parse_hex_rgba(hex: &str) -> Result<Rgba, HexColourParseError> {
-    parse_hex_colour(hex, true)
 }
 
 fn parse_hex_colour(hex: &str, allow_alpha: bool) -> Result<Rgba, HexColourParseError> {

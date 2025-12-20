@@ -5,15 +5,9 @@
 //! shapes via `DocOp::SetStyle` so they participate in document undo/redo.
 
 use gpui::{AppContext as _, Context, Hsla, ParentElement as _, Styled as _, Window, div};
-use gpui_component::{
-    Colorize as _,
-    color_picker::{ColorPicker, ColorPickerEvent, ColorPickerState},
-};
+use gpui_component::color_picker::{ColorPicker, ColorPickerEvent, ColorPickerState};
 
-use crate::model::{
-    DocChange, DocOp, PaintStyle, Rgba, SelItem, ShapeId, format_hex_rgba_optional_alpha,
-    parse_hex_rgba,
-};
+use crate::model::{DocChange, DocOp, PaintStyle, Rgba, SelItem, ShapeId};
 
 use super::Phase0Shell;
 
@@ -23,8 +17,8 @@ impl Phase0Shell {
             return;
         }
 
-        let stroke_default = self.current_style.stroke.and_then(model_rgba_to_hsla);
-        let fill_default = self.current_style.fill.and_then(model_rgba_to_hsla);
+        let stroke_default = self.current_style.stroke.map(model_rgba_to_hsla);
+        let fill_default = self.current_style.fill.map(model_rgba_to_hsla);
 
         let stroke_state = cx.new(|picker_cx| {
             let mut state = ColorPickerState::new(window, picker_cx);
@@ -94,12 +88,12 @@ impl Phase0Shell {
     }
 
     fn apply_stroke_colour_inner(&mut self, colour: Option<Hsla>) -> bool {
-        let stroke = colour.and_then(hsla_to_model_rgba);
+        let stroke = colour.map(hsla_to_model_rgba);
         self.apply_style_update(StyleUpdate::Stroke(stroke))
     }
 
     fn apply_fill_colour_inner(&mut self, colour: Option<Hsla>) -> bool {
-        let fill = colour.and_then(hsla_to_model_rgba);
+        let fill = colour.map(hsla_to_model_rgba);
         self.apply_style_update(StyleUpdate::Fill(fill))
     }
 
@@ -175,9 +169,15 @@ impl Phase0Shell {
     }
 
     fn selected_shape_ids_for_style(&self) -> Vec<ShapeId> {
+        use std::collections::HashSet;
+
+        let mut seen = HashSet::new();
         let mut ids = Vec::new();
         for item in &self.selection.items {
-            push_unique_shape_id(&mut ids, shape_id_for_selection_item(item));
+            let shape_id = shape_id_for_selection_item(item);
+            if seen.insert(shape_id) {
+                ids.push(shape_id);
+            }
         }
         ids
     }
@@ -212,21 +212,21 @@ const fn shape_id_for_selection_item(item: &SelItem) -> ShapeId {
     }
 }
 
-fn push_unique_shape_id(ids: &mut Vec<ShapeId>, shape_id: ShapeId) {
-    if ids.contains(&shape_id) {
-        return;
-    }
-    ids.push(shape_id);
+fn model_rgba_to_hsla(color: Rgba) -> Hsla {
+    let packed = (u32::from(color.r) << 24)
+        | (u32::from(color.g) << 16)
+        | (u32::from(color.b) << 8)
+        | u32::from(color.a);
+    let rgba = gpui::rgba(packed);
+    Hsla::from(rgba)
 }
 
-fn model_rgba_to_hsla(color: Rgba) -> Option<Hsla> {
-    let hex = format_hex_rgba_optional_alpha(color);
-    let Ok(hsla) = Hsla::parse_hex(&hex) else {
-        return None;
-    };
-    Some(hsla)
-}
-
-fn hsla_to_model_rgba(color: Hsla) -> Option<Rgba> {
-    parse_hex_rgba(&color.to_hex()).ok()
+fn hsla_to_model_rgba(color: Hsla) -> Rgba {
+    let rgba = gpui::Rgba::from(color);
+    let packed: u32 = rgba.into();
+    let r = ((packed >> 24) & 0xff) as u8;
+    let g = ((packed >> 16) & 0xff) as u8;
+    let b = ((packed >> 8) & 0xff) as u8;
+    let a = (packed & 0xff) as u8;
+    Rgba::new(r, g, b, a)
 }

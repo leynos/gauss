@@ -8,6 +8,7 @@ mod canvas_paint;
 pub mod phase0_shell;
 mod phase0_support;
 mod selection_overlays;
+mod selection_utils;
 mod viewport_input;
 
 pub use phase0_shell::{OpenSvg, Phase0Shell, SaveSvg};

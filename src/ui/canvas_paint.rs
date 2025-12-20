@@ -8,8 +8,9 @@ use gpui::{
     App, Bounds, Path, PathBuilder, Pixels, Styled as _, Window, canvas, fill, point, px, rgba,
 };
 
-use crate::model::{Document, Rgba as ModelRgba, SegmentKind, SelItem, Selection, Shape, Viewport};
+use crate::model::{Document, Rgba as ModelRgba, SegmentKind, Selection, Shape, Viewport};
 use crate::ui::selection_overlays::{OverlayMarker, SelectionOverlays, compute_selection_overlays};
+use crate::ui::selection_utils::selected_shape_ids;
 
 #[derive(Clone, Debug)]
 struct CanvasState {
@@ -86,13 +87,6 @@ fn paint_selection_overlays(
 
         window.paint_path(path, rgba(0x1d4e_d8ff));
     }
-}
-
-fn selected_shape_ids(selection: &Selection) -> impl Iterator<Item = crate::model::ShapeId> + '_ {
-    selection.items.iter().filter_map(|item| match item {
-        SelItem::Shape(id) => Some(*id),
-        _ => None,
-    })
 }
 
 fn build_paths(shape: &Shape, viewport: Viewport) -> (Option<Path<Pixels>>, Option<Path<Pixels>>) {

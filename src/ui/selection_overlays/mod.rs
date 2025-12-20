@@ -10,9 +10,8 @@
 //! computed in a lightweight way, but they now account for cubic Bézier
 //! extrema so the box better matches the visible curve.
 
-use crate::model::{
-    Document, SelItem, Selection, Shape, ShapeId, Vec2, Viewport, shape_world_bounds,
-};
+use crate::model::{Document, Selection, Shape, Vec2, Viewport, shape_world_bounds};
+use crate::ui::selection_utils::selected_shape_ids;
 
 /// A line segment in screen-space pixels.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -65,13 +64,6 @@ pub(super) fn compute_selection_overlays(
     }
 
     overlays
-}
-
-fn selected_shape_ids(selection: &Selection) -> impl Iterator<Item = ShapeId> + '_ {
-    selection.items.iter().filter_map(|item| match item {
-        SelItem::Shape(id) => Some(*id),
-        _ => None,
-    })
 }
 
 fn add_shape_overlays(overlays: &mut SelectionOverlays, shape: &Shape, viewport: Viewport) {

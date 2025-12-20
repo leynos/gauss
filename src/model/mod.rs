@@ -15,9 +15,7 @@ pub mod path;
 pub mod selection;
 pub mod viewport;
 
-pub(crate) use colour::{
-    format_hex_rgb, format_hex_rgba_optional_alpha, parse_hex_rgb, parse_hex_rgba,
-};
+pub(crate) use colour::{format_hex_rgb, parse_hex_rgb};
 pub use document::Document;
 pub(crate) use geometry::{CubicSegment, cubic_point, shape_world_bounds};
 pub use ops::{DocChange, DocOp};
