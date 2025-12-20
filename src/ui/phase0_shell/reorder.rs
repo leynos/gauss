@@ -47,6 +47,9 @@ impl Phase0Shell {
 }
 
 fn selected_shape_ids(items: &[SelItem]) -> Vec<ShapeId> {
+    use std::collections::HashSet;
+
+    let mut seen = HashSet::new();
     let mut shapes = Vec::new();
     for item in items {
         let shape = match item {
@@ -57,10 +60,9 @@ fn selected_shape_ids(items: &[SelItem]) -> Vec<ShapeId> {
             | SelItem::Segment { shape, .. } => *shape,
         };
 
-        if shapes.contains(&shape) {
-            continue;
+        if seen.insert(shape) {
+            shapes.push(shape);
         }
-        shapes.push(shape);
     }
     shapes
 }
@@ -70,66 +72,69 @@ fn reorder_ops(
     selected: &[ShapeId],
     direction: Direction,
 ) -> Vec<DocOp> {
+    use std::collections::HashSet;
+
     let mut working = doc.clone();
     let mut ops = Vec::new();
+    let selected_set: HashSet<ShapeId> = selected.iter().copied().collect();
+
+    if working.shapes.len() < 2 {
+        return ops;
+    }
+
+    let mut ctx = ReorderContext {
+        working: &mut working,
+        selected: &selected_set,
+        ops: &mut ops,
+    };
 
     match direction {
         Direction::Raise => {
-            let Some(last_movable) = working.shapes.len().checked_sub(1) else {
+            let Some(last_movable) = ctx.working.shapes.len().checked_sub(1) else {
                 return ops;
             };
             for index in (0..last_movable).rev() {
-                let Some(shape) = working.shapes.get(index) else {
-                    continue;
-                };
-                if !selected.contains(&shape.id) {
-                    continue;
-                }
-
-                let next_index = index + 1;
-                let Some(next_shape) = working.shapes.get(next_index) else {
-                    continue;
-                };
-                if selected.contains(&next_shape.id) {
-                    continue;
-                }
-
-                let op = DocOp::Reorder {
-                    shape: shape.id,
-                    from: index,
-                    to: next_index,
-                };
-                op.apply(&mut working);
-                ops.push(op);
+                ctx.try_reorder(index, index + 1);
             }
         }
         Direction::Lower => {
-            for index in 1..working.shapes.len() {
-                let Some(shape) = working.shapes.get(index) else {
-                    continue;
-                };
-                if !selected.contains(&shape.id) {
-                    continue;
-                }
-
-                let prev_index = index - 1;
-                let Some(prev_shape) = working.shapes.get(prev_index) else {
-                    continue;
-                };
-                if selected.contains(&prev_shape.id) {
-                    continue;
-                }
-
-                let op = DocOp::Reorder {
-                    shape: shape.id,
-                    from: index,
-                    to: prev_index,
-                };
-                op.apply(&mut working);
-                ops.push(op);
+            for index in 1..ctx.working.shapes.len() {
+                ctx.try_reorder(index, index - 1);
             }
         }
     }
 
     ops
+}
+
+struct ReorderContext<'a> {
+    working: &'a mut crate::model::Document,
+    selected: &'a std::collections::HashSet<ShapeId>,
+    ops: &'a mut Vec<DocOp>,
+}
+
+impl ReorderContext<'_> {
+    fn try_reorder(&mut self, from: usize, to: usize) {
+        let Some(shape) = self.working.shapes.get(from) else {
+            return;
+        };
+        if !self.selected.contains(&shape.id) {
+            return;
+        }
+
+        let Some(other_shape) = self.working.shapes.get(to) else {
+            return;
+        };
+        if self.selected.contains(&other_shape.id) {
+            return;
+        }
+
+        let op = DocOp::Reorder {
+            shape: shape.id,
+            from,
+            to,
+        };
+        op.apply(self.working);
+        self.ops.push(op);
+    }
 }
