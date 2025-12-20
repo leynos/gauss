@@ -4,7 +4,7 @@
 //! Phase 0 therefore routes “Open…” through `prompt_for_new_path` when the
 //! `Phase0Shell` is constructed via `Phase0Shell::new_for_tests`.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 mod common;
 
@@ -13,11 +13,20 @@ use gauss::ui::{OpenSvg, Phase0Shell};
 use gpui::TestAppContext;
 use uuid::Uuid;
 
+struct TempFileGuard(PathBuf);
+
+impl Drop for TempFileGuard {
+    fn drop(&mut self) {
+        let _cleanup = std::fs::remove_file(&self.0);
+    }
+}
+
 #[gpui::test]
 fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
     init_test_app(cx);
 
     let svg_path = std::env::temp_dir().join(format!("gauss-test-open-{}.svg", Uuid::new_v4()));
+    let _cleanup = TempFileGuard(svg_path.clone());
     let svg = r##"
         <svg xmlns="http://www.w3.org/2000/svg">
           <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
