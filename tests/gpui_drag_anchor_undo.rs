@@ -39,6 +39,7 @@ fn drag_first_anchor(
     scenario: CanvasDragScenario,
 ) -> TestSupportResult<()> {
     visual_cx.simulate_mouse_down(scenario.first, MouseButton::Left, Modifiers::none());
+    visual_cx.run_until_parked();
 
     let selected_anchor = SelItem::Anchor {
         shape: shape_id,
