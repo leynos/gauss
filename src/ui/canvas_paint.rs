@@ -253,6 +253,17 @@ fn add_dashed_line(
         return;
     }
 
+    let step = pattern.dash + pattern.gap;
+    if step <= f32::EPSILON {
+        return;
+    }
+
+    if length / step > 2048.0 {
+        builder.move_to(point(px(start.x), px(start.y)));
+        builder.line_to(point(px(end.x), px(end.y)));
+        return;
+    }
+
     let direction = end.sub(start).mul(1.0 / length);
 
     let mut t = 0.0;
@@ -261,7 +272,7 @@ fn add_dashed_line(
         let segment_end = start.add(direction.mul((t + pattern.dash).min(length)));
         builder.move_to(point(px(segment_start.x), px(segment_start.y)));
         builder.line_to(point(px(segment_end.x), px(segment_end.y)));
-        t += pattern.dash + pattern.gap;
+        t += step;
     }
 }
 
