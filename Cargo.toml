@@ -17,6 +17,9 @@ rstest = "0.26.1"
 rstest-bdd = "0.2.0"
 rstest-bdd-macros = "0.2.0"
 
+[features]
+test-support = []
+
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 

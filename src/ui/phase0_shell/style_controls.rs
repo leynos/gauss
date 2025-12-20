@@ -93,33 +93,43 @@ impl Phase0Shell {
         row
     }
 
+    fn apply_stroke_colour_inner(&mut self, colour: Option<Hsla>) -> bool {
+        let stroke = colour.and_then(hsla_to_model_rgba);
+        self.apply_style_update(StyleUpdate::Stroke(stroke))
+    }
+
+    fn apply_fill_colour_inner(&mut self, colour: Option<Hsla>) -> bool {
+        let fill = colour.and_then(hsla_to_model_rgba);
+        self.apply_style_update(StyleUpdate::Fill(fill))
+    }
+
     /// Apply a new stroke colour to the current selection.
     ///
     /// This is a small public API so headless `#[gpui::test]` integration tests
     /// can drive style changes without relying on brittle palette UI
     /// hit-testing.
+    #[cfg(any(test, feature = "test-support"))]
     pub fn apply_stroke_colour(&mut self, colour: Option<Hsla>) -> bool {
-        let stroke = colour.and_then(hsla_to_model_rgba);
-        self.apply_style_update(StyleUpdate::Stroke(stroke))
+        self.apply_stroke_colour_inner(colour)
     }
 
     /// Apply a new fill colour to the current selection.
     ///
     /// See [`Self::apply_stroke_colour`] for why this method is public.
+    #[cfg(any(test, feature = "test-support"))]
     pub fn apply_fill_colour(&mut self, colour: Option<Hsla>) -> bool {
-        let fill = colour.and_then(hsla_to_model_rgba);
-        self.apply_style_update(StyleUpdate::Fill(fill))
+        self.apply_fill_colour_inner(colour)
     }
 
     fn handle_stroke_picker_event(&mut self, event: &ColorPickerEvent) -> bool {
         match event {
-            ColorPickerEvent::Change(value) => self.apply_stroke_colour(*value),
+            ColorPickerEvent::Change(value) => self.apply_stroke_colour_inner(*value),
         }
     }
 
     fn handle_fill_picker_event(&mut self, event: &ColorPickerEvent) -> bool {
         match event {
-            ColorPickerEvent::Change(value) => self.apply_fill_colour(*value),
+            ColorPickerEvent::Change(value) => self.apply_fill_colour_inner(*value),
         }
     }
 
