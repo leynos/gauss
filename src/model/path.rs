@@ -87,6 +87,12 @@ impl Vec2 {
         Self::new(self.x * scalar, self.y * scalar)
     }
 
+    /// Return the squared magnitude of the vector.
+    #[must_use]
+    pub const fn magnitude_squared(self) -> f32 {
+        (self.x * self.x) + (self.y * self.y)
+    }
+
     /// Return the squared Euclidean distance to `other`.
     #[must_use]
     pub const fn distance_squared(self, other: Self) -> f32 {

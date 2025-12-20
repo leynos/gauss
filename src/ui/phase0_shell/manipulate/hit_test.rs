@@ -242,7 +242,7 @@ fn segment_distance_squared(
 fn point_segment_distance_squared(p: Vec2, a: Vec2, b: Vec2) -> f32 {
     let ab = b.sub(a);
     let ap = p.sub(a);
-    let denom = ab.distance_squared(Vec2::ZERO);
+    let denom = ab.magnitude_squared();
     if denom <= f32::EPSILON {
         return p.distance_squared(a);
     }
