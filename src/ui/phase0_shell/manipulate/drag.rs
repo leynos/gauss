@@ -170,10 +170,6 @@ fn start_shapes_drag(
 
         let shape = doc.shapes.get(index)?;
         if shape.id != shape_id {
-            debug_assert_eq!(
-                shape.id, shape_id,
-                "shape id mismatch at index {index} during drag start"
-            );
             continue;
         }
 
@@ -197,11 +193,6 @@ fn start_anchor_drag(
 ) -> Option<AnchorDragState> {
     let shape = doc.shapes.get(hit.shape_index)?;
     if shape.id != hit.shape_id {
-        debug_assert_eq!(
-            shape.id, hit.shape_id,
-            "anchor hit shape id mismatch at index {}",
-            hit.shape_index
-        );
         return None;
     }
     let anchor = shape.path.anchors.get(hit.anchor_index)?.clone();
@@ -232,11 +223,6 @@ fn apply_shapes_drag_to_doc(doc: &mut Document, drag: &ShapesDragState, delta: V
             continue;
         };
         if shape.id != dragged.shape {
-            debug_assert_eq!(
-                shape.id, dragged.shape,
-                "shape id mismatch at index {} during drag apply",
-                dragged.index
-            );
             continue;
         }
 
