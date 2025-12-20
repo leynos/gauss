@@ -25,6 +25,14 @@ fn find_shape<'a>(doc: &'a Document, id: ShapeId, context: &str) -> TestSupportR
         .ok_or_else(|| TestSupportError::missing("shape", message))
 }
 
+#[expect(
+    clippy::float_arithmetic,
+    reason = "tests compute midpoint values to position drag gestures"
+)]
+fn midpoint(a: f32, b: f32) -> f32 {
+    (a + b) * 0.5
+}
+
 fn shape_bbox_centre(shape: &Shape) -> Vec2 {
     assert!(
         !shape.path.anchors.is_empty(),
@@ -40,7 +48,7 @@ fn shape_bbox_centre(shape: &Shape) -> Vec2 {
         max_x = max_x.max(anchor.pos.x);
         max_y = max_y.max(anchor.pos.y);
     }
-    Vec2::new(f32::midpoint(min_x, max_x), f32::midpoint(min_y, max_y))
+    Vec2::new(midpoint(min_x, max_x), midpoint(min_y, max_y))
 }
 
 const fn viewport_to_screen_point(
