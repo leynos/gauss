@@ -185,9 +185,15 @@ fn extract_path_tags(svg: &str) -> Vec<String> {
 fn attribute_value(tag: &str, name: &str) -> Option<String> {
     for quote in ['"', '\''] {
         let needle = format!("{name}={quote}");
-        let start = tag.find(&needle)?;
-        let after = tag.get((start + needle.len())..)?;
-        let end = after.find(quote)?;
+        let Some(start) = tag.find(&needle) else {
+            continue;
+        };
+        let Some(after) = tag.get((start + needle.len())..) else {
+            continue;
+        };
+        let Some(end) = after.find(quote) else {
+            continue;
+        };
         if let Some(value) = after.get(..end) {
             return Some(value.to_owned());
         }
