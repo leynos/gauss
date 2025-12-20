@@ -6,6 +6,8 @@
 
 use crate::model::{SegmentKind, Shape, Vec2};
 
+const CUBIC_EXTREMA_EPSILON: f32 = 1.0e-6;
+
 /// Axis-aligned bounds in world space.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Bounds {
@@ -190,10 +192,9 @@ fn add_cubic_extrema_ts(axis: CubicAxis, out: &mut Vec<f32>) {
     let coeff_a = -axis.start + (3.0 * axis.control_a) - (3.0 * axis.control_b) + axis.end;
     let coeff_b = 2.0 * (axis.start - (2.0 * axis.control_a) + axis.control_b);
     let coeff_c = axis.control_a - axis.start;
-    let epsilon = 1.0e-6;
 
-    if coeff_a.abs() < epsilon {
-        if coeff_b.abs() < epsilon {
+    if coeff_a.abs() < CUBIC_EXTREMA_EPSILON {
+        if coeff_b.abs() < CUBIC_EXTREMA_EPSILON {
             return;
         }
         let t = -coeff_c / coeff_b;
