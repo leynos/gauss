@@ -50,14 +50,9 @@ fn assert_round_trip(mut doc: Document, op: &DocOp) {
 
 #[rstest]
 fn insert_shape_inverts() {
-    let mut doc = sample_doc();
+    let doc = sample_doc();
     let shape = sample_shape(shape_id(3), 2);
-    let op = DocOp::InsertShape { index: 1, shape };
-
-    let before = doc.clone();
-    op.apply(&mut doc);
-    op.invert().apply(&mut doc);
-    assert_eq!(doc, before);
+    assert_round_trip(doc, &DocOp::InsertShape { index: 1, shape });
 }
 
 #[rstest]
