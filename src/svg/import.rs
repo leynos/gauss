@@ -141,54 +141,18 @@ fn parse_opacity_to_alpha(value: &str) -> Result<u8, SvgImportError> {
         return Err(SvgImportError::InvalidOpacity);
     }
 
-    let (int_part_str, frac_part_str) = match s.split_once('.') {
-        Some((int_part, frac_part)) => (int_part, Some(frac_part)),
-        None => (s, None),
-    };
-
-    let int_part_value = match int_part_str {
-        "" | "0" => 0u8,
-        "1" => 1u8,
-        _ => return Err(SvgImportError::InvalidOpacity),
-    };
-
-    let frac_part = frac_part_str.unwrap_or("");
-    if int_part_value == 1 && !frac_part.is_empty() {
+    let opacity = s
+        .parse::<f32>()
+        .map_err(|_| SvgImportError::InvalidOpacity)?;
+    if !(0.0..=1.0).contains(&opacity) {
         return Err(SvgImportError::InvalidOpacity);
     }
 
-    if int_part_value == 1 {
-        return Ok(255);
-    }
-
-    if frac_part.is_empty() {
-        return Ok(0);
-    }
-
-    let mut denom: u32 = 1;
-    let mut numer: u32 = 0;
-    for ch in frac_part.chars() {
-        let digit = ch.to_digit(10).ok_or(SvgImportError::InvalidOpacity)?;
-        denom = denom
-            .checked_mul(10)
-            .ok_or(SvgImportError::InvalidOpacity)?;
-        numer = numer
-            .checked_mul(10)
-            .and_then(|v| v.checked_add(digit))
-            .ok_or(SvgImportError::InvalidOpacity)?;
-    }
-
-    let scaled = numer
-        .checked_mul(255)
-        .ok_or(SvgImportError::InvalidOpacity)?;
-    let denom_half = denom.checked_div(2).ok_or(SvgImportError::InvalidOpacity)?;
-    let rounded = scaled
-        .checked_add(denom_half)
-        .ok_or(SvgImportError::InvalidOpacity)?
-        .checked_div(denom)
-        .ok_or(SvgImportError::InvalidOpacity)?;
-
-    u8::try_from(rounded).map_err(|_| SvgImportError::InvalidOpacity)
+    let scaled = (opacity * 255.0).round();
+    let alpha_text = format!("{scaled:.0}");
+    alpha_text
+        .parse::<u8>()
+        .map_err(|_| SvgImportError::InvalidOpacity)
 }
 
 fn extract_path_tags(svg: &str) -> Vec<String> {
@@ -213,11 +177,17 @@ fn extract_path_tags(svg: &str) -> Vec<String> {
 }
 
 fn attribute_value(tag: &str, name: &str) -> Option<String> {
-    let needle = format!(r#"{name}=""#);
-    let start = tag.find(&needle)?;
-    let after = tag.get((start + needle.len())..)?;
-    let end = after.find('"')?;
-    after.get(..end).map(ToOwned::to_owned)
+    for quote in ['"', '\''] {
+        let needle = format!("{name}={quote}");
+        let start = tag.find(&needle)?;
+        let after = tag.get((start + needle.len())..)?;
+        let end = after.find(quote)?;
+        if let Some(value) = after.get(..end) {
+            return Some(value.to_owned());
+        }
+    }
+
+    None
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -271,7 +241,7 @@ fn parse_path_data(d: &str) -> Result<PathGeom, SvgImportError> {
             }
             'Z' => {
                 geom.closed = true;
-                geom.closing_segment = SegmentKind::Line;
+                geom.closing_segment = geom.segments.last().copied().unwrap_or(SegmentKind::Line);
             }
             other => return Err(SvgImportError::UnsupportedPathCommand(other)),
         }
@@ -318,6 +288,22 @@ fn tokenize_path_data(d: &str) -> Result<Vec<PathToken>, SvgImportError> {
 
         if ch.is_ascii_whitespace() || ch == ',' {
             flush_number(&mut number_buf, &mut tokens)?;
+            continue;
+        }
+
+        if ch == '-' || ch == '+' {
+            if number_buf.is_empty() {
+                number_buf.push(ch);
+                continue;
+            }
+
+            let is_exponent = number_buf.ends_with('e') || number_buf.ends_with('E');
+            if is_exponent {
+                number_buf.push(ch);
+            } else {
+                flush_number(&mut number_buf, &mut tokens)?;
+                number_buf.push(ch);
+            }
             continue;
         }
 

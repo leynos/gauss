@@ -127,7 +127,8 @@ fn format_paint(paint: Option<Rgba>) -> (String, f32) {
 }
 
 fn write_optional_opacity(out: &mut String, attr: &str, paint: &str, opacity: f32) {
-    if paint == "none" || opacity >= 1.0 {
+    const OPACITY_EPSILON: f32 = 1.0e-6;
+    if paint == "none" || opacity >= 1.0 - OPACITY_EPSILON {
         return;
     }
 
@@ -136,7 +137,8 @@ fn write_optional_opacity(out: &mut String, attr: &str, paint: &str, opacity: f3
 
 fn write_fmt(out: &mut String, args: Arguments<'_>) {
     if out.write_fmt(args).is_err() {
-        // `String` implements `fmt::Write` infallibly, so ignore this case.
+        // `String` implements `fmt::Write` without failing, so this is
+        // unreachable in practice.
     }
 }
 

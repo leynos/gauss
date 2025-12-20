@@ -122,6 +122,7 @@ async fn apply_save_path(
         return;
     };
 
+    // TODO: derive canvas size from document bounds or viewport state.
     let svg = export_svg(&doc, 100.0, 100.0);
     let save_result = super::super::phase0_support::write_svg_to_path(&path, &svg);
     let error = save_result.err();
