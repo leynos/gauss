@@ -32,8 +32,8 @@ pub fn export_svg(doc: &Document, canvas_width: f32, canvas_height: f32) -> Stri
 }
 
 #[must_use]
-fn opacity_from_alpha(alpha: u8) -> f32 {
-    f32::from(alpha) / 255.0
+const fn opacity_from_alpha(alpha: u8) -> f32 {
+    (alpha as f32) / 255.0
 }
 
 fn write_svg_header(out: &mut String, canvas_width: f32, canvas_height: f32) {
