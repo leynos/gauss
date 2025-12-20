@@ -6,7 +6,7 @@
 
 mod common;
 
-use common::{canvas_bounds, ensure_initial_draw, init_test_app, simulate_key};
+use common::{canvas_bounds, ensure_initial_draw, init_test_app, simulate_escape};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, TestAppContext, VisualTestContext, point, px};
 
@@ -46,7 +46,7 @@ fn escape_in_manipulate_returns_to_draw(cx: &mut TestAppContext) {
     );
 
     // Act: press escape to return to draw mode, and click again.
-    simulate_key(visual_cx, "escape", Modifiers::none());
+    simulate_escape(visual_cx);
     visual_cx.simulate_mouse_move(click_point, None, Modifiers::none());
     visual_cx.simulate_click(click_point, Modifiers::none());
     visual_cx.run_until_parked();

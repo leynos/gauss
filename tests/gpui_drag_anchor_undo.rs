@@ -3,61 +3,16 @@
 mod common;
 
 use common::{
-    assert_vec2_close, ensure_initial_draw, init_test_app, read_document, require_draw_shape,
-    simulate_document_undo, simulate_key,
+    CanvasDragScenario, assert_vec2_close, canvas_drag_scenario, draw_point, ensure_initial_draw,
+    init_test_app, read_document, require_draw_shape, simulate_document_undo, simulate_escape,
 };
-use gauss::model::{Anchor, SelItem, Shape, ShapeId, Vec2};
+use gauss::model::{Anchor, SelItem, Shape, ShapeId};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
-
-#[derive(Clone, Copy, Debug)]
-struct CanvasDragScenario {
-    first: gpui::Point<gpui::Pixels>,
-    second: gpui::Point<gpui::Pixels>,
-    drag_end: gpui::Point<gpui::Pixels>,
-    delta: Vec2,
-}
-
-fn canvas_drag_scenario(visual_cx: &mut VisualTestContext) -> CanvasDragScenario {
-    let Some(bounds) = visual_cx.debug_bounds("#phase0-canvas") else {
-        panic!("phase0 canvas should have debug bounds after drawing");
-    };
-
-    let width = f32::from(bounds.size.width);
-    let height = f32::from(bounds.size.height);
-
-    let first = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));
-    let second = point(
-        bounds.origin.x + px((width - 2.0).max(2.0)),
-        bounds.origin.y + px((height - 2.0).max(2.0)),
-    );
-
-    let max_horizontal_delta = (width - 4.0).max(1.0);
-    let max_vertical_delta = (height - 4.0).max(1.0);
-
-    let horizontal_delta = max_horizontal_delta.min(24.0);
-    let vertical_delta = max_vertical_delta.min(12.0);
-
-    let drag_end = point(first.x + px(horizontal_delta), first.y + px(vertical_delta));
-
-    CanvasDragScenario {
-        first,
-        second,
-        drag_end,
-        delta: Vec2::new(horizontal_delta, vertical_delta),
-    }
-}
-
-fn simulate_escape(visual_cx: &mut VisualTestContext) {
-    simulate_key(visual_cx, "escape", Modifiers::none());
-}
+use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext};
 
 fn draw_two_point_line_path(visual_cx: &mut VisualTestContext, scenario: CanvasDragScenario) {
-    visual_cx.simulate_mouse_move(scenario.first, None, Modifiers::none());
-    visual_cx.simulate_click(scenario.first, Modifiers::none());
-    visual_cx.simulate_mouse_move(scenario.second, None, Modifiers::none());
-    visual_cx.simulate_click(scenario.second, Modifiers::none());
-    visual_cx.run_until_parked();
+    draw_point(visual_cx, scenario.first);
+    draw_point(visual_cx, scenario.second);
 }
 
 fn first_two_anchors(shape: &Shape) -> (Anchor, Anchor) {
@@ -104,7 +59,7 @@ fn dragging_anchor_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let scenario = canvas_drag_scenario(visual_cx);
+    let scenario = canvas_drag_scenario(visual_cx, 24.0, 12.0);
     draw_two_point_line_path(visual_cx, scenario);
 
     let doc_before = read_document(visual_cx, &view);

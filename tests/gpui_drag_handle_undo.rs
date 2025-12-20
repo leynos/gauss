@@ -3,58 +3,20 @@
 mod common;
 
 use common::{
-    anchor_to_canvas_point, assert_vec2_close, ensure_initial_draw, init_test_app, read_document,
-    require_draw_shape, simulate_document_undo, simulate_key,
+    CanvasDragScenario, anchor_to_canvas_point, assert_vec2_close, canvas_drag_scenario,
+    ensure_initial_draw, init_test_app, read_document, require_draw_shape, simulate_document_undo,
+    simulate_escape,
 };
 use gauss::model::{SelItem, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
-
-#[derive(Clone, Copy, Debug)]
-struct CanvasScenario {
-    bounds: gpui::Bounds<gpui::Pixels>,
-    first: gpui::Point<gpui::Pixels>,
-    second: gpui::Point<gpui::Pixels>,
-    delta: Vec2,
-}
-
-fn canvas_scenario(visual_cx: &mut VisualTestContext) -> CanvasScenario {
-    let Some(bounds) = visual_cx.debug_bounds("#phase0-canvas") else {
-        panic!("phase0 canvas should have debug bounds after drawing");
-    };
-
-    let width = f32::from(bounds.size.width);
-    let height = f32::from(bounds.size.height);
-
-    let first = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));
-    let second = point(
-        bounds.origin.x + px((width - 2.0).max(2.0)),
-        bounds.origin.y + px((height - 2.0).max(2.0)),
-    );
-
-    let max_horizontal_delta = (width - 4.0).max(1.0);
-    let max_vertical_delta = (height - 4.0).max(1.0);
-    let horizontal_delta = max_horizontal_delta.min(18.0);
-    let vertical_delta = max_vertical_delta.min(10.0);
-
-    CanvasScenario {
-        bounds,
-        first,
-        second,
-        delta: Vec2::new(horizontal_delta, vertical_delta),
-    }
-}
-
-fn simulate_escape(visual_cx: &mut VisualTestContext) {
-    simulate_key(visual_cx, "escape", Modifiers::none());
-}
 
 fn toggle_bezier_auto(visual_cx: &mut VisualTestContext) {
     visual_cx.simulate_keystrokes("tab");
     visual_cx.run_until_parked();
 }
 
-fn draw_two_point_bezier_path(visual_cx: &mut VisualTestContext, scenario: CanvasScenario) {
+fn draw_two_point_bezier_path(visual_cx: &mut VisualTestContext, scenario: CanvasDragScenario) {
     toggle_bezier_auto(visual_cx);
     visual_cx.simulate_mouse_move(scenario.first, None, Modifiers::none());
     visual_cx.simulate_click(scenario.first, Modifiers::none());
@@ -97,7 +59,7 @@ fn dragging_handle_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let scenario = canvas_scenario(visual_cx);
+    let scenario = canvas_drag_scenario(visual_cx, 18.0, 10.0);
     draw_two_point_bezier_path(visual_cx, scenario);
 
     let doc_before = read_document(visual_cx, &view);

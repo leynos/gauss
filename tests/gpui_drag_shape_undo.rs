@@ -3,50 +3,12 @@
 mod common;
 
 use common::{
-    ensure_initial_draw, init_test_app, read_document, require_draw_shape, simulate_document_undo,
-    simulate_key,
+    canvas_drag_scenario, draw_point, ensure_initial_draw, init_test_app, read_document,
+    require_draw_shape, simulate_document_undo, simulate_escape,
 };
 use gauss::model::{SelItem, Shape, Vec2};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
-
-#[derive(Clone, Copy, Debug)]
-struct CanvasDragScenario {
-    first: gpui::Point<gpui::Pixels>,
-    second: gpui::Point<gpui::Pixels>,
-    delta: Vec2,
-}
-
-fn canvas_drag_scenario(visual_cx: &mut VisualTestContext) -> CanvasDragScenario {
-    let Some(bounds) = visual_cx.debug_bounds("#phase0-canvas") else {
-        panic!("phase0 canvas should have debug bounds after drawing");
-    };
-
-    let width = f32::from(bounds.size.width);
-    let height = f32::from(bounds.size.height);
-
-    let first = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));
-    let second = point(
-        bounds.origin.x + px((width - 2.0).max(2.0)),
-        bounds.origin.y + px((height - 2.0).max(2.0)),
-    );
-
-    let max_horizontal_delta = (width - 4.0).max(1.0);
-    let max_vertical_delta = (height - 4.0).max(1.0);
-
-    let horizontal_delta = max_horizontal_delta.min(20.0);
-    let vertical_delta = max_vertical_delta.min(10.0);
-
-    CanvasDragScenario {
-        first,
-        second,
-        delta: Vec2::new(horizontal_delta, vertical_delta),
-    }
-}
-
-fn simulate_escape(visual_cx: &mut VisualTestContext) {
-    simulate_key(visual_cx, "escape", Modifiers::none());
-}
+use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 
 fn assert_shape_translated_by_delta(shape: &Shape, original: &Shape, delta: Vec2, context: &str) {
     assert_eq!(
@@ -78,12 +40,9 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
 
     // Create a new shape in draw mode at deterministic in-canvas coordinates so
     // the hit-testing and drag logic can operate on it.
-    let scenario = canvas_drag_scenario(visual_cx);
-    visual_cx.simulate_mouse_move(scenario.first, None, Modifiers::none());
-    visual_cx.simulate_click(scenario.first, Modifiers::none());
-    visual_cx.simulate_mouse_move(scenario.second, None, Modifiers::none());
-    visual_cx.simulate_click(scenario.second, Modifiers::none());
-    visual_cx.run_until_parked();
+    let scenario = canvas_drag_scenario(visual_cx, 20.0, 10.0);
+    draw_point(visual_cx, scenario.first);
+    draw_point(visual_cx, scenario.second);
 
     let doc_before = read_document(visual_cx, &view);
     let original_shape = require_draw_shape(&doc_before, "after drawing two points").clone();

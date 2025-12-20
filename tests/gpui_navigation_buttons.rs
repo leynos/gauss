@@ -7,7 +7,7 @@ mod common;
 
 use common::{
     anchor_to_canvas_point, canvas_bounds, draw_point, ensure_initial_draw, init_test_app,
-    require_draw_shape, simulate_key,
+    require_draw_shape, simulate_escape,
 };
 use gauss::model::{Document, PaintStyle, Rgba, Vec2};
 use gauss::ui::Phase0Shell;
@@ -90,7 +90,7 @@ fn draw_two_points_and_select_anchor0(
     let draw_shape_before = require_draw_shape(&doc_before, "after drawing");
     let initial_style = draw_shape_before.style.clone();
 
-    simulate_key(visual_cx, "escape", Modifiers::none());
+    simulate_escape(visual_cx);
 
     let anchor0 = draw_shape_before
         .path

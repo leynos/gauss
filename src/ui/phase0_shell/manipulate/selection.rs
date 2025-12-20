@@ -32,14 +32,10 @@ pub(super) fn can_drag_shape_bbox(previous: &Selection, hit: MouseDownHit) -> bo
 }
 
 pub(super) fn selected_shape_ids_for_drag(selection: &Selection) -> Vec<ShapeId> {
-    let mut seen = HashSet::new();
-    let mut ids = Vec::new();
-    for shape_id in selected_shape_ids(selection) {
-        if seen.insert(shape_id) {
-            ids.push(shape_id);
-        }
-    }
-    ids
+    selected_shape_ids(selection)
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 fn toggle_selection_for_hit(current: &Selection, hit: MouseDownHit) -> Selection {

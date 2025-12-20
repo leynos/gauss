@@ -7,12 +7,12 @@
 mod common;
 
 use common::{
-    click_canvas_and_wait, ensure_initial_draw, init_test_app, read_document, require_draw_shape,
-    simulate_key,
+    canvas_bounds, click_canvas_and_wait, ensure_initial_draw, init_test_app, read_document,
+    require_draw_shape, simulate_escape,
 };
 use gauss::model::Vec2;
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, TestAppContext, point, px};
+use gpui::{TestAppContext, point, px};
 
 #[gpui::test]
 fn escape_commits_open_path_and_enters_manipulate(cx: &mut TestAppContext) {
@@ -21,9 +21,7 @@ fn escape_commits_open_path_and_enters_manipulate(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let Some(bounds) = visual_cx.debug_bounds("#phase0-canvas") else {
-        panic!("phase0 canvas should have debug bounds");
-    };
+    let bounds = canvas_bounds(visual_cx);
 
     let p1 = point(bounds.origin.x + px(10.0), bounds.origin.y + px(10.0));
     let p2 = point(bounds.origin.x + px(80.0), bounds.origin.y + px(30.0));
@@ -41,7 +39,7 @@ fn escape_commits_open_path_and_enters_manipulate(cx: &mut TestAppContext) {
     let anchor_count_before = shape_before_escape.path.anchors.len();
     let seg_count_before = shape_before_escape.path.segments.len();
 
-    simulate_key(visual_cx, "escape", Modifiers::none());
+    simulate_escape(visual_cx);
 
     // Clicking after escape should not add points (we should be in manipulate
     // mode), and the open path should still exist in the document.

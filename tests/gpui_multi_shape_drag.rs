@@ -66,9 +66,8 @@ fn assert_shape_translated_by_delta(shape: &Shape, original: &Shape, delta: Vec2
 fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) {
     doc.shapes.push(Shape {
         id,
-        z: i32::try_from(doc.shapes.len()).unwrap_or_else(|_| {
-            panic!("expected shape count to fit in i32 for z-ordering")
-        }),
+        z: i32::try_from(doc.shapes.len())
+            .unwrap_or_else(|_| panic!("expected shape count to fit in i32 for z-ordering")),
         style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
         path: gauss::model::PathGeom {
             anchors: vec![

@@ -23,9 +23,7 @@ fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
           <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
         </svg>
     "##;
-    std::fs::write(&svg_path, svg).unwrap_or_else(|_| {
-        panic!("Test SVG file should be writable")
-    });
+    std::fs::write(&svg_path, svg).unwrap_or_else(|_| panic!("Test SVG file should be writable"));
 
     assert!(
         !cx.did_prompt_for_new_path(),

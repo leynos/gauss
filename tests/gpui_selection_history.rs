@@ -4,7 +4,7 @@ mod common;
 
 use common::{
     anchor_to_canvas_point, click_left_and_wait, draw_point, ensure_initial_draw, init_test_app,
-    require_draw_shape, shift_secondary, simulate_key,
+    require_draw_shape, shift_secondary, simulate_escape, simulate_key,
 };
 use gauss::model::Vec2;
 use gauss::ui::Phase0Shell;
@@ -35,7 +35,7 @@ fn selection_undo_uses_shift_modified_stack(cx: &mut TestAppContext) {
     let draw_shape = require_draw_shape(&doc_before, "after drawing");
     let shapes_len_before = doc_before.shapes.len();
 
-    simulate_key(visual_cx, "escape", Modifiers::none());
+    simulate_escape(visual_cx);
 
     let anchor0 = draw_shape
         .path

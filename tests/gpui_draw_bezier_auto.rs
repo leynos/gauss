@@ -12,7 +12,8 @@
 mod common;
 
 use common::{
-    assert_vec2_close, draw_point, ensure_initial_draw, init_test_app, require_draw_shape,
+    assert_vec2_close, canvas_bounds, draw_point, ensure_initial_draw, init_test_app,
+    require_draw_shape,
 };
 use gauss::model::{SegmentKind, Shape, Vec2};
 use gauss::ui::Phase0Shell;
@@ -73,9 +74,7 @@ fn tab_switches_to_bezier_auto_and_synthesises_handles(cx: &mut TestAppContext) 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let Some(bounds) = visual_cx.debug_bounds("#phase0-canvas") else {
-        panic!("phase0 canvas should have debug bounds");
-    };
+    let bounds = canvas_bounds(visual_cx);
 
     let p1 = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));
     let p2 = point(

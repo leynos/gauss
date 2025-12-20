@@ -4,7 +4,8 @@ mod common;
 
 use common::{
     anchor_to_canvas_point, assert_vec2_close, canvas_bounds, click_canvas_and_wait,
-    ensure_initial_draw, init_test_app, read_document, require_draw_shape, simulate_key,
+    ensure_initial_draw, init_test_app, read_document, require_draw_shape, simulate_escape,
+    simulate_key,
 };
 use gauss::model::{SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
@@ -96,7 +97,7 @@ fn insert_and_delete_anchor_are_doc_undoable(cx: &mut TestAppContext) {
     let start_pos = require_anchor_pos(&shape_before, 0, "after drawing");
     let end_pos = require_anchor_pos(&shape_before, 1, "after drawing");
 
-    simulate_key(visual_cx, "escape", Modifiers::none());
+    simulate_escape(visual_cx);
 
     let midpoint = Vec2::new(
         f32::midpoint(start_pos.x, end_pos.x),

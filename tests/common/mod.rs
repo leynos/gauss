@@ -75,6 +75,49 @@ pub fn draw_point(visual_cx: &mut VisualTestContext, position: Point<Pixels>) {
     click_canvas_and_wait(visual_cx, position);
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct CanvasDragScenario {
+    pub bounds: Bounds<Pixels>,
+    pub first: Point<Pixels>,
+    pub second: Point<Pixels>,
+    pub drag_end: Point<Pixels>,
+    pub delta: Vec2,
+}
+
+pub fn canvas_drag_scenario(
+    visual_cx: &mut VisualTestContext,
+    horizontal_limit: f32,
+    vertical_limit: f32,
+) -> CanvasDragScenario {
+    let bounds = canvas_bounds(visual_cx);
+
+    let width = f32::from(bounds.size.width);
+    let height = f32::from(bounds.size.height);
+
+    let first = point(
+        bounds.origin.x + px(CANVAS_PADDING_PX),
+        bounds.origin.y + px(CANVAS_PADDING_PX),
+    );
+    let second = point(
+        bounds.origin.x + px((width - CANVAS_PADDING_PX).max(CANVAS_PADDING_PX)),
+        bounds.origin.y + px((height - CANVAS_PADDING_PX).max(CANVAS_PADDING_PX)),
+    );
+
+    let max_horizontal_delta = (width - (2.0 * CANVAS_PADDING_PX)).max(1.0);
+    let max_vertical_delta = (height - (2.0 * CANVAS_PADDING_PX)).max(1.0);
+    let horizontal_delta = max_horizontal_delta.min(horizontal_limit);
+    let vertical_delta = max_vertical_delta.min(vertical_limit);
+    let drag_end = point(first.x + px(horizontal_delta), first.y + px(vertical_delta));
+
+    CanvasDragScenario {
+        bounds,
+        first,
+        second,
+        drag_end,
+        delta: Vec2::new(horizontal_delta, vertical_delta),
+    }
+}
+
 pub fn read_document(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> Document {
     visual_cx.read(|app| view.read(app).document().clone())
 }
@@ -122,6 +165,10 @@ pub fn simulate_key(visual_cx: &mut VisualTestContext, key: &str, modifiers: Mod
         is_held: false,
     });
     visual_cx.run_until_parked();
+}
+
+pub fn simulate_escape(visual_cx: &mut VisualTestContext) {
+    simulate_key(visual_cx, "escape", Modifiers::none());
 }
 
 pub const fn shift_secondary(modifiers: Modifiers) -> Modifiers {

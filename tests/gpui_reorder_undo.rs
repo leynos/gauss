@@ -7,8 +7,8 @@
 mod common;
 
 use common::{
-    click_canvas_and_wait, demo_shape_id, ensure_initial_draw, init_test_app, read_document,
-    simulate_key,
+    canvas_bounds, click_canvas_and_wait, demo_shape_id, ensure_initial_draw, init_test_app,
+    read_document, simulate_escape, simulate_key,
 };
 use gauss::model::{Document, SelItem, Selection, ShapeId};
 use gauss::ui::Phase0Shell;
@@ -91,12 +91,12 @@ fn line_points(bounds: &gpui::Bounds<gpui::Pixels>) -> LinePoints {
 fn draw_overlapping_lines(visual_cx: &mut VisualTestContext, points: LinePoints) {
     click_canvas_and_wait(visual_cx, points.start);
     click_canvas_and_wait(visual_cx, points.end);
-    simulate_key(visual_cx, "escape", Modifiers::none());
+    simulate_escape(visual_cx);
 
-    simulate_key(visual_cx, "escape", Modifiers::none());
+    simulate_escape(visual_cx);
     click_canvas_and_wait(visual_cx, points.start);
     click_canvas_and_wait(visual_cx, points.end);
-    simulate_key(visual_cx, "escape", Modifiers::none());
+    simulate_escape(visual_cx);
 }
 
 #[gpui::test]
@@ -106,9 +106,7 @@ fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let Some(bounds) = visual_cx.debug_bounds("#phase0-canvas") else {
-        panic!("phase0 canvas should have debug bounds");
-    };
+    let bounds = canvas_bounds(visual_cx);
     let points = line_points(&bounds);
 
     draw_overlapping_lines(visual_cx, points);
