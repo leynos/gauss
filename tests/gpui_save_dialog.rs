@@ -3,7 +3,7 @@
 //! These tests validate Save prompt wiring and SVG file output without needing
 //! a real window manager.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 mod common;
 
@@ -11,6 +11,14 @@ use common::{ensure_initial_draw, init_test_app};
 use gauss::ui::{Phase0Shell, SaveSvg};
 use gpui::TestAppContext;
 use uuid::Uuid;
+
+struct TempFileGuard(PathBuf);
+
+impl Drop for TempFileGuard {
+    fn drop(&mut self) {
+        let _cleanup = std::fs::remove_file(&self.0);
+    }
+}
 
 #[gpui::test]
 fn save_action_prompts_for_path(cx: &mut TestAppContext) {
@@ -36,6 +44,7 @@ fn save_action_prompts_for_path(cx: &mut TestAppContext) {
     );
 
     let expected = std::env::temp_dir().join(format!("gauss-test-save-{}.svg", Uuid::new_v4()));
+    let _cleanup = TempFileGuard(expected.clone());
     cx.simulate_new_path_selection(|_directory: &Path| Some(expected.clone()));
     cx.run_until_parked();
 
