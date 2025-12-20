@@ -13,6 +13,7 @@ use common::{
 use gauss::model::{Document, SelItem, Selection, ShapeId};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
+use test_support::{TestSupportError, TestSupportResult};
 
 #[derive(Clone, Copy, Debug)]
 struct LinePoints {
@@ -35,7 +36,7 @@ fn selected_shape_id(selection: &Selection) -> Option<ShapeId> {
     })
 }
 
-fn require_drawn_shape_ids(doc: &Document) -> (ShapeId, ShapeId) {
+fn require_drawn_shape_ids(doc: &Document) -> TestSupportResult<(ShapeId, ShapeId)> {
     let demo_id = demo_shape_id();
     let mut ids = doc
         .shapes
@@ -43,40 +44,58 @@ fn require_drawn_shape_ids(doc: &Document) -> (ShapeId, ShapeId) {
         .filter(|shape| shape.id != demo_id)
         .map(|shape| shape.id);
 
-    let Some(first) = ids.next() else {
-        panic!("expected a first drawn shape");
-    };
-    let Some(second) = ids.next() else {
-        panic!("expected a second drawn shape");
-    };
-    assert!(ids.next().is_none(), "expected exactly two drawn shapes");
-    (first, second)
+    let first = ids
+        .next()
+        .ok_or_else(|| TestSupportError::missing("drawn shape 1", "after drawing"))?;
+    let second = ids
+        .next()
+        .ok_or_else(|| TestSupportError::missing("drawn shape 2", "after drawing"))?;
+    if ids.next().is_some() {
+        return Err(TestSupportError::expectation(
+            "expected exactly two drawn shapes",
+        ));
+    }
+    Ok((first, second))
 }
 
-fn require_shape_index(doc: &Document, shape_id: ShapeId, context: &str) -> usize {
-    let Some(index) = doc.find_index(shape_id) else {
-        panic!("expected {shape_id:?} to exist: {context}");
-    };
-    index
+fn require_shape_index(
+    doc: &Document,
+    shape_id: ShapeId,
+    context: &str,
+) -> TestSupportResult<usize> {
+    doc.find_index(shape_id)
+        .ok_or_else(|| TestSupportError::missing("shape index", format!("{shape_id:?}: {context}")))
 }
 
-fn ordered_pair(doc: &Document, a: ShapeId, b: ShapeId, context: &str) -> (ShapeId, ShapeId) {
-    let a_index = require_shape_index(doc, a, context);
-    let b_index = require_shape_index(doc, b, context);
-    if a_index <= b_index { (a, b) } else { (b, a) }
+fn ordered_pair(
+    doc: &Document,
+    a: ShapeId,
+    b: ShapeId,
+    context: &str,
+) -> TestSupportResult<(ShapeId, ShapeId)> {
+    let a_index = require_shape_index(doc, a, context)?;
+    let b_index = require_shape_index(doc, b, context)?;
+    Ok(if a_index <= b_index { (a, b) } else { (b, a) })
 }
 
-fn assert_relative_order(doc: &Document, lower: ShapeId, higher: ShapeId, context: &str) {
-    let Some(lower_index) = doc.find_index(lower) else {
-        panic!("expected {lower:?} to exist: {context}");
-    };
-    let Some(higher_index) = doc.find_index(higher) else {
-        panic!("expected {higher:?} to exist: {context}");
-    };
-    assert!(
-        lower_index < higher_index,
-        "expected {lower:?} below {higher:?}: {context}"
-    );
+fn assert_relative_order(
+    doc: &Document,
+    lower: ShapeId,
+    higher: ShapeId,
+    context: &str,
+) -> TestSupportResult<()> {
+    let lower_index = doc
+        .find_index(lower)
+        .ok_or_else(|| TestSupportError::missing("shape index", format!("{lower:?}: {context}")))?;
+    let higher_index = doc.find_index(higher).ok_or_else(|| {
+        TestSupportError::missing("shape index", format!("{higher:?}: {context}"))
+    })?;
+    if lower_index >= higher_index {
+        return Err(TestSupportError::expectation(format!(
+            "expected {lower:?} below {higher:?}: {context}"
+        )));
+    }
+    Ok(())
 }
 
 fn line_points(bounds: &gpui::Bounds<gpui::Pixels>) -> LinePoints {
@@ -106,23 +125,24 @@ fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let bounds = canvas_bounds(visual_cx);
+    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
     let points = line_points(&bounds);
 
     draw_overlapping_lines(visual_cx, points);
 
     let doc = read_document(visual_cx, &view);
-    let (a, b) = require_drawn_shape_ids(&doc);
-    let (lower, higher) = ordered_pair(&doc, a, b, "after drawing");
-    assert_relative_order(&doc, lower, higher, "after drawing");
+    let (a, b) = require_drawn_shape_ids(&doc).expect("expected two drawn shapes");
+    let (lower, higher) =
+        ordered_pair(&doc, a, b, "after drawing").expect("expected to order shapes by index");
+    assert_relative_order(&doc, lower, higher, "after drawing")
+        .expect("expected lower shape to be below higher shape");
 
     visual_cx.simulate_mouse_down(points.start, MouseButton::Left, Modifiers::none());
     visual_cx.simulate_mouse_up(points.start, MouseButton::Left, Modifiers::none());
     visual_cx.run_until_parked();
     let selection = read_selection(visual_cx, &view);
-    let Some(selected) = selected_shape_id(&selection) else {
-        panic!("expected selection to be non-empty after selecting");
-    };
+    let selected =
+        selected_shape_id(&selection).expect("expected selection to be non-empty after selecting");
     assert_eq!(
         selected, higher,
         "expected overlapping click to select the top-most shape"
@@ -135,17 +155,21 @@ fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
         higher,
         lower,
         "after lowering top-most shape",
-    );
+    )
+    .expect("expected lower/upper order after lowering");
 
     simulate_key(visual_cx, "]", Modifiers::secondary_key());
     let doc_after_raise = read_document(visual_cx, &view);
-    assert_relative_order(&doc_after_raise, lower, higher, "after raising back to top");
+    assert_relative_order(&doc_after_raise, lower, higher, "after raising back to top")
+        .expect("expected order after raising back to top");
 
     simulate_key(visual_cx, "z", Modifiers::secondary_key());
     let doc_after_undo_raise = read_document(visual_cx, &view);
-    assert_relative_order(&doc_after_undo_raise, higher, lower, "after undoing raise");
+    assert_relative_order(&doc_after_undo_raise, higher, lower, "after undoing raise")
+        .expect("expected order after undoing raise");
 
     simulate_key(visual_cx, "z", Modifiers::secondary_key());
     let doc_after_undo_lower = read_document(visual_cx, &view);
-    assert_relative_order(&doc_after_undo_lower, lower, higher, "after undoing lower");
+    assert_relative_order(&doc_after_undo_lower, lower, higher, "after undoing lower")
+        .expect("expected order after undoing lower");
 }

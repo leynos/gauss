@@ -10,6 +10,7 @@ use gauss::model::{
 use gauss::svg::export::export_svg;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
+use test_support::{TestSupportError, TestSupportResult};
 
 #[derive(Default)]
 struct DocWorld {
@@ -47,11 +48,13 @@ fn insert_shape(world: &mut DocWorld) {
 }
 
 #[when("I undo the insertion")]
-fn undo_insertion(world: &mut DocWorld) {
-    let Some(change) = world.last_change.clone() else {
-        panic!("Expected a previous change to undo");
-    };
+fn undo_insertion(world: &mut DocWorld) -> TestSupportResult<()> {
+    let change = world
+        .last_change
+        .clone()
+        .ok_or_else(|| TestSupportError::missing("doc change", "undo insertion"))?;
     change.apply_inverse(&mut world.doc);
+    Ok(())
 }
 
 #[when("I add a closed triangle path")]
@@ -81,20 +84,29 @@ fn export_document_as_svg(world: &mut DocWorld) {
 }
 
 #[then("the document contains {count:usize} shapes")]
-fn document_contains_shapes(world: &DocWorld, count: usize) {
-    assert_eq!(world.doc.shapes.len(), count);
+fn document_contains_shapes(world: &DocWorld, count: usize) -> TestSupportResult<()> {
+    if world.doc.shapes.len() != count {
+        return Err(TestSupportError::expectation(format!(
+            "expected {count} shapes, got {}",
+            world.doc.shapes.len()
+        )));
+    }
+    Ok(())
 }
 
 #[then("the exported SVG contains {snippet}")]
-fn exported_svg_contains(world: &DocWorld, snippet: String) {
-    let Some(svg) = &world.last_svg else {
-        panic!("Expected SVG output to have been exported");
-    };
+fn exported_svg_contains(world: &DocWorld, snippet: String) -> TestSupportResult<()> {
+    let svg = world
+        .last_svg
+        .as_ref()
+        .ok_or_else(|| TestSupportError::missing("exported svg", "after export"))?;
 
-    assert!(
-        svg.contains(&snippet),
-        "Expected exported SVG to contain snippet.\nSnippet: {snippet}\nSVG: {svg}"
-    );
+    if !svg.contains(&snippet) {
+        return Err(TestSupportError::expectation(format!(
+            "Expected exported SVG to contain snippet.\nSnippet: {snippet}\nSVG: {svg}"
+        )));
+    }
+    Ok(())
 }
 
 #[scenario(

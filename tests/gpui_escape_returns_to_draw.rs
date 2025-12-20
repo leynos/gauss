@@ -21,7 +21,7 @@ fn escape_in_manipulate_returns_to_draw(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let bounds = canvas_bounds(visual_cx);
+    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
 
     let click_point = point(bounds.origin.x + px(10.0), bounds.origin.y + px(10.0));
 

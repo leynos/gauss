@@ -38,7 +38,7 @@ fn clicking_inside_shape_bbox_selects_shape(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let bounds = canvas_bounds(visual_cx);
+    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
 
     let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
     let shape_id = ShapeId::from(Uuid::from_u128(0x4444_4444_4444_4444_4444_4444_4444_4444));

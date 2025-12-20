@@ -8,6 +8,7 @@ use common::{
 };
 use gauss::ui::Phase0Shell;
 use gpui::TestAppContext;
+use test_support::{TestSupportError, TestSupportResult};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct ExpectedDrawShapeState {
@@ -32,44 +33,48 @@ fn assert_draw_shape_state(
     doc: &gauss::model::Document,
     expected: ExpectedDrawShapeState,
     context: &str,
-) {
-    assert_eq!(
-        doc.shapes.len(),
-        expected.total_shapes,
-        "unexpected shape count: {context}"
-    );
+) -> TestSupportResult<()> {
+    if doc.shapes.len() != expected.total_shapes {
+        return Err(TestSupportError::expectation(format!(
+            "unexpected shape count: {context}"
+        )));
+    }
 
-    let shape = require_draw_shape(doc, context);
-    assert_eq!(
-        shape.path.anchors.len(),
-        expected.anchors,
-        "unexpected anchor count: {context}"
-    );
-    assert_eq!(
-        shape.path.segments.len(),
-        expected.segments,
-        "unexpected segment count: {context}"
-    );
-    assert_eq!(
-        shape.path.closed, expected.closed,
-        "unexpected closed state: {context}"
-    );
+    let shape = require_draw_shape(doc, context)?;
+    if shape.path.anchors.len() != expected.anchors {
+        return Err(TestSupportError::expectation(format!(
+            "unexpected anchor count: {context}"
+        )));
+    }
+    if shape.path.segments.len() != expected.segments {
+        return Err(TestSupportError::expectation(format!(
+            "unexpected segment count: {context}"
+        )));
+    }
+    if shape.path.closed != expected.closed {
+        return Err(TestSupportError::expectation(format!(
+            "unexpected closed state: {context}"
+        )));
+    }
+    Ok(())
 }
 
 fn assert_draw_shape_absent(
     doc: &gauss::model::Document,
     expected_total_shapes: usize,
     context: &str,
-) {
-    assert_eq!(
-        doc.shapes.len(),
-        expected_total_shapes,
-        "unexpected shape count: {context}"
-    );
-    assert!(
-        common::find_draw_shape(doc).is_none(),
-        "draw shape should be absent: {context}"
-    );
+) -> TestSupportResult<()> {
+    if doc.shapes.len() != expected_total_shapes {
+        return Err(TestSupportError::expectation(format!(
+            "unexpected shape count: {context}"
+        )));
+    }
+    if common::find_draw_shape(doc).is_some() {
+        return Err(TestSupportError::expectation(format!(
+            "draw shape should be absent: {context}"
+        )));
+    }
+    Ok(())
 }
 
 #[gpui::test]
@@ -79,17 +84,19 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let (pos1, pos2) = canvas_points(visual_cx);
+    let (pos1, pos2) = canvas_points(visual_cx).expect("canvas points should be available");
 
     common::click_canvas_and_wait(visual_cx, pos1);
-    let last_click_after_first = require_last_canvas_click(visual_cx, &view, "after first click");
+    let last_click_after_first = require_last_canvas_click(visual_cx, &view, "after first click")
+        .expect("expected Phase0Shell to record the first click");
 
     let doc_after_first = read_document(visual_cx, &view);
     assert_draw_shape_state(
         &doc_after_first,
         ExpectedDrawShapeState::new(2, 1, 0, false),
         "after first click",
-    );
+    )
+    .expect("draw shape should contain one anchor after first click");
 
     common::click_canvas_and_wait(visual_cx, pos2);
     let _last_click_after_second = require_canvas_click_changed(
@@ -97,14 +104,16 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
         &view,
         last_click_after_first,
         "after second click",
-    );
+    )
+    .expect("expected Phase0Shell to record a second click");
 
     let doc_after_second = read_document(visual_cx, &view);
     assert_draw_shape_state(
         &doc_after_second,
         ExpectedDrawShapeState::new(2, 2, 1, false),
         "after second click",
-    );
+    )
+    .expect("draw shape should contain two anchors after second click");
 
     simulate_document_undo(visual_cx);
     let doc_after_undo = read_document(visual_cx, &view);
@@ -112,9 +121,11 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
         &doc_after_undo,
         ExpectedDrawShapeState::new(2, 1, 0, false),
         "after undoing second click",
-    );
+    )
+    .expect("draw shape should have one anchor after undo");
 
     simulate_document_undo(visual_cx);
     let doc_after_second_undo = read_document(visual_cx, &view);
-    assert_draw_shape_absent(&doc_after_second_undo, 1, "after undoing the first click");
+    assert_draw_shape_absent(&doc_after_second_undo, 1, "after undoing the first click")
+        .expect("draw shape should be removed after undo");
 }

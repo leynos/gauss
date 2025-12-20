@@ -9,26 +9,31 @@ use common::{
 use gauss::model::{SelItem, Shape, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
+use test_support::{TestSupportError, TestSupportResult};
 
-fn assert_shape_translated_by_delta(shape: &Shape, original: &Shape, delta: Vec2, context: &str) {
-    assert_eq!(
-        shape.path.anchors.len(),
-        original.path.anchors.len(),
-        "anchor count mismatch: {context}"
-    );
+fn assert_shape_translated_by_delta(
+    shape: &Shape,
+    original: &Shape,
+    delta: Vec2,
+    context: &str,
+) -> TestSupportResult<()> {
+    if shape.path.anchors.len() != original.path.anchors.len() {
+        return Err(TestSupportError::expectation(format!(
+            "anchor count mismatch: {context}"
+        )));
+    }
 
     for (current, start) in shape.path.anchors.iter().zip(original.path.anchors.iter()) {
         let expected = start.pos.add(delta);
         let diff = current.pos.sub(expected);
-        assert!(
-            diff.distance_squared(Vec2::ZERO) <= 0.0001,
-            "anchor did not move by expected delta: {context}; start={:?} expected={:?} got={:?} delta={:?}",
-            start.pos,
-            expected,
-            current.pos,
-            delta
-        );
+        if diff.distance_squared(Vec2::ZERO) > 0.0001 {
+            return Err(TestSupportError::expectation(format!(
+                "anchor did not move by expected delta: {context}; start={:?} expected={:?} got={:?} delta={:?}",
+                start.pos, expected, current.pos, delta
+            )));
+        }
     }
+    Ok(())
 }
 
 #[gpui::test]
@@ -40,12 +45,15 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
 
     // Create a new shape in draw mode at deterministic in-canvas coordinates so
     // the hit-testing and drag logic can operate on it.
-    let scenario = canvas_drag_scenario(visual_cx, 20.0, 10.0);
+    let scenario =
+        canvas_drag_scenario(visual_cx, 20.0, 10.0).expect("expected canvas drag scenario");
     draw_point(visual_cx, scenario.first);
     draw_point(visual_cx, scenario.second);
 
     let doc_before = read_document(visual_cx, &view);
-    let original_shape = require_draw_shape(&doc_before, "after drawing two points").clone();
+    let original_shape = require_draw_shape(&doc_before, "after drawing two points")
+        .expect("expected draw shape after drawing two points")
+        .clone();
 
     // Switch to manipulate mode (Phase0Shell defaults to draw mode).
     simulate_escape(visual_cx);
@@ -96,11 +104,15 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     );
 
     let doc_after_drag = read_document(visual_cx, &view);
-    let moved_shape = require_draw_shape(&doc_after_drag, "after dragging draw shape");
-    assert_shape_translated_by_delta(moved_shape, &original_shape, scenario.delta, "after drag");
+    let moved_shape = require_draw_shape(&doc_after_drag, "after dragging draw shape")
+        .expect("expected draw shape after drag");
+    assert_shape_translated_by_delta(moved_shape, &original_shape, scenario.delta, "after drag")
+        .expect("expected shape to move by drag delta");
 
     simulate_document_undo(visual_cx);
     let doc_after_undo = read_document(visual_cx, &view);
-    let restored_shape = require_draw_shape(&doc_after_undo, "after undo");
-    assert_shape_translated_by_delta(restored_shape, &original_shape, Vec2::ZERO, "after undo");
+    let restored_shape =
+        require_draw_shape(&doc_after_undo, "after undo").expect("expected draw shape after undo");
+    assert_shape_translated_by_delta(restored_shape, &original_shape, Vec2::ZERO, "after undo")
+        .expect("expected shape to return to original position");
 }

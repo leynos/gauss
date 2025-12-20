@@ -17,9 +17,9 @@ fn clicking_quit_button_requests_quit(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let Some(bounds) = visual_cx.debug_bounds("#quit-button") else {
-        panic!("quit button should have debug bounds after drawing");
-    };
+    let bounds = visual_cx
+        .debug_bounds("#quit-button")
+        .expect("quit button should have debug bounds after drawing");
 
     let position = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));
     visual_cx.simulate_mouse_move(position, None, Modifiers::none());

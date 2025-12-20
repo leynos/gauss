@@ -14,6 +14,7 @@ use gauss::ui::Phase0Shell;
 use gpui::{
     Hsla, Modifiers, MouseButton, NavigationDirection, TestAppContext, VisualTestContext, point, px,
 };
+use test_support::{TestSupportError, TestSupportResult};
 
 fn click_button(
     visual_cx: &mut VisualTestContext,
@@ -33,13 +34,13 @@ const fn with_shift(mut modifiers: Modifiers) -> Modifiers {
 
 fn canvas_points(
     visual_cx: &mut VisualTestContext,
-) -> (gpui::Bounds<gpui::Pixels>, gpui::Point<gpui::Pixels>) {
-    let bounds = canvas_bounds(visual_cx);
+) -> TestSupportResult<(gpui::Bounds<gpui::Pixels>, gpui::Point<gpui::Pixels>)> {
+    let bounds = canvas_bounds(visual_cx)?;
     let p1 = point(
         bounds.origin.x + px(common::CANVAS_PADDING_PX),
         bounds.origin.y + px(common::CANVAS_PADDING_PX),
     );
-    (bounds, p1)
+    Ok((bounds, p1))
 }
 
 fn second_point(
@@ -74,12 +75,12 @@ fn select_point_for_anchor0(
 fn draw_two_points_and_select_anchor0(
     visual_cx: &mut VisualTestContext,
     view: &gpui::Entity<Phase0Shell>,
-) -> (
+) -> TestSupportResult<(
     gpui::Bounds<gpui::Pixels>,
     gpui::Point<gpui::Pixels>,
     PaintStyle,
-) {
-    let (bounds, p1) = canvas_points(visual_cx);
+)> {
+    let (bounds, p1) = canvas_points(visual_cx)?;
     let p2 = second_point(&bounds, p1);
 
     draw_point(visual_cx, p1);
@@ -87,7 +88,7 @@ fn draw_two_points_and_select_anchor0(
     visual_cx.run_until_parked();
 
     let doc_before = visual_cx.read(|app| view.read(app).document().clone());
-    let draw_shape_before = require_draw_shape(&doc_before, "after drawing");
+    let draw_shape_before = require_draw_shape(&doc_before, "after drawing")?;
     let initial_style = draw_shape_before.style.clone();
 
     simulate_escape(visual_cx);
@@ -105,7 +106,7 @@ fn draw_two_points_and_select_anchor0(
         Modifiers::none(),
     );
 
-    (bounds, p1, initial_style)
+    Ok((bounds, p1, initial_style))
 }
 
 fn apply_red_stroke(visual_cx: &mut VisualTestContext, view: &gpui::Entity<Phase0Shell>) {
@@ -117,13 +118,14 @@ fn apply_red_stroke(visual_cx: &mut VisualTestContext, view: &gpui::Entity<Phase
     visual_cx.run_until_parked();
 }
 
-fn expect_stroke_is_red(doc: &Document, context: &str) {
-    let shape = require_draw_shape(doc, context);
-    assert_eq!(
-        shape.style.stroke,
-        Some(Rgba::new(255, 0, 0, 255)),
-        "expected stroke to be red ({context})"
-    );
+fn expect_stroke_is_red(doc: &Document, context: &str) -> TestSupportResult<()> {
+    let shape = require_draw_shape(doc, context)?;
+    if shape.style.stroke != Some(Rgba::new(255, 0, 0, 255)) {
+        return Err(TestSupportError::expectation(format!(
+            "expected stroke to be red ({context})"
+        )));
+    }
+    Ok(())
 }
 
 #[gpui::test]
@@ -133,11 +135,13 @@ fn navigation_buttons_undo_redo_document_history(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let (_bounds, p1, initial_style) = draw_two_points_and_select_anchor0(visual_cx, &view);
+    let (_bounds, p1, initial_style) = draw_two_points_and_select_anchor0(visual_cx, &view)
+        .expect("expected to draw and select the first anchor");
     apply_red_stroke(visual_cx, &view);
 
     let doc_after_style = visual_cx.read(|app| view.read(app).document().clone());
-    expect_stroke_is_red(&doc_after_style, "after applying style");
+    expect_stroke_is_red(&doc_after_style, "after applying style")
+        .expect("expected red stroke after applying style");
 
     click_button(
         visual_cx,
@@ -147,7 +151,8 @@ fn navigation_buttons_undo_redo_document_history(cx: &mut TestAppContext) {
     );
 
     let doc_after_undo = visual_cx.read(|app| view.read(app).document().clone());
-    let shape_after_undo = require_draw_shape(&doc_after_undo, "after doc undo");
+    let shape_after_undo = require_draw_shape(&doc_after_undo, "after doc undo")
+        .expect("expected draw shape after undo");
     assert_eq!(
         shape_after_undo.style, initial_style,
         "expected navigation back to undo the last document edit"
@@ -161,7 +166,8 @@ fn navigation_buttons_undo_redo_document_history(cx: &mut TestAppContext) {
     );
 
     let doc_after_redo = visual_cx.read(|app| view.read(app).document().clone());
-    expect_stroke_is_red(&doc_after_redo, "after doc redo");
+    expect_stroke_is_red(&doc_after_redo, "after doc redo")
+        .expect("expected stroke to be red after redo");
 }
 
 #[gpui::test]
@@ -171,7 +177,8 @@ fn navigation_buttons_undo_redo_selection_history_with_shift(cx: &mut TestAppCon
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let (bounds, p1, _initial_style) = draw_two_points_and_select_anchor0(visual_cx, &view);
+    let (bounds, p1, _initial_style) = draw_two_points_and_select_anchor0(visual_cx, &view)
+        .expect("expected to draw and select the first anchor");
     apply_red_stroke(visual_cx, &view);
 
     let selection_before_clear = visual_cx.read(|app| view.read(app).selection().clone());
@@ -203,7 +210,8 @@ fn navigation_buttons_undo_redo_selection_history_with_shift(cx: &mut TestAppCon
     );
 
     let doc_after_selection_undo = visual_cx.read(|app| view.read(app).document().clone());
-    expect_stroke_is_red(&doc_after_selection_undo, "after selection undo");
+    expect_stroke_is_red(&doc_after_selection_undo, "after selection undo")
+        .expect("expected stroke to remain red after selection undo");
 
     click_button(
         visual_cx,

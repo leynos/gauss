@@ -3,11 +3,6 @@
 //! These tests validate the core undo/redo invariant for the model layer:
 //! applying an operation and then applying its inverse restores the document.
 
-#![allow(
-    clippy::expect_used,
-    reason = "unit tests use expect for clear failure messages"
-)]
-
 use crate::model::{
     Anchor, DocChange, DocOp, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId,
     Vec2,

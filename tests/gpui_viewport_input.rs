@@ -9,13 +9,16 @@ use common::{canvas_bounds, ensure_initial_draw, init_test_app};
 use gauss::model::Vec2;
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, ScrollDelta, ScrollWheelEvent, TestAppContext, TouchPhase, point, px};
+use test_support::TestSupportResult;
 
-fn canvas_position(visual_cx: &mut gpui::VisualTestContext) -> gpui::Point<gpui::Pixels> {
-    let bounds = canvas_bounds(visual_cx);
-    point(
+fn canvas_position(
+    visual_cx: &mut gpui::VisualTestContext,
+) -> TestSupportResult<gpui::Point<gpui::Pixels>> {
+    let bounds = canvas_bounds(visual_cx)?;
+    Ok(point(
         bounds.origin.x + px(common::CANVAS_PADDING_PX),
         bounds.origin.y + px(common::CANVAS_PADDING_PX),
-    )
+    ))
 }
 
 #[gpui::test]
@@ -27,7 +30,7 @@ fn scroll_wheel_pans_viewport(cx: &mut TestAppContext) {
         ensure_initial_draw(visual_cx);
 
         let before = visual_cx.read(|app| view.read(app).viewport());
-        let position = canvas_position(visual_cx);
+        let position = canvas_position(visual_cx).expect("canvas bounds should be available");
 
         visual_cx.simulate_event(ScrollWheelEvent {
             position,
@@ -56,7 +59,7 @@ fn secondary_scroll_wheel_zooms_around_cursor(cx: &mut TestAppContext) {
         ensure_initial_draw(visual_cx);
 
         let before = visual_cx.read(|app| view.read(app).viewport());
-        let position = canvas_position(visual_cx);
+        let position = canvas_position(visual_cx).expect("canvas bounds should be available");
         let cursor = Vec2::new(f32::from(position.x), f32::from(position.y));
         let world_before = before.screen_to_world(cursor);
 

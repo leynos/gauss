@@ -3,6 +3,9 @@ name = "gauss"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]
+members = ["crates/test_support"]
+
 [dependencies]
 camino = "1.2.2"
 cap-std = { version = "4.0.0", features = ["fs_utf8"] }
@@ -16,6 +19,7 @@ gpui = { version = "0.2.2", features = ["test-support"] }
 rstest = "0.26.1"
 rstest-bdd = "0.2.0"
 rstest-bdd-macros = "0.2.0"
+test_support = { path = "crates/test_support" }
 
 [features]
 test-support = []

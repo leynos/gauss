@@ -42,8 +42,7 @@ fn save_action_prompts_for_path(cx: &mut TestAppContext) {
     let saved = cx.read(|app| view.read(app).last_saved_path().map(Path::to_path_buf));
     assert_eq!(saved, Some(expected.clone()));
 
-    let contents = std::fs::read_to_string(&expected)
-        .unwrap_or_else(|_| panic!("Saved SVG file should be readable"));
+    let contents = std::fs::read_to_string(&expected).expect("Saved SVG file should be readable");
     assert!(
         contents.contains(r#"<path d="M 10 10 L 90 10 L 90 90 L 10 90 Z""#),
         "Saved SVG should include the demo shape path"

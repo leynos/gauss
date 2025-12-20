@@ -10,6 +10,7 @@ use common::{
 use gauss::model::{SelItem, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
+use test_support::{TestSupportError, TestSupportResult};
 
 fn toggle_bezier_auto(visual_cx: &mut VisualTestContext) {
     visual_cx.simulate_keystrokes("tab");
@@ -33,43 +34,34 @@ fn model_point_to_canvas_point(
     anchor_to_canvas_point(&bounds, model, reference)
 }
 
-fn assert_handle_selection_includes_shape(
-    visual_cx: &VisualTestContext,
-    view: &gpui::Entity<Phase0Shell>,
+#[derive(Debug)]
+struct HandleDragSetup {
+    scenario: CanvasDragScenario,
     shape_id: ShapeId,
-) {
-    let selection = visual_cx.read(|app| view.read(app).selection().clone());
-    assert!(
-        selection.contains(&SelItem::Shape(shape_id)),
-        "expected handle interaction to keep the shape selected; selection={selection:?}"
-    );
-    assert!(
-        selection.contains(&SelItem::HandleOut {
-            shape: shape_id,
-            anchor: 0,
-        }),
-        "expected mouse down to select the handle; selection={selection:?}"
-    );
+    first_anchor_pos: Vec2,
+    original_handle_out: Vec2,
+    handle_start: gpui::Point<gpui::Pixels>,
+    handle_end: gpui::Point<gpui::Pixels>,
 }
 
-#[gpui::test]
-fn dragging_handle_moves_it_and_undo_restores(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
-
-    let scenario = canvas_drag_scenario(visual_cx, 18.0, 10.0);
+fn setup_handle_drag(
+    visual_cx: &mut VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+) -> TestSupportResult<HandleDragSetup> {
+    let scenario = canvas_drag_scenario(visual_cx, 18.0, 10.0)?;
     draw_two_point_bezier_path(visual_cx, scenario);
 
-    let doc_before = read_document(visual_cx, &view);
-    let original_shape = require_draw_shape(&doc_before, "after drawing two points").clone();
-    let Some(first_anchor) = original_shape.path.anchors.first().cloned() else {
-        panic!("expected first anchor");
-    };
-    let Some(original_handle_out) = first_anchor.handle_out else {
-        panic!("expected handle_out on first anchor in bezier mode");
-    };
+    let doc_before = read_document(visual_cx, view);
+    let original_shape = require_draw_shape(&doc_before, "after drawing two points")?;
+    let first_anchor = original_shape
+        .path
+        .anchors
+        .first()
+        .cloned()
+        .ok_or_else(|| TestSupportError::missing("anchor 0", "after drawing"))?;
+    let original_handle_out = first_anchor.handle_out.ok_or_else(|| {
+        TestSupportError::missing("handle_out", "after drawing bezier auto shape")
+    })?;
 
     let handle_start =
         model_point_to_canvas_point(scenario.bounds, original_handle_out, scenario.first);
@@ -80,50 +72,106 @@ fn dragging_handle_moves_it_and_undo_restores(cx: &mut TestAppContext) {
 
     simulate_escape(visual_cx);
 
-    visual_cx.simulate_mouse_down(handle_start, MouseButton::Left, Modifiers::none());
+    Ok(HandleDragSetup {
+        scenario,
+        shape_id: original_shape.id,
+        first_anchor_pos: first_anchor.pos,
+        original_handle_out,
+        handle_start,
+        handle_end,
+    })
+}
+
+fn assert_handle_selection_includes_shape(
+    visual_cx: &VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    shape_id: ShapeId,
+) -> TestSupportResult<()> {
+    let selection = visual_cx.read(|app| view.read(app).selection().clone());
+    if !selection.contains(&SelItem::Shape(shape_id)) {
+        return Err(TestSupportError::expectation(format!(
+            "expected handle interaction to keep the shape selected; selection={selection:?}"
+        )));
+    }
+    if !selection.contains(&SelItem::HandleOut {
+        shape: shape_id,
+        anchor: 0,
+    }) {
+        return Err(TestSupportError::expectation(format!(
+            "expected mouse down to select the handle; selection={selection:?}"
+        )));
+    }
+    Ok(())
+}
+
+#[gpui::test]
+fn dragging_handle_moves_it_and_undo_restores(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    let setup = setup_handle_drag(visual_cx, &view).expect("expected handle drag setup");
+
+    visual_cx.simulate_mouse_down(setup.handle_start, MouseButton::Left, Modifiers::none());
     visual_cx.run_until_parked();
 
-    assert_handle_selection_includes_shape(visual_cx, &view, original_shape.id);
+    assert_handle_selection_includes_shape(visual_cx, &view, setup.shape_id)
+        .expect("expected handle selection to include shape");
 
-    visual_cx.simulate_mouse_move(handle_end, MouseButton::Left, Modifiers::none());
-    visual_cx.simulate_mouse_up(handle_end, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_move(setup.handle_end, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_up(setup.handle_end, MouseButton::Left, Modifiers::none());
     visual_cx.run_until_parked();
 
     let doc_after_drag = read_document(visual_cx, &view);
-    let moved_shape = require_draw_shape(&doc_after_drag, "after dragging handle");
-    let Some(moved_anchor) = moved_shape.path.anchors.first() else {
-        panic!("expected first anchor after drag");
-    };
+    let moved_shape = require_draw_shape(&doc_after_drag, "after dragging handle")
+        .expect("expected draw shape after handle drag");
+    let moved_anchor = moved_shape
+        .path
+        .anchors
+        .first()
+        .expect("expected first anchor after drag");
 
     assert_vec2_close(
         moved_anchor.pos,
-        first_anchor.pos,
+        setup.first_anchor_pos,
         "anchor position stable when dragging handle",
-    );
-    let Some(moved_handle_out) = moved_anchor.handle_out else {
-        panic!("expected handle_out to remain present after dragging");
-    };
+    )
+    .expect("expected anchor position to remain stable");
+    let moved_handle_out = moved_anchor
+        .handle_out
+        .expect("expected handle_out to remain present after dragging");
     assert_vec2_close(
         moved_handle_out,
-        original_handle_out.add(scenario.delta),
+        setup.original_handle_out.add(setup.scenario.delta),
         "handle_out moved by delta",
-    );
+    )
+    .expect("expected handle_out to move by drag delta");
 
     simulate_document_undo(visual_cx);
 
     let doc_after_undo = read_document(visual_cx, &view);
-    let restored_shape = require_draw_shape(&doc_after_undo, "after undo");
-    let Some(restored_anchor) = restored_shape.path.anchors.first() else {
-        panic!("expected first anchor after undo");
-    };
-    let Some(restored_handle_out) = restored_anchor.handle_out else {
-        panic!("expected handle_out after undo");
-    };
+    let restored_shape =
+        require_draw_shape(&doc_after_undo, "after undo").expect("expected draw shape after undo");
+    let restored_anchor = restored_shape
+        .path
+        .anchors
+        .first()
+        .expect("expected first anchor after undo");
+    let restored_handle_out = restored_anchor
+        .handle_out
+        .expect("expected handle_out after undo");
 
-    assert_vec2_close(restored_anchor.pos, first_anchor.pos, "anchor restored");
+    assert_vec2_close(
+        restored_anchor.pos,
+        setup.first_anchor_pos,
+        "anchor restored",
+    )
+    .expect("expected anchor to be restored");
     assert_vec2_close(
         restored_handle_out,
-        original_handle_out,
+        setup.original_handle_out,
         "handle_out restored",
-    );
+    )
+    .expect("expected handle_out to be restored");
 }

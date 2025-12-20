@@ -8,24 +8,20 @@
 //! still allowing explicit drags when the user has a selected shape (or a
 //! multi-selection).
 
-#![allow(
-    clippy::expect_used,
-    reason = "integration tests use expect for clear failure messages"
-)]
-
 mod common;
 
 use common::{canvas_bounds, ensure_initial_draw, init_test_app};
 use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, px};
+use test_support::{TestSupportError, TestSupportResult};
 use uuid::Uuid;
 
-fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) {
+fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) -> TestSupportResult<()> {
     doc.shapes.push(Shape {
         id,
         z: i32::try_from(doc.shapes.len())
-            .expect("expected shape count to fit in i32 for z-ordering"),
+            .map_err(|error| TestSupportError::z_order_overflow("z-ordering", error))?,
         style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
         path: gauss::model::PathGeom {
             anchors: vec![
@@ -39,14 +35,19 @@ fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) {
             closing_segment: SegmentKind::Line,
         },
     });
+    Ok(())
 }
 
-fn require_shape<'a>(doc: &'a Document, id: ShapeId, context: &str) -> &'a Shape {
-    let message = format!("expected shape {id:?} to exist: {context}");
+fn require_shape<'a>(
+    doc: &'a Document,
+    id: ShapeId,
+    context: &str,
+) -> TestSupportResult<&'a Shape> {
+    let message = format!("shape {id:?}: {context}");
     doc.shapes
         .iter()
         .find(|shape| shape.id == id)
-        .expect(&message)
+        .ok_or_else(|| TestSupportError::missing("shape", message))
 }
 
 fn shape_bbox_centre(shape: &Shape) -> Vec2 {
@@ -72,22 +73,23 @@ const fn viewport_to_screen_point(
     gpui::point(px(screen.x), px(screen.y))
 }
 
-fn assert_shape_unchanged(shape: &Shape, original: &Shape, context: &str) {
-    assert_eq!(
-        shape.path.anchors.len(),
-        original.path.anchors.len(),
-        "anchor count mismatch: {context}"
-    );
+fn assert_shape_unchanged(shape: &Shape, original: &Shape, context: &str) -> TestSupportResult<()> {
+    if shape.path.anchors.len() != original.path.anchors.len() {
+        return Err(TestSupportError::expectation(format!(
+            "anchor count mismatch: {context}"
+        )));
+    }
 
     for (current, start) in shape.path.anchors.iter().zip(original.path.anchors.iter()) {
         let diff = current.pos.sub(start.pos);
-        assert!(
-            diff.distance_squared(Vec2::ZERO) <= 0.0001,
-            "expected shape to remain unchanged ({context}); start={:?} got={:?}",
-            start.pos,
-            current.pos
-        );
+        if diff.distance_squared(Vec2::ZERO) > 0.0001 {
+            return Err(TestSupportError::expectation(format!(
+                "expected shape to remain unchanged ({context}); start={:?} got={:?}",
+                start.pos, current.pos
+            )));
+        }
     }
+    Ok(())
 }
 
 #[gpui::test]
@@ -97,7 +99,7 @@ fn bbox_dragging_requires_shape_to_be_preselected(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let bounds = canvas_bounds(visual_cx);
+    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
     let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
 
     let shape_id = ShapeId::from(Uuid::from_u128(0x4444_4444_4444_4444_4444_4444_4444_4444));
@@ -107,7 +109,7 @@ fn bbox_dragging_requires_shape_to_be_preselected(cx: &mut TestAppContext) {
     visual_cx.update(|_window, app| {
         view.update(app, |shell, view_cx| {
             let mut doc = shell.document().clone();
-            add_square(&mut doc, shape_id, min, max);
+            add_square(&mut doc, shape_id, min, max).expect("expected to build square shape");
             shell.enter_manipulate_mode_for_tests();
             shell.replace_document_for_tests(doc);
             shell.replace_selection_for_tests(gauss::model::Selection::empty());
@@ -119,7 +121,9 @@ fn bbox_dragging_requires_shape_to_be_preselected(cx: &mut TestAppContext) {
     let viewport = visual_cx.read(|app| view.read(app).viewport());
 
     let doc_before = visual_cx.read(|app| view.read(app).document().clone());
-    let shape_before = require_shape(&doc_before, shape_id, "before drag").clone();
+    let shape_before = require_shape(&doc_before, shape_id, "before drag")
+        .expect("expected shape before drag")
+        .clone();
     let start_world = shape_bbox_centre(&shape_before);
     let delta = Vec2::new(25.0, 15.0);
 
@@ -149,6 +153,8 @@ fn bbox_dragging_requires_shape_to_be_preselected(cx: &mut TestAppContext) {
     visual_cx.run_until_parked();
 
     let doc_after = visual_cx.read(|app| view.read(app).document().clone());
-    let shape_after = require_shape(&doc_after, shape_id, "after attempted drag");
-    assert_shape_unchanged(shape_after, &shape_before, "bbox drag without preselection");
+    let shape_after = require_shape(&doc_after, shape_id, "after attempted drag")
+        .expect("expected shape after attempted drag");
+    assert_shape_unchanged(shape_after, &shape_before, "bbox drag without preselection")
+        .expect("expected shape to remain unchanged after bbox drag");
 }

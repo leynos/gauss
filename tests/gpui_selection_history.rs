@@ -17,7 +17,7 @@ fn selection_undo_uses_shift_modified_stack(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let bounds = common::canvas_bounds(visual_cx);
+    let bounds = common::canvas_bounds(visual_cx).expect("canvas bounds should be available");
 
     let width = f32::from(bounds.size.width);
     let height = f32::from(bounds.size.height);
@@ -32,7 +32,8 @@ fn selection_undo_uses_shift_modified_stack(cx: &mut TestAppContext) {
     draw_point(visual_cx, p2);
 
     let doc_before = visual_cx.read(|app| view.read(app).document().clone());
-    let draw_shape = require_draw_shape(&doc_before, "after drawing");
+    let draw_shape = require_draw_shape(&doc_before, "after drawing")
+        .expect("expected draw shape after drawing");
     let shapes_len_before = doc_before.shapes.len();
 
     simulate_escape(visual_cx);

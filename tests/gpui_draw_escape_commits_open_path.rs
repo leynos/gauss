@@ -21,7 +21,7 @@ fn escape_commits_open_path_and_enters_manipulate(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let bounds = canvas_bounds(visual_cx);
+    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
 
     let p1 = point(bounds.origin.x + px(10.0), bounds.origin.y + px(10.0));
     let p2 = point(bounds.origin.x + px(80.0), bounds.origin.y + px(30.0));
@@ -30,7 +30,8 @@ fn escape_commits_open_path_and_enters_manipulate(cx: &mut TestAppContext) {
     click_canvas_and_wait(visual_cx, p2);
 
     let doc_before_escape = read_document(visual_cx, &view);
-    let shape_before_escape = require_draw_shape(&doc_before_escape, "after drawing two points");
+    let shape_before_escape = require_draw_shape(&doc_before_escape, "after drawing two points")
+        .expect("expected draw shape after drawing two points");
     assert!(
         !shape_before_escape.path.closed,
         "expected newly drawn path to be open before closing; shape={shape_before_escape:?}"
@@ -46,7 +47,8 @@ fn escape_commits_open_path_and_enters_manipulate(cx: &mut TestAppContext) {
     click_canvas_and_wait(visual_cx, p2);
 
     let doc_after = read_document(visual_cx, &view);
-    let shape_after = require_draw_shape(&doc_after, "after escape and click");
+    let shape_after = require_draw_shape(&doc_after, "after escape and click")
+        .expect("expected draw shape after escape and click");
 
     assert_eq!(
         shape_after.id, shape_before_escape.id,

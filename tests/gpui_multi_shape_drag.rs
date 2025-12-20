@@ -5,25 +5,21 @@
 //! - keep the selection intact, and
 //! - translate all selected shapes by the same delta.
 
-#![allow(
-    clippy::expect_used,
-    reason = "integration tests use expect for clear failure messages"
-)]
-
 mod common;
 
 use common::{canvas_bounds, ensure_initial_draw, init_test_app, read_document};
 use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, px};
+use test_support::{TestSupportError, TestSupportResult};
 use uuid::Uuid;
 
-fn find_shape<'a>(doc: &'a Document, id: ShapeId, context: &str) -> &'a Shape {
-    let message = format!("expected shape {id:?} to exist: {context}");
+fn find_shape<'a>(doc: &'a Document, id: ShapeId, context: &str) -> TestSupportResult<&'a Shape> {
+    let message = format!("shape {id:?}: {context}");
     doc.shapes
         .iter()
         .find(|shape| shape.id == id)
-        .expect(&message)
+        .ok_or_else(|| TestSupportError::missing("shape", message))
 }
 
 fn shape_bbox_centre(shape: &Shape) -> Vec2 {
@@ -48,32 +44,36 @@ const fn viewport_to_screen_point(
     gpui::point(px(screen.x), px(screen.y))
 }
 
-fn assert_shape_translated_by_delta(shape: &Shape, original: &Shape, delta: Vec2, context: &str) {
-    assert_eq!(
-        shape.path.anchors.len(),
-        original.path.anchors.len(),
-        "anchor count mismatch: {context}"
-    );
+fn assert_shape_translated_by_delta(
+    shape: &Shape,
+    original: &Shape,
+    delta: Vec2,
+    context: &str,
+) -> TestSupportResult<()> {
+    if shape.path.anchors.len() != original.path.anchors.len() {
+        return Err(TestSupportError::expectation(format!(
+            "anchor count mismatch: {context}"
+        )));
+    }
 
     for (current, start) in shape.path.anchors.iter().zip(original.path.anchors.iter()) {
         let expected = start.pos.add(delta);
         let diff = current.pos.sub(expected);
-        assert!(
-            diff.distance_squared(Vec2::ZERO) <= 0.0001,
-            "anchor did not move by expected delta: {context}; start={:?} expected={:?} got={:?} delta={:?}",
-            start.pos,
-            expected,
-            current.pos,
-            delta
-        );
+        if diff.distance_squared(Vec2::ZERO) > 0.0001 {
+            return Err(TestSupportError::expectation(format!(
+                "anchor did not move by expected delta: {context}; start={:?} expected={:?} got={:?} delta={:?}",
+                start.pos, expected, current.pos, delta
+            )));
+        }
     }
+    Ok(())
 }
 
-fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) {
+fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) -> TestSupportResult<()> {
     doc.shapes.push(Shape {
         id,
         z: i32::try_from(doc.shapes.len())
-            .expect("expected shape count to fit in i32 for z-ordering"),
+            .map_err(|error| TestSupportError::z_order_overflow("z-ordering", error))?,
         style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
         path: gauss::model::PathGeom {
             anchors: vec![
@@ -87,6 +87,7 @@ fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) {
             closing_segment: SegmentKind::Line,
         },
     });
+    Ok(())
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -100,17 +101,18 @@ fn arrange_multi_shape_selection(
     view: &gpui::Entity<Phase0Shell>,
     origin: Vec2,
     shapes: ShapePair,
-) {
+) -> TestSupportResult<()> {
     let min1 = origin.add(Vec2::new(10.0, 10.0));
     let max1 = origin.add(Vec2::new(110.0, 110.0));
     let min2 = origin.add(Vec2::new(160.0, 10.0));
     let max2 = origin.add(Vec2::new(260.0, 110.0));
 
-    visual_cx.update(|_window, app| {
+    let mut doc = visual_cx.read(|app| view.read(app).document().clone());
+    add_square(&mut doc, shapes.first, min1, max1)?;
+    add_square(&mut doc, shapes.second, min2, max2)?;
+
+    visual_cx.update(move |_window, app| {
         view.update(app, |shell, view_cx| {
-            let mut doc = shell.document().clone();
-            add_square(&mut doc, shapes.first, min1, max1);
-            add_square(&mut doc, shapes.second, min2, max2);
             shell.enter_manipulate_mode_for_tests();
             shell.replace_document_for_tests(doc);
             shell.replace_selection_for_tests(gauss::model::Selection {
@@ -120,6 +122,7 @@ fn arrange_multi_shape_selection(
         });
     });
     visual_cx.run_until_parked();
+    Ok(())
 }
 
 fn assert_selection_contains_shapes(
@@ -127,20 +130,23 @@ fn assert_selection_contains_shapes(
     view: &gpui::Entity<Phase0Shell>,
     expected_shape_ids: [ShapeId; 2],
     context: &str,
-) {
+) -> TestSupportResult<()> {
     let selection = visual_cx.read(|app| view.read(app).selection().clone());
-    assert_eq!(
-        selection.items.len(),
-        2,
-        "expected selection to remain a 2-shape multi-select ({context}); selection={selection:?}"
-    );
+    if selection.items.len() != 2 {
+        return Err(TestSupportError::expectation(format!(
+            "expected selection to remain a 2-shape multi-select ({context}); selection={selection:?}"
+        )));
+    }
 
     let [shape1_id, shape2_id] = expected_shape_ids;
-    assert!(
-        selection.contains(&SelItem::Shape(shape1_id))
-            && selection.contains(&SelItem::Shape(shape2_id)),
-        "expected selection to contain both shapes ({context}); selection={selection:?}"
-    );
+    if !(selection.contains(&SelItem::Shape(shape1_id))
+        && selection.contains(&SelItem::Shape(shape2_id)))
+    {
+        return Err(TestSupportError::expectation(format!(
+            "expected selection to contain both shapes ({context}); selection={selection:?}"
+        )));
+    }
+    Ok(())
 }
 
 #[gpui::test]
@@ -152,7 +158,7 @@ fn dragging_a_selected_shape_moves_all_selected_shapes_and_preserves_selection(
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let bounds = canvas_bounds(visual_cx);
+    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
     let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
 
     // Arrange: add two extra shapes so we can multi-select and move them.
@@ -166,13 +172,18 @@ fn dragging_a_selected_shape_moves_all_selected_shapes_and_preserves_selection(
             first: shape1_id,
             second: shape2_id,
         },
-    );
+    )
+    .expect("expected to arrange multi-shape selection");
 
     let viewport = visual_cx.read(|app| view.read(app).viewport());
 
     let doc_before = read_document(visual_cx, &view);
-    let shape1_before = find_shape(&doc_before, shape1_id, "before drag shape1").clone();
-    let shape2_before = find_shape(&doc_before, shape2_id, "before drag shape2").clone();
+    let shape1_before = find_shape(&doc_before, shape1_id, "before drag shape1")
+        .expect("expected shape1 before drag")
+        .clone();
+    let shape2_before = find_shape(&doc_before, shape2_id, "before drag shape2")
+        .expect("expected shape2 before drag")
+        .clone();
 
     let start_model = shape_bbox_centre(&shape1_before);
     let delta = Vec2::new(20.0, 10.0);
@@ -185,7 +196,8 @@ fn dragging_a_selected_shape_moves_all_selected_shapes_and_preserves_selection(
     visual_cx.run_until_parked();
 
     // Assert: selection remains intact on mouse down (no collapse to a single shape).
-    assert_selection_contains_shapes(visual_cx, &view, [shape1_id, shape2_id], "after mouse down");
+    assert_selection_contains_shapes(visual_cx, &view, [shape1_id, shape2_id], "after mouse down")
+        .expect("expected selection to remain a multi-select after mouse down");
 
     visual_cx.simulate_mouse_move(end_screen, MouseButton::Left, Modifiers::none());
     visual_cx.simulate_mouse_up(end_screen, MouseButton::Left, Modifiers::none());
@@ -193,13 +205,18 @@ fn dragging_a_selected_shape_moves_all_selected_shapes_and_preserves_selection(
 
     // Assert: both shapes translate by the same delta and selection stays intact.
     let doc_after = read_document(visual_cx, &view);
-    let shape1_after = find_shape(&doc_after, shape1_id, "after drag shape1");
-    let shape2_after = find_shape(&doc_after, shape2_id, "after drag shape2");
+    let shape1_after =
+        find_shape(&doc_after, shape1_id, "after drag shape1").expect("expected shape1 after drag");
+    let shape2_after =
+        find_shape(&doc_after, shape2_id, "after drag shape2").expect("expected shape2 after drag");
 
-    assert_shape_translated_by_delta(shape1_after, &shape1_before, delta, "shape1 after drag");
-    assert_shape_translated_by_delta(shape2_after, &shape2_before, delta, "shape2 after drag");
+    assert_shape_translated_by_delta(shape1_after, &shape1_before, delta, "shape1 after drag")
+        .expect("expected shape1 to translate by the drag delta");
+    assert_shape_translated_by_delta(shape2_after, &shape2_before, delta, "shape2 after drag")
+        .expect("expected shape2 to translate by the drag delta");
 
-    assert_selection_contains_shapes(visual_cx, &view, [shape1_id, shape2_id], "after drag");
+    assert_selection_contains_shapes(visual_cx, &view, [shape1_id, shape2_id], "after drag")
+        .expect("expected selection to remain a multi-select after drag");
 
     // Keep this test resilient: if we accidentally fall back to draw mode, fail
     // loudly rather than flaking.

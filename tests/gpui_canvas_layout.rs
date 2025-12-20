@@ -17,7 +17,7 @@ fn canvas_is_not_collapsed_to_a_tiny_height(cx: &mut TestAppContext) {
     let (_view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let bounds = canvas_bounds(visual_cx);
+    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
 
     let height = f32::from(bounds.size.height);
     assert!(

@@ -18,6 +18,7 @@ use common::{
 use gauss::model::{SegmentKind, Shape, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{TestAppContext, point, px};
+use test_support::{TestSupportError, TestSupportResult};
 
 const CATMULL_ROM_TENSION: f32 = 1.0;
 
@@ -28,43 +29,67 @@ fn catmull_rom_controls(p0: Vec2, p1: Vec2, p2: Vec2, p3: Vec2) -> (Vec2, Vec2) 
     (c1, c2)
 }
 
-fn assert_segment_kind_is_cubic(shape: &Shape) {
-    assert!(
-        shape
-            .path
-            .segments
-            .iter()
-            .all(|kind| *kind == SegmentKind::Cubic),
+fn assert_segment_kind_is_cubic(shape: &Shape) -> TestSupportResult<()> {
+    if shape
+        .path
+        .segments
+        .iter()
+        .all(|kind| *kind == SegmentKind::Cubic)
+    {
+        return Ok(());
+    }
+    Err(TestSupportError::expectation(format!(
         "expected all segments to be cubic in Bézier auto mode; got segments={:?}",
         shape.path.segments
-    );
+    )))
 }
 
-fn require_anchor_pos(shape: &Shape, index: usize, context: &str) -> Vec2 {
-    let Some(anchor) = shape.path.anchors.get(index) else {
-        panic!("expected anchor {index} to exist: {context}");
-    };
-    anchor.pos
+fn require_anchor_pos(shape: &Shape, index: usize, context: &str) -> TestSupportResult<Vec2> {
+    shape
+        .path
+        .anchors
+        .get(index)
+        .map(|anchor| anchor.pos)
+        .ok_or_else(|| {
+            TestSupportError::missing(
+                format!("anchor {index}"),
+                format!("anchor position: {context}"),
+            )
+        })
 }
 
-fn require_handle_out(shape: &Shape, anchor_index: usize, context: &str) -> Vec2 {
-    let Some(anchor) = shape.path.anchors.get(anchor_index) else {
-        panic!("expected anchor {anchor_index} to exist: {context}");
-    };
-    let Some(handle) = anchor.handle_out else {
-        panic!("expected handle_out on anchor {anchor_index}: {context}");
-    };
-    handle
+fn require_handle_out(
+    shape: &Shape,
+    anchor_index: usize,
+    context: &str,
+) -> TestSupportResult<Vec2> {
+    let anchor = shape.path.anchors.get(anchor_index).ok_or_else(|| {
+        TestSupportError::missing(
+            format!("anchor {anchor_index}"),
+            format!("handle_out: {context}"),
+        )
+    })?;
+    anchor.handle_out.ok_or_else(|| {
+        TestSupportError::missing(
+            format!("handle_out for anchor {anchor_index}"),
+            format!("handle_out: {context}"),
+        )
+    })
 }
 
-fn require_handle_in(shape: &Shape, anchor_index: usize, context: &str) -> Vec2 {
-    let Some(anchor) = shape.path.anchors.get(anchor_index) else {
-        panic!("expected anchor {anchor_index} to exist: {context}");
-    };
-    let Some(handle) = anchor.handle_in else {
-        panic!("expected handle_in on anchor {anchor_index}: {context}");
-    };
-    handle
+fn require_handle_in(shape: &Shape, anchor_index: usize, context: &str) -> TestSupportResult<Vec2> {
+    let anchor = shape.path.anchors.get(anchor_index).ok_or_else(|| {
+        TestSupportError::missing(
+            format!("anchor {anchor_index}"),
+            format!("handle_in: {context}"),
+        )
+    })?;
+    anchor.handle_in.ok_or_else(|| {
+        TestSupportError::missing(
+            format!("handle_in for anchor {anchor_index}"),
+            format!("handle_in: {context}"),
+        )
+    })
 }
 
 #[gpui::test]
@@ -74,7 +99,7 @@ fn tab_switches_to_bezier_auto_and_synthesises_handles(cx: &mut TestAppContext) 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let bounds = canvas_bounds(visual_cx);
+    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
 
     let p1 = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));
     let p2 = point(
@@ -99,7 +124,8 @@ fn tab_switches_to_bezier_auto_and_synthesises_handles(cx: &mut TestAppContext) 
     draw_point(visual_cx, p4);
 
     let doc = visual_cx.read(|app| view.read(app).document().clone());
-    let shape = require_draw_shape(&doc, "after drawing bezier auto points");
+    let shape = require_draw_shape(&doc, "after drawing bezier auto points")
+        .expect("expected draw shape after bezier auto drawing");
     assert_eq!(
         shape.path.anchors.len(),
         4,
@@ -110,19 +136,23 @@ fn tab_switches_to_bezier_auto_and_synthesises_handles(cx: &mut TestAppContext) 
         3,
         "expected three segments after drawing"
     );
-    assert_segment_kind_is_cubic(shape);
+    assert_segment_kind_is_cubic(shape).expect("expected cubic segments in bezier auto mode");
 
-    let a0 = require_anchor_pos(shape, 0, "anchor0");
-    let a1 = require_anchor_pos(shape, 1, "anchor1");
-    let a2 = require_anchor_pos(shape, 2, "anchor2");
-    let a3 = require_anchor_pos(shape, 3, "anchor3");
+    let a0 = require_anchor_pos(shape, 0, "anchor0").expect("expected anchor0 position");
+    let a1 = require_anchor_pos(shape, 1, "anchor1").expect("expected anchor1 position");
+    let a2 = require_anchor_pos(shape, 2, "anchor2").expect("expected anchor2 position");
+    let a3 = require_anchor_pos(shape, 3, "anchor3").expect("expected anchor3 position");
 
     // Segment 1 (a1->a2) is updated when a3 is appended, so it uses the full
     // four-point window [a0, a1, a2, a3].
     let (expected_c1, expected_c2) = catmull_rom_controls(a0, a1, a2, a3);
-    let actual_c1 = require_handle_out(shape, 1, "segment1 start handle_out");
-    let actual_c2 = require_handle_in(shape, 2, "segment1 end handle_in");
+    let actual_c1 = require_handle_out(shape, 1, "segment1 start handle_out")
+        .expect("expected handle_out for segment1");
+    let actual_c2 = require_handle_in(shape, 2, "segment1 end handle_in")
+        .expect("expected handle_in for segment1");
 
-    assert_vec2_close(actual_c1, expected_c1, "segment1 handle_out");
-    assert_vec2_close(actual_c2, expected_c2, "segment1 handle_in");
+    assert_vec2_close(actual_c1, expected_c1, "segment1 handle_out")
+        .expect("expected handle_out position to match");
+    assert_vec2_close(actual_c2, expected_c2, "segment1 handle_in")
+        .expect("expected handle_in position to match");
 }
