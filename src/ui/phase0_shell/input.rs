@@ -145,6 +145,8 @@ impl Phase0Shell {
         match action {
             KeyAction::Escape => {
                 self.handle_escape(cx);
+                // `handle_escape` notifies directly; return false to avoid a
+                // second `cx.notify()` from `handle_key_down`.
                 false
             }
             KeyAction::InsertAnchor => self.insert_anchor_on_selected_segment(),
