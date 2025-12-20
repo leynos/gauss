@@ -13,7 +13,8 @@
 )]
 
 use crate::model::{
-    CubicSegment, Document, SegmentKind, Shape, ShapeId, Vec2, cubic_point, shape_world_bounds,
+    Anchor, CubicSegment, Document, SegmentKind, Shape, ShapeId, Vec2, cubic_point,
+    shape_world_bounds,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -146,19 +147,7 @@ pub(super) fn hit_test_topmost_segment(
                     break;
                 };
 
-                let distance_squared = match kind {
-                    SegmentKind::Line => {
-                        point_segment_distance_squared(cursor_world, start.pos, end.pos)
-                    }
-                    SegmentKind::Cubic => {
-                        let c1 = start.handle_out.unwrap_or(start.pos);
-                        let c2 = end.handle_in.unwrap_or(end.pos);
-                        cubic_distance_squared(
-                            cursor_world,
-                            CubicSegment::new(start.pos, c1, c2, end.pos),
-                        )
-                    }
-                };
+                let distance_squared = segment_distance_squared(cursor_world, *kind, start, end);
 
                 if distance_squared > tolerance_squared {
                     continue;
@@ -232,6 +221,22 @@ fn hit_test_shape_bbox(shape: &Shape, cursor_world: Vec2, tolerance_world: f32) 
     };
 
     bounds.contains(cursor_world, tolerance_world)
+}
+
+fn segment_distance_squared(
+    cursor_world: Vec2,
+    kind: SegmentKind,
+    start: &Anchor,
+    end: &Anchor,
+) -> f32 {
+    match kind {
+        SegmentKind::Line => point_segment_distance_squared(cursor_world, start.pos, end.pos),
+        SegmentKind::Cubic => {
+            let c1 = start.handle_out.unwrap_or(start.pos);
+            let c2 = end.handle_in.unwrap_or(end.pos);
+            cubic_distance_squared(cursor_world, CubicSegment::new(start.pos, c1, c2, end.pos))
+        }
+    }
 }
 
 fn point_segment_distance_squared(p: Vec2, a: Vec2, b: Vec2) -> f32 {
