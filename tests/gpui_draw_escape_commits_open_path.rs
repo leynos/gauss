@@ -10,7 +10,6 @@ use common::{
     canvas_bounds, click_canvas_and_wait, ensure_initial_draw, init_test_app, read_document,
     require_draw_shape, simulate_escape,
 };
-use gauss::model::Vec2;
 use gauss::ui::Phase0Shell;
 use gpui::{TestAppContext, point, px};
 
@@ -75,12 +74,14 @@ fn escape_commits_open_path_and_enters_manipulate(cx: &mut TestAppContext) {
         .path
         .anchors
         .first()
-        .map_or(Vec2::ZERO, |anchor| anchor.pos);
+        .expect("expected at least one anchor in the committed open path")
+        .pos;
     let second_anchor = shape_after
         .path
         .anchors
         .get(1)
-        .map_or(Vec2::ZERO, |anchor| anchor.pos);
+        .expect("expected at least two anchors in the committed open path")
+        .pos;
     assert_ne!(
         first_anchor, second_anchor,
         "expected at least two distinct anchors in the committed open path"
