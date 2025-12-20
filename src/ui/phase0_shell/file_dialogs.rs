@@ -12,7 +12,9 @@ use std::path::{Path, PathBuf};
 
 use futures::channel::oneshot;
 use gpui::{AsyncWindowContext, Context, PathPromptOptions, WeakEntity, Window};
+use gpui_component::history::History;
 
+use crate::model::Selection;
 use crate::svg::export::export_svg;
 
 use super::Phase0Shell;
@@ -151,6 +153,11 @@ async fn apply_open_prompt(
     drop(this.update(&mut cx, move |view, view_cx| {
         if let Some(doc) = loaded_doc {
             view.document = doc;
+            view.document_history = History::new();
+            view.selection_history = History::new();
+            view.selection = Selection::empty();
+            view.drag_state = None;
+            view.draw_active_shape = None;
             view.last_opened_path = Some(first_path);
             view.last_open_error = None;
         } else {
