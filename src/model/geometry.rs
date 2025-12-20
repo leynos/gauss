@@ -22,25 +22,11 @@ impl Bounds {
     }
 
     pub(crate) fn update(&mut self, point: Vec2) {
-        if let (Some(mut min), Some(mut max)) = (self.min, self.max) {
-            if point.x < min.x {
-                min.x = point.x;
-            }
-            if point.y < min.y {
-                min.y = point.y;
-            }
-            if point.x > max.x {
-                max.x = point.x;
-            }
-            if point.y > max.y {
-                max.y = point.y;
-            }
-            self.min = Some(min);
-            self.max = Some(max);
-        } else {
-            self.min = Some(point);
-            self.max = Some(point);
-        }
+        let min = self.min.unwrap_or(point);
+        let max = self.max.unwrap_or(point);
+
+        self.min = Some(Vec2::new(min.x.min(point.x), min.y.min(point.y)));
+        self.max = Some(Vec2::new(max.x.max(point.x), max.y.max(point.y)));
     }
 
     pub(crate) const fn to_tuple(self) -> Option<(Vec2, Vec2)> {
