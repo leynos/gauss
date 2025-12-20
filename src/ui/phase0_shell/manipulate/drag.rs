@@ -96,7 +96,9 @@ pub(super) fn start_drag(input: &DragStartInput<'_>, hit: MouseDownHit) -> Optio
             shape_id,
             shape_index,
         }) => {
-            input.can_drag_shape_bbox.then_some(())?;
+            if !input.can_drag_shape_bbox {
+                return None;
+            }
             start_shapes_drag(
                 input.doc,
                 input.selection,
