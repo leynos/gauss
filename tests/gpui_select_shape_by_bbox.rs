@@ -4,15 +4,13 @@
 //! handles, anchors, and segments. Clicking inside a shape’s bounding box (but
 //! not near its edges) should select the shape.
 
+mod common;
+
+use common::{canvas_bounds, ensure_initial_draw, init_test_app};
 use gauss::model::{PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
+use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 use uuid::Uuid;
-
-fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
-    visual_cx.update(|window, app| drop(window.draw(app)));
-    visual_cx.run_until_parked();
-}
 
 fn demo_square(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
     Shape {
@@ -35,14 +33,12 @@ fn demo_square(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
 
 #[gpui::test]
 fn clicking_inside_shape_bbox_selects_shape(cx: &mut TestAppContext) {
-    cx.update(gauss::ui::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let Some(bounds) = visual_cx.debug_bounds("#phase0-canvas") else {
-        panic!("phase0 canvas should have debug bounds after drawing");
-    };
+    let bounds = canvas_bounds(visual_cx);
 
     let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
     let shape_id = ShapeId::from(Uuid::from_u128(0x4444_4444_4444_4444_4444_4444_4444_4444));

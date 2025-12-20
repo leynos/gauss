@@ -6,13 +6,16 @@
 
 use std::path::Path;
 
+mod common;
+
+use common::{ensure_initial_draw, init_test_app};
 use gauss::ui::{OpenSvg, Phase0Shell};
 use gpui::TestAppContext;
 use uuid::Uuid;
 
 #[gpui::test]
 fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
-    cx.update(gpui_component::init);
+    init_test_app(cx);
 
     let svg_path = std::env::temp_dir().join(format!("gauss-test-open-{}.svg", Uuid::new_v4()));
     let svg = r##"
@@ -20,7 +23,9 @@ fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
           <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
         </svg>
     "##;
-    std::fs::write(&svg_path, svg).expect("Test SVG file should be writable");
+    std::fs::write(&svg_path, svg).unwrap_or_else(|_| {
+        panic!("Test SVG file should be writable")
+    });
 
     assert!(
         !cx.did_prompt_for_new_path(),
@@ -31,7 +36,7 @@ fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
         let (view, visual_cx) =
             cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
 
-        visual_cx.update(|window, app| drop(window.draw(app)));
+        ensure_initial_draw(visual_cx);
         visual_cx.dispatch_action(OpenSvg);
         visual_cx.run_until_parked();
 

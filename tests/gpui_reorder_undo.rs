@@ -4,12 +4,15 @@
 //! “lower” behaviour depends only on z-order, not on choosing distinct hit
 //! targets.
 
+mod common;
+
+use common::{
+    click_canvas_and_wait, demo_shape_id, ensure_initial_draw, init_test_app, read_document,
+    simulate_key,
+};
 use gauss::model::{Document, SelItem, Selection, ShapeId};
 use gauss::ui::Phase0Shell;
-use gpui::{
-    KeyDownEvent, Keystroke, Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px,
-};
-use uuid::Uuid;
+use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
 
 #[derive(Clone, Copy, Debug)]
 struct LinePoints {
@@ -17,39 +20,8 @@ struct LinePoints {
     end: gpui::Point<gpui::Pixels>,
 }
 
-fn demo_shape_id() -> ShapeId {
-    ShapeId::from(Uuid::from_u128(0x6d3c_0fb4_43a8_48f1_9f14_623a_70d5_2e1a))
-}
-
-fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
-    visual_cx.update(|window, app| drop(window.draw(app)));
-    visual_cx.run_until_parked();
-}
-
-fn read_document(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> Document {
-    visual_cx.read(|app| view.read(app).document().clone())
-}
-
 fn read_selection(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> Selection {
     visual_cx.read(|app| view.read(app).selection().clone())
-}
-
-fn click_canvas(visual_cx: &mut VisualTestContext, position: gpui::Point<gpui::Pixels>) {
-    visual_cx.simulate_mouse_move(position, None, Modifiers::none());
-    visual_cx.simulate_click(position, Modifiers::none());
-    visual_cx.run_until_parked();
-}
-
-fn simulate_key(visual_cx: &mut VisualTestContext, key: &str, modifiers: Modifiers) {
-    visual_cx.simulate_event(KeyDownEvent {
-        keystroke: Keystroke {
-            modifiers,
-            key: key.to_owned(),
-            key_char: None,
-        },
-        is_held: false,
-    });
-    visual_cx.run_until_parked();
 }
 
 fn selected_shape_id(selection: &Selection) -> Option<ShapeId> {
@@ -117,19 +89,19 @@ fn line_points(bounds: &gpui::Bounds<gpui::Pixels>) -> LinePoints {
 }
 
 fn draw_overlapping_lines(visual_cx: &mut VisualTestContext, points: LinePoints) {
-    click_canvas(visual_cx, points.start);
-    click_canvas(visual_cx, points.end);
+    click_canvas_and_wait(visual_cx, points.start);
+    click_canvas_and_wait(visual_cx, points.end);
     simulate_key(visual_cx, "escape", Modifiers::none());
 
     simulate_key(visual_cx, "escape", Modifiers::none());
-    click_canvas(visual_cx, points.start);
-    click_canvas(visual_cx, points.end);
+    click_canvas_and_wait(visual_cx, points.start);
+    click_canvas_and_wait(visual_cx, points.end);
     simulate_key(visual_cx, "escape", Modifiers::none());
 }
 
 #[gpui::test]
 fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
-    cx.update(gpui_component::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);

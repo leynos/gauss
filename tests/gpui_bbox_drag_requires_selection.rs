@@ -8,26 +8,20 @@
 //! still allowing explicit drags when the user has a selected shape (or a
 //! multi-selection).
 
+mod common;
+
+use common::{canvas_bounds, ensure_initial_draw, init_test_app};
 use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, px};
+use gpui::{Modifiers, MouseButton, TestAppContext, px};
 use uuid::Uuid;
-
-fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
-    visual_cx.update(|window, app| drop(window.draw(app)));
-    visual_cx.run_until_parked();
-}
-
-fn canvas_bounds(visual_cx: &mut VisualTestContext) -> gpui::Bounds<gpui::Pixels> {
-    visual_cx
-        .debug_bounds("#phase0-canvas")
-        .unwrap_or_else(|| panic!("phase0 canvas should have debug bounds"))
-}
 
 fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) {
     doc.shapes.push(Shape {
         id,
-        z: i32::try_from(doc.shapes.len()).unwrap_or(i32::MAX),
+        z: i32::try_from(doc.shapes.len()).unwrap_or_else(|_| {
+            panic!("expected shape count to fit in i32 for z-ordering")
+        }),
         style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
         path: gauss::model::PathGeom {
             anchors: vec![
@@ -93,7 +87,7 @@ fn assert_shape_unchanged(shape: &Shape, original: &Shape, context: &str) {
 
 #[gpui::test]
 fn bbox_dragging_requires_shape_to_be_preselected(cx: &mut TestAppContext) {
-    cx.update(gauss::ui::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);

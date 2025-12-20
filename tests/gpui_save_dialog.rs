@@ -5,13 +5,16 @@
 
 use std::path::Path;
 
+mod common;
+
+use common::{ensure_initial_draw, init_test_app};
 use gauss::ui::{Phase0Shell, SaveSvg};
 use gpui::TestAppContext;
 use uuid::Uuid;
 
 #[gpui::test]
 fn save_action_prompts_for_path(cx: &mut TestAppContext) {
-    cx.update(gpui_component::init);
+    init_test_app(cx);
 
     assert!(
         !cx.did_prompt_for_new_path(),
@@ -20,7 +23,7 @@ fn save_action_prompts_for_path(cx: &mut TestAppContext) {
 
     let view: gpui::Entity<Phase0Shell> = {
         let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-        visual_cx.update(|window, app| drop(window.draw(app)));
+        ensure_initial_draw(visual_cx);
         visual_cx.dispatch_action(SaveSvg);
         visual_cx.run_until_parked();
         view
@@ -39,7 +42,9 @@ fn save_action_prompts_for_path(cx: &mut TestAppContext) {
     let saved = cx.read(|app| view.read(app).last_saved_path().map(Path::to_path_buf));
     assert_eq!(saved, Some(expected.clone()));
 
-    let contents = std::fs::read_to_string(&expected).expect("Saved SVG file should be readable");
+    let contents = std::fs::read_to_string(&expected).unwrap_or_else(|_| {
+        panic!("Saved SVG file should be readable")
+    });
     assert!(
         contents.contains(r#"<path d="M 10 10 L 90 10 L 90 90 L 10 90 Z""#),
         "Saved SVG should include the demo shape path"

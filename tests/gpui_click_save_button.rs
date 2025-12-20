@@ -1,11 +1,14 @@
 //! Validate that headless GPUI tests can drive `on_click` handlers.
 
+mod common;
+
+use common::{ensure_initial_draw, init_test_app};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, TestAppContext, point, px};
 
 #[gpui::test]
 fn clicking_save_button_opens_save_prompt(cx: &mut TestAppContext) {
-    cx.update(gpui_component::init);
+    init_test_app(cx);
 
     assert!(
         !cx.did_prompt_for_new_path(),
@@ -14,8 +17,7 @@ fn clicking_save_button_opens_save_prompt(cx: &mut TestAppContext) {
 
     {
         let (_view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-        visual_cx.update(|window, app| drop(window.draw(app)));
-        visual_cx.run_until_parked();
+        ensure_initial_draw(visual_cx);
 
         let Some(bounds) = visual_cx.debug_bounds("#save-button") else {
             panic!("save button should have debug bounds after drawing");

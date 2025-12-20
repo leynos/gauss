@@ -7,58 +7,15 @@
 //! - The editor switches to manipulate mode so subsequent clicks do not place
 //!   more points.
 
-use gauss::model::{Document, SegmentKind, Shape, ShapeId, Vec2};
+mod common;
+
+use common::{
+    anchor_to_canvas_point, canvas_bounds, draw_point, ensure_initial_draw, init_test_app,
+    require_draw_shape,
+};
+use gauss::model::{Document, SegmentKind, ShapeId};
 use gauss::ui::Phase0Shell;
-use gpui::{Bounds, Modifiers, Pixels, TestAppContext, VisualTestContext, point, px};
-use uuid::Uuid;
-
-fn demo_shape_id() -> ShapeId {
-    ShapeId::from(Uuid::from_u128(0x6d3c_0fb4_43a8_48f1_9f14_623a_70d5_2e1a))
-}
-
-fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
-    visual_cx.update(|window, app| drop(window.draw(app)));
-    visual_cx.run_until_parked();
-}
-
-fn canvas_bounds(visual_cx: &mut VisualTestContext) -> Bounds<Pixels> {
-    let Some(bounds) = visual_cx.debug_bounds("#phase0-canvas") else {
-        panic!("phase0 canvas should have debug bounds");
-    };
-    bounds
-}
-
-fn require_draw_shape<'a>(doc: &'a Document, context: &'static str) -> &'a Shape {
-    let demo_id = demo_shape_id();
-    let Some(shape) = doc.shapes.iter().find(|shape| shape.id != demo_id) else {
-        panic!("expected draw shape to exist: {context}");
-    };
-    shape
-}
-
-fn draw_point(visual_cx: &mut VisualTestContext, position: gpui::Point<gpui::Pixels>) {
-    visual_cx.simulate_mouse_move(position, None, Modifiers::none());
-    visual_cx.simulate_click(position, Modifiers::none());
-    visual_cx.run_until_parked();
-}
-
-fn anchor0_is_local(anchor0: Vec2, click_point: gpui::Point<gpui::Pixels>) -> bool {
-    let expected_local = Vec2::new(2.0, 2.0);
-    let expected_abs = Vec2::new(f32::from(click_point.x), f32::from(click_point.y));
-    anchor0.distance_squared(expected_local) <= anchor0.distance_squared(expected_abs)
-}
-
-fn model_to_screen_point(
-    bounds: &gpui::Bounds<gpui::Pixels>,
-    use_local: bool,
-    model: Vec2,
-) -> gpui::Point<gpui::Pixels> {
-    if use_local {
-        point(bounds.origin.x + px(model.x), bounds.origin.y + px(model.y))
-    } else {
-        point(px(model.x), px(model.y))
-    }
-}
+use gpui::{Bounds, Pixels, TestAppContext, VisualTestContext, point, px};
 
 fn triangle_points(
     bounds: &Bounds<Pixels>,
@@ -110,8 +67,7 @@ fn close_path_by_clicking_first_anchor(
         panic!("expected first anchor to exist before close");
     };
 
-    let use_local = anchor0_is_local(first_anchor.pos, click_point);
-    let close_point = model_to_screen_point(bounds, use_local, first_anchor.pos);
+    let close_point = anchor_to_canvas_point(bounds, first_anchor.pos, click_point);
     draw_point(visual_cx, close_point);
 
     shape_id
@@ -164,7 +120,7 @@ fn assert_click_does_not_place_points(
 
 #[gpui::test]
 fn clicking_near_first_anchor_closes_path_and_enters_manipulate(cx: &mut TestAppContext) {
-    cx.update(gauss::ui::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
@@ -193,7 +149,7 @@ fn clicking_near_first_anchor_closes_path_and_enters_manipulate(cx: &mut TestApp
 
 #[gpui::test]
 fn closing_in_bezier_mode_uses_cubic_closing_segment(cx: &mut TestAppContext) {
-    cx.update(gauss::ui::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);

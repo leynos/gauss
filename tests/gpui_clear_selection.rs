@@ -3,15 +3,13 @@
 //! Phase 0 uses `on_mouse_down` for selection. This test verifies that clicking
 //! empty canvas space clears the current selection.
 
+mod common;
+
+use common::{click_left_and_wait, ensure_initial_draw, init_test_app};
 use gauss::model::{PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
+use gpui::{TestAppContext, VisualTestContext, point, px};
 use uuid::Uuid;
-
-fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
-    visual_cx.update(|window, app| drop(window.draw(app)));
-    visual_cx.run_until_parked();
-}
 
 fn demo_square(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
     Shape {
@@ -38,14 +36,12 @@ fn read_selection(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell
 
 #[gpui::test]
 fn clicking_empty_space_clears_selection(cx: &mut TestAppContext) {
-    cx.update(gauss::ui::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let Some(bounds) = visual_cx.debug_bounds("#phase0-canvas") else {
-        panic!("phase0 canvas should have debug bounds after drawing");
-    };
+    let bounds = common::canvas_bounds(visual_cx);
 
     let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
     let width = f32::from(bounds.size.width);
@@ -83,9 +79,7 @@ fn clicking_empty_space_clears_selection(cx: &mut TestAppContext) {
     let click_y = (height - 2.0).max(2.0);
     let empty_point = point(bounds.origin.x + px(click_x), bounds.origin.y + px(click_y));
 
-    visual_cx.simulate_mouse_down(empty_point, MouseButton::Left, Modifiers::none());
-    visual_cx.simulate_mouse_up(empty_point, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
+    click_left_and_wait(visual_cx, empty_point);
 
     let selection_after = read_selection(visual_cx, &view);
     assert!(

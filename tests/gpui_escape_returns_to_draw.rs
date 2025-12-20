@@ -4,25 +4,11 @@
 //! - Draw → Manipulate: commit the current open path and enter manipulate mode.
 //! - Manipulate → Draw: return to draw mode so clicks place points again.
 
+mod common;
+
+use common::{canvas_bounds, ensure_initial_draw, init_test_app, simulate_key};
 use gauss::ui::Phase0Shell;
-use gpui::{KeyDownEvent, Keystroke, Modifiers, TestAppContext, VisualTestContext, point, px};
-
-fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
-    visual_cx.update(|window, app| drop(window.draw(app)));
-    visual_cx.run_until_parked();
-}
-
-fn simulate_key(visual_cx: &mut VisualTestContext, key: &str, modifiers: Modifiers) {
-    visual_cx.simulate_event(KeyDownEvent {
-        keystroke: Keystroke {
-            modifiers,
-            key: key.to_owned(),
-            key_char: None,
-        },
-        is_held: false,
-    });
-    visual_cx.run_until_parked();
-}
+use gpui::{Modifiers, TestAppContext, VisualTestContext, point, px};
 
 fn read_shape_count(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> usize {
     visual_cx.read(|app| view.read(app).document().shapes.len())
@@ -30,14 +16,12 @@ fn read_shape_count(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0She
 
 #[gpui::test]
 fn escape_in_manipulate_returns_to_draw(cx: &mut TestAppContext) {
-    cx.update(gauss::ui::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let Some(bounds) = visual_cx.debug_bounds("#phase0-canvas") else {
-        panic!("phase0 canvas should have debug bounds");
-    };
+    let bounds = canvas_bounds(visual_cx);
 
     let click_point = point(bounds.origin.x + px(10.0), bounds.origin.y + px(10.0));
 

@@ -3,24 +3,28 @@
 //! These tests exercise scroll wheel event dispatch against the Phase 0 view,
 //! asserting the viewport pan/zoom state updates as expected.
 
+mod common;
+
+use common::{canvas_bounds, ensure_initial_draw, init_test_app};
 use gauss::model::Vec2;
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, ScrollDelta, ScrollWheelEvent, TestAppContext, TouchPhase, point, px};
 
 fn canvas_position(visual_cx: &mut gpui::VisualTestContext) -> gpui::Point<gpui::Pixels> {
-    let Some(bounds) = visual_cx.debug_bounds("#phase0-canvas") else {
-        panic!("phase0 canvas should have debug bounds after drawing");
-    };
-    point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0))
+    let bounds = canvas_bounds(visual_cx);
+    point(
+        bounds.origin.x + px(common::CANVAS_PADDING_PX),
+        bounds.origin.y + px(common::CANVAS_PADDING_PX),
+    )
 }
 
 #[gpui::test]
 fn scroll_wheel_pans_viewport(cx: &mut TestAppContext) {
-    cx.update(gpui_component::init);
+    init_test_app(cx);
 
     let view: gpui::Entity<Phase0Shell> = {
         let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-        visual_cx.update(|window, app| drop(window.draw(app)));
+        ensure_initial_draw(visual_cx);
 
         let before = visual_cx.read(|app| view.read(app).viewport());
         let position = canvas_position(visual_cx);
@@ -45,11 +49,11 @@ fn scroll_wheel_pans_viewport(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn secondary_scroll_wheel_zooms_around_cursor(cx: &mut TestAppContext) {
-    cx.update(gpui_component::init);
+    init_test_app(cx);
 
     let view: gpui::Entity<Phase0Shell> = {
         let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-        visual_cx.update(|window, app| drop(window.draw(app)));
+        ensure_initial_draw(visual_cx);
 
         let before = visual_cx.read(|app| view.read(app).viewport());
         let position = canvas_position(visual_cx);

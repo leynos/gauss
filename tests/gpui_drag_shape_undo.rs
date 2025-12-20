@@ -1,11 +1,14 @@
 //! GPUI headless integration tests for Phase 0 manipulate-mode interactions.
 
-use gauss::model::{Document, SelItem, Shape, ShapeId, Vec2};
-use gauss::ui::Phase0Shell;
-use gpui::{
-    KeyDownEvent, Keystroke, Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px,
+mod common;
+
+use common::{
+    ensure_initial_draw, init_test_app, read_document, require_draw_shape, simulate_document_undo,
+    simulate_key,
 };
-use uuid::Uuid;
+use gauss::model::{SelItem, Shape, Vec2};
+use gauss::ui::Phase0Shell;
+use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
 
 #[derive(Clone, Copy, Debug)]
 struct CanvasDragScenario {
@@ -41,50 +44,8 @@ fn canvas_drag_scenario(visual_cx: &mut VisualTestContext) -> CanvasDragScenario
     }
 }
 
-fn demo_shape_id() -> ShapeId {
-    ShapeId::from(Uuid::from_u128(0x6d3c_0fb4_43a8_48f1_9f14_623a_70d5_2e1a))
-}
-
-fn find_draw_shape(doc: &Document) -> Option<&Shape> {
-    let demo_id = demo_shape_id();
-    doc.shapes.iter().find(|shape| shape.id != demo_id)
-}
-
-fn require_draw_shape<'a>(doc: &'a Document, context: &str) -> &'a Shape {
-    let Some(shape) = find_draw_shape(doc) else {
-        panic!("expected draw shape to exist: {context}");
-    };
-    shape
-}
-
-fn read_document(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> Document {
-    visual_cx.read(|app| view.read(app).document().clone())
-}
-
-fn simulate_document_undo(visual_cx: &mut VisualTestContext) {
-    let undo = KeyDownEvent {
-        keystroke: Keystroke {
-            modifiers: Modifiers::secondary_key(),
-            key: "z".to_owned(),
-            key_char: None,
-        },
-        is_held: false,
-    };
-
-    visual_cx.simulate_event(undo);
-}
-
 fn simulate_escape(visual_cx: &mut VisualTestContext) {
-    let escape = KeyDownEvent {
-        keystroke: Keystroke {
-            modifiers: Modifiers::none(),
-            key: "escape".to_owned(),
-            key_char: None,
-        },
-        is_held: false,
-    };
-
-    visual_cx.simulate_event(escape);
+    simulate_key(visual_cx, "escape", Modifiers::none());
 }
 
 fn assert_shape_translated_by_delta(shape: &Shape, original: &Shape, delta: Vec2, context: &str) {
@@ -110,11 +71,10 @@ fn assert_shape_translated_by_delta(shape: &Shape, original: &Shape, delta: Vec2
 
 #[gpui::test]
 fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
-    cx.update(gpui_component::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    visual_cx.update(|window, app| drop(window.draw(app)));
-    visual_cx.run_until_parked();
+    ensure_initial_draw(visual_cx);
 
     // Create a new shape in draw mode at deterministic in-canvas coordinates so
     // the hit-testing and drag logic can operate on it.

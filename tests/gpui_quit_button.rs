@@ -4,16 +4,18 @@
 //! invoked, so the shell exposes a `did_request_quit` flag for stable headless
 //! assertions.
 
+mod common;
+
+use common::{ensure_initial_draw, init_test_app};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, TestAppContext, point, px};
 
 #[gpui::test]
 fn clicking_quit_button_requests_quit(cx: &mut TestAppContext) {
-    cx.update(gpui_component::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    visual_cx.update(|window, app| drop(window.draw(app)));
-    visual_cx.run_until_parked();
+    ensure_initial_draw(visual_cx);
 
     let Some(bounds) = visual_cx.debug_bounds("#quit-button") else {
         panic!("quit button should have debug bounds after drawing");

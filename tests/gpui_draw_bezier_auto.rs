@@ -9,49 +9,22 @@
 //! This test asserts that switching to Bézier auto via `Tab` yields cubic
 //! segments with the expected handle positions.
 
-use gauss::model::{Document, SegmentKind, Shape, ShapeId, Vec2};
+mod common;
+
+use common::{
+    assert_vec2_close, draw_point, ensure_initial_draw, init_test_app, require_draw_shape,
+};
+use gauss::model::{SegmentKind, Shape, Vec2};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, TestAppContext, VisualTestContext, point, px};
-use uuid::Uuid;
+use gpui::{TestAppContext, point, px};
 
 const CATMULL_ROM_TENSION: f32 = 1.0;
-
-fn demo_shape_id() -> ShapeId {
-    ShapeId::from(Uuid::from_u128(0x6d3c_0fb4_43a8_48f1_9f14_623a_70d5_2e1a))
-}
-
-fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
-    visual_cx.update(|window, app| drop(window.draw(app)));
-    visual_cx.run_until_parked();
-}
-
-fn require_draw_shape<'a>(doc: &'a Document, context: &'static str) -> &'a Shape {
-    let demo_id = demo_shape_id();
-    let Some(shape) = doc.shapes.iter().find(|shape| shape.id != demo_id) else {
-        panic!("expected draw shape to exist: {context}");
-    };
-    shape
-}
-
-fn draw_point(visual_cx: &mut VisualTestContext, position: gpui::Point<gpui::Pixels>) {
-    visual_cx.simulate_mouse_move(position, None, Modifiers::none());
-    visual_cx.simulate_click(position, Modifiers::none());
-    visual_cx.run_until_parked();
-}
 
 fn catmull_rom_controls(p0: Vec2, p1: Vec2, p2: Vec2, p3: Vec2) -> (Vec2, Vec2) {
     let t = CATMULL_ROM_TENSION / 6.0;
     let c1 = p1.add(p2.sub(p0).mul(t));
     let c2 = p2.sub(p3.sub(p1).mul(t));
     (c1, c2)
-}
-
-fn assert_vec2_close(actual: Vec2, expected: Vec2, context: &'static str) {
-    let diff = actual.sub(expected);
-    assert!(
-        diff.distance_squared(Vec2::ZERO) <= 0.0001,
-        "{context}: expected={expected:?} got={actual:?}"
-    );
 }
 
 fn assert_segment_kind_is_cubic(shape: &Shape) {
@@ -66,14 +39,14 @@ fn assert_segment_kind_is_cubic(shape: &Shape) {
     );
 }
 
-fn require_anchor_pos(shape: &Shape, index: usize, context: &'static str) -> Vec2 {
+fn require_anchor_pos(shape: &Shape, index: usize, context: &str) -> Vec2 {
     let Some(anchor) = shape.path.anchors.get(index) else {
         panic!("expected anchor {index} to exist: {context}");
     };
     anchor.pos
 }
 
-fn require_handle_out(shape: &Shape, anchor_index: usize, context: &'static str) -> Vec2 {
+fn require_handle_out(shape: &Shape, anchor_index: usize, context: &str) -> Vec2 {
     let Some(anchor) = shape.path.anchors.get(anchor_index) else {
         panic!("expected anchor {anchor_index} to exist: {context}");
     };
@@ -83,7 +56,7 @@ fn require_handle_out(shape: &Shape, anchor_index: usize, context: &'static str)
     handle
 }
 
-fn require_handle_in(shape: &Shape, anchor_index: usize, context: &'static str) -> Vec2 {
+fn require_handle_in(shape: &Shape, anchor_index: usize, context: &str) -> Vec2 {
     let Some(anchor) = shape.path.anchors.get(anchor_index) else {
         panic!("expected anchor {anchor_index} to exist: {context}");
     };
@@ -95,7 +68,7 @@ fn require_handle_in(shape: &Shape, anchor_index: usize, context: &'static str) 
 
 #[gpui::test]
 fn tab_switches_to_bezier_auto_and_synthesises_handles(cx: &mut TestAppContext) {
-    cx.update(gauss::ui::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);

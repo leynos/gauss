@@ -5,19 +5,13 @@
 //! - keep the selection intact, and
 //! - translate all selected shapes by the same delta.
 
+mod common;
+
+use common::{canvas_bounds, ensure_initial_draw, init_test_app, read_document};
 use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, px};
 use uuid::Uuid;
-
-fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
-    visual_cx.update(|window, app| drop(window.draw(app)));
-    visual_cx.run_until_parked();
-}
-
-fn read_document(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> Document {
-    visual_cx.read(|app| view.read(app).document().clone())
-}
 
 fn find_shape<'a>(doc: &'a Document, id: ShapeId, context: &str) -> &'a Shape {
     doc.shapes
@@ -38,12 +32,6 @@ fn shape_bbox_centre(shape: &Shape) -> Vec2 {
         max_y = max_y.max(anchor.pos.y);
     }
     Vec2::new(f32::midpoint(min_x, max_x), f32::midpoint(min_y, max_y))
-}
-
-fn canvas_bounds(visual_cx: &mut VisualTestContext) -> gpui::Bounds<gpui::Pixels> {
-    visual_cx
-        .debug_bounds("#phase0-canvas")
-        .unwrap_or_else(|| panic!("phase0 canvas should have debug bounds"))
 }
 
 const fn viewport_to_screen_point(
@@ -78,7 +66,9 @@ fn assert_shape_translated_by_delta(shape: &Shape, original: &Shape, delta: Vec2
 fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) {
     doc.shapes.push(Shape {
         id,
-        z: i32::try_from(doc.shapes.len()).unwrap_or(i32::MAX),
+        z: i32::try_from(doc.shapes.len()).unwrap_or_else(|_| {
+            panic!("expected shape count to fit in i32 for z-ordering")
+        }),
         style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
         path: gauss::model::PathGeom {
             anchors: vec![
@@ -152,7 +142,7 @@ fn assert_selection_contains_shapes(
 fn dragging_a_selected_shape_moves_all_selected_shapes_and_preserves_selection(
     cx: &mut TestAppContext,
 ) {
-    cx.update(gauss::ui::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);

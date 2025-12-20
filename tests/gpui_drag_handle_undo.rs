@@ -1,11 +1,14 @@
 //! GPUI headless integration tests for Phase 0 handle dragging.
 
-use gauss::model::{Anchor, Document, SelItem, Shape, ShapeId, Vec2};
-use gauss::ui::Phase0Shell;
-use gpui::{
-    KeyDownEvent, Keystroke, Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px,
+mod common;
+
+use common::{
+    anchor_to_canvas_point, assert_vec2_close, ensure_initial_draw, init_test_app, read_document,
+    require_draw_shape, simulate_document_undo, simulate_key,
 };
-use uuid::Uuid;
+use gauss::model::{SelItem, ShapeId, Vec2};
+use gauss::ui::Phase0Shell;
+use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
 
 #[derive(Clone, Copy, Debug)]
 struct CanvasScenario {
@@ -42,50 +45,8 @@ fn canvas_scenario(visual_cx: &mut VisualTestContext) -> CanvasScenario {
     }
 }
 
-fn demo_shape_id() -> ShapeId {
-    ShapeId::from(Uuid::from_u128(0x6d3c_0fb4_43a8_48f1_9f14_623a_70d5_2e1a))
-}
-
-fn find_draw_shape(doc: &Document) -> Option<&Shape> {
-    let demo_id = demo_shape_id();
-    doc.shapes.iter().find(|shape| shape.id != demo_id)
-}
-
-fn require_draw_shape<'a>(doc: &'a Document, context: &str) -> &'a Shape {
-    let Some(shape) = find_draw_shape(doc) else {
-        panic!("expected draw shape to exist: {context}");
-    };
-    shape
-}
-
-fn read_document(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> Document {
-    visual_cx.read(|app| view.read(app).document().clone())
-}
-
-fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
-    visual_cx.update(|window, app| drop(window.draw(app)));
-    visual_cx.run_until_parked();
-}
-
-fn simulate_key(visual_cx: &mut VisualTestContext, key: &str, modifiers: Modifiers) {
-    visual_cx.simulate_event(KeyDownEvent {
-        keystroke: Keystroke {
-            modifiers,
-            key: key.to_owned(),
-            key_char: None,
-        },
-        is_held: false,
-    });
-}
-
 fn simulate_escape(visual_cx: &mut VisualTestContext) {
     simulate_key(visual_cx, "escape", Modifiers::none());
-    visual_cx.run_until_parked();
-}
-
-fn simulate_document_undo(visual_cx: &mut VisualTestContext) {
-    simulate_key(visual_cx, "z", Modifiers::secondary_key());
-    visual_cx.run_until_parked();
 }
 
 fn toggle_bezier_auto(visual_cx: &mut VisualTestContext) {
@@ -102,30 +63,12 @@ fn draw_two_point_bezier_path(visual_cx: &mut VisualTestContext, scenario: Canva
     visual_cx.run_until_parked();
 }
 
-fn assert_vec2_close(actual: Vec2, expected: Vec2, context: &str) {
-    let diff = actual.sub(expected);
-    assert!(
-        diff.distance_squared(Vec2::ZERO) <= 0.0001,
-        "{context}: expected={expected:?} got={actual:?}"
-    );
-}
-
-fn anchor0_is_local_coordinates(anchor0: &Anchor, click_point: gpui::Point<gpui::Pixels>) -> bool {
-    let expected_local = Vec2::new(2.0, 2.0);
-    let expected_abs = Vec2::new(f32::from(click_point.x), f32::from(click_point.y));
-    anchor0.pos.distance_squared(expected_local) <= anchor0.pos.distance_squared(expected_abs)
-}
-
 fn model_point_to_canvas_point(
     bounds: gpui::Bounds<gpui::Pixels>,
-    use_local_coordinates: bool,
     model: Vec2,
+    reference: gpui::Point<gpui::Pixels>,
 ) -> gpui::Point<gpui::Pixels> {
-    if use_local_coordinates {
-        point(bounds.origin.x + px(model.x), bounds.origin.y + px(model.y))
-    } else {
-        point(px(model.x), px(model.y))
-    }
+    anchor_to_canvas_point(&bounds, model, reference)
 }
 
 fn assert_handle_selection_includes_shape(
@@ -149,7 +92,7 @@ fn assert_handle_selection_includes_shape(
 
 #[gpui::test]
 fn dragging_handle_moves_it_and_undo_restores(cx: &mut TestAppContext) {
-    cx.update(gauss::ui::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
@@ -166,9 +109,8 @@ fn dragging_handle_moves_it_and_undo_restores(cx: &mut TestAppContext) {
         panic!("expected handle_out on first anchor in bezier mode");
     };
 
-    let use_local_coordinates = anchor0_is_local_coordinates(&first_anchor, scenario.first);
     let handle_start =
-        model_point_to_canvas_point(scenario.bounds, use_local_coordinates, original_handle_out);
+        model_point_to_canvas_point(scenario.bounds, original_handle_out, scenario.first);
     let handle_end = point(
         handle_start.x + px(scenario.delta.x),
         handle_start.y + px(scenario.delta.y),

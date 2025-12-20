@@ -6,17 +6,15 @@
 //! - `Tab` toggling the draw edge mode label, and
 //! - manipulate mode not displaying an edge mode suffix.
 
-use gauss::ui::Phase0Shell;
-use gpui::{TestAppContext, VisualTestContext};
+mod common;
 
-fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
-    visual_cx.update(|window, app| drop(window.draw(app)));
-    visual_cx.run_until_parked();
-}
+use common::{ensure_initial_draw, init_test_app};
+use gauss::ui::Phase0Shell;
+use gpui::TestAppContext;
 
 #[gpui::test]
 fn mode_indicator_reflects_tool_and_edge_mode(cx: &mut TestAppContext) {
-    cx.update(gauss::ui::init);
+    init_test_app(cx);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
