@@ -77,12 +77,14 @@ fn draw_two_points_and_anchor_points(
     );
     let shape = require_draw_shape(&doc, "after drawing two points");
 
-    let Some(anchor0) = shape.path.anchors.first().map(|anchor| anchor.pos) else {
-        panic!("expected first anchor after drawing");
-    };
-    let Some(anchor1) = shape.path.anchors.get(1).map(|anchor| anchor.pos) else {
-        panic!("expected second anchor after drawing");
-    };
+    let anchor0 = shape.path.anchors.first().map_or_else(
+        || panic!("expected first anchor after drawing"),
+        |anchor| anchor.pos,
+    );
+    let anchor1 = shape.path.anchors.get(1).map_or_else(
+        || panic!("expected second anchor after drawing"),
+        |anchor| anchor.pos,
+    );
 
     let anchor0_point = anchor_to_canvas_point(&bounds, anchor0, p1);
     let anchor1_point = anchor_to_canvas_point(&bounds, anchor1, p1);
