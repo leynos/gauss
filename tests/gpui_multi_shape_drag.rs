@@ -7,7 +7,10 @@
 
 mod common;
 
-use common::{canvas_bounds, ensure_initial_draw, init_test_app, read_document};
+use common::{
+    assert_shape_translated_by_delta, canvas_bounds, ensure_initial_draw, init_test_app,
+    read_document,
+};
 use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, px};
@@ -42,31 +45,6 @@ const fn viewport_to_screen_point(
 ) -> gpui::Point<gpui::Pixels> {
     let screen = viewport.world_to_screen(world);
     gpui::point(px(screen.x), px(screen.y))
-}
-
-fn assert_shape_translated_by_delta(
-    shape: &Shape,
-    original: &Shape,
-    delta: Vec2,
-    context: &str,
-) -> TestSupportResult<()> {
-    if shape.path.anchors.len() != original.path.anchors.len() {
-        return Err(TestSupportError::expectation(format!(
-            "anchor count mismatch: {context}"
-        )));
-    }
-
-    for (current, start) in shape.path.anchors.iter().zip(original.path.anchors.iter()) {
-        let expected = start.pos.add(delta);
-        let diff = current.pos.sub(expected);
-        if diff.distance_squared(Vec2::ZERO) > 0.0001 {
-            return Err(TestSupportError::expectation(format!(
-                "anchor did not move by expected delta: {context}; start={:?} expected={:?} got={:?} delta={:?}",
-                start.pos, expected, current.pos, delta
-            )));
-        }
-    }
-    Ok(())
 }
 
 fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) -> TestSupportResult<()> {

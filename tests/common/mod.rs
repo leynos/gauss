@@ -212,6 +212,31 @@ pub fn assert_vec2_close(actual: Vec2, expected: Vec2, context: &str) -> TestSup
     Ok(())
 }
 
+pub fn assert_shape_translated_by_delta(
+    shape: &Shape,
+    original: &Shape,
+    delta: Vec2,
+    context: &str,
+) -> TestSupportResult<()> {
+    if shape.path.anchors.len() != original.path.anchors.len() {
+        return Err(TestSupportError::expectation(format!(
+            "anchor count mismatch: {context}"
+        )));
+    }
+
+    for (current, start) in shape.path.anchors.iter().zip(original.path.anchors.iter()) {
+        let expected = start.pos.add(delta);
+        let diff = current.pos.sub(expected);
+        if diff.distance_squared(Vec2::ZERO) > 0.0001 {
+            return Err(TestSupportError::expectation(format!(
+                "anchor did not move by expected delta: {context}; start={:?} expected={:?} got={:?} delta={:?}",
+                start.pos, expected, current.pos, delta
+            )));
+        }
+    }
+    Ok(())
+}
+
 /// Convert an anchor position into a canvas point.
 ///
 /// Tests sometimes store anchor positions relative to the canvas origin and

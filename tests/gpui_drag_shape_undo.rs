@@ -3,38 +3,12 @@
 mod common;
 
 use common::{
-    canvas_drag_scenario, draw_point, ensure_initial_draw, init_test_app, read_document,
-    require_draw_shape, simulate_document_undo, simulate_escape,
+    assert_shape_translated_by_delta, canvas_drag_scenario, draw_point, ensure_initial_draw,
+    init_test_app, read_document, require_draw_shape, simulate_document_undo, simulate_escape,
 };
-use gauss::model::{SelItem, Shape, Vec2};
+use gauss::model::{SelItem, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
-use test_support::{TestSupportError, TestSupportResult};
-
-fn assert_shape_translated_by_delta(
-    shape: &Shape,
-    original: &Shape,
-    delta: Vec2,
-    context: &str,
-) -> TestSupportResult<()> {
-    if shape.path.anchors.len() != original.path.anchors.len() {
-        return Err(TestSupportError::expectation(format!(
-            "anchor count mismatch: {context}"
-        )));
-    }
-
-    for (current, start) in shape.path.anchors.iter().zip(original.path.anchors.iter()) {
-        let expected = start.pos.add(delta);
-        let diff = current.pos.sub(expected);
-        if diff.distance_squared(Vec2::ZERO) > 0.0001 {
-            return Err(TestSupportError::expectation(format!(
-                "anchor did not move by expected delta: {context}; start={:?} expected={:?} got={:?} delta={:?}",
-                start.pos, expected, current.pos, delta
-            )));
-        }
-    }
-    Ok(())
-}
 
 #[gpui::test]
 fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
