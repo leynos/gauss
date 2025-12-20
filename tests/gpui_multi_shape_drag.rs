@@ -26,6 +26,10 @@ fn find_shape<'a>(doc: &'a Document, id: ShapeId, context: &str) -> TestSupportR
 }
 
 fn shape_bbox_centre(shape: &Shape) -> Vec2 {
+    assert!(
+        !shape.path.anchors.is_empty(),
+        "expected shape anchors when computing bounding box centre"
+    );
     let mut min_x = f32::INFINITY;
     let mut min_y = f32::INFINITY;
     let mut max_x = f32::NEG_INFINITY;
