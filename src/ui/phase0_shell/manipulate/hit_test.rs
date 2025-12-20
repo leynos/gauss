@@ -138,34 +138,12 @@ pub(super) fn hit_test_topmost_segment(
         .enumerate()
         .rev()
         .find_map(|(shape_index, shape)| {
-            let mut best_segment: Option<(usize, f32)> = None;
-            for (seg_index, kind) in shape.path.segments.iter().enumerate() {
-                let Some(start) = shape.path.anchors.get(seg_index) else {
-                    break;
-                };
-                let Some(end) = shape.path.anchors.get(seg_index + 1) else {
-                    break;
-                };
-
-                let distance_squared = segment_distance_squared(cursor_world, *kind, start, end);
-
-                if distance_squared > tolerance_squared {
-                    continue;
+            find_best_segment_hit(shape, cursor_world, tolerance_squared).map(|seg_index| {
+                SegmentHit {
+                    shape_index,
+                    shape_id: shape.id,
+                    seg_index,
                 }
-
-                match best_segment {
-                    None => best_segment = Some((seg_index, distance_squared)),
-                    Some((_, best)) if distance_squared < best => {
-                        best_segment = Some((seg_index, distance_squared));
-                    }
-                    Some(_) => {}
-                }
-            }
-
-            best_segment.map(|(seg_index, _)| SegmentHit {
-                shape_index,
-                shape_id: shape.id,
-                seg_index,
             })
         })
 }
@@ -221,6 +199,38 @@ fn hit_test_shape_bbox(shape: &Shape, cursor_world: Vec2, tolerance_world: f32) 
     };
 
     bounds.contains(cursor_world, tolerance_world)
+}
+
+fn find_best_segment_hit(
+    shape: &Shape,
+    cursor_world: Vec2,
+    tolerance_squared: f32,
+) -> Option<usize> {
+    let mut best_segment: Option<(usize, f32)> = None;
+    for (seg_index, kind) in shape.path.segments.iter().enumerate() {
+        let Some(start) = shape.path.anchors.get(seg_index) else {
+            break;
+        };
+        let Some(end) = shape.path.anchors.get(seg_index + 1) else {
+            break;
+        };
+
+        let distance_squared = segment_distance_squared(cursor_world, *kind, start, end);
+
+        if distance_squared > tolerance_squared {
+            continue;
+        }
+
+        match best_segment {
+            None => best_segment = Some((seg_index, distance_squared)),
+            Some((_, best)) if distance_squared < best => {
+                best_segment = Some((seg_index, distance_squared));
+            }
+            Some(_) => {}
+        }
+    }
+
+    best_segment.map(|(seg_index, _)| seg_index)
 }
 
 fn segment_distance_squared(
