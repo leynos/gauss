@@ -5,8 +5,7 @@ TARGET ?= libgauss.rlib
 
 CARGO ?= cargo
 BUILD_JOBS ?=
-RUST_FLAGS ?=
-RUST_FLAGS := -D warnings $(RUST_FLAGS)
+RUST_FLAGS ?= -D warnings
 CARGO_FLAGS ?= --all-targets --all-features
 CLIPPY_FLAGS ?= $(CARGO_FLAGS) -- $(RUST_FLAGS)
 TEST_FLAGS ?= $(CARGO_FLAGS)
