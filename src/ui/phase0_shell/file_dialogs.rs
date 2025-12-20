@@ -127,13 +127,13 @@ async fn apply_save_path(
     let save_result = super::super::phase0_support::write_svg_to_path(&path, &svg);
     let error = save_result.err();
 
-    drop(this.update(&mut cx, move |view, view_cx| {
+    let _update_result = this.update(&mut cx, move |view, view_cx| {
         if error.is_none() {
             view.last_saved_path = Some(path);
         }
         view.last_save_error = error;
         view_cx.notify();
-    }));
+    });
 }
 
 async fn apply_open_prompt(
@@ -151,7 +151,7 @@ async fn apply_open_prompt(
         Err(err) => (None, Some(err)),
     };
 
-    drop(this.update(&mut cx, move |view, view_cx| {
+    let _update_result = this.update(&mut cx, move |view, view_cx| {
         if let Some(doc) = loaded_doc {
             view.document = doc;
             view.document_history = History::new();
@@ -165,5 +165,5 @@ async fn apply_open_prompt(
             view.last_open_error = error;
         }
         view_cx.notify();
-    }));
+    });
 }
