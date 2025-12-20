@@ -6,7 +6,7 @@
 
 use std::fmt::{Arguments, Write as _};
 
-use crate::model::{Document, Rgba, SegmentKind};
+use crate::model::{Document, Rgba, SegmentKind, format_hex_rgb};
 
 /// Export a document to an SVG string.
 ///
@@ -24,11 +24,6 @@ pub fn export_svg(doc: &Document, canvas_width: f32, canvas_height: f32) -> Stri
     }
     out.push_str("</svg>\n");
     out
-}
-
-#[must_use]
-fn format_colour_rgb(c: Rgba) -> String {
-    format!("#{:02x}{:02x}{:02x}", c.r, c.g, c.b)
 }
 
 #[must_use]
@@ -127,7 +122,7 @@ fn build_path_data(shape: &crate::model::Shape) -> Option<String> {
 fn format_paint(paint: Option<Rgba>) -> (String, f32) {
     paint.map_or_else(
         || ("none".to_owned(), 1.0),
-        |c| (format_colour_rgb(c), opacity_from_alpha(c.a)),
+        |c| (format_hex_rgb(c), opacity_from_alpha(c.a)),
     )
 }
 

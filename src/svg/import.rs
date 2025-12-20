@@ -13,7 +13,7 @@
 use std::{error::Error, fmt};
 
 use crate::model::{
-    Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2,
+    Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2, parse_hex_rgb,
 };
 
 /// Errors returned by [`import_svg`].
@@ -126,36 +126,13 @@ fn parse_colour(value: &str) -> Result<Option<Rgba>, SvgImportError> {
         return Ok(None);
     }
 
-    let Some(hex) = trimmed.strip_prefix('#') else {
-        return Err(SvgImportError::InvalidColour);
-    };
-
-    if hex.len() != 6 {
+    if !trimmed.starts_with('#') {
         return Err(SvgImportError::InvalidColour);
     }
 
-    let mut chars = hex.chars();
-    let r = parse_hex_byte(&mut chars)?;
-    let g = parse_hex_byte(&mut chars)?;
-    let b = parse_hex_byte(&mut chars)?;
-    if chars.next().is_some() {
-        return Err(SvgImportError::InvalidColour);
-    }
-
-    Ok(Some(Rgba::new(r, g, b, 255)))
-}
-
-fn parse_hex_byte(chars: &mut impl Iterator<Item = char>) -> Result<u8, SvgImportError> {
-    let high = chars
-        .next()
-        .and_then(|ch| ch.to_digit(16))
-        .ok_or(SvgImportError::InvalidColour)?;
-    let low = chars
-        .next()
-        .and_then(|ch| ch.to_digit(16))
-        .ok_or(SvgImportError::InvalidColour)?;
-    let value = (high << 4) | low;
-    u8::try_from(value).map_err(|_| SvgImportError::InvalidColour)
+    parse_hex_rgb(trimmed)
+        .map(Some)
+        .map_err(|_| SvgImportError::InvalidColour)
 }
 
 fn parse_opacity_to_alpha(value: &str) -> Result<u8, SvgImportError> {

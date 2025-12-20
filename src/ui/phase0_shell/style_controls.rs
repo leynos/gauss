@@ -10,7 +10,10 @@ use gpui_component::{
     color_picker::{ColorPicker, ColorPickerEvent, ColorPickerState},
 };
 
-use crate::model::{DocChange, DocOp, PaintStyle, Rgba, SelItem, ShapeId};
+use crate::model::{
+    DocChange, DocOp, PaintStyle, Rgba, SelItem, ShapeId, format_hex_rgba_optional_alpha,
+    parse_hex_rgba,
+};
 
 use super::Phase0Shell;
 
@@ -207,7 +210,7 @@ fn push_unique_shape_id(ids: &mut Vec<ShapeId>, shape_id: ShapeId) {
 }
 
 fn model_rgba_to_hsla(color: Rgba) -> Option<Hsla> {
-    let hex = model_rgba_to_hex(color);
+    let hex = format_hex_rgba_optional_alpha(color);
     let Ok(hsla) = Hsla::parse_hex(&hex) else {
         return None;
     };
@@ -215,55 +218,5 @@ fn model_rgba_to_hsla(color: Rgba) -> Option<Hsla> {
 }
 
 fn hsla_to_model_rgba(color: Hsla) -> Option<Rgba> {
-    parse_hex_colour(&color.to_hex())
-}
-
-fn model_rgba_to_hex(color: Rgba) -> String {
-    if color.a == 255 {
-        return format!("#{:02X}{:02X}{:02X}", color.r, color.g, color.b);
-    }
-
-    format!(
-        "#{:02X}{:02X}{:02X}{:02X}",
-        color.r, color.g, color.b, color.a
-    )
-}
-
-fn parse_hex_colour(hex: &str) -> Option<Rgba> {
-    let without_hash = hex.strip_prefix('#').unwrap_or(hex);
-    let len = without_hash.len();
-    if len != 6 && len != 8 {
-        return None;
-    }
-
-    let mut iter = without_hash.as_bytes().iter().copied();
-    let r = parse_hex_byte(&mut iter)?;
-    let g = parse_hex_byte(&mut iter)?;
-    let b = parse_hex_byte(&mut iter)?;
-    let a = if len == 8 {
-        parse_hex_byte(&mut iter)?
-    } else {
-        255
-    };
-
-    if iter.next().is_some() {
-        return None;
-    }
-
-    Some(Rgba::new(r, g, b, a))
-}
-
-fn parse_hex_byte(iter: &mut impl Iterator<Item = u8>) -> Option<u8> {
-    let high_digit = parse_hex_nibble(iter.next()?)?;
-    let low_digit = parse_hex_nibble(iter.next()?)?;
-    Some((high_digit << 4) | low_digit)
-}
-
-const fn parse_hex_nibble(byte: u8) -> Option<u8> {
-    match byte {
-        b'0'..=b'9' => Some(byte - b'0'),
-        b'a'..=b'f' => Some(byte - b'a' + 10),
-        b'A'..=b'F' => Some(byte - b'A' + 10),
-        _ => None,
-    }
+    parse_hex_rgba(&color.to_hex()).ok()
 }
