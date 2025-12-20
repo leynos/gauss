@@ -1,0 +1,235 @@
+//! Draw-mode behaviour and document history wiring for the Phase 0 shell.
+//!
+//! Phase 0 intentionally keeps draw mode simple:
+//!
+//! - Click appends anchors to an open path.
+//! - Clicking near the first anchor closes the path.
+//! - Each click is one undo step.
+//! - When in "Bezier (auto)" mode, we synthesise cubic handles using a
+//!   Catmull–Rom-to-cubic conversion.
+
+#![expect(
+    clippy::float_arithmetic,
+    reason = "draw mode operates on floating-point geometry and handles"
+)]
+
+use gpui_component::history::HistoryItem;
+
+use crate::model::{
+    Anchor, DocChange, DocOp, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, Vec2,
+};
+
+use super::Phase0Shell;
+
+mod handles;
+
+use self::handles::{clear_line_segment_handles, close_shape, update_catmull_rom_handles};
+
+const SNAP_RADIUS_PX: f32 = 10.0;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum ToolMode {
+    Draw,
+    Manipulate,
+}
+
+impl ToolMode {
+    pub(super) const fn label(self) -> &'static str {
+        match self {
+            Self::Draw => "Draw",
+            Self::Manipulate => "Manipulate",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum DrawEdgeMode {
+    Line,
+    BezierAuto,
+}
+
+impl DrawEdgeMode {
+    pub(super) const fn label(self) -> &'static str {
+        match self {
+            Self::Line => "Line",
+            Self::BezierAuto => "Bezier (auto)",
+        }
+    }
+
+    pub(super) const fn toggle(self) -> Self {
+        match self {
+            Self::Line => Self::BezierAuto,
+            Self::BezierAuto => Self::Line,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct DocHistoryItem {
+    version: usize,
+    pub(super) change: DocChange,
+}
+
+impl PartialEq for DocHistoryItem {
+    fn eq(&self, other: &Self) -> bool {
+        self.change == other.change
+    }
+}
+
+impl HistoryItem for DocHistoryItem {
+    fn version(&self) -> usize {
+        self.version
+    }
+
+    fn set_version(&mut self, version: usize) {
+        self.version = version;
+    }
+}
+
+impl DocHistoryItem {
+    pub(super) const fn new(change: DocChange) -> Self {
+        Self { version: 0, change }
+    }
+}
+
+impl Phase0Shell {
+    pub(super) fn handle_canvas_click(&mut self, position: gpui::Point<gpui::Pixels>) -> bool {
+        let cursor_screen = Vec2::new(f32::from(position.x), f32::from(position.y));
+        self.last_canvas_click_screen = Some(cursor_screen);
+
+        if self.tool_mode != ToolMode::Draw {
+            return false;
+        }
+
+        let cursor_world = self.viewport.screen_to_world(cursor_screen);
+        self.draw_click_world(cursor_world)
+    }
+
+    fn draw_click_world(&mut self, cursor_world: Vec2) -> bool {
+        let Some(active) = self.draw_active_shape else {
+            return self.start_new_open_shape(cursor_world);
+        };
+
+        let Some(index) = self.document.find_index(active) else {
+            self.draw_active_shape = None;
+            return self.start_new_open_shape(cursor_world);
+        };
+
+        let Some(existing) = self.document.shapes.get(index).cloned() else {
+            self.draw_active_shape = None;
+            return false;
+        };
+
+        if should_close_path(&existing.path, cursor_world, self.viewport.zoom()) {
+            let closed = close_shape(existing.clone(), segment_kind_for_edge_mode(self.edge_mode));
+            self.apply_doc_change(replace_shape_change(index, existing, closed));
+            self.tool_mode = ToolMode::Manipulate;
+            self.draw_active_shape = None;
+            return true;
+        }
+
+        let appended = append_anchor(existing.clone(), cursor_world, self.edge_mode);
+        self.apply_doc_change(replace_shape_change(index, existing, appended));
+        true
+    }
+
+    fn start_new_open_shape(&mut self, cursor_world: Vec2) -> bool {
+        let shape = new_open_shape(cursor_world, self.current_style.clone());
+        let shape_id = shape.id;
+        let index = self.document.shapes.len();
+        self.apply_doc_change(DocChange {
+            ops: vec![DocOp::InsertShape { index, shape }],
+        });
+
+        self.draw_active_shape = Some(shape_id);
+        true
+    }
+
+    pub(super) fn apply_doc_change(&mut self, change: DocChange) {
+        change.apply(&mut self.document);
+        self.document_history.push(DocHistoryItem::new(change));
+    }
+
+    pub(super) fn undo_document(&mut self) {
+        let Some(group) = self.document_history.undo() else {
+            return;
+        };
+
+        for item in group {
+            item.change.apply_inverse(&mut self.document);
+        }
+    }
+
+    pub(super) fn redo_document(&mut self) {
+        let Some(group) = self.document_history.redo() else {
+            return;
+        };
+
+        for item in group {
+            item.change.apply(&mut self.document);
+        }
+    }
+}
+
+fn new_open_shape(first_anchor: Vec2, style: PaintStyle) -> Shape {
+    Shape {
+        id: ShapeId::new_v4(),
+        z: 0,
+        style,
+        path: PathGeom {
+            anchors: vec![Anchor::new(first_anchor)],
+            segments: Vec::new(),
+            closed: false,
+            closing_segment: SegmentKind::Line,
+        },
+    }
+}
+
+const fn segment_kind_for_edge_mode(edge_mode: DrawEdgeMode) -> SegmentKind {
+    match edge_mode {
+        DrawEdgeMode::Line => SegmentKind::Line,
+        DrawEdgeMode::BezierAuto => SegmentKind::Cubic,
+    }
+}
+
+fn append_anchor(mut shape: Shape, pos: Vec2, edge_mode: DrawEdgeMode) -> Shape {
+    let new_anchor_index = shape.path.anchors.len();
+    shape.path.anchors.push(Anchor::new(pos));
+    shape
+        .path
+        .segments
+        .push(segment_kind_for_edge_mode(edge_mode));
+
+    match edge_mode {
+        DrawEdgeMode::Line => {
+            clear_line_segment_handles(&mut shape.path, new_anchor_index);
+        }
+        DrawEdgeMode::BezierAuto => {
+            update_catmull_rom_handles(&mut shape.path, new_anchor_index);
+        }
+    }
+
+    shape
+}
+
+fn replace_shape_change(index: usize, from: Shape, to: Shape) -> DocChange {
+    DocChange {
+        ops: vec![
+            DocOp::RemoveShape { index, shape: from },
+            DocOp::InsertShape { index, shape: to },
+        ],
+    }
+}
+
+fn should_close_path(path: &PathGeom, cursor_world: Vec2, zoom: f32) -> bool {
+    let Some(first) = path.anchors.first() else {
+        return false;
+    };
+
+    if path.anchors.len() < 3 {
+        return false;
+    }
+
+    let snap_world = SNAP_RADIUS_PX / zoom;
+    first.pos.distance(cursor_world) <= snap_world
+}
