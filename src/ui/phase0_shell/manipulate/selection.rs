@@ -3,8 +3,6 @@
 //! The logic here keeps selection changes isolated from drag setup so the
 //! event handlers remain easy to follow.
 
-use std::collections::HashSet;
-
 use crate::model::{SelItem, Selection, ShapeId};
 use crate::ui::selection_utils::selected_shape_ids;
 
@@ -32,10 +30,7 @@ pub(super) fn can_drag_shape_bbox(previous: &Selection, hit: MouseDownHit) -> bo
 }
 
 pub(super) fn selected_shape_ids_for_drag(selection: &Selection) -> Vec<ShapeId> {
-    selected_shape_ids(selection)
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect()
+    selected_shape_ids(selection).collect()
 }
 
 fn toggle_selection_for_hit(current: &Selection, hit: MouseDownHit) -> Selection {
