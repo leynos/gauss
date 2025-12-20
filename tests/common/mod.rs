@@ -197,6 +197,12 @@ pub fn assert_vec2_close(actual: Vec2, expected: Vec2, context: &str) -> TestSup
     Ok(())
 }
 
+/// Convert an anchor position into a canvas point.
+///
+/// Tests sometimes store anchor positions relative to the canvas origin and
+/// sometimes in absolute window coordinates. This helper chooses the
+/// interpretation that is closest to the expected local padding to keep tests
+/// resilient to both representations.
 pub fn anchor_to_canvas_point(
     bounds: &Bounds<Pixels>,
     anchor: Vec2,
