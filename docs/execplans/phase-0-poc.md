@@ -1,4 +1,4 @@
-# Phase 0: Build the “Gauss” GPUI PoC vector editor
+# Phase 0: Build the “Gauss” GPU-accelerated UI (GPUI) PoC vector editor
 
 This ExecPlan is a living document. The sections `Progress`,
 `Surprises & discoveries`, `Decision log`, and `Outcomes & retrospective` must
@@ -20,8 +20,8 @@ After this work, a developer can run the app and:
 - In “Manipulate” mode, select and drag shapes/anchors/handles, toggle segment
   kind (line ↔ cubic), adjust stroke/fill, raise/lower, and do “PoC quality”
   structural edits (insert/delete anchor).
-- Open and save SVG via a native file dialog, using GPUI’s platform path
-  prompts (preferred over a bespoke dialog).
+- Open and save Scalable Vector Graphics (SVG) via a native file dialog, using
+  GPUI’s platform path prompts (preferred over a bespoke dialog).
 - Undo/redo edits on two independent stacks (document edits and selection
   changes). The same shortcut set is used; holding Shift selects the selection
   history stack.
@@ -95,7 +95,7 @@ running `make all` and seeing it pass.
           not allow further point placement.
     - [x] (2025-12-18) Add a headless `#[gpui::test]` asserting `Tab` switches
           draw mode into `Bezier (auto)` and the resulting path segments are
-          cubic with Catmull–Rom synthesised handles.
+          cubic with Catmull–Rom synthesized handles.
     - [x] (2025-12-18) Add stroke/fill colour controls via
           `gpui-component`’s colour picker, and a headless `#[gpui::test]`
           asserting style changes apply to selected shapes and are undoable.
@@ -190,7 +190,7 @@ running `make all` and seeing it pass.
       switching covered by separate tests that already click into the canvas.
 
     - Observation: Having both `src/ui/phase0_shell.rs` and
-      `src/ui/phase0_shell/*` triggers `clippy::self-named-module-files`.
+      `src/ui/phase0_shell/*` triggers `clippy::self_named_module_files`.
       Evidence: `make lint` fails with a suggestion to move
       `src/ui/phase0_shell.rs` to `src/ui/phase0_shell/mod.rs`.
       Impact: When introducing submodules under `src/ui/phase0_shell`, convert
@@ -750,7 +750,7 @@ The Phase 0 PoC is accepted when:
       - Covered by `tests/gpui_mode_indicator.rs` and
         `tests/gpui_draw_bezier_auto.rs`.
     - [x] In `Bezier (auto)` mode, add several points and confirm the
-      resulting curve is smooth (handles are synthesised using a
+      resulting curve is smooth (handles are synthesized using a
       Catmull–Rom-to-cubic conversion).
       - Covered by `tests/gpui_draw_bezier_auto.rs`.
     - [x] Close the path by clicking near the first anchor (within the snap
