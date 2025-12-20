@@ -3,7 +3,7 @@
     clippy::float_arithmetic,
     reason = "integration tests use floating point geometry inputs"
 )]
-#![allow(
+#![expect(
     dead_code,
     reason = "integration tests each use a subset of the shared helper module"
 )]
