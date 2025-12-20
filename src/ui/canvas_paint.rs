@@ -106,7 +106,7 @@ fn build_paths(shape: &Shape, viewport: Viewport) -> (Option<Path<Pixels>>, Opti
         build_path(
             shape,
             viewport,
-            PathBuilder::stroke(px(shape.style.stroke_width * viewport.zoom)),
+            PathBuilder::stroke(px(shape.style.stroke_width * viewport.zoom())),
         )
     } else {
         None

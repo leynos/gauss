@@ -5,6 +5,8 @@
 //! geometry in that editor-friendly form, while remaining straightforward to
 //! compile into SVG path strings or a GPUI `PathBuilder` later.
 
+use std::ops::{Add, Mul, Sub};
+
 use uuid::Uuid;
 
 /// Identifier for a [`Shape`].
@@ -92,6 +94,38 @@ impl Vec2 {
     #[must_use]
     pub fn distance(self, other: Self) -> f32 {
         self.distance_squared(other).sqrt()
+    }
+}
+
+impl Add for Vec2 {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        self.add(other)
+    }
+}
+
+impl Sub for Vec2 {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        self.sub(other)
+    }
+}
+
+impl Mul<f32> for Vec2 {
+    type Output = Self;
+
+    fn mul(self, scalar: f32) -> Self {
+        self.mul(scalar)
+    }
+}
+
+impl Mul<Vec2> for f32 {
+    type Output = Vec2;
+
+    fn mul(self, vec: Vec2) -> Vec2 {
+        vec.mul(self)
     }
 }
 

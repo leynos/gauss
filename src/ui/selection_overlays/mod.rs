@@ -88,9 +88,9 @@ fn add_shape_overlays(overlays: &mut SelectionOverlays, shape: &Shape, viewport:
 }
 
 fn shape_screen_bbox(shape: &Shape, viewport: Viewport) -> Option<(Vec2, Vec2)> {
-    let bounds = shape_world_bounds(shape)?;
-    let screen_min = viewport.world_to_screen(bounds.min());
-    let screen_max = viewport.world_to_screen(bounds.max());
+    let (min, max) = shape_world_bounds(shape)?.to_tuple()?;
+    let screen_min = viewport.world_to_screen(min);
+    let screen_max = viewport.world_to_screen(max);
     Some((screen_min, screen_max))
 }
 

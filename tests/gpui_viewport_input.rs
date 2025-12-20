@@ -65,7 +65,7 @@ fn secondary_scroll_wheel_zooms_around_cursor(cx: &mut TestAppContext) {
 
         let after = visual_cx.read(|app| view.read(app).viewport());
         assert!(
-            (after.zoom - before.zoom).abs() > 0.0001,
+            (after.zoom() - before.zoom()).abs() > 0.0001,
             "zoom should change when using the secondary scroll modifier"
         );
 
@@ -81,5 +81,5 @@ fn secondary_scroll_wheel_zooms_around_cursor(cx: &mut TestAppContext) {
     cx.run_until_parked();
 
     let viewport = cx.read(|app| view.read(app).viewport());
-    assert!(viewport.zoom > 1.0);
+    assert!(viewport.zoom() > 1.0);
 }

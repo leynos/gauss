@@ -75,7 +75,7 @@ impl Phase0Shell {
         }
 
         let cursor_world = cursor_world(&self.viewport, event.position);
-        let tolerance_world = 4.0 / self.viewport.zoom;
+        let tolerance_world = 4.0 / self.viewport.zoom();
         let hit = hit_under_cursor(&self.document, cursor_world, tolerance_world);
 
         let previous_selection = self.selection.clone();

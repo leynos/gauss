@@ -122,7 +122,7 @@ impl Phase0Shell {
             return false;
         };
 
-        if should_close_path(&existing.path, cursor_world, self.viewport.zoom) {
+        if should_close_path(&existing.path, cursor_world, self.viewport.zoom()) {
             let closed = close_shape(existing.clone(), self.edge_mode);
             self.apply_doc_change(replace_shape_change(index, existing, closed));
             self.tool_mode = ToolMode::Manipulate;

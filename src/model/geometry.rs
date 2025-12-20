@@ -9,53 +9,56 @@ use crate::model::{SegmentKind, Shape, Vec2};
 /// Axis-aligned bounds in world space.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Bounds {
-    min: Vec2,
-    max: Vec2,
+    min: Option<Vec2>,
+    max: Option<Vec2>,
 }
 
 impl Bounds {
     pub(crate) const fn new() -> Self {
         Self {
-            min: Vec2::new(f32::INFINITY, f32::INFINITY),
-            max: Vec2::new(f32::NEG_INFINITY, f32::NEG_INFINITY),
+            min: None,
+            max: None,
         }
     }
 
-    pub(crate) const fn update(&mut self, point: Vec2) {
-        if point.x < self.min.x {
-            self.min.x = point.x;
-        }
-        if point.y < self.min.y {
-            self.min.y = point.y;
-        }
-        if point.x > self.max.x {
-            self.max.x = point.x;
-        }
-        if point.y > self.max.y {
-            self.max.y = point.y;
+    pub(crate) fn update(&mut self, point: Vec2) {
+        if let (Some(mut min), Some(mut max)) = (self.min, self.max) {
+            if point.x < min.x {
+                min.x = point.x;
+            }
+            if point.y < min.y {
+                min.y = point.y;
+            }
+            if point.x > max.x {
+                max.x = point.x;
+            }
+            if point.y > max.y {
+                max.y = point.y;
+            }
+            self.min = Some(min);
+            self.max = Some(max);
+        } else {
+            self.min = Some(point);
+            self.max = Some(point);
         }
     }
 
-    pub(crate) const fn min(&self) -> Vec2 {
-        self.min
-    }
-
-    pub(crate) const fn max(&self) -> Vec2 {
-        self.max
+    pub(crate) const fn to_tuple(self) -> Option<(Vec2, Vec2)> {
+        match (self.min, self.max) {
+            (Some(min), Some(max)) => Some((min, max)),
+            _ => None,
+        }
     }
 
     pub(crate) const fn contains(self, point: Vec2, tolerance: f32) -> bool {
-        point.x >= (self.min.x - tolerance)
-            && point.x <= (self.max.x + tolerance)
-            && point.y >= (self.min.y - tolerance)
-            && point.y <= (self.max.y + tolerance)
-    }
+        let Some((min, max)) = self.to_tuple() else {
+            return false;
+        };
 
-    pub(crate) const fn is_valid(self) -> bool {
-        self.min.x.is_finite()
-            && self.min.y.is_finite()
-            && self.max.x.is_finite()
-            && self.max.y.is_finite()
+        point.x >= (min.x - tolerance)
+            && point.x <= (max.x + tolerance)
+            && point.y >= (min.y - tolerance)
+            && point.y <= (max.y + tolerance)
     }
 }
 
@@ -139,10 +142,7 @@ pub(crate) fn shape_world_bounds(shape: &Shape) -> Option<Bounds> {
         let end = end_anchor.pos;
 
         match kind {
-            SegmentKind::Line => {
-                bounds.update(start);
-                bounds.update(end);
-            }
+            SegmentKind::Line => {}
             SegmentKind::Cubic => {
                 let c1 = start_anchor.handle_out.unwrap_or(start);
                 let c2 = end_anchor.handle_in.unwrap_or(end);
@@ -155,10 +155,7 @@ pub(crate) fn shape_world_bounds(shape: &Shape) -> Option<Bounds> {
         && let (Some(last), Some(first)) = (shape.path.anchors.last(), shape.path.anchors.first())
     {
         match shape.path.closing_segment {
-            SegmentKind::Line => {
-                bounds.update(last.pos);
-                bounds.update(first.pos);
-            }
+            SegmentKind::Line => {}
             SegmentKind::Cubic => {
                 let c1 = last.handle_out.unwrap_or(last.pos);
                 let c2 = first.handle_in.unwrap_or(first.pos);
@@ -170,11 +167,7 @@ pub(crate) fn shape_world_bounds(shape: &Shape) -> Option<Bounds> {
         }
     }
 
-    if bounds.is_valid() {
-        Some(bounds)
-    } else {
-        None
-    }
+    bounds.to_tuple().map(|_| bounds)
 }
 
 fn extend_bounds_with_cubic(bounds: &mut Bounds, cubic: CubicSegment) {
