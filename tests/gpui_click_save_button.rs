@@ -1,4 +1,5 @@
-//! Validate that headless GPUI tests can drive `on_click` handlers.
+//! Validate that headless GPUI tests can drive the Save button `on_click`
+//! handler and observe the platform save prompt state.
 
 mod common;
 
