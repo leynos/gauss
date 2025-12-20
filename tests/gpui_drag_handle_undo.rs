@@ -26,14 +26,6 @@ fn draw_two_point_bezier_path(visual_cx: &mut VisualTestContext, scenario: Canva
     visual_cx.run_until_parked();
 }
 
-fn model_point_to_canvas_point(
-    bounds: gpui::Bounds<gpui::Pixels>,
-    model: Vec2,
-    reference: gpui::Point<gpui::Pixels>,
-) -> gpui::Point<gpui::Pixels> {
-    anchor_to_canvas_point(&bounds, model, reference)
-}
-
 #[derive(Debug)]
 struct HandleDragSetup {
     scenario: CanvasDragScenario,
@@ -64,7 +56,7 @@ fn setup_handle_drag(
     })?;
 
     let handle_start =
-        model_point_to_canvas_point(scenario.bounds, original_handle_out, scenario.first);
+        anchor_to_canvas_point(&scenario.bounds, original_handle_out, scenario.first);
     let handle_end = point(
         handle_start.x + px(scenario.delta.x),
         handle_start.y + px(scenario.delta.y),
