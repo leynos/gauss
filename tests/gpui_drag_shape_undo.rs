@@ -9,6 +9,7 @@ use common::{
 use gauss::model::{SelItem, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
+use test_support::math;
 
 #[gpui::test]
 fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
@@ -44,8 +45,8 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     );
 
     let drag_start = {
-        let start_x = f32::midpoint(f32::from(scenario.first.x), f32::from(scenario.second.x));
-        let start_y = f32::midpoint(f32::from(scenario.first.y), f32::from(scenario.second.y));
+        let start_x = math::midpoint(f32::from(scenario.first.x), f32::from(scenario.second.x));
+        let start_y = math::midpoint(f32::from(scenario.first.y), f32::from(scenario.second.y));
         point(px(start_x), px(start_y))
     };
     let drag_end = point(

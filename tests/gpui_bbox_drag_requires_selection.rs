@@ -14,7 +14,7 @@ use common::{canvas_bounds, ensure_initial_draw, init_test_app};
 use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, px};
-use test_support::{TestSupportError, TestSupportResult};
+use test_support::{TestSupportError, TestSupportResult, math};
 use uuid::Uuid;
 
 fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) -> TestSupportResult<()> {
@@ -62,7 +62,7 @@ fn shape_bbox_centre(shape: &Shape) -> Vec2 {
         max_y = max_y.max(anchor.pos.y);
     }
 
-    Vec2::new(f32::midpoint(min_x, max_x), f32::midpoint(min_y, max_y))
+    Vec2::new(math::midpoint(min_x, max_x), math::midpoint(min_y, max_y))
 }
 
 const fn viewport_to_screen_point(

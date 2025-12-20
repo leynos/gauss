@@ -10,7 +10,7 @@ use common::{
 use gauss::model::{SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
-use test_support::{TestSupportError, TestSupportResult};
+use test_support::{TestSupportError, TestSupportResult, math};
 
 #[derive(Clone, Copy, Debug)]
 struct PathCounts {
@@ -309,8 +309,8 @@ fn insert_and_delete_anchor_are_doc_undoable(cx: &mut TestAppContext) {
     simulate_escape(visual_cx);
 
     let midpoint = Vec2::new(
-        f32::midpoint(setup.start_pos.x, setup.end_pos.x),
-        f32::midpoint(setup.start_pos.y, setup.end_pos.y),
+        math::midpoint(setup.start_pos.x, setup.end_pos.x),
+        math::midpoint(setup.start_pos.y, setup.end_pos.y),
     );
     insert_anchor_at_midpoint(visual_cx, &view, &setup, midpoint)
         .expect("expected anchor insertion to succeed");

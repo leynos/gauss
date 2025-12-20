@@ -22,7 +22,7 @@ use common::{
 use gauss::model::{SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
-use test_support::{TestSupportError, TestSupportResult};
+use test_support::{TestSupportError, TestSupportResult, math};
 
 fn select_segment0(
     visual_cx: &mut VisualTestContext,
@@ -179,8 +179,8 @@ fn tab_toggles_selected_segment_kind_and_undo_restores(cx: &mut TestAppContext) 
     simulate_escape(visual_cx);
 
     let midpoint = Vec2::new(
-        f32::midpoint(start_anchor.pos.x, end_anchor.pos.x),
-        f32::midpoint(start_anchor.pos.y, end_anchor.pos.y),
+        math::midpoint(start_anchor.pos.x, end_anchor.pos.x),
+        math::midpoint(start_anchor.pos.y, end_anchor.pos.y),
     );
     let select_point = anchor_to_canvas_point(&bounds, midpoint, p1);
 

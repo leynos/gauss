@@ -10,6 +10,7 @@ use common::{canvas_bounds, ensure_initial_draw, init_test_app};
 use gauss::model::{PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
+use test_support::math;
 use uuid::Uuid;
 
 fn demo_square(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
@@ -47,7 +48,7 @@ fn clicking_inside_shape_bbox_selects_shape(cx: &mut TestAppContext) {
     // should not trigger (we click the square's centre, not near edges).
     let min = origin.add(Vec2::new(20.0, 20.0));
     let max = origin.add(Vec2::new(160.0, 160.0));
-    let centre = Vec2::new(f32::midpoint(min.x, max.x), f32::midpoint(min.y, max.y));
+    let centre = Vec2::new(math::midpoint(min.x, max.x), math::midpoint(min.y, max.y));
 
     visual_cx.update(|_window, app| {
         view.update(app, |shell, view_cx| {

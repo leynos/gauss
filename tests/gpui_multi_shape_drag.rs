@@ -14,7 +14,7 @@ use common::{
 use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, px};
-use test_support::{TestSupportError, TestSupportResult};
+use test_support::{TestSupportError, TestSupportResult, math};
 use uuid::Uuid;
 
 fn find_shape<'a>(doc: &'a Document, id: ShapeId, context: &str) -> TestSupportResult<&'a Shape> {
@@ -23,14 +23,6 @@ fn find_shape<'a>(doc: &'a Document, id: ShapeId, context: &str) -> TestSupportR
         .iter()
         .find(|shape| shape.id == id)
         .ok_or_else(|| TestSupportError::missing("shape", message))
-}
-
-#[expect(
-    clippy::float_arithmetic,
-    reason = "tests compute midpoint values to position drag gestures"
-)]
-fn midpoint(a: f32, b: f32) -> f32 {
-    (a + b) * 0.5
 }
 
 fn shape_bbox_centre(shape: &Shape) -> Vec2 {
@@ -48,7 +40,7 @@ fn shape_bbox_centre(shape: &Shape) -> Vec2 {
         max_x = max_x.max(anchor.pos.x);
         max_y = max_y.max(anchor.pos.y);
     }
-    Vec2::new(midpoint(min_x, max_x), midpoint(min_y, max_y))
+    Vec2::new(math::midpoint(min_x, max_x), math::midpoint(min_y, max_y))
 }
 
 const fn viewport_to_screen_point(
