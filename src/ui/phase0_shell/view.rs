@@ -1,8 +1,11 @@
 //! Layout and rendering for the Phase 0 shell.
 
-use gpui::{Window, div, prelude::*};
+use gpui::{Window, div, prelude::*, white};
 
-use super::{KEY_CONTEXT, OpenSvg, Phase0Shell, SaveSvg, ToggleEdgeMode, draw, file_dialogs};
+use super::{
+    KEY_CONTEXT, OpenSvg, Phase0Shell, SaveSvg, ToggleEdgeMode, chrome_palette::chrome_border,
+    draw, file_dialogs,
+};
 
 impl Phase0Shell {
     pub(super) fn mode_status_line(&self) -> String {
@@ -16,30 +19,17 @@ impl Phase0Shell {
         }
     }
 
-    fn save_status_line(&self) -> String {
-        match (&self.last_saved_path, &self.last_save_error) {
-            (_, Some(err)) => format!("Save failed: {err}"),
-            (Some(path), None) => format!("Last saved path: {}", path.display()),
-            (None, None) => "Last saved path: (none)".to_owned(),
-        }
-    }
-
-    fn open_status_line(&self) -> String {
-        match (&self.last_opened_path, &self.last_open_error) {
-            (_, Some(err)) => format!("Open failed: {err}"),
-            (Some(path), None) => format!("Last opened path: {}", path.display()),
-            (None, None) => "Last opened path: (none)".to_owned(),
-        }
-    }
-
-    fn canvas_area(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    pub(super) fn canvas_area(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         div()
             .id("phase0-canvas")
             .debug_selector(|| "#phase0-canvas".to_owned())
             .flex()
             .flex_1()
             .border_1()
+            .border_color(chrome_border())
+            .bg(white())
             .rounded_md()
+            .overflow_hidden()
             .occlude()
             .on_mouse_down(
                 gpui::MouseButton::Left,
@@ -150,19 +140,16 @@ impl Render for Phase0Shell {
         }
 
         div()
-            .p_4()
             .size_full()
             .key_context(KEY_CONTEXT)
             .track_focus(&self.focus_handle)
             .flex()
             .flex_col()
-            .gap_4()
             .on_key_down(
                 cx.listener(|shell: &mut Self, event: &gpui::KeyDownEvent, _, view_cx| {
                     shell.handle_key_down(event, view_cx);
                 }),
             )
-            .child(self.header_row(window, cx))
             .on_action(
                 cx.listener(|shell: &mut Self, _: &OpenSvg, action_window, action_cx| {
                     file_dialogs::request_open(shell.open_prompt_mode, action_window, action_cx);
@@ -178,13 +165,6 @@ impl Render for Phase0Shell {
                     shell.handle_tab_action(action_cx);
                 }),
             )
-            .child(
-                "This view validates action wiring, native open/save prompts, and canvas \
-                 painting, while Phase 0 assembles the real editor UI.",
-            )
-            .child(self.canvas_area(cx))
-            .child(self.mode_status_line())
-            .child(self.save_status_line())
-            .child(self.open_status_line())
+            .child(self.chrome_view(window, cx))
     }
 }

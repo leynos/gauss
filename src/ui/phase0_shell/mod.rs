@@ -5,18 +5,25 @@
 //! `TestAppContext`.
 
 mod anchor_edit;
+mod chrome;
+mod chrome_palette;
+mod chrome_panels;
 mod draw;
 mod file_dialogs;
-mod header;
+mod icon_button;
 mod input;
 mod manipulate;
 mod reorder;
 mod segment_toggle;
 mod selection_history;
 mod style_controls;
+mod tool_rail;
 mod view;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+
+#[cfg(any(test, feature = "test-support"))]
+use std::path::Path;
 
 use gpui::prelude::*;
 use gpui_component::history::History;
