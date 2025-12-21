@@ -264,4 +264,15 @@ mod tests {
         let status_after = visual_cx.read(|app| view.read(app).file_status_line());
         assert_eq!(status_after, Some("Opened: /tmp/in.svg".to_owned()));
     }
+
+    #[gpui::test]
+    fn file_status_line_returns_none_when_empty(cx: &mut TestAppContext) {
+        cx.update(crate::ui::init);
+
+        let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+        visual_cx.run_until_parked();
+
+        let status = visual_cx.read(|app| view.read(app).file_status_line());
+        assert_eq!(status, None);
+    }
 }
