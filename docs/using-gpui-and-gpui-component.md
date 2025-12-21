@@ -1,6 +1,10 @@
 # Using GPUI and GPUI Component in Gauss
 
-This document captures what we learned while building the Phase 0 PoC and
+GPUI is a hybrid immediate/retained, GPU-accelerated user interface (UI)
+framework for Rust. GPUI Component sits on top of GPUI and provides a themed,
+Tailwind-style set of UI controls and layout helpers.
+
+This document captures the lessons from the Phase 0 proof of concept (PoC) and
 provides guidance for Phase 1, which will introduce a functional user
 interface. It assumes the current project structure and uses GPUI 0.2.2 and
 GPUI Component 0.5.0 as pinned in this repository.
@@ -8,139 +12,276 @@ GPUI Component 0.5.0 as pinned in this repository.
 ## Why this exists
 
 GPUI is pre-1.0 and changes frequently. The best way to stay productive is to
-standardise how we boot the app, organise state, render the UI, and test our
-behaviour. This guide records the patterns that worked in Phase 0, highlights
-pitfalls, and outlines how to extend the UI safely.
+standardize how the app boots, how state is organized, how the UI is rendered,
+and how behaviour is tested. This guide records the patterns that worked in
+Phase 0, highlights pitfalls, and outlines how to extend the UI safely.
 
 ## Version and platform constraints
 
 - GPUI is pre-1.0, so API changes are expected between versions.
-- It targets macOS and Linux and expects the latest stable Rust. In this repo
-  we currently use a nightly toolchain to support behavioural testing, but the
-  API patterns are stable-friendly.
-- Track versions intentionally and expect occasional update work.
+- This repo pins `gpui = "0.2.2"` and `gpui-component = "0.5.0"` in
+  `Cargo.toml`. When either changes, update this guide.
+- GPUI targets macOS and Linux and expects the latest stable Rust. This repo
+  uses a nightly toolchain to support behavioural testing, but the API patterns
+  are stable-friendly.
+- On macOS, GPUI uses Metal and requires Xcode and the command line tools. Run
+  the following once after installing Xcode:
+
+  ```sh
+  xcode-select --install
+  sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+  ```
+
+- Local rustdoc copies live under `docs/rustdoc-gpui-0.2.2` and
+  `docs/rustdoc-gpui-component-0.5.0`. They are not committed, so a fresh clone
+  will not include them.
+
+## Getting started from scratch
+
+### Add dependencies
+
+The pinned versions below match the repo. The optional assets crate should stay
+on the same version as `gpui-component`.
+
+```toml
+[dependencies]
+gpui = "0.2.2"
+gpui-component = "0.5.0"
+# Optional, for bundled icon assets
+# gpui-component-assets = "0.5.0"
+anyhow = "1.0"
+```
+
+### Entry point skeleton
+
+All GPUI apps follow the same boot sequence:
+
+1. Create an `Application`.
+2. Call `gpui_component::init(app)` inside the `Application::run` closure.
+3. Open a window and install a `Root` view as the first view in the window.
+4. Create the root view entity and pass it to `Root::new`.
+
+Minimal example:
+
+```rust
+use gpui::*;
+use gpui_component::Root;
+
+struct HelloWorld;
+
+impl Render for HelloWorld {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div().child("Hello, World!")
+    }
+}
+
+fn main() {
+    let app = Application::new();
+    // If gpui-component-assets is used:
+    // let app = Application::new().with_assets(gpui_component_assets::Assets);
+
+    app.run(|app| {
+        gpui_component::init(app);
+
+        if app
+            .open_window(WindowOptions::default(), |window, cx| {
+                let view = cx.new(|_| HelloWorld);
+                cx.new(|root_cx| Root::new(view, window, root_cx))
+            })
+            .is_err()
+        {
+            app.quit();
+        }
+    });
+}
+```
+
+Gauss centralizes this setup in `gauss::ui::init`, and the entrypoint in
+`src/main.rs` calls it before opening the window.
 
 ## Mental model: three registers
 
-GPUI supports three primary registers. We use all three in the PoC.
+GPUI supports three primary registers. The PoC uses all three.
 
 1. **Entities (state and communication)**
    - `Entity<T>` is owned by the app. State lives here.
-   - Use entities for shared editor state or view state that needs to be read
-     or updated across components.
-   - Access entity data via context (`Context<T>` or `App`) with `read` and
-     `update`.
+   - Entities suit shared editor state or view state that needs to be read or
+     updated across components.
+   - Access entity data via a context (`Context<T>` or `App`) and call
+     `Context::notify` when state changes need to wake observers.
 
 2. **Views (declarative UI)**
    - Views are entities that implement `Render`.
-   - Use views to compose the UI tree (`div`, components, etc).
+   - Views compose the UI tree (`div`, components, etc).
    - GPUI calls `render` on the root view each frame.
 
 3. **Elements (imperative UI)**
    - Elements give direct control over layout and rendering.
-   - Use elements when you need custom drawing (e.g. `Canvas`) or specialised
+   - Elements handle custom drawing (for example, `Canvas`) or specialized
      layout.
 
 The PoC uses a view (`Phase0Shell`) that renders a toolbar and a canvas. The
 canvas uses GPUI's low-level drawing surface via `Canvas` and `PathBuilder`.
 
-## Contexts you will touch
+## Contexts used in Gauss
 
 - `Application` / `App`: create windows and access global state.
 - `Context<T>`: entity context, dereferences to `App`.
 - `Window`: the active window; required by `Render`.
-- `TestAppContext`: headless testing and input simulation.
-
-In async workflows, GPUI provides `to_async` contexts. We do not rely on async
-contexts in Phase 0, but the API exists for background tasks.
-
-## Bootstrapping the app
-
-The minimal pattern used in this repo:
-
-- Create an `Application`.
-- Call `gpui_component::init(cx)` inside `app.run`.
-- Open a window and set the root view to a `Root` wrapper.
-
-Example (trimmed):
-
-```rust
-let app = Application::new();
-app.run(|cx| {
-    gpui_component::init(cx);
-    cx.open_window(WindowOptions::default(), |window, cx| {
-        let view = cx.new(|_| Phase0Shell::new(cx));
-        cx.new(|cx| Root::new(view, window, cx))
-    });
-});
-```
-
-The `Root` wrapper is required by GPUI Component for theming and layout.
+- `AsyncApp` and `AsyncWindowContext`: created via `to_async`, can be held
+  across `.await` points but become fallible because the app or window may
+  disappear.
+- `TestAppContext`: test-only contexts that panic if the app or window is
+  missing and provide extra helpers for input simulation.
 
 ## GPUI Component in practice
 
 ### When to use components
 
-Use GPUI Component for standard UI controls: buttons, inputs, dropdowns, colour
-pickers, etc. It provides consistent theming and sizes and lets the canvas
-remain the only custom-drawn piece.
+GPUI Component is the default for standard UI controls (buttons, inputs,
+dropdowns, colour pickers, etc). It provides consistent theming and sizing and
+keeps custom drawing focused on the canvas.
 
-### Initialise once
+### Initialize once
 
-`gpui_component::init(cx)` must be called inside the `app.run` closure before
-using any components. This ensures theme state and global settings are ready.
+`gpui_component::init(app)` must be called inside the `Application::run`
+closure before using any components. This initializes theme state and registers
+component services.
 
-### Stateless vs stateful
+### Root wrapper is required
 
-- Most components are stateless and are used directly in `render`.
-- A few are stateful (e.g. inputs, lists) and must be created as entities and
-  stored on the view struct.
+The first view in every window must be a `gpui_component::Root`. This wrapper
+hosts theming, dialog layers, and other global component plumbing.
 
-### Colour picker and history
+### Stateless vs stateful components
 
-We use GPUI Component's colour picker module and `History` for undo/redo
-stacks. This is a central dependency for Phase 1 UI work.
+- Most components are stateless `RenderOnce` elements used directly in
+  `render`.
+- Some components manage internal state and therefore implement `Render`. These
+  must be created as entities and stored on the view struct.
+
+Example (stateful input):
+
+```rust
+struct MyView {
+    input: Entity<gpui_component::input::InputState>,
+}
+
+impl MyView {
+    fn new(window: &Window, cx: &mut Context<Self>) -> Self {
+        let input = cx.new(|cx| {
+            gpui_component::input::InputState::new(window, cx).default_value("Hello")
+        });
+        Self { input }
+    }
+}
+
+impl Render for MyView {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        self.input.clone()
+    }
+}
+```
+
+### Theming
+
+GPUI Component exposes theme data via the `ActiveTheme` trait, implemented for
+`App`. Because `Context<T>` dereferences to `App`, `cx.theme()` is available in
+views and elements.
+
+### Sizing and variants
+
+Most components support sizes and variants with fluent methods:
+
+```rust
+Button::new("btn").small();
+Button::new("btn").medium(); // default
+Button::new("btn").large();
+
+Button::new("btn").primary();
+Button::new("btn").danger();
+Button::new("btn").warning();
+Button::new("btn").success();
+Button::new("btn").ghost();
+Button::new("btn").outline();
+```
 
 ### Icons and assets
 
-Icons are not bundled by default. If we want iconography in Phase 1, we must
-add assets and use `Icon` with a supported `IconName`.
+GPUI Component includes an `Icon` element and an `IconName` enum, but it does
+not bundle Scalable Vector Graphics (SVG) icons by default. Icons require
+either custom SVG assets or the optional `gpui-component-assets` crate plus
+`Application::with_assets`.
+
+```rust
+use gpui_component::{Icon, IconName};
+
+Icon::new(IconName::Check);
+```
+
+## Actions and keyboard input
+
+GPUI is keyboard-first. Actions should be defined and bound in a key context to
+expose keyboard behaviour.
+
+Actions can be unit structs:
+
+```rust
+mod menu {
+    actions!(gpui, [MoveUp, MoveDown]);
+}
+```
+
+Or richer types:
+
+```rust
+mod menu {
+    #[gpui::action]
+    struct Move {
+        direction: Direction,
+        select: bool,
+    }
+}
+```
+
+Bind actions on elements with `on_action` and scope key bindings with
+`key_context`:
+
+```rust
+div()
+    .key_context("menu")
+    .on_action(|this: &mut Menu, _: &menu::MoveUp, _window, _cx| {
+        // ...
+    });
+```
+
+Key bindings can be expressed as JSON keymaps (action names are fully qualified
+Rust paths). Gauss currently registers bindings in code via `App::bind_keys` in
+`src/ui/phase0_shell/mod.rs`. Key context strings must use letters, digits,
+`_`, or `-`.
 
 ## Canvas and drawing
 
-For the PoC we kept rendering inside a `Canvas` element with `PathBuilder`.
-This provides low-level control without writing a full custom element.
+For the PoC, rendering stays inside a `Canvas` element with `PathBuilder`. This
+provides low-level control without writing a full custom element.
 
-Patterns that worked well:
+Recommended patterns:
 
 - Convert model-space points to screen-space through a `Viewport` transform.
 - Build separate fill and stroke paths for each shape.
 - Draw fill first, then stroke, then selection overlays.
 - Use a small, predictable marker size for anchors and handles.
 
-GPUI's `PathBuilder` supports lines and cubic Bézier curves, which match our
+GPUI's `PathBuilder` supports lines and cubic Bézier curves, which match the
 model representation. Use `PathBuilder::fill()` and `PathBuilder::stroke()` to
 build `Path` objects for the canvas.
-
-## Actions and keyboard input
-
-GPUI uses actions for key bindings. The reliable flow is:
-
-1. Define actions (unit structs are easiest).
-2. Set a `key_context` on the element subtree that should handle the bindings.
-3. Register `on_action` handlers on that subtree.
-4. Provide key bindings in the keymap file.
-
-In Phase 0 we also handle some keys directly in view-level logic for
-simplicity, but Phase 1 should move fully to actions so keyboard behaviour is
-centralised and testable.
 
 ## File dialogs and platform prompts
 
 The PoC uses native file dialogs for Open/Save via GPUI platform prompts. The
 headless test backend does not implement `prompt_for_paths`, so tests route
-Open via `prompt_for_new_path`. This is why `Phase0Shell::new_for_tests` exists
-and should remain for headless testing.
+Open via `prompt_for_new_path`. `Phase0Shell::new_for_tests` exists to support
+headless testing and should remain.
 
 Guidance for Phase 1:
 
@@ -159,9 +300,9 @@ from the PoC:
 - Prefer test helpers in `tests/common` for repeated setup.
 - When simulating platform prompts, assert prompt state before and after.
 
-We kept behaviour-heavy tests at the controller/model boundary using
-`rstest-bdd` and a few targeted `#[gpui::test]` integrations for wiring and
-input behaviour. This is the recommended split for Phase 1.
+Behaviour-heavy tests stay at the controller/model boundary using `rstest-bdd`,
+with a few targeted `#[gpui::test]` integrations for wiring and input
+behaviour. This is the recommended split for Phase 1.
 
 ## Model + controller separation
 
@@ -183,12 +324,12 @@ possible. This keeps tests fast and reduces UI coupling.
 - Hit-testing is kept deterministic and uses model-space geometry.
 - Selection overlays and hit-testing share geometry utilities.
 
-## Pitfalls we hit (and how to avoid them)
+## Pitfalls encountered (and how to avoid them)
 
 - **Unfulfilled lint expectations**: Only add `#[expect]` when the lint is
   actually triggered in that module.
-- **`let _ =` with `#[must_use]`**: Use a named binding (e.g. `let _cleanup =`)
-  to satisfy the lint.
+- **`let _ =` with `#[must_use]`**: Use a named binding (for example,
+  `let _cleanup =`) to satisfy the lint.
 - **Headless prompt differences**: `prompt_for_paths` is not available in the
   test platform; use `prompt_for_new_path` when testing Open.
 - **Stale history after Open**: When swapping documents, clear undo/redo and
@@ -215,8 +356,9 @@ possible. This keeps tests fast and reduces UI coupling.
 
 ## References
 
-- GPUI docs: `docs/rustdoc-gpui-0.2.2`
-- GPUI Component docs: `docs/rustdoc-gpui-component-0.5.0`
+- GPUI docs: `docs/rustdoc-gpui-0.2.2/gpui/index.html`
+- GPUI Component docs:
+  `docs/rustdoc-gpui-component-0.5.0/gpui_component/index.html`
 
-These local docs should be consulted before introducing new GPUI APIs so we
-stay aligned with the pinned versions.
+These local docs should be consulted before introducing new GPUI APIs, so the
+project stays aligned with the pinned versions.

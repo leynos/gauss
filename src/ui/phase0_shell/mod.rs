@@ -5,18 +5,25 @@
 //! `TestAppContext`.
 
 mod anchor_edit;
+mod chrome;
+mod chrome_palette;
+mod chrome_panels;
 mod draw;
 mod file_dialogs;
-mod header;
+mod icon_button;
 mod input;
 mod manipulate;
 mod reorder;
 mod segment_toggle;
 mod selection_history;
 mod style_controls;
+mod tool_rail;
 mod view;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+
+#[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+use std::path::Path;
 
 use gpui::prelude::*;
 use gpui_component::history::History;
@@ -97,6 +104,7 @@ pub struct Phase0Shell {
     stroke_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
     fill_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
     style_picker_subscriptions: Vec<gpui::Subscription>,
+    did_init_style_pickers: bool,
 }
 
 impl Phase0Shell {
@@ -126,6 +134,7 @@ impl Phase0Shell {
             stroke_picker: None,
             fill_picker: None,
             style_picker_subscriptions: Vec::new(),
+            did_init_style_pickers: false,
         }
     }
 
@@ -133,7 +142,7 @@ impl Phase0Shell {
     ///
     /// This differs from [`Self::new`] only in how it triggers the file dialog
     /// for “Open…”.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub fn new_for_tests(cx: &mut Context<Self>) -> Self {
         Self {
@@ -143,14 +152,14 @@ impl Phase0Shell {
     }
 
     /// Return the last path selected by the platform save prompt, if any.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub fn last_saved_path(&self) -> Option<&Path> {
         self.last_saved_path.as_deref()
     }
 
     /// Return the last path selected by the platform open prompt, if any.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub fn last_opened_path(&self) -> Option<&Path> {
         self.last_opened_path.as_deref()
@@ -160,7 +169,7 @@ impl Phase0Shell {
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real UI.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub const fn document(&self) -> &Document {
         &self.document
@@ -170,7 +179,7 @@ impl Phase0Shell {
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub const fn viewport(&self) -> Viewport {
         self.viewport
@@ -180,10 +189,32 @@ impl Phase0Shell {
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub const fn selection(&self) -> &Selection {
         &self.selection
+    }
+
+    /// Return the active shape identifier, if any.
+    ///
+    /// This is intended for headless tests that validate tool mode switches.
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+    #[must_use]
+    pub const fn draw_active_shape_for_tests(&self) -> Option<ShapeId> {
+        self.draw_active_shape
+    }
+
+    /// Override the active shape during tests.
+    ///
+    /// This is used to verify that switching to manipulate mode clears the
+    /// active draw state.
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+    #[expect(
+        clippy::missing_const_for_fn,
+        reason = "Keep test helper aligned with other non-const mutators."
+    )]
+    pub fn set_draw_active_shape_for_tests(&mut self, shape: Option<ShapeId>) {
+        self.draw_active_shape = shape;
     }
 
     /// Replace the entire document.
@@ -192,7 +223,7 @@ impl Phase0Shell {
     /// assembling the real editor UI. It deliberately does not attempt to
     /// preserve history; callers that need undo/redo should drive changes via
     /// editor operations instead.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     pub fn replace_document_for_tests(&mut self, document: Document) {
         self.document = document;
         self.drag_state = None;
@@ -204,7 +235,7 @@ impl Phase0Shell {
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI. Selection history is not updated by this
     /// helper.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     pub fn replace_selection_for_tests(&mut self, selection: Selection) {
         self.selection = selection;
         self.drag_state = None;
@@ -214,7 +245,7 @@ impl Phase0Shell {
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub const fn is_dragging(&self) -> bool {
         self.drag_state.is_some()
@@ -224,7 +255,7 @@ impl Phase0Shell {
     ///
     /// This exists to keep `#[gpui::test]` assertions stable on the test
     /// platform, which does not necessarily exit when `App::quit()` is invoked.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub const fn did_request_quit(&self) -> bool {
         self.did_request_quit
@@ -234,7 +265,7 @@ impl Phase0Shell {
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub fn mode_status_line_for_tests(&self) -> String {
         self.mode_status_line()
@@ -246,17 +277,16 @@ impl Phase0Shell {
     /// established before the test sends synthetic key events. This helper
     /// allows tests to set the tool mode explicitly without relying on
     /// `Escape` dispatch.
-    #[cfg(any(test, feature = "test-support"))]
-    pub const fn enter_manipulate_mode_for_tests(&mut self) {
-        self.tool_mode = draw::ToolMode::Manipulate;
-        self.draw_active_shape = None;
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+    pub fn enter_manipulate_mode_for_tests(&mut self) {
+        self.set_tool_mode(draw::ToolMode::Manipulate);
     }
 
     /// Return the last canvas click position in screen coordinates.
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub const fn last_canvas_click_screen(&self) -> Option<Vec2> {
         self.last_canvas_click_screen

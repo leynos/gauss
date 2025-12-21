@@ -21,10 +21,12 @@ use super::Phase0Shell;
 
 type SavePathPromptReceiver = oneshot::Receiver<gpui::Result<Option<PathBuf>>>;
 type OpenPathsPromptReceiver = oneshot::Receiver<gpui::Result<Option<Vec<PathBuf>>>>;
+#[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
 type OpenPathPromptReceiver = SavePathPromptReceiver;
 
 enum OpenPromptReceiver {
     Paths(OpenPathsPromptReceiver),
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     NewPath(OpenPathPromptReceiver),
 }
 
@@ -39,6 +41,7 @@ pub(super) enum OpenPromptMode {
     /// GPUI 0.2.2's test platform does not implement `prompt_for_paths`, so
     /// this mode lets us cover the rest of the open pipeline (action dispatch,
     /// async wiring, file read, parse, and state update).
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     TestNewPath,
 }
 
@@ -51,6 +54,7 @@ impl OpenPromptMode {
                 multiple: false,
                 prompt: Some("Open SVG".into()),
             })),
+            #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
             Self::TestNewPath => {
                 OpenPromptReceiver::NewPath(cx.prompt_for_new_path(Path::new("."), None))
             }
@@ -105,6 +109,7 @@ async fn receive_open_path(receiver: OpenPromptReceiver) -> Option<PathBuf> {
         OpenPromptReceiver::Paths(paths_rx) => {
             receive_open_paths(paths_rx).await?.into_iter().next()
         }
+        #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
         OpenPromptReceiver::NewPath(path_rx) => receive_save_path(path_rx).await,
     }
 }

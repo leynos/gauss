@@ -1,8 +1,11 @@
 //! Layout and rendering for the Phase 0 shell.
 
-use gpui::{Window, div, prelude::*};
+use gpui::{Window, div, prelude::*, white};
 
-use super::{KEY_CONTEXT, OpenSvg, Phase0Shell, SaveSvg, ToggleEdgeMode, draw, file_dialogs};
+use super::{
+    KEY_CONTEXT, OpenSvg, Phase0Shell, SaveSvg, ToggleEdgeMode, chrome_palette::chrome_border,
+    draw, file_dialogs,
+};
 
 impl Phase0Shell {
     pub(super) fn mode_status_line(&self) -> String {
@@ -16,30 +19,37 @@ impl Phase0Shell {
         }
     }
 
-    fn save_status_line(&self) -> String {
-        match (&self.last_saved_path, &self.last_save_error) {
-            (_, Some(err)) => format!("Save failed: {err}"),
-            (Some(path), None) => format!("Last saved path: {}", path.display()),
-            (None, None) => "Last saved path: (none)".to_owned(),
+    pub(super) fn file_status_line(&self) -> Option<String> {
+        if let Some(error) = self.last_save_error.as_deref() {
+            return Some(format!("Save failed: {error}"));
         }
+
+        if let Some(error) = self.last_open_error.as_deref() {
+            return Some(format!("Open failed: {error}"));
+        }
+
+        if let Some(path) = self.last_saved_path.as_deref() {
+            return Some(format!("Saved: {}", path.display()));
+        }
+
+        if let Some(path) = self.last_opened_path.as_deref() {
+            return Some(format!("Opened: {}", path.display()));
+        }
+
+        None
     }
 
-    fn open_status_line(&self) -> String {
-        match (&self.last_opened_path, &self.last_open_error) {
-            (_, Some(err)) => format!("Open failed: {err}"),
-            (Some(path), None) => format!("Last opened path: {}", path.display()),
-            (None, None) => "Last opened path: (none)".to_owned(),
-        }
-    }
-
-    fn canvas_area(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    pub(super) fn canvas_area(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         div()
             .id("phase0-canvas")
             .debug_selector(|| "#phase0-canvas".to_owned())
             .flex()
             .flex_1()
             .border_1()
+            .border_color(chrome_border())
+            .bg(white())
             .rounded_md()
+            .overflow_hidden()
             .occlude()
             .on_mouse_down(
                 gpui::MouseButton::Left,
@@ -149,20 +159,22 @@ impl Render for Phase0Shell {
             window.focus(&self.focus_handle);
         }
 
+        if !self.did_init_style_pickers {
+            self.ensure_style_pickers(window, cx);
+            self.did_init_style_pickers = true;
+        }
+
         div()
-            .p_4()
             .size_full()
             .key_context(KEY_CONTEXT)
             .track_focus(&self.focus_handle)
             .flex()
             .flex_col()
-            .gap_4()
             .on_key_down(
                 cx.listener(|shell: &mut Self, event: &gpui::KeyDownEvent, _, view_cx| {
                     shell.handle_key_down(event, view_cx);
                 }),
             )
-            .child(self.header_row(window, cx))
             .on_action(
                 cx.listener(|shell: &mut Self, _: &OpenSvg, action_window, action_cx| {
                     file_dialogs::request_open(shell.open_prompt_mode, action_window, action_cx);
@@ -178,13 +190,89 @@ impl Render for Phase0Shell {
                     shell.handle_tab_action(action_cx);
                 }),
             )
-            .child(
-                "This view validates action wiring, native open/save prompts, and canvas \
-                 painting, while Phase 0 assembles the real editor UI.",
-            )
-            .child(self.canvas_area(cx))
-            .child(self.mode_status_line())
-            .child(self.save_status_line())
-            .child(self.open_status_line())
+            .child(self.chrome_view(cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use gpui::TestAppContext;
+
+    use super::Phase0Shell;
+
+    #[gpui::test]
+    fn file_status_line_prefers_save_error(cx: &mut TestAppContext) {
+        cx.update(crate::ui::init);
+
+        let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, _cx| {
+                shell.last_save_error = Some("disk full".to_owned());
+                shell.last_open_error = Some("missing file".to_owned());
+                shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
+                shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
+            });
+        });
+        visual_cx.run_until_parked();
+
+        let status = visual_cx.read(|app| view.read(app).file_status_line());
+        assert_eq!(status, Some("Save failed: disk full".to_owned()));
+    }
+
+    #[gpui::test]
+    fn file_status_line_falls_back_to_open_error(cx: &mut TestAppContext) {
+        cx.update(crate::ui::init);
+
+        let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, _cx| {
+                shell.last_open_error = Some("missing file".to_owned());
+                shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
+            });
+        });
+        visual_cx.run_until_parked();
+
+        let status = visual_cx.read(|app| view.read(app).file_status_line());
+        assert_eq!(status, Some("Open failed: missing file".to_owned()));
+    }
+
+    #[gpui::test]
+    fn file_status_line_reports_paths_when_no_errors(cx: &mut TestAppContext) {
+        cx.update(crate::ui::init);
+
+        let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, _cx| {
+                shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
+            });
+        });
+        visual_cx.run_until_parked();
+
+        let status = visual_cx.read(|app| view.read(app).file_status_line());
+        assert_eq!(status, Some("Saved: /tmp/out.svg".to_owned()));
+
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, _cx| {
+                shell.last_saved_path = None;
+                shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
+            });
+        });
+        visual_cx.run_until_parked();
+
+        let status_after = visual_cx.read(|app| view.read(app).file_status_line());
+        assert_eq!(status_after, Some("Opened: /tmp/in.svg".to_owned()));
+    }
+
+    #[gpui::test]
+    fn file_status_line_returns_none_when_empty(cx: &mut TestAppContext) {
+        cx.update(crate::ui::init);
+
+        let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+        visual_cx.run_until_parked();
+
+        let status = visual_cx.read(|app| view.read(app).file_status_line());
+        assert_eq!(status, None);
     }
 }

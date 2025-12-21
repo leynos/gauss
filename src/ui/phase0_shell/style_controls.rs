@@ -102,7 +102,7 @@ impl Phase0Shell {
     /// This is a small public API so headless `#[gpui::test]` integration tests
     /// can drive style changes without relying on brittle palette UI
     /// hit-testing.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     pub fn apply_stroke_colour(&mut self, colour: Option<Hsla>) -> bool {
         self.apply_stroke_colour_inner(colour)
     }
@@ -110,7 +110,7 @@ impl Phase0Shell {
     /// Apply a new fill colour to the current selection.
     ///
     /// See [`Self::apply_stroke_colour`] for why this method is public.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     pub fn apply_fill_colour(&mut self, colour: Option<Hsla>) -> bool {
         self.apply_fill_colour_inner(colour)
     }
