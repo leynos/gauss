@@ -36,14 +36,10 @@ macro_rules! define_ui_icons {
             ),*
         ];
 
-        static EMPTY_ICON: LazyLock<Arc<Image>> = LazyLock::new(|| {
-            svg_image(br#"<svg xmlns="http://www.w3.org/2000/svg"></svg>"#)
-        });
-
         fn icon_image(icon: UiIcon) -> Arc<Image> {
             let image = ICON_IMAGES
                 .get(icon.as_index())
-                .unwrap_or(&EMPTY_ICON);
+                .expect("UiIcon index must map to an embedded icon image");
             Arc::clone(image)
         }
     };
@@ -76,6 +72,14 @@ define_ui_icons! {
     ZoomOut => "zoom-out",
 }
 
+/// Create a sized image element for a UI icon.
+///
+/// # Parameters
+/// - `icon`: which icon to render.
+/// - `size`: pixel size for the rendered image.
+///
+/// # Returns
+/// An element implementing `IntoElement` for the sized icon image.
 pub(crate) fn icon_element(icon: UiIcon, size: f32) -> impl IntoElement {
     let image = icon_image(icon);
     img(image).size(px(size))
@@ -87,11 +91,9 @@ fn svg_image(bytes: &'static [u8]) -> Arc<Image> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use gpui::{Render, TestAppContext, Window, div, prelude::*};
 
-    use super::{ICON_COUNT, ICON_IMAGES, UiIcon, icon_element, icon_image};
+    use super::{ICON_COUNT, ICON_IMAGES, UiIcon, icon_element};
 
     struct IconTestView;
 
@@ -109,14 +111,6 @@ mod tests {
     fn ui_icon_table_matches_static_images() {
         assert_eq!(UiIcon::ALL.len(), ICON_COUNT);
         assert_eq!(UiIcon::ALL.len(), ICON_IMAGES.len());
-
-        for icon in UiIcon::ALL {
-            let image = icon_image(icon);
-            assert!(
-                Arc::strong_count(&image) > 0,
-                "expected icon image to remain alive for {icon:?}"
-            );
-        }
     }
 
     #[gpui::test]
