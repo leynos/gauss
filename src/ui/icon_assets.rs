@@ -43,7 +43,6 @@ macro_rules! define_ui_icons {
         fn icon_image(icon: UiIcon) -> Arc<Image> {
             let image = ICON_IMAGES
                 .get(icon.as_index())
-                .or_else(|| ICON_IMAGES.first())
                 .unwrap_or(&EMPTY_ICON);
             Arc::clone(image)
         }
