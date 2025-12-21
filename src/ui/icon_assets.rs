@@ -4,32 +4,77 @@ use std::sync::{Arc, LazyLock};
 
 use gpui::{Image, ImageFormat, IntoElement, Styled as _, img, px};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum UiIcon {
-    AlignHorizontalCenter,
-    AlignHorizontalLeft,
-    AlignHorizontalRight,
-    AlignVerticalBottom,
-    AlignVerticalCenter,
-    AlignVerticalTop,
-    DrawCircle,
-    DrawCurve,
-    DrawPath,
-    DrawSquare,
-    EditRedo,
-    EditUndo,
-    FileNew,
-    FileOpen,
-    FileSave,
-    Select,
-    Settings,
-    SnapToGrid,
-    WindowClose,
-    WindowMaximize,
-    WindowMinimize,
-    ZoomArea,
-    ZoomIn,
-    ZoomOut,
+macro_rules! define_ui_icons {
+    ($( $variant:ident => $file:literal ),* $(,)?) => {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        #[repr(u8)]
+        pub(crate) enum UiIcon {
+            $( $variant ),*
+        }
+
+        impl UiIcon {
+            #[cfg(any(test, coverage, coverage_nightly))]
+            pub(crate) const ALL: [UiIcon; ICON_COUNT] = [$( UiIcon::$variant ),*];
+
+            const fn as_index(self) -> usize {
+                self as usize
+            }
+        }
+
+        const ICON_COUNT: usize = 0 $(+ { let _ = stringify!($variant); 1 })*;
+
+        static ICON_IMAGES: [LazyLock<Arc<Image>>; ICON_COUNT] = [
+            $(
+                LazyLock::new(|| {
+                    svg_image(include_bytes!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/icons/",
+                        $file,
+                        ".svg"
+                    )))
+                })
+            ),*
+        ];
+
+        static EMPTY_ICON: LazyLock<Arc<Image>> = LazyLock::new(|| {
+            svg_image(br#"<svg xmlns="http://www.w3.org/2000/svg"></svg>"#)
+        });
+
+        fn icon_image(icon: UiIcon) -> Arc<Image> {
+            let image = ICON_IMAGES
+                .get(icon.as_index())
+                .or_else(|| ICON_IMAGES.first())
+                .unwrap_or(&EMPTY_ICON);
+            Arc::clone(image)
+        }
+    };
+}
+
+define_ui_icons! {
+    AlignHorizontalCenter => "align-horizontal-center",
+    AlignHorizontalLeft => "align-horizontal-left",
+    AlignHorizontalRight => "align-horizontal-right",
+    AlignVerticalBottom => "align-vertical-bottom",
+    AlignVerticalCenter => "align-vertical-center",
+    AlignVerticalTop => "align-vertical-top",
+    DrawCircle => "draw-circle",
+    DrawCurve => "draw-curve",
+    DrawPath => "draw-path",
+    DrawSquare => "draw-square",
+    EditRedo => "edit-redo",
+    EditUndo => "edit-undo",
+    FileNew => "file-new",
+    FileOpen => "file-open",
+    FileSave => "file-save",
+    Select => "select",
+    Settings => "settings",
+    SnapToGrid => "snap-to-grid",
+    WindowClose => "window-close",
+    WindowMaximize => "window-maximize",
+    WindowMinimize => "window-minimize",
+    ZoomArea => "zoom-area",
+    ZoomIn => "zoom-in",
+    ZoomOut => "zoom-out",
 }
 
 pub(crate) fn icon_element(icon: UiIcon, size: f32) -> impl IntoElement {
@@ -37,180 +82,57 @@ pub(crate) fn icon_element(icon: UiIcon, size: f32) -> impl IntoElement {
     img(image).size(px(size))
 }
 
-fn icon_image(icon: UiIcon) -> Arc<Image> {
-    match icon {
-        UiIcon::AlignHorizontalCenter => ALIGN_HORIZONTAL_CENTER.clone(),
-        UiIcon::AlignHorizontalLeft => ALIGN_HORIZONTAL_LEFT.clone(),
-        UiIcon::AlignHorizontalRight => ALIGN_HORIZONTAL_RIGHT.clone(),
-        UiIcon::AlignVerticalBottom => ALIGN_VERTICAL_BOTTOM.clone(),
-        UiIcon::AlignVerticalCenter => ALIGN_VERTICAL_CENTER.clone(),
-        UiIcon::AlignVerticalTop => ALIGN_VERTICAL_TOP.clone(),
-        UiIcon::DrawCircle => DRAW_CIRCLE.clone(),
-        UiIcon::DrawCurve => DRAW_CURVE.clone(),
-        UiIcon::DrawPath => DRAW_PATH.clone(),
-        UiIcon::DrawSquare => DRAW_SQUARE.clone(),
-        UiIcon::EditRedo => EDIT_REDO.clone(),
-        UiIcon::EditUndo => EDIT_UNDO.clone(),
-        UiIcon::FileNew => FILE_NEW.clone(),
-        UiIcon::FileOpen => FILE_OPEN.clone(),
-        UiIcon::FileSave => FILE_SAVE.clone(),
-        UiIcon::Select => SELECT.clone(),
-        UiIcon::Settings => SETTINGS.clone(),
-        UiIcon::SnapToGrid => SNAP_TO_GRID.clone(),
-        UiIcon::WindowClose => WINDOW_CLOSE.clone(),
-        UiIcon::WindowMaximize => WINDOW_MAXIMIZE.clone(),
-        UiIcon::WindowMinimize => WINDOW_MINIMIZE.clone(),
-        UiIcon::ZoomArea => ZOOM_AREA.clone(),
-        UiIcon::ZoomIn => ZOOM_IN.clone(),
-        UiIcon::ZoomOut => ZOOM_OUT.clone(),
-    }
-}
-
 fn svg_image(bytes: &'static [u8]) -> Arc<Image> {
     Arc::new(Image::from_bytes(ImageFormat::Svg, bytes.to_vec()))
 }
 
-static ALIGN_HORIZONTAL_CENTER: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/align-horizontal-center.svg"
-    )))
-});
-static ALIGN_HORIZONTAL_LEFT: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/align-horizontal-left.svg"
-    )))
-});
-static ALIGN_HORIZONTAL_RIGHT: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/align-horizontal-right.svg"
-    )))
-});
-static ALIGN_VERTICAL_BOTTOM: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/align-vertical-bottom.svg"
-    )))
-});
-static ALIGN_VERTICAL_CENTER: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/align-vertical-center.svg"
-    )))
-});
-static ALIGN_VERTICAL_TOP: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/align-vertical-top.svg"
-    )))
-});
-static DRAW_CIRCLE: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/draw-circle.svg"
-    )))
-});
-static DRAW_CURVE: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/draw-curve.svg"
-    )))
-});
-static DRAW_PATH: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/draw-path.svg"
-    )))
-});
-static DRAW_SQUARE: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/draw-square.svg"
-    )))
-});
-static EDIT_REDO: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/edit-redo.svg"
-    )))
-});
-static EDIT_UNDO: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/edit-undo.svg"
-    )))
-});
-static FILE_NEW: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/file-new.svg"
-    )))
-});
-static FILE_OPEN: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/file-open.svg"
-    )))
-});
-static FILE_SAVE: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/file-save.svg"
-    )))
-});
-static SELECT: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/select.svg"
-    )))
-});
-static SETTINGS: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/settings.svg"
-    )))
-});
-static SNAP_TO_GRID: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/snap-to-grid.svg"
-    )))
-});
-static WINDOW_CLOSE: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/window-close.svg"
-    )))
-});
-static WINDOW_MAXIMIZE: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/window-maximize.svg"
-    )))
-});
-static WINDOW_MINIMIZE: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/window-minimize.svg"
-    )))
-});
-static ZOOM_AREA: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/zoom-area.svg"
-    )))
-});
-static ZOOM_IN: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/zoom-in.svg"
-    )))
-});
-static ZOOM_OUT: LazyLock<Arc<Image>> = LazyLock::new(|| {
-    svg_image(include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/icons/zoom-out.svg"
-    )))
-});
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use gpui::{Render, TestAppContext, Window, div, prelude::*};
+
+    use super::{ICON_COUNT, ICON_IMAGES, UiIcon, icon_element, icon_image};
+
+    struct IconTestView;
+
+    impl Render for IconTestView {
+        fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+            div()
+                .id("icon-test")
+                .debug_selector(|| "#icon-test".to_owned())
+                .child(icon_element(UiIcon::FileOpen, 16.0))
+                .child(icon_element(UiIcon::FileSave, 16.0))
+        }
+    }
+
+    #[test]
+    fn ui_icon_table_matches_static_images() {
+        assert_eq!(UiIcon::ALL.len(), ICON_COUNT);
+        assert_eq!(UiIcon::ALL.len(), ICON_IMAGES.len());
+
+        for icon in UiIcon::ALL {
+            let image = icon_image(icon);
+            assert!(
+                Arc::strong_count(&image) > 0,
+                "expected icon image to remain alive for {icon:?}"
+            );
+        }
+    }
+
+    #[gpui::test]
+    fn icon_element_renders_in_headless_view(cx: &mut TestAppContext) {
+        cx.update(crate::ui::init);
+
+        let (_view, visual_cx) = cx.add_window_view(|_window, _view_cx| IconTestView);
+        visual_cx.update(|window, app| {
+            let _draw = window.draw(app);
+        });
+        visual_cx.run_until_parked();
+
+        assert!(
+            visual_cx.debug_bounds("#icon-test").is_some(),
+            "expected icon test view to render"
+        );
+    }
+}

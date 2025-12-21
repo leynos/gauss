@@ -19,6 +19,26 @@ impl Phase0Shell {
         }
     }
 
+    pub(super) fn file_status_line(&self) -> Option<String> {
+        if let Some(error) = self.last_save_error.as_deref() {
+            return Some(format!("Save failed: {error}"));
+        }
+
+        if let Some(error) = self.last_open_error.as_deref() {
+            return Some(format!("Open failed: {error}"));
+        }
+
+        if let Some(path) = self.last_saved_path.as_deref() {
+            return Some(format!("Saved: {}", path.display()));
+        }
+
+        if let Some(path) = self.last_opened_path.as_deref() {
+            return Some(format!("Opened: {}", path.display()));
+        }
+
+        None
+    }
+
     pub(super) fn canvas_area(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         div()
             .id("phase0-canvas")
@@ -139,6 +159,11 @@ impl Render for Phase0Shell {
             window.focus(&self.focus_handle);
         }
 
+        if !self.did_init_style_pickers {
+            self.ensure_style_pickers(window, cx);
+            self.did_init_style_pickers = true;
+        }
+
         div()
             .size_full()
             .key_context(KEY_CONTEXT)
@@ -165,6 +190,78 @@ impl Render for Phase0Shell {
                     shell.handle_tab_action(action_cx);
                 }),
             )
-            .child(self.chrome_view(window, cx))
+            .child(self.chrome_view(cx))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use gpui::TestAppContext;
+
+    use super::Phase0Shell;
+
+    #[gpui::test]
+    fn file_status_line_prefers_save_error(cx: &mut TestAppContext) {
+        cx.update(crate::ui::init);
+
+        let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, _cx| {
+                shell.last_save_error = Some("disk full".to_owned());
+                shell.last_open_error = Some("missing file".to_owned());
+                shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
+                shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
+            });
+        });
+        visual_cx.run_until_parked();
+
+        let status = visual_cx.read(|app| view.read(app).file_status_line());
+        assert_eq!(status, Some("Save failed: disk full".to_owned()));
+    }
+
+    #[gpui::test]
+    fn file_status_line_falls_back_to_open_error(cx: &mut TestAppContext) {
+        cx.update(crate::ui::init);
+
+        let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, _cx| {
+                shell.last_open_error = Some("missing file".to_owned());
+                shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
+            });
+        });
+        visual_cx.run_until_parked();
+
+        let status = visual_cx.read(|app| view.read(app).file_status_line());
+        assert_eq!(status, Some("Open failed: missing file".to_owned()));
+    }
+
+    #[gpui::test]
+    fn file_status_line_reports_paths_when_no_errors(cx: &mut TestAppContext) {
+        cx.update(crate::ui::init);
+
+        let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, _cx| {
+                shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
+            });
+        });
+        visual_cx.run_until_parked();
+
+        let status = visual_cx.read(|app| view.read(app).file_status_line());
+        assert_eq!(status, Some("Saved: /tmp/out.svg".to_owned()));
+
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, _cx| {
+                shell.last_saved_path = None;
+                shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
+            });
+        });
+        visual_cx.run_until_parked();
+
+        let status_after = visual_cx.read(|app| view.read(app).file_status_line());
+        assert_eq!(status_after, Some("Opened: /tmp/in.svg".to_owned()));
     }
 }

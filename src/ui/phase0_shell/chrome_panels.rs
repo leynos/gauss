@@ -24,7 +24,10 @@ pub(super) fn document_header() -> impl gpui::IntoElement {
         .child(alignment_buttons())
 }
 
-pub(super) fn status_bar(mode_status_line: String) -> impl gpui::IntoElement {
+pub(super) fn status_bar(
+    mode_status_line: String,
+    file_status_line: Option<String>,
+) -> impl gpui::IntoElement {
     let left = div()
         .flex()
         .items_center()
@@ -54,17 +57,23 @@ pub(super) fn status_bar(mode_status_line: String) -> impl gpui::IntoElement {
             Some("Snap to Grid"),
         ));
 
-    let right = div()
+    let mut right = div()
         .flex()
         .items_center()
         .gap_3()
         .text_sm()
         .text_color(chrome_muted_text())
-        .child(mode_status_line)
-        .child("1:1")
-        .child("Plain Text");
+        .child(mode_status_line);
+
+    if let Some(status) = file_status_line {
+        right = right.child(status);
+    }
+
+    right = right.child("1:1").child("Plain Text");
 
     div()
+        .id("status-bar")
+        .debug_selector(|| "#status-bar".to_owned())
         .flex()
         .items_center()
         .justify_between()

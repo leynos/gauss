@@ -56,11 +56,7 @@ fn tool_select_button(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
 ) -> impl gpui::IntoElement {
-    let state = if shell_state.tool_mode == ToolMode::Manipulate {
-        IconButtonState::Active
-    } else {
-        IconButtonState::Enabled
-    };
+    let state = select_button_state(shell_state.tool_mode);
 
     icon_button("tool-select", UiIcon::Select, state, Some("Select")).on_click(cx.listener(
         |shell: &mut Phase0Shell, _event, _window, view_cx| {
@@ -74,12 +70,7 @@ fn tool_draw_line_button(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
 ) -> impl gpui::IntoElement {
-    let state =
-        if shell_state.tool_mode == ToolMode::Draw && shell_state.edge_mode == DrawEdgeMode::Line {
-            IconButtonState::Active
-        } else {
-            IconButtonState::Enabled
-        };
+    let state = draw_line_button_state(shell_state.tool_mode, shell_state.edge_mode);
 
     icon_button("tool-draw-line", UiIcon::DrawPath, state, Some("Draw Path")).on_click(cx.listener(
         |shell: &mut Phase0Shell, _event, _window, view_cx| {
@@ -94,13 +85,7 @@ fn tool_draw_curve_button(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
 ) -> impl gpui::IntoElement {
-    let state = if shell_state.tool_mode == ToolMode::Draw
-        && shell_state.edge_mode == DrawEdgeMode::BezierAuto
-    {
-        IconButtonState::Active
-    } else {
-        IconButtonState::Enabled
-    };
+    let state = draw_curve_button_state(shell_state.tool_mode, shell_state.edge_mode);
 
     icon_button(
         "tool-draw-curve",
@@ -123,4 +108,78 @@ fn tool_placeholder_button(
     tooltip: &'static str,
 ) -> impl gpui::IntoElement {
     icon_button(id, icon, IconButtonState::Placeholder, Some(tooltip))
+}
+
+fn select_button_state(tool_mode: ToolMode) -> IconButtonState {
+    if tool_mode == ToolMode::Manipulate {
+        IconButtonState::Active
+    } else {
+        IconButtonState::Enabled
+    }
+}
+
+fn draw_line_button_state(tool_mode: ToolMode, edge_mode: DrawEdgeMode) -> IconButtonState {
+    if tool_mode == ToolMode::Draw && edge_mode == DrawEdgeMode::Line {
+        IconButtonState::Active
+    } else {
+        IconButtonState::Enabled
+    }
+}
+
+fn draw_curve_button_state(tool_mode: ToolMode, edge_mode: DrawEdgeMode) -> IconButtonState {
+    if tool_mode == ToolMode::Draw && edge_mode == DrawEdgeMode::BezierAuto {
+        IconButtonState::Active
+    } else {
+        IconButtonState::Enabled
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{DrawEdgeMode, IconButtonState, ToolMode};
+    use super::{draw_curve_button_state, draw_line_button_state, select_button_state};
+
+    #[test]
+    fn select_button_state_tracks_tool_mode() {
+        assert_eq!(
+            select_button_state(ToolMode::Manipulate),
+            IconButtonState::Active
+        );
+        assert_eq!(
+            select_button_state(ToolMode::Draw),
+            IconButtonState::Enabled
+        );
+    }
+
+    #[test]
+    fn draw_line_button_state_tracks_edge_mode() {
+        assert_eq!(
+            draw_line_button_state(ToolMode::Draw, DrawEdgeMode::Line),
+            IconButtonState::Active
+        );
+        assert_eq!(
+            draw_line_button_state(ToolMode::Draw, DrawEdgeMode::BezierAuto),
+            IconButtonState::Enabled
+        );
+        assert_eq!(
+            draw_line_button_state(ToolMode::Manipulate, DrawEdgeMode::Line),
+            IconButtonState::Enabled
+        );
+    }
+
+    #[test]
+    fn draw_curve_button_state_tracks_edge_mode() {
+        assert_eq!(
+            draw_curve_button_state(ToolMode::Draw, DrawEdgeMode::BezierAuto),
+            IconButtonState::Active
+        );
+        assert_eq!(
+            draw_curve_button_state(ToolMode::Draw, DrawEdgeMode::Line),
+            IconButtonState::Enabled
+        );
+        assert_eq!(
+            draw_curve_button_state(ToolMode::Manipulate, DrawEdgeMode::BezierAuto),
+            IconButtonState::Enabled
+        );
+    }
 }

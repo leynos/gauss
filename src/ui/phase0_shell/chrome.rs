@@ -1,6 +1,6 @@
 //! Zed-inspired chrome layout for the Phase 1 UI shell.
 
-use gpui::{Window, div, prelude::*};
+use gpui::{div, prelude::*};
 
 use crate::ui::UiIcon;
 
@@ -17,13 +17,7 @@ use super::{
 };
 
 impl Phase0Shell {
-    pub(super) fn chrome_view(
-        &mut self,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> impl gpui::IntoElement {
-        self.ensure_style_pickers(window, cx);
-
+    pub(super) fn chrome_view(&mut self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         div()
             .size_full()
             .bg(chrome_background())
@@ -37,7 +31,10 @@ impl Phase0Shell {
                     .child(tool_rail::tool_rail(self, cx))
                     .child(self.editor_panel(cx)),
             )
-            .child(chrome_panels::status_bar(self.mode_status_line()))
+            .child(chrome_panels::status_bar(
+                self.mode_status_line(),
+                self.file_status_line(),
+            ))
     }
 
     fn top_bar(&mut self, cx: &mut Context<Self>) -> impl gpui::IntoElement {

@@ -104,6 +104,7 @@ pub struct Phase0Shell {
     stroke_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
     fill_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
     style_picker_subscriptions: Vec<gpui::Subscription>,
+    did_init_style_pickers: bool,
 }
 
 impl Phase0Shell {
@@ -133,6 +134,7 @@ impl Phase0Shell {
             stroke_picker: None,
             fill_picker: None,
             style_picker_subscriptions: Vec::new(),
+            did_init_style_pickers: false,
         }
     }
 
@@ -191,6 +193,24 @@ impl Phase0Shell {
     #[must_use]
     pub const fn selection(&self) -> &Selection {
         &self.selection
+    }
+
+    /// Return the active shape identifier, if any.
+    ///
+    /// This is intended for headless tests that validate tool mode switches.
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+    #[must_use]
+    pub const fn draw_active_shape_for_tests(&self) -> Option<ShapeId> {
+        self.draw_active_shape
+    }
+
+    /// Override the active shape during tests.
+    ///
+    /// This is used to verify that switching to manipulate mode clears the
+    /// active draw state.
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+    pub const fn set_draw_active_shape_for_tests(&mut self, shape: Option<ShapeId>) {
+        self.draw_active_shape = shape;
     }
 
     /// Replace the entire document.

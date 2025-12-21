@@ -1,6 +1,6 @@
-# Build Phase 1 basic UI shell
+# Build Phase 1 basic user interface (UI) shell
 
-This ExecPlan is a living document. The sections `Progress`,
+This Execution Plan (ExecPlan) is a living document. The sections `Progress`,
 `Surprises & Discoveries`, `Decision Log`, and `Outcomes & Retrospective` must
 be kept up to date as work proceeds.
 
@@ -86,19 +86,20 @@ Pending. This will be completed once the Phase 1 UI ships and is verified.
 
 ## Context and Orientation
 
-Gauss is a GPUI application. The entrypoint in `src/main.rs` creates a window
-and installs `gauss::ui::Phase0Shell` inside a `gpui_component::Root`. UI code
-lives under `src/ui/phase0_shell/`. The existing layout is defined in
-`src/ui/phase0_shell/view.rs`, with the chrome layout assembled in
-`src/ui/phase0_shell/chrome.rs`. The canvas element is identified by the
-`phase0-canvas` debug selector and is referenced by GPUI tests under `tests/`.
+Gauss is a GPU-accelerated user interface (GPUI) application. The entrypoint in
+`src/main.rs` creates a window and installs `gauss::ui::Phase0Shell` inside a
+`gpui_component::Root`. UI code lives under `src/ui/phase0_shell/`. The
+existing layout is defined in `src/ui/phase0_shell/view.rs`, with the chrome
+layout assembled in `src/ui/phase0_shell/chrome.rs`. The canvas element is
+identified by the `phase0-canvas` debug selector and is referenced by GPUI
+tests under `tests/`.
 
 The Zed-like chrome should be built using GPUI Component where possible. The
 reference guidance for component usage and theming is
-`docs/using-gpui-and-gpui-component.md`. Custom SVG icons are stored in the
-repository at `icons/` and are Apache-licensed from IBM Carbon. Use
-placeholders (greyed out) for any icon that represents functionality not yet
-implemented.
+`docs/using-gpui-and-gpui-component.md`. Custom Scalable Vector Graphics (SVG)
+icons are stored in the repository at `icons/` and are Apache-licensed from IBM
+Carbon. Use placeholders (greyed out) for any icon that represents
+functionality not yet implemented.
 
 ## Plan of Work
 
@@ -166,7 +167,7 @@ then delete the prototype once the API is confirmed.
 Implement the new chrome modules and update `Phase0Shell::render` to assemble
 that layout.
 
-If you update documentation, run the Markdown tooling through the Makefile:
+If documentation is updated, run the Markdown tooling through the Makefile:
 
     (set -o pipefail; timeout 300s make fmt 2>&1 | tee /tmp/gauss-fmt.log)
     (set -o pipefail; timeout 300s make markdownlint 2>&1 | \
@@ -275,3 +276,6 @@ match the latest UI adjustments.
 
 Recorded the chrome layout refactor that moved tool rail and panel helpers into
 dedicated modules to keep `chrome.rs` below the 400-line threshold.
+
+Expanded the UI, GPUI, SVG, and ExecPlan acronyms on first use and rephrased
+the documentation tooling guidance to avoid second-person pronouns.
