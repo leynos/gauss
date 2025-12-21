@@ -360,5 +360,5 @@ possible. This keeps tests fast and reduces UI coupling.
 - GPUI Component docs:
   `docs/rustdoc-gpui-component-0.5.0/gpui_component/index.html`
 
-These local docs should be consulted before introducing new GPUI APIs so the
+These local docs should be consulted before introducing new GPUI APIs, so the
 project stays aligned with the pinned versions.

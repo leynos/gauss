@@ -13,7 +13,7 @@ macro_rules! define_ui_icons {
         }
 
         impl UiIcon {
-            #[cfg(any(test, coverage, coverage_nightly))]
+            #[cfg(test)]
             pub(crate) const ALL: [UiIcon; ICON_COUNT] = [$( UiIcon::$variant ),*];
 
             const fn as_index(self) -> usize {
