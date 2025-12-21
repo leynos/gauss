@@ -37,9 +37,9 @@ macro_rules! define_ui_icons {
         ];
 
         fn icon_image(icon: UiIcon) -> Arc<Image> {
-            let image = ICON_IMAGES
-                .get(icon.as_index())
-                .expect("UiIcon index must map to an embedded icon image");
+            let Some(image) = ICON_IMAGES.get(icon.as_index()) else {
+                unreachable!("UiIcon index must map to an embedded icon image");
+            };
             Arc::clone(image)
         }
     };
