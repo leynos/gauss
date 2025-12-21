@@ -12,7 +12,7 @@ GPUI Component 0.5.0 as pinned in this repository.
 ## Why this exists
 
 GPUI is pre-1.0 and changes frequently. The best way to stay productive is to
-standardize how the app boots, how state is organized, how the UI is rendered,
+standardise how the app boots, how state is organised, how the UI is rendered,
 and how behaviour is tested. This guide records the patterns that worked in
 Phase 0, highlights pitfalls, and outlines how to extend the UI safely.
 
@@ -21,6 +21,7 @@ Phase 0, highlights pitfalls, and outlines how to extend the UI safely.
 - GPUI is pre-1.0, so API changes are expected between versions.
 - This repo pins `gpui = "0.2.2"` and `gpui-component = "0.5.0"` in
   `Cargo.toml`. When either changes, update this guide.
+- Track versions intentionally and expect occasional update work.
 - GPUI targets macOS and Linux and expects the latest stable Rust. This repo
   uses a nightly toolchain to support behavioural testing, but the API patterns
   are stable-friendly.
@@ -96,7 +97,7 @@ fn main() {
 }
 ```
 
-Gauss centralizes this setup in `gauss::ui::init`, and the entrypoint in
+Gauss centralises this setup in `gauss::ui::init`, and the entrypoint in
 `src/main.rs` calls it before opening the window.
 
 ## Mental model: three registers
@@ -117,7 +118,7 @@ GPUI supports three primary registers. The PoC uses all three.
 
 3. **Elements (imperative UI)**
    - Elements give direct control over layout and rendering.
-   - Elements handle custom drawing (for example, `Canvas`) or specialized
+   - Elements handle custom drawing (for example, `Canvas`) or specialised
      layout.
 
 The PoC uses a view (`Phase0Shell`) that renders a toolbar and a canvas. The
@@ -145,7 +146,7 @@ keeps custom drawing focused on the canvas.
 ### Initialize once
 
 `gpui_component::init(app)` must be called inside the `Application::run`
-closure before using any components. This initializes theme state and registers
+closure before using any components. This initialises theme state and registers
 component services.
 
 ### Root wrapper is required
@@ -272,7 +273,7 @@ Recommended patterns:
 - Draw fill first, then stroke, then selection overlays.
 - Use a small, predictable marker size for anchors and handles.
 
-GPUI's `PathBuilder` supports lines and cubic Bézier curves, which match the
+GPUI's `PathBuilder` supports lines and cubic Bezier curves, which match the
 model representation. Use `PathBuilder::fill()` and `PathBuilder::stroke()` to
 build `Path` objects for the canvas.
 
@@ -360,5 +361,5 @@ possible. This keeps tests fast and reduces UI coupling.
 - GPUI Component docs:
   `docs/rustdoc-gpui-component-0.5.0/gpui_component/index.html`
 
-These local docs should be consulted before introducing new GPUI APIs, so the
+These local docs should be consulted before introducing new GPUI APIs so the
 project stays aligned with the pinned versions.
