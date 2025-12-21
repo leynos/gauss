@@ -22,7 +22,7 @@ mod view;
 
 use std::path::PathBuf;
 
-#[cfg(any(test, feature = "test-support"))]
+#[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
 use std::path::Path;
 
 use gpui::prelude::*;
@@ -140,7 +140,7 @@ impl Phase0Shell {
     ///
     /// This differs from [`Self::new`] only in how it triggers the file dialog
     /// for “Open…”.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub fn new_for_tests(cx: &mut Context<Self>) -> Self {
         Self {
@@ -150,14 +150,14 @@ impl Phase0Shell {
     }
 
     /// Return the last path selected by the platform save prompt, if any.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub fn last_saved_path(&self) -> Option<&Path> {
         self.last_saved_path.as_deref()
     }
 
     /// Return the last path selected by the platform open prompt, if any.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub fn last_opened_path(&self) -> Option<&Path> {
         self.last_opened_path.as_deref()
@@ -167,7 +167,7 @@ impl Phase0Shell {
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real UI.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub const fn document(&self) -> &Document {
         &self.document
@@ -177,7 +177,7 @@ impl Phase0Shell {
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub const fn viewport(&self) -> Viewport {
         self.viewport
@@ -187,7 +187,7 @@ impl Phase0Shell {
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub const fn selection(&self) -> &Selection {
         &self.selection
@@ -199,7 +199,7 @@ impl Phase0Shell {
     /// assembling the real editor UI. It deliberately does not attempt to
     /// preserve history; callers that need undo/redo should drive changes via
     /// editor operations instead.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     pub fn replace_document_for_tests(&mut self, document: Document) {
         self.document = document;
         self.drag_state = None;
@@ -241,7 +241,7 @@ impl Phase0Shell {
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub fn mode_status_line_for_tests(&self) -> String {
         self.mode_status_line()
@@ -253,7 +253,7 @@ impl Phase0Shell {
     /// established before the test sends synthetic key events. This helper
     /// allows tests to set the tool mode explicitly without relying on
     /// `Escape` dispatch.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     pub const fn enter_manipulate_mode_for_tests(&mut self) {
         self.tool_mode = draw::ToolMode::Manipulate;
         self.draw_active_shape = None;
@@ -263,7 +263,7 @@ impl Phase0Shell {
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub const fn last_canvas_click_screen(&self) -> Option<Vec2> {
         self.last_canvas_click_screen
