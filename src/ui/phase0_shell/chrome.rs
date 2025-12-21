@@ -208,7 +208,11 @@ impl Phase0Shell {
         }
     }
 
-    pub(super) const fn set_edge_mode(&mut self, mode: DrawEdgeMode) {
+    #[expect(
+        clippy::missing_const_for_fn,
+        reason = "Keep setter consistent with runtime tool-mode mutation."
+    )]
+    pub(super) fn set_edge_mode(&mut self, mode: DrawEdgeMode) {
         self.edge_mode = mode;
     }
 }

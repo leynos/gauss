@@ -209,7 +209,7 @@ Button::new("btn").outline();
 ### Icons and assets
 
 GPUI Component includes an `Icon` element and an `IconName` enum, but it does
-not bundle Scalable Vector Graphics (SVG) assets by default. Icons require
+not bundle Scalable Vector Graphics (SVG) icons by default. Icons require
 either custom SVG assets or the optional `gpui-component-assets` crate plus
 `Application::with_assets`.
 
