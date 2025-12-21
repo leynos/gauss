@@ -36,24 +36,27 @@ fn tool_rail_buttons(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
 ) -> impl gpui::IntoElement {
-    div()
+    let mut rail = div()
         .flex()
         .flex_col()
         .items_center()
         .gap_2()
-        .child(tool_select_button(shell_state, cx))
-        .child(tool_draw_line_button(shell_state, cx))
-        .child(tool_draw_curve_button(shell_state, cx))
-        .child(tool_placeholder_button(
-            "tool-draw-square",
-            UiIcon::DrawSquare,
-            "Draw Rectangle",
-        ))
-        .child(tool_placeholder_button(
-            "tool-draw-circle",
-            UiIcon::DrawCircle,
-            "Draw Circle",
-        ))
+        .child(tool_select_button(shell_state, cx));
+
+    for spec in DRAW_BUTTON_SPECS {
+        rail = rail.child(tool_draw_button(shell_state, cx, &spec));
+    }
+
+    rail.child(tool_placeholder_button(
+        "tool-draw-square",
+        UiIcon::DrawSquare,
+        "Draw Rectangle",
+    ))
+    .child(tool_placeholder_button(
+        "tool-draw-circle",
+        UiIcon::DrawCircle,
+        "Draw Circle",
+    ))
 }
 
 struct ToolModeButtonSpec<F, S> {
@@ -64,12 +67,28 @@ struct ToolModeButtonSpec<F, S> {
     on_click: F,
 }
 
+#[derive(Clone, Copy)]
 struct ToolDrawButtonSpec {
     id: &'static str,
     icon: UiIcon,
     tooltip: &'static str,
     edge_mode: DrawEdgeMode,
 }
+
+const DRAW_BUTTON_SPECS: [ToolDrawButtonSpec; 2] = [
+    ToolDrawButtonSpec {
+        id: "tool-draw-line",
+        icon: UiIcon::DrawPath,
+        tooltip: "Draw Path",
+        edge_mode: DrawEdgeMode::Line,
+    },
+    ToolDrawButtonSpec {
+        id: "tool-draw-curve",
+        icon: UiIcon::DrawCurve,
+        tooltip: "Draw Curve",
+        edge_mode: DrawEdgeMode::BezierAuto,
+    },
+];
 
 /// Shared builder for tool-mode buttons to keep wiring consistent.
 fn tool_mode_button<F, S>(
@@ -140,38 +159,6 @@ fn tool_select_button(
             tooltip: "Select",
             state_fn: |shell: &Phase0Shell| select_button_state(shell.tool_mode),
             on_click: |shell: &mut Phase0Shell| shell.set_tool_mode(ToolMode::Manipulate),
-        },
-    )
-}
-
-fn tool_draw_line_button(
-    shell_state: &Phase0Shell,
-    cx: &mut Context<Phase0Shell>,
-) -> impl gpui::IntoElement {
-    tool_draw_button(
-        shell_state,
-        cx,
-        &ToolDrawButtonSpec {
-            id: "tool-draw-line",
-            icon: UiIcon::DrawPath,
-            tooltip: "Draw Path",
-            edge_mode: DrawEdgeMode::Line,
-        },
-    )
-}
-
-fn tool_draw_curve_button(
-    shell_state: &Phase0Shell,
-    cx: &mut Context<Phase0Shell>,
-) -> impl gpui::IntoElement {
-    tool_draw_button(
-        shell_state,
-        cx,
-        &ToolDrawButtonSpec {
-            id: "tool-draw-curve",
-            icon: UiIcon::DrawCurve,
-            tooltip: "Draw Curve",
-            edge_mode: DrawEdgeMode::BezierAuto,
         },
     )
 }
