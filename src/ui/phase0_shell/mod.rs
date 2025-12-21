@@ -209,8 +209,11 @@ impl Phase0Shell {
     /// This is used to verify that switching to manipulate mode clears the
     /// active draw state.
     #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+    #[expect(
+        clippy::missing_const_for_fn,
+        reason = "Keep test helper aligned with other non-const mutators."
+    )]
     pub fn set_draw_active_shape_for_tests(&mut self, shape: Option<ShapeId>) {
-        self.set_edge_mode(self.edge_mode);
         self.draw_active_shape = shape;
     }
 
