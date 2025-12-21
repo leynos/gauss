@@ -231,7 +231,7 @@ impl Phase0Shell {
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI. Selection history is not updated by this
     /// helper.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     pub fn replace_selection_for_tests(&mut self, selection: Selection) {
         self.selection = selection;
         self.drag_state = None;
