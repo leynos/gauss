@@ -241,7 +241,7 @@ impl Phase0Shell {
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub const fn is_dragging(&self) -> bool {
         self.drag_state.is_some()
