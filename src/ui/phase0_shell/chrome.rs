@@ -10,7 +10,7 @@ use super::{
         chrome_background, chrome_border, chrome_muted_text, chrome_panel, chrome_text,
     },
     chrome_panels,
-    draw::ToolMode,
+    draw::{DrawEdgeMode, ToolMode},
     file_dialogs,
     icon_button::{IconButtonState, icon_button},
     tool_rail,
@@ -67,7 +67,7 @@ impl Phase0Shell {
             .items_center()
             .gap_2()
             .child(Self::top_bar_file_actions(cx))
-            .child(Self::top_bar_edit_actions(cx))
+            .child(self.top_bar_edit_actions(cx))
             .child(icon_button(
                 "settings-button",
                 UiIcon::Settings,
@@ -117,39 +117,46 @@ impl Phase0Shell {
             )
     }
 
-    fn top_bar_edit_actions(cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn top_bar_edit_actions(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        let can_undo = !self.document_history.undos().is_empty();
+        let undo_state = if can_undo {
+            IconButtonState::Enabled
+        } else {
+            IconButtonState::Disabled
+        };
+        let can_redo = !self.document_history.redos().is_empty();
+        let redo_state = if can_redo {
+            IconButtonState::Enabled
+        } else {
+            IconButtonState::Disabled
+        };
+
+        let mut undo_button =
+            icon_button("undo-button", UiIcon::EditUndo, undo_state, Some("Undo"));
+        if can_undo {
+            undo_button =
+                undo_button.on_click(cx.listener(|shell: &mut Self, _event, _window, view_cx| {
+                    shell.undo_document();
+                    view_cx.notify();
+                }));
+        }
+
+        let mut redo_button =
+            icon_button("redo-button", UiIcon::EditRedo, redo_state, Some("Redo"));
+        if can_redo {
+            redo_button =
+                redo_button.on_click(cx.listener(|shell: &mut Self, _event, _window, view_cx| {
+                    shell.redo_document();
+                    view_cx.notify();
+                }));
+        }
+
         div()
             .flex()
             .items_center()
             .gap_2()
-            .child(
-                icon_button(
-                    "undo-button",
-                    UiIcon::EditUndo,
-                    IconButtonState::Enabled,
-                    Some("Undo"),
-                )
-                .on_click(cx.listener(
-                    |shell: &mut Self, _event, _window, view_cx| {
-                        shell.undo_document();
-                        view_cx.notify();
-                    },
-                )),
-            )
-            .child(
-                icon_button(
-                    "redo-button",
-                    UiIcon::EditRedo,
-                    IconButtonState::Enabled,
-                    Some("Redo"),
-                )
-                .on_click(cx.listener(
-                    |shell: &mut Self, _event, _window, view_cx| {
-                        shell.redo_document();
-                        view_cx.notify();
-                    },
-                )),
-            )
+            .child(undo_button)
+            .child(redo_button)
     }
 
     fn window_controls(cx: &mut Context<Self>) -> impl gpui::IntoElement {
@@ -161,13 +168,13 @@ impl Phase0Shell {
                 "window-minimize",
                 UiIcon::WindowMinimize,
                 IconButtonState::Placeholder,
-                Some("Minimise"),
+                Some("Minimize"),
             ))
             .child(icon_button(
                 "window-maximize",
                 UiIcon::WindowMaximize,
                 IconButtonState::Placeholder,
-                Some("Maximise"),
+                Some("Maximize"),
             ))
             .child(Self::quit_button(cx))
     }
@@ -199,5 +206,9 @@ impl Phase0Shell {
         if mode == ToolMode::Manipulate {
             self.draw_active_shape = None;
         }
+    }
+
+    pub(super) const fn set_edge_mode(&mut self, mode: DrawEdgeMode) {
+        self.edge_mode = mode;
     }
 }

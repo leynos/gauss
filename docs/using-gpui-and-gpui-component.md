@@ -12,7 +12,7 @@ GPUI Component 0.5.0 as pinned in this repository.
 ## Why this exists
 
 GPUI is pre-1.0 and changes frequently. The best way to stay productive is to
-standardise how the app boots, how state is organised, how the UI is rendered,
+standardize how the app boots, how state is organized, how the UI is rendered,
 and how behaviour is tested. This guide records the patterns that worked in
 Phase 0, highlights pitfalls, and outlines how to extend the UI safely.
 
@@ -96,7 +96,7 @@ fn main() {
 }
 ```
 
-Gauss centralises this setup in `gauss::ui::init`, and the entrypoint in
+Gauss centralizes this setup in `gauss::ui::init`, and the entrypoint in
 `src/main.rs` calls it before opening the window.
 
 ## Mental model: three registers
@@ -117,7 +117,7 @@ GPUI supports three primary registers. The PoC uses all three.
 
 3. **Elements (imperative UI)**
    - Elements give direct control over layout and rendering.
-   - Elements handle custom drawing (for example, `Canvas`) or specialised
+   - Elements handle custom drawing (for example, `Canvas`) or specialized
      layout.
 
 The PoC uses a view (`Phase0Shell`) that renders a toolbar and a canvas. The
@@ -142,10 +142,10 @@ GPUI Component is the default for standard UI controls (buttons, inputs,
 dropdowns, colour pickers, etc). It provides consistent theming and sizing and
 keeps custom drawing focused on the canvas.
 
-### Initialise once
+### Initialize once
 
 `gpui_component::init(app)` must be called inside the `Application::run`
-closure before using any components. This initialises theme state and registers
+closure before using any components. This initializes theme state and registers
 component services.
 
 ### Root wrapper is required
@@ -272,7 +272,7 @@ Recommended patterns:
 - Draw fill first, then stroke, then selection overlays.
 - Use a small, predictable marker size for anchors and handles.
 
-GPUI's `PathBuilder` supports lines and cubic Bezier curves, which match the
+GPUI's `PathBuilder` supports lines and cubic Bézier curves, which match the
 model representation. Use `PathBuilder::fill()` and `PathBuilder::stroke()` to
 build `Path` objects for the canvas.
 

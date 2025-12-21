@@ -11,6 +11,10 @@ use super::{
     icon_button::{IconButtonState, icon_button},
 };
 
+/// Build the vertical tool rail for the chrome shell.
+///
+/// Uses the current shell state to set button states and wires click handlers
+/// with the provided context.
 pub(super) fn tool_rail(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
@@ -75,7 +79,7 @@ fn tool_draw_line_button(
     icon_button("tool-draw-line", UiIcon::DrawPath, state, Some("Draw Path")).on_click(cx.listener(
         |shell: &mut Phase0Shell, _event, _window, view_cx| {
             shell.set_tool_mode(ToolMode::Draw);
-            shell.edge_mode = DrawEdgeMode::Line;
+            shell.set_edge_mode(DrawEdgeMode::Line);
             view_cx.notify();
         },
     ))
@@ -96,7 +100,7 @@ fn tool_draw_curve_button(
     .on_click(
         cx.listener(|shell: &mut Phase0Shell, _event, _window, view_cx| {
             shell.set_tool_mode(ToolMode::Draw);
-            shell.edge_mode = DrawEdgeMode::BezierAuto;
+            shell.set_edge_mode(DrawEdgeMode::BezierAuto);
             view_cx.notify();
         }),
     )

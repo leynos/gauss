@@ -63,7 +63,7 @@ mode switching) still work.
   tests are written against `Phase0Shell`, so this avoids widespread test churn
   while still allowing a complete UI refresh. Date/Author: 2025-12-20, Codex.
 - Decision: Render icons with
-  `gpui::img(Image::from_bytes(ImageFormat::Svg, ...))` using `include_bytes!`
+  `gpui::img(Image::from_bytes(ImageFormat::Svg, …))` using `include_bytes!`
   for the `icons/` assets. Rationale: `img()` accepts `Image` sources and SVG
   bytes directly, avoiding runtime file access and keeping headless tests
   stable. Date/Author: 2025-12-20, Codex.

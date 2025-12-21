@@ -91,7 +91,7 @@ impl Phase0Shell {
     pub(super) fn handle_tab_action(&mut self, cx: &mut Context<Self>) {
         let did_change = match self.tool_mode {
             ToolMode::Draw => {
-                self.edge_mode = self.edge_mode.toggle();
+                self.set_edge_mode(self.edge_mode.toggle());
                 true
             }
             ToolMode::Manipulate => self.toggle_selected_segments_kind(),

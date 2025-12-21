@@ -14,6 +14,7 @@ const BUTTON_SIZE: f32 = 28.0;
 pub(super) enum IconButtonState {
     Enabled,
     Active,
+    Disabled,
     Placeholder,
 }
 
@@ -37,6 +38,12 @@ pub(super) fn icon_button_base(id: &'static str, state: IconButtonState) -> Stat
         IconButtonState::Active => {
             base = base.bg(chrome_active()).cursor_pointer();
         }
+        IconButtonState::Disabled => {
+            base = base
+                .text_color(chrome_muted_text())
+                .opacity(0.6)
+                .cursor_default();
+        }
         IconButtonState::Placeholder => {
             base = base
                 .text_color(chrome_muted_text())
@@ -56,9 +63,7 @@ pub(super) fn icon_button(
 ) -> Stateful<gpui::Div> {
     let mut button = icon_button_base(id, state).child(icon_element(icon, ICON_SIZE));
     if let Some(text) = tooltip {
-        let tooltip_text = text.to_owned();
-        button =
-            button.tooltip(move |window, cx| Tooltip::new(tooltip_text.clone()).build(window, cx));
+        button = button.tooltip(move |window, cx| Tooltip::new(text).build(window, cx));
     }
     button
 }
