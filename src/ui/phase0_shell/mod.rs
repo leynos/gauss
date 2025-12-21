@@ -251,7 +251,7 @@ impl Phase0Shell {
     ///
     /// This exists to keep `#[gpui::test]` assertions stable on the test
     /// platform, which does not necessarily exit when `App::quit()` is invoked.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     #[must_use]
     pub const fn did_request_quit(&self) -> bool {
         self.did_request_quit
