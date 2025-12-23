@@ -18,19 +18,20 @@ VoiceOver (macOS) and Orca (Linux).
 - **Biggest technical risk:** **Text**. AccessKit's adapters support
   single/multi‑line text inputs today; **rich/hypertext** are not yet supported
   upstream. If Marrakesh Express needs full rich‑text semantics (attributes per
-  range, embedded objects) you'll either constrain features for v1 or fund
-  upstream work. ([GitHub][1])
+  range, embedded objects), constrain features for v1 or fund upstream work.
+  ([GitHub][1])
 - **Why now:** Zed/GPUI currently lacks practical Windows screen‑reader support
   (recent user report: "absolutely inaccessible"), so shipping without this work
   is not an option. ([GitHub][2])
-- **Tooling reality:** You won't get "free" a11y. You will build and maintain
-  the GPUI↔AccessKit bridge, then verify with OS‑level tools: **Accessibility
-  Insights/Inspect** (Windows), **Accessibility Inspector/VoiceOver** (macOS),
-  **Accerciser/Orca** (Linux). ([Accessibility Insights][3])
+- **Tooling reality:** Accessibility (a11y) does not come for free. The
+  GPUI↔AccessKit bridge must be built and maintained, then verified with
+  OS‑level tools: **Accessibility Insights/Inspect** (Windows), **Accessibility
+  Inspector/VoiceOver** (macOS), **Accerciser/Orca** (Linux).
+  ([Accessibility Insights][3])
 
 Bottom line: with a focused integration, disciplined text support, and a
-rigorous test matrix, you can meet **screen reader + limited mobility**
-requirements on desktop while keeping GPUI's performance virtues.
+rigorous test matrix, **screen reader + limited mobility** requirements can be
+met on desktop while keeping GPUI's performance virtues.
 
 ---
 
@@ -56,22 +57,23 @@ requirements on desktop while keeping GPUI's performance virtues.
 
 - **Keyboard‑only operation:** Logical focus order, consistent and visible focus
   indication, no keyboard traps, and full command coverage from the keyboard
-  (parallels WCAG 2.x **2.1 Keyboard**, **2.4 Focus Order/Visible**). ([W3C][7])
+  (parallels Web Content Accessibility Guidelines (WCAG) 2.x **2.1 Keyboard**,
+  **2.4 Focus Order/Visible**). ([W3C][7])
 - **Switch/voice control:** All actionable elements expose programmatic
   **invoke**/**set value** actions via platform APIs (UIA patterns /
   NSAccessibility actions / AT‑SPI actions). ([Microsoft Learn][8])
 - **Low‑vision:** High‑contrast theme tokens and scalable typography; platform
   contrast settings respected where possible.
 
-If you also need procurement‑grade compliance in Europe, align with **EN 301
-549** for "non‑web software". It references WCAG but explicitly covers native
-desktop software too. ([ETSI][9])
+For procurement‑grade compliance in Europe, align with **EN 301 549** for
+"non‑web software". It references WCAG but explicitly covers native desktop
+software too. ([ETSI][9])
 
 ---
 
 ## Impact of each proposed step
 
-Below I assess **scope**, **risks**, and **proof points** per step you listed.
+Below are **scope**, **risks**, and **proof points** assessments per step.
 
 ### 1) Adopt AccessKit early (GPUI → AccessKit tree + actions)
 
@@ -90,18 +92,19 @@ Below I assess **scope**, **risks**, and **proof points** per step you listed.
 
 - AccessKit's design explicitly targets immediate‑mode UIs given **stable node
   IDs**, and provides per‑OS adapters already. GPUI's architecture (AppContext
-  owns entities) gives you a central locus to generate stable identities.
+  owns entities) provides a central locus to generate stable identities.
   ([GitHub][1])
 
 **Notable risks:**
 
-- **Windowing:** GPUI does not use winit by default; you'll integrate
-  AccessKit's adapters directly (not accesskit_winit). This is normal: the
+- **Windowing:** GPUI does not use winit by default; integrate AccessKit's
+  adapters directly (not accesskit_winit). This is normal: the
   Windows adapter hooks WM_GETOBJECT and focus, macOS adapter subclasses NSView
   or forwards focus, Unix adapter binds AT‑SPI over D‑Bus. ([GitHub][10])
-- **Threading & event order:** UIA demands you initialize before responding to
+- **Threading & event order:** UIA demands initialisation before responding to
   WM_GETOBJECT; the Windows adapter provides a handle_wm_getobject flow and
-  update_if_active/update_window_focus_state to keep you honest. ([Docs.rs][11])
+  update_if_active/update_window_focus_state to ensure correctness.
+  ([Docs.rs][11])
 
 **Proof points:**
 
@@ -121,7 +124,7 @@ Below I assess **scope**, **risks**, and **proof points** per step you listed.
 
 **What changes:**
 
-- Implement the **text control** surface in your AccessKit nodes, including:
+- Implement the **text control** surface in the AccessKit nodes, including:
 
   - current caret (possibly modelled as a zero‑width selection),
   - **selection ranges**,
@@ -135,8 +138,9 @@ Below I assess **scope**, **risks**, and **proof points** per step you listed.
 
 - AccessKit currently documents that adapters support single‑/multi‑line text
   inputs but **not rich/hypertext** yet. For rich text editing (attributes per
-  span, embedded links, code folding), you'll need to scope features or extend
-  AccessKit's schema/adapter support. For standard form inputs, you're fine.
+  span, embedded links, code folding), scope features or extend AccessKit's
+  schema/adapter support. For standard form inputs, the current support is
+  sufficient.
   ([GitHub][1])
 
 **Proof points:**
@@ -146,7 +150,7 @@ Below I assess **scope**, **risks**, and **proof points** per step you listed.
   appropriately; VoiceOver/Orca can read/modify selection by word/line.
   ([Accessibility Insights][14])
 
-**Sizing:** Large if you need rich text; Medium for standard text inputs.
+**Sizing:** Large for rich text; Medium for standard text inputs.
 
 ---
 
@@ -188,8 +192,8 @@ Below I assess **scope**, **risks**, and **proof points** per step you listed.
 
 - Capture **AT transcripts** for each scenario (what the screen reader
   announces, keystrokes used) and keep them in CI artefacts.
-- Use **Accessibility Insights** to assert required UIA patterns/properties when
-  you build. ([Accessibility Insights][3])
+- Use **Accessibility Insights** to assert required UIA patterns/properties
+  during build. ([Accessibility Insights][3])
 
 **Sizing:** Ongoing; initial setup Medium.
 
@@ -221,14 +225,14 @@ Below I assess **scope**, **risks**, and **proof points** per step you listed.
 - **Stable Node IDs:** Immediate‑mode toolkits must keep **stable identities**
   for elements across frames. Map GPUI entities to **AccessKit NodeId**
   deterministically (e.g., a u64 derived from a component key + stable path).
-  AccessKit's design assumes this and avoids keeping the full tree on your side.
+  AccessKit's design assumes this and avoids keeping the full tree locally.
   ([GitHub][1])
 - **Focus & window activation:** Drive focus through GPUI's focus manager and
   forward it into the adapter (update_window_focus_state). On Windows, ensure
-  you initialize UIA **before** returning from WM_GETOBJECT. ([Docs.rs][11])
-- **Performance:** Accessibility tree updates are **incremental**; you only push
-  diffs to the adapter. This keeps overhead low, provided you coalesce updates
-  sensibly. ([GitHub][1])
+  UIA is initialised **before** returning from WM_GETOBJECT. ([Docs.rs][11])
+- **Performance:** Accessibility tree updates are **incremental**; only diffs
+  are pushed to the adapter. This keeps overhead low, provided updates are
+  coalesced sensibly. ([GitHub][1])
 - **GPUI/plumbing reality:** GPUI uses its own windowing; plan to integrate the
   **platform adapters directly**, not via accesskit_winit. (There is an
   accesskit_winit crate, but it's for winit‑based apps.) ([GitHub][10])
@@ -237,8 +241,7 @@ Below I assess **scope**, **risks**, and **proof points** per step you listed.
 
 ## Example: Windows adapter wiring (sketch)
 
-This illustrates the control flow you'll embed in GPUI's Windows platform
-layer:
+This illustrates the control flow to embed in GPUI's Windows platform layer:
 
 ```rust
 // Pseudocode-ish; see accesskit_windows docs for exact signatures
@@ -290,7 +293,7 @@ respectively. ([Docs.rs][11])
 
 ---
 
-## Risks you must explicitly budget for
+## Risks to explicitly budget for
 
 1. **Rich text/editor semantics**
    AccessKit's own docs state rich text/hypertext aren't yet implemented in
@@ -304,9 +307,9 @@ respectively. ([Docs.rs][11])
    conformance as a gate. ([GitHub][2])
 
 3. **Fragmentation across three OSes**
-   You'll hit platform quirks (e.g., NSAccessibility focus forwarding, AT‑SPI
-   event ordering). The adapters smooth many edges, but your test matrix keeps
-   you honest. ([Docs.rs][12])
+   Expect platform quirks (e.g., NSAccessibility focus forwarding, AT‑SPI event
+   ordering). The adapters smooth many edges, but the test matrix ensures
+   compliance. ([Docs.rs][12])
 
 ---
 
@@ -344,10 +347,10 @@ respectively. ([Docs.rs][11])
   adapter crates on docs.rs/crates.io. ([GitHub][1])
 - **GPUI architecture** (AppContext, entity ownership): Zed blog—useful to
   reason about stable node identities and update boundaries. ([Zed][17])
-- **GPUI↔winit** (not used): confirms you'll embed adapters directly, not via
-  accesskit_winit. ([GitHub][10])
+- **GPUI↔winit** (not used): confirms adapters must be embedded directly, not
+  via accesskit_winit. ([GitHub][10])
 - **Zed Windows a11y status:** recent issue describing real‑world lack of
-  screen‑reader support—your baseline to beat. ([GitHub][2])
+  screen‑reader support—the baseline to beat. ([GitHub][2])
 - **Text patterns & inspectors:** official Microsoft UIA text pattern docs;
   Apple/Orca docs; Accessibility Insights/Inspect/Accerciser usage.
   ([Microsoft Learn][4])
@@ -356,26 +359,26 @@ respectively. ([Docs.rs][11])
 
 ---
 
-## What this buys you
+## Benefits
 
-- **Compliance runway:** You can credibly claim screen‑reader support across
-  desktop OSes, align with **EN 301 549** expectations, and keep procurement
-  doors open in the UK/EU public sector. ([ETSI][9])
+- **Compliance runway:** Credibly claim screen‑reader support across desktop
+  OSes, align with **EN 301 549** expectations, and keep procurement doors open
+  in the UK/EU public sector. ([ETSI][9])
 - **User trust:** Screen‑reader users get first‑class support rather than a
   post‑script apology.
-- **Future‑proofing:** When AccessKit gains richer text/hypertext, your GPUI
-  bridge simply **emits more semantics**; you don't have to rethink your UI.
+- **Future‑proofing:** When AccessKit gains richer text/hypertext, the GPUI
+  bridge simply **emits more semantics**; no need to rethink the UI.
 
 ---
 
 ## Suggested next moves (concrete, bounded)
 
-1. **Prototype the bridge on one window** (e.g., your main shell): implement
+1. **Prototype the bridge on one window** (e.g., the main shell): implement
    node tree + actions and prove NVDA/VoiceOver/Orca navigation works
    end‑to‑end.
 2. **Ship text inputs** with full caret/selection semantics; lock down
    TextPattern on Windows. ([Microsoft Learn][4])
-3. **Roll out component by component** per your a11y matrix; add contrast tokens
+3. **Roll out component by component** per the a11y matrix; add contrast tokens
    and a high‑contrast theme early to avoid re‑painting later.
 4. **Automate inspections** (Windows first with Accessibility Insights CLI) to
    stop regressions. ([Accessibility Insights][3])
