@@ -6,8 +6,15 @@
 use gauss::ui::{GaussRoot, Phase0Shell};
 use gpui::Point;
 use gpui::{
-    App, AppContext as _, Application, TitlebarOptions, WindowDecorations, WindowOptions, px,
+    App, AppContext as _, Application, Pixels, TitlebarOptions, WindowDecorations, WindowOptions,
+    px,
 };
+
+/// Horizontal offset for macOS traffic light buttons from the left edge.
+const TRAFFIC_LIGHT_X_OFFSET: Pixels = px(10.0);
+
+/// Vertical offset for macOS traffic light buttons from the top edge.
+const TRAFFIC_LIGHT_Y_OFFSET: Pixels = px(10.0);
 
 fn main() {
     Application::new().run(|app: &mut App| {
@@ -19,7 +26,10 @@ fn main() {
             titlebar: Some(TitlebarOptions {
                 title: Some("Gauss".into()),
                 appears_transparent: true,
-                traffic_light_position: Some(Point::new(px(10.0), px(10.0))),
+                traffic_light_position: Some(Point::new(
+                    TRAFFIC_LIGHT_X_OFFSET,
+                    TRAFFIC_LIGHT_Y_OFFSET,
+                )),
             }),
             ..WindowOptions::default()
         };

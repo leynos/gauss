@@ -12,7 +12,15 @@
 //! Note: State query functions are prepared for future AccessKit integration
 //! and may appear unused until that work is complete.
 
-use gpui::{ResizeEdge, Window, point, px};
+use gpui::{Pixels, ResizeEdge, Window, point, px};
+
+/// Horizontal offset for the window menu position from the left edge.
+const WINDOW_MENU_X_OFFSET: Pixels = px(10.0);
+
+/// Vertical offset for the window menu position from the top edge.
+///
+/// Positioned below the titlebar area to avoid overlap with window controls.
+const WINDOW_MENU_Y_OFFSET: Pixels = px(30.0);
 
 /// Minimize the window.
 pub fn minimize(window: &Window) {
@@ -66,5 +74,5 @@ pub fn start_resize(window: &Window, edge: ResizeEdge) {
 
 /// Show the system window menu at a default location near the top-left.
 pub fn show_window_menu(window: &Window) {
-    window.show_window_menu(point(px(10.0), px(30.0)));
+    window.show_window_menu(point(WINDOW_MENU_X_OFFSET, WINDOW_MENU_Y_OFFSET));
 }

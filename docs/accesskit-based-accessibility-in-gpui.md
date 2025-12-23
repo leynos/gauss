@@ -106,7 +106,8 @@ groundwork for future products.
 **Note:** For text editing, the implementation should allow screen reader users
 to review text by character, word, and line, and get feedback on cursor
 position and selection changes. This is crucial for code or text editing
-scenarios. Implementation will follow platform-specific guidance (UIA TextPattern on Windows
+scenarios. Implementation will follow platform-specific guidance (UIA
+TextPattern on Windows
 ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext))
 ([3](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-about-text-and-textrange-patterns#:~:text=About%20the%20Text%20and%20TextRange,Services%20Framework%20%C2%B7%20Control%20Types)),
 ATSPI Text on Linux

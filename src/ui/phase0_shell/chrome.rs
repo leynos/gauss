@@ -100,6 +100,7 @@ impl Phase0Shell {
     fn top_bar_left(is_maximized: bool, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         let mut el = div()
             .id("titlebar-drag-region")
+            .debug_selector(|| "#titlebar-drag-region".to_owned())
             .flex()
             .flex_1() // Take remaining horizontal space
             .items_center()

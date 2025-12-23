@@ -74,11 +74,7 @@ impl Phase0Shell {
     ///
     /// This is used to verify that switching to manipulate mode clears the
     /// active draw state.
-    #[expect(
-        clippy::missing_const_for_fn,
-        reason = "Keep test helper aligned with other non-const mutators."
-    )]
-    pub fn set_draw_active_shape_for_tests(&mut self, shape: Option<ShapeId>) {
+    pub const fn set_draw_active_shape_for_tests(&mut self, shape: Option<ShapeId>) {
         self.draw_active_shape = shape;
     }
 
@@ -88,11 +84,7 @@ impl Phase0Shell {
     /// to simulate a maximized window (no resize borders), `Some(false)` for
     /// a normal window (resize borders visible), or `None` to use the actual
     /// window state.
-    #[expect(
-        clippy::missing_const_for_fn,
-        reason = "Keep test helper aligned with other non-const mutators."
-    )]
-    pub fn set_maximized_for_tests(&mut self, maximized: Option<bool>) {
+    pub const fn set_maximized_for_tests(&mut self, maximized: Option<bool>) {
         self.test_maximized_override = maximized;
     }
 
@@ -162,5 +154,13 @@ impl Phase0Shell {
     #[must_use]
     pub const fn last_canvas_click_screen(&self) -> Option<Vec2> {
         self.last_canvas_click_screen
+    }
+
+    /// Check if the window should be treated as maximized for resize border visibility.
+    ///
+    /// This exposes `is_maximized_for_resize_borders` for tests.
+    #[must_use]
+    pub fn is_maximized_for_resize_borders_for_tests(&self, window: &gpui::Window) -> bool {
+        self.is_maximized_for_resize_borders(window)
     }
 }

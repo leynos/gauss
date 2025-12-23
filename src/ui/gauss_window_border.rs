@@ -94,13 +94,6 @@ impl GaussWindowBorder {
         .when(!tiling.right, |d| d.pr(SHADOW_SIZE))
     }
 
-    /// Apply resize mouse-down handler when not maximized.
-    fn apply_resize_handler(div: Stateful<Div>, is_maximized: bool) -> Stateful<Div> {
-        div.when(!is_maximized, |d| {
-            d.on_mouse_down(MouseButton::Left, handle_resize_mouse_down)
-        })
-    }
-
     /// Render the inner content border with styling based on tiling state.
     fn render_inner_border(self, tiling: Tiling, app: &App) -> Div {
         // Inline corner rounding (same logic as apply_tiling_styles but for Div)
@@ -149,7 +142,10 @@ impl RenderOnce for GaussWindowBorder {
                 }
 
                 let styled_outer = Self::apply_tiling_styles(outer, tiling);
-                Self::apply_resize_handler(styled_outer, is_maximized)
+                // Add resize handler only when not maximized
+                styled_outer.when(!is_maximized, |d| {
+                    d.on_mouse_down(MouseButton::Left, on_resize_mouse_down)
+                })
             }
         };
 
@@ -166,17 +162,13 @@ impl RenderOnce for GaussWindowBorder {
     }
 }
 
-/// Handle mouse-down event for window resize.
-///
-/// This is extracted as a standalone function to reduce nesting depth
-/// in `apply_resize_handler`.
-fn handle_resize_mouse_down(_: &gpui::MouseDownEvent, window: &mut Window, _: &mut App) {
+/// Handle mouse-down for window resize initiation.
+fn on_resize_mouse_down(_: &gpui::MouseDownEvent, window: &mut Window, _: &mut App) {
     if window.is_maximized() {
         return;
     }
     let size = window.window_bounds().get_bounds().size;
     let pos = window.mouse_position();
-
     if let Some(edge) = resize_edge(pos, SHADOW_SIZE, size) {
         window.start_window_resize(edge);
     }
