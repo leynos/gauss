@@ -4,15 +4,48 @@
 //! allowing users to resize the window via drag operations. The regions
 //! are invisible but intercept mouse events to initiate compositor-controlled
 //! resize operations.
+//!
+//! On Linux, window resize hit regions are provided by `GaussWindowBorder`
+//! (which handles the window shadow area), so this module returns an empty
+//! vector to avoid overlapping hitboxes.
 
+#[cfg(not(target_os = "linux"))]
 use gpui::{AnyElement, CursorStyle, MouseButton, ResizeEdge, Window, div, prelude::*, px};
 
+#[cfg(target_os = "linux")]
+use gpui::AnyElement;
+
 /// Width/height of the invisible resize edge region in pixels.
+#[cfg(not(target_os = "linux"))]
 const RESIZE_EDGE_SIZE: f32 = 6.0;
 
 /// Width/height of the invisible resize corner region in pixels.
 /// Corners are larger than edges to make them easier to target.
+#[cfg(not(target_os = "linux"))]
 const RESIZE_CORNER_SIZE: f32 = 12.0;
+
+/// Render resize border regions around the window content.
+///
+/// Returns a vector of absolutely-positioned resize regions that should be
+/// added directly as children of a relative-positioned container. By avoiding
+/// an intermediate wrapper element, cursor state updates correctly when the
+/// mouse enters from outside the window boundary.
+///
+/// On Linux, resize hit regions are provided by `GaussWindowBorder`, so this
+/// returns an empty vector to avoid overlapping hitboxes.
+///
+/// # Example
+///
+/// ```ignore
+/// div()
+///     .relative()
+///     .child(content)
+///     .children(resize_borders())
+/// ```
+#[cfg(target_os = "linux")]
+pub(super) const fn resize_borders() -> Vec<AnyElement> {
+    Vec::new()
+}
 
 /// Render resize border regions around the window content.
 ///
@@ -29,6 +62,7 @@ const RESIZE_CORNER_SIZE: f32 = 12.0;
 ///     .child(content)
 ///     .children(resize_borders())
 /// ```
+#[cfg(not(target_os = "linux"))]
 pub(super) fn resize_borders() -> Vec<AnyElement> {
     vec![
         resize_edge(ResizeEdge::Top).into_any_element(),
@@ -44,6 +78,7 @@ pub(super) fn resize_borders() -> Vec<AnyElement> {
     ]
 }
 
+#[cfg(not(target_os = "linux"))]
 fn resize_edge(edge: ResizeEdge) -> impl gpui::IntoElement {
     let edge_size = px(RESIZE_EDGE_SIZE);
     let corner_size = px(RESIZE_CORNER_SIZE);
@@ -93,6 +128,7 @@ fn resize_edge(edge: ResizeEdge) -> impl gpui::IntoElement {
     )
 }
 
+#[cfg(not(target_os = "linux"))]
 fn resize_corner(edge: ResizeEdge) -> impl gpui::IntoElement {
     let corner_size = px(RESIZE_CORNER_SIZE);
     let (id, cursor) = match edge {
