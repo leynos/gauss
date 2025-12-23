@@ -346,7 +346,7 @@ respectively. ([Docs.rs][11])
   reason about stable node identities and update boundaries. ([Zed][17])
 - **GPUI↔winit** (not used): confirms you'll embed adapters directly, not via
   accesskit_winit. ([GitHub][10])
-- **Zed Windows a11y status:** recent issue describing read‑world lack of
+- **Zed Windows a11y status:** recent issue describing real‑world lack of
   screen‑reader support—your baseline to beat. ([GitHub][2])
 - **Text patterns & inspectors:** official Microsoft UIA text pattern docs;
   Apple/Orca docs; Accessibility Insights/Inspect/Accerciser usage.
