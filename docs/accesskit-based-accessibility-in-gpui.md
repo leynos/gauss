@@ -6,8 +6,9 @@ friendly) is feasible – but it requires deliberate engineering. This plan
 outlines how to integrate **AccessKit** into GPUI, implement proper semantics
 (especially for text), and verify the result on NVDA/JAWS/Narrator (Windows),
 VoiceOver (macOS), and Orca (Linux). The immediate focus is enabling
-cross-platform **keyboard-only control** in **Gauss** (our vector illustration
-app) via GPUI, with later phases adding visual aids and enhanced screen-reader
+cross-platform **keyboard-only control** in **Gauss** (the Gauss vector
+illustration application) via GPUI, with later phases adding visual aids and
+enhanced screen-reader
 support (e.g. for the upcoming Marrakesh Express client).
 
 ## Executive summary
@@ -18,8 +19,8 @@ support (e.g. for the upcoming Marrakesh Express client).
   expose an accessibility tree with **stable node IDs**
   ([1](https://accesskit.dev/how-it-works/#:~:text=One%20notable%20consequence%20of%20this,ID%20for%20each%20UI%20element))
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
-  We leverage this by having GPUI push updates to an AccessKit tree, and the
-  adapters will bridge to native Accessibility APIs on each OS.
+  This approach allows GPUI to push updates to an AccessKit tree, with the
+  adapters bridging to native Accessibility APIs on each OS.
 
 - **Biggest technical risk:** **Text support.** AccessKit's adapters handle
   single-line and multi-line text controls today, but **rich text or
@@ -67,7 +68,7 @@ and laying groundwork for future products.
   movement, selection, word/line navigation, and text-change events
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Summary))
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=3,the%20editor%20to%20learn%20it)).
-  We must fire events like `TextSelectionChanged` and support patterns like
+  Events like `TextSelectionChanged` must be fired, and patterns like
   **Invoke**, **Value**, **Selection**, etc., as appropriate. Success is
   verified with **NVDA**, **JAWS**, and **Narrator**, using Microsoft's Inspect
   or Accessibility Insights tool to confirm the presence of the expected UIA
@@ -147,11 +148,11 @@ and the macOS accessibility text protocol) to get this right.
   ([5](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-implementingtextandtextrange#:~:text=Learn%20learn,1)).)
 
 - **Low-vision accommodations:** Provide a high-contrast UI theme and scalable
-  UI elements. We will define contrast-enhanced color tokens (ensuring text
+  UI elements. Contrast-enhanced colour tokens should be defined (ensuring text
   meets at least WCAG AA contrast ratio against its background) and honor
   system high-contrast settings when possible. Users should be able to increase
   UI scale (text and control size) without breaking layout. Also, ensure no
-  critical information is conveyed by color alone (provide shapes or text
+  critical information is conveyed by colour alone (provide shapes or text
   labels as needed). While this is more of a UI design task, it ties into
   accessibility standards and will be documented as part of our compliance
   (relates to WCAG 2.1 **1.4.3 Contrast** and others).
@@ -343,21 +344,21 @@ or rich text). For basic single-line inputs and simple multiline areas,
 *Medium*. We will implement baseline text support in phase 1, and if rich-text
 or advanced editing is needed, that may be a separate subproject.
 
-### 3) Audit and improve color contrast & theming for visibility
+### 3) Audit and improve colour contrast & theming for visibility
 
 **What changes:** This step is about **visual accessibility** (particularly for
 low-vision users or those with contrast sensitivity):
 
-- Define a set of **high-contrast theme tokens**. Likely, we will add a High
-  Contrast mode to our theme system (in addition to the default Light/Dark). In
-  High Contrast, text and important UI elements use colors that maximize
-  contrast with the background (e.g., white on black or black on yellow,
-  depending on user preference or system settings). We'll ensure all text meets
+- Define a set of **high-contrast theme tokens**. A High Contrast mode should be
+  added to the theme system (in addition to the default Light/Dark). In High
+  Contrast, text and important UI elements use colours that maximise contrast
+  with the background (e.g., white on black or black on yellow, depending on
+  user preference or system settings). All text should meet
   at least a 4.5:1 contrast ratio against its background (WCAG 2.1 AA level).
 
 - Ensure **focus indicators** are very visible. This might mean using a thick
   outline or an obvious highlight on the focused element, not just a subtle
-  shadow. For high contrast mode, the focus ring might be a distinct color
+  shadow. For high contrast mode, the focus ring might be a distinct colour
   (like yellow) that stands out on black.
 
 - Support **UI scaling**: Users who have trouble seeing small text should be
@@ -371,16 +372,16 @@ low-vision users or those with contrast sensitivity):
   to our themes. On Windows, for instance, we can query if a high-contrast
   theme is active and automatically switch or adjust colors. On macOS, the
   "Increase Contrast" and "Differentiate Without Color" settings could inform
-  some adjustments (like adding shapes or labels in addition to color coding).
+  some adjustments (like adding shapes or labels in addition to colour coding).
 
 This step is relatively self-contained in terms of code (mostly styling), but
 it's crucial for compliance and user comfort.
 
 **Proof points:**
 
-- Use a color contrast analyzer (there's one in Accessibility Insights and
-  browser dev tools) to verify that all text-color vs background-color
-  combinations in our UI are >= 4.5:1 (for normal text) or 3:1 for large
+- Use a colour contrast analyser (there's one in Accessibility Insights and
+  browser dev tools) to verify that all text-colour vs background-colour
+  combinations in the UI are >= 4.5:1 (for normal text) or 3:1 for large
   text/icons. We should document these contrast ratios for key UI components.
 
 - Manually enable high-contrast mode on each OS and observe our app: On
@@ -727,8 +728,8 @@ passes the following tests:
 
 - **Windows:** Run Accessibility Insights for Windows **FastPass** on the main
   windows of Gauss. The FastPass automated checks should report **no errors**
-  in the categories of: Name, Role, Value for controls; keyboard traps; color
-  contrast (if we include the contrast rules); focus order (AI can flag if
+  in the categories of: Name, Role, Value for controls; keyboard traps; colour
+  contrast (if the contrast rules are included); focus order (AI can flag if
   focus moves in an illogical order). We also manually use **Inspect** to
   ensure key controls expose the correct UIA control patterns (e.g., a slider
   control should show a RangeValue pattern, a text box shows Text pattern,
@@ -755,7 +756,7 @@ We script and perform end-to-end tasks *purely via keyboard and screen reader*.
 Example scenario for Gauss: **"Create and save a simple drawing"** – The tester
 will: launch Gauss, create a new canvas (via menu or shortcut), draw a shape
 (using keyboard to select shape tool and place a shape of default size, or
-using an accessible shape insertion command), change the shape's color or
+using an accessible shape insertion command), change the shape's colour or
 properties (navigating the properties panel), save the file (via keyboard).
 While doing this, the screen reader should announce each action (e.g., when
 selecting the rectangle tool, it might say "Rectangle tool selected, press
@@ -770,7 +771,7 @@ address that before considering the feature complete.
 - **Contrast and scaling checks:**
 
 Verify that in high-contrast mode, or with a custom high-contrast theme, all UI
-elements are still distinguishable. Use a color contrast tool on all UI text.
+elements are still distinguishable. Use a colour contrast tool on all UI text.
 Increase the system font scale (or our app's zoom) to, say, 150% and ensure the
 UI is still usable (text isn't cut off, icons scale or have appropriate
 alternatives like text labels instead of relying on tiny icons). Focus
@@ -928,8 +929,8 @@ framework.
   etc.) and implement their accessibility roles/properties. We can prioritize
   core ones used in Gauss's main workflow first. As we do this, update the
   accessibility support matrix document. Also, implement the **high-contrast
-  theme toggle** and get feedback from someone with low-vision on our color
-  choices. Doing them in parallel ensures we don't forget visual accessibility
+  theme toggle** and get feedback from someone with low-vision on the colour
+  choices. Doing them in parallel ensures visual accessibility is not forgotten
   while focusing on screen readers.
 
 - **Automate where possible and prevent regressions:** Integrate accessibility
