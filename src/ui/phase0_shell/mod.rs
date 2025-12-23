@@ -211,21 +211,14 @@ impl Phase0Shell {
     }
 
     /// Handle window resize by adjusting viewport pan to maintain anchor.
-    #[expect(
-        clippy::float_arithmetic,
-        reason = "Size comparison requires floating-point subtraction."
-    )]
     pub(super) fn handle_window_resize(&mut self, window: &gpui::Window) {
         let new_size = window.viewport_size();
 
         if let Some(old_size) = self.last_viewport_size {
-            let old_vec = Vec2::new(f32::from(old_size.width), f32::from(old_size.height));
-            let new_vec = Vec2::new(f32::from(new_size.width), f32::from(new_size.height));
-
             // Only adjust if size actually changed
-            let dx = (old_vec.x - new_vec.x).abs();
-            let dy = (old_vec.y - new_vec.y).abs();
-            if dx > f32::EPSILON || dy > f32::EPSILON {
+            if old_size != new_size {
+                let old_vec = Vec2::new(f32::from(old_size.width), f32::from(old_size.height));
+                let new_vec = Vec2::new(f32::from(new_size.width), f32::from(new_size.height));
                 let anchor_factor = self.resize_anchor.as_factor();
                 self.viewport
                     .adjust_pan_for_resize(old_vec, new_vec, anchor_factor);

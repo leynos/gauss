@@ -103,7 +103,15 @@ impl GaussWindowBorder {
 
     /// Render the inner content border with styling based on tiling state.
     fn render_inner_border(self, tiling: Tiling, app: &App) -> Div {
-        let inner_div = apply_corner_rounding(div(), tiling);
+        // Inline corner rounding (same logic as apply_tiling_styles but for Div)
+        let inner_div = div()
+            .when(!(tiling.top || tiling.right), |d| {
+                d.rounded_tr(BORDER_RADIUS)
+            })
+            .when(!(tiling.top || tiling.left), |d| {
+                d.rounded_tl(BORDER_RADIUS)
+            });
+
         apply_border_styling(inner_div, tiling, app)
             .on_mouse_move(|_e, _, ctx| {
                 ctx.stop_propagation();
@@ -184,16 +192,6 @@ const fn cursor_style_for_edge(edge: ResizeEdge) -> CursorStyle {
     }
 }
 
-/// Apply corner rounding based on tiling state.
-fn apply_corner_rounding(div: Div, tiling: Tiling) -> Div {
-    div.when(!(tiling.top || tiling.right), |d| {
-        d.rounded_tr(BORDER_RADIUS)
-    })
-    .when(!(tiling.top || tiling.left), |d| {
-        d.rounded_tl(BORDER_RADIUS)
-    })
-}
-
 /// Apply border styling including edges and drop shadow.
 fn apply_border_styling(div: Div, tiling: Tiling, cx: &App) -> Div {
     div.border_color(cx.theme().window_border)
@@ -218,47 +216,31 @@ fn apply_border_styling(div: Div, tiling: Tiling, cx: &App) -> Div {
 
 /// Determine which resize edge (if any) the mouse position is over.
 ///
-/// This is the entry point for resize edge detection. It delegates to
-/// [`check_corner`] first (corners take precedence at intersections),
-/// then falls back to [`check_edge`] for the four cardinal edges.
-///
-/// Ported from `gpui-component::window_border` with identical logic,
-/// decomposed into smaller functions to reduce cyclomatic complexity.
+/// Corners take precedence at intersections (e.g., top-left wins over top).
+/// Ported from `gpui-component::window_border` with identical logic.
 fn resize_edge(pos: Point<Pixels>, shadow_size: Pixels, size: Size<Pixels>) -> Option<ResizeEdge> {
-    check_corner(pos, shadow_size, size).or_else(|| check_edge(pos, shadow_size, size))
-}
-
-/// Check if the mouse position is over a corner resize zone.
-///
-/// Corners are checked before edges because they take precedence at
-/// the intersection points (e.g., top-left corner wins over top edge).
-fn check_corner(pos: Point<Pixels>, shadow_size: Pixels, size: Size<Pixels>) -> Option<ResizeEdge> {
     let in_top = pos.y < shadow_size;
     let in_bottom = pos.y > size.height - shadow_size;
     let in_left = pos.x < shadow_size;
     let in_right = pos.x > size.width - shadow_size;
 
+    // Check corners first (they take precedence at intersections)
     match (in_top, in_bottom, in_left, in_right) {
-        (true, _, true, _) => Some(ResizeEdge::TopLeft),
-        (true, _, _, true) => Some(ResizeEdge::TopRight),
-        (_, true, true, _) => Some(ResizeEdge::BottomLeft),
-        (_, true, _, true) => Some(ResizeEdge::BottomRight),
-        _ => None,
+        (true, _, true, _) => return Some(ResizeEdge::TopLeft),
+        (true, _, _, true) => return Some(ResizeEdge::TopRight),
+        (_, true, true, _) => return Some(ResizeEdge::BottomLeft),
+        (_, true, _, true) => return Some(ResizeEdge::BottomRight),
+        _ => {}
     }
-}
 
-/// Check if the mouse position is over an edge (non-corner) resize zone.
-///
-/// This is called only after [`check_corner`] returns `None`, so we know
-/// the position is not in a corner and can safely check just the edges.
-fn check_edge(pos: Point<Pixels>, shadow_size: Pixels, size: Size<Pixels>) -> Option<ResizeEdge> {
-    if pos.y < shadow_size {
+    // Check edges
+    if in_top {
         Some(ResizeEdge::Top)
-    } else if pos.y > size.height - shadow_size {
+    } else if in_bottom {
         Some(ResizeEdge::Bottom)
-    } else if pos.x < shadow_size {
+    } else if in_left {
         Some(ResizeEdge::Left)
-    } else if pos.x > size.width - shadow_size {
+    } else if in_right {
         Some(ResizeEdge::Right)
     } else {
         None
@@ -267,14 +249,16 @@ fn check_edge(pos: Point<Pixels>, shadow_size: Pixels, size: Size<Pixels>) -> Op
 
 /// Window root wrapper that renders content inside our custom window border.
 ///
-/// This serves as a replacement for `gpui_component::Root` when we need the
-/// window border/shadow but don't need Sheet/Dialog/Notification features.
+/// GPUI's `App::open_window` requires the root view to implement `Render`,
+/// which means we cannot use a bare helper function. This thin wrapper
+/// exists solely to satisfy that constraint while delegating all layout
+/// to [`gauss_window_border`].
 pub struct GaussRoot {
     view: AnyView,
 }
 
 impl GaussRoot {
-    /// Create a new root wrapper for the given view entity.
+    /// Wrap `view` so it can be passed to `App::open_window`.
     pub fn new<V: Render>(view: Entity<V>, _cx: &mut Context<Self>) -> Self {
         Self { view: view.into() }
     }
