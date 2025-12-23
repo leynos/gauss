@@ -11,10 +11,10 @@
 //! - Drop shadow is still rendered (controlled by tiling state)
 
 use gpui::{
-    AnyElement, AnyView, App, Bounds, Context, CursorStyle, Decorations, Entity, HitboxBehavior,
-    Hsla, InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels, Point, Render,
-    RenderOnce, ResizeEdge, Size, Styled as _, Window, canvas, div, point,
-    prelude::FluentBuilder as _, px,
+    AnyElement, AnyView, App, Bounds, Context, CursorStyle, Decorations, Div, Entity,
+    HitboxBehavior, Hsla, InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels,
+    Point, Render, RenderOnce, ResizeEdge, Size, Stateful, Styled as _, Tiling, Window, canvas,
+    div, point, prelude::FluentBuilder as _, px,
 };
 
 use gpui_component::ActiveTheme;
@@ -48,6 +48,80 @@ impl GaussWindowBorder {
             children: Vec::new(),
         }
     }
+
+    /// Create the resize detection canvas element.
+    ///
+    /// This canvas inserts a hitbox covering the window and updates the cursor
+    /// style based on which resize edge the mouse is over.
+    fn create_resize_canvas() -> impl IntoElement {
+        canvas(
+            |_bounds, window, _| {
+                window.insert_hitbox(
+                    Bounds::new(
+                        point(px(0.0), px(0.0)),
+                        window.window_bounds().get_bounds().size,
+                    ),
+                    HitboxBehavior::Normal,
+                )
+            },
+            move |_bounds, hitbox, window, _| {
+                if window.is_maximized() {
+                    return;
+                }
+
+                let mouse = window.mouse_position();
+                let size = window.window_bounds().get_bounds().size;
+                if let Some(edge) = resize_edge(mouse, SHADOW_SIZE, size) {
+                    window.set_cursor_style(cursor_style_for_edge(edge), &hitbox);
+                }
+            },
+        )
+        .size_full()
+        .absolute()
+    }
+
+    /// Apply tiling-aware padding and corner rounding to the outer div.
+    fn apply_tiling_styles(div: Stateful<Div>, tiling: Tiling) -> Stateful<Div> {
+        div.when(!(tiling.top || tiling.right), |d| {
+            d.rounded_tr(BORDER_RADIUS)
+        })
+        .when(!(tiling.top || tiling.left), |d| {
+            d.rounded_tl(BORDER_RADIUS)
+        })
+        .when(!tiling.top, |d| d.pt(SHADOW_SIZE))
+        .when(!tiling.bottom, |d| d.pb(SHADOW_SIZE))
+        .when(!tiling.left, |d| d.pl(SHADOW_SIZE))
+        .when(!tiling.right, |d| d.pr(SHADOW_SIZE))
+    }
+
+    /// Apply resize mouse-down handler when not maximized.
+    fn apply_resize_handler(div: Stateful<Div>, is_maximized: bool) -> Stateful<Div> {
+        div.when(!is_maximized, |d| {
+            d.on_mouse_down(MouseButton::Left, move |_, window, _| {
+                if window.is_maximized() {
+                    return;
+                }
+                let size = window.window_bounds().get_bounds().size;
+                let pos = window.mouse_position();
+
+                if let Some(edge) = resize_edge(pos, SHADOW_SIZE, size) {
+                    window.start_window_resize(edge);
+                }
+            })
+        })
+    }
+
+    /// Render the inner content border with styling based on tiling state.
+    fn render_inner_border(self, tiling: Tiling, cx: &App) -> Div {
+        let div = apply_corner_rounding(div(), tiling);
+        apply_border_styling(div, tiling, cx)
+            .on_mouse_move(|_e, _, cx| {
+                cx.stop_propagation();
+            })
+            .bg(cx.theme().background)
+            .size_full()
+            .children(self.children)
+    }
 }
 
 impl ParentElement for GaussWindowBorder {
@@ -62,163 +136,127 @@ impl RenderOnce for GaussWindowBorder {
         let is_maximized = window.is_maximized();
         window.set_client_inset(SHADOW_SIZE);
 
-        div()
+        let backdrop = div()
             .id("gauss-window-backdrop")
-            .bg(gpui::transparent_black())
-            .map(|div| match decorations {
-                Decorations::Server => div,
-                Decorations::Client { tiling, .. } => {
-                    let div = div.bg(gpui::transparent_black());
+            .bg(gpui::transparent_black());
 
-                    // Only add resize hit detection when NOT maximized.
-                    // When maximized, tiling should be all true, but gpui-component
-                    // doesn't respect this for the hitbox - we explicitly check.
-                    let div = if !is_maximized {
-                        div.child(
-                            canvas(
-                                |_bounds, window, _| {
-                                    window.insert_hitbox(
-                                        Bounds::new(
-                                            point(px(0.0), px(0.0)),
-                                            window.window_bounds().get_bounds().size,
-                                        ),
-                                        HitboxBehavior::Normal,
-                                    )
-                                },
-                                move |_bounds, hitbox, window, _| {
-                                    // Skip cursor changes if maximized (shouldn't happen
-                                    // since we don't add this canvas, but defensive)
-                                    if window.is_maximized() {
-                                        return;
-                                    }
+        let backdrop = match decorations {
+            Decorations::Server => backdrop,
+            Decorations::Client { tiling, .. } => {
+                let mut outer = backdrop.bg(gpui::transparent_black());
 
-                                    let mouse = window.mouse_position();
-                                    let size = window.window_bounds().get_bounds().size;
-                                    let Some(edge) = resize_edge(mouse, SHADOW_SIZE, size) else {
-                                        return;
-                                    };
-                                    window.set_cursor_style(
-                                        match edge {
-                                            ResizeEdge::Top | ResizeEdge::Bottom => {
-                                                CursorStyle::ResizeUpDown
-                                            }
-                                            ResizeEdge::Left | ResizeEdge::Right => {
-                                                CursorStyle::ResizeLeftRight
-                                            }
-                                            ResizeEdge::TopLeft | ResizeEdge::BottomRight => {
-                                                CursorStyle::ResizeUpLeftDownRight
-                                            }
-                                            ResizeEdge::TopRight | ResizeEdge::BottomLeft => {
-                                                CursorStyle::ResizeUpRightDownLeft
-                                            }
-                                        },
-                                        &hitbox,
-                                    );
-                                },
-                            )
-                            .size_full()
-                            .absolute(),
-                        )
-                    } else {
-                        div
-                    };
-
-                    div.when(!(tiling.top || tiling.right), |div| {
-                        div.rounded_tr(BORDER_RADIUS)
-                    })
-                    .when(!(tiling.top || tiling.left), |div| {
-                        div.rounded_tl(BORDER_RADIUS)
-                    })
-                    .when(!tiling.top, |div| div.pt(SHADOW_SIZE))
-                    .when(!tiling.bottom, |div| div.pb(SHADOW_SIZE))
-                    .when(!tiling.left, |div| div.pl(SHADOW_SIZE))
-                    .when(!tiling.right, |div| div.pr(SHADOW_SIZE))
-                    // Only handle resize mouse-down when NOT maximized
-                    .when(!is_maximized, |div| {
-                        div.on_mouse_down(MouseButton::Left, move |_, window, _| {
-                            if window.is_maximized() {
-                                return;
-                            }
-                            let size = window.window_bounds().get_bounds().size;
-                            let pos = window.mouse_position();
-
-                            if let Some(edge) = resize_edge(pos, SHADOW_SIZE, size) {
-                                window.start_window_resize(edge);
-                            }
-                        })
-                    })
+                // Only add resize hit detection when NOT maximized.
+                if !is_maximized {
+                    outer = outer.child(Self::create_resize_canvas());
                 }
-            })
-            .size_full()
-            .child(
-                div()
-                    .map(|div| match decorations {
-                        Decorations::Server => div,
-                        Decorations::Client { tiling } => div
-                            .when(!(tiling.top || tiling.right), |div| {
-                                div.rounded_tr(BORDER_RADIUS)
-                            })
-                            .when(!(tiling.top || tiling.left), |div| {
-                                div.rounded_tl(BORDER_RADIUS)
-                            })
-                            .border_color(cx.theme().window_border)
-                            .when(!tiling.top, |div| div.border_t(BORDER_SIZE))
-                            .when(!tiling.bottom, |div| div.border_b(BORDER_SIZE))
-                            .when(!tiling.left, |div| div.border_l(BORDER_SIZE))
-                            .when(!tiling.right, |div| div.border_r(BORDER_SIZE))
-                            .when(!tiling.is_tiled(), |div| {
-                                div.shadow(vec![gpui::BoxShadow {
-                                    color: Hsla {
-                                        h: 0.,
-                                        s: 0.,
-                                        l: 0.,
-                                        a: 0.3,
-                                    },
-                                    blur_radius: SHADOW_SIZE / 2.,
-                                    spread_radius: px(0.),
-                                    offset: point(px(0.0), px(0.0)),
-                                }])
-                            }),
-                    })
-                    .on_mouse_move(|_e, _, cx| {
-                        cx.stop_propagation();
-                    })
-                    .bg(cx.theme().background)
-                    .size_full()
-                    .children(self.children),
-            )
+
+                let outer = Self::apply_tiling_styles(outer, tiling);
+                Self::apply_resize_handler(outer, is_maximized)
+            }
+        };
+
+        let inner = match decorations {
+            Decorations::Server => div()
+                .on_mouse_move(|_e, _, cx| cx.stop_propagation())
+                .bg(cx.theme().background)
+                .size_full()
+                .children(self.children),
+            Decorations::Client { tiling } => self.render_inner_border(tiling, cx),
+        };
+
+        backdrop.size_full().child(inner)
     }
+}
+
+/// Map a resize edge to the appropriate cursor style.
+fn cursor_style_for_edge(edge: ResizeEdge) -> CursorStyle {
+    match edge {
+        ResizeEdge::Top | ResizeEdge::Bottom => CursorStyle::ResizeUpDown,
+        ResizeEdge::Left | ResizeEdge::Right => CursorStyle::ResizeLeftRight,
+        ResizeEdge::TopLeft | ResizeEdge::BottomRight => CursorStyle::ResizeUpLeftDownRight,
+        ResizeEdge::TopRight | ResizeEdge::BottomLeft => CursorStyle::ResizeUpRightDownLeft,
+    }
+}
+
+/// Apply corner rounding based on tiling state.
+fn apply_corner_rounding(div: Div, tiling: Tiling) -> Div {
+    div.when(!(tiling.top || tiling.right), |d| {
+        d.rounded_tr(BORDER_RADIUS)
+    })
+    .when(!(tiling.top || tiling.left), |d| {
+        d.rounded_tl(BORDER_RADIUS)
+    })
+}
+
+/// Apply border styling including edges and drop shadow.
+fn apply_border_styling(div: Div, tiling: Tiling, cx: &App) -> Div {
+    div.border_color(cx.theme().window_border)
+        .when(!tiling.top, |d| d.border_t(BORDER_SIZE))
+        .when(!tiling.bottom, |d| d.border_b(BORDER_SIZE))
+        .when(!tiling.left, |d| d.border_l(BORDER_SIZE))
+        .when(!tiling.right, |d| d.border_r(BORDER_SIZE))
+        .when(!tiling.is_tiled(), |d| {
+            d.shadow(vec![gpui::BoxShadow {
+                color: Hsla {
+                    h: 0.,
+                    s: 0.,
+                    l: 0.,
+                    a: 0.3,
+                },
+                blur_radius: SHADOW_SIZE / 2.,
+                spread_radius: px(0.),
+                offset: point(px(0.0), px(0.0)),
+            }])
+        })
 }
 
 /// Determine which resize edge (if any) the mouse position is over.
 ///
-/// This function has high branching complexity by necessity: it must check
-/// all 8 edge/corner regions in a specific order. Corners are checked first
-/// (they take precedence at intersections), then edges. The order ensures
-/// corners like TopLeft are detected before the general Top or Left edges.
+/// This is the entry point for resize edge detection. It delegates to
+/// [`check_corner`] first (corners take precedence at intersections),
+/// then falls back to [`check_edge`] for the four cardinal edges.
 ///
-/// Ported from `gpui-component::window_border` with identical logic.
+/// Ported from `gpui-component::window_border` with identical logic,
+/// decomposed into smaller functions to reduce cyclomatic complexity.
 fn resize_edge(pos: Point<Pixels>, shadow_size: Pixels, size: Size<Pixels>) -> Option<ResizeEdge> {
-    let edge = if pos.y < shadow_size && pos.x < shadow_size {
-        ResizeEdge::TopLeft
-    } else if pos.y < shadow_size && pos.x > size.width - shadow_size {
-        ResizeEdge::TopRight
-    } else if pos.y < shadow_size {
-        ResizeEdge::Top
-    } else if pos.y > size.height - shadow_size && pos.x < shadow_size {
-        ResizeEdge::BottomLeft
-    } else if pos.y > size.height - shadow_size && pos.x > size.width - shadow_size {
-        ResizeEdge::BottomRight
+    check_corner(pos, shadow_size, size).or_else(|| check_edge(pos, shadow_size, size))
+}
+
+/// Check if the mouse position is over a corner resize zone.
+///
+/// Corners are checked before edges because they take precedence at
+/// the intersection points (e.g., top-left corner wins over top edge).
+fn check_corner(pos: Point<Pixels>, shadow_size: Pixels, size: Size<Pixels>) -> Option<ResizeEdge> {
+    let in_top = pos.y < shadow_size;
+    let in_bottom = pos.y > size.height - shadow_size;
+    let in_left = pos.x < shadow_size;
+    let in_right = pos.x > size.width - shadow_size;
+
+    match (in_top, in_bottom, in_left, in_right) {
+        (true, _, true, _) => Some(ResizeEdge::TopLeft),
+        (true, _, _, true) => Some(ResizeEdge::TopRight),
+        (_, true, true, _) => Some(ResizeEdge::BottomLeft),
+        (_, true, _, true) => Some(ResizeEdge::BottomRight),
+        _ => None,
+    }
+}
+
+/// Check if the mouse position is over an edge (non-corner) resize zone.
+///
+/// This is called only after [`check_corner`] returns `None`, so we know
+/// the position is not in a corner and can safely check just the edges.
+fn check_edge(pos: Point<Pixels>, shadow_size: Pixels, size: Size<Pixels>) -> Option<ResizeEdge> {
+    if pos.y < shadow_size {
+        Some(ResizeEdge::Top)
     } else if pos.y > size.height - shadow_size {
-        ResizeEdge::Bottom
+        Some(ResizeEdge::Bottom)
     } else if pos.x < shadow_size {
-        ResizeEdge::Left
+        Some(ResizeEdge::Left)
     } else if pos.x > size.width - shadow_size {
-        ResizeEdge::Right
+        Some(ResizeEdge::Right)
     } else {
-        return None;
-    };
-    Some(edge)
+        None
+    }
 }
 
 /// Window root wrapper that renders content inside our custom window border.
