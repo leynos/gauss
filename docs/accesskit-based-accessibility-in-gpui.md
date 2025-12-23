@@ -27,8 +27,8 @@ support (e.g. for the upcoming Marrakesh Express client).
   hypertext** content is *not yet supported*
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
   If Gauss or Marrakesh Express requires full rich-text semantics (formatted
-  text spans, embedded objects, code editor features), we'll either need to
-  limit those features in v1 or contribute upstream to extend AccessKit.
+  text spans, embedded objects, code editor features), either limiting those
+  features in v1 or contributing upstream to extend AccessKit will be required.
 
 - **Why now:** Currently, GPUI-based apps lack practical screen-reader support
   on some platforms. For example, Zed (which uses GPUI) on Windows was reported
@@ -37,11 +37,11 @@ support (e.g. for the upcoming Marrakesh Express client).
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke)).
   Shipping Gauss without accessibility is not an option. This project brings
   GPUI to parity with competitor tools (e.g. VS Code's strong accessibility)
-  and meets our users' needs from day one.
+  and meets user needs from day one.
 
-- **Tooling reality:** Accessibility won't come "for free" – we must build and
-  maintain the GPUI ↔ AccessKit bridge and thoroughly test it. We will use
-  OS-level accessibility inspection tools to validate our implementation:
+- **Tooling reality:** Accessibility won't come "for free" – the GPUI ↔ AccessKit
+  bridge must be built, maintained, and thoroughly tested. OS-level accessibility
+  inspection tools validate the implementation:
   **Accessibility Insights/Inspect** on Windows
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=2,the%20editor%20to%20learn%20it))
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke)),
@@ -52,11 +52,11 @@ support (e.g. for the upcoming Marrakesh Express client).
   essential to catch issues early.
 
 **Bottom line:** With focused integration, disciplined text handling, and a
-rigorous test matrix, we can achieve **screen reader + keyboard-only
-operation** on desktop while preserving GPUI's performance advantages.
-Accessibility becomes a first-class feature of our apps, not a post-hoc
-addition – ensuring Gauss can be fully used by keyboard or alternative input,
-and laying groundwork for future products.
+rigorous test matrix, **screen reader + keyboard-only operation** on desktop
+is achievable while preserving GPUI's performance advantages. Accessibility
+becomes a first-class feature of the applications, not a post-hoc addition –
+ensuring Gauss can be fully used by keyboard or alternative input, and laying
+groundwork for future products.
 
 ## What "full" accessibility means (Acceptance Criteria)
 
@@ -103,10 +103,10 @@ and laying groundwork for future products.
   and activate controls, and use **Accerciser** to inspect the accessibility
   tree.
 
-**Note:** For text editing, our implementation should allow screen reader users
+**Note:** For text editing, the implementation should allow screen reader users
 to review text by character, word, and line, and get feedback on cursor
 position and selection changes. This is crucial for code or text editing
-scenarios. We'll follow platform-specific guidance (UIA TextPattern on Windows
+scenarios. Implementation will follow platform-specific guidance (UIA TextPattern on Windows
 ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext))
 ([3](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-about-text-and-textrange-patterns#:~:text=About%20the%20Text%20and%20TextRange,Services%20Framework%20%C2%B7%20Control%20Types)),
 ATSPI Text on Linux
@@ -122,7 +122,7 @@ and the macOS accessibility text protocol) to get this right.
   combos). There should be a visible focus indicator on the focused element at
   all times (meeting WCAG 2.1 Focus Visible criteria
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=2,the%20editor%20to%20learn%20it))).
-  We will map complex canvas interactions in Gauss to keyboard controls (e.g.
+  Complex canvas interactions in Gauss will be mapped to keyboard controls (e.g.
   arrow keys or WASD to nudge objects, keyboard shortcuts for drawing tools,
   etc.), so that a designer can create and edit illustrations without a mouse.
   This aligns with WCAG 2.1 Success Criterion **2.1.1 Keyboard** and **2.4.3
@@ -154,15 +154,15 @@ and the macOS accessibility text protocol) to get this right.
   UI scale (text and control size) without breaking layout. Also, ensure no
   critical information is conveyed by colour alone (provide shapes or text
   labels as needed). While this is more of a UI design task, it ties into
-  accessibility standards and will be documented as part of our compliance
-  (relates to WCAG 2.1 **1.4.3 Contrast** and others).
+  accessibility standards and will be documented as part of the compliance
+  effort (relates to WCAG 2.1 **1.4.3 Contrast** and others).
 
-**Note:** If we need formal compliance (e.g. for EU government adoption), we
-should align with **EN 301 549** (the European accessibility standard for ICT
-products, which extends WCAG to non-web software)
+**Note:** If formal compliance is needed (e.g. for EU government adoption),
+alignment with **EN 301 549** (the European accessibility standard for ICT
+products, which extends WCAG to non-web software) is recommended
 ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke)).
 This essentially means meeting WCAG 2.x success criteria in a desktop context.
-Our acceptance criteria above are designed with those guidelines in mind.
+The acceptance criteria above are designed with those guidelines in mind.
 
 ## Proposed Implementation Steps and Impact
 
@@ -171,84 +171,84 @@ outcomes of each step.
 
 ### 1) Adopt AccessKit early – GPUI bridge to native accessibility
 
-**What changes:** We will integrate AccessKit at the core of GPUI's rendering
-loop. In GPUI's platform-specific code (for Windows, macOS, Linux), we
-instantiate an **AccessKit adapter** for the active window
+**What changes:** AccessKit will be integrated at the core of GPUI's rendering
+loop. In GPUI's platform-specific code (for Windows, macOS, Linux), an
+**AccessKit adapter** is instantiated for the active window
 (`accesskit_windows::Adapter`, `accesskit_macos::Adapter`,
 `accesskit_unix::Adapter`). GPUI will maintain an **accessibility tree**
 parallel to its UI hierarchy, where each UI element corresponds to an
 **AccessKit `Node`** with a stable ID and properties (role, name/label, value,
 state, relationships, etc.). Every time the UI changes (layout updates, focus
-moves, elements added/removed), we send an incremental **TreeUpdate** to the
-adapter. We also register an **action handler** callback with the adapter, so
+moves, elements added/removed), an incremental **TreeUpdate** is sent to the
+adapter. An **action handler** callback is also registered with the adapter, so
 when an assistive technology requests an action (e.g. "press button X" or
-"focus text field Y"), AccessKit will call into our handler to perform that
+"focus text field Y"), AccessKit calls into the handler to perform that
 action in GPUI.
 
 **Why it's tractable:** AccessKit is explicitly designed to make immediate-mode
-UIs accessible, as long as we can provide stable IDs for elements
+UIs accessible, as long as stable IDs can be provided for elements
 ([1](https://accesskit.dev/how-it-works/#:~:text=One%20notable%20consequence%20of%20this,ID%20for%20each%20UI%20element))
 ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
 GPUI's architecture (all UI entities owned by a central `App` context
 ([4](https://zed.dev/blog/gpui-ownership#:~:text=After%20initial%20attempts%20to%20use,and%20interact%20with%20other%20entities))
 ([4](https://zed.dev/blog/gpui-ownership#:~:text=UI%20framework%2C%20GPUI,and%20interact%20with%20other%20entities)))
-means we can generate stable `NodeId`s for each component (for example, use a
+means stable `NodeId`s can be generated for each component (for example, using a
 combination of entity ID and type). AccessKit already handles the hard part:
-translating our `Node` tree and events to each platform's API. We don't have to
-implement UIA, NSAccessibility, or AT-SPI from scratch – we just feed data to
-AccessKit and it updates the OS on our behalf. The AccessKit adapters for
+translating the `Node` tree and events to each platform's API. There is no need
+to implement UIA, NSAccessibility, or AT-SPI from scratch – data is fed to
+AccessKit and it updates the OS accordingly. The AccessKit adapters for
 Windows, Mac, and Linux are at feature parity and actively maintained
 ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
 
 **Notable risks:**
 
 - **Custom windowing:** GPUI doesn't use the typical `winit` loop (it has its
-  own windowing). This means we can't just use `accesskit_winit` crate
+  own windowing). This means the `accesskit_winit` crate cannot be used
   out-of-the-box
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API));
-  instead, we'll call the lower-level adapter APIs directly. On Windows, for
-  example, we must handle the `WM_GETOBJECT` message to provide the
+  instead, the lower-level adapter APIs must be called directly. On Windows, for
+  example, the `WM_GETOBJECT` message must be handled to provide the
   `IAccessible` interface pointer to assistive tech. The AccessKit Windows
-  adapter gives us a helper for this (`Adapter::handle_wm_getobject`) which we
-  must call when we receive that message
+  adapter provides a helper for this (`Adapter::handle_wm_getobject`) which
+  must be called when that message is received
   ([1](https://accesskit.dev/how-it-works/#:~:text=Platform%20adapters))
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API)).
-  We also need to call `Adapter::update_window_focus_state` when our window
-  gains or loses focus so the accessibility framework knows which window is
-  active. These details require careful integration with GPUI's Win32 message
+  Additionally, `Adapter::update_window_focus_state` needs to be called when the
+  window gains or loses focus so the accessibility framework knows which window
+  is active. These details require careful integration with GPUI's Win32 message
   loop, Cocoa event loop, and X11/Wayland events respectively.
 
 - **Threading and init order:** On Windows, UI Automation expects the provider
-  (our app) to be ready to supply the accessibility tree **before returning
-  from `WM_GETOBJECT`**. That means our adapter initialization has to happen at
-  the right time. We'll likely initialize the AccessKit adapter when the window
-  is created (or first shown) and have a cached tree ready by the time a screen
-  reader first queries it. The adapter provides `update_if_active` and `update`
-  methods which only take effect when a screen reader is actually listening (so
-  we don't pay overhead if no AT is in use)
+  (the app) to be ready to supply the accessibility tree **before returning
+  from `WM_GETOBJECT`**. That means the adapter initialization has to happen at
+  the right time. The AccessKit adapter will likely be initialised when the
+  window is created (or first shown) with a cached tree ready by the time a
+  screen reader first queries it. The adapter provides `update_if_active` and
+  `update` methods which only take effect when a screen reader is actually
+  listening (avoiding overhead if no AT is in use)
   ([1](https://accesskit.dev/how-it-works/#:~:text=Platform%20adapters))
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API)).
-  We must use these correctly to avoid missing events.
+  These must be used correctly to avoid missing events.
 
-**Proof of concept:** We create a minimal window in GPUI, add a few controls
-(e.g. a button and a text field), and ensure that:
+**Proof of concept:** A minimal window in GPUI is created, a few controls are
+added (e.g. a button and a text field), and the following is verified:
 
 - On **Windows**, running a screen reader (NVDA) and using Inspect.exe shows
   the controls in the UIA tree with correct names/roles. Pressing the button
   via the screen reader's command (or via Accessibility Insights' "invoke"
-  action) activates our GPUI button. We handle `WM_GETOBJECT` by returning the
-  AccessKit-provided object. We call `adapter.update_if_active(tree_update)` on
-  any UI change and see events being raised (like `UIA_Event_FocusChanged`).
+  action) activates the GPUI button. `WM_GETOBJECT` is handled by returning the
+  AccessKit-provided object. Calling `adapter.update_if_active(tree_update)` on
+  any UI change results in events being raised (like `UIA_Event_FocusChanged`).
 
 - On **macOS**, enabling VoiceOver should allow navigation to the GPUI window's
-  controls (e.g. VO+Right moves focus to our button and it announces properly).
-  The **Accessibility Inspector** on Mac should list our custom window's
-  elements in the hierarchy with proper roles. We likely subclass `NSView` or
-  use `NSAccessibilityUnignoredDescendant` to tie our view to AccessKit's
-  adapter (the adapter provides a simple way to hook into NSAccessibility).
+  controls (e.g. VO+Right moves focus to the button and it announces properly).
+  The **Accessibility Inspector** on Mac should list the custom window's
+  elements in the hierarchy with proper roles. Subclassing `NSView` or using
+  `NSAccessibilityUnignoredDescendant` ties the view to AccessKit's adapter (the
+  adapter provides a simple way to hook into NSAccessibility).
 
-- On **Linux**, running Orca and tabbing through our UI should have Orca speak
-  the control labels. **Accerciser** should show our app's accessibility tree
+- On **Linux**, running Orca and tabbing through the UI should have Orca speak
+  the control labels. **Accerciser** should show the app's accessibility tree
   with the expected structure.
 
 **Sizing:** *Medium-to-Large.* This is foundational work across three
@@ -259,12 +259,12 @@ adding more controls is incremental.
 ### 2) Prioritize text input and editing support (caret, selection, range ops)
 
 **What changes:** Text boxes and code editor fields are often the most complex
-accessibility elements. We need to implement the **text interfaces** in our
+accessibility elements. The **text interfaces** must be implemented in the
 accessibility tree:
 
 - Represent the text content of each text field or editor in the `Node` (likely
   via the `Node::value` for plain text, and perhaps a separate role like
-  `EditableText`). For multiline editors, we might designate the text content
+  `EditableText`). For multiline editors, the text content might be designated
   as child nodes or use the appropriate role (like `Paragraph` children, or a
   generic `Document` role containing text).
 
@@ -281,42 +281,41 @@ accessibility tree:
   moving the text caret and selecting text
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
   On Linux, the AT-SPI `Text` interface has methods like `SetCaretOffset`,
-  `SetSelection`, etc., which the Unix adapter will invoke on our action
+  `SetSelection`, etc., which the Unix adapter will invoke on the action
   handler.
 
-- Fire **text events**: e.g., when text is inserted or deleted in an editor, we
-  should send events so the screen reader announces changes (UIA
+- Fire **text events**: e.g., when text is inserted or deleted in an editor,
+  events should be sent so the screen reader announces changes (UIA
   `Text_TextChangedEvent`, AT-SPI `TextChanged` signal, etc.). AccessKit might
-  handle some of this if we update the node's text value and selection
-  appropriately, but we must ensure to call the right update functions so the
-  adapters emit incremental events (rather than reading the whole text each
-  time).
+  handle some of this if the node's text value and selection are updated
+  appropriately, but the right update functions must be called so the adapters
+  emit incremental events (rather than reading the whole text each time).
 
 **Risk to call out:** As noted, **rich text support is limited** in AccessKit
 currently
 ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext))
 ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext)).
-This means if Gauss or our code editor has formatted text (different styles, or
+This means if Gauss or the code editor has formatted text (different styles, or
 embedded controls within text), the adapters might not fully expose that
-structure. For phase 1, we will likely restrict to plain text or simple
-formatting in accessible content. If our use-case absolutely needs rich text
-(say, styled text or inline images in a future Marrakesh Express chat client),
-we should plan to either implement a simplified accessibility presentation
-(e.g., expose just plain text to the screen reader) or engage with the
-AccessKit project to extend support. This is a known gap; we should track
-AccessKit's updates on this front. Another risk is performance: long documents
-(like a large code file open in Gauss's editor, if any) should not produce
-overly large events. We'll need to test with large text content to ensure
-updates are efficient (AccessKit's diff mechanism should help here).
+structure. For phase 1, restricting to plain text or simple formatting in
+accessible content is likely. If the use-case absolutely needs rich text (say,
+styled text or inline images in a future Marrakesh Express chat client), either
+implementing a simplified accessibility presentation (e.g., expose just plain
+text to the screen reader) or engaging with the AccessKit project to extend
+support should be planned. This is a known gap; AccessKit's updates on this
+front should be tracked. Another risk is performance: long documents (like a
+large code file open in Gauss's editor, if any) should not produce overly large
+events. Testing with large text content is needed to ensure updates are
+efficient (AccessKit's diff mechanism should help here).
 
 **Proof points:**
 
 - Use **Accessibility Insights (Windows)** in **Inspect mode** to verify that a
-  text box in our app supports the **Text Pattern**. Insights will list
-  supported patterns for a focused element; we expect to see *Value* and *Text*
+  text box in the app supports the **Text Pattern**. Insights will list
+  supported patterns for a focused element; *Value* and *Text* are expected
   (and *TextEdit* if editable) for a multiline editor
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke)).
-  We also can use Inspect.exe to retrieve the text via UIA and ensure it
+  Inspect.exe can also be used to retrieve the text via UIA and ensure it
   matches.
 
 - With a screen reader, test typical text interactions: type in a text field
@@ -335,14 +334,14 @@ updates are efficient (AccessKit's diff mechanism should help here).
   entire content upon request.
 
 - Verify on macOS with VoiceOver: VoiceOver has specific rotor settings for
-  text (like moving by words/lines). Our text fields should support those.
+  text (like moving by words/lines). The text fields should support those.
   Similarly on Orca, ensure the Orca "SayAll" (read from cursor to end) works
-  in our text control.
+  in the text control.
 
 **Sizing:** *Large* for full-featured text editing (especially if code editor
 or rich text). For basic single-line inputs and simple multiline areas,
-*Medium*. We will implement baseline text support in phase 1, and if rich-text
-or advanced editing is needed, that may be a separate subproject.
+*Medium*. Baseline text support will be implemented in phase 1, and if
+rich-text or advanced editing is needed, that may be a separate subproject.
 
 ### 3) Audit and improve colour contrast & theming for visibility
 
@@ -353,8 +352,8 @@ low-vision users or those with contrast sensitivity):
   added to the theme system (in addition to the default Light/Dark). In High
   Contrast, text and important UI elements use colours that maximise contrast
   with the background (e.g., white on black or black on yellow, depending on
-  user preference or system settings). All text should meet
-  at least a 4.5:1 contrast ratio against its background (WCAG 2.1 AA level).
+  user preference or system settings). All text should meet at least a 4.5:1
+  contrast ratio against its background (WCAG 2.1 AA level).
 
 - Ensure **focus indicators** are very visible. This might mean using a thick
   outline or an obvious highlight on the focused element, not just a subtle
@@ -363,16 +362,17 @@ low-vision users or those with contrast sensitivity):
 
 - Support **UI scaling**: Users who have trouble seeing small text should be
   able to scale up the interface. GPUI should already handle different
-  DPI/resolutions; we can add a user preference slider for UI scale or simply
-  respect the OS text scaling setting if available. All our custom drawing (in
+  DPI/resolutions; a user preference slider for UI scale can be added or the
+  OS text scaling setting respected if available. All custom drawing (in
   Gauss's canvas for example) should either scale with it or be at least
   unaffected by larger system font settings.
 
 - If possible, detect OS-level high-contrast or dark mode settings and map them
-  to our themes. On Windows, for instance, we can query if a high-contrast
-  theme is active and automatically switch or adjust colors. On macOS, the
-  "Increase Contrast" and "Differentiate Without Color" settings could inform
-  some adjustments (like adding shapes or labels in addition to colour coding).
+  to the application themes. On Windows, for instance, a query can determine if
+  a high-contrast theme is active and automatically switch or adjust colours.
+  On macOS, the "Increase Contrast" and "Differentiate Without Colour" settings
+  could inform some adjustments (like adding shapes or labels in addition to
+  colour coding).
 
 This step is relatively self-contained in terms of code (mostly styling), but
 it's crucial for compliance and user comfort.
@@ -382,22 +382,22 @@ it's crucial for compliance and user comfort.
 - Use a colour contrast analyser (there's one in Accessibility Insights and
   browser dev tools) to verify that all text-colour vs background-colour
   combinations in the UI are >= 4.5:1 (for normal text) or 3:1 for large
-  text/icons. We should document these contrast ratios for key UI components.
+  text/icons. These contrast ratios should be documented for key UI components.
 
-- Manually enable high-contrast mode on each OS and observe our app: On
+- Manually enable high-contrast mode on each OS and observe the app: On
   Windows, turn on High Contrast (via Ease of Access settings) and confirm that
-  either our app switches to its high-contrast theme or at least remains usable
-  (Windows might override system colors if we allow it, but since we
-  custom-draw everything, we likely need to manually apply a theme). On macOS,
-  enable "Increase contrast" and "Reduce transparency" and check that our UI
+  either the app switches to its high-contrast theme or at least remains usable
+  (Windows might override system colours if allowed, but since everything is
+  custom-drawn, manually applying a theme is likely needed). On macOS,
+  enable "Increase contrast" and "Reduce transparency" and check that the UI
   still looks correct (no reliance on transparency or low-contrast elements).
-  On Linux, test with a high-contrast GTK theme if applicable (though our app
-  might not automatically adopt it, we can still provide an in-app toggle).
+  On Linux, test with a high-contrast GTK theme if applicable (though the app
+  might not automatically adopt it, an in-app toggle can still be provided).
 
-- Ensure that when users increase system font scaling (or if we provide a zoom
-  preference), our text and controls scale appropriately without clipping or
+- Ensure that when users increase system font scaling (or with an application
+  zoom preference), text and controls scale appropriately without clipping or
   overlapping. All interactive targets should remain accessible (e.g., if
-  someone sets system DPI to 150%, our hit regions should also scale up).
+  someone sets system DPI to 150%, hit regions should also scale up).
 
 **Sizing:** *Small to Medium.* Mostly adjusting styles and providing a new
 theme variant. The main workload is verifying each component under those
@@ -406,17 +406,17 @@ replacing a faint gray border with a thicker one in high contrast mode).
 
 ### 4) Test with real assistive technologies (not just inspectors)
 
-**What changes:** We will create a **test matrix and schedule** for iterative
+**What changes:** A **test matrix and schedule** will be created for iterative
 accessibility testing:
 
-- Identify key user journeys in Gauss (and later Marrakesh Express) that we
-  need to verify: e.g., **launch app, open a document, draw an object, edit its
+- Identify key user journeys in Gauss (and later Marrakesh Express) that need
+  verification: e.g., **launch app, open a document, draw an object, edit its
   properties, save/export** – all using keyboard + screen reader. Also cover
   **navigating menus**, using **toolbars/palettes**, and any **dialogs** or
   notifications.
 
 - For each platform (Win/Mac/Linux), script a sequence of keyboard actions to
-  accomplish these tasks. We might write down step-by-step test cases (like
+  accomplish these tasks. Step-by-step test cases may be written down (like
   "Press Alt+F to open File menu, arrow down to 'Open...', press Enter, ...").
   These will be used by QA or developers with screen readers turned on.
 
@@ -431,9 +431,9 @@ accessibility testing:
   (or at least the concept, e.g., Windows has a built-in "Scan Mode" that
   tab-steps through UI).
 
-We'll incorporate these tests into our development cycle – e.g., run through a
-basic smoke test on every major UI change, and plan a dedicated accessibility
-testing session for each release.
+These tests will be incorporated into the development cycle – e.g., running
+through a basic smoke test on every major UI change, and planning a dedicated
+accessibility testing session for each release.
 
 **Proof points:**
 
@@ -442,8 +442,8 @@ testing session for each release.
   announces at each step. Ensure that the announcements make sense (e.g., when
   focusing a button, NVDA says "Open (button)" if the button's label is "Open";
   when toggling a toolbar toggle, it says "Bold, pressed, toggle button",
-  etc.). We will collect these outputs and use them to verify we didn't break
-  anything later.
+  etc.). These outputs will be collected and used to verify nothing broke
+  later.
 
 - Use **Accessibility Insights for Windows (AIWin)** in its **Assessment** mode
   or the FastPass automated checks
@@ -451,31 +451,31 @@ testing session for each release.
   regularly. This can catch missing labels, contrast issues, and missing
   keyboard support. For example, AIWin's **FastPass** should report no
   **keyboard trap** issues, no missing names for controls, and no inappropriate
-  roles. We can integrate AIWin's CLI into our CI pipeline for Windows builds
+  roles. AIWin's CLI can be integrated into the CI pipeline for Windows builds
   to catch regressions automatically.
 
-- On macOS, use the **Accessibility Inspector** to examine our UI hierarchy at
+- On macOS, use the **Accessibility Inspector** to examine the UI hierarchy at
   runtime. Ensure that every focusable item has an `AXDescription` (label) and
-  the roles look correct. We can also use Xcode's Accessibility Audit. On
-  Linux, use **Accerciser** to introspect our app's accessibility tree,
+  the roles look correct. Xcode's Accessibility Audit can also be used. On
+  Linux, use **Accerciser** to introspect the app's accessibility tree,
   ensuring all expected interfaces are present (the Accerciser plugin can
   highlight if an object doesn't implement the text interface when it should,
   etc.).
 
 - As a final verification, have an **external accessibility expert or an actual
   screen reader user** exercise Gauss and give feedback. They might find
-  usability issues that our technical checks miss (like confusing focus order
-  or verbosity of announcements). We'll treat their feedback as high priority
-  to fix.
+  usability issues that technical checks miss (like confusing focus order or
+  verbosity of announcements). Their feedback should be treated as high
+  priority to fix.
 
 **Sizing:** *Ongoing.* Initial setup of test scenarios is Medium effort, but
-testing is an ongoing commitment. We may allocate time each sprint for
+testing is an ongoing commitment. Time may be allocated each sprint for
 accessibility regression testing.
 
 ### 5) Document an accessibility support matrix (for components and features)
 
-**What changes:** To ensure clarity and track our coverage, we will create an
-**accessibility support matrix** for GPUI components and Gauss features:
+**What changes:** To ensure clarity and track coverage, an **accessibility
+support matrix** for GPUI components and Gauss features will be created:
 
 - List each UI component (Button, Toggle, Slider, TextField, List,
   Canvas/Artboard, etc.) and detail how it's made accessible: **Role**,
@@ -498,25 +498,25 @@ accessibility regression testing.
   keyboard equivalent), be transparent about it and perhaps suggest workarounds
   or plans.
 
-This document will live in our repo (e.g., as `ACCESSIBILITY.md`) and be
-updated as we improve things. It's both for internal use (engineers and QA
-refer to it) and external (it shows our commitment to accessibility to users or
-auditors).
+This document will live in the repo (e.g., as `ACCESSIBILITY.md`) and be
+updated as things improve. It's both for internal use (engineers and QA refer
+to it) and external (it shows the project's commitment to accessibility to
+users or auditors).
 
 **Proof points:**
 
-- The existence of this document itself is a proof: it means we've thought
-  through each component. We can point enterprise customers or compliance
-  officers to this matrix to answer questions like "Can a user do X without a
+- The existence of this document itself is a proof: it means each component has
+  been thought through. Enterprise customers or compliance officers can be
+  pointed to this matrix to answer questions like "Can a user do X without a
   mouse?" or "Will a screen reader announce Y for this widget?".
 
-- We should also incorporate automated checks for the items in the matrix where
+- Automated checks for the items in the matrix should also be incorporated where
   possible. For example, if the matrix says "All buttons have accessible
-  names," we could have a unit test that runs through our UI widget registry
-  and ensures every button has a non-empty label property in the accessibility
-  tree (this could be a development-time assert). Similarly, if we list
-  keyboard shortcuts for all actions, ensure our documentation of shortcuts is
-  up-to-date and perhaps accessible via an in-app cheat sheet.
+  names," a unit test could run through the UI widget registry and ensure every
+  button has a non-empty label property in the accessibility tree (this could
+  be a development-time assert). Similarly, if keyboard shortcuts are listed
+  for all actions, ensure the documentation of shortcuts is up-to-date and
+  perhaps accessible via an in-app cheat sheet.
 
 **Sizing:** *Small* for initial documentation (one engineer can draft it from
 the implementation). *Medium* to keep it updated as features evolve (this
@@ -526,74 +526,74 @@ matrix).
 ## Architecture notes and gotchas
 
 - **Stable Node IDs:** Because GPUI is an immediate-mode framework (the UI is
-  redrawn each frame), we must ensure each accessibility node has a
-  **persistent identifier** across frames
+  redrawn each frame), each accessibility node must have a **persistent
+  identifier** across frames
   ([1](https://accesskit.dev/how-it-works/#:~:text=One%20notable%20consequence%20of%20this,ID%20for%20each%20UI%20element))
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
-  We will likely tie the `NodeId` to the underlying GPUI `Entity` (since an
+  The `NodeId` will likely be tied to the underlying GPUI `Entity` (since an
   `Entity<Counter>` or similar persists in the App's entity map
   ([4](https://zed.dev/blog/gpui-ownership#:~:text=After%20initial%20attempts%20to%20use,and%20interact%20with%20other%20entities))
   ([4](https://zed.dev/blog/gpui-ownership#:~:text=UI%20framework%2C%20GPUI,and%20interact%20with%20other%20entities))).
-  AccessKit doesn't keep our whole UI tree; it relies on us to send updates. If
-  we accidentally change an ID when nothing else changed, the adapters might
+  AccessKit doesn't keep the whole UI tree; it relies on updates being sent. If
+  an ID is accidentally changed when nothing else changed, the adapters might
   treat it as a removal/addition, which can confuse screen readers (e.g., focus
-  might get lost). So we'll implement a consistent ID scheme (perhaps using the
-  pointer or index of the element in the GPUI tree, or a hash of its stable
+  might get lost). A consistent ID scheme should be implemented (perhaps using
+  the pointer or index of the element in the GPUI tree, or a hash of its stable
   path).
 
-- **Focus management and window activation:** We need to hook GPUI's internal
-  focus system to AccessKit. When the user presses Tab or otherwise moves focus
-  in GPUI, we should call `adapter.update_focus(focused_node_id)` (or include
-  the focused node in TreeUpdate). On Windows, call
-  `update_window_focus_state(true/false)` when our app window gains/loses focus
-  (so the screen reader knows to switch context). On macOS, we might need to
-  override `NSWindow.makeFirstResponder` or similar to notify the adapter of
-  focus shifts. These ensure that, for example, when our window is activated,
-  the screen reader knows where to resume, and when it's inactive, we don't
-  send unnecessary events.
+- **Focus management and window activation:** GPUI's internal focus system
+  needs to be hooked to AccessKit. When the user presses Tab or otherwise moves
+  focus in GPUI, `adapter.update_focus(focused_node_id)` should be called (or
+  include the focused node in TreeUpdate). On Windows, call
+  `update_window_focus_state(true/false)` when the app window gains/loses focus
+  (so the screen reader knows to switch context). On macOS, it might be
+  necessary to override `NSWindow.makeFirstResponder` or similar to notify the
+  adapter of focus shifts. These ensure that, for example, when the window is
+  activated, the screen reader knows where to resume, and when it's inactive,
+  unnecessary events aren't sent.
 
 - **Performance considerations:** AccessKit is designed to handle frequent
-  updates efficiently by sending only diffs. We should batch our accessibility
-  updates to coincide with frame updates or state changes, rather than calling
+  updates efficiently by sending only diffs. Accessibility updates should be
+  batched to coincide with frame updates or state changes, rather than calling
   on every minor event individually. For instance, if 10 buttons enable/disable
   at once, push one update with all their state changes. The platform APIs can
-  be chatty, but coalescing events helps. We'll also avoid computing
-  accessibility info if no assistive tech is active – AccessKit adapters have
-  an `is_active()` we can check, so that if (for example) no screen reader is
-  running, we might skip building the tree to save cycles. However, we must
-  always handle `WM_GETOBJECT` etc., in case one starts mid-run. In practice,
-  this overhead is low (tree updates are essentially serialization of some node
-  structs), and we'll test to ensure minimal impact on frame rates.
+  be chatty, but coalescing events helps. Computing accessibility info can also
+  be avoided if no assistive tech is active – AccessKit adapters have an
+  `is_active()` to check, so that if (for example) no screen reader is running,
+  building the tree can be skipped to save cycles. However, `WM_GETOBJECT`
+  etc., must always be handled in case one starts mid-run. In practice, this
+  overhead is low (tree updates are essentially serialization of some node
+  structs), and testing will ensure minimal impact on frame rates.
 
 - **Custom drawing and hit testing:** Gauss's canvas is highly custom (for
-  vector graphics). We need to decide how to expose the canvas content to
-  accessibility. Initially, we might treat the canvas as a single component
+  vector graphics). Deciding how to expose the canvas content to accessibility
+  is needed. Initially, the canvas might be treated as a single component
   (role=Graphic or Canvas) with an accessible name (e.g., "Drawing area").
-  Eventually, if we allow keyboard navigation of objects on the canvas, we
-  could expose each shape as an accessible object in a hierarchy (like objects
+  Eventually, if keyboard navigation of objects on the canvas is allowed, each
+  shape could be exposed as an accessible object in a hierarchy (like objects
   as children of the canvas node). This may require dynamic generation of nodes
   for drawing objects and possibly describing them (e.g., "Blue circle at (x,y)
-  radius r"). This is advanced and could be a later phase; for now, we focus on
-  the UI chrome and ensure at least the canvas can be focused and its purpose
-  conveyed (so a blind user isn't left wondering what that region is).
+  radius r"). This is advanced and could be a later phase; for now, the focus
+  is on the UI chrome and ensuring at least the canvas can be focused and its
+  purpose conveyed (so a blind user isn't left wondering what that region is).
 
 - **No free lunch with `accesskit_winit`:** Since GPUI doesn't use Winit's
-  event loop (it has its own windowing and rendering), we will integrate
-  AccessKit **manually**. The `accesskit_winit` adapter is a convenience for
-  Winit apps, but in our case we'll follow what it does internally: on Windows,
-  handle the `WM_GETOBJECT` message, etc. The good news is AccessKit's
+  event loop (it has its own windowing and rendering), AccessKit will be
+  integrated **manually**. The `accesskit_winit` adapter is a convenience for
+  Winit apps, but in this case following what it does internally is needed: on
+  Windows, handle the `WM_GETOBJECT` message, etc. The good news is AccessKit's
   documentation and examples include using the adapters directly (for example,
-  they have a pure Win32 example and an SDL example in C). We can refer to
-  those to ensure we're doing it right. (See also the discussion in the Winit
+  they have a pure Win32 example and an SDL example in C). These can be
+  referred to for correct implementation. (See also the discussion in the Winit
   issue about GPUI: GPUI has its own windowing system
   ([6](https://www.reddit.com/r/rust/comments/19fle6w/gpui_ui_framework_from_the_makers_of_zed/#:~:text=GPUI%3A%20UI%20Framework%20from%20the,to%20be%20depending%20on%20Metal)),
-  which reinforces that we must handle the integration ourselves, not expecting
+  which reinforces that the integration must be handled directly, not expecting
   Winit to do it.)
 
 ## Example: Windows adapter integration snippet
 
 To illustrate, here's a simplified approach for integrating the Windows adapter
-in GPUI's window procedure (pseudo-Rust code):
+in the GPUI window procedure (pseudo-Rust code):
 
 ```rust
 use accesskit::{ActionRequest, NodeId, TreeUpdate};
@@ -621,7 +621,7 @@ fn initialize_accesskit(hwnd: isize, initial_tree: TreeUpdate) -> AccessibilityS
     AccessibilityState { adapter: Some(adapter) }
 }
 
-// In our Win32 window proc:
+// In the Win32 window proc:
 match msg {
     WM_GETOBJECT => {
         if let Some(acc_state) = &mut self.accessibility {
@@ -639,7 +639,7 @@ match msg {
 }
 ```
 
-In practice, we would call an update function whenever our UI changes, for
+In practice, an update function would be called whenever the UI changes, for
 example on UI state change:
 
 ```rust
@@ -659,27 +659,27 @@ closely (see `Adapter::new`, `Adapter::initialize`, `handle_wm_getobject`,
 ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API))).
 The macOS adapter (`accesskit_macos::Adapter`) and Linux adapter
 (`accesskit_unix::Adapter`) have analogous methods for hooking into their
-respective event loops. For instance, on macOS we might create an `NSView`
-subclass for our GPUI content view and use `accesskit_macos::Adapter::new` with
-that view; on Linux, we initialize the adapter with our window handle and it
+respective event loops. For instance, on macOS an `NSView` subclass might be
+created for the GPUI content view and `accesskit_macos::Adapter::new` used with
+that view; on Linux, the adapter is initialised with the window handle and it
 registers on D-Bus to communicate with AT-SPI
 ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API)).
 
-*Takeaway:* The integration involves initializing the adapter with our window,
+*Takeaway:* The integration involves initialising the adapter with the window,
 providing an initial accessibility tree (with all nodes and their properties),
 handling OS requests (like `WM_GETOBJECT` or the Cocoa accessibility
-callbacks), and sending incremental updates whenever our UI changes state.
+callbacks), and sending incremental updates whenever the UI changes state.
 
 ## Risks and Challenges to Mitigate
 
 - **Rich text editor semantics:** As mentioned, if Gauss's text editing or
   Marrakesh Express's messaging require rich text (multiple styles, inline
-  graphics), **AccessKit's current limitations** mean we might not present that
-  content perfectly to ATs
+  graphics), **AccessKit's current limitations** mean the content might not be
+  presented perfectly to ATs
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
-  We should plan to either simplify the exposed structure (e.g., expose plain
-  text alternative for screen readers) or contribute to AccessKit's
-  development. This might involve working on features like an HTML-like
+  Either simplifying the exposed structure (e.g., expose plain text alternative
+  for screen readers) or contributing to AccessKit's development should be
+  planned. This might involve working on features like an HTML-like
   accessibility tree for formatted text or ensuring code editors expose line
   numbers and syntax as needed (similar to how VS Code's accessibility works).
   It's a non-trivial extension, so best addressed early if needed.
@@ -688,40 +688,40 @@ callbacks), and sending incremental updates whenever our UI changes state.
   segment and very vocal (see the Zed issue
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Summary))
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=3,the%20editor%20to%20learn%20it))).
-  We anticipate a lot of feedback from them. It's critical that our Windows
+  A lot of feedback from them is anticipated. It's critical that Windows
   support is as complete as possible – that means all UIA patterns implemented
   where appropriate, no missing keyboard focuses, and thorough testing with
   NVDA and JAWS. If something works in NVDA but not JAWS (which can happen due
-  to JAWS-specific quirks), we'll need to investigate since enterprise users
+  to JAWS-specific quirks), investigation is needed since enterprise users
   often use JAWS. Essentially, treat **UIA compliance** as a gate for release.
-  We might even run the **UIA Verify** tool or other automated UIA tests on our
-  app to ensure we're not missing required patterns.
+  The **UIA Verify** tool or other automated UIA tests might even be run on the
+  app to ensure no required patterns are missing.
 
-- **Cross-platform quirks:** Each OS has its unique behaviors. For example, on
+- **Cross-platform quirks:** Each OS has its unique behaviours. For example, on
   macOS, VoiceOver might automatically group certain items or require an
-  `AXGroup` for composite controls – we might need to adjust our tree structure
+  `AXGroup` for composite controls – the tree structure might need adjustment
   to accommodate that. On Linux, the AT-SPI might require certain events (like
   `Object:StateChanged:focused`) to be emitted in a specific order relative to
   `Object:ActiveDescendantChanged` for things like list selections. The
-  AccessKit adapters abstract a lot of this, but not all. We need to budget
-  time for debugging platform-specific issues. Having a diverse test set (as
-  per step 4) will help catch these. We should also keep an eye on upstream
-  AccessKit issues for any platform bugs and update our AccessKit version as
-  fixes come out.
+  AccessKit adapters abstract a lot of this, but not all. Time should be
+  budgeted for debugging platform-specific issues. Having a diverse test set
+  (as per step 4) will help catch these. Upstream AccessKit issues should also
+  be monitored for any platform bugs and the AccessKit version updated as fixes
+  come out.
 
 - **Maintenance and performance:** Once integrated, accessibility code must be
   maintained alongside feature changes. Developers adding a new widget or
-  feature need to update the accessibility tree accordingly. We should ensure
-  the team is trained on how to do this (perhaps via the support matrix and
-  code examples). Also, although AccessKit is efficient, if someone
-  inadvertently generates tons of accessibility events (e.g., updating a node
-  property every frame), it could slow things down or flood assistive tech.
-  Code review should catch misuse (like not marking purely decorative elements
-  as such, or not spamming events).
+  feature need to update the accessibility tree accordingly. The team should be
+  trained on how to do this (perhaps via the support matrix and code examples).
+  Also, although AccessKit is efficient, if someone inadvertently generates
+  tons of accessibility events (e.g., updating a node property every frame), it
+  could slow things down or flood assistive tech. Code review should catch
+  misuse (like not marking purely decorative elements as such, or not spamming
+  events).
 
 ## "Done means done": Acceptance Tests
 
-We will consider the accessibility work "done" (for phase 1) only when it
+The accessibility work will be considered "done" (for phase 1) only when it
 passes the following tests:
 
 - **Automated smoke tests (CI-level checks):**
@@ -730,10 +730,10 @@ passes the following tests:
   windows of Gauss. The FastPass automated checks should report **no errors**
   in the categories of: Name, Role, Value for controls; keyboard traps; colour
   contrast (if the contrast rules are included); focus order (AI can flag if
-  focus moves in an illogical order). We also manually use **Inspect** to
-  ensure key controls expose the correct UIA control patterns (e.g., a slider
-  control should show a RangeValue pattern, a text box shows Text pattern,
-  etc.).
+  focus moves in an illogical order). **Inspect** should also be used manually
+  to ensure key controls expose the correct UIA control patterns (e.g., a
+  slider control should show a RangeValue pattern, a text box shows Text
+  pattern, etc.).
 
 - **macOS:** Use Apple's Accessibility Inspector to verify that all interactive
   views have an appropriate `AXRole` and `AXLabel`. Run the built-in macOS
@@ -745,34 +745,34 @@ passes the following tests:
 - **Linux:** Use **Accerciser** to navigate the accessibility hierarchy of the
   app. Check that each focusable widget has the expected role and states. Use
   Orca in a basic way (tab through, use Orca's reading commands) to see that
-  nothing crashes and announcements are made. We will also rely on continuous
-  integration to run a headless test of the accessibility tree if possible (for
-  instance, using AccessKit's ability to dump the tree, we could compare it
-  against expected output for a known UI state).
+  nothing crashes and announcements are made. Continuous integration will also
+  be relied upon to run a headless test of the accessibility tree if possible
+  (for instance, using AccessKit's ability to dump the tree, the output could
+  be compared against expected output for a known UI state).
 
 - **Full scenario manual tests:**
 
-We script and perform end-to-end tasks *purely via keyboard and screen reader*.
-Example scenario for Gauss: **"Create and save a simple drawing"** – The tester
-will: launch Gauss, create a new canvas (via menu or shortcut), draw a shape
-(using keyboard to select shape tool and place a shape of default size, or
-using an accessible shape insertion command), change the shape's colour or
+End-to-end tasks are scripted and performed *purely via keyboard and screen
+reader*. Example scenario for Gauss: **"Create and save a simple drawing"** –
+The tester will: launch Gauss, create a new canvas (via menu or shortcut), draw
+a shape (using keyboard to select shape tool and place a shape of default size,
+or using an accessible shape insertion command), change the shape's colour or
 properties (navigating the properties panel), save the file (via keyboard).
 While doing this, the screen reader should announce each action (e.g., when
 selecting the rectangle tool, it might say "Rectangle tool selected, press
-Enter to place" if we implement such feedback; when a shape is inserted, maybe
-we use a live region to announce "Shape added"). The success criterion is that
-a blind or motor-impaired user *can accomplish the task without sighted
-assistance*. We will perform similar scenarios for other key workflows (opening
-an existing drawing, exporting, using advanced features) and ensure no
-blockers. Any time a step cannot be done via keyboard or isn't spoken, we will
-address that before considering the feature complete.
+Enter to place" if such feedback is implemented; when a shape is inserted, a
+live region might announce "Shape added"). The success criterion is that a
+blind or motor-impaired user *can accomplish the task without sighted
+assistance*. Similar scenarios for other key workflows (opening an existing
+drawing, exporting, using advanced features) will be performed and blockers
+addressed. Any time a step cannot be done via keyboard or isn't spoken, it will
+be addressed before considering the feature complete.
 
 - **Contrast and scaling checks:**
 
 Verify that in high-contrast mode, or with a custom high-contrast theme, all UI
 elements are still distinguishable. Use a colour contrast tool on all UI text.
-Increase the system font scale (or our app's zoom) to, say, 150% and ensure the
+Increase the system font scale (or the app's zoom) to, say, 150% and ensure the
 UI is still usable (text isn't cut off, icons scale or have appropriate
 alternatives like text labels instead of relying on tiny icons). Focus
 indicator visibility is tested under various conditions (e.g., window not
@@ -781,16 +781,16 @@ focused vs focused, high contrast on/off).
 - **Documentation and knowledge transfer:**
 
 The accessibility support matrix document is reviewed and accepted by the team.
-We consider it a "test" that an engineer can read the matrix and understand how
-to make any new component accessible, following the patterns established.
-Additionally, we'll have a brief training or demo for the whole team (so
+It is considered a "test" that an engineer can read the matrix and understand
+how to make any new component accessible, following the patterns established.
+Additionally, a brief training or demo for the whole team is planned (so
 design, QA, and dev know how to use the screen reader to test their features).
-When everyone is comfortable that we can maintain accessibility going forward,
-that's a sign the implementation is truly integrated into our process (not just
-a one-time fix).
+When everyone is comfortable that accessibility can be maintained going
+forward, that's a sign the implementation is truly integrated into the process
+(not just a one-time fix).
 
-Passing all the above means we can confidently say GPUI (and thus Gauss)
-supports **screen reader users, keyboard-only users, and low-vision users** in
+Passing all the above means GPUI (and thus Gauss) can confidently be said to
+support **screen reader users, keyboard-only users, and low-vision users** in
 its core functionality. It sets the stage for future improvements (like more
 advanced ARIA roles for canvas content, or support in other platforms like a
 possible web version via AccessKit's upcoming web adapter, etc.).
@@ -799,14 +799,15 @@ possible web version via AccessKit's upcoming web adapter, etc.).
 
 This plan builds on existing technologies and guidelines:
 
-- **AccessKit library:** The core of our solution. See the AccessKit project's
+- **AccessKit library:** The core of the solution. See the AccessKit project's
   README and documentation
   ([1](https://accesskit.dev/how-it-works/#:~:text=Platform%20adapters))
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)),
   which explain the immediate-mode friendly design, stable ID requirement, and
   currently supported features (including text, with the noted omission of rich
-  text/hypertext). AccessKit provides the multi-platform adapters we need (UIA,
-  NSAccessibility, AT-SPI). It's open source and we can contribute if needed
+  text/hypertext). AccessKit provides the multi-platform adapters needed (UIA,
+  NSAccessibility, AT-SPI). It's open source and contributions can be made if
+  needed
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API)).
 
 - **GPUI architecture:** Understanding GPUI's entity/component system is key to
@@ -815,10 +816,10 @@ This plan builds on existing technologies and guidelines:
   ([4](https://zed.dev/blog/gpui-ownership#:~:text=After%20initial%20attempts%20to%20use,and%20interact%20with%20other%20entities))
   ([4](https://zed.dev/blog/gpui-ownership#:~:text=UI%20framework%2C%20GPUI,and%20interact%20with%20other%20entities))
   for an overview of how all UI state in GPUI is owned by a central `App`. This
-  informs how we generate stable IDs and where we hook in the accessibility
-  updates (likely at the App or Window level).
+  informs how stable IDs are generated and where the accessibility updates hook
+  in (likely at the App or Window level).
 
-- **Platform-specific accessibility APIs:** We rely on AccessKit to abstract
+- **Platform-specific accessibility APIs:** AccessKit is relied upon to abstract
   these, but it's useful to know them. Microsoft's documentation on UI
   Automation (especially the **TextPattern** and control patterns) provides
   insight into what screen readers expect
@@ -832,49 +833,49 @@ This plan builds on existing technologies and guidelines:
   for Linux
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API)).
 
-- **Assistive Technology tools:** We will use tools like **Accessibility
-  Insights for Windows** (which includes "Inspect" and automation scanners)
+- **Assistive Technology tools:** Tools like **Accessibility Insights for
+  Windows** (which includes "Inspect" and automation scanners) will be used
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=2,the%20editor%20to%20learn%20it)),
   Apple's **Accessibility Inspector**
   ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext)),
   and the **Orca screen reader** (with its learning resources
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=2,the%20editor%20to%20learn%20it)))
-  to develop and test. These are essential to debug what our app is exposing.
-  We should familiarize ourselves with these tools early on.
+  to develop and test. These are essential to debug what the app is exposing.
+  Familiarisation with these tools early on is recommended.
 
 - **Standards and guidelines:** The **Web Content Accessibility Guidelines
   (WCAG) 2.1/2.2** are the basis for many accessibility requirements even in
   native apps
   ([4](https://zed.dev/blog/gpui-ownership#:~:text=Ownership%20and%20data%20flow%20in,an%20old%20version%20of%20GPUI)).
-  We map relevant ones (like keyboard access, focus order, contrast, semantics)
-  to our context. Additionally, **EN 301 549** in the EU and **Section 508** in
-  the US are standards/laws requiring accessible software – aligning with these
-  will be important for enterprise adoption
+  Relevant ones (like keyboard access, focus order, contrast, semantics) are
+  mapped to the project context. Additionally, **EN 301 549** in the EU and
+  **Section 508** in the US are standards/laws requiring accessible software –
+  aligning with these will be important for enterprise adoption
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke)).
-  While our primary motive is usability, adhering to standards ensures we don't
-  miss things (like offering captions for any audio feedback, etc., though
-  Gauss is mostly visual).
+  While the primary motive is usability, adhering to standards ensures nothing
+  is missed (like offering captions for any audio feedback, etc., though Gauss
+  is mostly visual).
 
 By leveraging the above and treating accessibility as a core part of the
-development (with design and QA involvement), we minimize the chance of major
-issues down the line.
+development (with design and QA involvement), the chance of major issues down
+the line is minimised.
 
 ## What this investment yields
 
-- **Compliance and market access:** Upon implementing this plan, we can
-  credibly claim **screen-reader support on Windows, macOS, and Linux**, as
-  well as keyboard-only operation. This opens doors to government and education
-  markets that require software to meet accessibility standards (e.g., European
-  public sector tenders often ask for EN 301 549 compliance
+- **Compliance and market access:** Upon implementing this plan, **screen-reader
+  support on Windows, macOS, and Linux** as well as keyboard-only operation can
+  be credibly claimed. This opens doors to government and education markets
+  that require software to meet accessibility standards (e.g., European public
+  sector tenders often ask for EN 301 549 compliance
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke))).
-  We can prepare a VPAT (Voluntary Product Accessibility Template) based on our
-  support matrix to formally document compliance.
+  A VPAT (Voluntary Product Accessibility Template) based on the support matrix
+  can be prepared to formally document compliance.
 
 - **Better software design:** Building with accessibility in mind often
   improves overall UX. Clear focus handling and keyboard shortcuts benefit
   power users; well-structured UI content (for screen readers) often translates
-  to cleaner state management in code. By "learning the hard lessons early," we
-  instill good practices in the team – making accessibility a default
+  to cleaner state management in code. By "learning the hard lessons early,"
+  good practices are instilled in the team – making accessibility a default
   consideration for any new feature (rather than a retrofit).
 
 - **User trust and goodwill:** Users with disabilities (and advocacy
@@ -882,23 +883,23 @@ issues down the line.
   needing to ask for special support. This fosters a positive reputation. Even
   among users without disabilities, features like keyboard shortcuts and
   high-contrast modes are often welcomed (think of situational impairments or
-  simply personal preference). We're delivering a robust product for everyone,
-  not a niche add-on.
+  simply personal preference). This delivers a robust product for everyone, not
+  a niche add-on.
 
-- **Future-proofing:** By integrating with AccessKit, we position ourselves to
-  easily gain new platform accessibility support. For instance, if we later
-  build a mobile app using a similar paradigm, AccessKit's planned Android/iOS
-  adapters could be leveraged. If we consider a WebAssembly/web-canvas version
-  of GPUI, the planned web adapter could allow screen readers to work there too
-  ([1](https://accesskit.dev/how-it-works/#:~:text=Planned%20adapters)). Also,
-  as AccessKit extends to rich text or new patterns, we can adopt those
-  improvements with minimal changes to our app logic (since we primarily
-  populate data for AccessKit to consume). In short, we build once, benefit
-  repeatedly.
+- **Future-proofing:** By integrating with AccessKit, the project is positioned
+  to easily gain new platform accessibility support. For instance, if a mobile
+  app using a similar paradigm is later built, AccessKit's planned Android/iOS
+  adapters could be leveraged. If a WebAssembly/web-canvas version of GPUI is
+  considered, the planned web adapter could allow screen readers to work there
+  too ([1](https://accesskit.dev/how-it-works/#:~:text=Planned%20adapters)).
+  Also, as AccessKit extends to rich text or new patterns, those improvements
+  can be adopted with minimal changes to the app logic (since data is primarily
+  populated for AccessKit to consume). In short, building once yields repeated
+  benefits.
 
 Finally, doing this work reinforces that **accessibility is a core feature** of
-our platform. We won't have to scramble later to "add accessibility" – it will
-be baked into GPUI, benefiting Gauss and any other app we build on this
+the platform. There will be no need to scramble later to "add accessibility" –
+it will be baked into GPUI, benefiting Gauss and any other app built on this
 framework.
 
 ## Suggested Next Steps
@@ -908,7 +909,7 @@ framework.
   `Adapter` working. Build a tiny test app (one window, a couple of controls)
   and iterate until NVDA can read them. This will flush out integration issues
   (like event timing or focus handling) in a simpler setting. Once Windows is
-  roughly working, do the same on macOS and Linux. Aim to have a basic
+  roughly working, do the same on macOS and Linux. The aim is to have a basic
   cross-platform "Hello, Accessibility" demo (a window with a label, button,
   and text field that screen readers can read and interact with) within a short
   time. This serves as a proof-of-concept and confidence boost.
@@ -919,34 +920,35 @@ framework.
   arrow key nav in menus, etc., all generate the right focus events), and
   **text boxes support editing via screen reader** (caret moves, selection
   announced). Achieve parity with a standard platform text box. This will
-  likely involve refining our action handling for text (using UIA TextPattern
+  likely involve refining the action handling for text (using UIA TextPattern
   methods as a reference) and testing heavily on Windows (since it's the
   strictest). Once a text box works well on Windows, check VoiceOver and Orca
   for any additional tweaks.
 
 - **Iteratively enhance component by component:** Go through the UI component
   list (buttons, checkboxes, menus, dropdowns, list views, tree views, dialogs,
-  etc.) and implement their accessibility roles/properties. We can prioritize
-  core ones used in Gauss's main workflow first. As we do this, update the
-  accessibility support matrix document. Also, implement the **high-contrast
-  theme toggle** and get feedback from someone with low-vision on the colour
-  choices. Doing them in parallel ensures visual accessibility is not forgotten
-  while focusing on screen readers.
+  etc.) and implement their accessibility roles/properties. Core ones used in
+  Gauss's main workflow can be prioritised first. As this progresses, update
+  the accessibility support matrix document. Also, implement the
+  **high-contrast theme toggle** and get feedback from someone with low-vision
+  on the colour choices. Doing them in parallel ensures visual accessibility is
+  not forgotten while focusing on screen readers.
 
 - **Automate where possible and prevent regressions:** Integrate accessibility
-  checks into our CI. For example, on Windows we can use the Accessibility
-  Insights CLI to run tests on the app UI (though it might require the app to
-  be running; we could have an automated test mode that opens key windows and
-  then runs the tool). We can also write unit tests for our accessibility tree
-  generation (e.g., given a certain UI state, our code produces a certain
-  `TreeUpdate` – this can be asserted in a test). Set up a policy that any UI
-  change must be tested for accessibility (just as we do for performance or
-  memory). This cultural shift will keep the project accessible long-term.
+  checks into CI. For example, on Windows the Accessibility Insights CLI can be
+  used to run tests on the app UI (though it might require the app to be
+  running; an automated test mode that opens key windows and then runs the tool
+  could be used). Unit tests for accessibility tree generation can also be
+  written (e.g., given a certain UI state, the code produces a certain
+  `TreeUpdate` – this can be asserted in a test). A policy that any UI change
+  must be tested for accessibility should be set up (just as is done for
+  performance or memory). This cultural shift will keep the project accessible
+  long-term.
 
 Remember, **treat accessibility work as foundational infrastructure**, not a
 one-off feature. Investing effort up front will pay off by reducing future
-retrofits and by expanding our user base. As we proceed through these steps, we
-should continuously involve users (if possible) and experts, adjusting our plan
-if something isn't working well. By phase's end, Gauss will be one of the few
-(if not only) vector graphic tools that is fully accessible – a significant
+retrofits and by expanding the user base. As these steps progress, users (if
+possible) and experts should be continuously involved, adjusting the plan if
+something isn't working well. By phase's end, Gauss will be one of the few (if
+not only) vector graphic tools that is fully accessible – a significant
 achievement technically and socially.
