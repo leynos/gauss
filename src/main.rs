@@ -30,7 +30,7 @@ fn main() {
         if app
             .open_window(window_options, |_window, cx| {
                 let shell = cx.new(Phase0Shell::new);
-                cx.new(|cx| GaussRoot::new(shell, cx))
+                cx.new(|ctx| GaussRoot::new(shell, ctx))
             })
             .is_err()
         {

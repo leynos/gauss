@@ -17,7 +17,7 @@ const TOP_BAR_PAD_Y_MAXIMIZED: Pixels = px(12.0);
 ///
 /// Wayland compositors intercept pointer events near window edges for resize
 /// gestures, even on maximized windows. A 24px inset clears this zone on
-/// tested compositors (GNOME Mutter, KDE KWin).
+/// tested compositors (GNOME Mutter, KDE `KWin`).
 const TOP_BAR_PAD_X_MAXIMIZED: Pixels = px(24.0);
 
 use super::{
@@ -113,11 +113,11 @@ impl Phase0Shell {
             // Double-click to toggle maximize/restore
             .on_click(cx.listener(
                 |_shell: &mut Self, event: &gpui::ClickEvent, window, view_cx| {
-                    if let gpui::ClickEvent::Mouse(mouse_event) = event {
-                        if mouse_event.down.click_count == 2 {
-                            window_controls::toggle_maximize(window);
-                            view_cx.notify();
-                        }
+                    if let gpui::ClickEvent::Mouse(mouse_event) = event
+                        && mouse_event.down.click_count == 2
+                    {
+                        window_controls::toggle_maximize(window);
+                        view_cx.notify();
                     }
                 },
             ));

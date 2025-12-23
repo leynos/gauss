@@ -28,7 +28,7 @@ const BORDER_SIZE: Pixels = px(1.0);
 const BORDER_RADIUS: Pixels = px(0.0);
 
 /// Create a new Gauss window border with maximized-aware resize zones.
-pub fn gauss_window_border() -> GaussWindowBorder {
+pub const fn gauss_window_border() -> GaussWindowBorder {
     GaussWindowBorder::new()
 }
 
@@ -43,7 +43,7 @@ pub struct GaussWindowBorder {
 }
 
 impl GaussWindowBorder {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             children: Vec::new(),
         }
@@ -97,28 +97,18 @@ impl GaussWindowBorder {
     /// Apply resize mouse-down handler when not maximized.
     fn apply_resize_handler(div: Stateful<Div>, is_maximized: bool) -> Stateful<Div> {
         div.when(!is_maximized, |d| {
-            d.on_mouse_down(MouseButton::Left, move |_, window, _| {
-                if window.is_maximized() {
-                    return;
-                }
-                let size = window.window_bounds().get_bounds().size;
-                let pos = window.mouse_position();
-
-                if let Some(edge) = resize_edge(pos, SHADOW_SIZE, size) {
-                    window.start_window_resize(edge);
-                }
-            })
+            d.on_mouse_down(MouseButton::Left, handle_resize_mouse_down)
         })
     }
 
     /// Render the inner content border with styling based on tiling state.
-    fn render_inner_border(self, tiling: Tiling, cx: &App) -> Div {
-        let div = apply_corner_rounding(div(), tiling);
-        apply_border_styling(div, tiling, cx)
-            .on_mouse_move(|_e, _, cx| {
-                cx.stop_propagation();
+    fn render_inner_border(self, tiling: Tiling, app: &App) -> Div {
+        let inner_div = apply_corner_rounding(div(), tiling);
+        apply_border_styling(inner_div, tiling, app)
+            .on_mouse_move(|_e, _, ctx| {
+                ctx.stop_propagation();
             })
-            .bg(cx.theme().background)
+            .bg(app.theme().background)
             .size_full()
             .children(self.children)
     }
@@ -131,45 +121,61 @@ impl ParentElement for GaussWindowBorder {
 }
 
 impl RenderOnce for GaussWindowBorder {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, app: &mut App) -> impl IntoElement {
         let decorations = window.window_decorations();
         let is_maximized = window.is_maximized();
         window.set_client_inset(SHADOW_SIZE);
 
-        let backdrop = div()
-            .id("gauss-window-backdrop")
-            .bg(gpui::transparent_black());
-
-        let backdrop = match decorations {
-            Decorations::Server => backdrop,
+        let styled_backdrop = match decorations {
+            Decorations::Server => div()
+                .id("gauss-window-backdrop")
+                .bg(gpui::transparent_black()),
             Decorations::Client { tiling, .. } => {
-                let mut outer = backdrop.bg(gpui::transparent_black());
+                let mut outer = div()
+                    .id("gauss-window-backdrop")
+                    .bg(gpui::transparent_black());
 
                 // Only add resize hit detection when NOT maximized.
                 if !is_maximized {
                     outer = outer.child(Self::create_resize_canvas());
                 }
 
-                let outer = Self::apply_tiling_styles(outer, tiling);
-                Self::apply_resize_handler(outer, is_maximized)
+                let styled_outer = Self::apply_tiling_styles(outer, tiling);
+                Self::apply_resize_handler(styled_outer, is_maximized)
             }
         };
 
         let inner = match decorations {
             Decorations::Server => div()
-                .on_mouse_move(|_e, _, cx| cx.stop_propagation())
-                .bg(cx.theme().background)
+                .on_mouse_move(|_e, _, ctx| ctx.stop_propagation())
+                .bg(app.theme().background)
                 .size_full()
                 .children(self.children),
-            Decorations::Client { tiling } => self.render_inner_border(tiling, cx),
+            Decorations::Client { tiling } => self.render_inner_border(tiling, app),
         };
 
-        backdrop.size_full().child(inner)
+        styled_backdrop.size_full().child(inner)
+    }
+}
+
+/// Handle mouse-down event for window resize.
+///
+/// This is extracted as a standalone function to reduce nesting depth
+/// in `apply_resize_handler`.
+fn handle_resize_mouse_down(_: &gpui::MouseDownEvent, window: &mut Window, _: &mut App) {
+    if window.is_maximized() {
+        return;
+    }
+    let size = window.window_bounds().get_bounds().size;
+    let pos = window.mouse_position();
+
+    if let Some(edge) = resize_edge(pos, SHADOW_SIZE, size) {
+        window.start_window_resize(edge);
     }
 }
 
 /// Map a resize edge to the appropriate cursor style.
-fn cursor_style_for_edge(edge: ResizeEdge) -> CursorStyle {
+const fn cursor_style_for_edge(edge: ResizeEdge) -> CursorStyle {
     match edge {
         ResizeEdge::Top | ResizeEdge::Bottom => CursorStyle::ResizeUpDown,
         ResizeEdge::Left | ResizeEdge::Right => CursorStyle::ResizeLeftRight,
