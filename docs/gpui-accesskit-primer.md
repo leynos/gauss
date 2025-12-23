@@ -19,7 +19,7 @@ Bottom line: with a focused integration, disciplined text support, and a rigorou
 
 ### Screen readers
 
-* **Windows:** All interactive widgets expose correct **UIA roles**, names, states and actions; text controls implement **TextPattern** (and **TextEditPattern** when editing), including caret movement, selection ranges, word/line navigation and text‑changed events. Verified on **NVDA**, **JAWS**, and **Narrator** with **Inspect**/**Accessibility Insights**. ([Microsoft Learn][4])
+* **Windows:** All interactive widgets expose correct **UIA roles**, names, states, and actions; text controls implement **TextPattern** (and **TextEditPattern** when editing), including caret movement, selection ranges, word/line navigation and text‑changed events. Verified on **NVDA**, **JAWS**, and **Narrator** with **Inspect**/**Accessibility Insights**. ([Microsoft Learn][4])
 * **macOS:** Widgets expose **NSAccessibility** roles/attributes; text implements the macOS text attributes and notifications VoiceOver expects. Verified with **VoiceOver** and **Accessibility Inspector**. ([Apple Developer][5])
 * **Linux:** Widgets expose **AT‑SPI** roles/states/actions; text implements **Atspi.Text** interface with selections and text attributes. Verified with **Orca** and **Accerciser**. ([gnome.pages.gitlab.gnome.org][6])
 
@@ -52,7 +52,7 @@ Below I assess **scope**, **risks**, and **proof points** per step you listed.
 **Notable risks:**
 
 * **Windowing:** GPUI does not use winit by default; you’ll integrate AccessKit’s adapters directly (not accesskit_winit). This is normal: the Windows adapter hooks WM_GETOBJECT and focus, macOS adapter subclasses NSView or forwards focus, Unix adapter binds AT‑SPI over D‑Bus. ([GitHub][10])
-* **Threading & event order:** UIA demands you initialise before responding to WM_GETOBJECT; the Windows adapter provides a handle_wm_getobject flow and update_if_active/update_window_focus_state to keep you honest. ([Docs.rs][11])
+* **Threading & event order:** UIA demands you initialize before responding to WM_GETOBJECT; the Windows adapter provides a handle_wm_getobject flow and update_if_active/update_window_focus_state to keep you honest. ([Docs.rs][11])
 
 **Proof points:**
 
@@ -64,7 +64,7 @@ Below I assess **scope**, **risks**, and **proof points** per step you listed.
 
 ---
 
-### 2) Prioritise text controls (caret, selection, range ops)
+### 2) Prioritize text controls (caret, selection, range ops)
 
 **What changes:**
 
@@ -107,7 +107,7 @@ Below I assess **scope**, **risks**, and **proof points** per step you listed.
 
 **What changes:**
 
-* Formalise a **test matrix** with scripted journeys and checkpoints:
+* Formalize a **test matrix** with scripted journeys and checkpoints:
 
   * Windows (NVDA, JAWS, Narrator), macOS (VoiceOver), Linux (Orca).
   * Inspectors: **Accessibility Insights**/**Inspect** (Windows), **Accessibility Inspector** (macOS), **Accerciser** (Linux).
@@ -141,7 +141,7 @@ Below I assess **scope**, **risks**, and **proof points** per step you listed.
 ## Architecture notes and gotchas
 
 * **Stable Node IDs:** Immediate‑mode toolkits must keep **stable identities** for elements across frames. Map GPUI entities to **AccessKit NodeId** deterministically (e.g., a u64 derived from a component key + stable path). AccessKit’s design assumes this and avoids keeping the full tree on your side. ([GitHub][1])
-* **Focus & window activation:** Drive focus through GPUI’s focus manager and forward it into the adapter (update_window_focus_state). On Windows, ensure you initialise UIA **before** returning from WM_GETOBJECT. ([Docs.rs][11])
+* **Focus & window activation:** Drive focus through GPUI's focus manager and forward it into the adapter (update_window_focus_state). On Windows, ensure you initialize UIA **before** returning from WM_GETOBJECT. ([Docs.rs][11])
 * **Performance:** Accessibility tree updates are **incremental**; you only push diffs to the adapter. This keeps overhead low, provided you coalesce updates sensibly. ([GitHub][1])
 * **GPUI/plumbing reality:** GPUI uses its own windowing; plan to integrate the **platform adapters directly**, not via accesskit_winit. (There is an accesskit_winit crate, but it’s for winit‑based apps.) ([GitHub][10])
 
@@ -149,9 +149,9 @@ Below I assess **scope**, **risks**, and **proof points** per step you listed.
 
 ## Example: Windows adapter wiring (sketch)
 
-This illustrates the control flow you’ll embed in GPUI’s Windows platform layer:
+This illustrates the control flow you'll embed in GPUI's Windows platform layer:
 
-rust
+```rust
 // Pseudocode-ish; see accesskit_windows docs for exact signatures
 use accesskit::{ActionRequest, Node, NodeId, Tree, TreeUpdate};
 use accesskit_windows::{Adapter, QueuedEvents};
@@ -192,8 +192,7 @@ impl A11y {
         }
     }
 }
-
-
+```
 
 See Adapter::new, handle_wm_getobject, update_if_active, update_window_focus_state in the Windows adapter. macOS (accesskit_macos) and Linux (accesskit_unix) expose similar “adapter + updates” patterns for NSAccessibility and AT‑SPI respectively. ([Docs.rs][11])
 
@@ -202,7 +201,7 @@ See Adapter::new, handle_wm_getobject, update_if_active, update_window_focus_sta
 ## Risks you must explicitly budget for
 
 1. **Rich text/editor semantics**
-   AccessKit’s own docs state rich text/hypertext aren’t yet implemented in adapters. If Marrakesh Express requires attribute runs, in‑line widgets, hyperlinks or code‑editor semantics, expect upstream work and extra testing. Otherwise, constrain to plain text for v1. ([GitHub][1])
+   AccessKit's own docs state rich text/hypertext aren't yet implemented in adapters. If Marrakesh Express requires attribute runs, in‑line widgets, hyperlinks, or code‑editor semantics, expect upstream work and extra testing. Otherwise, constrain to plain text for v1. ([GitHub][1])
 
 2. **Windows parity pressure**
    Windows users are vocal (rightly). Zed’s current Windows a11y issue shows expectations: NVDA/JAWS must work end‑to‑end. Treat **UIA TextPattern** conformance as a gate. ([GitHub][2])

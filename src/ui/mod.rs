@@ -5,6 +5,7 @@
 //! the data model in `crate::model` usable without a running window.
 
 mod canvas_paint;
+mod gauss_window_border;
 mod icon_assets;
 pub mod phase0_shell;
 mod phase0_support;
@@ -12,6 +13,7 @@ mod selection_overlays;
 mod selection_utils;
 mod viewport_input;
 
+pub use gauss_window_border::GaussRoot;
 pub(crate) use icon_assets::{UiIcon, icon_element};
 pub use phase0_shell::{OpenSvg, Phase0Shell, SaveSvg};
 
