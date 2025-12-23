@@ -12,11 +12,6 @@
 //! Note: State query functions are prepared for future AccessKit integration
 //! and may appear unused until that work is complete.
 
-#![expect(
-    dead_code,
-    reason = "State queries prepared for future AccessKit integration"
-)]
-
 use gpui::{ResizeEdge, Window, point, px};
 
 /// Minimize the window.
@@ -35,12 +30,20 @@ pub fn toggle_fullscreen(window: &Window) {
 }
 
 /// Check if the window is currently maximized.
+#[expect(
+    dead_code,
+    reason = "State query prepared for future AccessKit integration"
+)]
 #[must_use]
 pub fn is_maximized(window: &Window) -> bool {
     window.is_maximized()
 }
 
 /// Check if the window is currently in fullscreen mode.
+#[expect(
+    dead_code,
+    reason = "State query prepared for future AccessKit integration"
+)]
 #[must_use]
 pub fn is_fullscreen(window: &Window) -> bool {
     window.is_fullscreen()
@@ -48,8 +51,10 @@ pub fn is_fullscreen(window: &Window) -> bool {
 
 /// Start compositor-controlled window move.
 ///
-/// On Linux (Wayland/X11), this delegates to the compositor.
-/// On macOS, this is a no-op (macOS uses native titlebar dragging).
+/// On Linux (Wayland/X11), this delegates to the compositor which handles
+/// the interactive move operation. On macOS, the compositor may ignore
+/// this call if native titlebar dragging is active; the behaviour depends
+/// on the GPUI backend implementation.
 pub fn start_move(window: &Window) {
     window.start_window_move();
 }

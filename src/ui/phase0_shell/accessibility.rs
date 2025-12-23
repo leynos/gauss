@@ -17,11 +17,6 @@
 //! Note: Constants in this module are intentionally defined for future use
 //! and may appear unused until AccessKit integration is complete.
 
-#![expect(
-    dead_code,
-    reason = "Constants prepared for future AccessKit integration"
-)]
-
 /// Stable node IDs for window control elements.
 ///
 /// These IDs are used to identify accessibility nodes for window controls.
@@ -30,6 +25,10 @@
 ///
 /// The ID scheme uses a reserved range (0x1000–0x1FFF) for window chrome
 /// elements, leaving other ranges for document content.
+#[expect(
+    dead_code,
+    reason = "Constants prepared for future AccessKit integration"
+)]
 pub mod node_ids {
     /// Minimize window button.
     pub const MINIMIZE_BUTTON: u64 = 0x1001;
@@ -49,6 +48,10 @@ pub mod node_ids {
 ///
 /// These strings are announced by screen readers when focus moves to
 /// each control. They include keyboard shortcuts for discoverability.
+#[expect(
+    dead_code,
+    reason = "Constants prepared for future AccessKit integration"
+)]
 pub mod accessible_names {
     /// Accessible name for the minimize button.
     pub const MINIMIZE: &str = "Minimize window";
@@ -68,6 +71,10 @@ pub mod accessible_names {
 ///
 /// Screen readers can announce these along with button names to help
 /// users learn keyboard shortcuts.
+#[expect(
+    dead_code,
+    reason = "Constants prepared for future AccessKit integration"
+)]
 pub mod shortcut_hints {
     /// Shortcut hint for minimize (cross-platform).
     pub const MINIMIZE: &str = "Alt+F9";
