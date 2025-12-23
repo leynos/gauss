@@ -252,7 +252,7 @@ fn resize_edge(pos: Point<Pixels>, shadow_size: Pixels, size: Size<Pixels>) -> O
 /// GPUI's `App::open_window` requires the root view to implement `Render`,
 /// which means we cannot use a bare helper function. This thin wrapper
 /// exists solely to satisfy that constraint while delegating all layout
-/// to [`gauss_window_border`].
+/// to `GaussWindowBorder`.
 pub struct GaussRoot {
     view: AnyView,
 }
