@@ -1,12 +1,22 @@
 //! Tests for resize border visibility based on window state.
+//!
+//! On Linux, resize hit regions are provided by `GaussWindowBorder` in the
+//! window shadow area, so the inner `resize_borders()` function returns empty.
+//! These tests only run on non-Linux platforms where the inner resize borders
+//! are used.
 
+#[cfg(not(target_os = "linux"))]
 mod common;
 
+#[cfg(not(target_os = "linux"))]
 use common::{ensure_initial_draw, init_test_app};
+#[cfg(not(target_os = "linux"))]
 use gauss::ui::Phase0Shell;
+#[cfg(not(target_os = "linux"))]
 use gpui::TestAppContext;
 
 /// Resize border element IDs that should be present when the window is not maximized.
+#[cfg(not(target_os = "linux"))]
 const RESIZE_BORDER_SELECTORS: [&str; 8] = [
     "#resize-edge-top",
     "#resize-edge-bottom",
@@ -18,6 +28,9 @@ const RESIZE_BORDER_SELECTORS: [&str; 8] = [
     "#resize-corner-br",
 ];
 
+/// On Linux, resize borders are provided by `GaussWindowBorder`, not the inner
+/// `resize_borders()` function.
+#[cfg(not(target_os = "linux"))]
 #[gpui::test]
 fn resize_borders_hidden_when_maximized(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -39,6 +52,9 @@ fn resize_borders_hidden_when_maximized(cx: &mut TestAppContext) {
     }
 }
 
+/// On Linux, resize borders are provided by `GaussWindowBorder`, not the inner
+/// `resize_borders()` function.
+#[cfg(not(target_os = "linux"))]
 #[gpui::test]
 fn resize_borders_visible_when_not_maximized(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -60,6 +76,9 @@ fn resize_borders_visible_when_not_maximized(cx: &mut TestAppContext) {
     }
 }
 
+/// On Linux, resize borders are provided by `GaussWindowBorder`, not the inner
+/// `resize_borders()` function.
+#[cfg(not(target_os = "linux"))]
 #[gpui::test]
 fn resize_borders_appear_when_restoring_from_maximized(cx: &mut TestAppContext) {
     init_test_app(cx);
