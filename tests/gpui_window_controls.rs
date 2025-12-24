@@ -7,7 +7,7 @@ mod common;
 
 use common::{ensure_initial_draw, init_test_app};
 use gauss::ui::Phase0Shell;
-use gpui::{Entity, Pixels, TestAppContext, VisualTestContext, px};
+use gpui::{Entity, Modifiers, MouseButton, Pixels, TestAppContext, VisualTestContext, point, px};
 
 /// Minimum expected width for icon buttons (28x28 nominal size).
 const MIN_BUTTON_SIZE: Pixels = px(20.0);
@@ -219,5 +219,43 @@ fn resize_canvas_present_when_not_maximised(cx: &mut TestAppContext) {
     assert!(
         visual_cx.debug_bounds("#resize-canvas").is_some(),
         "resize canvas should be present when window is not maximised"
+    );
+}
+
+/// Test that mouse interaction at a resize border does not resize when maximised.
+///
+/// This behavioural test verifies that the resize prevention guards work
+/// correctly: when the window is maximised, clicking and dragging at a
+/// position that would normally be a resize zone should not change the
+/// window bounds.
+///
+/// Note: This test runs only on Linux because client-side window decorations
+/// (and thus the resize zones in the shadow area) are only used on Linux.
+#[gpui::test]
+#[cfg(target_os = "linux")]
+fn resize_interaction_prevented_when_maximised(cx: &mut TestAppContext) {
+    let (_view, visual_cx) = setup_window_with(cx, |shell| {
+        shell.set_maximized_for_tests(Some(true));
+    });
+
+    // Capture initial window bounds
+    let bounds_before = visual_cx.update(|window, _app| window.window_bounds());
+
+    // Simulate mouse down at a position in the resize border zone.
+    // The shadow size is 12px on Linux, so (5, 5) is within the top-left
+    // corner resize zone.
+    let resize_zone_position = point(px(5.0), px(5.0));
+    visual_cx.simulate_mouse_down(resize_zone_position, MouseButton::Left, Modifiers::none());
+    visual_cx.run_until_parked();
+
+    // Simulate mouse up at the same position (no drag)
+    visual_cx.simulate_mouse_up(resize_zone_position, MouseButton::Left, Modifiers::none());
+    visual_cx.run_until_parked();
+
+    // Verify window bounds are unchanged
+    let bounds_after = visual_cx.update(|window, _app| window.window_bounds());
+    assert_eq!(
+        bounds_before, bounds_after,
+        "window bounds should not change when clicking resize zone while maximised"
     );
 }
