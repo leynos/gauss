@@ -3,19 +3,28 @@
 use gpui::{Window, div, prelude::*, white};
 
 use super::{
-    KEY_CONTEXT, OpenSvg, Phase0Shell, SaveSvg, ToggleEdgeMode, chrome_palette::chrome_border,
-    draw, file_dialogs,
+    CloseWindow, KEY_CONTEXT, MinimizeWindow, OpenSvg, Phase0Shell, SaveSvg, ShowWindowMenu,
+    StartWindowMove, StartWindowResize, ToggleEdgeMode, ToggleFullscreen, ToggleMaximize,
+    chrome_palette::chrome_border, draw, file_dialogs, window_controls,
 };
 
 impl Phase0Shell {
     pub(super) fn mode_status_line(&self) -> String {
+        let maximized_indicator = if self.last_maximized_state == Some(true) {
+            " [MAX]"
+        } else {
+            ""
+        };
         match self.tool_mode {
             draw::ToolMode::Draw => format!(
-                "Mode: {} ({})",
+                "Mode: {} ({}){}",
                 self.tool_mode.label(),
-                self.edge_mode.label()
+                self.edge_mode.label(),
+                maximized_indicator
             ),
-            draw::ToolMode::Manipulate => format!("Mode: {}", self.tool_mode.label()),
+            draw::ToolMode::Manipulate => {
+                format!("Mode: {}{}", self.tool_mode.label(), maximized_indicator)
+            }
         }
     }
 
@@ -152,6 +161,41 @@ impl Phase0Shell {
     }
 }
 
+impl Phase0Shell {
+    /// Bind window control action handlers to the root element.
+    fn bind_window_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
+        el.on_action(cx.listener(|_: &mut Self, _: &MinimizeWindow, w, view_cx| {
+            window_controls::minimize(w);
+            view_cx.notify();
+        }))
+        .on_action(cx.listener(|_: &mut Self, _: &ToggleMaximize, w, view_cx| {
+            window_controls::toggle_maximize(w);
+            view_cx.notify();
+        }))
+        .on_action(
+            cx.listener(|_: &mut Self, _: &ToggleFullscreen, w, view_cx| {
+                window_controls::toggle_fullscreen(w);
+                view_cx.notify();
+            }),
+        )
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &CloseWindow, _, action_cx| {
+                shell.did_request_quit = true;
+                action_cx.quit();
+            }),
+        )
+        .on_action(cx.listener(|_: &mut Self, _: &StartWindowMove, w, _cx| {
+            window_controls::start_move(w);
+        }))
+        .on_action(cx.listener(|_: &mut Self, _: &StartWindowResize, w, _cx| {
+            window_controls::start_resize(w, gpui::ResizeEdge::BottomRight);
+        }))
+        .on_action(cx.listener(|_: &mut Self, _: &ShowWindowMenu, w, _cx| {
+            window_controls::show_window_menu(w);
+        }))
+    }
+}
+
 impl Render for Phase0Shell {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         if !self.did_focus {
@@ -164,7 +208,10 @@ impl Render for Phase0Shell {
             self.did_init_style_pickers = true;
         }
 
-        div()
+        // Track viewport size changes and adjust pan to maintain anchor point
+        self.handle_window_resize(window);
+
+        let root = div()
             .size_full()
             .key_context(KEY_CONTEXT)
             .track_focus(&self.focus_handle)
@@ -175,22 +222,21 @@ impl Render for Phase0Shell {
                     shell.handle_key_down(event, view_cx);
                 }),
             )
-            .on_action(
-                cx.listener(|shell: &mut Self, _: &OpenSvg, action_window, action_cx| {
-                    file_dialogs::request_open(shell.open_prompt_mode, action_window, action_cx);
-                }),
-            )
-            .on_action(
-                cx.listener(|_shell: &mut Self, _: &SaveSvg, action_window, action_cx| {
-                    file_dialogs::request_save(action_window, action_cx);
-                }),
-            )
+            .on_action(cx.listener(|shell: &mut Self, _: &OpenSvg, w, action_cx| {
+                file_dialogs::request_open(shell.open_prompt_mode, w, action_cx);
+            }))
+            .on_action(cx.listener(|_: &mut Self, _: &SaveSvg, w, action_cx| {
+                file_dialogs::request_save(w, action_cx);
+            }))
             .on_action(
                 cx.listener(|shell: &mut Self, _: &ToggleEdgeMode, _, action_cx| {
                     shell.handle_tab_action(action_cx);
                 }),
-            )
-            .child(self.chrome_view(cx))
+            );
+
+        // Check for maximized state change and trigger re-render if needed
+        let is_maximized = self.check_maximized_state_change(window, cx);
+        Self::bind_window_actions(root, cx).child(self.chrome_view(is_maximized, cx))
     }
 }
 

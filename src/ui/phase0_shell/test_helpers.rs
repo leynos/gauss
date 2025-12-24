@@ -1,0 +1,166 @@
+//! Test helper methods for Phase 0 shell.
+//!
+//! This module contains test-only methods that are gated behind the
+//! `test-support` feature or test compilation. They provide controlled access
+//! to internal state for headless GPUI tests.
+
+use std::path::Path;
+
+use crate::model::{Document, Selection, ShapeId, Vec2, Viewport};
+
+use super::{Phase0Shell, draw, file_dialogs::OpenPromptMode};
+
+impl Phase0Shell {
+    /// Construct a new shell configured for headless `#[gpui::test]` tests.
+    ///
+    /// This differs from [`Self::new`] only in how it triggers the file dialog
+    /// for "Open…".
+    #[must_use]
+    pub fn new_for_tests(cx: &mut gpui::Context<Self>) -> Self {
+        Self {
+            open_prompt_mode: OpenPromptMode::TestNewPath,
+            ..Self::new(cx)
+        }
+    }
+
+    /// Return the last path selected by the platform save prompt, if any.
+    #[must_use]
+    pub fn last_saved_path(&self) -> Option<&Path> {
+        self.last_saved_path.as_deref()
+    }
+
+    /// Return the last path selected by the platform open prompt, if any.
+    #[must_use]
+    pub fn last_opened_path(&self) -> Option<&Path> {
+        self.last_opened_path.as_deref()
+    }
+
+    /// Return the current document.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real UI.
+    #[must_use]
+    pub const fn document(&self) -> &Document {
+        &self.document
+    }
+
+    /// Return the current viewport.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI.
+    #[must_use]
+    pub const fn viewport(&self) -> Viewport {
+        self.viewport
+    }
+
+    /// Return the current selection.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI.
+    #[must_use]
+    pub const fn selection(&self) -> &Selection {
+        &self.selection
+    }
+
+    /// Return the active shape identifier, if any.
+    ///
+    /// This is intended for headless tests that validate tool mode switches.
+    #[must_use]
+    pub const fn draw_active_shape_for_tests(&self) -> Option<ShapeId> {
+        self.draw_active_shape
+    }
+
+    /// Override the active shape during tests.
+    ///
+    /// This is used to verify that switching to manipulate mode clears the
+    /// active draw state.
+    pub const fn set_draw_active_shape_for_tests(&mut self, shape: Option<ShapeId>) {
+        self.draw_active_shape = shape;
+    }
+
+    /// Override the maximized state for tests.
+    ///
+    /// This controls whether resize borders are visible. Set to `Some(true)`
+    /// to simulate a maximized window (no resize borders), `Some(false)` for
+    /// a normal window (resize borders visible), or `None` to use the actual
+    /// window state.
+    pub const fn set_maximized_for_tests(&mut self, maximized: Option<bool>) {
+        self.test_maximized_override = maximized;
+    }
+
+    /// Replace the entire document.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI. It deliberately does not attempt to
+    /// preserve history; callers that need undo/redo should drive changes via
+    /// editor operations instead.
+    pub fn replace_document_for_tests(&mut self, document: Document) {
+        self.document = document;
+        self.drag_state = None;
+        self.draw_active_shape = None;
+    }
+
+    /// Replace the current selection.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI. Selection history is not updated by this
+    /// helper.
+    pub fn replace_selection_for_tests(&mut self, selection: Selection) {
+        self.selection = selection;
+        self.drag_state = None;
+    }
+
+    /// Return whether a drag gesture is currently active.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI.
+    #[must_use]
+    pub const fn is_dragging(&self) -> bool {
+        self.drag_state.is_some()
+    }
+
+    /// Return whether a quit request has been triggered from the UI.
+    ///
+    /// This exists to keep `#[gpui::test]` assertions stable on the test
+    /// platform, which does not necessarily exit when `App::quit()` is invoked.
+    #[must_use]
+    pub const fn did_request_quit(&self) -> bool {
+        self.did_request_quit
+    }
+
+    /// Return the current mode indicator line as shown in the UI.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI.
+    #[must_use]
+    pub fn mode_status_line_for_tests(&self) -> String {
+        self.mode_status_line()
+    }
+
+    /// Force manipulate mode for headless tests.
+    ///
+    /// GPUI's headless harness does not always guarantee that keyboard focus is
+    /// established before the test sends synthetic key events. This helper
+    /// allows tests to set the tool mode explicitly without relying on
+    /// `Escape` dispatch.
+    pub fn enter_manipulate_mode_for_tests(&mut self) {
+        self.set_tool_mode(draw::ToolMode::Manipulate);
+    }
+
+    /// Return the last canvas click position in screen coordinates.
+    ///
+    /// This is intended for tests and debugging while Phase 0 is still
+    /// assembling the real editor UI.
+    #[must_use]
+    pub const fn last_canvas_click_screen(&self) -> Option<Vec2> {
+        self.last_canvas_click_screen
+    }
+
+    /// Check if the window should be treated as maximized for resize border visibility.
+    ///
+    /// This exposes `is_maximized_for_resize_borders` for tests.
+    #[must_use]
+    pub fn is_maximized_for_resize_borders_for_tests(&self, window: &gpui::Window) -> bool {
+        self.is_maximized_for_resize_borders(window)
+    }
+}
