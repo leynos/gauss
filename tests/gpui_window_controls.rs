@@ -222,12 +222,11 @@ fn resize_canvas_present_when_not_maximised(cx: &mut TestAppContext) {
     );
 }
 
-/// Test that mouse interaction at a resize border does not resize when maximised.
+/// Test that dragging at a resize border does not resize when maximised.
 ///
 /// This behavioural test verifies that the resize prevention guards work
-/// correctly: when the window is maximised, clicking and dragging at a
-/// position that would normally be a resize zone should not change the
-/// window bounds.
+/// correctly: when the window is maximised, dragging from a position that
+/// would normally be a resize zone should not change the window bounds.
 ///
 /// Note: This test runs only on Linux because client-side window decorations
 /// (and thus the resize zones in the shadow area) are only used on Linux.
@@ -244,18 +243,24 @@ fn resize_interaction_prevented_when_maximised(cx: &mut TestAppContext) {
     // Simulate mouse down at a position in the resize border zone.
     // The shadow size is 12px on Linux, so (5, 5) is within the top-left
     // corner resize zone.
-    let resize_zone_position = point(px(5.0), px(5.0));
-    visual_cx.simulate_mouse_down(resize_zone_position, MouseButton::Left, Modifiers::none());
+    let resize_zone_start = point(px(5.0), px(5.0));
+    let drag_target = point(px(50.0), px(50.0));
+
+    visual_cx.simulate_mouse_down(resize_zone_start, MouseButton::Left, Modifiers::none());
     visual_cx.run_until_parked();
 
-    // Simulate mouse up at the same position (no drag)
-    visual_cx.simulate_mouse_up(resize_zone_position, MouseButton::Left, Modifiers::none());
+    // Simulate drag by moving to a different position
+    visual_cx.simulate_mouse_move(drag_target, MouseButton::Left, Modifiers::none());
+    visual_cx.run_until_parked();
+
+    // Complete the drag by releasing at the target position
+    visual_cx.simulate_mouse_up(drag_target, MouseButton::Left, Modifiers::none());
     visual_cx.run_until_parked();
 
     // Verify window bounds are unchanged
     let bounds_after = visual_cx.update(|window, _app| window.window_bounds());
     assert_eq!(
         bounds_before, bounds_after,
-        "window bounds should not change when clicking resize zone while maximised"
+        "window bounds should not change when dragging resize zone while maximised"
     );
 }
