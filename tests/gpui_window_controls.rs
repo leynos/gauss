@@ -7,10 +7,35 @@ mod common;
 
 use common::{ensure_initial_draw, init_test_app};
 use gauss::ui::Phase0Shell;
-use gpui::{Pixels, TestAppContext, VisualTestContext, px};
+use gpui::{Entity, Pixels, TestAppContext, VisualTestContext, px};
 
 /// Minimum expected width for icon buttons (28x28 nominal size).
 const MIN_BUTTON_SIZE: Pixels = px(20.0);
+
+/// Create a test window with a default `Phase0Shell`.
+fn setup_window(cx: &mut TestAppContext) -> (Entity<Phase0Shell>, &mut VisualTestContext) {
+    setup_window_with(cx, |_shell| {})
+}
+
+/// Create a test window with a customised `Phase0Shell` configuration.
+fn setup_window_with<F>(
+    cx: &mut TestAppContext,
+    configure: F,
+) -> (Entity<Phase0Shell>, &mut VisualTestContext)
+where
+    F: FnOnce(&mut Phase0Shell),
+{
+    init_test_app(cx);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| {
+        let mut shell = Phase0Shell::new(view_cx);
+        configure(&mut shell);
+        shell
+    });
+    ensure_initial_draw(visual_cx);
+
+    (view, visual_cx)
+}
 
 /// Assert that an element exists and has reasonable dimensions.
 ///
@@ -40,10 +65,7 @@ fn assert_element_has_size(
 /// Test that the titlebar drag region element exists.
 #[gpui::test]
 fn titlebar_drag_region_is_present(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (_view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
+    let (_view, visual_cx) = setup_window(cx);
 
     assert!(
         visual_cx.debug_bounds("#titlebar-drag-region").is_some(),
@@ -54,10 +76,7 @@ fn titlebar_drag_region_is_present(cx: &mut TestAppContext) {
 /// Test that window control buttons exist in the UI.
 #[gpui::test]
 fn window_control_buttons_are_present(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (_view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
+    let (_view, visual_cx) = setup_window(cx);
 
     let control_selectors = ["#window-minimize", "#window-maximize", "#quit-button"];
     for selector in control_selectors {
@@ -76,10 +95,7 @@ fn window_control_buttons_are_present(cx: &mut TestAppContext) {
 /// This test verifies the UI structure instead.
 #[gpui::test]
 fn titlebar_drag_region_has_dimensions(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (_view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
+    let (_view, visual_cx) = setup_window(cx);
 
     assert_element_has_size(visual_cx, "#titlebar-drag-region", px(100.0), px(10.0));
 }
@@ -91,10 +107,7 @@ fn titlebar_drag_region_has_dimensions(cx: &mut TestAppContext) {
 /// panic with "not implemented"). This test verifies the UI structure instead.
 #[gpui::test]
 fn window_control_buttons_have_dimensions(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (_view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
+    let (_view, visual_cx) = setup_window(cx);
 
     // All window control buttons should be icon buttons (28x28 nominal)
     for selector in ["#window-minimize", "#window-maximize", "#quit-button"] {
@@ -107,14 +120,9 @@ fn window_control_buttons_have_dimensions(cx: &mut TestAppContext) {
 /// This verifies the test infrastructure for simulating maximized state.
 #[gpui::test]
 fn maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| {
-        let mut shell = Phase0Shell::new(view_cx);
+    let (view, visual_cx) = setup_window_with(cx, |shell| {
         shell.set_maximized_for_tests(Some(true));
-        shell
     });
-    ensure_initial_draw(visual_cx);
 
     visual_cx.update(|window, app| {
         let is_maximized_for_borders = view
@@ -130,14 +138,9 @@ fn maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
 /// Test that setting maximized to false via test override works.
 #[gpui::test]
 fn non_maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| {
-        let mut shell = Phase0Shell::new(view_cx);
+    let (view, visual_cx) = setup_window_with(cx, |shell| {
         shell.set_maximized_for_tests(Some(false));
-        shell
     });
-    ensure_initial_draw(visual_cx);
 
     visual_cx.update(|window, app| {
         let is_maximized_for_borders = view
@@ -153,14 +156,9 @@ fn non_maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
 /// Test that changing maximized state triggers a re-render.
 #[gpui::test]
 fn maximized_state_change_triggers_rerender(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| {
-        let mut shell = Phase0Shell::new(view_cx);
+    let (view, visual_cx) = setup_window_with(cx, |shell| {
         shell.set_maximized_for_tests(Some(false));
-        shell
     });
-    ensure_initial_draw(visual_cx);
 
     // Change the maximized state
     visual_cx.update(|_window, app| {
