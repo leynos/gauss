@@ -1,7 +1,7 @@
 //! Tests for window control actions and resize behaviour.
 //!
 //! This module tests the keyboard-accessible window controls and verifies
-//! that resize zones are properly disabled when the window is maximized.
+//! that resize zones are properly disabled when the window is maximised.
 
 mod common;
 
@@ -62,6 +62,27 @@ fn assert_element_has_size(
     );
 }
 
+/// Assert that the maximised state override returns the expected value.
+///
+/// This helper creates a window with the specified maximised override and
+/// verifies that `is_maximized_for_resize_borders_for_tests` returns the
+/// expected value.
+fn assert_maximised_override_matches(cx: &mut TestAppContext, expected_maximised: bool) {
+    let (view, visual_cx) = setup_window_with(cx, |shell| {
+        shell.set_maximized_for_tests(Some(expected_maximised));
+    });
+
+    visual_cx.update(|window, app| {
+        let actual = view
+            .read(app)
+            .is_maximized_for_resize_borders_for_tests(window);
+        assert_eq!(
+            actual, expected_maximised,
+            "expected maximised override to return {expected_maximised}"
+        );
+    });
+}
+
 /// Test that the titlebar drag region element exists.
 #[gpui::test]
 fn titlebar_drag_region_is_present(cx: &mut TestAppContext) {
@@ -90,7 +111,7 @@ fn window_control_buttons_are_present(cx: &mut TestAppContext) {
 /// Test that the titlebar drag region has appropriate dimensions.
 ///
 /// Note: Clicking the titlebar is not tested because GPUI's test platform
-/// does not implement `start_window_move()`. Double-click to toggle maximize
+/// does not implement `start_window_move()`. Double-click to toggle maximise
 /// also isn't testable as `zoom_window()` is similarly unimplemented.
 /// This test verifies the UI structure instead.
 #[gpui::test]
@@ -115,52 +136,28 @@ fn window_control_buttons_have_dimensions(cx: &mut TestAppContext) {
     }
 }
 
-/// Test that the maximized state override works in tests.
+/// Test that the maximised state override works in tests.
 ///
-/// This verifies the test infrastructure for simulating maximized state.
+/// This verifies the test infrastructure for simulating maximised state.
 #[gpui::test]
 fn maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
-    let (view, visual_cx) = setup_window_with(cx, |shell| {
-        shell.set_maximized_for_tests(Some(true));
-    });
-
-    visual_cx.update(|window, app| {
-        let is_maximized_for_borders = view
-            .read(app)
-            .is_maximized_for_resize_borders_for_tests(window);
-        assert!(
-            is_maximized_for_borders,
-            "expected maximized override to return true"
-        );
-    });
+    assert_maximised_override_matches(cx, true);
 }
 
-/// Test that setting maximized to false via test override works.
+/// Test that setting maximised to false via test override works.
 #[gpui::test]
 fn non_maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
-    let (view, visual_cx) = setup_window_with(cx, |shell| {
-        shell.set_maximized_for_tests(Some(false));
-    });
-
-    visual_cx.update(|window, app| {
-        let is_maximized_for_borders = view
-            .read(app)
-            .is_maximized_for_resize_borders_for_tests(window);
-        assert!(
-            !is_maximized_for_borders,
-            "expected non-maximized override to return false"
-        );
-    });
+    assert_maximised_override_matches(cx, false);
 }
 
-/// Test that changing maximized state triggers a re-render.
+/// Test that changing maximised state triggers a re-render.
 #[gpui::test]
 fn maximized_state_change_triggers_rerender(cx: &mut TestAppContext) {
     let (view, visual_cx) = setup_window_with(cx, |shell| {
         shell.set_maximized_for_tests(Some(false));
     });
 
-    // Change the maximized state
+    // Change the maximised state
     visual_cx.update(|_window, app| {
         view.update(app, |shell, view_cx| {
             shell.set_maximized_for_tests(Some(true));
@@ -171,9 +168,9 @@ fn maximized_state_change_triggers_rerender(cx: &mut TestAppContext) {
 
     // Verify the change took effect
     visual_cx.update(|window, app| {
-        let is_maximized = view
+        let is_maximised = view
             .read(app)
             .is_maximized_for_resize_borders_for_tests(window);
-        assert!(is_maximized, "expected maximized state to change");
+        assert!(is_maximised, "expected maximised state to change");
     });
 }
