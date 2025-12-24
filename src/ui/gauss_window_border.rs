@@ -69,32 +69,34 @@ impl GaussWindowBorder {
     /// Create the resize detection canvas element.
     ///
     /// This canvas inserts a hitbox covering the window and updates the cursor
-    /// style based on which resize edge the mouse is over.
+    /// style based on which resize edge the mouse is over. The wrapper div has
+    /// a debug selector for testing.
     fn create_resize_canvas() -> impl IntoElement {
-        canvas(
-            |_bounds, window, _| {
-                window.insert_hitbox(
-                    Bounds::new(
-                        point(px(0.0), px(0.0)),
-                        window.window_bounds().get_bounds().size,
-                    ),
-                    HitboxBehavior::Normal,
-                )
-            },
-            move |_bounds, hitbox, window, _| {
-                if window.is_maximized() {
-                    return;
-                }
+        div().id("resize-canvas").size_full().absolute().child(
+            canvas(
+                |_bounds, window, _| {
+                    window.insert_hitbox(
+                        Bounds::new(
+                            point(px(0.0), px(0.0)),
+                            window.window_bounds().get_bounds().size,
+                        ),
+                        HitboxBehavior::Normal,
+                    )
+                },
+                move |_bounds, hitbox, window, _| {
+                    if window.is_maximized() {
+                        return;
+                    }
 
-                let mouse = window.mouse_position();
-                let size = window.window_bounds().get_bounds().size;
-                if let Some(edge) = resize_edge(mouse, SHADOW_SIZE, size) {
-                    window.set_cursor_style(cursor_style_for_edge(edge), &hitbox);
-                }
-            },
+                    let mouse = window.mouse_position();
+                    let size = window.window_bounds().get_bounds().size;
+                    if let Some(edge) = resize_edge(mouse, SHADOW_SIZE, size) {
+                        window.set_cursor_style(cursor_style_for_edge(edge), &hitbox);
+                    }
+                },
+            )
+            .size_full(),
         )
-        .size_full()
-        .absolute()
     }
 
     /// Apply tiling-aware padding and corner rounding to the outer div.
@@ -126,6 +128,36 @@ impl ParentElement for GaussWindowBorder {
     }
 }
 
+/// Build the backdrop element for client-side decorations.
+///
+/// This handles resize canvas insertion and mouse handler attachment,
+/// both of which are conditional on the maximized state.
+fn build_client_backdrop(tiling: Tiling, is_maximized: bool) -> Stateful<Div> {
+    let mut outer = div()
+        .id("gauss-window-backdrop")
+        .bg(gpui::transparent_black());
+
+    // Only add resize hit detection when NOT maximized.
+    if !is_maximized {
+        outer = outer.child(GaussWindowBorder::create_resize_canvas());
+    }
+
+    let styled_outer = GaussWindowBorder::apply_tiling_styles(outer, tiling);
+    // Add resize handler only when not maximized
+    styled_outer.when(!is_maximized, |d| {
+        d.on_mouse_down(MouseButton::Left, on_resize_mouse_down)
+    })
+}
+
+/// Build the inner content element for server-side decorations.
+fn build_server_inner(children: Vec<AnyElement>, app: &App) -> Div {
+    div()
+        .on_mouse_move(|_e, _, ctx| ctx.stop_propagation())
+        .bg(app.theme().background)
+        .size_full()
+        .children(children)
+}
+
 impl RenderOnce for GaussWindowBorder {
     fn render(self, window: &mut Window, app: &mut App) -> impl IntoElement {
         let decorations = window.window_decorations();
@@ -136,30 +168,11 @@ impl RenderOnce for GaussWindowBorder {
             Decorations::Server => div()
                 .id("gauss-window-backdrop")
                 .bg(gpui::transparent_black()),
-            Decorations::Client { tiling, .. } => {
-                let mut outer = div()
-                    .id("gauss-window-backdrop")
-                    .bg(gpui::transparent_black());
-
-                // Only add resize hit detection when NOT maximized.
-                if !is_maximized {
-                    outer = outer.child(Self::create_resize_canvas());
-                }
-
-                let styled_outer = Self::apply_tiling_styles(outer, tiling);
-                // Add resize handler only when not maximized
-                styled_outer.when(!is_maximized, |d| {
-                    d.on_mouse_down(MouseButton::Left, on_resize_mouse_down)
-                })
-            }
+            Decorations::Client { tiling, .. } => build_client_backdrop(tiling, is_maximized),
         };
 
         let inner = match decorations {
-            Decorations::Server => div()
-                .on_mouse_move(|_e, _, ctx| ctx.stop_propagation())
-                .bg(app.theme().background)
-                .size_full()
-                .children(self.children),
+            Decorations::Server => build_server_inner(self.children, app),
             Decorations::Client { tiling } => self.render_inner_border(tiling, app),
         };
 
@@ -213,37 +226,67 @@ fn apply_border_styling(div: Div, tiling: Tiling, cx: &App) -> Div {
         })
 }
 
+/// Flags indicating which edge zones the mouse position overlaps.
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "four independent bools naturally represent the four window edge zones"
+)]
+struct EdgeZones {
+    top: bool,
+    bottom: bool,
+    left: bool,
+    right: bool,
+}
+
+impl EdgeZones {
+    /// Create edge zones from a mouse position and window dimensions.
+    fn from_position(pos: Point<Pixels>, shadow_size: Pixels, size: Size<Pixels>) -> Self {
+        Self {
+            top: pos.y < shadow_size,
+            bottom: pos.y > size.height - shadow_size,
+            left: pos.x < shadow_size,
+            right: pos.x > size.width - shadow_size,
+        }
+    }
+
+    /// Check if the mouse is over a corner resize zone.
+    ///
+    /// Corners are formed by the intersection of two edge zones.
+    const fn check_corner(&self) -> Option<ResizeEdge> {
+        match (self.top, self.bottom, self.left, self.right) {
+            (true, _, true, _) => Some(ResizeEdge::TopLeft),
+            (true, _, _, true) => Some(ResizeEdge::TopRight),
+            (_, true, true, _) => Some(ResizeEdge::BottomLeft),
+            (_, true, _, true) => Some(ResizeEdge::BottomRight),
+            _ => None,
+        }
+    }
+
+    /// Check if the mouse is over an edge (non-corner) resize zone.
+    const fn check_edge(&self) -> Option<ResizeEdge> {
+        if self.top {
+            Some(ResizeEdge::Top)
+        } else if self.bottom {
+            Some(ResizeEdge::Bottom)
+        } else if self.left {
+            Some(ResizeEdge::Left)
+        } else if self.right {
+            Some(ResizeEdge::Right)
+        } else {
+            None
+        }
+    }
+}
+
 /// Determine which resize edge (if any) the mouse position is over.
 ///
 /// Corners take precedence at intersections (e.g., top-left wins over top).
 /// Ported from `gpui-component::window_border` with identical logic.
 fn resize_edge(pos: Point<Pixels>, shadow_size: Pixels, size: Size<Pixels>) -> Option<ResizeEdge> {
-    let in_top = pos.y < shadow_size;
-    let in_bottom = pos.y > size.height - shadow_size;
-    let in_left = pos.x < shadow_size;
-    let in_right = pos.x > size.width - shadow_size;
+    let zones = EdgeZones::from_position(pos, shadow_size, size);
 
-    // Check corners first (they take precedence at intersections)
-    match (in_top, in_bottom, in_left, in_right) {
-        (true, _, true, _) => return Some(ResizeEdge::TopLeft),
-        (true, _, _, true) => return Some(ResizeEdge::TopRight),
-        (_, true, true, _) => return Some(ResizeEdge::BottomLeft),
-        (_, true, _, true) => return Some(ResizeEdge::BottomRight),
-        _ => {}
-    }
-
-    // Check edges
-    if in_top {
-        Some(ResizeEdge::Top)
-    } else if in_bottom {
-        Some(ResizeEdge::Bottom)
-    } else if in_left {
-        Some(ResizeEdge::Left)
-    } else if in_right {
-        Some(ResizeEdge::Right)
-    } else {
-        None
-    }
+    // Corners take precedence at intersections
+    zones.check_corner().or_else(|| zones.check_edge())
 }
 
 /// Window root wrapper that renders content inside our custom window border.

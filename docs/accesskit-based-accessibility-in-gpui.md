@@ -198,7 +198,7 @@ means stable `NodeId`s can be generated for each component (for example, using a
 combination of entity ID and type). AccessKit already handles the hard part:
 translating the `Node` tree and events to each platform's API. There is no need
 to implement UIA, NSAccessibility, or AT-SPI from scratch – data is fed to
-AccessKit and it updates the OS accordingly. The AccessKit adapters for
+AccessKit, and it updates the OS accordingly. The AccessKit adapters for
 Windows, Mac, and Linux are at feature parity and actively maintained
 ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
 
@@ -216,14 +216,14 @@ Windows, Mac, and Linux are at feature parity and actively maintained
   ([1](https://accesskit.dev/how-it-works/#:~:text=Platform%20adapters))
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API)).
   Additionally, `Adapter::update_window_focus_state` needs to be called when the
-  window gains or loses focus so the accessibility framework knows which window
+  window gains or loses focus, so the accessibility framework knows which window
   is active. These details require careful integration with GPUI's Win32 message
   loop, Cocoa event loop, and X11/Wayland events respectively.
 
 - **Threading and init order:** On Windows, UI Automation expects the provider
   (the app) to be ready to supply the accessibility tree **before returning
   from `WM_GETOBJECT`**. That means the adapter initialization has to happen at
-  the right time. The AccessKit adapter will likely be initialised when the
+  the right time. The AccessKit adapter will likely be initialized when the
   window is created (or first shown) with a cached tree ready by the time a
   screen reader first queries it. The adapter provides `update_if_active` and
   `update` methods which only take effect when a screen reader is actually
@@ -243,7 +243,7 @@ added (e.g. a button and a text field), and the following is verified:
   any UI change results in events being raised (like `UIA_Event_FocusChanged`).
 
 - On **macOS**, enabling VoiceOver should allow navigation to the GPUI window's
-  controls (e.g. VO+Right moves focus to the button and it announces properly).
+  controls (e.g. VO+Right moves focus to the button, and it announces properly).
   The **Accessibility Inspector** on Mac should list the custom window's
   elements in the hierarchy with proper roles. Subclassing `NSView` or using
   `NSAccessibilityUnignoredDescendant` ties the view to AccessKit's adapter (the
@@ -287,10 +287,10 @@ accessibility tree:
   handler.
 
 - Fire **text events**: e.g., when text is inserted or deleted in an editor,
-  events should be sent so the screen reader announces changes (UIA
+  events should be sent, so the screen reader announces changes (UIA
   `Text_TextChangedEvent`, AT-SPI `TextChanged` signal, etc.). AccessKit might
   handle some of this if the node's text value and selection are updated
-  appropriately, but the right update functions must be called so the adapters
+  appropriately, but the right update functions must be called, so the adapters
   emit incremental events (rather than reading the whole text each time).
 
 **Risk to call out:** As noted, **rich text support is limited** in AccessKit
@@ -352,7 +352,7 @@ low-vision users or those with contrast sensitivity):
 
 - Define a set of **high-contrast theme tokens**. A High Contrast mode should be
   added to the theme system (in addition to the default Light/Dark). In High
-  Contrast, text and important UI elements use colours that maximise contrast
+  Contrast, text and important UI elements use colours that maximize contrast
   with the background (e.g., white on black or black on yellow, depending on
   user preference or system settings). All text should meet at least a 4.5:1
   contrast ratio against its background (WCAG 2.1 AA level).
@@ -576,13 +576,13 @@ matrix).
   as children of the canvas node). This may require dynamic generation of nodes
   for drawing objects and possibly describing them (e.g., "Blue circle at (x,y)
   radius r"). This is advanced and could be a later phase; for now, the focus
-  is on the UI chrome and ensuring at least the canvas can be focused and its
+  is on the UI chrome and ensuring at least the canvas can be focused, and its
   purpose conveyed (so a blind user isn't left wondering what that region is).
 
 - **No free lunch with `accesskit_winit`:** Since GPUI doesn't use Winit's
   event loop (it has its own windowing and rendering), AccessKit will be
   integrated **manually**. The `accesskit_winit` adapter is a convenience for
-  Winit apps, but in this case following what it does internally is needed: on
+  Winit apps; instead, the lower-level adapter APIs must be used directly. On
   Windows, handle the `WM_GETOBJECT` message, etc. The good news is AccessKit's
   documentation and examples include using the adapters directly (for example,
   they have a pure Win32 example and an SDL example in C). These can be
@@ -663,11 +663,11 @@ The macOS adapter (`accesskit_macos::Adapter`) and Linux adapter
 (`accesskit_unix::Adapter`) have analogous methods for hooking into their
 respective event loops. For instance, on macOS an `NSView` subclass might be
 created for the GPUI content view and `accesskit_macos::Adapter::new` used with
-that view; on Linux, the adapter is initialised with the window handle and it
+that view; on Linux, the adapter is initialized with the window handle, and it
 registers on D-Bus to communicate with AT-SPI
 ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API)).
 
-*Takeaway:* The integration involves initialising the adapter with the window,
+*Takeaway:* The integration involves initializing the adapter with the window,
 providing an initial accessibility tree (with all nodes and their properties),
 handling OS requests (like `WM_GETOBJECT` or the Cocoa accessibility
 callbacks), and sending incremental updates whenever the UI changes state.
@@ -734,7 +734,7 @@ passes the following tests:
   contrast (if the contrast rules are included); focus order (AI can flag if
   focus moves in an illogical order). **Inspect** should also be used manually
   to ensure key controls expose the correct UIA control patterns (e.g., a
-  slider control should show a RangeValue pattern, a text box shows Text
+  slider control should show a RangeValue pattern, a text box shows a Text
   pattern, etc.).
 
 - **macOS:** Use Apple's Accessibility Inspector to verify that all interactive
@@ -831,7 +831,7 @@ This plan builds on existing technologies and guidelines:
   guide and VoiceOver guide) will help for macOS specifics (like how to label
   custom controls properly)
   ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext)).
-  The AT-SPI documentation (e.g., the GNOME accessibility guide) is reference
+  The AT-SPI documentation (e.g., the GNOME accessibility guide) is a reference
   for Linux
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API)).
 
@@ -843,7 +843,7 @@ This plan builds on existing technologies and guidelines:
   and the **Orca screen reader** (with its learning resources
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=2,the%20editor%20to%20learn%20it)))
   to develop and test. These are essential to debug what the app is exposing.
-  Familiarisation with these tools early on is recommended.
+  Familiarization with these tools early on is recommended.
 
 - **Standards and guidelines:** The **Web Content Accessibility Guidelines
   (WCAG) 2.1/2.2** are the basis for many accessibility requirements even in
@@ -860,7 +860,7 @@ This plan builds on existing technologies and guidelines:
 
 By leveraging the above and treating accessibility as a core part of the
 development (with design and QA involvement), the chance of major issues down
-the line is minimised.
+the line is minimized.
 
 ## What this investment yields
 
@@ -930,7 +930,7 @@ framework.
 - **Iteratively enhance component by component:** Go through the UI component
   list (buttons, checkboxes, menus, dropdowns, list views, tree views, dialogs,
   etc.) and implement their accessibility roles/properties. Core ones used in
-  Gauss's main workflow can be prioritised first. As this progresses, update
+  Gauss's main workflow can be prioritized first. As this progresses, update
   the accessibility support matrix document. Also, implement the
   **high-contrast theme toggle** and get feedback from someone with low-vision
   on the colour choices. Doing them in parallel ensures visual accessibility is
