@@ -7,7 +7,35 @@ mod common;
 
 use common::{ensure_initial_draw, init_test_app};
 use gauss::ui::Phase0Shell;
-use gpui::{TestAppContext, px};
+use gpui::{Pixels, TestAppContext, VisualTestContext, px};
+
+/// Minimum expected width for icon buttons (28x28 nominal size).
+const MIN_BUTTON_SIZE: Pixels = px(20.0);
+
+/// Assert that an element exists and has reasonable dimensions.
+///
+/// This helper reduces duplication in tests that verify UI structure.
+fn assert_element_has_size(
+    visual_cx: &mut VisualTestContext,
+    selector: &'static str,
+    min_width: Pixels,
+    min_height: Pixels,
+) {
+    let bounds = visual_cx
+        .debug_bounds(selector)
+        .unwrap_or_else(|| panic!("element {selector} should exist"));
+
+    assert!(
+        bounds.size.width > min_width,
+        "{selector} should have width > {min_width:?}, got {:?}",
+        bounds.size.width
+    );
+    assert!(
+        bounds.size.height > min_height,
+        "{selector} should have height > {min_height:?}, got {:?}",
+        bounds.size.height
+    );
+}
 
 /// Test that the titlebar drag region element exists.
 #[gpui::test]
@@ -53,55 +81,25 @@ fn titlebar_drag_region_has_dimensions(cx: &mut TestAppContext) {
     let (_view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let bounds = visual_cx
-        .debug_bounds("#titlebar-drag-region")
-        .expect("titlebar drag region should exist");
-
-    // Verify the drag region has a reasonable size (should span most of top bar)
-    assert!(bounds.size.width > px(100.0), "drag region should span horizontally");
-    assert!(bounds.size.height > px(10.0), "drag region should have reasonable height");
+    assert_element_has_size(visual_cx, "#titlebar-drag-region", px(100.0), px(10.0));
 }
 
-/// Test that minimize button exists and is positioned correctly.
+/// Test that window control buttons have appropriate dimensions.
 ///
-/// Note: Actually clicking the button is not tested because GPUI's test
-/// platform does not implement `minimize_window()` (it panics with
-/// "not implemented"). This test verifies the UI structure instead.
+/// Note: Actually clicking the buttons is not tested because GPUI's test
+/// platform does not implement `minimize_window()` or `zoom_window()` (they
+/// panic with "not implemented"). This test verifies the UI structure instead.
 #[gpui::test]
-fn minimize_button_exists_and_is_positioned(cx: &mut TestAppContext) {
+fn window_control_buttons_have_dimensions(cx: &mut TestAppContext) {
     init_test_app(cx);
 
     let (_view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let bounds = visual_cx
-        .debug_bounds("#window-minimize")
-        .expect("minimize button should exist");
-
-    // Verify the button has a reasonable size (icon buttons are 28x28)
-    assert!(bounds.size.width > px(20.0), "button should have reasonable width");
-    assert!(bounds.size.height > px(20.0), "button should have reasonable height");
-}
-
-/// Test that maximize button exists and is positioned correctly.
-///
-/// Note: Actually clicking the button is not tested because GPUI's test
-/// platform does not implement `zoom_window()` (it panics with
-/// "not implemented"). This test verifies the UI structure instead.
-#[gpui::test]
-fn maximize_button_exists_and_is_positioned(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (_view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
-
-    let bounds = visual_cx
-        .debug_bounds("#window-maximize")
-        .expect("maximize button should exist");
-
-    // Verify the button has a reasonable size (icon buttons are 28x28)
-    assert!(bounds.size.width > px(20.0), "button should have reasonable width");
-    assert!(bounds.size.height > px(20.0), "button should have reasonable height");
+    // All window control buttons should be icon buttons (28x28 nominal)
+    for selector in ["#window-minimize", "#window-maximize", "#quit-button"] {
+        assert_element_has_size(visual_cx, selector, MIN_BUTTON_SIZE, MIN_BUTTON_SIZE);
+    }
 }
 
 /// Test that the maximized state override works in tests.
@@ -118,11 +116,10 @@ fn maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
     });
     ensure_initial_draw(visual_cx);
 
-    // Verify the override was applied (we can't directly check is_maximized
-    // in the test harness, but the shell should have stored the override)
     visual_cx.update(|window, app| {
-        let is_maximized_for_borders =
-            view.read(app).is_maximized_for_resize_borders_for_tests(window);
+        let is_maximized_for_borders = view
+            .read(app)
+            .is_maximized_for_resize_borders_for_tests(window);
         assert!(
             is_maximized_for_borders,
             "expected maximized override to return true"
@@ -143,8 +140,9 @@ fn non_maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
     ensure_initial_draw(visual_cx);
 
     visual_cx.update(|window, app| {
-        let is_maximized_for_borders =
-            view.read(app).is_maximized_for_resize_borders_for_tests(window);
+        let is_maximized_for_borders = view
+            .read(app)
+            .is_maximized_for_resize_borders_for_tests(window);
         assert!(
             !is_maximized_for_borders,
             "expected non-maximized override to return false"
@@ -175,7 +173,9 @@ fn maximized_state_change_triggers_rerender(cx: &mut TestAppContext) {
 
     // Verify the change took effect
     visual_cx.update(|window, app| {
-        let is_maximized = view.read(app).is_maximized_for_resize_borders_for_tests(window);
+        let is_maximized = view
+            .read(app)
+            .is_maximized_for_resize_borders_for_tests(window);
         assert!(is_maximized, "expected maximized state to change");
     });
 }

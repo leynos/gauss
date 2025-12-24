@@ -27,6 +27,23 @@ const SHADOW_SIZE: Pixels = px(12.0);
 const BORDER_SIZE: Pixels = px(1.0);
 const BORDER_RADIUS: Pixels = px(0.0);
 
+/// Apply corner rounding based on tiling state.
+///
+/// Corners are only rounded when they are not adjacent to a tiled edge.
+/// This is shared between `apply_tiling_styles` and `render_inner_border`.
+fn apply_corner_rounding<E: gpui::Styled + gpui::prelude::FluentBuilder>(
+    element: E,
+    tiling: Tiling,
+) -> E {
+    element
+        .when(!(tiling.top || tiling.right), |d| {
+            d.rounded_tr(BORDER_RADIUS)
+        })
+        .when(!(tiling.top || tiling.left), |d| {
+            d.rounded_tl(BORDER_RADIUS)
+        })
+}
+
 /// Create a new Gauss window border with maximized-aware resize zones.
 pub const fn gauss_window_border() -> GaussWindowBorder {
     GaussWindowBorder::new()
@@ -82,28 +99,16 @@ impl GaussWindowBorder {
 
     /// Apply tiling-aware padding and corner rounding to the outer div.
     fn apply_tiling_styles(div: Stateful<Div>, tiling: Tiling) -> Stateful<Div> {
-        div.when(!(tiling.top || tiling.right), |d| {
-            d.rounded_tr(BORDER_RADIUS)
-        })
-        .when(!(tiling.top || tiling.left), |d| {
-            d.rounded_tl(BORDER_RADIUS)
-        })
-        .when(!tiling.top, |d| d.pt(SHADOW_SIZE))
-        .when(!tiling.bottom, |d| d.pb(SHADOW_SIZE))
-        .when(!tiling.left, |d| d.pl(SHADOW_SIZE))
-        .when(!tiling.right, |d| d.pr(SHADOW_SIZE))
+        apply_corner_rounding(div, tiling)
+            .when(!tiling.top, |d| d.pt(SHADOW_SIZE))
+            .when(!tiling.bottom, |d| d.pb(SHADOW_SIZE))
+            .when(!tiling.left, |d| d.pl(SHADOW_SIZE))
+            .when(!tiling.right, |d| d.pr(SHADOW_SIZE))
     }
 
     /// Render the inner content border with styling based on tiling state.
     fn render_inner_border(self, tiling: Tiling, app: &App) -> Div {
-        // Inline corner rounding (same logic as apply_tiling_styles but for Div)
-        let inner_div = div()
-            .when(!(tiling.top || tiling.right), |d| {
-                d.rounded_tr(BORDER_RADIUS)
-            })
-            .when(!(tiling.top || tiling.left), |d| {
-                d.rounded_tl(BORDER_RADIUS)
-            });
+        let inner_div = apply_corner_rounding(div(), tiling);
 
         apply_border_styling(inner_div, tiling, app)
             .on_mouse_move(|_e, _, ctx| {
@@ -164,6 +169,8 @@ impl RenderOnce for GaussWindowBorder {
 
 /// Handle mouse-down for window resize initiation.
 fn on_resize_mouse_down(_: &gpui::MouseDownEvent, window: &mut Window, _: &mut App) {
+    // Defensive check: this handler is only attached when not maximized (see
+    // RenderOnce impl), but re-check here in case of stale render state.
     if window.is_maximized() {
         return;
     }

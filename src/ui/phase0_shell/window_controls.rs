@@ -60,9 +60,8 @@ pub fn is_fullscreen(window: &Window) -> bool {
 /// Start compositor-controlled window move.
 ///
 /// On Linux (Wayland/X11), this delegates to the compositor which handles
-/// the interactive move operation. On macOS, the compositor may ignore
-/// this call if native titlebar dragging is active; the behaviour depends
-/// on the GPUI backend implementation.
+/// the interactive move operation. On macOS, this operation is not
+/// implemented in GPUI 0.2.2 (the call is a no-op).
 pub fn start_move(window: &Window) {
     window.start_window_move();
 }

@@ -121,7 +121,8 @@ and the macOS accessibility text protocol) to get this right.
   interactive elements (matching visual navigation order) and no keyboard
   traps. Users can perform all commands using key combinations (or macro of key
   combos). There should be a visible focus indicator on the focused element at
-  all times (meeting WCAG 2.1 Focus Visible criteria
+  all times (meeting Web Content Accessibility Guidelines (WCAG) 2.1 Focus
+  Visible criteria
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=2,the%20editor%20to%20learn%20it))).
   Complex canvas interactions in Gauss will be mapped to keyboard controls (e.g.
   arrow keys or WASD to nudge objects, keyboard shortcuts for drawing tools,
