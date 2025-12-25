@@ -13,7 +13,7 @@ guiding principle.
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Trait vs Enum | **Enum with methods** | Exhaustive matching, serialisation-ready, simpler dispatch |
+| Trait vs Enum | **Enum with methods** | Exhaustive matching, serialization-ready, simpler dispatch |
 | Initial scope | **Minimal starter set** | 5–8 core actions; expand in later tasks |
 | Module location | `src/model/action.rs` | GPUI-independent for testability |
 
@@ -62,7 +62,7 @@ Define the core structures:
 //!
 //! Actions are GPUI-independent for testability and scripting.
 
-/// Categorisation of actions for dispatch routing.
+/// Categorization of actions for dispatch routing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ActionKind {
     /// Mutates document state; produces undoable Command.
@@ -97,7 +97,7 @@ pub enum Action {
 
 Implement methods:
 
-- `kind(&self) -> ActionKind` — categorise for dispatch routing
+- `kind(&self) -> ActionKind` — categorize for dispatch routing
 - `name(&self) -> &'static str` — human-readable name for undo/a11y
 - `requires_selection(&self) -> bool` — validation helper
 
@@ -151,8 +151,8 @@ mod tests {
 Create `tests/features/action.feature`:
 
 ```gherkin
-Feature: Action categorisation
-  Actions are categorised for correct dispatch routing.
+Feature: Action categorization
+  Actions are categorized for correct dispatch routing.
 
   Scenario: Document action kind
     Given the action DeleteSelection
@@ -174,7 +174,7 @@ Feature: Action categorisation
 Create `tests/action_bdd.rs`:
 
 ```rust
-//! BDD tests for Action categorisation.
+//! BDD tests for Action categorization.
 
 use gauss::model::{Action, ActionKind};
 use rstest::fixture;

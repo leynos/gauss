@@ -1,6 +1,6 @@
 # Gauss: Foundational Architecture & Guiding Principles
 
-*(Draft v0.1 — December 2025)*
+(Draft v0.1 — December 2025)
 
 This document defines an architectural “spine” for **Gauss**, a Rust/GPUI SVG
 illustration tool, designed to scale from the current proof-of-concept to
@@ -340,7 +340,7 @@ methods** rather than a trait, for the following reasons:
 
 - **Exhaustive matching**: All action variants can be matched at compile time,
   ensuring dispatch tables are complete.
-- **Serialisation**: Enums are trivially serialisable, enabling future macro
+- **Serialization**: Enums are trivially serializable, enabling future macro
   recording and playback.
 - **Simplicity**: No type erasure or dynamic dispatch complexity.
 
@@ -348,12 +348,12 @@ The `Action` enum lives in `src/model/action.rs` and is GPUI-independent for
 testability. Each variant carries only the data needed to describe the intent;
 actual execution is delegated to the command dispatch layer.
 
-Actions are categorised by `ActionKind`:
+Actions are categorized by `ActionKind`:
 
 - **Document**: Mutates document state; produces undoable Commands.
 - **Editor**: Mutates editor state (selection, viewport, tool).
 
-This categorisation enables the dispatcher to route actions appropriately.
+This categorization enables the dispatcher to route actions appropriately.
 
 ### 7.1 Command design
 

@@ -1,6 +1,6 @@
-Feature: Action categorisation
+Feature: Action categorization
 
-  Actions are categorised for correct dispatch routing. Document actions
+  Actions are categorized for correct dispatch routing. Document actions
   produce undoable commands; editor actions update selection, viewport,
   or tool state.
 

@@ -1,7 +1,7 @@
-//! Behaviour tests for Action categorisation.
+//! Behaviour tests for Action categorization.
 //!
 //! These tests use `rstest-bdd` to validate that actions are correctly
-//! categorised for dispatch routing.
+//! categorized for dispatch routing.
 
 use gauss::model::{Action, ActionKind};
 use rstest::fixture;
@@ -41,62 +41,56 @@ fn given_undo(world: &mut ActionWorld) {
     world.action = Some(Action::Undo);
 }
 
+// === Helper functions ===
+
+fn get_action(world: &ActionWorld, context: &str) -> TestSupportResult<Action> {
+    world
+        .action
+        .ok_or_else(|| TestSupportError::missing("action", context))
+}
+
+fn assert_kind(action: Action, expected: ActionKind) -> TestSupportResult<()> {
+    if action.kind() != expected {
+        return Err(TestSupportError::expectation(format!(
+            "Expected {action:?} to have {expected:?} kind, got {:?}",
+            action.kind()
+        )));
+    }
+    Ok(())
+}
+
+fn assert_requires_selection(action: Action, expected: bool) -> TestSupportResult<()> {
+    if action.requires_selection() != expected {
+        let msg = if expected {
+            format!("Expected {action:?} to require a selection")
+        } else {
+            format!("Expected {action:?} to not require a selection")
+        };
+        return Err(TestSupportError::expectation(msg));
+    }
+    Ok(())
+}
+
 // === Then steps ===
 
 #[then("its kind should be Document")]
 fn then_kind_is_document(world: &ActionWorld) -> TestSupportResult<()> {
-    let action = world
-        .action
-        .ok_or_else(|| TestSupportError::missing("action", "kind check"))?;
-    if action.kind() != ActionKind::Document {
-        return Err(TestSupportError::expectation(format!(
-            "Expected {:?} to have Document kind, got {:?}",
-            action,
-            action.kind()
-        )));
-    }
-    Ok(())
+    assert_kind(get_action(world, "kind check")?, ActionKind::Document)
 }
 
 #[then("its kind should be Editor")]
 fn then_kind_is_editor(world: &ActionWorld) -> TestSupportResult<()> {
-    let action = world
-        .action
-        .ok_or_else(|| TestSupportError::missing("action", "kind check"))?;
-    if action.kind() != ActionKind::Editor {
-        return Err(TestSupportError::expectation(format!(
-            "Expected {:?} to have Editor kind, got {:?}",
-            action,
-            action.kind()
-        )));
-    }
-    Ok(())
+    assert_kind(get_action(world, "kind check")?, ActionKind::Editor)
 }
 
 #[then("it should require a selection")]
 fn then_requires_selection(world: &ActionWorld) -> TestSupportResult<()> {
-    let action = world
-        .action
-        .ok_or_else(|| TestSupportError::missing("action", "selection check"))?;
-    if !action.requires_selection() {
-        return Err(TestSupportError::expectation(format!(
-            "Expected {action:?} to require a selection"
-        )));
-    }
-    Ok(())
+    assert_requires_selection(get_action(world, "selection check")?, true)
 }
 
 #[then("it should not require a selection")]
 fn then_does_not_require_selection(world: &ActionWorld) -> TestSupportResult<()> {
-    let action = world
-        .action
-        .ok_or_else(|| TestSupportError::missing("action", "selection check"))?;
-    if action.requires_selection() {
-        return Err(TestSupportError::expectation(format!(
-            "Expected {action:?} to not require a selection"
-        )));
-    }
-    Ok(())
+    assert_requires_selection(get_action(world, "selection check")?, false)
 }
 
 // === Scenario bindings ===

@@ -12,7 +12,7 @@
 //!
 //! - **Exhaustive matching**: All action variants can be matched exhaustively,
 //!   making dispatch tables complete and verifiable at compile time.
-//! - **Serialisation**: Enums are trivially serialisable, enabling future macro
+//! - **Serialization**: Enums are trivially serializable, enabling future macro
 //!   recording and playback (see roadmap §0.1.2).
 //! - **Simplicity**: No type erasure or dynamic dispatch complexity.
 //!
@@ -42,7 +42,7 @@
 //! assert!(action.requires_selection());
 //! ```
 
-/// Categorisation of actions for dispatch routing.
+/// Categorization of actions for dispatch routing.
 ///
 /// Actions are grouped by the type of state they affect, which determines
 /// how they are dispatched and whether they produce undoable commands.
