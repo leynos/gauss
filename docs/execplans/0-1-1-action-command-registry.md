@@ -1,4 +1,4 @@
-# Execution Plan: 0.1.1 Define Typed Action Trait
+# Execution Plan: 0.1.1 Define Typed Action Enum
 
 **Status**: Ready for implementation
 **Roadmap reference**: `docs/roadmap.md` §0.1.1

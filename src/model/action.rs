@@ -33,9 +33,9 @@
 //! DocChange / DocOp (atomic operations)
 //! ```
 //!
-//! # Example
+//! # Examples
 //!
-//! ```
+//! ```rust,no_run
 //! use gauss::model::{Action, ActionKind};
 //!
 //! let action = Action::DeleteSelection;
@@ -56,11 +56,12 @@ pub enum ActionKind {
     /// and are recorded in the undo history.
     Document,
 
-    /// Mutates editor state (selection, viewport, tool).
+    /// Mutates editor state (selection, viewport, tool, history navigation).
     ///
     /// Editor actions may or may not be undoable. Selection changes have
     /// their own history stack; viewport and tool changes are typically
-    /// not recorded.
+    /// not recorded. History navigation actions (Undo/Redo) traverse the
+    /// document history stack but do not themselves produce new undo entries.
     Editor,
 }
 
@@ -75,9 +76,9 @@ pub enum ActionKind {
 /// This enum uses `#[non_exhaustive]` to allow adding new action variants
 /// in future versions without breaking downstream code.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```
+/// ```rust,no_run
 /// use gauss::model::Action;
 ///
 /// // Actions can be matched exhaustively within this crate
@@ -140,9 +141,13 @@ impl Action {
     /// - [`ActionKind::Document`]: Requires command dispatch, produces undo entry
     /// - [`ActionKind::Editor`]: May update editor state directly
     ///
-    /// # Example
+    /// # Returns
     ///
-    /// ```
+    /// The [`ActionKind`] categorizing this action for dispatch routing.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
     /// use gauss::model::{Action, ActionKind};
     ///
     /// assert_eq!(Action::DeleteSelection.kind(), ActionKind::Document);
@@ -154,7 +159,7 @@ impl Action {
             // Document mutations require command dispatch
             Self::DeleteSelection => ActionKind::Document,
 
-            // Editor state changes (selection, tools, history)
+            // Editor state changes (selection, tools, history navigation)
             Self::SelectAll
             | Self::DeselectAll
             | Self::ActivatePenTool
@@ -173,12 +178,16 @@ impl Action {
     /// - Scripting API documentation
     /// - Command palette display
     ///
-    /// Note: These names will be replaced with localised strings when the
+    /// Note: These names will be replaced with localized strings when the
     /// i18n scaffolding (task 0.7) is implemented.
     ///
-    /// # Example
+    /// # Returns
     ///
-    /// ```
+    /// A static string containing the human-readable action name.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
     /// use gauss::model::Action;
     ///
     /// assert_eq!(Action::DeleteSelection.name(), "Delete Selection");
@@ -203,9 +212,13 @@ impl Action {
     /// nothing is selected, and should be rejected by the command dispatcher
     /// with an appropriate error.
     ///
-    /// # Example
+    /// # Returns
     ///
-    /// ```
+    /// `true` if this action requires a non-empty selection, `false` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
     /// use gauss::model::Action;
     ///
     /// assert!(Action::DeleteSelection.requires_selection());
@@ -258,7 +271,7 @@ mod tests {
         assert!(!action.name().is_empty());
     }
 
-    #[rstest]
+    #[test]
     fn delete_selection_requires_selection() {
         assert!(Action::DeleteSelection.requires_selection());
     }
@@ -274,9 +287,15 @@ mod tests {
         assert!(!action.requires_selection());
     }
 
-    #[rstest]
+    #[test]
     fn document_actions_are_all_accounted_for() {
-        // Ensure that any action requiring selection is a Document action
+        // Ensure that any action requiring selection is a Document action.
+        //
+        // NOTE: This list is intentionally hardcoded rather than generated.
+        // When adding a new Action variant, the developer must explicitly add
+        // it here, forcing consideration of the selection-requires-Document
+        // invariant. A compile error from an unmatched variant in the match
+        // arms above will remind you to update this test.
         let all_actions = [
             Action::DeleteSelection,
             Action::SelectAll,
@@ -298,7 +317,7 @@ mod tests {
         }
     }
 
-    #[rstest]
+    #[test]
     fn action_is_copy() {
         // Verify Action implements Copy (important for ergonomics)
         fn assert_copy<T: Copy>(_: T) {}
@@ -306,7 +325,7 @@ mod tests {
         assert_copy(Action::Undo);
     }
 
-    #[rstest]
+    #[test]
     fn action_kind_is_copy() {
         // Verify ActionKind implements Copy
         fn assert_copy<T: Copy>(_: T) {}
