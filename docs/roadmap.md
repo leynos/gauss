@@ -10,6 +10,40 @@ Each phase builds upon the last. Cross-cutting concerns—accessibility,
 localizability, performance, and pervasive scripting—are addressed from the
 start rather than retrofitted.
 
+## Guiding principles
+
+These principles from the [architecture document](gauss-architecture-design.md)
+are non-negotiable invariants. If a feature violates them, the feature is
+redesigned.
+
+1. **Everything is an Action (and therefore scriptable)**: All user-visible
+   behaviour must be representable as an Action → Command pipeline. UI,
+   scripting, and LLM control all invoke the same actions. If there is no
+   command, the feature does not exist.
+
+2. **Single source of truth: document state in the engine**: The document and
+   editor state (selection, tool mode, viewport) live in engine state, not in
+   the view layer. The view is a projection of state plus a dispatcher of
+   actions.
+
+3. **Deterministic geometry and rendering**: Given the same document and
+   viewport, Gauss produces the same scene every time, across platforms and
+   runs. Stable ordering of nodes, stable IDs, deterministic floating-point
+   strategy.
+
+4. **Accessibility is a first-class API surface**: Keyboard-only operation is
+   always supported. UI controls expose roles, labels, states, and actions.
+   Canvas interactions have keyboard equivalents where feasible. Accessibility
+   tree uses stable node IDs.
+
+5. **SVG first with reversible transforms**: SVG is the native format.
+   Round-tripping keeps SVG semantics intact. Non-SVG editor metadata is stored
+   in a safe, namespaced way. Export can strip metadata for web-ready SVG.
+
+6. **Platform abstraction at the edges**: All platform-specific behaviour
+   (dialogs, clipboard, filesystem, accessibility adapters) is isolated behind
+   a small platform boundary.
+
 ## Current state summary
 
 Phase 0 (proof-of-concept) is complete. The following capabilities are
@@ -35,6 +69,113 @@ implemented and tested:
 
 **Not yet implemented**: Shape tools, transform handles, layers panel, advanced
 styling, gradients, text, effects, symbols, scripting integration.
+
+______________________________________________________________________
+
+## 0. Architecture foundations
+
+**Goal**: Establish the architectural spine before broad feature work
+accelerates. These work items create the infrastructure that all subsequent
+phases depend upon. See architecture document §20.
+
+### 0.1. Action/Command registry
+
+- [ ] 0.1.1. Define typed Action trait.
+  - [ ] Actions represent user intent (e.g., "Delete Selection").
+  - [ ] Actions are dispatchable from UI, scripts, and tests.
+- [ ] 0.1.2. Implement Command dispatch.
+  - [ ] Commands are concrete, undoable state changes.
+  - [ ] Commands are serialisable for macro recording (optional initially).
+- [ ] 0.1.3. Create key context system.
+  - [ ] Actions bind to keyboard shortcuts via key contexts.
+  - [ ] Extend existing `KEY_CONTEXT` pattern from Phase 0.
+
+### 0.2. Core EngineState
+
+- [ ] 0.2.1. Consolidate engine state.
+  - [ ] Unify document, selection, viewport, and resources into `EngineState`.
+  - [ ] Ensure single source of truth per guiding principle §2.
+- [ ] 0.2.2. Implement stable ID generation.
+  - [ ] Use generational IDs (`slotmap` or similar). See architecture §5.1.
+  - [ ] Ensure IDs are stable across frames for AccessKit.
+- [ ] 0.2.3. Define resource stores.
+  - [ ] `StyleStore`, `ResourceStore` for gradients, patterns, symbols.
+  - [ ] Prepare for Phase 4 colour and effects features.
+
+### 0.3. History and grouping
+
+- [ ] 0.3.1. Audit existing undo/redo implementation.
+  - [ ] Verify multi-step interactions create single undo entries.
+  - [ ] Test history clear on document open. See architecture §7.2.
+- [ ] 0.3.2. Implement command grouping API.
+  - [ ] Begin/end transaction for compound operations.
+  - [ ] Integrate with GPUI Component `History`.
+- [ ] 0.3.3. Add inverse command generation.
+  - [ ] All commands produce `CommandInverse` for undo. See architecture §7.1.
+
+### 0.4. SVG load/save and metadata policy
+
+- [ ] 0.4.1. Define Gauss metadata namespace.
+  - [ ] Use `gauss:` prefixed attributes or `<metadata>` block.
+  - [ ] Document namespace in ADR. See architecture §10.1.
+- [ ] 0.4.2. Implement metadata round-trip.
+  - [ ] Editor-only data survives load/save cycle.
+  - [ ] Add golden tests for round-trip fidelity.
+- [ ] 0.4.3. Implement web-ready export.
+  - [ ] Strip all Gauss metadata on export.
+  - [ ] Produce valid, minimal SVG.
+
+### 0.5. Tool framework
+
+- [ ] 0.5.1. Define Tool trait.
+  - [ ] Tools are FSMs driven by input events. See architecture §6.1.
+  - [ ] Tools emit Commands, not direct state mutations.
+- [ ] 0.5.2. Refactor existing draw mode to Tool trait.
+  - [ ] Extract `PenTool` FSM from current implementation.
+  - [ ] Maintain existing functionality.
+- [ ] 0.5.3. Refactor existing manipulate mode to Tool trait.
+  - [ ] Extract `SelectTool` FSM.
+  - [ ] Handle selection, drag, and transform states.
+- [ ] 0.5.4. Create shared hit-test service.
+  - [ ] Deterministic hit testing for selection and hover.
+  - [ ] Prepare for R-tree/BVH optimisation. See architecture §6.2.
+
+### 0.6. A11yService skeleton
+
+- [ ] 0.6.1. Create `A11yService` structure.
+  - [ ] Build AccessKit tree from UI and document state.
+  - [ ] Push incremental updates. See architecture §11.1.
+- [ ] 0.6.2. Wire existing stable node IDs.
+  - [ ] Connect pre-defined IDs in `accessibility.rs` to AccessKit.
+  - [ ] Expose roles and labels for window chrome.
+- [ ] 0.6.3. Map AccessKit action requests to Gauss Actions.
+  - [ ] Accessibility actions trigger the same command pipeline as UI.
+  - [ ] Ensure keyboard-only operation parity.
+
+### 0.7. i18n scaffolding
+
+- [ ] 0.7.1. Create i18n module.
+  - [ ] Define message catalog structure.
+  - [ ] Evaluate Fluent vs simpler keyed system. See architecture §12.
+- [ ] 0.7.2. Extract UI strings.
+  - [ ] Replace inline strings with resource IDs.
+  - [ ] Start with window chrome and tool names.
+- [ ] 0.7.3. Localise command names.
+  - [ ] Command names are user-visible (undo descriptions, scripting).
+  - [ ] Ensure locale-aware formatting for numbers.
+
+### 0.8. Widget capability audit
+
+- [ ] 0.8.1. List required controls for Phase 1–2.
+  - [ ] Toolbars, panels, layers, properties, colour pickers.
+  - [ ] Document each control's requirements.
+- [ ] 0.8.2. Map controls to gpui-component widgets.
+  - [ ] Identify which widgets exist and are sufficient.
+  - [ ] Flag controls needing custom implementation.
+- [ ] 0.8.3. Plan custom widget development.
+  - [ ] Bezier handle overlays (canvas-adjacent).
+  - [ ] Gradient editor (Phase 4, may defer).
+  - [ ] Ensure consistent focus, keyboard, and a11y behaviour.
 
 ______________________________________________________________________
 
