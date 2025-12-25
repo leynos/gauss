@@ -15,6 +15,8 @@
 //! - **Serialization**: Enums are trivially serializable, enabling future macro
 //!   recording and playback (see roadmap §0.1.2).
 //! - **Simplicity**: No type erasure or dynamic dispatch complexity.
+//! - **Hashable**: Both [`Action`] and [`ActionKind`] derive `Hash`, enabling
+//!   use as map keys for dispatch table caching and keybinding lookups.
 //!
 //! # Relationship to Commands
 //!
