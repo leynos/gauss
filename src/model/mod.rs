@@ -7,6 +7,7 @@
 //! It is intentionally independent of GPUI so it can be unit tested and reused
 //! by alternative frontends.
 
+pub mod action;
 pub(crate) mod colour;
 pub mod document;
 pub(crate) mod geometry;
@@ -16,6 +17,7 @@ pub mod resize_anchor;
 pub mod selection;
 pub mod viewport;
 
+pub use action::{Action, ActionKind};
 pub(crate) use colour::{format_hex_rgb, parse_hex_rgb};
 pub use document::Document;
 pub(crate) use geometry::{CubicSegment, cubic_point, shape_world_bounds};
