@@ -322,11 +322,38 @@ Gauss should treat **Commands** as the unit of truth for edits, enabling:
 
 - undo/redo
 - script execution
-- deterministic tests (“apply a sequence of commands”)
+- deterministic tests ("apply a sequence of commands")
 - macro recording (later)
 
 The PoC notes undo/redo uses GPUI Component `History` for grouping.
 【111†using-gpui-and-gpui-component.md】
+
+### 7.0 Action layer (implemented)
+
+Actions represent user intent ("Delete Selection", "Undo") and form the public
+API surface for all editor behaviour. They are the entry point for UI, scripts,
+and tests. Actions are dispatched through a command system (§7.1) to produce
+undoable state mutations.
+
+**Design decision (2025-12):** Actions are implemented as an **enum with
+methods** rather than a trait, for the following reasons:
+
+- **Exhaustive matching**: All action variants can be matched at compile time,
+  ensuring dispatch tables are complete.
+- **Serialisation**: Enums are trivially serialisable, enabling future macro
+  recording and playback.
+- **Simplicity**: No type erasure or dynamic dispatch complexity.
+
+The `Action` enum lives in `src/model/action.rs` and is GPUI-independent for
+testability. Each variant carries only the data needed to describe the intent;
+actual execution is delegated to the command dispatch layer.
+
+Actions are categorised by `ActionKind`:
+
+- **Document**: Mutates document state; produces undoable Commands.
+- **Editor**: Mutates editor state (selection, viewport, tool).
+
+This categorisation enables the dispatcher to route actions appropriately.
 
 ### 7.1 Command design
 
