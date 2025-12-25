@@ -41,6 +41,21 @@ fn given_undo(world: &mut ActionWorld) {
     world.action = Some(Action::Undo);
 }
 
+#[given("the action Redo")]
+fn given_redo(world: &mut ActionWorld) {
+    world.action = Some(Action::Redo);
+}
+
+#[given("the action DeselectAll")]
+fn given_deselect_all(world: &mut ActionWorld) {
+    world.action = Some(Action::DeselectAll);
+}
+
+#[given("the action ActivateSelectTool")]
+fn given_activate_select_tool(world: &mut ActionWorld) {
+    world.action = Some(Action::ActivateSelectTool);
+}
+
 // === Helper functions ===
 
 fn get_action(world: &ActionWorld, context: &str) -> TestSupportResult<Action> {
@@ -137,5 +152,53 @@ fn action_requires_selection(world: ActionWorld) {
     name = "Action does not require selection"
 )]
 fn action_does_not_require_selection(world: ActionWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/action.feature",
+    name = "Editor action kind for redo"
+)]
+fn editor_action_kind_for_redo(world: ActionWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/action.feature",
+    name = "Editor action kind for deselection"
+)]
+fn editor_action_kind_for_deselection(world: ActionWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/action.feature",
+    name = "Editor action kind for select tool"
+)]
+fn editor_action_kind_for_select_tool(world: ActionWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/action.feature",
+    name = "DeselectAll does not require selection"
+)]
+fn deselect_all_does_not_require_selection(world: ActionWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/action.feature",
+    name = "ActivateSelectTool does not require selection"
+)]
+fn activate_select_tool_does_not_require_selection(world: ActionWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/action.feature",
+    name = "Redo does not require selection"
+)]
+fn redo_does_not_require_selection(world: ActionWorld) {
     let _ = world;
 }

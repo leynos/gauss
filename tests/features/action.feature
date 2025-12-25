@@ -20,10 +20,34 @@ Feature: Action categorization
     Given the action Undo
     Then its kind should be Editor
 
+  Scenario: Editor action kind for redo
+    Given the action Redo
+    Then its kind should be Editor
+
+  Scenario: Editor action kind for deselection
+    Given the action DeselectAll
+    Then its kind should be Editor
+
+  Scenario: Editor action kind for select tool
+    Given the action ActivateSelectTool
+    Then its kind should be Editor
+
   Scenario: Action requires selection
     Given the action DeleteSelection
     Then it should require a selection
 
   Scenario: Action does not require selection
     Given the action SelectAll
+    Then it should not require a selection
+
+  Scenario: DeselectAll does not require selection
+    Given the action DeselectAll
+    Then it should not require a selection
+
+  Scenario: ActivateSelectTool does not require selection
+    Given the action ActivateSelectTool
+    Then it should not require a selection
+
+  Scenario: Redo does not require selection
+    Given the action Redo
     Then it should not require a selection

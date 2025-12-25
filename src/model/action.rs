@@ -1,7 +1,7 @@
 //! User-intent Actions for the Gauss editor.
 //!
 //! Actions represent what the user wants to do (e.g., "delete selection")
-//! without specifying how. Actions are despatchable from UI, scripts, and
+//! without specifying how. Actions are dispatchable from UI, scripts, and
 //! tests. They are the public API surface for all editor behaviour.
 //!
 //! Actions are GPUI-independent for testability and scripting.
