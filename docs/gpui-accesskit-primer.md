@@ -7,13 +7,13 @@ The plan hinges on integrating **AccessKit** into GPUI, implementing proper
 text semantics, and proving the result on NVDA/JAWS/Narrator (Windows),
 VoiceOver (macOS) and Orca (Linux).
 
----
+______________________________________________________________________
 
 ## Executive summary
 
 - **Feasibility:** High, with caveats. AccessKit already ships platform adapters
-  for **Windows (UIA)**, **macOS (NSAccessibility)** and **Unix (AT‑SPI)**. It's
-  explicitly designed so immediate‑mode toolkits (like GPUI) can expose an
+  for **Windows (UIA)**, **macOS (NSAccessibility)** and **Unix (AT‑SPI)**.
+  It's explicitly designed so immediate‑mode toolkits (like GPUI) can expose an
   accessibility tree with **stable node IDs**. ([GitHub][1])
 - **Biggest technical risk:** **Text**. AccessKit's adapters support
   single/multi‑line text inputs today; **rich/hypertext** are not yet supported
@@ -21,19 +21,19 @@ VoiceOver (macOS) and Orca (Linux).
   range, embedded objects), constrain features for v1 or fund upstream work.
   ([GitHub][1])
 - **Why now:** Zed/GPUI currently lacks practical Windows screen‑reader support
-  (recent user report: "absolutely inaccessible"), so shipping without this work
-  is not an option. ([GitHub][2])
+  (recent user report: "absolutely inaccessible"), so shipping without this
+  work is not an option. ([GitHub][2])
 - **Tooling reality:** Accessibility (a11y) does not come for free. The
   GPUI↔AccessKit bridge must be built and maintained, then verified with
   OS‑level tools: **Accessibility Insights/Inspect** (Windows), **Accessibility
-  Inspector/VoiceOver** (macOS), **Accerciser/Orca** (Linux).
-  ([Accessibility Insights][3])
+  Inspector/VoiceOver** (macOS), **Accerciser/Orca** (Linux). ([Accessibility
+  Insights][3])
 
 Bottom line: with a focused integration, disciplined text support, and a
 rigorous test matrix, **screen reader + limited mobility** requirements can be
 met on desktop while keeping GPUI's performance virtues.
 
----
+______________________________________________________________________
 
 ## What "full" accessibility means here (acceptance criteria)
 
@@ -41,14 +41,14 @@ met on desktop while keeping GPUI's performance virtues.
 
 - **Windows:** All interactive widgets expose correct **UIA roles**, names,
   states, and actions; text controls implement **TextPattern** (and
-  **TextEditPattern** when editing), including caret movement, selection ranges,
-  word/line navigation and text‑changed events. Verified on **NVDA**, **JAWS**,
-  and **Narrator** with **Inspect**/**Accessibility Insights**.
+  **TextEditPattern** when editing), including caret movement, selection
+  ranges, word/line navigation and text‑changed events. Verified on **NVDA**,
+  **JAWS**, and **Narrator** with **Inspect**/**Accessibility Insights**.
   ([Microsoft Learn][4])
 - **macOS:** Widgets expose **NSAccessibility** roles/attributes; text
   implements the macOS text attributes and notifications VoiceOver expects.
-  Verified with **VoiceOver** and **Accessibility Inspector**.
-  ([Apple Developer][5])
+  Verified with **VoiceOver** and **Accessibility Inspector**. ([Apple
+  Developer][5])
 - **Linux:** Widgets expose **AT‑SPI** roles/states/actions; text implements
   **Atspi.Text** interface with selections and text attributes. Verified with
   **Orca** and **Accerciser**. ([gnome.pages.gitlab.gnome.org][6])
@@ -69,7 +69,7 @@ For procurement‑grade compliance in Europe, align with **EN 301 549** for
 "non‑web software". It references WCAG but explicitly covers native desktop
 software too. ([ETSI][9])
 
----
+______________________________________________________________________
 
 ## Impact of each proposed step
 
@@ -98,9 +98,9 @@ Below are **scope**, **risks**, and **proof points** assessments per step.
 **Notable risks:**
 
 - **Windowing:** GPUI does not use winit by default; integrate AccessKit's
-  adapters directly (not accesskit_winit). This is normal: the
-  Windows adapter hooks WM_GETOBJECT and focus, macOS adapter subclasses NSView
-  or forwards focus, Unix adapter binds AT‑SPI over D‑Bus. ([GitHub][10])
+  adapters directly (not accesskit_winit). This is normal: the Windows adapter
+  hooks WM_GETOBJECT and focus, macOS adapter subclasses NSView or forwards
+  focus, Unix adapter binds AT‑SPI over D‑Bus. ([GitHub][10])
 - **Threading & event order:** UIA demands initialisation before responding to
   WM_GETOBJECT; the Windows adapter provides a handle_wm_getobject flow and
   update_if_active/update_window_focus_state to ensure correctness.
@@ -118,7 +118,7 @@ Below are **scope**, **risks**, and **proof points** assessments per step.
 
 **Sizing:** Medium–Large (core platform work across three OSes).
 
----
+______________________________________________________________________
 
 ### 2) Prioritize text controls (caret, selection, range ops)
 
@@ -140,8 +140,7 @@ Below are **scope**, **risks**, and **proof points** assessments per step.
   inputs but **not rich/hypertext** yet. For rich text editing (attributes per
   span, embedded links, code folding), scope features or extend AccessKit's
   schema/adapter support. For standard form inputs, the current support is
-  sufficient.
-  ([GitHub][1])
+  sufficient. ([GitHub][1])
 
 **Proof points:**
 
@@ -152,7 +151,7 @@ Below are **scope**, **risks**, and **proof points** assessments per step.
 
 **Sizing:** Large for rich text; Medium for standard text inputs.
 
----
+______________________________________________________________________
 
 ### 3) Audit colour/contrast and theming
 
@@ -173,7 +172,7 @@ Below are **scope**, **risks**, and **proof points** assessments per step.
 
 **Sizing:** Small–Medium; mainly design tokens + a few component tweaks.
 
----
+______________________________________________________________________
 
 ### 4) Test on real AT, not just inspectors
 
@@ -197,7 +196,7 @@ Below are **scope**, **risks**, and **proof points** assessments per step.
 
 **Sizing:** Ongoing; initial setup Medium.
 
----
+______________________________________________________________________
 
 ### 5) Publish an a11y support matrix (component + framework)
 
@@ -218,7 +217,7 @@ Below are **scope**, **risks**, and **proof points** assessments per step.
 
 **Sizing:** Small for the doc; Medium to keep green as components evolve.
 
----
+______________________________________________________________________
 
 ## Architecture notes and gotchas
 
@@ -237,7 +236,7 @@ Below are **scope**, **risks**, and **proof points** assessments per step.
   **platform adapters directly**, not via accesskit_winit. (There is an
   accesskit_winit crate, but it's for winit‑based apps.) ([GitHub][10])
 
----
+______________________________________________________________________
 
 ## Example: Windows adapter wiring (sketch)
 
@@ -286,20 +285,20 @@ impl A11y {
 }
 ```
 
-See Adapter::new, handle_wm_getobject, update_if_active, update_window_focus_state
-in the Windows adapter. macOS (accesskit_macos) and Linux (accesskit_unix)
-expose similar "adapter + updates" patterns for NSAccessibility and AT‑SPI
-respectively. ([Docs.rs][11])
+See Adapter::new, handle_wm_getobject, update_if_active,
+update_window_focus_state in the Windows adapter. macOS (accesskit_macos) and
+Linux (accesskit_unix) expose similar "adapter + updates" patterns for
+NSAccessibility and AT‑SPI respectively. ([Docs.rs][11])
 
----
+______________________________________________________________________
 
 ## Risks to explicitly budget for
 
 1. **Rich text/editor semantics**
    AccessKit's own docs state rich text/hypertext aren't yet implemented in
    adapters. If Marrakesh Express requires attribute runs, in‑line widgets,
-   hyperlinks, or code‑editor semantics, expect upstream work and extra testing.
-   Otherwise, constrain to plain text for v1. ([GitHub][1])
+   hyperlinks, or code‑editor semantics, expect upstream work and extra
+   testing. Otherwise, constrain to plain text for v1. ([GitHub][1])
 
 2. **Windows parity pressure**
    Windows users are vocal (rightly). Zed's current Windows a11y issue shows
@@ -311,7 +310,7 @@ respectively. ([Docs.rs][11])
    ordering). The adapters smooth many edges, but the test matrix ensures
    compliance. ([Docs.rs][12])
 
----
+______________________________________________________________________
 
 ## "Done means done": concrete acceptance tests
 
@@ -338,7 +337,7 @@ respectively. ([Docs.rs][11])
   - Longbridge components table shows complete mappings and notes any temporary
     exceptions (with release IDs).
 
----
+______________________________________________________________________
 
 ## Dependencies & references (why this isn't pie‑in‑the‑sky)
 
@@ -352,12 +351,12 @@ respectively. ([Docs.rs][11])
 - **Zed Windows a11y status:** recent issue describing real‑world lack of
   screen‑reader support—the baseline to beat. ([GitHub][2])
 - **Text patterns & inspectors:** official Microsoft UIA text pattern docs;
-  Apple/Orca docs; Accessibility Insights/Inspect/Accerciser usage.
-  ([Microsoft Learn][4])
+  Apple/Orca docs; Accessibility Insights/Inspect/Accerciser usage. ([Microsoft
+  Learn][4])
 - **Standards:** WCAG 2.2 (focus order etc.) and EN 301 549 for non‑web
   software. ([W3C][18])
 
----
+______________________________________________________________________
 
 ## Benefits
 
@@ -369,7 +368,7 @@ respectively. ([Docs.rs][11])
 - **Future‑proofing:** When AccessKit gains richer text/hypertext, the GPUI
   bridge simply **emits more semantics**; no need to rethink the UI.
 
----
+______________________________________________________________________
 
 ## Suggested next moves (concrete, bounded)
 
@@ -386,21 +385,37 @@ respectively. ([Docs.rs][11])
 Treat this as foundational infrastructure, not "nice to have". Do it well once;
 reap the benefits release after release.
 
-[1]: https://github.com/AccessKit/accesskit "GitHub - AccessKit/accesskit: Accessibility infrastructure for UI toolkits"
-[2]: https://github.com/zed-industries/zed/issues/41138?utm_source=chatgpt.com "Windows: Screen reader accessibility missing completely"
-[3]: https://accessibilityinsights.io/docs/windows/overview/?utm_source=chatgpt.com "Accessibility Insights for Windows"
-[4]: https://learn.microsoft.com/en-us/dotnet/framework/ui-automation/ui-automation-textpattern-overview?utm_source=chatgpt.com "UI Automation TextPattern Overview - .NET Framework"
-[5]: https://developer.apple.com/documentation/accessibility/voiceover?utm_source=chatgpt.com "VoiceOver | Apple Developer Documentation"
-[6]: https://gnome.pages.gitlab.gnome.org/at-spi2-core/libatspi/iface.Text.html?utm_source=chatgpt.com "Atspi.Text"
-[7]: https://www.w3.org/WAI/WCAG21/Understanding/focus-order.html?utm_source=chatgpt.com "Understanding Success Criterion 2.4.3: Focus Order | WAI"
-[8]: https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-implementingtextandtextrange?utm_source=chatgpt.com "Text and TextRange Control Patterns - Win32 apps"
-[9]: https://www.etsi.org/human-factors-accessibility/en-301-549-v3-the-harmonized-european-standard-for-ict-accessibility?utm_source=chatgpt.com "EN 301 549 V3 the harmonized European Standard for ICT ..."
-[10]: https://github.com/rust-windowing/winit/issues/3535?utm_source=chatgpt.com "[Research] Can we use GPUI in the winit library? #3535"
-[11]: https://docs.rs/accesskit_windows/latest/accesskit_windows/struct.Adapter.html "Adapter in accesskit_windows - Rust"
-[12]: https://docs.rs/accesskit_macos "accesskit_macos - Rust"
-[13]: https://doc.servo.org/accesskit_unix/atspi/index.html?utm_source=chatgpt.com "accesskit_unix::atspi - Rust"
-[14]: https://accessibilityinsights.io/docs/windows/getstarted/inspect/?utm_source=chatgpt.com "Inspect in Accessibility Insights for Windows"
-[15]: https://developer.apple.com/documentation/accessibility/accessibility-inspector?utm_source=chatgpt.com "Accessibility Inspector | Apple Developer Documentation"
-[16]: https://help.gnome.org/users/orca/?utm_source=chatgpt.com "Orca Screen Reader"
-[17]: https://zed.dev/blog/gpui-ownership "Ownership and data flow in GPUI — Zed's Blog"
-[18]: https://www.w3.org/WAI/WCAG22/quickref/?utm_source=chatgpt.com "How to Meet WCAG (Quick Reference)"
+[1]: <https://github.com/AccessKit/accesskit> "GitHub - AccessKit/accesskit:
+Accessibility infrastructure for UI toolkits" [2]:
+<https://github.com/zed-industries/zed/issues/41138?utm_source=chatgpt.com>
+"Windows: Screen reader accessibility missing completely" [3]:
+<https://accessibilityinsights.io/docs/windows/overview/?utm_source=chatgpt.com>
+"Accessibility Insights for Windows" [4]:
+<https://learn.microsoft.com/en-us/dotnet/framework/ui-automation/ui-automation-textpattern-overview?utm_source=chatgpt.com>
+ "UI Automation TextPattern Overview - .NET Framework" [5]:
+<https://developer.apple.com/documentation/accessibility/voiceover?utm_source=chatgpt.com>
+ "VoiceOver | Apple Developer Documentation" [6]:
+<https://gnome.pages.gitlab.gnome.org/at-spi2-core/libatspi/iface.Text.html?utm_source=chatgpt.com>
+ "Atspi.Text" [7]:
+<https://www.w3.org/WAI/WCAG21/Understanding/focus-order.html?utm_source=chatgpt.com>
+ "Understanding Success Criterion 2.4.3: Focus Order | WAI" [8]:
+<https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-implementingtextandtextrange?utm_source=chatgpt.com>
+ "Text and TextRange Control Patterns - Win32 apps" [9]:
+<https://www.etsi.org/human-factors-accessibility/en-301-549-v3-the-harmonized-european-standard-for-ict-accessibility?utm_source=chatgpt.com>
+ "EN 301 549 V3 the harmonized European Standard for ICT …" [10]:
+<https://github.com/rust-windowing/winit/issues/3535?utm_source=chatgpt.com>
+"[Research] Can we use GPUI in the winit library? #3535" [11]:
+<https://docs.rs/accesskit_windows/latest/accesskit_windows/struct.Adapter.html>
+"Adapter in accesskit_windows - Rust" [12]: <https://docs.rs/accesskit_macos>
+"accesskit_macos - Rust" [13]:
+<https://doc.servo.org/accesskit_unix/atspi/index.html?utm_source=chatgpt.com>
+"accesskit_unix::atspi - Rust" [14]:
+<https://accessibilityinsights.io/docs/windows/getstarted/inspect/?utm_source=chatgpt.com>
+ "Inspect in Accessibility Insights for Windows" [15]:
+<https://developer.apple.com/documentation/accessibility/accessibility-inspector?utm_source=chatgpt.com>
+ "Accessibility Inspector | Apple Developer Documentation" [16]:
+<https://help.gnome.org/users/orca/?utm_source=chatgpt.com> "Orca Screen Reader"
+[17]: <https://zed.dev/blog/gpui-ownership> "Ownership and data flow in GPUI —
+Zed's Blog" [18]:
+<https://www.w3.org/WAI/WCAG22/quickref/?utm_source=chatgpt.com> "How to Meet
+WCAG (Quick Reference)"
