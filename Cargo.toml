@@ -17,8 +17,8 @@ uuid = { version = "1.19.0", features = ["v4"] }
 [dev-dependencies]
 gpui = { version = "0.2.2", features = ["test-support"] }
 rstest = "0.26.1"
-rstest-bdd = "0.2.0"
-rstest-bdd-macros = "0.2.0"
+rstest-bdd = "0.3.0"
+rstest-bdd-macros = "0.3.0"
 test_support = { path = "crates/test_support" }
 
 [features]
