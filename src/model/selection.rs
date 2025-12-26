@@ -54,10 +54,38 @@ impl Selection {
         Self { items: Vec::new() }
     }
 
+    /// Return whether the selection is empty.
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
     /// Return whether the selection contains `item`.
     #[must_use]
     pub fn contains(&self, item: &SelItem) -> bool {
         self.items.iter().any(|i| i == item)
+    }
+
+    /// Toggle the presence of `item` in the selection.
+    ///
+    /// If `item` is already selected, it is removed. Otherwise, it is added.
+    pub fn toggle(&mut self, item: SelItem) {
+        if let Some(pos) = self.items.iter().position(|existing| existing == &item) {
+            self.items.remove(pos);
+        } else {
+            self.items.push(item);
+        }
+    }
+
+    /// Return an iterator over selected shape IDs.
+    ///
+    /// Only returns IDs from `SelItem::Shape` variants; anchors, handles, and
+    /// segments are filtered out.
+    pub fn selected_shapes(&self) -> impl Iterator<Item = ShapeId> + '_ {
+        self.items.iter().filter_map(|item| match item {
+            SelItem::Shape(id) => Some(*id),
+            _ => None,
+        })
     }
 }
 

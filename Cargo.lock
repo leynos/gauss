@@ -2173,6 +2173,7 @@ dependencies = [
  "rstest-bdd",
  "rstest-bdd-macros",
  "test_support",
+ "thiserror 2.0.17",
  "uuid",
 ]
 

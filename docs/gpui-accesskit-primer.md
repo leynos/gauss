@@ -385,21 +385,30 @@ ______________________________________________________________________
 Treat this as foundational infrastructure, not "nice to have". Do it well once;
 reap the benefits release after release.
 
-[1]: https://github.com/AccessKit/accesskit "AccessKit on GitHub"
-[2]: https://github.com/zed-industries/zed/issues/41138 "Windows screen reader accessibility issue"
-[3]: https://accessibilityinsights.io/docs/windows/overview/ "Accessibility Insights for Windows"
-[4]: https://learn.microsoft.com/en-us/dotnet/framework/ui-automation/ui-automation-textpattern-overview "UI Automation TextPattern Overview"
-[5]: https://developer.apple.com/documentation/accessibility/voiceover "VoiceOver documentation"
-[6]: https://gnome.pages.gitlab.gnome.org/at-spi2-core/libatspi/iface.Text.html "Atspi.Text"
-[7]: https://www.w3.org/WAI/WCAG21/Understanding/focus-order.html "WCAG Focus Order"
-[8]: https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-implementingtextandtextrange "Text and TextRange Control Patterns"
-[9]: https://www.etsi.org/human-factors-accessibility/en-301-549-v3-the-harmonized-european-standard-for-ict-accessibility "EN 301 549"
-[10]: https://github.com/rust-windowing/winit/issues/3535 "GPUI and winit discussion"
-[11]: https://docs.rs/accesskit_windows/latest/accesskit_windows/struct.Adapter.html "accesskit_windows Adapter"
-[12]: https://docs.rs/accesskit_macos "accesskit_macos"
-[13]: https://doc.servo.org/accesskit_unix/atspi/index.html "accesskit_unix::atspi"
-[14]: https://accessibilityinsights.io/docs/windows/getstarted/inspect/ "Accessibility Insights Inspect"
-[15]: https://developer.apple.com/documentation/accessibility/accessibility-inspector "Accessibility Inspector"
-[16]: https://help.gnome.org/users/orca/ "Orca Screen Reader"
-[17]: https://zed.dev/blog/gpui-ownership "GPUI Ownership - Zed Blog"
-[18]: https://www.w3.org/WAI/WCAG22/quickref/ "How to Meet WCAG"
+[1]: <https://github.com/AccessKit/accesskit> "AccessKit on GitHub" [2]:
+<https://github.com/zed-industries/zed/issues/41138> "Windows screen reader
+accessibility issue" [3]:
+<https://accessibilityinsights.io/docs/windows/overview/> "Accessibility Insights
+for Windows" [4]:
+<https://learn.microsoft.com/en-us/dotnet/framework/ui-automation/ui-automation-textpattern-overview>
+ "UI Automation TextPattern Overview" [5]:
+<https://developer.apple.com/documentation/accessibility/voiceover> "VoiceOver
+documentation" [6]:
+<https://gnome.pages.gitlab.gnome.org/at-spi2-core/libatspi/iface.Text.html>
+"Atspi.Text" [7]: <https://www.w3.org/WAI/WCAG21/Understanding/focus-order.html>
+"WCAG Focus Order" [8]:
+<https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-implementingtextandtextrange>
+ "Text and TextRange Control Patterns" [9]:
+<https://www.etsi.org/human-factors-accessibility/en-301-549-v3-the-harmonized-european-standard-for-ict-accessibility>
+ "EN 301 549" [10]: <https://github.com/rust-windowing/winit/issues/3535> "GPUI
+and winit discussion" [11]:
+<https://docs.rs/accesskit_windows/latest/accesskit_windows/struct.Adapter.html>
+"accesskit_windows Adapter" [12]: <https://docs.rs/accesskit_macos>
+"accesskit_macos" [13]: <https://doc.servo.org/accesskit_unix/atspi/index.html>
+"accesskit_unix::atspi" [14]:
+<https://accessibilityinsights.io/docs/windows/getstarted/inspect/>
+"Accessibility Insights Inspect" [15]:
+<https://developer.apple.com/documentation/accessibility/accessibility-inspector>
+"Accessibility Inspector" [16]: <https://help.gnome.org/users/orca/> "Orca Screen
+Reader" [17]: <https://zed.dev/blog/gpui-ownership> "GPUI Ownership - Zed Blog"
+[18]: <https://www.w3.org/WAI/WCAG22/quickref/> "How to Meet WCAG"

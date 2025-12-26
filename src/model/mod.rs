@@ -9,6 +9,7 @@
 
 pub mod action;
 pub(crate) mod colour;
+pub mod command;
 pub mod document;
 pub(crate) mod geometry;
 pub mod ops;
@@ -19,6 +20,7 @@ pub mod viewport;
 
 pub use action::{Action, ActionKind};
 pub(crate) use colour::{format_hex_rgb, parse_hex_rgb};
+pub use command::{Command, CommandError, CommandInverse, DeletedShape, prepare_command};
 pub use document::Document;
 pub(crate) use geometry::{CubicSegment, cubic_point, shape_world_bounds};
 pub use ops::{DocChange, DocOp};
