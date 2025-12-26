@@ -130,14 +130,15 @@ fn prepare_delete_selection_succeeds_with_selection(
         &selection_with_first_shape,
     );
 
-    assert!(result.is_ok());
     let cmd = result.expect("prepare_command should succeed");
-    match cmd {
-        Command::DeleteShapes { targets } => {
-            assert_eq!(targets.len(), 1);
-            assert_eq!(targets.first().expect("should have one target").index, 0);
-        }
-        _ => panic!("expected DeleteShapes command"),
+    assert!(
+        matches!(cmd, Command::DeleteShapes { .. }),
+        "expected DeleteShapes command"
+    );
+
+    if let Command::DeleteShapes { targets } = cmd {
+        assert_eq!(targets.len(), 1);
+        assert_eq!(targets.first().expect("should have one target").index, 0);
     }
 }
 

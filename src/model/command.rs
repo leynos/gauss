@@ -318,10 +318,17 @@ fn prepare_delete_selection(
         let Some(index) = doc.find_index(id) else {
             return Err(CommandError::ShapeNotFound(id));
         };
-        // find_index returned Some, so index is valid; use .get() for clippy
-        let Some(shape) = doc.shapes.get(index).cloned() else {
-            return Err(CommandError::ShapeNotFound(id));
-        };
+        // find_index returned Some, so index is valid; use .get().expect() to
+        // signal programmer bug (not user error) if invariant is violated
+        #[expect(
+            clippy::expect_used,
+            reason = "find_index guarantees valid index; panic signals logic bug"
+        )]
+        let shape = doc
+            .shapes
+            .get(index)
+            .expect("find_index guarantees valid index")
+            .clone();
         targets.push(DeletedShape { index, shape });
     }
 
