@@ -80,9 +80,9 @@ phases depend upon. See architecture document §20.
 
 ### 0.1. Action/Command registry
 
-- [ ] 0.1.1. Define typed Action trait.
-  - [ ] Actions represent user intent (e.g., "Delete Selection").
-  - [ ] Actions are dispatchable from UI, scripts, and tests.
+- [x] 0.1.1. Define typed Action enum.
+  - [x] Actions represent user intent (e.g., "Delete Selection").
+  - [x] Actions are dispatchable from UI, scripts, and tests.
 - [ ] 0.1.2. Implement Command dispatch.
   - [ ] Commands are concrete, undoable state changes.
   - [ ] Commands are serialisable for macro recording (optional initially).
