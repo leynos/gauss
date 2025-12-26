@@ -4,13 +4,12 @@
 //! Actions to undoable document mutations.
 
 use gauss::model::{
-    Action, Anchor, Command, CommandError, CommandInverse, Document, PaintStyle, PathGeom, Rgba,
-    SegmentKind, SelItem, Selection, Shape, ShapeId, Vec2, prepare_command,
+    Action, Command, CommandError, CommandInverse, Document, SelItem, Selection, prepare_command,
 };
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
+use test_support::shapes::{sample_shape, shape_id};
 use test_support::{TestSupportError, TestSupportResult};
-use uuid::Uuid;
 
 /// World state for command BDD tests.
 #[derive(Default)]
@@ -24,32 +23,6 @@ struct CommandWorld {
 #[fixture]
 fn world() -> CommandWorld {
     CommandWorld::default()
-}
-
-// === Test helpers ===
-
-#[must_use]
-fn shape_id(seed: u128) -> ShapeId {
-    ShapeId::from(Uuid::from_u128(seed))
-}
-
-#[must_use]
-fn sample_shape(id: ShapeId, z: i32) -> Shape {
-    let mut path = PathGeom::new();
-    path.anchors.push(Anchor::new(Vec2::new(10.0, 20.0)));
-    path.anchors.push(Anchor {
-        pos: Vec2::new(30.0, 40.0),
-        handle_in: Some(Vec2::new(25.0, 35.0)),
-        handle_out: None,
-    });
-    path.segments.push(SegmentKind::Line);
-
-    Shape {
-        id,
-        z,
-        style: PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), 2.0, None),
-        path,
-    }
 }
 
 // === Given steps ===

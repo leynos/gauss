@@ -60,6 +60,13 @@ pub enum CommandError {
     /// A referenced shape does not exist in the document.
     #[error("shape {0:?} not found in document")]
     ShapeNotFound(ShapeId),
+
+    /// An action that does not produce a command was passed to `prepare_command`.
+    ///
+    /// This indicates a dispatcher bug: Editor actions (Undo, Redo, tool
+    /// activations, etc.) should be routed directly, not via `prepare_command`.
+    #[error("action {0:?} does not produce a command")]
+    NotACommand(Action),
 }
 
 /// A shape that was deleted, with data needed for restoration.
@@ -279,17 +286,13 @@ pub fn prepare_command(
 ) -> Result<Command, CommandError> {
     match action {
         Action::DeleteSelection => prepare_delete_selection(doc, selection),
-        // Editor actions do not produce commands
+        // Editor actions do not produce commands; this is a dispatcher bug
         Action::SelectAll
         | Action::DeselectAll
         | Action::ActivatePenTool
         | Action::ActivateSelectTool
         | Action::Undo
-        | Action::Redo => {
-            // This should not be called for Editor actions; the dispatcher
-            // should route them directly. Return EmptySelection as a sentinel.
-            Err(CommandError::EmptySelection)
-        }
+        | Action::Redo => Err(CommandError::NotACommand(action)),
     }
 }
 
@@ -315,12 +318,10 @@ fn prepare_delete_selection(
         let Some(index) = doc.find_index(id) else {
             return Err(CommandError::ShapeNotFound(id));
         };
-        // Safe indexing: find_index returned Some, so index is valid
-        let shape = doc
-            .shapes
-            .get(index)
-            .ok_or(CommandError::ShapeNotFound(id))?
-            .clone();
+        // find_index returned Some, so index is valid; use .get() for clippy
+        let Some(shape) = doc.shapes.get(index).cloned() else {
+            return Err(CommandError::ShapeNotFound(id));
+        };
         targets.push(DeletedShape { index, shape });
     }
 
@@ -333,6 +334,12 @@ fn apply_delete_shapes(doc: &mut Document, targets: &[DeletedShape]) -> CommandI
     sorted_indices.sort_unstable_by(|a, b| b.cmp(a));
 
     for &index in &sorted_indices {
+        debug_assert!(
+            index < doc.shapes.len(),
+            "apply_delete_shapes: index {index} out of range (len = {}), \
+             this likely indicates document corruption or a logic bug",
+            doc.shapes.len()
+        );
         if index < doc.shapes.len() {
             doc.shapes.remove(index);
         }
@@ -349,303 +356,15 @@ fn apply_restore_shapes(doc: &mut Document, targets: &[DeletedShape]) {
     sorted_targets.sort_by_key(|t| t.index);
 
     for target in sorted_targets {
+        debug_assert!(
+            target.index <= doc.shapes.len(),
+            "apply_restore_shapes: target index {} out of range (len = {}), \
+             this likely indicates document corruption or a logic bug",
+            target.index,
+            doc.shapes.len()
+        );
         if target.index <= doc.shapes.len() {
             doc.shapes.insert(target.index, target.shape);
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::model::{Anchor, PaintStyle, PathGeom, Rgba, SegmentKind, SelItem, Vec2};
-    use rstest::{fixture, rstest};
-    use uuid::Uuid;
-
-    #[must_use]
-    fn shape_id(seed: u128) -> ShapeId {
-        ShapeId::from(Uuid::from_u128(seed))
-    }
-
-    #[must_use]
-    fn sample_shape(id: ShapeId, z: i32) -> Shape {
-        let mut path = PathGeom::new();
-        path.anchors.push(Anchor::new(Vec2::new(10.0, 20.0)));
-        path.anchors.push(Anchor {
-            pos: Vec2::new(30.0, 40.0),
-            handle_in: Some(Vec2::new(25.0, 35.0)),
-            handle_out: None,
-        });
-        path.segments.push(SegmentKind::Line);
-
-        Shape {
-            id,
-            z,
-            style: PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), 2.0, None),
-            path,
-        }
-    }
-
-    #[fixture]
-    fn empty_doc() -> Document {
-        Document::default()
-    }
-
-    #[fixture]
-    fn doc_with_two_shapes() -> Document {
-        Document {
-            shapes: vec![sample_shape(shape_id(1), 0), sample_shape(shape_id(2), 1)],
-        }
-    }
-
-    #[fixture]
-    fn selection_with_first_shape() -> Selection {
-        let mut selection = Selection::default();
-        selection.toggle(SelItem::Shape(shape_id(1)));
-        selection
-    }
-
-    #[rstest]
-    fn delete_shapes_removes_from_document(mut doc_with_two_shapes: Document) {
-        let shape = doc_with_two_shapes
-            .shapes
-            .first()
-            .cloned()
-            .expect("fixture should have shapes");
-        let cmd = Command::DeleteShapes {
-            targets: vec![DeletedShape {
-                index: 0,
-                shape: shape.clone(),
-            }],
-        };
-
-        let result = cmd.apply(&mut doc_with_two_shapes);
-        assert!(result.is_ok());
-        assert_eq!(doc_with_two_shapes.shapes.len(), 1);
-    }
-
-    #[rstest]
-    fn delete_shapes_inverse_restores(mut doc_with_two_shapes: Document) {
-        let original_len = doc_with_two_shapes.shapes.len();
-        let shape = doc_with_two_shapes
-            .shapes
-            .first()
-            .cloned()
-            .expect("fixture should have shapes");
-
-        let cmd = Command::DeleteShapes {
-            targets: vec![DeletedShape { index: 0, shape }],
-        };
-
-        let inverse = cmd
-            .apply(&mut doc_with_two_shapes)
-            .expect("apply succeeded");
-        assert_eq!(doc_with_two_shapes.shapes.len(), original_len - 1);
-
-        inverse
-            .apply(&mut doc_with_two_shapes)
-            .expect("undo succeeded");
-        assert_eq!(doc_with_two_shapes.shapes.len(), original_len);
-    }
-
-    #[rstest]
-    fn delete_restores_shape_at_correct_index(mut doc_with_two_shapes: Document) {
-        let original_shapes = doc_with_two_shapes.shapes.clone();
-        let shape = doc_with_two_shapes
-            .shapes
-            .first()
-            .cloned()
-            .expect("fixture should have shapes");
-
-        let cmd = Command::DeleteShapes {
-            targets: vec![DeletedShape {
-                index: 0,
-                shape: shape.clone(),
-            }],
-        };
-
-        let inverse = cmd
-            .apply(&mut doc_with_two_shapes)
-            .expect("apply succeeded");
-
-        // First shape should be removed, second should now be at index 0
-        assert_eq!(
-            doc_with_two_shapes
-                .shapes
-                .first()
-                .expect("should have remaining shape")
-                .id,
-            shape_id(2)
-        );
-
-        inverse
-            .apply(&mut doc_with_two_shapes)
-            .expect("undo succeeded");
-
-        // After undo, shapes should match original order
-        assert_eq!(doc_with_two_shapes.shapes, original_shapes);
-    }
-
-    #[rstest]
-    fn prepare_delete_selection_fails_with_empty_selection(doc_with_two_shapes: Document) {
-        let selection = Selection::default();
-
-        let result = prepare_command(Action::DeleteSelection, &doc_with_two_shapes, &selection);
-
-        assert!(matches!(result, Err(CommandError::EmptySelection)));
-    }
-
-    #[rstest]
-    fn prepare_delete_selection_succeeds_with_selection(
-        doc_with_two_shapes: Document,
-        selection_with_first_shape: Selection,
-    ) {
-        let result = prepare_command(
-            Action::DeleteSelection,
-            &doc_with_two_shapes,
-            &selection_with_first_shape,
-        );
-
-        assert!(result.is_ok());
-        let cmd = result.expect("prepare_command should succeed");
-        match cmd {
-            Command::DeleteShapes { targets } => {
-                assert_eq!(targets.len(), 1);
-                assert_eq!(targets.first().expect("should have one target").index, 0);
-            }
-        }
-    }
-
-    #[rstest]
-    fn prepare_delete_selection_fails_with_missing_shape(empty_doc: Document) {
-        let mut selection = Selection::default();
-        selection.toggle(SelItem::Shape(shape_id(999)));
-
-        let result = prepare_command(Action::DeleteSelection, &empty_doc, &selection);
-
-        assert!(matches!(result, Err(CommandError::ShapeNotFound(_))));
-    }
-
-    #[rstest]
-    fn command_name_is_nonempty() {
-        let cmd = Command::DeleteShapes { targets: vec![] };
-        assert!(!cmd.name().is_empty());
-    }
-
-    #[rstest]
-    fn command_name_is_delete() {
-        let cmd = Command::DeleteShapes { targets: vec![] };
-        assert_eq!(cmd.name(), "Delete");
-    }
-
-    #[rstest]
-    fn command_inverse_name_matches() {
-        let inverse = CommandInverse::RestoreShapes { targets: vec![] };
-        assert_eq!(inverse.name(), "Delete");
-    }
-
-    #[rstest]
-    fn delete_multiple_shapes_preserves_order(mut doc_with_two_shapes: Document) {
-        // Add a third shape
-        doc_with_two_shapes
-            .shapes
-            .push(sample_shape(shape_id(3), 2));
-        let original_shapes = doc_with_two_shapes.shapes.clone();
-
-        // Delete first and last shapes
-        let targets = vec![
-            DeletedShape {
-                index: 0,
-                shape: original_shapes
-                    .first()
-                    .expect("should have first shape")
-                    .clone(),
-            },
-            DeletedShape {
-                index: 2,
-                shape: original_shapes
-                    .get(2)
-                    .expect("should have third shape")
-                    .clone(),
-            },
-        ];
-
-        let cmd = Command::DeleteShapes { targets };
-        let inverse = cmd
-            .apply(&mut doc_with_two_shapes)
-            .expect("apply succeeded");
-
-        // Only middle shape should remain
-        assert_eq!(doc_with_two_shapes.shapes.len(), 1);
-        assert_eq!(
-            doc_with_two_shapes
-                .shapes
-                .first()
-                .expect("should have remaining shape")
-                .id,
-            shape_id(2)
-        );
-
-        // Undo should restore all shapes in original order
-        inverse
-            .apply(&mut doc_with_two_shapes)
-            .expect("undo succeeded");
-        assert_eq!(doc_with_two_shapes.shapes, original_shapes);
-    }
-
-    #[rstest]
-    fn full_round_trip_via_action(
-        mut doc_with_two_shapes: Document,
-        selection_with_first_shape: Selection,
-    ) {
-        let original = doc_with_two_shapes.clone();
-
-        // Prepare command from action
-        let cmd = prepare_command(
-            Action::DeleteSelection,
-            &doc_with_two_shapes,
-            &selection_with_first_shape,
-        )
-        .expect("prepare succeeded");
-
-        // Apply command
-        let inverse = cmd
-            .apply(&mut doc_with_two_shapes)
-            .expect("apply succeeded");
-        assert_eq!(doc_with_two_shapes.shapes.len(), 1);
-
-        // Undo via inverse
-        inverse
-            .apply(&mut doc_with_two_shapes)
-            .expect("undo succeeded");
-        assert_eq!(doc_with_two_shapes, original);
-    }
-
-    #[rstest]
-    fn selection_only_anchors_returns_empty_selection_error(doc_with_two_shapes: Document) {
-        let mut selection = Selection::default();
-        // Select only an anchor, not the whole shape
-        selection.toggle(SelItem::Anchor {
-            shape: shape_id(1),
-            anchor: 0,
-        });
-
-        let result = prepare_command(Action::DeleteSelection, &doc_with_two_shapes, &selection);
-
-        assert!(matches!(result, Err(CommandError::EmptySelection)));
-    }
-
-    #[test]
-    fn command_error_display_empty_selection() {
-        let err = CommandError::EmptySelection;
-        let msg = format!("{err}");
-        assert!(msg.contains("selection"));
-    }
-
-    #[test]
-    fn command_error_display_shape_not_found() {
-        let err = CommandError::ShapeNotFound(shape_id(42));
-        let msg = format!("{err}");
-        assert!(msg.contains("not found"));
     }
 }

@@ -30,7 +30,7 @@ DocChange / DocOp          e.g., RemoveShape { index, shape }
 | Inverse storage        | **Pre-computed at apply time**         | Undo does not require re-deriving inverse from current state              |
 | Serialization          | **`serde` derives (optional feature)** | Enables macro recording without blocking initial implementation           |
 | Error handling         | **`thiserror` enum**                   | Semantic errors for caller inspection, consistent with project guidelines |
-| Module location        | `src/model/command.rs`                 | GPUI-independent for testability                                          |
+| Module location        | `src/model/command.rs`                 | GPUI (Zed's UI framework)-independent for testability                     |
 
 ## Design Rationale
 
@@ -394,7 +394,7 @@ mod tests {
 }
 ```
 
-### Step 8: BDD tests (rstest-bdd)
+### Step 8: Behaviour-driven development (BDD) tests (rstest-bdd)
 
 Create `tests/features/command.feature`:
 
@@ -724,8 +724,8 @@ The relationship is:
 - DocOps are atomic invertible document mutations
 ```
 
-**Users guide**: No user-guide changes are needed for this foundational task as
-Commands are not directly user-visible. Users interact with Actions via
+**User's guide**: No user guide changes are needed for this foundational task, as
+commands are not directly user-visible. Users interact with Actions via
 keyboard shortcuts and UI; the Command layer is internal.
 
 ### Step 12: Mark roadmap complete
