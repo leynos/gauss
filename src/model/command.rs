@@ -206,8 +206,9 @@ impl Command {
     /// let inverse = cmd.apply(&mut doc).expect("apply succeeded");
     /// ```
     pub fn apply(&self, doc: &mut Document) -> Result<CommandInverse, UserError> {
+        let command_name = self.name();
         match self {
-            Self::DeleteShapes { targets } => Ok(apply_delete_shapes(doc, targets)),
+            Self::DeleteShapes { targets } => Ok(apply_delete_shapes(doc, targets, command_name)),
         }
     }
 }
@@ -223,7 +224,10 @@ impl Command {
 /// use gauss::model::{CommandInverse, DeletedShape, Document};
 ///
 /// let mut doc = Document::default();
-/// let inverse = CommandInverse::RestoreShapes { targets: vec![] };
+/// let inverse = CommandInverse::RestoreShapes {
+///     command_name: "Delete",
+///     targets: vec![],
+/// };
 /// inverse.apply(&mut doc).expect("undo succeeded");
 /// ```
 #[derive(Clone, Debug, PartialEq)]
@@ -231,6 +235,8 @@ impl Command {
 pub enum CommandInverse {
     /// Restore deleted shapes to their original positions.
     RestoreShapes {
+        /// Name of the original command (for "Undo {name}" menu entries).
+        command_name: &'static str,
         /// Shapes to restore, with their original indices.
         targets: Vec<DeletedShape>,
     },
@@ -249,7 +255,7 @@ impl CommandInverse {
     #[must_use]
     pub const fn name(&self) -> &'static str {
         match self {
-            Self::RestoreShapes { .. } => "Delete",
+            Self::RestoreShapes { command_name, .. } => command_name,
         }
     }
 
@@ -269,12 +275,15 @@ impl CommandInverse {
     /// use gauss::model::{CommandInverse, DeletedShape, Document};
     ///
     /// let mut doc = Document::default();
-    /// let inverse = CommandInverse::RestoreShapes { targets: vec![] };
+    /// let inverse = CommandInverse::RestoreShapes {
+    ///     command_name: "Delete",
+    ///     targets: vec![],
+    /// };
     /// inverse.apply(&mut doc).expect("undo succeeded");
     /// ```
     pub fn apply(&self, doc: &mut Document) -> Result<(), UserError> {
         match self {
-            Self::RestoreShapes { targets } => {
+            Self::RestoreShapes { targets, .. } => {
                 apply_restore_shapes(doc, targets);
                 Ok(())
             }
@@ -377,7 +386,11 @@ fn prepare_delete_selection(doc: &Document, selection: &Selection) -> Result<Com
     Ok(Command::DeleteShapes { targets })
 }
 
-fn apply_delete_shapes(doc: &mut Document, targets: &[DeletedShape]) -> CommandInverse {
+fn apply_delete_shapes(
+    doc: &mut Document,
+    targets: &[DeletedShape],
+    command_name: &'static str,
+) -> CommandInverse {
     // Remove shapes in reverse index order to preserve indices during removal
     let mut sorted_indices: Vec<usize> = targets.iter().map(|t| t.index).collect();
     sorted_indices.sort_unstable_by(|a, b| b.cmp(a));
@@ -395,6 +408,7 @@ fn apply_delete_shapes(doc: &mut Document, targets: &[DeletedShape]) -> CommandI
     }
 
     CommandInverse::RestoreShapes {
+        command_name,
         targets: targets.to_vec(),
     }
 }
