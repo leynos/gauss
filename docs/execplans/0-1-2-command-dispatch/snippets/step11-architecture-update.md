@@ -1,6 +1,6 @@
 # Architecture update: command design
 
-## 7.1 Command design (implemented 2025-12)
+## 7.1 command design (implemented 2025-12)
 
 **Design decision:** Commands are implemented as an **enum with data** rather
 than a trait, for the following reasons:
