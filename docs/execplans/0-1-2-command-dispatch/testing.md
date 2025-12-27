@@ -70,7 +70,7 @@ Edit `docs/roadmap.md`:
    applies correctly, inverse restores state.
 
 2. **Error cases**: DeleteSelection with empty selection returns
-   `CommandError::EmptySelection`.
+   `UserError::EmptySelection`.
 
 3. **Round-trip**: Apply + inverse returns document to original state.
 

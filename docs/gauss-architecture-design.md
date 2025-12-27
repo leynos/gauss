@@ -393,7 +393,7 @@ The command system provides:
 - `prepare_command()` — bridges Actions to Commands, capturing context
 - `Command::apply()` — executes mutation, returns `CommandInverse`
 - `CommandInverse::apply()` — reverses the mutation for undo
-- `CommandError` — semantic errors (EmptySelection, ShapeNotFound)
+- `UserError` — user-facing semantic errors (EmptySelection, ShapeNotFound)
 
 Commands should be small and composable:
 

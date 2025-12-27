@@ -28,5 +28,5 @@ See [snippets/step5-prepare-command.rs](snippets/step5-prepare-command.rs).
 ```rust
 pub mod command;
 
-pub use command::{Command, CommandError, CommandInverse, DeletedShape, prepare_command};
+pub use command::{Command, CommandInverse, DeletedShape, UserError, prepare_command};
 ```

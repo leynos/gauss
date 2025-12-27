@@ -28,8 +28,8 @@ impl CommandInverse {
     ///
     /// # Errors
     ///
-    /// Returns `CommandError` if the inverse cannot be applied.
-    pub fn apply(&self, doc: &mut Document) -> Result<(), CommandError> {
+    /// Returns `UserError` if the inverse cannot be applied.
+    pub fn apply(&self, doc: &mut Document) -> Result<(), UserError> {
         match self {
             Self::RestoreShapes { targets, .. } => apply_restore_shapes(doc, targets),
         }

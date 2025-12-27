@@ -57,7 +57,7 @@ mod tests {
             &selection,
         );
 
-        assert!(matches!(result, Err(CommandError::EmptySelection)));
+        assert!(matches!(result, Err(UserError::EmptySelection)));
     }
 
     #[rstest]

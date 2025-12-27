@@ -22,13 +22,13 @@ DocChange / DocOp          e.g., RemoveShape { index, shape }
 
 ## Design Decisions
 
-| Decision               | Choice                                 | Rationale                                                                 |
-| ---------------------- | -------------------------------------- | ------------------------------------------------------------------------- |
-| Command representation | **Enum with data**                     | Exhaustive matching, serialization-ready, consistent with Action design   |
-| Inverse storage        | **Pre-computed at apply time**         | Undo does not require re-deriving inverse from current state              |
-| Serialization          | **`serde` derives (optional feature)** | Enables macro recording without blocking initial implementation           |
-| Error handling         | **`thiserror` enum**                   | Semantic errors for caller inspection, consistent with project guidelines |
-| Module location        | `src/model/command.rs`                 | GPUI (Zed's UI framework)-independent for testability                     |
+| Decision               | Choice                                 | Rationale                                                                       |
+| ---------------------- | -------------------------------------- | ------------------------------------------------------------------------------- |
+| Command representation | **Enum with data**                     | Exhaustive matching, serialization-ready, consistent with Action design         |
+| Inverse storage        | **Pre-computed at apply time**         | Undo does not require re-deriving inverse from current state                    |
+| Serialization          | **`serde` derives (optional feature)** | Enables macro recording without blocking initial implementation                 |
+| Error handling         | **Separated by audience**              | User-facing errors (`UserError`) for UI; internal errors for dispatcher bugs    |
+| Module location        | `src/model/command.rs`                 | GPUI (Zed's UI framework)-independent for testability                           |
 
 ## Design Rationale
 
@@ -51,6 +51,22 @@ Commands are designed for future macro recording per the architecture document.
 The `serde` derives are gated behind a `serde` feature flag to avoid mandatory
 serialization overhead. Initial implementation does not require macros to work.
 
+### Error Handling Strategy
+
+Command errors are separated by audience and recovery strategy:
+
+- **User-facing errors** (`UserError`): Semantic issues like empty selections
+  or missing shapes. The UI layer catches these and presents appropriate
+  feedback (disabled menu items, error messages, accessibility announcements).
+
+- **Internal errors**: Dispatcher bugs and invariant violations. These use
+  `panic!()` or `debug_assert!()` to fail fast during development. In release
+  builds, defensive checks prevent undefined behaviour while logging indicates
+  bugs.
+
+This separation follows the principle: **fail fast for programmer errors,
+degrade gracefully for user errors**.
+
 ## Command Set (Initial Scope)
 
 The initial command set mirrors the existing Document-kind Actions. See
@@ -64,7 +80,7 @@ The `DeletedShape` captures everything needed to restore the shape on undo. See
 | File                             | Purpose                                            |
 | -------------------------------- | -------------------------------------------------- |
 | `src/model/command.rs`           | Command enum, CommandInverse, dispatch logic       |
-| `src/model/command/error.rs`     | CommandError enum (optional: inline in command.rs) |
+| `src/model/command/error.rs`     | UserError enum (optional: inline in command.rs)    |
 | `src/model/mod.rs`               | Add exports for Command types                      |
 | `tests/features/command.feature` | BDD scenarios for command dispatch                 |
 | `tests/command_bdd.rs`           | BDD step implementations                           |

@@ -6,6 +6,21 @@
 //!
 //! Commands are GPUI-independent for testability and scripting.
 //!
+//! # Error Handling
+//!
+//! Command errors are separated into two categories:
+//!
+//! - **[`UserError`]**: Semantic errors that should be presented to users
+//!   (e.g., empty selection, shape not found). These are returned from
+//!   [`prepare_command`] and command application methods.
+//!
+//! - **Internal errors**: Dispatcher bugs and invariant violations that
+//!   indicate programming errors. These use `unreachable!()` or `debug_assert!()`
+//!   to fail fast during development while maintaining safety in release builds.
+//!
+//! This separation clarifies error handling responsibilities: UI code handles
+//! [`UserError`] gracefully, while internal errors are caught during testing.
+//!
 //! # Design
 //!
 //! Commands are implemented as an enum rather than a trait for several reasons:
@@ -47,26 +62,41 @@
 
 use crate::model::{Action, Document, Selection, Shape, ShapeId};
 
-/// Errors that can occur during command preparation or execution.
+/// User-facing errors that can occur during command preparation or execution.
 ///
-/// These are semantic errors that the caller can inspect and handle
-/// appropriately (e.g., disable a menu item, show an error message).
+/// These errors represent semantic issues that should be presented to users
+/// (e.g., via UI messages, disabled menu items, or accessibility feedback).
+///
+/// # UI Integration
+///
+/// UI code should handle [`UserError`] gracefully:
+///
+/// ```rust,ignore
+/// use gauss::model::{Action, UserError, prepare_command};
+///
+/// // In UI action handler:
+/// match prepare_command(action, &doc, &selection) {
+///     Ok(cmd) => {
+///         // Execute command, add to undo stack
+///     }
+///     Err(UserError::EmptySelection) => {
+///         // Show "Nothing selected" message or disable menu item
+///     }
+///     Err(UserError::ShapeNotFound(id)) => {
+///         // Log error, show "Shape not found" message
+///         // This shouldn't happen in normal use
+///     }
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
-pub enum CommandError {
+pub enum UserError {
     /// The command requires a non-empty selection, but nothing is selected.
-    #[error("command requires a selection, but nothing is selected")]
+    #[error("No selection")]
     EmptySelection,
 
     /// A referenced shape does not exist in the document.
-    #[error("shape {0:?} not found in document")]
+    #[error("Shape not found")]
     ShapeNotFound(ShapeId),
-
-    /// An action that does not produce a command was passed to `prepare_command`.
-    ///
-    /// This indicates a dispatcher bug: Editor actions (Undo, Redo, tool
-    /// activations, etc.) should be routed directly, not via `prepare_command`.
-    #[error("action {0:?} does not produce a command")]
-    NotACommand(Action),
 }
 
 /// A shape that was deleted, with data needed for restoration.
@@ -154,7 +184,7 @@ impl Command {
     ///
     /// # Errors
     ///
-    /// Returns [`CommandError`] if the command cannot be executed (e.g.,
+    /// Returns [`UserError`] if the command cannot be executed (e.g.,
     /// referenced shapes do not exist). In practice, commands prepared via
     /// [`prepare_command`] should not fail during application.
     ///
@@ -167,7 +197,7 @@ impl Command {
     /// let cmd = Command::DeleteShapes { targets: vec![] };
     /// let inverse = cmd.apply(&mut doc).expect("apply succeeded");
     /// ```
-    pub fn apply(&self, doc: &mut Document) -> Result<CommandInverse, CommandError> {
+    pub fn apply(&self, doc: &mut Document) -> Result<CommandInverse, UserError> {
         let command_name = self.name();
         match self {
             Self::DeleteShapes { targets } => Ok(apply_delete_shapes(doc, targets, command_name)),
@@ -228,7 +258,7 @@ impl CommandInverse {
     ///
     /// # Errors
     ///
-    /// Returns [`CommandError`] if the inverse cannot be applied.
+    /// Returns [`UserError`] if the inverse cannot be applied.
     ///
     /// # Examples
     ///
@@ -242,7 +272,7 @@ impl CommandInverse {
     /// };
     /// inverse.apply(&mut doc).expect("undo succeeded");
     /// ```
-    pub fn apply(&self, doc: &mut Document) -> Result<(), CommandError> {
+    pub fn apply(&self, doc: &mut Document) -> Result<(), UserError> {
         match self {
             Self::RestoreShapes { targets, .. } => {
                 apply_restore_shapes(doc, targets);
@@ -271,10 +301,16 @@ impl CommandInverse {
 ///
 /// # Errors
 ///
-/// Returns [`CommandError`] if the action cannot produce a valid command:
+/// Returns [`UserError`] if the action cannot produce a valid command:
 ///
-/// - [`CommandError::EmptySelection`]: Action requires selection but none exists.
-/// - [`CommandError::ShapeNotFound`]: Selected shape not in document.
+/// - [`UserError::EmptySelection`]: Action requires selection but none exists.
+/// - [`UserError::ShapeNotFound`]: Selected shape not in document.
+///
+/// # Panics
+///
+/// Panics if an editor action (e.g., `Undo`, `Redo`, `SelectAll`) is passed.
+/// These actions do not produce commands and should be routed directly by the
+/// dispatcher. A panic here indicates a dispatcher bug.
 ///
 /// # Examples
 ///
@@ -288,29 +324,35 @@ impl CommandInverse {
 /// let result = prepare_command(Action::DeleteSelection, &doc, &selection);
 /// assert!(result.is_err());
 /// ```
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Panic is intentional fail-fast for dispatcher bugs; editor actions \
+              should never reach this function in correct code"
+)]
 pub fn prepare_command(
     action: Action,
     doc: &Document,
     selection: &Selection,
-) -> Result<Command, CommandError> {
+) -> Result<Command, UserError> {
     match action {
         Action::DeleteSelection => prepare_delete_selection(doc, selection),
-        // Editor actions do not produce commands; this is a dispatcher bug
+        // Editor actions do not produce commands; this is a dispatcher bug.
+        // We panic unconditionally; the match arm is never reached in correct code.
         Action::SelectAll
         | Action::DeselectAll
         | Action::ActivatePenTool
         | Action::ActivateSelectTool
         | Action::Undo
-        | Action::Redo => Err(CommandError::NotACommand(action)),
+        | Action::Redo => panic!(
+            "dispatcher bug: action {action:?} does not produce a command \
+             and should be routed directly"
+        ),
     }
 }
 
-fn prepare_delete_selection(
-    doc: &Document,
-    selection: &Selection,
-) -> Result<Command, CommandError> {
+fn prepare_delete_selection(doc: &Document, selection: &Selection) -> Result<Command, UserError> {
     if selection.is_empty() {
-        return Err(CommandError::EmptySelection);
+        return Err(UserError::EmptySelection);
     }
 
     // Collect selected shape IDs
@@ -318,19 +360,19 @@ fn prepare_delete_selection(
 
     if shape_ids.is_empty() {
         // Selection contains only anchors/handles/segments, no whole shapes
-        return Err(CommandError::EmptySelection);
+        return Err(UserError::EmptySelection);
     }
 
     // Build DeletedShape entries with indices and data
     let mut targets = Vec::with_capacity(shape_ids.len());
     for &id in &shape_ids {
         let Some(index) = doc.find_index(id) else {
-            return Err(CommandError::ShapeNotFound(id));
+            return Err(UserError::ShapeNotFound(id));
         };
         // find_index guarantees valid index; if violated, treat as shape not found
         // (defensive: avoids panic in production while preserving error semantics)
         let Some(shape) = doc.shapes.get(index).cloned() else {
-            return Err(CommandError::ShapeNotFound(id));
+            return Err(UserError::ShapeNotFound(id));
         };
         targets.push(DeletedShape { index, shape });
     }

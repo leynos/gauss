@@ -1,8 +1,8 @@
 //! Behaviour tests for Command dispatch.
 
 use gauss::model::{
-    Action, Command, CommandError, CommandInverse, Document, Selection, SelItem,
-    Shape, prepare_command,
+    Action, Command, CommandInverse, Document, Selection, SelItem,
+    Shape, UserError, prepare_command,
 };
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
@@ -13,7 +13,7 @@ use test_support::{TestSupportError, TestSupportResult};
 struct CommandWorld {
     doc: Document,
     selection: Selection,
-    command: Option<Result<Command, CommandError>>,
+    command: Option<Result<Command, UserError>>,
     inverse: Option<CommandInverse>,
 }
 
@@ -156,7 +156,7 @@ fn then_doc_has_two_shapes(world: &CommandWorld) -> TestSupportResult<()> {
 #[then("the command should fail with EmptySelection")]
 fn then_command_fails_empty_selection(world: &CommandWorld) -> TestSupportResult<()> {
     match &world.command {
-        Some(Err(CommandError::EmptySelection)) => Ok(()),
+        Some(Err(UserError::EmptySelection)) => Ok(()),
         Some(Err(e)) => Err(TestSupportError::expectation(format!(
             "expected EmptySelection, got {e}"
         ))),
