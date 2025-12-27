@@ -39,8 +39,7 @@ screen-reader support (e.g. for the upcoming Marrakesh Express client).
   and meets user needs from day one.
 
 - **Tooling reality:** Accessibility won't come "for free" – the GPUI ↔
-  AccessKit
-  bridge must be built, maintained, and thoroughly tested. OS-level
+  AccessKit bridge must be built, maintained, and thoroughly tested. OS-level
   accessibility inspection tools validate the implementation: **Accessibility
   Insights/Inspect** on Windows
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=2,the%20editor%20to%20learn%20it))

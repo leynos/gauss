@@ -1,7 +1,7 @@
 # Execution Plan: 0.1.1 Define Typed Action Enum
 
-**Status**: Ready for implementation
-**Roadmap reference**: `docs/roadmap.md` §0.1.1
+**Status**: Ready for implementation **Roadmap reference**: `docs/roadmap.md`
+§0.1.1
 
 ## Overview
 
@@ -11,11 +11,11 @@ guiding principle.
 
 ## Design Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Trait vs Enum | **Enum with methods** | Exhaustive matching, serialization-ready, simpler dispatch |
-| Initial scope | **Minimal starter set** | 5–8 core actions; expand in later tasks |
-| Module location | `src/model/action.rs` | GPUI-independent for testability |
+| Decision        | Choice                  | Rationale                                                  |
+| --------------- | ----------------------- | ---------------------------------------------------------- |
+| Trait vs Enum   | **Enum with methods**   | Exhaustive matching, serialization-ready, simpler dispatch |
+| Initial scope   | **Minimal starter set** | 5–8 core actions; expand in later tasks                    |
+| Module location | `src/model/action.rs`   | GPUI-independent for testability                           |
 
 ## Action Set (Minimal Starter)
 
@@ -40,12 +40,12 @@ pub enum Action {
 
 ## File Layout
 
-| File | Purpose |
-|------|---------|
-| `src/model/action.rs` | Action enum, ActionKind, methods |
-| `src/model/mod.rs` | Add exports for Action, ActionKind |
-| `tests/features/action.feature` | BDD scenarios |
-| `tests/action_bdd.rs` | BDD step implementations |
+| File                            | Purpose                            |
+| ------------------------------- | ---------------------------------- |
+| `src/model/action.rs`           | Action enum, ActionKind, methods   |
+| `src/model/mod.rs`              | Add exports for Action, ActionKind |
+| `tests/features/action.feature` | BDD scenarios                      |
+| `tests/action_bdd.rs`           | BDD step implementations           |
 
 ## Implementation Steps
 
@@ -277,12 +277,12 @@ Edit `docs/roadmap.md`:
 
 ## Critical Files
 
-| File | Purpose |
-|------|---------|
-| `src/model/mod.rs` | Add exports |
-| `src/model/ops.rs` | Pattern reference for invertible operations |
-| `docs/roadmap.md` | Update status on completion |
-| `docs/gauss-architecture-design.md` | Record design decision |
+| File                                | Purpose                                     |
+| ----------------------------------- | ------------------------------------------- |
+| `src/model/mod.rs`                  | Add exports                                 |
+| `src/model/ops.rs`                  | Pattern reference for invertible operations |
+| `docs/roadmap.md`                   | Update status on completion                 |
+| `docs/gauss-architecture-design.md` | Record design decision                      |
 
 ## Estimated Scope
 

@@ -355,32 +355,52 @@ Actions are categorized by `ActionKind`:
 
 This categorization enables the dispatcher to route actions appropriately.
 
-### 7.1 Command design
+### 7.1 Command design (implemented 2025-12)
 
-A command must be:
+Commands are concrete, undoable state changes that bridge user intent (Actions)
+to atomic document mutations. Commands capture:
 
-- **serializable** (optional but strongly recommended for macro playback)
-- **invertible** (for undo) or provide a precomputed inverse
-- **self-contained** (contains enough info to apply to a document version)
+- **Pre-conditions**: Can the command execute? (e.g., is there a selection?)
+- **Context**: What data is needed? (e.g., which shape IDs are selected?)
+- **Inverse**: How to undo? (store sufficient data at apply time)
+- **Name**: Human-readable description for undo/redo menu entries
 
-Suggested trait shape (conceptual):
+**Design decision:** Commands are implemented as an **enum with data** rather
+than a trait, for the following reasons:
 
-```rust
-trait Command {
-    fn name(&self) -> &'static str;
-    fn apply(&self, engine: &mut EngineState) -> anyhow::Result<CommandInverse>;
-}
+- **Exhaustive matching**: All command variants can be matched at compile time,
+  ensuring dispatch tables are complete.
+- **Serialization**: Enums are trivially serializable, enabling future macro
+  recording and playback.
+- **Consistency**: Matches the Action enum design from task 0.1.1.
+- **Simplicity**: No type erasure or dynamic dispatch complexity.
 
-trait CommandInverse {
-    fn undo(&self, engine: &mut EngineState) -> anyhow::Result<()>;
-}
+The `Command` enum lives in `src/model/command.rs` and is GPUI-independent for
+testability. The relationship between Actions, Commands, and DocOps is:
+
+```text
+Action (user intent)       e.g., DeleteSelection
+   │
+   ▼  prepare_command()
+Command (undoable mutation) e.g., DeleteShapes { targets: [...] }
+   │
+   ▼  apply()
+Document mutation          Direct shape removal with inverse capture
 ```
+
+The command system provides:
+
+- `prepare_command()` — bridges Actions to Commands, capturing context
+- `Command::apply()` — executes mutation, returns `CommandInverse`
+- `CommandInverse::apply()` — reverses the mutation for undo
+- `CommandError` — semantic errors (EmptySelection, ShapeNotFound)
 
 Commands should be small and composable:
 
-- `InsertNode`, `DeleteNode`
-- `SetTransform`, `SetStyle`, `SetPathData`
-- `ReparentNode`, `ReorderChildren`
+- `DeleteShapes` (implemented)
+- `InsertNode`, `DeleteNode` (future)
+- `SetTransform`, `SetStyle`, `SetPathData` (future)
+- `ReparentNode`, `ReorderChildren` (future)
 - `SetSelection` (editor-state command; separate history stack is plausible)
 
 ### 7.2 Grouping and “boring but essential” correctness

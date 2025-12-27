@@ -83,9 +83,9 @@ phases depend upon. See architecture document §20.
 - [x] 0.1.1. Define typed Action enum.
   - [x] Actions represent user intent (e.g., "Delete Selection").
   - [x] Actions are dispatchable from UI, scripts, and tests.
-- [ ] 0.1.2. Implement Command dispatch.
-  - [ ] Commands are concrete, undoable state changes.
-  - [ ] Commands are serialisable for macro recording (optional initially).
+- [x] 0.1.2. Implement Command dispatch.
+  - [x] Commands are concrete, undoable state changes.
+  - [x] Commands are serializable for macro recording (optional initially).
 - [ ] 0.1.3. Create key context system.
   - [ ] Actions bind to keyboard shortcuts via key contexts.
   - [ ] Extend existing `KEY_CONTEXT` pattern from Phase 0.

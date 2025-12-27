@@ -6,6 +6,7 @@ use std::{io, result};
 use thiserror::Error;
 
 pub mod math;
+pub mod shapes;
 
 /// A convenient result type for test helper operations.
 pub type TestSupportResult<T> = result::Result<T, TestSupportError>;
