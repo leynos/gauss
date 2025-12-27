@@ -15,8 +15,10 @@ pub enum CommandInverse {
 
 impl CommandInverse {
     /// Return a human-readable name for this inverse command.
+    ///
+    /// The name is derived from the variant, not stored state.
     #[must_use]
-    pub fn name(&self) -> &'static str {
+    pub const fn name(&self) -> &'static str {
         match self {
             Self::RestoreShapes { .. } => "Delete",
         }
@@ -26,10 +28,13 @@ impl CommandInverse {
     ///
     /// # Errors
     ///
-    /// Returns `CommandError` if the inverse cannot be applied.
-    pub fn apply(&self, doc: &mut Document) -> Result<(), CommandError> {
+    /// Returns `UserError` if the inverse cannot be applied.
+    pub fn apply(&self, doc: &mut Document) -> Result<(), UserError> {
         match self {
-            Self::RestoreShapes { targets } => apply_restore_shapes(doc, targets),
+            Self::RestoreShapes { targets } => {
+                apply_restore_shapes(doc, targets);
+                Ok(())
+            }
         }
     }
 }

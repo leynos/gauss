@@ -4,7 +4,7 @@
 //! mutations.
 
 use gauss::model::{
-    Action, Command, CommandError, CommandInverse, DeletedShape, Document, SelItem, Selection,
+    Action, Command, CommandInverse, DeletedShape, Document, SelItem, Selection, UserError,
     prepare_command,
 };
 use rstest::{fixture, rstest};
@@ -116,7 +116,7 @@ fn prepare_delete_selection_fails_with_empty_selection(doc_with_two_shapes: Docu
 
     let result = prepare_command(Action::DeleteSelection, &doc_with_two_shapes, &selection);
 
-    assert!(matches!(result, Err(CommandError::EmptySelection)));
+    assert!(matches!(result, Err(UserError::EmptySelection)));
 }
 
 #[rstest]
@@ -149,7 +149,7 @@ fn prepare_delete_selection_fails_with_missing_shape(empty_doc: Document) {
 
     let result = prepare_command(Action::DeleteSelection, &empty_doc, &selection);
 
-    assert!(matches!(result, Err(CommandError::ShapeNotFound(_))));
+    assert!(matches!(result, Err(UserError::ShapeNotFound(_))));
 }
 
 #[rstest]
@@ -165,8 +165,28 @@ fn command_name_is_delete() {
 }
 
 #[rstest]
-fn command_inverse_name_matches() {
+fn command_inverse_name_is_delete() {
     let inverse = CommandInverse::RestoreShapes { targets: vec![] };
+    assert_eq!(inverse.name(), "Delete");
+}
+
+#[rstest]
+fn inverse_name_matches_command_after_apply(mut doc_with_two_shapes: Document) {
+    let shape = doc_with_two_shapes
+        .shapes
+        .first()
+        .cloned()
+        .expect("fixture should have shapes");
+    let cmd = Command::DeleteShapes {
+        targets: vec![DeletedShape { index: 0, shape }],
+    };
+
+    let inverse = cmd
+        .apply(&mut doc_with_two_shapes)
+        .expect("apply succeeded");
+
+    // Inverse name should match the command name
+    assert_eq!(inverse.name(), cmd.name());
     assert_eq!(inverse.name(), "Delete");
 }
 
@@ -258,49 +278,38 @@ fn selection_only_anchors_returns_empty_selection_error(doc_with_two_shapes: Doc
 
     let result = prepare_command(Action::DeleteSelection, &doc_with_two_shapes, &selection);
 
-    assert!(matches!(result, Err(CommandError::EmptySelection)));
+    assert!(matches!(result, Err(UserError::EmptySelection)));
 }
 
 #[test]
-fn command_error_display_empty_selection() {
-    let err = CommandError::EmptySelection;
+fn user_error_display_empty_selection() {
+    let err = UserError::EmptySelection;
     let msg = format!("{err}");
-    assert!(msg.contains("selection"));
+    assert_eq!(msg, "No selection");
 }
 
 #[test]
-fn command_error_display_shape_not_found() {
-    let err = CommandError::ShapeNotFound(shape_id(42));
+fn user_error_display_shape_not_found() {
+    let err = UserError::ShapeNotFound(shape_id(42));
     let msg = format!("{err}");
-    assert!(msg.contains("not found"));
+    assert_eq!(msg, "Shape not found");
 }
 
-#[test]
-fn command_error_display_not_a_command() {
-    let err = CommandError::NotACommand(Action::Undo);
-    let msg = format!("{err}");
-    assert!(msg.contains("does not produce a command"));
-}
-
+/// Test that editor actions panic when passed to `prepare_command`.
+///
+/// This is a dispatcher bug: editor actions should be routed directly, not
+/// via `prepare_command`. Uses `#[rstest]` parameterisation to verify the
+/// panic message contains "dispatcher bug" for all editor action variants.
 #[rstest]
-fn editor_actions_return_not_a_command_error(doc_with_two_shapes: Document) {
+#[case::select_all(Action::SelectAll)]
+#[case::deselect_all(Action::DeselectAll)]
+#[case::undo(Action::Undo)]
+#[case::redo(Action::Redo)]
+#[case::activate_pen_tool(Action::ActivatePenTool)]
+#[case::activate_select_tool(Action::ActivateSelectTool)]
+#[should_panic(expected = "dispatcher bug")]
+fn editor_action_panics(#[case] action: Action) {
+    let doc = Document::default();
     let selection = Selection::default();
-
-    // Test all editor actions that should not produce commands
-    let editor_actions = [
-        Action::SelectAll,
-        Action::DeselectAll,
-        Action::ActivatePenTool,
-        Action::ActivateSelectTool,
-        Action::Undo,
-        Action::Redo,
-    ];
-
-    for action in editor_actions {
-        let result = prepare_command(action, &doc_with_two_shapes, &selection);
-        assert!(
-            matches!(result, Err(CommandError::NotACommand(_))),
-            "expected NotACommand for {action:?}, got {result:?}"
-        );
-    }
+    drop(prepare_command(action, &doc, &selection));
 }

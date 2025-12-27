@@ -8,15 +8,18 @@
 
 use crate::model::{Shape, ShapeId};
 
-/// Errors that can occur during command execution.
+/// User-facing errors that can occur during command preparation or execution.
+///
+/// These errors represent semantic issues that should be presented to users
+/// (e.g., via UI messages, disabled menu items, or accessibility feedback).
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
-pub enum CommandError {
+pub enum UserError {
     /// The command requires a non-empty selection, but nothing is selected.
-    #[error("command requires a selection, but nothing is selected")]
+    #[error("No selection")]
     EmptySelection,
 
     /// A referenced shape does not exist in the document.
-    #[error("shape {0:?} not found in document")]
+    #[error("Shape not found")]
     ShapeNotFound(ShapeId),
 }
 

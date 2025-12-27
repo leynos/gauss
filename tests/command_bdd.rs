@@ -4,7 +4,7 @@
 //! Actions to undoable document mutations.
 
 use gauss::model::{
-    Action, Command, CommandError, CommandInverse, Document, SelItem, Selection, prepare_command,
+    Action, Command, CommandInverse, Document, SelItem, Selection, UserError, prepare_command,
 };
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
@@ -16,7 +16,7 @@ use test_support::{TestSupportError, TestSupportResult};
 struct CommandWorld {
     doc: Document,
     selection: Selection,
-    command: Option<Result<Command, CommandError>>,
+    command: Option<Result<Command, UserError>>,
     inverse: Option<CommandInverse>,
 }
 
@@ -137,7 +137,7 @@ fn then_doc_has_two_shapes(world: &CommandWorld) -> TestSupportResult<()> {
 #[then("the command should fail with EmptySelection")]
 fn then_command_fails_empty_selection(world: &CommandWorld) -> TestSupportResult<()> {
     match &world.command {
-        Some(Err(CommandError::EmptySelection)) => Ok(()),
+        Some(Err(UserError::EmptySelection)) => Ok(()),
         Some(Err(e)) => Err(TestSupportError::expectation(format!(
             "expected EmptySelection, got {e}"
         ))),
@@ -155,6 +155,23 @@ fn then_command_name_is_delete(world: &CommandWorld) -> TestSupportResult<()> {
         Err(TestSupportError::expectation(format!(
             r#"expected "Delete", got "{}""#,
             cmd.name()
+        )))
+    }
+}
+
+#[then(r#"the inverse name should be "Delete""#)]
+fn then_inverse_name_is_delete(world: &CommandWorld) -> TestSupportResult<()> {
+    let inverse = world
+        .inverse
+        .as_ref()
+        .ok_or_else(|| TestSupportError::missing("inverse", "check name"))?;
+
+    if inverse.name() == "Delete" {
+        Ok(())
+    } else {
+        Err(TestSupportError::expectation(format!(
+            r#"expected "Delete", got "{}""#,
+            inverse.name()
         )))
     }
 }
@@ -209,5 +226,13 @@ fn delete_selection_requires_selection(world: CommandWorld) {
     name = "Command has human-readable name"
 )]
 fn command_has_human_readable_name(world: CommandWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/command.feature",
+    name = "Inverse command has matching name"
+)]
+fn inverse_command_has_matching_name(world: CommandWorld) {
     let _ = world;
 }
