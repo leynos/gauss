@@ -142,7 +142,7 @@ fn then_command_fails_empty_selection(world: &CommandWorld) -> TestSupportResult
             "expected EmptySelection, got {e}"
         ))),
         Some(Ok(_)) => Err(TestSupportError::expectation(
-            "expected error, got success".to_owned(),
+            "expected error, got success",
         )),
         None => Err(TestSupportError::missing("command", "check")),
     }
