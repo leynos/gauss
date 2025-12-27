@@ -298,60 +298,18 @@ fn user_error_display_shape_not_found() {
 /// Test that editor actions panic when passed to `prepare_command`.
 ///
 /// This is a dispatcher bug: editor actions should be routed directly, not
-/// via `prepare_command`. Each test uses `#[should_panic]` to verify the
-/// panic message contains "dispatcher bug".
-mod editor_action_panics {
-    use super::*;
-
-    #[test]
-    #[should_panic(expected = "dispatcher bug")]
-    fn select_all_panics() {
-        let doc = Document::default();
-        let selection = Selection::default();
-        drop(prepare_command(Action::SelectAll, &doc, &selection));
-    }
-
-    #[test]
-    #[should_panic(expected = "dispatcher bug")]
-    fn deselect_all_panics() {
-        let doc = Document::default();
-        let selection = Selection::default();
-        drop(prepare_command(Action::DeselectAll, &doc, &selection));
-    }
-
-    #[test]
-    #[should_panic(expected = "dispatcher bug")]
-    fn undo_panics() {
-        let doc = Document::default();
-        let selection = Selection::default();
-        drop(prepare_command(Action::Undo, &doc, &selection));
-    }
-
-    #[test]
-    #[should_panic(expected = "dispatcher bug")]
-    fn redo_panics() {
-        let doc = Document::default();
-        let selection = Selection::default();
-        drop(prepare_command(Action::Redo, &doc, &selection));
-    }
-
-    #[test]
-    #[should_panic(expected = "dispatcher bug")]
-    fn activate_pen_tool_panics() {
-        let doc = Document::default();
-        let selection = Selection::default();
-        drop(prepare_command(Action::ActivatePenTool, &doc, &selection));
-    }
-
-    #[test]
-    #[should_panic(expected = "dispatcher bug")]
-    fn activate_select_tool_panics() {
-        let doc = Document::default();
-        let selection = Selection::default();
-        drop(prepare_command(
-            Action::ActivateSelectTool,
-            &doc,
-            &selection,
-        ));
-    }
+/// via `prepare_command`. Uses `#[rstest]` parameterisation to verify the
+/// panic message contains "dispatcher bug" for all editor action variants.
+#[rstest]
+#[case::select_all(Action::SelectAll)]
+#[case::deselect_all(Action::DeselectAll)]
+#[case::undo(Action::Undo)]
+#[case::redo(Action::Redo)]
+#[case::activate_pen_tool(Action::ActivatePenTool)]
+#[case::activate_select_tool(Action::ActivateSelectTool)]
+#[should_panic(expected = "dispatcher bug")]
+fn editor_action_panics(#[case] action: Action) {
+    let doc = Document::default();
+    let selection = Selection::default();
+    drop(prepare_command(action, &doc, &selection));
 }

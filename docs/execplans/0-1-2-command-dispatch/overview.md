@@ -61,7 +61,7 @@ Command errors are separated by audience and recovery strategy:
 
 - **Internal errors**: Dispatcher bugs and invariant violations. These use
   `panic!()` or `debug_assert!()` to fail fast during development. In release
-  builds, defensive checks prevent undefined behaviour while logging indicates
+  builds, defensive checks prevent undefined behaviour, while logging indicates
   bugs.
 
 This separation follows the principle: **fail fast for programmer errors,
