@@ -14,20 +14,18 @@ ______________________________________________________________________
 - **Feasibility:** High, with caveats. AccessKit already ships platform adapters
   for **Windows (UIA)**, **macOS (NSAccessibility)** and **Unix (AT‑SPI)**.
   It's explicitly designed so immediate‑mode toolkits (like GPUI) can expose an
-  accessibility tree with **stable node IDs**. ([GitHub][1])
+  accessibility tree with **stable node IDs**.[^1]
 - **Biggest technical risk:** **Text**. AccessKit's adapters support
   single/multi‑line text inputs today; **rich/hypertext** are not yet supported
   upstream. If Marrakesh Express needs full rich‑text semantics (attributes per
-  range, embedded objects), constrain features for v1 or fund upstream work.
-  ([GitHub][1])
+  range, embedded objects), constrain features for v1 or fund upstream work.[^1]
 - **Why now:** Zed/GPUI currently lacks practical Windows screen‑reader support
   (recent user report: "absolutely inaccessible"), so shipping without this
-  work is not an option. ([GitHub][2])
+  work is not an option.[^2]
 - **Tooling reality:** Accessibility (a11y) does not come for free. The
   GPUI↔AccessKit bridge must be built and maintained, then verified with
   OS‑level tools: **Accessibility Insights/Inspect** (Windows), **Accessibility
-  Inspector/VoiceOver** (macOS), **Accerciser/Orca** (Linux). ([Accessibility
-  Insights][3])
+  Inspector/VoiceOver** (macOS), **Accerciser/Orca** (Linux).[^3]
 
 Bottom line: with a focused integration, disciplined text support, and a
 rigorous test matrix, **screen reader + limited mobility** requirements can be
@@ -43,31 +41,29 @@ ______________________________________________________________________
   states, and actions; text controls implement **TextPattern** (and
   **TextEditPattern** when editing), including caret movement, selection
   ranges, word/line navigation and text‑changed events. Verified on **NVDA**,
-  **JAWS**, and **Narrator** with **Inspect**/**Accessibility Insights**.
-  ([Microsoft Learn][4])
+  **JAWS**, and **Narrator** with **Inspect**/**Accessibility Insights**.[^4]
 - **macOS:** Widgets expose **NSAccessibility** roles/attributes; text
   implements the macOS text attributes and notifications VoiceOver expects.
-  Verified with **VoiceOver** and **Accessibility Inspector**. ([Apple
-  Developer][5])
+  Verified with **VoiceOver** and **Accessibility Inspector**.[^5]
 - **Linux:** Widgets expose **AT‑SPI** roles/states/actions; text implements
   **Atspi.Text** interface with selections and text attributes. Verified with
-  **Orca** and **Accerciser**. ([gnome.pages.gitlab.gnome.org][6])
+  **Orca** and **Accerciser**.[^6]
 
 ### Limited mobility
 
 - **Keyboard‑only operation:** Logical focus order, consistent and visible focus
   indication, no keyboard traps, and full command coverage from the keyboard
   (parallels Web Content Accessibility Guidelines (WCAG) 2.x **2.1 Keyboard**,
-  **2.4 Focus Order/Visible**). ([W3C][7])
+  **2.4 Focus Order/Visible**).[^7]
 - **Switch/voice control:** All actionable elements expose programmatic
   **invoke**/**set value** actions via platform APIs (UIA patterns /
-  NSAccessibility actions / AT‑SPI actions). ([Microsoft Learn][8])
+  NSAccessibility actions / AT‑SPI actions).[^8]
 - **Low‑vision:** High‑contrast theme tokens and scalable typography; platform
   contrast settings respected where possible.
 
 For procurement‑grade compliance in Europe, align with **EN 301 549** for
 "non‑web software". It references WCAG but explicitly covers native desktop
-software too. ([ETSI][9])
+software too.[^9]
 
 ______________________________________________________________________
 
@@ -92,29 +88,27 @@ Below are **scope**, **risks**, and **proof points** assessments per step.
 
 - AccessKit's design explicitly targets immediate‑mode UIs given **stable node
   IDs**, and provides per‑OS adapters already. GPUI's architecture (AppContext
-  owns entities) provides a central locus to generate stable identities.
-  ([GitHub][1])
+  owns entities) provides a central locus to generate stable identities.[^1]
 
 **Notable risks:**
 
 - **Windowing:** GPUI does not use winit by default; integrate AccessKit's
   adapters directly (not accesskit_winit). This is normal: the Windows adapter
   hooks WM_GETOBJECT and focus, macOS adapter subclasses NSView or forwards
-  focus, Unix adapter binds AT‑SPI over D‑Bus. ([GitHub][10])
+  focus, Unix adapter binds AT‑SPI over D‑Bus.[^10]
 - **Threading & event order:** UIA demands initialisation before responding to
   WM_GETOBJECT; the Windows adapter provides a handle_wm_getobject flow and
-  update_if_active/update_window_focus_state to ensure correctness.
-  ([Docs.rs][11])
+  update_if_active/update_window_focus_state to ensure correctness.[^11]
 
 **Proof points:**
 
 - **Windows**: Adapter::new(HWND, focused, action_handler); call
-  handle_wm_getobject on WM_GETOBJECT; call update_if_active on tree changes.
-  ([Docs.rs][11])
+  handle_wm_getobject on WM_GETOBJECT; call update_if_active on tree
+  changes.[^11]
 - **macOS**: accesskit_macos::Adapter or SubclassingAdapter; forward focus from
-  NSWindow to content view if needed. ([Docs.rs][12])
-- **Linux**: accesskit_unix adapter publishing roles/states/actions to AT‑SPI.
-  ([doc.servo.org][13])
+  NSWindow to content view if needed.[^12]
+- **Linux**: accesskit_unix adapter publishing roles/states/actions to
+  AT‑SPI.[^13]
 
 **Sizing:** Medium–Large (core platform work across three OSes).
 
@@ -132,7 +126,7 @@ ______________________________________________________________________
   - value change notifications and editable text actions.
 - On Windows that maps to **UIA TextPattern/TextEditPattern**; Linux maps to
   **Atspi.Text**; macOS maps to the corresponding NSAccessibility text
-  attributes/events. ([Microsoft Learn][4])
+  attributes/events.[^4]
 
 **Risk to call out:**
 
@@ -140,14 +134,13 @@ ______________________________________________________________________
   inputs but **not rich/hypertext** yet. For rich text editing (attributes per
   span, embedded links, code folding), scope features or extend AccessKit's
   schema/adapter support. For standard form inputs, the current support is
-  sufficient. ([GitHub][1])
+  sufficient.[^1]
 
 **Proof points:**
 
 - Verify in **Accessibility Insights/Inspect** that a text field exposes
   **TextPattern**; cursor movement fires **TextSelectionChanged**
-  appropriately; VoiceOver/Orca can read/modify selection by word/line.
-  ([Accessibility Insights][14])
+  appropriately; VoiceOver/Orca can read/modify selection by word/line.[^14]
 
 **Sizing:** Large for rich text; Medium for standard text inputs.
 
@@ -168,7 +161,7 @@ ______________________________________________________________________
 - Contrast ratios meet WCAG AA for text and UI components; focused elements are
   clearly visible and not colour‑only. (Yes, WCAG is "web", but the contrast
   maths applies just as well to native surfaces; EN 301 549 references WCAG
-  criteria for non‑web software.) ([ETSI][9])
+  criteria for non‑web software.)[^9]
 
 **Sizing:** Small–Medium; mainly design tokens + a few component tweaks.
 
@@ -184,15 +177,14 @@ ______________________________________________________________________
   - Inspectors: **Accessibility Insights**/**Inspect** (Windows),
     **Accessibility Inspector** (macOS), **Accerciser** (Linux).
   - Scenarios: focus order; announcing names/roles/states; text entry/editing;
-    list/grid navigation; menus; live updates; error notifications.
-    ([Accessibility Insights][3])
+    list/grid navigation; menus; live updates; error notifications.[^3]
 
 **Proof points:**
 
 - Capture **AT transcripts** for each scenario (what the screen reader
   announces, keystrokes used) and keep them in CI artefacts.
 - Use **Accessibility Insights** to assert required UIA patterns/properties
-  during build. ([Accessibility Insights][3])
+  during build.[^3]
 
 **Sizing:** Ongoing; initial setup Medium.
 
@@ -224,17 +216,16 @@ ______________________________________________________________________
 - **Stable Node IDs:** Immediate‑mode toolkits must keep **stable identities**
   for elements across frames. Map GPUI entities to **AccessKit NodeId**
   deterministically (e.g., a u64 derived from a component key + stable path).
-  AccessKit's design assumes this and avoids keeping the full tree locally.
-  ([GitHub][1])
+  AccessKit's design assumes this and avoids keeping the full tree locally.[^1]
 - **Focus & window activation:** Drive focus through GPUI's focus manager and
   forward it into the adapter (update_window_focus_state). On Windows, ensure
-  UIA is initialised **before** returning from WM_GETOBJECT. ([Docs.rs][11])
+  UIA is initialised **before** returning from WM_GETOBJECT.[^11]
 - **Performance:** Accessibility tree updates are **incremental**; only diffs
   are pushed to the adapter. This keeps overhead low, provided updates are
-  coalesced sensibly. ([GitHub][1])
+  coalesced sensibly.[^1]
 - **GPUI/plumbing reality:** GPUI uses its own windowing; plan to integrate the
   **platform adapters directly**, not via accesskit_winit. (There is an
-  accesskit_winit crate, but it's for winit‑based apps.) ([GitHub][10])
+  accesskit_winit crate, but it's for winit‑based apps.)[^10]
 
 ______________________________________________________________________
 
@@ -288,7 +279,7 @@ impl A11y {
 See Adapter::new, handle_wm_getobject, update_if_active,
 update_window_focus_state in the Windows adapter. macOS (accesskit_macos) and
 Linux (accesskit_unix) expose similar "adapter + updates" patterns for
-NSAccessibility and AT‑SPI respectively. ([Docs.rs][11])
+NSAccessibility and AT‑SPI respectively.[^11]
 
 ______________________________________________________________________
 
@@ -298,17 +289,17 @@ ______________________________________________________________________
    AccessKit's own docs state rich text/hypertext aren't yet implemented in
    adapters. If Marrakesh Express requires attribute runs, in‑line widgets,
    hyperlinks, or code‑editor semantics, expect upstream work and extra
-   testing. Otherwise, constrain to plain text for v1. ([GitHub][1])
+   testing. Otherwise, constrain to plain text for v1.[^1]
 
 2. **Windows parity pressure**
    Windows users are vocal (rightly). Zed's current Windows a11y issue shows
    expectations: NVDA/JAWS must work end‑to‑end. Treat **UIA TextPattern**
-   conformance as a gate. ([GitHub][2])
+   conformance as a gate.[^2]
 
 3. **Fragmentation across three OSes**
    Expect platform quirks (e.g., NSAccessibility focus forwarding, AT‑SPI event
    ordering). The adapters smooth many edges, but the test matrix ensures
-   compliance. ([Docs.rs][12])
+   compliance.[^12]
 
 ______________________________________________________________________
 
@@ -317,13 +308,11 @@ ______________________________________________________________________
 - **Smoke** (every build):
 
   - Windows: Accessibility Insights "FastPass" on key windows shows correct
-    **control types**, **names**, **patterns** (especially TextPattern).
-    ([Accessibility Insights][3])
+    **control types**, **names**, **patterns** (especially TextPattern).[^3]
   - macOS: Accessibility Inspector shows expected roles/labels; VoiceOver can
-    navigate the main flows without rotor spelunking.
-    ([Apple Developer][15])
+    navigate the main flows without rotor spelunking.[^15]
   - Linux: Accerciser tree shows correct roles/states; Orca reads and edits text
-    fields and announces selections. ([help.gnome.org][16])
+    fields and announces selections.[^16]
 - **Scenario** (manual scripts):
 
   - Task flows (create/open/search/send/etc.) are **completely** operable from
@@ -343,18 +332,17 @@ ______________________________________________________________________
 
 - **AccessKit** (design, adapters, immediate‑mode suitability, single/multi‑line
   text support, lack of rich text/hypertext): project site and README; plus
-  adapter crates on docs.rs/crates.io. ([GitHub][1])
+  adapter crates on docs.rs/crates.io.[^1]
 - **GPUI architecture** (AppContext, entity ownership): Zed blog—useful to
-  reason about stable node identities and update boundaries. ([Zed][17])
+  reason about stable node identities and update boundaries.[^17]
 - **GPUI↔winit** (not used): confirms adapters must be embedded directly, not
-  via accesskit_winit. ([GitHub][10])
+  via accesskit_winit.[^10]
 - **Zed Windows a11y status:** recent issue describing real‑world lack of
-  screen‑reader support—the baseline to beat. ([GitHub][2])
+  screen‑reader support—the baseline to beat.[^2]
 - **Text patterns & inspectors:** official Microsoft UIA text pattern docs;
-  Apple/Orca docs; Accessibility Insights/Inspect/Accerciser usage. ([Microsoft
-  Learn][4])
+  Apple/Orca docs; Accessibility Insights/Inspect/Accerciser usage.[^4]
 - **Standards:** WCAG 2.2 (focus order etc.) and EN 301 549 for non‑web
-  software. ([W3C][18])
+  software.[^18]
 
 ______________________________________________________________________
 
@@ -362,7 +350,7 @@ ______________________________________________________________________
 
 - **Compliance runway:** Credibly claim screen‑reader support across desktop
   OSes, align with **EN 301 549** expectations, and keep procurement doors open
-  in the UK/EU public sector. ([ETSI][9])
+  in the UK/EU public sector.[^9]
 - **User trust:** Screen‑reader users get first‑class support rather than a
   post‑script apology.
 - **Future‑proofing:** When AccessKit gains richer text/hypertext, the GPUI
@@ -376,30 +364,43 @@ ______________________________________________________________________
    node tree + actions and prove NVDA/VoiceOver/Orca navigation works
    end‑to‑end.
 2. **Ship text inputs** with full caret/selection semantics; lock down
-   TextPattern on Windows. ([Microsoft Learn][4])
+   TextPattern on Windows.[^4]
 3. **Roll out component by component** per the a11y matrix; add contrast tokens
    and a high‑contrast theme early to avoid re‑painting later.
 4. **Automate inspections** (Windows first with Accessibility Insights CLI) to
-   stop regressions. ([Accessibility Insights][3])
+   stop regressions.[^3]
 
 Treat this as foundational infrastructure, not "nice to have". Do it well once;
 reap the benefits release after release.
 
-[1]: <https://github.com/AccessKit/accesskit> "AccessKit on GitHub"
-[2]: <https://github.com/zed-industries/zed/issues/41138> "Windows screen reader accessibility issue"
-[3]: <https://accessibilityinsights.io/docs/windows/overview/> "Accessibility Insights for Windows"
-[4]: <https://learn.microsoft.com/en-us/dotnet/framework/ui-automation/ui-automation-textpattern-overview> "UI Automation TextPattern Overview"
-[5]: <https://developer.apple.com/documentation/accessibility/voiceover> "VoiceOver documentation"
-[6]: <https://gnome.pages.gitlab.gnome.org/at-spi2-core/libatspi/iface.Text.html> "Atspi.Text"
-[7]: <https://www.w3.org/WAI/WCAG21/Understanding/focus-order.html> "WCAG Focus Order"
-[8]: <https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-implementingtextandtextrange> "Text and TextRange Control Patterns"
-[9]: <https://www.etsi.org/human-factors-accessibility/en-301-549-v3-the-harmonized-european-standard-for-ict-accessibility> "EN 301 549"
-[10]: <https://github.com/rust-windowing/winit/issues/3535> "GPUI and winit discussion"
-[11]: <https://docs.rs/accesskit_windows/latest/accesskit_windows/struct.Adapter.html> "accesskit_windows Adapter"
-[12]: <https://docs.rs/accesskit_macos> "accesskit_macos"
-[13]: <https://doc.servo.org/accesskit_unix/atspi/index.html> "accesskit_unix::atspi"
-[14]: <https://accessibilityinsights.io/docs/windows/getstarted/inspect/> "Accessibility Insights Inspect"
-[15]: <https://developer.apple.com/documentation/accessibility/accessibility-inspector> "Accessibility Inspector"
-[16]: <https://help.gnome.org/users/orca/> "Orca Screen Reader"
-[17]: <https://zed.dev/blog/gpui-ownership> "GPUI Ownership - Zed Blog"
-[18]: <https://www.w3.org/WAI/WCAG22/quickref/> "How to Meet WCAG"
+[^1]: <https://github.com/AccessKit/accesskit> "AccessKit on GitHub"
+[^2]: <https://github.com/zed-industries/zed/issues/41138> "Windows screen
+      reader accessibility issue"
+[^3]: <https://accessibilityinsights.io/docs/windows/overview/> "Accessibility
+      Insights for Windows"
+[^4]: <https://learn.microsoft.com/en-us/dotnet/framework/ui-automation/ui-automation-textpattern-overview>
+       "UI Automation TextPattern Overview"
+[^5]: <https://developer.apple.com/documentation/accessibility/voiceover>
+      "VoiceOver documentation"
+[^6]: <https://gnome.pages.gitlab.gnome.org/at-spi2-core/libatspi/iface.Text.html>
+       "Atspi.Text"
+[^7]: <https://www.w3.org/WAI/WCAG21/Understanding/focus-order.html> "WCAG
+      Focus Order"
+[^8]: <https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-implementingtextandtextrange>
+       "Text and TextRange Control Patterns"
+[^9]: <https://www.etsi.org/human-factors-accessibility/en-301-549-v3-the-harmonized-european-standard-for-ict-accessibility>
+       "EN 301 549"
+[^10]: <https://github.com/rust-windowing/winit/issues/3535> "GPUI and winit
+       discussion"
+[^11]: <https://docs.rs/accesskit_windows/latest/accesskit_windows/struct.Adapter.html>
+        "accesskit_windows Adapter"
+[^12]: <https://docs.rs/accesskit_macos> "accesskit_macos"
+[^13]: <https://doc.servo.org/accesskit_unix/atspi/index.html>
+       "accesskit_unix::atspi"
+[^14]: <https://accessibilityinsights.io/docs/windows/getstarted/inspect/>
+       "Accessibility Insights Inspect"
+[^15]: <https://developer.apple.com/documentation/accessibility/accessibility-inspector>
+        "Accessibility Inspector"
+[^16]: <https://help.gnome.org/users/orca/> "Orca Screen Reader"
+[^17]: <https://zed.dev/blog/gpui-ownership> "GPUI Ownership - Zed Blog"
+[^18]: <https://www.w3.org/WAI/WCAG22/quickref/> "How to Meet WCAG"
