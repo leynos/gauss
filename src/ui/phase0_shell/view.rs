@@ -2,9 +2,15 @@
 
 use gpui::{Window, div, prelude::*, white};
 
+use crate::model::KeyContext;
+use crate::ui::action_bridge::{
+    GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeleteSelection, GpuiDeselectAll, GpuiRedo,
+    GpuiSelectAll, GpuiUndo, context_for_tool_mode,
+};
+
 use super::{
-    CloseWindow, KEY_CONTEXT, MinimizeWindow, OpenSvg, Phase0Shell, SaveSvg, ShowWindowMenu,
-    StartWindowMove, StartWindowResize, ToggleEdgeMode, ToggleFullscreen, ToggleMaximize,
+    CloseWindow, MinimizeWindow, OpenSvg, Phase0Shell, SaveSvg, ShowWindowMenu, StartWindowMove,
+    StartWindowResize, ToggleEdgeMode, ToggleFullscreen, ToggleMaximize,
     chrome_palette::chrome_border, draw, file_dialogs, window_controls,
 };
 
@@ -196,6 +202,48 @@ impl Phase0Shell {
     }
 }
 
+impl Phase0Shell {
+    /// Bind model action handlers (from the action bridge) to the root element.
+    fn bind_model_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
+        el.on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiSelectAll, _, action_cx| {
+                shell.select_all(action_cx);
+            }),
+        )
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiDeselectAll, _, action_cx| {
+                shell.deselect_all(action_cx);
+            }),
+        )
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiDeleteSelection, _, action_cx| {
+                shell.delete_selected_anchors();
+                action_cx.notify();
+            }),
+        )
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiActivatePenTool, _, action_cx| {
+                shell.tool_mode = draw::ToolMode::Draw;
+                action_cx.notify();
+            }),
+        )
+        .on_action(cx.listener(
+            |shell: &mut Self, _: &GpuiActivateSelectTool, _, action_cx| {
+                shell.tool_mode = draw::ToolMode::Manipulate;
+                action_cx.notify();
+            },
+        ))
+        .on_action(cx.listener(|shell: &mut Self, _: &GpuiUndo, _, action_cx| {
+            shell.undo_document();
+            action_cx.notify();
+        }))
+        .on_action(cx.listener(|shell: &mut Self, _: &GpuiRedo, _, action_cx| {
+            shell.redo_document();
+            action_cx.notify();
+        }))
+    }
+}
+
 impl Render for Phase0Shell {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         if !self.did_focus {
@@ -211,9 +259,19 @@ impl Render for Phase0Shell {
         // Track viewport size changes and adjust pan to maintain anchor point
         self.handle_window_resize(window);
 
+        // Determine which key context to apply. For now, we use only the global
+        // context. Mode-specific contexts (for ManipulateMode-only shortcuts like
+        // Delete) would require a different approach since GPUI's key_context()
+        // replaces rather than adds to the context.
+        let _mode_context = context_for_tool_mode(self.tool_mode);
+
         let root = div()
             .size_full()
-            .key_context(KEY_CONTEXT)
+            // Apply global context for global shortcuts (Undo, Redo, Tab, etc.)
+            // Note: We only use the global context for now. Mode-specific context
+            // (for ManipulateMode-only shortcuts) will need a different approach
+            // since GPUI's key_context() replaces rather than adds.
+            .key_context(KeyContext::Global.as_ref())
             .track_focus(&self.focus_handle)
             .flex()
             .flex_col()
@@ -234,9 +292,12 @@ impl Render for Phase0Shell {
                 }),
             );
 
+        // Bind action handlers for model actions and window controls
+        let root_with_actions = Self::bind_model_actions(root, cx);
+
         // Check for maximized state change and trigger re-render if needed
         let is_maximized = self.check_maximized_state_change(window, cx);
-        Self::bind_window_actions(root, cx).child(self.chrome_view(is_maximized, cx))
+        Self::bind_window_actions(root_with_actions, cx).child(self.chrome_view(is_maximized, cx))
     }
 }
 

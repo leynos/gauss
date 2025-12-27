@@ -9,7 +9,7 @@ mod anchor_edit;
 mod chrome;
 mod chrome_palette;
 mod chrome_panels;
-mod draw;
+pub(crate) mod draw;
 mod file_dialogs;
 mod icon_button;
 mod input;
@@ -30,23 +30,13 @@ use std::path::PathBuf;
 use gpui::prelude::*;
 use gpui_component::history::History;
 
-use crate::model::{Document, PaintStyle, ResizeAnchor, Selection, ShapeId, Vec2, Viewport};
+use crate::model::{
+    Document, KeyContext, PaintStyle, ResizeAnchor, Selection, ShapeId, Vec2, Viewport,
+};
 
 use super::phase0_support::demo_document;
 
 use self::{draw::DrawEdgeMode, file_dialogs::OpenPromptMode};
-
-/// Keymap context used for Phase 0 shell bindings.
-///
-/// GPUI key bindings are dispatched relative to an element's key context. Phase
-/// 0 sets this context on the root `div()` for the shell so global editor
-/// shortcuts (for example, `Tab` to toggle the draw edge mode) work even when a
-/// child element holds focus.
-///
-/// Note: this string must be valid `gpui::KeyContext` syntax, which accepts
-/// identifiers (letters/digits), plus `_` and `-`. Avoid `.` here: it is not a
-/// valid identifier character in GPUI key contexts.
-pub const KEY_CONTEXT: &str = "gauss-phase0";
 
 /// Trigger an “Open…” workflow for loading a document from disk.
 #[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
@@ -111,26 +101,33 @@ pub struct ShowWindowMenu;
 /// - Window controls use Alt-based shortcuts (cross-platform fallback)
 /// - macOS: Cmd+M for minimize, Cmd+Q for quit
 /// - Linux: Alt+F7/F8 patterns for move/resize (GNOME/KDE convention)
+///
+/// Note: Model-layer action bindings (Undo, Redo, `SelectAll`, etc.) are
+/// registered separately via [`crate::ui::action_bridge::register_action_bindings`].
 pub fn bind_keymap(app: &mut gpui::App) {
     use gpui::KeyBinding;
 
+    // Global context string for editor-wide shortcuts
+    let global = Some(KeyContext::Global.as_ref());
+
+    // Editor-specific bindings (not in the model Action enum)
     app.bind_keys([
-        KeyBinding::new("tab", ToggleEdgeMode, Some(KEY_CONTEXT)),
+        KeyBinding::new("tab", ToggleEdgeMode, global),
         // Cross-platform window controls
-        KeyBinding::new("alt-f4", CloseWindow, Some(KEY_CONTEXT)),
-        KeyBinding::new("alt-f9", MinimizeWindow, Some(KEY_CONTEXT)),
-        KeyBinding::new("alt-f10", ToggleMaximize, Some(KEY_CONTEXT)),
-        KeyBinding::new("alt-f11", ToggleFullscreen, Some(KEY_CONTEXT)),
-        KeyBinding::new("alt-space", ShowWindowMenu, Some(KEY_CONTEXT)),
-        KeyBinding::new("alt-f7", StartWindowMove, Some(KEY_CONTEXT)),
-        KeyBinding::new("alt-f8", StartWindowResize, Some(KEY_CONTEXT)),
+        KeyBinding::new("alt-f4", CloseWindow, global),
+        KeyBinding::new("alt-f9", MinimizeWindow, global),
+        KeyBinding::new("alt-f10", ToggleMaximize, global),
+        KeyBinding::new("alt-f11", ToggleFullscreen, global),
+        KeyBinding::new("alt-space", ShowWindowMenu, global),
+        KeyBinding::new("alt-f7", StartWindowMove, global),
+        KeyBinding::new("alt-f8", StartWindowResize, global),
     ]);
 
     #[cfg(target_os = "macos")]
     app.bind_keys([
-        KeyBinding::new("cmd-m", MinimizeWindow, Some(KEY_CONTEXT)),
-        KeyBinding::new("cmd-q", CloseWindow, Some(KEY_CONTEXT)),
-        KeyBinding::new("ctrl-cmd-f", ToggleFullscreen, Some(KEY_CONTEXT)),
+        KeyBinding::new("cmd-m", MinimizeWindow, global),
+        KeyBinding::new("cmd-q", CloseWindow, global),
+        KeyBinding::new("ctrl-cmd-f", ToggleFullscreen, global),
     ]);
 }
 

@@ -86,9 +86,9 @@ phases depend upon. See architecture document §20.
 - [x] 0.1.2. Implement Command dispatch.
   - [x] Commands are concrete, undoable state changes.
   - [x] Commands are serializable for macro recording (optional initially).
-- [ ] 0.1.3. Create key context system.
-  - [ ] Actions bind to keyboard shortcuts via key contexts.
-  - [ ] Extend existing `KEY_CONTEXT` pattern from Phase 0.
+- [x] 0.1.3. Create key context system.
+  - [x] Actions bind to keyboard shortcuts via key contexts.
+  - [x] Extend existing `KEY_CONTEXT` pattern from Phase 0.
 
 ### 0.2. Core EngineState
 

@@ -28,13 +28,13 @@ use self::handles::{clear_line_segment_handles, close_shape, update_catmull_rom_
 const SNAP_RADIUS_PX: f32 = 10.0;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum ToolMode {
+pub(crate) enum ToolMode {
     Draw,
     Manipulate,
 }
 
 impl ToolMode {
-    pub(super) const fn label(self) -> &'static str {
+    pub(crate) const fn label(self) -> &'static str {
         match self {
             Self::Draw => "Draw",
             Self::Manipulate => "Manipulate",

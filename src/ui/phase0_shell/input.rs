@@ -7,6 +7,8 @@ use gpui::{
     Context, KeyDownEvent, Keystroke, Modifiers, MouseButton, MouseDownEvent, NavigationDirection,
 };
 
+use crate::model::{SelItem, Selection};
+
 use super::{Phase0Shell, draw::ToolMode};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -184,5 +186,36 @@ impl Phase0Shell {
         }
 
         cx.notify();
+    }
+
+    /// Select all shapes in the document.
+    pub(super) fn select_all(&mut self, cx: &mut Context<Self>) {
+        let previous = self.selection.clone();
+        let all_shapes: Vec<SelItem> = self
+            .document
+            .shapes
+            .iter()
+            .map(|shape| SelItem::Shape(shape.id))
+            .collect();
+
+        let new_selection = Selection { items: all_shapes };
+
+        if new_selection != previous {
+            self.record_selection_change(previous, new_selection.clone());
+            self.selection = new_selection;
+            cx.notify();
+        }
+    }
+
+    /// Clear the current selection.
+    pub(super) fn deselect_all(&mut self, cx: &mut Context<Self>) {
+        let previous = self.selection.clone();
+        let new_selection = Selection::empty();
+
+        if new_selection != previous {
+            self.record_selection_change(previous, new_selection.clone());
+            self.selection = new_selection;
+            cx.notify();
+        }
     }
 }
