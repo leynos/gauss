@@ -8,6 +8,8 @@
 pub enum CommandInverse {
     /// Restore deleted shapes to their original positions.
     RestoreShapes {
+        /// Name of the original command (for "Undo {name}" menu entries).
+        command_name: &'static str,
         /// Shapes to restore, with their original indices.
         targets: Vec<DeletedShape>,
     },
@@ -18,7 +20,7 @@ impl CommandInverse {
     #[must_use]
     pub fn name(&self) -> &'static str {
         match self {
-            Self::RestoreShapes { .. } => "Delete",
+            Self::RestoreShapes { command_name, .. } => command_name,
         }
     }
 
@@ -29,7 +31,7 @@ impl CommandInverse {
     /// Returns `CommandError` if the inverse cannot be applied.
     pub fn apply(&self, doc: &mut Document) -> Result<(), CommandError> {
         match self {
-            Self::RestoreShapes { targets } => apply_restore_shapes(doc, targets),
+            Self::RestoreShapes { targets, .. } => apply_restore_shapes(doc, targets),
         }
     }
 }

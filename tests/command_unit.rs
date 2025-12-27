@@ -166,7 +166,10 @@ fn command_name_is_delete() {
 
 #[rstest]
 fn command_inverse_name_matches() {
-    let inverse = CommandInverse::RestoreShapes { targets: vec![] };
+    let inverse = CommandInverse::RestoreShapes {
+        command_name: "Delete",
+        targets: vec![],
+    };
     assert_eq!(inverse.name(), "Delete");
 }
 
