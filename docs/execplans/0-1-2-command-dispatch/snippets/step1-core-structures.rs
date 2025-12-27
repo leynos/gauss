@@ -6,7 +6,7 @@
 //!
 //! Commands are GPUI-independent for testability and scripting.
 
-use crate::model::{Document, Selection, Shape, ShapeId};
+use crate::model::{Shape, ShapeId};
 
 /// Errors that can occur during command execution.
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
