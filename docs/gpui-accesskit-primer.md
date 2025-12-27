@@ -96,7 +96,7 @@ Below are **scope**, **risks**, and **proof points** assessments per step.
   adapters directly (not accesskit_winit). This is normal: the Windows adapter
   hooks WM_GETOBJECT and focus, macOS adapter subclasses NSView or forwards
   focus, Unix adapter binds AT‑SPI over D‑Bus.[^10]
-- **Threading & event order:** UIA demands initialisation before responding to
+- **Threading & event order:** UIA demands initialization before responding to
   WM_GETOBJECT; the Windows adapter provides a handle_wm_getobject flow and
   update_if_active/update_window_focus_state to ensure correctness.[^11]
 
@@ -219,7 +219,7 @@ ______________________________________________________________________
   AccessKit's design assumes this and avoids keeping the full tree locally.[^1]
 - **Focus & window activation:** Drive focus through GPUI's focus manager and
   forward it into the adapter (update_window_focus_state). On Windows, ensure
-  UIA is initialised **before** returning from WM_GETOBJECT.[^11]
+  UIA is initialized **before** returning from WM_GETOBJECT.[^11]
 - **Performance:** Accessibility tree updates are **incremental**; only diffs
   are pushed to the adapter. This keeps overhead low, provided updates are
   coalesced sensibly.[^1]
