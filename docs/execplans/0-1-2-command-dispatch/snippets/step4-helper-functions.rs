@@ -2,7 +2,11 @@
 // src/model/command.rs includes debug_assert! statements and different
 // return types.
 
-fn apply_delete_shapes(doc: &mut Document, targets: &[DeletedShape]) -> CommandInverse {
+fn apply_delete_shapes(
+    doc: &mut Document,
+    targets: &[DeletedShape],
+    command_name: &'static str,
+) -> CommandInverse {
     // Remove shapes in reverse index order to preserve indices during removal
     let mut sorted_indices: Vec<usize> = targets.iter().map(|t| t.index).collect();
     sorted_indices.sort_unstable_by(|a, b| b.cmp(a));
@@ -18,6 +22,7 @@ fn apply_delete_shapes(doc: &mut Document, targets: &[DeletedShape]) -> CommandI
     }
 
     CommandInverse::RestoreShapes {
+        command_name,
         targets: targets.to_vec(),
     }
 }

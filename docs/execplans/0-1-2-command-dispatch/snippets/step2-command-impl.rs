@@ -16,8 +16,9 @@ impl Command {
     /// Returns `CommandError` if the command cannot be executed (e.g.,
     /// referenced shapes do not exist).
     pub fn apply(&self, doc: &mut Document) -> Result<CommandInverse, CommandError> {
+        let command_name = self.name();
         match self {
-            Self::DeleteShapes { targets } => apply_delete_shapes(doc, targets),
+            Self::DeleteShapes { targets } => apply_delete_shapes(doc, targets, command_name),
         }
     }
 }
