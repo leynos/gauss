@@ -98,7 +98,10 @@ fn then_command_is_delete_shapes(world: &CommandWorld) -> TestSupportResult<()> 
 
     match cmd {
         Command::DeleteShapes { .. } => Ok(()),
-        #[allow(unreachable_patterns)]
+        #[expect(
+            unreachable_patterns,
+            reason = "Command is currently single-variant; arm guards future variants"
+        )]
         _ => Err(TestSupportError::expectation("expected DeleteShapes")),
     }
 }
@@ -118,33 +121,36 @@ fn then_command_targets_one_shape(world: &CommandWorld) -> TestSupportResult<()>
             "expected 1 target, got {}",
             targets.len()
         ))),
-        #[allow(unreachable_patterns)]
+        #[expect(
+            unreachable_patterns,
+            reason = "Command is currently single-variant; arm guards future variants"
+        )]
         _ => Err(TestSupportError::expectation("expected DeleteShapes")),
+    }
+}
+
+/// Helper: assert document has expected number of shapes.
+fn assert_doc_shape_count(world: &CommandWorld, expected: usize) -> TestSupportResult<()> {
+    if world.doc.shapes.len() == expected {
+        Ok(())
+    } else {
+        Err(TestSupportError::expectation(format!(
+            "expected {} shape{}, got {}",
+            expected,
+            if expected == 1 { "" } else { "s" },
+            world.doc.shapes.len()
+        )))
     }
 }
 
 #[then("the document should have one shape")]
 fn then_doc_has_one_shape(world: &CommandWorld) -> TestSupportResult<()> {
-    if world.doc.shapes.len() == 1 {
-        Ok(())
-    } else {
-        Err(TestSupportError::expectation(format!(
-            "expected 1 shape, got {}",
-            world.doc.shapes.len()
-        )))
-    }
+    assert_doc_shape_count(world, 1)
 }
 
 #[then("the document should have two shapes")]
 fn then_doc_has_two_shapes(world: &CommandWorld) -> TestSupportResult<()> {
-    if world.doc.shapes.len() == 2 {
-        Ok(())
-    } else {
-        Err(TestSupportError::expectation(format!(
-            "expected 2 shapes, got {}",
-            world.doc.shapes.len()
-        )))
-    }
+    assert_doc_shape_count(world, 2)
 }
 
 #[then("the command should fail with EmptySelection")]

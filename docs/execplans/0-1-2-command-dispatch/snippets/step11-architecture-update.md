@@ -1,4 +1,4 @@
-# Architecture Update: Command Design
+# Architecture update: command design
 
 ## 7.1 Command design (implemented 2025-12)
 

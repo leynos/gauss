@@ -19,7 +19,6 @@ mod tests {
 
     #[rstest]
     fn delete_shapes_removes_from_document(mut doc_with_two_shapes: Document) {
-        let id = doc_with_two_shapes.shapes[0].id;
         let cmd = Command::DeleteShapes {
             targets: vec![DeletedShape {
                 index: 0,

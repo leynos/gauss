@@ -31,7 +31,7 @@
 //!
 //! # Examples
 //!
-//! ```rust,no_run
+//! ```rust
 //! use gauss::model::{
 //!     Action, Command, Document, Selection, SelItem, Shape, prepare_command,
 //! };
@@ -93,7 +93,7 @@ pub struct DeletedShape {
 ///
 /// # Examples
 ///
-/// ```rust,no_run
+/// ```rust
 /// use gauss::model::{Command, DeletedShape};
 ///
 /// // Commands can be matched exhaustively within this crate
@@ -129,7 +129,7 @@ impl Command {
     ///
     /// # Examples
     ///
-    /// ```rust,no_run
+    /// ```rust
     /// use gauss::model::Command;
     ///
     /// let cmd = Command::DeleteShapes { targets: vec![] };
@@ -160,7 +160,7 @@ impl Command {
     ///
     /// # Examples
     ///
-    /// ```rust,no_run
+    /// ```rust
     /// use gauss::model::{Command, CommandInverse, DeletedShape, Document};
     ///
     /// let mut doc = Document::default();
@@ -181,7 +181,7 @@ impl Command {
 ///
 /// # Examples
 ///
-/// ```rust,no_run
+/// ```rust
 /// use gauss::model::{CommandInverse, DeletedShape, Document};
 ///
 /// let mut doc = Document::default();
@@ -226,7 +226,7 @@ impl CommandInverse {
     ///
     /// # Examples
     ///
-    /// ```rust,no_run
+    /// ```rust
     /// use gauss::model::{CommandInverse, DeletedShape, Document};
     ///
     /// let mut doc = Document::default();
@@ -269,7 +269,7 @@ impl CommandInverse {
 ///
 /// # Examples
 ///
-/// ```rust,no_run
+/// ```rust
 /// use gauss::model::{Action, Document, Selection, prepare_command};
 ///
 /// let doc = Document::default();
@@ -318,17 +318,11 @@ fn prepare_delete_selection(
         let Some(index) = doc.find_index(id) else {
             return Err(CommandError::ShapeNotFound(id));
         };
-        // find_index returned Some, so index is valid; use .get().expect() to
-        // signal programmer bug (not user error) if invariant is violated
-        #[expect(
-            clippy::expect_used,
-            reason = "find_index guarantees valid index; panic signals logic bug"
-        )]
-        let shape = doc
-            .shapes
-            .get(index)
-            .expect("find_index guarantees valid index")
-            .clone();
+        // find_index guarantees valid index; if violated, treat as shape not found
+        // (defensive: avoids panic in production while preserving error semantics)
+        let Some(shape) = doc.shapes.get(index).cloned() else {
+            return Err(CommandError::ShapeNotFound(id));
+        };
         targets.push(DeletedShape { index, shape });
     }
 

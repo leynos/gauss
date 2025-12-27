@@ -1,3 +1,6 @@
+// NOTE: This snippet reflects the actual implementation pattern.
+// See src/model/command.rs for the full version.
+
 /// Prepare a command from an action and current editor state.
 ///
 /// This function bridges user intent (Action) to concrete command (Command).
@@ -7,7 +10,7 @@
 /// # Errors
 ///
 /// Returns `CommandError` if the action cannot produce a valid command
-/// (e.g., DeleteSelection with empty selection).
+/// (e.g., DeleteSelection with empty selection, or a non-command action).
 pub fn prepare_command(
     action: Action,
     doc: &Document,
@@ -15,8 +18,13 @@ pub fn prepare_command(
 ) -> Result<Command, CommandError> {
     match action {
         Action::DeleteSelection => prepare_delete_selection(doc, selection),
-        // Other Document actions would be handled here
-        _ => unreachable!("only Document actions should be dispatched to prepare_command"),
+        // Editor actions do not produce commands; this is a dispatcher bug
+        Action::SelectAll
+        | Action::DeselectAll
+        | Action::ActivatePenTool
+        | Action::ActivateSelectTool
+        | Action::Undo
+        | Action::Redo => Err(CommandError::NotACommand(action)),
     }
 }
 
@@ -32,6 +40,7 @@ fn prepare_delete_selection(
     let shape_ids: Vec<ShapeId> = selection.selected_shapes().collect();
 
     if shape_ids.is_empty() {
+        // Selection contains only anchors/handles/segments, no whole shapes
         return Err(CommandError::EmptySelection);
     }
 
@@ -41,7 +50,11 @@ fn prepare_delete_selection(
         let Some(index) = doc.find_index(id) else {
             return Err(CommandError::ShapeNotFound(id));
         };
-        let shape = doc.shapes[index].clone();
+        // find_index guarantees valid index; if violated, treat as shape not found
+        // (defensive: avoids panic in production while preserving error semantics)
+        let Some(shape) = doc.shapes.get(index).cloned() else {
+            return Err(CommandError::ShapeNotFound(id));
+        };
         targets.push(DeletedShape { index, shape });
     }
 
