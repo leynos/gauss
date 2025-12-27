@@ -31,3 +31,8 @@ Feature: Command dispatch
   Scenario: Command has human-readable name
     When I prepare DeleteSelection action
     Then the command name should be "Delete"
+
+  Scenario: Inverse command has matching name
+    When I prepare DeleteSelection action
+    And I apply the command
+    Then the inverse name should be "Delete"

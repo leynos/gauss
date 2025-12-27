@@ -62,6 +62,14 @@
 
 use crate::model::{Action, Document, Selection, Shape, ShapeId};
 
+/// Panic message for dispatcher bugs where editor actions reach `prepare_command`.
+///
+/// Editor actions (`Undo`, `Redo`, `SelectAll`, etc.) do not produce commands and
+/// should be routed directly by the dispatcher. If they reach `prepare_command`,
+/// it indicates a bug in the dispatch logic.
+const DISPATCHER_BUG_MSG: &str = "dispatcher bug: this action does not produce a command \
+                                  and should be routed directly";
+
 /// User-facing errors that can occur during command preparation or execution.
 ///
 /// These errors represent semantic issues that should be presented to users
@@ -198,9 +206,8 @@ impl Command {
     /// let inverse = cmd.apply(&mut doc).expect("apply succeeded");
     /// ```
     pub fn apply(&self, doc: &mut Document) -> Result<CommandInverse, UserError> {
-        let command_name = self.name();
         match self {
-            Self::DeleteShapes { targets } => Ok(apply_delete_shapes(doc, targets, command_name)),
+            Self::DeleteShapes { targets } => Ok(apply_delete_shapes(doc, targets)),
         }
     }
 }
@@ -216,10 +223,7 @@ impl Command {
 /// use gauss::model::{CommandInverse, DeletedShape, Document};
 ///
 /// let mut doc = Document::default();
-/// let inverse = CommandInverse::RestoreShapes {
-///     command_name: "Delete",
-///     targets: vec![],
-/// };
+/// let inverse = CommandInverse::RestoreShapes { targets: vec![] };
 /// inverse.apply(&mut doc).expect("undo succeeded");
 /// ```
 #[derive(Clone, Debug, PartialEq)]
@@ -227,8 +231,6 @@ impl Command {
 pub enum CommandInverse {
     /// Restore deleted shapes to their original positions.
     RestoreShapes {
-        /// Name of the original command (for "Undo {name}" menu entries).
-        command_name: &'static str,
         /// Shapes to restore, with their original indices.
         targets: Vec<DeletedShape>,
     },
@@ -238,7 +240,8 @@ impl CommandInverse {
     /// Return a human-readable name for this inverse command.
     ///
     /// This is the same name as the original command, for use in
-    /// "Undo {name}" menu entries.
+    /// "Undo {name}" menu entries. The name is derived from the variant,
+    /// not stored state, to keep the inverse lightweight and avoid coupling.
     ///
     /// # Returns
     ///
@@ -246,7 +249,7 @@ impl CommandInverse {
     #[must_use]
     pub const fn name(&self) -> &'static str {
         match self {
-            Self::RestoreShapes { command_name, .. } => command_name,
+            Self::RestoreShapes { .. } => "Delete",
         }
     }
 
@@ -266,15 +269,12 @@ impl CommandInverse {
     /// use gauss::model::{CommandInverse, DeletedShape, Document};
     ///
     /// let mut doc = Document::default();
-    /// let inverse = CommandInverse::RestoreShapes {
-    ///     command_name: "Delete",
-    ///     targets: vec![],
-    /// };
+    /// let inverse = CommandInverse::RestoreShapes { targets: vec![] };
     /// inverse.apply(&mut doc).expect("undo succeeded");
     /// ```
     pub fn apply(&self, doc: &mut Document) -> Result<(), UserError> {
         match self {
-            Self::RestoreShapes { targets, .. } => {
+            Self::RestoreShapes { targets } => {
                 apply_restore_shapes(doc, targets);
                 Ok(())
             }
@@ -343,10 +343,7 @@ pub fn prepare_command(
         | Action::ActivatePenTool
         | Action::ActivateSelectTool
         | Action::Undo
-        | Action::Redo => panic!(
-            "dispatcher bug: action {action:?} does not produce a command \
-             and should be routed directly"
-        ),
+        | Action::Redo => panic!("{DISPATCHER_BUG_MSG} (got {action:?})"),
     }
 }
 
@@ -380,11 +377,7 @@ fn prepare_delete_selection(doc: &Document, selection: &Selection) -> Result<Com
     Ok(Command::DeleteShapes { targets })
 }
 
-fn apply_delete_shapes(
-    doc: &mut Document,
-    targets: &[DeletedShape],
-    command_name: &'static str,
-) -> CommandInverse {
+fn apply_delete_shapes(doc: &mut Document, targets: &[DeletedShape]) -> CommandInverse {
     // Remove shapes in reverse index order to preserve indices during removal
     let mut sorted_indices: Vec<usize> = targets.iter().map(|t| t.index).collect();
     sorted_indices.sort_unstable_by(|a, b| b.cmp(a));
@@ -402,7 +395,6 @@ fn apply_delete_shapes(
     }
 
     CommandInverse::RestoreShapes {
-        command_name,
         targets: targets.to_vec(),
     }
 }

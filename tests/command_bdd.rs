@@ -159,6 +159,23 @@ fn then_command_name_is_delete(world: &CommandWorld) -> TestSupportResult<()> {
     }
 }
 
+#[then(r#"the inverse name should be "Delete""#)]
+fn then_inverse_name_is_delete(world: &CommandWorld) -> TestSupportResult<()> {
+    let inverse = world
+        .inverse
+        .as_ref()
+        .ok_or_else(|| TestSupportError::missing("inverse", "check name"))?;
+
+    if inverse.name() == "Delete" {
+        Ok(())
+    } else {
+        Err(TestSupportError::expectation(format!(
+            r#"expected "Delete", got "{}""#,
+            inverse.name()
+        )))
+    }
+}
+
 // === Helper functions ===
 
 fn get_command(world: &CommandWorld) -> TestSupportResult<&Command> {
@@ -209,5 +226,13 @@ fn delete_selection_requires_selection(world: CommandWorld) {
     name = "Command has human-readable name"
 )]
 fn command_has_human_readable_name(world: CommandWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/command.feature",
+    name = "Inverse command has matching name"
+)]
+fn inverse_command_has_matching_name(world: CommandWorld) {
     let _ = world;
 }

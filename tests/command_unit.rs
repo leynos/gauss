@@ -165,11 +165,28 @@ fn command_name_is_delete() {
 }
 
 #[rstest]
-fn command_inverse_name_matches() {
-    let inverse = CommandInverse::RestoreShapes {
-        command_name: "Delete",
-        targets: vec![],
+fn command_inverse_name_is_delete() {
+    let inverse = CommandInverse::RestoreShapes { targets: vec![] };
+    assert_eq!(inverse.name(), "Delete");
+}
+
+#[rstest]
+fn inverse_name_matches_command_after_apply(mut doc_with_two_shapes: Document) {
+    let shape = doc_with_two_shapes
+        .shapes
+        .first()
+        .cloned()
+        .expect("fixture should have shapes");
+    let cmd = Command::DeleteShapes {
+        targets: vec![DeletedShape { index: 0, shape }],
     };
+
+    let inverse = cmd
+        .apply(&mut doc_with_two_shapes)
+        .expect("apply succeeded");
+
+    // Inverse name should match the command name
+    assert_eq!(inverse.name(), cmd.name());
     assert_eq!(inverse.name(), "Delete");
 }
 

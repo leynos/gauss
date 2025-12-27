@@ -1,6 +1,10 @@
 // NOTE: This snippet reflects the actual implementation pattern.
 // See src/model/command.rs for the full version.
 
+/// Panic message for dispatcher bugs where editor actions reach `prepare_command`.
+const DISPATCHER_BUG_MSG: &str = "dispatcher bug: this action does not produce a command \
+                                  and should be routed directly";
+
 /// Prepare a command from an action and current editor state.
 ///
 /// This function bridges user intent (Action) to concrete command (Command).
@@ -34,10 +38,7 @@ pub fn prepare_command(
         | Action::ActivatePenTool
         | Action::ActivateSelectTool
         | Action::Undo
-        | Action::Redo => panic!(
-            "dispatcher bug: action {action:?} does not produce a command \
-             and should be routed directly"
-        ),
+        | Action::Redo => panic!("{DISPATCHER_BUG_MSG} (got {action:?})"),
     }
 }
 
