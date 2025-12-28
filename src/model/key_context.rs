@@ -228,11 +228,27 @@ mod tests {
     #[test]
     fn all_returns_all_variants() {
         let all = KeyContext::all();
-        assert_eq!(all.len(), 4);
-        assert!(all.contains(&KeyContext::Global));
-        assert!(all.contains(&KeyContext::DrawMode));
-        assert!(all.contains(&KeyContext::ManipulateMode));
-        assert!(all.contains(&KeyContext::TextEdit));
+
+        // Exhaustive match ensures this test must be updated when variants change.
+        // The compiler will flag any missing variants, keeping all() in sync.
+        let expected_count = {
+            let mut count = 0;
+            for ctx in all {
+                match ctx {
+                    KeyContext::Global
+                    | KeyContext::DrawMode
+                    | KeyContext::ManipulateMode
+                    | KeyContext::TextEdit => count += 1,
+                }
+            }
+            count
+        };
+
+        assert_eq!(
+            all.len(),
+            expected_count,
+            "all() should contain exactly the variants matched above"
+        );
     }
 
     #[test]

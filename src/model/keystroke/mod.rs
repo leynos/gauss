@@ -306,20 +306,21 @@ impl Keystroke {
     /// ```
     #[must_use]
     pub fn to_gpui_string(&self) -> String {
-        let mut parts: Vec<&str> = self
+        let mut parts: Vec<String> = self
             .modifiers
             .active_in_order()
             .map(|m| match m {
-                Modifier::Control => "ctrl",
-                Modifier::Alt => "alt",
-                Modifier::Shift => "shift",
+                Modifier::Control => "ctrl".to_owned(),
+                Modifier::Alt => "alt".to_owned(),
+                Modifier::Shift => "shift".to_owned(),
                 // GPUI uses "cmd" for the secondary modifier regardless of platform;
                 // the platform mapping happens at runtime in GPUI.
-                Modifier::Secondary => "cmd",
+                Modifier::Secondary => "cmd".to_owned(),
             })
             .collect();
 
-        parts.push(&self.key);
+        // Normalise key to lowercase to match documented GPUI format
+        parts.push(self.key.to_lowercase());
         parts.join("-")
     }
 

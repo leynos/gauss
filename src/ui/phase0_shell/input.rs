@@ -174,7 +174,6 @@ impl Phase0Shell {
 
     /// Select all shapes in the document.
     pub(super) fn select_all(&mut self, cx: &mut Context<Self>) {
-        let previous = self.selection.clone();
         let all_shapes: Vec<SelItem> = self
             .document
             .shapes
@@ -182,21 +181,18 @@ impl Phase0Shell {
             .map(|shape| SelItem::Shape(shape.id))
             .collect();
 
-        let new_selection = Selection { items: all_shapes };
-
-        if new_selection != previous {
-            self.record_selection_change(previous, new_selection.clone());
-            self.selection = new_selection;
-            cx.notify();
-        }
+        self.apply_selection_change(Selection { items: all_shapes }, cx);
     }
 
     /// Clear the current selection.
     pub(super) fn deselect_all(&mut self, cx: &mut Context<Self>) {
-        let previous = self.selection.clone();
-        let new_selection = Selection::empty();
+        self.apply_selection_change(Selection::empty(), cx);
+    }
 
-        if new_selection != previous {
+    /// Apply a selection change, recording it in history if different from current.
+    fn apply_selection_change(&mut self, new_selection: Selection, cx: &mut Context<Self>) {
+        if new_selection != self.selection {
+            let previous = self.selection.clone();
             self.record_selection_change(previous, new_selection.clone());
             self.selection = new_selection;
             cx.notify();
