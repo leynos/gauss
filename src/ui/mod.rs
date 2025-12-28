@@ -16,7 +16,7 @@ mod viewport_input;
 
 pub use action_bridge::{
     GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeleteSelection, GpuiDeselectAll, GpuiRedo,
-    GpuiSelectAll, GpuiUndo,
+    GpuiSelectAll, GpuiSelectionRedo, GpuiSelectionUndo, GpuiUndo,
 };
 pub use gauss_window_border::GaussRoot;
 pub(crate) use icon_assets::{UiIcon, icon_element};

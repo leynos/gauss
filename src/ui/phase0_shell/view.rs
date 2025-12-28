@@ -5,7 +5,7 @@ use gpui::{Window, div, prelude::*, white};
 use crate::model::KeyContext;
 use crate::ui::action_bridge::{
     GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeleteSelection, GpuiDeselectAll, GpuiRedo,
-    GpuiSelectAll, GpuiSelectionRedo, GpuiSelectionUndo, GpuiUndo, context_for_tool_mode,
+    GpuiSelectAll, GpuiSelectionRedo, GpuiSelectionUndo, GpuiUndo,
 };
 
 use super::{
@@ -271,11 +271,10 @@ impl Render for Phase0Shell {
         // Track viewport size changes and adjust pan to maintain anchor point
         self.handle_window_resize(window);
 
-        // Determine which key context to apply. For now, we use only the global
-        // context. Mode-specific contexts (for ManipulateMode-only shortcuts like
+        // Note: Mode-specific key contexts (for ManipulateMode-only shortcuts like
         // Delete) would require a different approach since GPUI's key_context()
-        // replaces rather than adds to the context.
-        let _mode_context = context_for_tool_mode(self.tool_mode);
+        // replaces rather than adds. See action_bridge::context_for_tool_mode() for
+        // future use.
 
         let root = div()
             .size_full()

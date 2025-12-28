@@ -4,7 +4,7 @@ mod common;
 
 use common::{
     anchor_to_canvas_point, click_canvas_and_wait, ensure_initial_draw, init_test_app,
-    read_document, require_draw_shape, simulate_escape, simulate_key,
+    read_document, require_draw_shape, simulate_escape,
 };
 use gauss::model::{Rgba, SelItem, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
@@ -91,8 +91,8 @@ fn style_changes_apply_to_selected_shapes_and_are_undoable(cx: &mut TestAppConte
         "expected fill to be updated to blue"
     );
 
-    simulate_key(visual_cx, "z", Modifiers::secondary_key());
-    simulate_key(visual_cx, "z", Modifiers::secondary_key());
+    common::simulate_document_undo(visual_cx);
+    common::simulate_document_undo(visual_cx);
 
     let doc_after_undo = read_document(visual_cx, &view);
     let shape_after_undo =

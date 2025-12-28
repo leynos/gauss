@@ -8,11 +8,11 @@ mod common;
 
 use common::{
     anchor_to_canvas_point, click_left_and_wait, draw_point, ensure_initial_draw, init_test_app,
-    require_draw_shape, shift_secondary, simulate_escape, simulate_key,
+    require_draw_shape, simulate_escape,
 };
 use gauss::model::Vec2;
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, TestAppContext, point, px};
+use gpui::{TestAppContext, point, px};
 
 #[gpui::test]
 fn selection_undo_uses_shift_modified_stack(cx: &mut TestAppContext) {
@@ -69,14 +69,14 @@ fn selection_undo_uses_shift_modified_stack(cx: &mut TestAppContext) {
         "expected selection to be cleared; got selection={selection_after_clear:?}"
     );
 
-    simulate_key(visual_cx, "z", shift_secondary(Modifiers::secondary_key()));
+    common::simulate_selection_undo(visual_cx);
     let selection_after_undo = visual_cx.read(|app| view.read(app).selection().clone());
     assert_eq!(
         selection_after_undo, selected_snapshot,
         "expected Shift+Undo to restore the selection"
     );
 
-    simulate_key(visual_cx, "y", shift_secondary(Modifiers::secondary_key()));
+    common::simulate_selection_redo(visual_cx);
     let selection_after_redo = visual_cx.read(|app| view.read(app).selection().clone());
     assert_eq!(
         selection_after_redo, selection_after_clear,

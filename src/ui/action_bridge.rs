@@ -181,6 +181,16 @@ pub fn register_action_bindings(app: &mut gpui::App) {
 /// # Returns
 ///
 /// The [`KeyContext`] corresponding to the tool mode.
+///
+/// # Note
+///
+/// This function is currently unused because GPUI's `key_context()` replaces
+/// rather than stacks contexts. It is retained for future use when mode-specific
+/// shortcuts can be properly supported.
+#[expect(
+    dead_code,
+    reason = "retained for future mode-specific context support"
+)]
 pub(crate) const fn context_for_tool_mode(mode: super::phase0_shell::draw::ToolMode) -> KeyContext {
     use super::phase0_shell::draw::ToolMode;
     match mode {

@@ -11,7 +11,7 @@
 // helpers, so allow dead code to keep the shared test surface in one place.
 
 use gauss::model::{Document, SelItem, Selection, Shape, ShapeId, Vec2};
-use gauss::ui::Phase0Shell;
+use gauss::ui::{GpuiRedo, GpuiSelectionRedo, GpuiSelectionUndo, GpuiUndo, Phase0Shell};
 use gpui::{
     Bounds, Entity, KeyDownEvent, Keystroke, Modifiers, MouseButton, Pixels, Point, TestAppContext,
     VisualTestContext, point, px,
@@ -199,7 +199,23 @@ pub const fn shift_secondary(modifiers: Modifiers) -> Modifiers {
 }
 
 pub fn simulate_document_undo(visual_cx: &mut VisualTestContext) {
-    simulate_key(visual_cx, "z", Modifiers::secondary_key());
+    visual_cx.dispatch_action(GpuiUndo);
+    visual_cx.run_until_parked();
+}
+
+pub fn simulate_document_redo(visual_cx: &mut VisualTestContext) {
+    visual_cx.dispatch_action(GpuiRedo);
+    visual_cx.run_until_parked();
+}
+
+pub fn simulate_selection_undo(visual_cx: &mut VisualTestContext) {
+    visual_cx.dispatch_action(GpuiSelectionUndo);
+    visual_cx.run_until_parked();
+}
+
+pub fn simulate_selection_redo(visual_cx: &mut VisualTestContext) {
+    visual_cx.dispatch_action(GpuiSelectionRedo);
+    visual_cx.run_until_parked();
 }
 
 pub fn assert_vec2_close(actual: Vec2, expected: Vec2, context: &str) -> TestSupportResult<()> {
