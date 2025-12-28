@@ -37,6 +37,43 @@ fn modifiers_builder_is_chainable() {
     assert!(mods.secondary);
 }
 
+// === active_in_order tests ===
+
+#[test]
+fn active_in_order_empty_for_no_modifiers() {
+    let mods = Modifiers::default();
+    let active: Vec<_> = mods.active_in_order().collect();
+    assert!(active.is_empty());
+}
+
+#[test]
+fn active_in_order_returns_modifiers_in_canonical_order() {
+    // Set modifiers in non-canonical order to verify ordering
+    let mods = Modifiers::default()
+        .with_secondary()
+        .with_control()
+        .with_shift()
+        .with_alt();
+
+    let active: Vec<_> = mods.active_in_order().collect();
+    assert_eq!(
+        active,
+        vec![
+            Modifier::Control,
+            Modifier::Alt,
+            Modifier::Shift,
+            Modifier::Secondary,
+        ]
+    );
+}
+
+#[test]
+fn active_in_order_filters_inactive_modifiers() {
+    let mods = Modifiers::default().with_shift().with_secondary();
+    let active: Vec<_> = mods.active_in_order().collect();
+    assert_eq!(active, vec![Modifier::Shift, Modifier::Secondary]);
+}
+
 // === Keystroke construction tests ===
 
 #[test]

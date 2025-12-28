@@ -40,6 +40,22 @@ mod tests;
 
 use std::fmt;
 
+/// Individual modifier key type.
+///
+/// Used by [`Modifiers::active_in_order`] to provide a single source of truth
+/// for modifier ordering and iteration.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Modifier {
+    /// Control key (Ctrl).
+    Control,
+    /// Alt/Option key.
+    Alt,
+    /// Shift key.
+    Shift,
+    /// Platform "secondary" modifier: Cmd on macOS, Ctrl elsewhere.
+    Secondary,
+}
+
 /// Modifier keys for a keystroke.
 ///
 /// Modifiers track which modifier keys are held during a keystroke. The
@@ -115,6 +131,34 @@ impl Modifiers {
     #[must_use]
     pub const fn none(&self) -> bool {
         !self.any()
+    }
+
+    /// Return an iterator of active modifiers in canonical order.
+    ///
+    /// The order matches GPUI's expected modifier ordering:
+    /// Control, Alt, Shift, Secondary (Cmd/Ctrl).
+    ///
+    /// This centralises modifier ordering logic so all output methods
+    /// (GPUI strings, display names) share a single source of truth.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use gauss::model::{Modifiers, Modifier};
+    ///
+    /// let mods = Modifiers::default().with_secondary().with_shift();
+    /// let active: Vec<_> = mods.active_in_order().collect();
+    /// assert_eq!(active, vec![Modifier::Shift, Modifier::Secondary]);
+    /// ```
+    pub fn active_in_order(&self) -> impl Iterator<Item = Modifier> + '_ {
+        [
+            (self.control, Modifier::Control),
+            (self.alt, Modifier::Alt),
+            (self.shift, Modifier::Shift),
+            (self.secondary, Modifier::Secondary),
+        ]
+        .into_iter()
+        .filter_map(|(enabled, m)| enabled.then_some(m))
     }
 }
 
@@ -262,22 +306,18 @@ impl Keystroke {
     /// ```
     #[must_use]
     pub fn to_gpui_string(&self) -> String {
-        let mut parts = Vec::new();
-
-        if self.modifiers.control {
-            parts.push("ctrl");
-        }
-        if self.modifiers.alt {
-            parts.push("alt");
-        }
-        if self.modifiers.shift {
-            parts.push("shift");
-        }
-        // GPUI uses "cmd" for the secondary modifier regardless of platform;
-        // the platform mapping happens at runtime in GPUI.
-        if self.modifiers.secondary {
-            parts.push("cmd");
-        }
+        let mut parts: Vec<&str> = self
+            .modifiers
+            .active_in_order()
+            .map(|m| match m {
+                Modifier::Control => "ctrl",
+                Modifier::Alt => "alt",
+                Modifier::Shift => "shift",
+                // GPUI uses "cmd" for the secondary modifier regardless of platform;
+                // the platform mapping happens at runtime in GPUI.
+                Modifier::Secondary => "cmd",
+            })
+            .collect();
 
         parts.push(&self.key);
         parts.join("-")
@@ -312,44 +352,35 @@ impl Keystroke {
 
     #[cfg(target_os = "macos")]
     fn display_name_macos(&self) -> String {
-        let mut parts = Vec::new();
+        let mut out = String::new();
 
-        if self.modifiers.control {
-            parts.push("⌃");
-        }
-        if self.modifiers.alt {
-            parts.push("⌥");
-        }
-        if self.modifiers.shift {
-            parts.push("⇧");
-        }
-        if self.modifiers.secondary {
-            parts.push("⌘");
+        for m in self.modifiers.active_in_order() {
+            out.push_str(match m {
+                Modifier::Control => "⌃",
+                Modifier::Alt => "⌥",
+                Modifier::Shift => "⇧",
+                Modifier::Secondary => "⌘",
+            });
         }
 
-        parts.push(&self.key.to_uppercase());
-        parts.concat()
+        out.push_str(&self.key.to_uppercase());
+        out
     }
 
     #[cfg(not(target_os = "macos"))]
     fn display_name_other(&self) -> String {
-        let mut parts = Vec::new();
-
-        // Output control and secondary independently to preserve information
-        // when both are set (matching to_gpui_string behaviour)
-        if self.modifiers.control {
-            parts.push("Ctrl".to_owned());
-        }
-        if self.modifiers.alt {
-            parts.push("Alt".to_owned());
-        }
-        if self.modifiers.shift {
-            parts.push("Shift".to_owned());
-        }
-        // Secondary maps to Ctrl on non-macOS platforms
-        if self.modifiers.secondary {
-            parts.push("Ctrl".to_owned());
-        }
+        let mut parts: Vec<String> = self
+            .modifiers
+            .active_in_order()
+            .map(|m| match m {
+                // Control and Secondary both render as "Ctrl" on non-macOS,
+                // but are output independently to preserve information when
+                // both flags are set (matching to_gpui_string behaviour).
+                Modifier::Control | Modifier::Secondary => "Ctrl".to_owned(),
+                Modifier::Alt => "Alt".to_owned(),
+                Modifier::Shift => "Shift".to_owned(),
+            })
+            .collect();
 
         parts.push(self.key.to_uppercase());
         parts.join("+")
