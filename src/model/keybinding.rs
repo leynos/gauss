@@ -152,10 +152,16 @@ impl ActionBinding {
 ///
 /// These bindings follow platform conventions where possible:
 ///
-/// - **History**: Cmd/Ctrl+Z for Undo, Cmd/Ctrl+Y or Cmd/Ctrl+Shift+Z for Redo
+/// - **Document History**: Cmd/Ctrl+Z for Undo, Cmd/Ctrl+Y for Redo
+/// - **Selection History**: Cmd/Ctrl+Shift+Z for Selection Undo,
+///   Cmd/Ctrl+Shift+Y for Selection Redo
 /// - **Selection**: Cmd/Ctrl+A for Select All, Cmd/Ctrl+Shift+A for Deselect
 /// - **Tools**: Single letter keys (P for Pen, V for Selection)
 /// - **Editing**: Backspace/Delete for deletion (in Manipulate mode only)
+///
+/// Note: Gauss maintains separate undo/redo stacks for document edits and
+/// selection changes, enabling independent traversal of edit and selection
+/// states. This deviates from the macOS convention of Cmd+Shift+Z for Redo.
 ///
 /// # Returns
 ///
@@ -195,12 +201,16 @@ pub fn default_bindings() -> Vec<ActionBinding> {
         // ActivateSelectTool: V key, global
         ActionBinding::new(Action::ActivateSelectTool, "v", &[KeyContext::Global]),
         // === History actions ===
-        // Undo: Cmd/Ctrl+Z, global
+        // Document Undo: Cmd/Ctrl+Z, global
         ActionBinding::secondary(Action::Undo, "z", &[KeyContext::Global]),
-        // Redo: Cmd/Ctrl+Y (Windows/Linux style), global
+        // Document Redo: Cmd/Ctrl+Y, global
         ActionBinding::secondary(Action::Redo, "y", &[KeyContext::Global]),
-        // Redo: Cmd/Ctrl+Shift+Z (macOS style), global
-        ActionBinding::secondary_shift(Action::Redo, "z", &[KeyContext::Global]),
+        // Selection Undo: Cmd/Ctrl+Shift+Z, global
+        // Note: This deviates from standard macOS Redo to support separate
+        // selection history traversal.
+        ActionBinding::secondary_shift(Action::SelectionUndo, "z", &[KeyContext::Global]),
+        // Selection Redo: Cmd/Ctrl+Shift+Y, global
+        ActionBinding::secondary_shift(Action::SelectionRedo, "y", &[KeyContext::Global]),
     ]
 }
 
@@ -309,6 +319,8 @@ mod tests {
     #[case(Action::ActivateSelectTool)]
     #[case(Action::Undo)]
     #[case(Action::Redo)]
+    #[case(Action::SelectionUndo)]
+    #[case(Action::SelectionRedo)]
     fn all_actions_have_bindings(#[case] action: Action) {
         let bindings = bindings_for_action(action);
         assert!(
@@ -318,10 +330,28 @@ mod tests {
     }
 
     #[test]
-    fn redo_has_two_bindings() {
-        // Redo should have both Cmd+Y and Cmd+Shift+Z
+    fn redo_has_one_binding() {
+        // Redo only has Cmd+Y (Cmd+Shift+Z is now SelectionUndo)
         let bindings = bindings_for_action(Action::Redo);
-        assert_eq!(bindings.len(), 2);
+        assert_eq!(bindings.len(), 1);
+    }
+
+    #[test]
+    fn selection_undo_has_shift_modifier() {
+        // SelectionUndo should be Cmd+Shift+Z
+        let bindings = bindings_for_action(Action::SelectionUndo);
+        assert_eq!(bindings.len(), 1);
+        let binding = bindings.first().expect("should have at least one binding");
+        assert_eq!(binding.keystroke.to_gpui_string(), "shift-cmd-z");
+    }
+
+    #[test]
+    fn selection_redo_has_shift_modifier() {
+        // SelectionRedo should be Cmd+Shift+Y
+        let bindings = bindings_for_action(Action::SelectionRedo);
+        assert_eq!(bindings.len(), 1);
+        let binding = bindings.first().expect("should have at least one binding");
+        assert_eq!(binding.keystroke.to_gpui_string(), "shift-cmd-y");
     }
 
     #[test]

@@ -5,7 +5,7 @@ use gpui::{Window, div, prelude::*, white};
 use crate::model::KeyContext;
 use crate::ui::action_bridge::{
     GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeleteSelection, GpuiDeselectAll, GpuiRedo,
-    GpuiSelectAll, GpuiUndo, context_for_tool_mode,
+    GpuiSelectAll, GpuiSelectionRedo, GpuiSelectionUndo, GpuiUndo, context_for_tool_mode,
 };
 
 use super::{
@@ -241,6 +241,18 @@ impl Phase0Shell {
             shell.redo_document();
             action_cx.notify();
         }))
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiSelectionUndo, _, action_cx| {
+                shell.undo_selection();
+                action_cx.notify();
+            }),
+        )
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiSelectionRedo, _, action_cx| {
+                shell.redo_selection();
+                action_cx.notify();
+            }),
+        )
     }
 }
 

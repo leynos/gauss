@@ -131,6 +131,19 @@ pub enum Action {
     /// Re-applies the most recently undone command from the redo stack.
     /// Has no effect if the redo stack is empty.
     Redo,
+
+    /// Undo the last selection change.
+    ///
+    /// Reverts the most recent selection change from the selection history
+    /// stack. Selection history is separate from document history, enabling
+    /// independent traversal of selection and edit states.
+    SelectionUndo,
+
+    /// Redo the last undone selection change.
+    ///
+    /// Re-applies the most recently undone selection change from the selection
+    /// redo stack.
+    SelectionRedo,
 }
 
 impl Action {
@@ -165,7 +178,9 @@ impl Action {
             | Self::ActivatePenTool
             | Self::ActivateSelectTool
             | Self::Undo
-            | Self::Redo => ActionKind::Editor,
+            | Self::Redo
+            | Self::SelectionUndo
+            | Self::SelectionRedo => ActionKind::Editor,
         }
     }
 
@@ -203,6 +218,8 @@ impl Action {
             Self::ActivateSelectTool => "Select Tool",
             Self::Undo => "Undo",
             Self::Redo => "Redo",
+            Self::SelectionUndo => "Selection Undo",
+            Self::SelectionRedo => "Selection Redo",
         }
     }
 
@@ -243,6 +260,8 @@ mod tests {
     #[case(Action::ActivateSelectTool, ActionKind::Editor)]
     #[case(Action::Undo, ActionKind::Editor)]
     #[case(Action::Redo, ActionKind::Editor)]
+    #[case(Action::SelectionUndo, ActionKind::Editor)]
+    #[case(Action::SelectionRedo, ActionKind::Editor)]
     fn action_kind_is_correct(#[case] action: Action, #[case] expected: ActionKind) {
         assert_eq!(action.kind(), expected);
     }
@@ -255,6 +274,8 @@ mod tests {
     #[case(Action::ActivateSelectTool, "Select Tool")]
     #[case(Action::Undo, "Undo")]
     #[case(Action::Redo, "Redo")]
+    #[case(Action::SelectionUndo, "Selection Undo")]
+    #[case(Action::SelectionRedo, "Selection Redo")]
     fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {
         assert_eq!(action.name(), expected);
     }
@@ -267,6 +288,8 @@ mod tests {
     #[case(Action::ActivateSelectTool)]
     #[case(Action::Undo)]
     #[case(Action::Redo)]
+    #[case(Action::SelectionUndo)]
+    #[case(Action::SelectionRedo)]
     fn actions_have_nonempty_names(#[case] action: Action) {
         assert!(!action.name().is_empty());
     }
@@ -283,6 +306,8 @@ mod tests {
     #[case(Action::ActivateSelectTool)]
     #[case(Action::Undo)]
     #[case(Action::Redo)]
+    #[case(Action::SelectionUndo)]
+    #[case(Action::SelectionRedo)]
     fn non_document_actions_do_not_require_selection(#[case] action: Action) {
         assert!(!action.requires_selection());
     }
@@ -304,6 +329,8 @@ mod tests {
             Action::ActivateSelectTool,
             Action::Undo,
             Action::Redo,
+            Action::SelectionUndo,
+            Action::SelectionRedo,
         ];
 
         for action in all_actions {

@@ -420,10 +420,22 @@ conversion** rather than raw strings, for the following reasons:
 
 The `KeyContext` enum lives in `src/model/key_context.rs` with variants:
 
-- `Global` — Always active (Undo, Redo, tool switching)
+- `Global` — Always active (Undo, Redo, Selection Undo/Redo, tool switching)
 - `DrawMode` — Active when Pen tool is selected
 - `ManipulateMode` — Active when Select tool is selected (Delete key)
 - `TextEdit` — Reserved for future on-canvas text editing
+
+**Dual History Stacks:** Gauss maintains separate undo/redo stacks for document
+edits and selection changes:
+
+- **Document history** (Ctrl+Z / Ctrl+Y): Edits to shapes, paths, styles, etc.
+- **Selection history** (Ctrl+Shift+Z / Ctrl+Shift+Y): Changes to what is
+  selected.
+
+This design enables users to traverse selection states independently of document
+edits. For example, after undoing a selection change, the user can redo the
+selection without affecting document state. This deviates from the macOS
+convention of Cmd+Shift+Z for Redo.
 
 Context strings use the format `gauss-{name}` for namespacing (e.g.,
 `"gauss-global"`, `"gauss-manipulate"`). Strings contain only letters, digits,

@@ -15,12 +15,18 @@ These shortcuts work in any editor mode:
 | Action | macOS | Linux/Windows |
 |--------|-------|---------------|
 | Undo | Cmd+Z | Ctrl+Z |
-| Redo | Cmd+Y or Cmd+Shift+Z | Ctrl+Y or Ctrl+Shift+Z |
+| Redo | Cmd+Y | Ctrl+Y |
+| Selection Undo | Cmd+Shift+Z | Ctrl+Shift+Z |
+| Selection Redo | Cmd+Shift+Y | Ctrl+Shift+Y |
 | Select All | Cmd+A | Ctrl+A |
 | Deselect All | Cmd+Shift+A | Ctrl+Shift+A |
 | Pen Tool | P | P |
 | Select Tool | V | V |
 | Toggle Edge Mode | Tab | Tab |
+
+**Note:** Gauss uses Cmd+Shift+Z / Ctrl+Shift+Z for Selection Undo rather than
+the standard macOS Redo shortcut. This supports the dual history stack design
+where document and selection changes can be undone independently.
 
 ### Mode-Specific Shortcuts
 
@@ -98,11 +104,14 @@ When drawing, the Tab key toggles between:
 
 Gauss maintains separate history stacks for:
 
-- **Document changes**: Shape creation, movement, deletion
-- **Selection changes**: What is currently selected
+- **Document changes** (Cmd+Z / Ctrl+Z, Cmd+Y / Ctrl+Y): Shape creation,
+  movement, deletion, style changes
+- **Selection changes** (Cmd+Shift+Z / Ctrl+Shift+Z, Cmd+Shift+Y / Ctrl+Shift+Y):
+  What is currently selected
 
 This allows you to undo selection changes without affecting the document,
-and vice versa.
+and vice versa. For example, if you select several shapes and then undo the
+selection, the shapes themselves remain unchanged.
 
 ## Platform Differences
 

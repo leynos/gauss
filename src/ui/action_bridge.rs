@@ -87,6 +87,20 @@ pub struct GpuiUndo;
 #[action(no_json)]
 pub struct GpuiRedo;
 
+/// GPUI action for [`Action::SelectionUndo`].
+///
+/// Undoes the last selection change.
+#[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
+#[action(no_json)]
+pub struct GpuiSelectionUndo;
+
+/// GPUI action for [`Action::SelectionRedo`].
+///
+/// Redoes the last undone selection change.
+#[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
+#[action(no_json)]
+pub struct GpuiSelectionRedo;
+
 // === Registration ===
 
 /// Register action keybindings from the model-layer binding registry.
@@ -143,6 +157,12 @@ pub fn register_action_bindings(app: &mut gpui::App) {
                 }
                 Action::Redo => {
                     app.bind_keys([KeyBinding::new(&keystroke, GpuiRedo, context_str)]);
+                }
+                Action::SelectionUndo => {
+                    app.bind_keys([KeyBinding::new(&keystroke, GpuiSelectionUndo, context_str)]);
+                }
+                Action::SelectionRedo => {
+                    app.bind_keys([KeyBinding::new(&keystroke, GpuiSelectionRedo, context_str)]);
                 }
             }
         }

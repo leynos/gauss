@@ -352,7 +352,9 @@ pub fn prepare_command(
         | Action::ActivatePenTool
         | Action::ActivateSelectTool
         | Action::Undo
-        | Action::Redo => panic!("{DISPATCHER_BUG_MSG} (got {action:?})"),
+        | Action::Redo
+        | Action::SelectionUndo
+        | Action::SelectionRedo => panic!("{DISPATCHER_BUG_MSG} (got {action:?})"),
     }
 }
 
