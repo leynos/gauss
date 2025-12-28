@@ -31,6 +31,11 @@
 //! assert!(!undo_bindings.is_empty());
 //! ```
 
+#[cfg(test)]
+mod tests;
+
+use std::sync::LazyLock;
+
 use super::action::Action;
 use super::key_context::KeyContext;
 use super::keystroke::Keystroke;
@@ -148,35 +153,8 @@ impl ActionBinding {
     }
 }
 
-/// Return the default keybindings for all actions.
-///
-/// These bindings follow platform conventions where possible:
-///
-/// - **Document History**: Cmd/Ctrl+Z for Undo, Cmd/Ctrl+Y for Redo
-/// - **Selection History**: Cmd/Ctrl+Shift+Z for Selection Undo,
-///   Cmd/Ctrl+Shift+Y for Selection Redo
-/// - **Selection**: Cmd/Ctrl+A for Select All, Cmd/Ctrl+Shift+A for Deselect
-/// - **Tools**: Single letter keys (P for Pen, V for Selection)
-/// - **Editing**: Backspace/Delete for deletion (in Manipulate mode only)
-///
-/// Note: Gauss maintains separate undo/redo stacks for document edits and
-/// selection changes, enabling independent traversal of edit and selection
-/// states. This deviates from the macOS convention of Cmd+Shift+Z for Redo.
-///
-/// # Returns
-///
-/// A vector of all default action bindings.
-///
-/// # Examples
-///
-/// ```rust,no_run
-/// use gauss::model::default_bindings;
-///
-/// let bindings = default_bindings();
-/// assert!(!bindings.is_empty());
-/// ```
-#[must_use]
-pub fn default_bindings() -> Vec<ActionBinding> {
+/// Cached default bindings using `LazyLock` to avoid repeated allocations.
+static DEFAULT_BINDINGS: LazyLock<Vec<ActionBinding>> = LazyLock::new(|| {
     vec![
         // === Document actions ===
         // DeleteSelection: Backspace and Delete keys, only in ManipulateMode
@@ -212,6 +190,39 @@ pub fn default_bindings() -> Vec<ActionBinding> {
         // Selection Redo: Cmd/Ctrl+Shift+Y, global
         ActionBinding::secondary_shift(Action::SelectionRedo, "y", &[KeyContext::Global]),
     ]
+});
+
+/// Return the default keybindings for all actions.
+///
+/// These bindings follow platform conventions where possible:
+///
+/// - **Document History**: Cmd/Ctrl+Z for Undo, Cmd/Ctrl+Y for Redo
+/// - **Selection History**: Cmd/Ctrl+Shift+Z for Selection Undo,
+///   Cmd/Ctrl+Shift+Y for Selection Redo
+/// - **Selection**: Cmd/Ctrl+A for Select All, Cmd/Ctrl+Shift+A for Deselect
+/// - **Tools**: Single letter keys (P for Pen, V for Selection)
+/// - **Editing**: Backspace/Delete for deletion (in Manipulate mode only)
+///
+/// Note: Gauss maintains separate undo/redo stacks for document edits and
+/// selection changes, enabling independent traversal of edit and selection
+/// states. This deviates from the macOS convention of Cmd+Shift+Z for Redo.
+///
+/// # Returns
+///
+/// A slice of all default action bindings. The bindings are cached using
+/// `LazyLock` to avoid repeated allocations.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use gauss::model::default_bindings;
+///
+/// let bindings = default_bindings();
+/// assert!(!bindings.is_empty());
+/// ```
+#[must_use]
+pub fn default_bindings() -> &'static [ActionBinding] {
+    &DEFAULT_BINDINGS
 }
 
 /// Find all bindings for a specific action.
@@ -230,14 +241,15 @@ pub fn default_bindings() -> Vec<ActionBinding> {
 /// use gauss::model::{Action, bindings_for_action};
 ///
 /// let redo_bindings = bindings_for_action(Action::Redo);
-/// // Redo has two bindings: Cmd+Y and Cmd+Shift+Z
-/// assert_eq!(redo_bindings.len(), 2);
+/// // Redo has one binding: Cmd+Y
+/// assert_eq!(redo_bindings.len(), 1);
 /// ```
 #[must_use]
 pub fn bindings_for_action(action: Action) -> Vec<ActionBinding> {
     default_bindings()
-        .into_iter()
+        .iter()
         .filter(|b| b.action == action)
+        .cloned()
         .collect()
 }
 
@@ -267,8 +279,9 @@ pub fn bindings_for_action(action: Action) -> Vec<ActionBinding> {
 #[must_use]
 pub fn bindings_for_context(context: KeyContext) -> Vec<ActionBinding> {
     default_bindings()
-        .into_iter()
+        .iter()
         .filter(|b| b.is_active_in(context))
+        .cloned()
         .collect()
 }
 
@@ -299,172 +312,4 @@ pub fn primary_keystroke(action: Action) -> Option<Keystroke> {
     bindings_for_action(action)
         .first()
         .map(|b| b.keystroke.clone())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rstest::rstest;
-
-    #[test]
-    fn default_bindings_is_not_empty() {
-        assert!(!default_bindings().is_empty());
-    }
-
-    #[rstest]
-    #[case(Action::DeleteSelection)]
-    #[case(Action::SelectAll)]
-    #[case(Action::DeselectAll)]
-    #[case(Action::ActivatePenTool)]
-    #[case(Action::ActivateSelectTool)]
-    #[case(Action::Undo)]
-    #[case(Action::Redo)]
-    #[case(Action::SelectionUndo)]
-    #[case(Action::SelectionRedo)]
-    fn all_actions_have_bindings(#[case] action: Action) {
-        let bindings = bindings_for_action(action);
-        assert!(
-            !bindings.is_empty(),
-            "{action:?} should have at least one keybinding"
-        );
-    }
-
-    #[test]
-    fn redo_has_one_binding() {
-        // Redo only has Cmd+Y (Cmd+Shift+Z is now SelectionUndo)
-        let bindings = bindings_for_action(Action::Redo);
-        assert_eq!(bindings.len(), 1);
-    }
-
-    #[test]
-    fn selection_undo_has_shift_modifier() {
-        // SelectionUndo should be Cmd+Shift+Z
-        let bindings = bindings_for_action(Action::SelectionUndo);
-        assert_eq!(bindings.len(), 1);
-        let binding = bindings.first().expect("should have at least one binding");
-        assert_eq!(binding.keystroke.to_gpui_string(), "shift-cmd-z");
-    }
-
-    #[test]
-    fn selection_redo_has_shift_modifier() {
-        // SelectionRedo should be Cmd+Shift+Y
-        let bindings = bindings_for_action(Action::SelectionRedo);
-        assert_eq!(bindings.len(), 1);
-        let binding = bindings.first().expect("should have at least one binding");
-        assert_eq!(binding.keystroke.to_gpui_string(), "shift-cmd-y");
-    }
-
-    #[test]
-    fn delete_selection_has_two_bindings() {
-        // DeleteSelection should have both Backspace and Delete
-        let bindings = bindings_for_action(Action::DeleteSelection);
-        assert_eq!(bindings.len(), 2);
-    }
-
-    #[test]
-    fn delete_selection_only_in_manipulate_mode() {
-        let bindings = bindings_for_action(Action::DeleteSelection);
-        for binding in bindings {
-            assert!(
-                binding.is_active_in(KeyContext::ManipulateMode),
-                "DeleteSelection should be active in ManipulateMode"
-            );
-            assert!(
-                !binding.is_active_in(KeyContext::DrawMode),
-                "DeleteSelection should NOT be active in DrawMode"
-            );
-        }
-    }
-
-    #[test]
-    fn undo_is_global() {
-        let bindings = bindings_for_action(Action::Undo);
-        for binding in bindings {
-            assert!(binding.contexts.contains(&KeyContext::Global));
-            assert!(binding.is_active_in(KeyContext::DrawMode));
-            assert!(binding.is_active_in(KeyContext::ManipulateMode));
-        }
-    }
-
-    #[test]
-    fn tool_shortcuts_are_global() {
-        for action in [Action::ActivatePenTool, Action::ActivateSelectTool] {
-            let bindings = bindings_for_action(action);
-            for binding in bindings {
-                assert!(
-                    binding.contexts.contains(&KeyContext::Global),
-                    "{action:?} should be global"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn bindings_for_context_includes_global() {
-        let draw_bindings = bindings_for_context(KeyContext::DrawMode);
-
-        // Should include global bindings like Undo
-        let has_undo = draw_bindings.iter().any(|b| b.action == Action::Undo);
-        assert!(has_undo, "DrawMode context should include Undo (global)");
-
-        // Should NOT include ManipulateMode-only bindings like DeleteSelection
-        let has_delete = draw_bindings
-            .iter()
-            .any(|b| b.action == Action::DeleteSelection);
-        assert!(
-            !has_delete,
-            "DrawMode context should NOT include DeleteSelection"
-        );
-    }
-
-    #[test]
-    fn bindings_for_context_manipulate_includes_delete() {
-        let manipulate_bindings = bindings_for_context(KeyContext::ManipulateMode);
-
-        let has_delete = manipulate_bindings
-            .iter()
-            .any(|b| b.action == Action::DeleteSelection);
-        assert!(has_delete, "ManipulateMode should include DeleteSelection");
-    }
-
-    #[test]
-    fn primary_keystroke_returns_first_binding() {
-        let undo = primary_keystroke(Action::Undo);
-        let keystroke = undo.expect("Undo should have a binding");
-        assert_eq!(keystroke.to_gpui_string(), "cmd-z");
-    }
-
-    #[test]
-    fn primary_keystroke_none_for_unknown() {
-        // All current actions have bindings, but test the None path
-        // by checking that it handles the lookup correctly
-        let keystroke = primary_keystroke(Action::Undo);
-        assert!(keystroke.is_some());
-    }
-
-    #[test]
-    fn is_active_in_global_context_matches_all() {
-        let binding = ActionBinding::secondary(Action::Undo, "z", &[KeyContext::Global]);
-
-        assert!(binding.is_active_in(KeyContext::Global));
-        assert!(binding.is_active_in(KeyContext::DrawMode));
-        assert!(binding.is_active_in(KeyContext::ManipulateMode));
-        assert!(binding.is_active_in(KeyContext::TextEdit));
-    }
-
-    #[test]
-    fn is_active_in_specific_context_only_matches_listed() {
-        let binding = ActionBinding::new(
-            Action::DeleteSelection,
-            "backspace",
-            &[KeyContext::ManipulateMode],
-        );
-
-        assert!(binding.is_active_in(KeyContext::ManipulateMode));
-        assert!(!binding.is_active_in(KeyContext::DrawMode));
-        assert!(!binding.is_active_in(KeyContext::TextEdit));
-        // Note: Global is not in the contexts list, so it doesn't match Global
-        // But Global acts as a wildcard in the opposite direction
-        assert!(!binding.is_active_in(KeyContext::Global));
-    }
 }

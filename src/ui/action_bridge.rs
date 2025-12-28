@@ -117,56 +117,85 @@ pub struct GpuiSelectionRedo;
 /// This should be called during application initialisation, typically from
 /// [`crate::ui::init`].
 pub fn register_action_bindings(app: &mut gpui::App) {
+    // Collect bindings by action type to batch bind_keys() calls
+    let mut delete_selection = Vec::new();
+    let mut select_all = Vec::new();
+    let mut deselect_all = Vec::new();
+    let mut activate_pen_tool = Vec::new();
+    let mut activate_select_tool = Vec::new();
+    let mut undo = Vec::new();
+    let mut redo = Vec::new();
+    let mut selection_undo = Vec::new();
+    let mut selection_redo = Vec::new();
+
     for binding in default_bindings() {
         let keystroke = binding.keystroke.to_gpui_string();
 
-        // Register in each context the binding applies to
         for context in &binding.contexts {
             let context_str = Some(context.as_ref());
 
             match binding.action {
                 Action::DeleteSelection => {
-                    app.bind_keys([KeyBinding::new(
+                    delete_selection.push(KeyBinding::new(
                         &keystroke,
                         GpuiDeleteSelection,
                         context_str,
-                    )]);
+                    ));
                 }
                 Action::SelectAll => {
-                    app.bind_keys([KeyBinding::new(&keystroke, GpuiSelectAll, context_str)]);
+                    select_all.push(KeyBinding::new(&keystroke, GpuiSelectAll, context_str));
                 }
                 Action::DeselectAll => {
-                    app.bind_keys([KeyBinding::new(&keystroke, GpuiDeselectAll, context_str)]);
+                    deselect_all.push(KeyBinding::new(&keystroke, GpuiDeselectAll, context_str));
                 }
                 Action::ActivatePenTool => {
-                    app.bind_keys([KeyBinding::new(
+                    activate_pen_tool.push(KeyBinding::new(
                         &keystroke,
                         GpuiActivatePenTool,
                         context_str,
-                    )]);
+                    ));
                 }
                 Action::ActivateSelectTool => {
-                    app.bind_keys([KeyBinding::new(
+                    activate_select_tool.push(KeyBinding::new(
                         &keystroke,
                         GpuiActivateSelectTool,
                         context_str,
-                    )]);
+                    ));
                 }
                 Action::Undo => {
-                    app.bind_keys([KeyBinding::new(&keystroke, GpuiUndo, context_str)]);
+                    undo.push(KeyBinding::new(&keystroke, GpuiUndo, context_str));
                 }
                 Action::Redo => {
-                    app.bind_keys([KeyBinding::new(&keystroke, GpuiRedo, context_str)]);
+                    redo.push(KeyBinding::new(&keystroke, GpuiRedo, context_str));
                 }
                 Action::SelectionUndo => {
-                    app.bind_keys([KeyBinding::new(&keystroke, GpuiSelectionUndo, context_str)]);
+                    selection_undo.push(KeyBinding::new(
+                        &keystroke,
+                        GpuiSelectionUndo,
+                        context_str,
+                    ));
                 }
                 Action::SelectionRedo => {
-                    app.bind_keys([KeyBinding::new(&keystroke, GpuiSelectionRedo, context_str)]);
+                    selection_redo.push(KeyBinding::new(
+                        &keystroke,
+                        GpuiSelectionRedo,
+                        context_str,
+                    ));
                 }
             }
         }
     }
+
+    // Register all bindings in batches by action type
+    app.bind_keys(delete_selection);
+    app.bind_keys(select_all);
+    app.bind_keys(deselect_all);
+    app.bind_keys(activate_pen_tool);
+    app.bind_keys(activate_select_tool);
+    app.bind_keys(undo);
+    app.bind_keys(redo);
+    app.bind_keys(selection_undo);
+    app.bind_keys(selection_redo);
 }
 
 /// Map a [`ToolMode`] to its corresponding [`KeyContext`].
