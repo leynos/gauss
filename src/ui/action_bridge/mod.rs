@@ -158,23 +158,22 @@ impl CollectedBindings {
         keystroke: &str,
         contexts: &[KeyContext],
     ) {
-        // Expand contexts: Global becomes all contexts, others remain literal.
-        let expanded = contexts
-            .iter()
-            .flat_map(|ctx| {
-                if *ctx == KeyContext::Global {
-                    // Global bindings are registered for all contexts.
-                    KeyContext::all().to_vec()
-                } else {
-                    // Mode-specific bindings are registered literally.
-                    // Note: Currently unreachable since the view only applies
-                    // KeyContext::Global; retained for future GPUI context stacking.
-                    vec![*ctx]
-                }
-            })
-            .collect::<Vec<_>>();
+        for ctx in contexts {
+            if *ctx == KeyContext::Global {
+                // Global bindings are registered for all contexts.
+                self.add_binding_for_all_contexts(action, keystroke);
+            } else {
+                // Mode-specific bindings are registered literally.
+                // Note: Currently unreachable since the view only applies
+                // KeyContext::Global; retained for future GPUI context stacking.
+                self.add_binding(action, keystroke, Some(ctx.as_ref()));
+            }
+        }
+    }
 
-        for context in expanded {
+    /// Add a binding for an action in all known contexts.
+    fn add_binding_for_all_contexts(&mut self, action: Action, keystroke: &str) {
+        for context in KeyContext::all() {
             self.add_binding(action, keystroke, Some(context.as_ref()));
         }
     }

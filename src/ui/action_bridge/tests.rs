@@ -1,4 +1,13 @@
-//! Tests for `action_bridge` module.
+//! Tests for the `action_bridge` module.
+//!
+//! Covers:
+//!
+//! - [`context_for_tool_mode`] mapping between tool modes and key contexts
+//! - [`CollectedBindings`] population from default bindings
+//! - Global binding expansion to all contexts
+//! - Coverage verification ensuring all model actions have GPUI bindings
+
+use rstest::rstest;
 
 use super::*;
 use crate::model::{Action, default_bindings};
@@ -6,51 +15,48 @@ use crate::ui::phase0_shell::draw::ToolMode;
 
 // === context_for_tool_mode tests ===
 
-#[test]
-fn context_for_tool_mode_maps_draw_to_draw_mode() {
-    assert_eq!(context_for_tool_mode(ToolMode::Draw), KeyContext::DrawMode);
-}
-
-#[test]
-fn context_for_tool_mode_maps_manipulate_to_manipulate_mode() {
-    assert_eq!(
-        context_for_tool_mode(ToolMode::Manipulate),
-        KeyContext::ManipulateMode
-    );
+#[rstest]
+#[case(ToolMode::Draw, KeyContext::DrawMode)]
+#[case(ToolMode::Manipulate, KeyContext::ManipulateMode)]
+fn context_for_tool_mode_maps_correctly(#[case] mode: ToolMode, #[case] expected: KeyContext) {
+    assert_eq!(context_for_tool_mode(mode), expected);
 }
 
 // === CollectedBindings tests ===
 
-/// Helper to verify a binding vector is populated.
-fn assert_bindings_populated(bindings: &[KeyBinding], action_name: &str) {
+/// Binding field accessor for parameterised tests.
+fn get_binding_field<'a>(collected: &'a CollectedBindings, name: &str) -> &'a [KeyBinding] {
+    match name {
+        "undo" => &collected.undo,
+        "redo" => &collected.redo,
+        "selection_undo" => &collected.selection_undo,
+        "selection_redo" => &collected.selection_redo,
+        "select_all" => &collected.select_all,
+        "deselect_all" => &collected.deselect_all,
+        "delete_selection" => &collected.delete_selection,
+        "activate_pen_tool" => &collected.activate_pen_tool,
+        "activate_select_tool" => &collected.activate_select_tool,
+        _ => panic!("unknown binding field: {name}"),
+    }
+}
+
+#[rstest]
+#[case("undo")]
+#[case("redo")]
+#[case("selection_undo")]
+#[case("selection_redo")]
+#[case("select_all")]
+#[case("deselect_all")]
+#[case("delete_selection")]
+#[case("activate_pen_tool")]
+#[case("activate_select_tool")]
+fn collected_bindings_populates_action(#[case] action_name: &str) {
+    let bindings = CollectedBindings::from_default_bindings();
+    let field = get_binding_field(&bindings, action_name);
     assert!(
-        !bindings.is_empty(),
+        !field.is_empty(),
         "expected {action_name} bindings to be populated"
     );
-}
-
-#[test]
-fn collected_bindings_populates_undo_redo() {
-    let bindings = CollectedBindings::from_default_bindings();
-    assert_bindings_populated(&bindings.undo, "undo");
-    assert_bindings_populated(&bindings.redo, "redo");
-    assert_bindings_populated(&bindings.selection_undo, "selection_undo");
-    assert_bindings_populated(&bindings.selection_redo, "selection_redo");
-}
-
-#[test]
-fn collected_bindings_populates_selection_actions() {
-    let bindings = CollectedBindings::from_default_bindings();
-    assert_bindings_populated(&bindings.select_all, "select_all");
-    assert_bindings_populated(&bindings.deselect_all, "deselect_all");
-    assert_bindings_populated(&bindings.delete_selection, "delete_selection");
-}
-
-#[test]
-fn collected_bindings_populates_tool_actions() {
-    let bindings = CollectedBindings::from_default_bindings();
-    assert_bindings_populated(&bindings.activate_pen_tool, "activate_pen_tool");
-    assert_bindings_populated(&bindings.activate_select_tool, "activate_select_tool");
 }
 
 #[test]
@@ -66,15 +72,6 @@ fn global_bindings_are_expanded_to_all_contexts() {
         "expected undo bindings to be expanded to all {} contexts, got {}",
         context_count,
         collected.undo.len()
-    );
-}
-
-#[test]
-fn delete_selection_binding_is_registered() {
-    let collected = CollectedBindings::from_default_bindings();
-    assert!(
-        !collected.delete_selection.is_empty(),
-        "expected delete_selection bindings to be registered"
     );
 }
 
