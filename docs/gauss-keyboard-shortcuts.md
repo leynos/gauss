@@ -8,8 +8,8 @@
 |---|---|---|
 | Undo | Ctrl + Z | Command + Z |
 | Redo | Ctrl + Y | Command + Y |
-| Selection Undo | Shift + Ctrl + Z | Sift + Command + Z |
-| Selection Redo | Shift + Ctrl + Y | Sift + Command + Y |
+| Selection Undo | Shift + Ctrl + Z | Shift + Command + Z |
+| Selection Redo | Shift + Ctrl + Y | Shift + Command + Y |
 | Cut | Ctrl + X | Command + X |
 | Copy | Ctrl + C | Command + C |
 | Paste | Ctrl + V | Command + V |

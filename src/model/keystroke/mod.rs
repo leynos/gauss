@@ -35,6 +35,9 @@
 //! let redo = Keystroke::secondary_shift("z");
 //! ```
 
+#[cfg(test)]
+mod tests;
+
 use std::fmt;
 
 /// Modifier keys for a keystroke.
@@ -332,7 +335,9 @@ impl Keystroke {
     fn display_name_other(&self) -> String {
         let mut parts = Vec::new();
 
-        if self.modifiers.control || self.modifiers.secondary {
+        // Output control and secondary independently to preserve information
+        // when both are set (matching to_gpui_string behaviour)
+        if self.modifiers.control {
             parts.push("Ctrl".to_owned());
         }
         if self.modifiers.alt {
@@ -340,6 +345,10 @@ impl Keystroke {
         }
         if self.modifiers.shift {
             parts.push("Shift".to_owned());
+        }
+        // Secondary maps to Ctrl on non-macOS platforms
+        if self.modifiers.secondary {
+            parts.push("Ctrl".to_owned());
         }
 
         parts.push(self.key.to_uppercase());
@@ -350,152 +359,5 @@ impl Keystroke {
 impl fmt::Display for Keystroke {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.display_name())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rstest::rstest;
-
-    // === Modifiers tests ===
-
-    #[test]
-    fn modifiers_default_has_no_flags() {
-        let mods = Modifiers::default();
-        assert!(!mods.control);
-        assert!(!mods.alt);
-        assert!(!mods.shift);
-        assert!(!mods.secondary);
-        assert!(mods.none());
-        assert!(!mods.any());
-    }
-
-    #[test]
-    fn modifiers_with_secondary_sets_flag() {
-        let mods = Modifiers::default().with_secondary();
-        assert!(mods.secondary);
-        assert!(mods.any());
-        assert!(!mods.none());
-    }
-
-    #[test]
-    fn modifiers_builder_is_chainable() {
-        let mods = Modifiers::default()
-            .with_secondary()
-            .with_shift()
-            .with_alt()
-            .with_control();
-        assert!(mods.control);
-        assert!(mods.alt);
-        assert!(mods.shift);
-        assert!(mods.secondary);
-    }
-
-    // === Keystroke construction tests ===
-
-    #[test]
-    fn new_creates_keystroke_without_modifiers() {
-        let ks = Keystroke::new("tab");
-        assert_eq!(ks.key, "tab");
-        assert!(ks.modifiers.none());
-    }
-
-    #[test]
-    fn secondary_creates_keystroke_with_cmd() {
-        let ks = Keystroke::secondary("z");
-        assert_eq!(ks.key, "z");
-        assert!(ks.modifiers.secondary);
-        assert!(!ks.modifiers.shift);
-    }
-
-    #[test]
-    fn secondary_shift_creates_keystroke_with_cmd_and_shift() {
-        let ks = Keystroke::secondary_shift("z");
-        assert_eq!(ks.key, "z");
-        assert!(ks.modifiers.secondary);
-        assert!(ks.modifiers.shift);
-    }
-
-    #[test]
-    fn alt_creates_keystroke_with_alt() {
-        let ks = Keystroke::alt("f4");
-        assert_eq!(ks.key, "f4");
-        assert!(ks.modifiers.alt);
-    }
-
-    // === GPUI string conversion tests ===
-
-    #[rstest]
-    #[case(Keystroke::new("tab"), "tab")]
-    #[case(Keystroke::new("backspace"), "backspace")]
-    #[case(Keystroke::new("delete"), "delete")]
-    #[case(Keystroke::new("escape"), "escape")]
-    fn to_gpui_string_simple_key(#[case] keystroke: Keystroke, #[case] expected: &str) {
-        assert_eq!(keystroke.to_gpui_string(), expected);
-    }
-
-    #[rstest]
-    #[case(Keystroke::secondary("z"), "cmd-z")]
-    #[case(Keystroke::secondary("a"), "cmd-a")]
-    #[case(Keystroke::secondary("y"), "cmd-y")]
-    fn to_gpui_string_secondary_modifier(#[case] keystroke: Keystroke, #[case] expected: &str) {
-        assert_eq!(keystroke.to_gpui_string(), expected);
-    }
-
-    #[rstest]
-    #[case(Keystroke::secondary_shift("z"), "shift-cmd-z")]
-    #[case(Keystroke::secondary_shift("a"), "shift-cmd-a")]
-    fn to_gpui_string_secondary_shift(#[case] keystroke: Keystroke, #[case] expected: &str) {
-        assert_eq!(keystroke.to_gpui_string(), expected);
-    }
-
-    #[rstest]
-    #[case(Keystroke::alt("f4"), "alt-f4")]
-    #[case(Keystroke::alt("f9"), "alt-f9")]
-    #[case(Keystroke::alt("space"), "alt-space")]
-    fn to_gpui_string_alt_modifier(#[case] keystroke: Keystroke, #[case] expected: &str) {
-        assert_eq!(keystroke.to_gpui_string(), expected);
-    }
-
-    #[test]
-    fn to_gpui_string_all_modifiers() {
-        let mods = Modifiers::default()
-            .with_control()
-            .with_alt()
-            .with_shift()
-            .with_secondary();
-        let ks = Keystroke::with_modifiers("a", mods);
-        assert_eq!(ks.to_gpui_string(), "ctrl-alt-shift-cmd-a");
-    }
-
-    // === Display tests ===
-
-    #[cfg(not(target_os = "macos"))]
-    #[rstest]
-    #[case(Keystroke::new("tab"), "TAB")]
-    #[case(Keystroke::secondary("z"), "Ctrl+Z")]
-    #[case(Keystroke::secondary_shift("a"), "Ctrl+Shift+A")]
-    #[case(Keystroke::alt("f4"), "Alt+F4")]
-    fn display_name_non_macos(#[case] keystroke: Keystroke, #[case] expected: &str) {
-        assert_eq!(keystroke.display_name(), expected);
-    }
-
-    #[test]
-    fn keystroke_is_hashable() {
-        use std::collections::HashSet;
-        let mut set = HashSet::new();
-        set.insert(Keystroke::new("a"));
-        set.insert(Keystroke::secondary("a"));
-        assert_eq!(set.len(), 2);
-    }
-
-    #[test]
-    fn keystroke_equality() {
-        let a = Keystroke::secondary("z");
-        let b = Keystroke::secondary("z");
-        let c = Keystroke::secondary("y");
-        assert_eq!(a, b);
-        assert_ne!(a, c);
     }
 }

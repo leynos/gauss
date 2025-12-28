@@ -103,6 +103,105 @@ pub struct GpuiSelectionRedo;
 
 // === Registration ===
 
+/// Collected keybindings grouped by action type.
+///
+/// This struct holds vectors of GPUI `KeyBinding`s for each action type,
+/// enabling batch registration with `app.bind_keys()`.
+#[derive(Default)]
+struct CollectedBindings {
+    delete_selection: Vec<KeyBinding>,
+    select_all: Vec<KeyBinding>,
+    deselect_all: Vec<KeyBinding>,
+    activate_pen_tool: Vec<KeyBinding>,
+    activate_select_tool: Vec<KeyBinding>,
+    undo: Vec<KeyBinding>,
+    redo: Vec<KeyBinding>,
+    selection_undo: Vec<KeyBinding>,
+    selection_redo: Vec<KeyBinding>,
+}
+
+impl CollectedBindings {
+    /// Collect all default bindings from the model layer.
+    fn from_default_bindings() -> Self {
+        let mut collected = Self::default();
+
+        for binding in default_bindings() {
+            let keystroke = binding.keystroke.to_gpui_string();
+
+            for context in &binding.contexts {
+                let context_str = Some(context.as_ref());
+                collected.add_binding(binding.action, &keystroke, context_str);
+            }
+        }
+
+        collected
+    }
+
+    /// Add a single binding to the appropriate collection.
+    fn add_binding(&mut self, action: Action, keystroke: &str, context: Option<&str>) {
+        match action {
+            Action::DeleteSelection => {
+                self.delete_selection.push(KeyBinding::new(
+                    keystroke,
+                    GpuiDeleteSelection,
+                    context,
+                ));
+            }
+            Action::SelectAll => {
+                self.select_all
+                    .push(KeyBinding::new(keystroke, GpuiSelectAll, context));
+            }
+            Action::DeselectAll => {
+                self.deselect_all
+                    .push(KeyBinding::new(keystroke, GpuiDeselectAll, context));
+            }
+            Action::ActivatePenTool => {
+                self.activate_pen_tool.push(KeyBinding::new(
+                    keystroke,
+                    GpuiActivatePenTool,
+                    context,
+                ));
+            }
+            Action::ActivateSelectTool => {
+                self.activate_select_tool.push(KeyBinding::new(
+                    keystroke,
+                    GpuiActivateSelectTool,
+                    context,
+                ));
+            }
+            Action::Undo => {
+                self.undo
+                    .push(KeyBinding::new(keystroke, GpuiUndo, context));
+            }
+            Action::Redo => {
+                self.redo
+                    .push(KeyBinding::new(keystroke, GpuiRedo, context));
+            }
+            Action::SelectionUndo => {
+                self.selection_undo
+                    .push(KeyBinding::new(keystroke, GpuiSelectionUndo, context));
+            }
+            Action::SelectionRedo => {
+                self.selection_redo
+                    .push(KeyBinding::new(keystroke, GpuiSelectionRedo, context));
+            }
+        }
+    }
+
+    /// Register all collected bindings with the GPUI application.
+    fn register_all(self, app: &mut gpui::App) {
+        app.bind_keys(self.delete_selection);
+        app.bind_keys(self.select_all);
+        app.bind_keys(self.deselect_all);
+        app.bind_keys(self.activate_pen_tool);
+        app.bind_keys(self.activate_select_tool);
+        app.bind_keys(self.undo);
+        app.bind_keys(self.redo);
+        app.bind_keys(self.selection_undo);
+        app.bind_keys(self.selection_redo);
+    }
+}
+
 /// Register action keybindings from the model-layer binding registry.
 ///
 /// This function reads the default bindings from [`default_bindings`] and
@@ -117,85 +216,8 @@ pub struct GpuiSelectionRedo;
 /// This should be called during application initialisation, typically from
 /// [`crate::ui::init`].
 pub fn register_action_bindings(app: &mut gpui::App) {
-    // Collect bindings by action type to batch bind_keys() calls
-    let mut delete_selection = Vec::new();
-    let mut select_all = Vec::new();
-    let mut deselect_all = Vec::new();
-    let mut activate_pen_tool = Vec::new();
-    let mut activate_select_tool = Vec::new();
-    let mut undo = Vec::new();
-    let mut redo = Vec::new();
-    let mut selection_undo = Vec::new();
-    let mut selection_redo = Vec::new();
-
-    for binding in default_bindings() {
-        let keystroke = binding.keystroke.to_gpui_string();
-
-        for context in &binding.contexts {
-            let context_str = Some(context.as_ref());
-
-            match binding.action {
-                Action::DeleteSelection => {
-                    delete_selection.push(KeyBinding::new(
-                        &keystroke,
-                        GpuiDeleteSelection,
-                        context_str,
-                    ));
-                }
-                Action::SelectAll => {
-                    select_all.push(KeyBinding::new(&keystroke, GpuiSelectAll, context_str));
-                }
-                Action::DeselectAll => {
-                    deselect_all.push(KeyBinding::new(&keystroke, GpuiDeselectAll, context_str));
-                }
-                Action::ActivatePenTool => {
-                    activate_pen_tool.push(KeyBinding::new(
-                        &keystroke,
-                        GpuiActivatePenTool,
-                        context_str,
-                    ));
-                }
-                Action::ActivateSelectTool => {
-                    activate_select_tool.push(KeyBinding::new(
-                        &keystroke,
-                        GpuiActivateSelectTool,
-                        context_str,
-                    ));
-                }
-                Action::Undo => {
-                    undo.push(KeyBinding::new(&keystroke, GpuiUndo, context_str));
-                }
-                Action::Redo => {
-                    redo.push(KeyBinding::new(&keystroke, GpuiRedo, context_str));
-                }
-                Action::SelectionUndo => {
-                    selection_undo.push(KeyBinding::new(
-                        &keystroke,
-                        GpuiSelectionUndo,
-                        context_str,
-                    ));
-                }
-                Action::SelectionRedo => {
-                    selection_redo.push(KeyBinding::new(
-                        &keystroke,
-                        GpuiSelectionRedo,
-                        context_str,
-                    ));
-                }
-            }
-        }
-    }
-
-    // Register all bindings in batches by action type
-    app.bind_keys(delete_selection);
-    app.bind_keys(select_all);
-    app.bind_keys(deselect_all);
-    app.bind_keys(activate_pen_tool);
-    app.bind_keys(activate_select_tool);
-    app.bind_keys(undo);
-    app.bind_keys(redo);
-    app.bind_keys(selection_undo);
-    app.bind_keys(selection_redo);
+    let bindings = CollectedBindings::from_default_bindings();
+    bindings.register_all(app);
 }
 
 /// Map a [`ToolMode`] to its corresponding [`KeyContext`].
