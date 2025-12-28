@@ -454,8 +454,8 @@ UI Layer (GPUI-dependent)
 └── bind_keymap() refactor    src/ui/phase0_shell/mod.rs
 ```
 
-The `Keystroke` type provides platform-independent keystroke representation with
-a `secondary` modifier flag (Cmd on macOS, Ctrl elsewhere). The `ActionBinding`
+The `Keystroke` type provides a platform-independent keystroke representation
+with a `secondary` modifier flag (Cmd on macOS, Ctrl elsewhere). The `ActionBinding`
 registry maps Actions to Keystrokes with context scoping.
 
 The UI layer bridges model Actions to GPUI Action structs (e.g., `GpuiUndo`,

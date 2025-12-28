@@ -217,8 +217,9 @@ impl Phase0Shell {
         )
         .on_action(
             cx.listener(|shell: &mut Self, _: &GpuiDeleteSelection, _, action_cx| {
-                shell.delete_selected_anchors();
-                action_cx.notify();
+                if shell.delete_selected_anchors() {
+                    action_cx.notify();
+                }
             }),
         )
         .on_action(

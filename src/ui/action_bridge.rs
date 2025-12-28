@@ -169,7 +169,7 @@ pub fn register_action_bindings(app: &mut gpui::App) {
     }
 }
 
-/// Map a model [`Action`] to its corresponding GPUI context string.
+/// Map a [`ToolMode`] to its corresponding [`KeyContext`].
 ///
 /// This helper is used by views to determine which key context to apply based
 /// on the current editor mode.

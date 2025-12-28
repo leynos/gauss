@@ -1,11 +1,12 @@
 # Gauss User Guide
 
-Gauss is an SVG illustration tool built on GPUI. This guide covers keyboard
-shortcuts and interaction patterns.
+Gauss is a Scalable Vector Graphics (SVG) illustration tool built on GPUI (the
+GPU-accelerated UI framework from Zed). This guide covers keyboard shortcuts
+and interaction patterns.
 
 ## Keyboard Shortcuts
 
-Gauss uses a context-aware keyboard shortcut system. Shortcuts are organised
+Gauss uses a context-aware keyboard shortcut system. Shortcuts are organized
 into contexts based on the current editor mode.
 
 ### Global Shortcuts
@@ -46,8 +47,8 @@ conventions:
 | Action | macOS | Linux/Windows |
 |--------|-------|---------------|
 | Close Window | Cmd+Q | Alt+F4 |
-| Minimise | Cmd+M | Alt+F9 |
-| Toggle Maximise | - | Alt+F10 |
+| Minimize | Cmd+M | Alt+F9 |
+| Toggle Maximize | - | Alt+F10 |
 | Toggle Fullscreen | Ctrl+Cmd+F | Alt+F11 |
 | Window Menu | - | Alt+Space |
 | Move Window | - | Alt+F7 |
@@ -59,7 +60,7 @@ Gauss has two primary tool modes:
 
 ### Draw Mode (Pen Tool)
 
-In draw mode, you create new shapes by clicking to place anchor points:
+In draw mode, new shapes are created by clicking to place anchor points:
 
 1. Click to place the first anchor
 2. Continue clicking to add more anchors
@@ -69,7 +70,7 @@ In draw mode, you create new shapes by clicking to place anchor points:
 
 ### Manipulate Mode (Select Tool)
 
-In manipulate mode, you select and edit existing shapes:
+In manipulate mode, existing shapes can be selected and edited:
 
 1. Click on a shape to select it
 2. Shift+click to add or remove from selection
@@ -85,7 +86,7 @@ In manipulate mode, you select and edit existing shapes:
 - **Cmd+A / Ctrl+A**: Select all shapes
 - **Cmd+Shift+A / Ctrl+Shift+A**: Deselect all
 
-Selection can be undone and redone independently from document changes.
+Selection can be undone and redone independently of document changes.
 
 ## Edge Modes
 
@@ -109,9 +110,9 @@ Gauss maintains separate history stacks for:
 - **Selection changes** (Cmd+Shift+Z / Ctrl+Shift+Z, Cmd+Shift+Y / Ctrl+Shift+Y):
   What is currently selected
 
-This allows you to undo selection changes without affecting the document,
-and vice versa. For example, if you select several shapes and then undo the
-selection, the shapes themselves remain unchanged.
+This allows selection changes to be undone without affecting the document,
+and vice versa. For example, after selecting several shapes and then undoing
+the selection, the shapes themselves remain unchanged.
 
 ## Platform Differences
 

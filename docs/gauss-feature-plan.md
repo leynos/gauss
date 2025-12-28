@@ -71,8 +71,9 @@ phases.
   is critical for any editing workflow. Gauss maintains **separate history
   stacks** for document edits (Ctrl+Z/Y) and selection changes (Ctrl+Shift+Z/Y),
   enabling independent traversal of edit and selection states. Also, implement
-  opening and saving in SVG format (as the native document format). Using SVG ensures immediate
-  compatibility with other tools; Illustrator 10 itself emphasized improved SVG
+  opening and saving in SVG format (as the native document format). Using SVG
+  ensures immediate compatibility with other tools; Illustrator 10 itself
+  emphasized improved SVG
   support([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=Illustrator%20now%20offers%20better%20support,and%20improvements%20abound%20as%20well)).
    In this phase, SVG is sufficient to represent the basic shapes, groups, and
   style properties we have. (In later phases, we will evaluate if SVG can still

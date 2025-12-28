@@ -17,9 +17,10 @@ Phase 0.
 Following the established Action/Command pattern, key contexts are implemented
 as an enum rather than raw strings:
 
-- **Exhaustive matching**: All context variants matched at compile time
+- **Exhaustive matching**: All context variants are matched at compile time
 - **Type safety**: Prevents typos in context strings
-- **Testability**: Context logic testable without GPUI
+- **Testability**: Context logic testable without GPUI (the GPU-accelerated
+  UI framework from Zed)
 - **GPUI compatibility**: `AsRef<str>` provides string conversion
 
 ### Layered Architecture
@@ -39,10 +40,10 @@ UI Layer (GPUI-dependent)
 
 ### Context Stacking Limitation
 
-During implementation, we discovered that GPUI's `.key_context()` method
+During implementation, it was discovered that GPUI's `.key_context()` method
 replaces the previous context rather than stacking multiple contexts. This
-means we cannot apply both Global and mode-specific contexts to the same
-element.
+means it is not possible to apply both Global and mode-specific contexts to
+the same element.
 
 **Resolution**: The view uses only `KeyContext::Global` for now. Mode-specific
 shortcuts (like Delete in ManipulateMode) are registered with the Global
@@ -57,7 +58,7 @@ bridge creates thin wrapper structs (e.g., `GpuiUndo`, `GpuiSelectAll`) that
 dispatch to model-layer logic. This pattern:
 
 - Keeps model code GPUI-independent for testability
-- Centralises keybinding registration in `register_action_bindings()`
+- Centralizes keybinding registration in `register_action_bindings()`
 - Allows the model's `Action` enum to remain serializable
 
 ## Files Created
