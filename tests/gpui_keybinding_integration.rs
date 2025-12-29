@@ -6,7 +6,11 @@
 //! - [`bind_keymap`] registers shell-specific keybindings (Tab, window controls)
 //! - [`bind_model_actions`] correctly wires GPUI actions to shell methods
 //! - [`select_all`] and [`deselect_all`] modify selection as expected
-//! - [`KeyContext::Global`] is applied to the root element for action dispatch
+//!
+//! Note: [`KeyContext::Global`] is implicitly tested by all action dispatch tests.
+//! GPUI requires a matching key context for actions to dispatch; if the root element
+//! did not have [`KeyContext::Global`] set, `dispatch_action()` calls would silently
+//! fail and assertions would not pass.
 
 mod common;
 
@@ -216,40 +220,4 @@ fn tab_key_toggles_edge_mode_in_draw_mode(cx: &mut TestAppContext) {
 
     let is_bezier_after = visual_cx.read(|app| view.read(app).is_bezier_edge_mode());
     assert!(is_bezier_after, "expected bezier edge mode after Tab");
-}
-
-// === KeyContext::Global tests ===
-
-#[gpui::test]
-fn key_context_global_enables_action_dispatch(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
-
-    let shape_id = ShapeId::from(Uuid::from_u128(0x4444_4444_4444_4444_4444_4444_4444_4444));
-
-    // Add a shape to the document.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, view_cx| {
-            let mut doc = shell.document().clone();
-            doc.shapes.clear();
-            doc.shapes.push(demo_square(shape_id));
-            shell.replace_document_for_tests(doc);
-            shell.replace_selection_for_tests(gauss::model::Selection::empty());
-            view_cx.notify();
-        });
-    });
-    visual_cx.run_until_parked();
-
-    // Dispatch an action that requires the global context.
-    // If KeyContext::Global is not set on the root element, this will fail.
-    visual_cx.dispatch_action(GpuiSelectAll);
-    visual_cx.run_until_parked();
-
-    let selection = read_selection_items(visual_cx, &view);
-    assert!(
-        !selection.is_empty(),
-        "expected action to dispatch with KeyContext::Global set"
-    );
 }
