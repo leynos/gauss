@@ -1,0 +1,255 @@
+//! GPUI integration tests for keybinding registration and action dispatch.
+//!
+//! These tests verify:
+//!
+//! - [`ui::init`] correctly registers action bindings from the model layer
+//! - [`bind_keymap`] registers shell-specific keybindings (Tab, window controls)
+//! - [`bind_model_actions`] correctly wires GPUI actions to shell methods
+//! - [`select_all`] and [`deselect_all`] modify selection as expected
+//! - [`KeyContext::Global`] is applied to the root element for action dispatch
+
+mod common;
+
+use common::{ensure_initial_draw, init_test_app, read_selection_items};
+use gauss::model::{PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
+use gauss::ui::{
+    GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeselectAll, GpuiSelectAll, Phase0Shell,
+};
+use gpui::TestAppContext;
+use uuid::Uuid;
+
+fn demo_square(id: ShapeId) -> Shape {
+    Shape {
+        id,
+        z: 0,
+        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
+        path: gauss::model::PathGeom {
+            anchors: vec![
+                gauss::model::Anchor::new(Vec2::new(10.0, 10.0)),
+                gauss::model::Anchor::new(Vec2::new(60.0, 10.0)),
+                gauss::model::Anchor::new(Vec2::new(60.0, 60.0)),
+                gauss::model::Anchor::new(Vec2::new(10.0, 60.0)),
+            ],
+            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
+            closed: true,
+            closing_segment: SegmentKind::Line,
+        },
+    }
+}
+
+// === ui::init registration tests ===
+
+#[gpui::test]
+fn ui_init_registers_action_bindings(cx: &mut TestAppContext) {
+    // ui::init should register action bindings without panicking.
+    // If registration fails, the test will panic during init.
+    init_test_app(cx);
+
+    // Verify the test context is functional by creating a view.
+    let (_view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    // If we got here, ui::init successfully registered bindings.
+}
+
+// === bind_model_actions tests ===
+
+#[gpui::test]
+fn gpui_select_all_action_selects_all_shapes(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    let first_shape = ShapeId::from(Uuid::from_u128(0x1111_1111_1111_1111_1111_1111_1111_1111));
+    let second_shape = ShapeId::from(Uuid::from_u128(0x2222_2222_2222_2222_2222_2222_2222_2222));
+
+    // Add two shapes to the document.
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, view_cx| {
+            let mut doc = shell.document().clone();
+            doc.shapes.clear();
+            doc.shapes.push(demo_square(first_shape));
+            doc.shapes.push(demo_square(second_shape));
+            shell.replace_document_for_tests(doc);
+            shell.replace_selection_for_tests(gauss::model::Selection::empty());
+            view_cx.notify();
+        });
+    });
+    visual_cx.run_until_parked();
+
+    // Selection should be empty initially.
+    let selection_before = read_selection_items(visual_cx, &view);
+    assert!(
+        selection_before.is_empty(),
+        "expected empty selection before GpuiSelectAll"
+    );
+
+    // Dispatch GpuiSelectAll action.
+    visual_cx.dispatch_action(GpuiSelectAll);
+    visual_cx.run_until_parked();
+
+    // All shapes should be selected.
+    let selection_after = read_selection_items(visual_cx, &view);
+    assert_eq!(
+        selection_after.len(),
+        2,
+        "expected 2 shapes selected after GpuiSelectAll"
+    );
+    assert!(selection_after.contains(&SelItem::Shape(first_shape)));
+    assert!(selection_after.contains(&SelItem::Shape(second_shape)));
+}
+
+#[gpui::test]
+fn gpui_deselect_all_action_clears_selection(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    let shape_id = ShapeId::from(Uuid::from_u128(0x3333_3333_3333_3333_3333_3333_3333_3333));
+
+    // Add a shape and select it.
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, view_cx| {
+            let mut doc = shell.document().clone();
+            doc.shapes.clear();
+            doc.shapes.push(demo_square(shape_id));
+            shell.replace_document_for_tests(doc);
+            shell.replace_selection_for_tests(gauss::model::Selection {
+                items: vec![SelItem::Shape(shape_id)],
+            });
+            view_cx.notify();
+        });
+    });
+    visual_cx.run_until_parked();
+
+    // Selection should have the shape.
+    let selection_before = read_selection_items(visual_cx, &view);
+    assert_eq!(selection_before.len(), 1, "expected 1 shape selected");
+
+    // Dispatch GpuiDeselectAll action.
+    visual_cx.dispatch_action(GpuiDeselectAll);
+    visual_cx.run_until_parked();
+
+    // Selection should be empty.
+    let selection_after = read_selection_items(visual_cx, &view);
+    assert!(
+        selection_after.is_empty(),
+        "expected empty selection after GpuiDeselectAll"
+    );
+}
+
+#[gpui::test]
+fn gpui_activate_pen_tool_switches_to_draw_mode(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    // Start in manipulate mode.
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, view_cx| {
+            shell.enter_manipulate_mode_for_tests();
+            view_cx.notify();
+        });
+    });
+    visual_cx.run_until_parked();
+
+    let is_manipulate_before = visual_cx.read(|app| view.read(app).is_manipulate_mode());
+    assert!(
+        is_manipulate_before,
+        "expected manipulate mode before GpuiActivatePenTool"
+    );
+
+    // Dispatch GpuiActivatePenTool action.
+    visual_cx.dispatch_action(GpuiActivatePenTool);
+    visual_cx.run_until_parked();
+
+    let is_draw_after = visual_cx.read(|app| view.read(app).is_draw_mode());
+    assert!(
+        is_draw_after,
+        "expected draw mode after GpuiActivatePenTool"
+    );
+}
+
+#[gpui::test]
+fn gpui_activate_select_tool_switches_to_manipulate_mode(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    // Start in draw mode (default).
+    let is_draw_before = visual_cx.read(|app| view.read(app).is_draw_mode());
+    assert!(
+        is_draw_before,
+        "expected draw mode before GpuiActivateSelectTool"
+    );
+
+    // Dispatch GpuiActivateSelectTool action.
+    visual_cx.dispatch_action(GpuiActivateSelectTool);
+    visual_cx.run_until_parked();
+
+    let is_manipulate_after = visual_cx.read(|app| view.read(app).is_manipulate_mode());
+    assert!(
+        is_manipulate_after,
+        "expected manipulate mode after GpuiActivateSelectTool"
+    );
+}
+
+// === bind_keymap tests ===
+
+#[gpui::test]
+fn tab_key_toggles_edge_mode_in_draw_mode(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    // Start in draw mode with Line edge mode (default).
+    let is_line_before = visual_cx.read(|app| view.read(app).is_line_edge_mode());
+    assert!(is_line_before, "expected line edge mode before Tab");
+
+    // Simulate Tab key press.
+    common::simulate_key(visual_cx, "tab", gpui::Modifiers::none());
+
+    let is_bezier_after = visual_cx.read(|app| view.read(app).is_bezier_edge_mode());
+    assert!(is_bezier_after, "expected bezier edge mode after Tab");
+}
+
+// === KeyContext::Global tests ===
+
+#[gpui::test]
+fn key_context_global_enables_action_dispatch(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    let shape_id = ShapeId::from(Uuid::from_u128(0x4444_4444_4444_4444_4444_4444_4444_4444));
+
+    // Add a shape to the document.
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, view_cx| {
+            let mut doc = shell.document().clone();
+            doc.shapes.clear();
+            doc.shapes.push(demo_square(shape_id));
+            shell.replace_document_for_tests(doc);
+            shell.replace_selection_for_tests(gauss::model::Selection::empty());
+            view_cx.notify();
+        });
+    });
+    visual_cx.run_until_parked();
+
+    // Dispatch an action that requires the global context.
+    // If KeyContext::Global is not set on the root element, this will fail.
+    visual_cx.dispatch_action(GpuiSelectAll);
+    visual_cx.run_until_parked();
+
+    let selection = read_selection_items(visual_cx, &view);
+    assert!(
+        !selection.is_empty(),
+        "expected action to dispatch with KeyContext::Global set"
+    );
+}
