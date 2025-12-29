@@ -163,4 +163,28 @@ impl Phase0Shell {
     pub fn is_maximized_for_resize_borders_for_tests(&self, window: &gpui::Window) -> bool {
         self.is_maximized_for_resize_borders(window)
     }
+
+    /// Check if the current tool mode is Draw.
+    #[must_use]
+    pub const fn is_draw_mode(&self) -> bool {
+        matches!(self.tool_mode, draw::ToolMode::Draw)
+    }
+
+    /// Check if the current tool mode is Manipulate.
+    #[must_use]
+    pub const fn is_manipulate_mode(&self) -> bool {
+        matches!(self.tool_mode, draw::ToolMode::Manipulate)
+    }
+
+    /// Check if the current edge mode is Line.
+    #[must_use]
+    pub const fn is_line_edge_mode(&self) -> bool {
+        matches!(self.edge_mode, draw::DrawEdgeMode::Line)
+    }
+
+    /// Check if the current edge mode is Bezier (auto).
+    #[must_use]
+    pub const fn is_bezier_edge_mode(&self) -> bool {
+        matches!(self.edge_mode, draw::DrawEdgeMode::BezierAuto)
+    }
 }

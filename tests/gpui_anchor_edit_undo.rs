@@ -253,7 +253,7 @@ fn assert_undo_redo_round_trip(
     visual_cx: &mut VisualTestContext,
     view: &gpui::Entity<Phase0Shell>,
 ) -> TestSupportResult<()> {
-    simulate_key(visual_cx, "z", Modifiers::secondary_key());
+    common::simulate_document_undo(visual_cx);
     read_shape_with_counts(
         visual_cx,
         view,
@@ -264,7 +264,7 @@ fn assert_undo_redo_round_trip(
         "after undo delete",
     )?;
 
-    simulate_key(visual_cx, "z", Modifiers::secondary_key());
+    common::simulate_document_undo(visual_cx);
     read_shape_with_counts(
         visual_cx,
         view,
@@ -275,7 +275,7 @@ fn assert_undo_redo_round_trip(
         "after undo insert",
     )?;
 
-    simulate_key(visual_cx, "y", Modifiers::secondary_key());
+    common::simulate_document_redo(visual_cx);
     read_shape_with_counts(
         visual_cx,
         view,
@@ -286,7 +286,7 @@ fn assert_undo_redo_round_trip(
         "after redo insert",
     )?;
 
-    simulate_key(visual_cx, "y", Modifiers::secondary_key());
+    common::simulate_document_redo(visual_cx);
     read_shape_with_counts(
         visual_cx,
         view,

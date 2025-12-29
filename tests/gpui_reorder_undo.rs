@@ -161,12 +161,12 @@ fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
     assert_relative_order(&doc_after_raise, lower, higher, "after raising back to top")
         .expect("expected order after raising back to top");
 
-    simulate_key(visual_cx, "z", Modifiers::secondary_key());
+    common::simulate_document_undo(visual_cx);
     let doc_after_undo_raise = read_document(visual_cx, &view);
     assert_relative_order(&doc_after_undo_raise, higher, lower, "after undoing raise")
         .expect("expected order after undoing raise");
 
-    simulate_key(visual_cx, "z", Modifiers::secondary_key());
+    common::simulate_document_undo(visual_cx);
     let doc_after_undo_lower = read_document(visual_cx, &view);
     assert_relative_order(&doc_after_undo_lower, lower, higher, "after undoing lower")
         .expect("expected order after undoing lower");

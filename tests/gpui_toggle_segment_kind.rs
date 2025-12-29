@@ -17,7 +17,6 @@ mod common;
 use common::{
     anchor_to_canvas_point, assert_vec2_close, canvas_bounds, click_canvas_and_wait,
     ensure_initial_draw, init_test_app, read_document, require_draw_shape, simulate_escape,
-    simulate_key,
 };
 use gauss::model::{SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
@@ -200,7 +199,7 @@ fn tab_toggles_selected_segment_kind_and_undo_restores(cx: &mut TestAppContext) 
     )
     .expect("expected cubic handles after toggle");
 
-    simulate_key(visual_cx, "z", Modifiers::secondary_key());
+    common::simulate_document_undo(visual_cx);
 
     let doc_after_undo = read_document(visual_cx, &view);
     let shape_after_undo =

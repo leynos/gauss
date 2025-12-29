@@ -403,7 +403,65 @@ Commands should be small and composable:
 - `ReparentNode`, `ReorderChildren` (future)
 - `SetSelection` (editor-state command; separate history stack is plausible)
 
-### 7.2 Grouping and “boring but essential” correctness
+### 7.2 Key Context System (implemented 2025-12)
+
+Key contexts determine which keyboard shortcuts are active based on the current
+editor state. The system enables mode-specific shortcuts while maintaining a
+central, GPUI-independent binding registry.
+
+**Design decision:** Key contexts are implemented as an **enum with `AsRef<str>`
+conversion** rather than raw strings, for the following reasons:
+
+- **Exhaustive matching**: All context variants can be matched at compile time.
+- **Type safety**: Prevents typos in context strings.
+- **Testability**: Context logic testable without GPUI.
+- **GPUI compatibility**: `AsRef<str>` provides string conversion for GPUI's
+  key binding API.
+
+The `KeyContext` enum lives in `src/model/key_context.rs` with variants:
+
+- `Global` — Always active (Undo, Redo, Selection Undo/Redo, tool switching)
+- `DrawMode` — Active when Pen tool is selected
+- `ManipulateMode` — Active when Select tool is selected (Delete key)
+- `TextEdit` — Reserved for future on-canvas text editing
+
+**Dual History Stacks:** Gauss maintains separate undo/redo stacks for document
+edits and selection changes:
+
+- **Document history** (Ctrl+Z / Ctrl+Y): Edits to shapes, paths, styles, etc.
+- **Selection history** (Ctrl+Shift+Z / Ctrl+Shift+Y): Changes to what is
+  selected.
+
+This design enables users to traverse selection states independently of document
+edits. For example, after undoing a selection change, the user can redo the
+selection without affecting document state. This deviates from the macOS
+convention of Cmd+Shift+Z for Redo.
+
+Context strings use the format `gauss-{name}` for namespacing (e.g.,
+`"gauss-global"`, `"gauss-manipulate"`). Strings contain only letters, digits,
+`_`, or `-` per GPUI requirements.
+
+**Layered architecture:**
+
+```text
+Model Layer (GPUI-independent)
+├── KeyContext enum           src/model/key_context.rs
+├── Keystroke type            src/model/keystroke.rs
+└── ActionBinding registry    src/model/keybinding.rs
+
+UI Layer (GPUI-dependent)
+├── GPUI Action bridge        src/ui/action_bridge.rs
+└── bind_keymap() refactor    src/ui/phase0_shell/mod.rs
+```
+
+The `Keystroke` type provides a platform-independent keystroke representation
+with a `secondary` modifier flag (Cmd on macOS, Ctrl elsewhere). The `ActionBinding`
+registry maps Actions to Keystrokes with context scoping.
+
+The UI layer bridges model Actions to GPUI Action structs (e.g., `GpuiUndo`,
+`GpuiSelectAll`) and registers keybindings via `register_action_bindings()`.
+
+### 7.3 Grouping and "boring but essential" correctness
 
 To avoid user-hostile undo behavior:
 

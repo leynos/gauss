@@ -7,8 +7,16 @@ use gpui::{
     Context, KeyDownEvent, Keystroke, Modifiers, MouseButton, MouseDownEvent, NavigationDirection,
 };
 
+use crate::model::{SelItem, Selection};
+
 use super::{Phase0Shell, draw::ToolMode};
 
+/// Key actions handled directly by the Phase 0 shell.
+///
+/// Note: Undo/Redo actions are now handled by the GPUI action bridge system
+/// (see `src/ui/action_bridge.rs`). Do not add them here, as this handler
+/// calls `stop_propagation()` which would prevent the action bridge from
+/// receiving the keystrokes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum KeyAction {
     Escape,
@@ -16,10 +24,6 @@ enum KeyAction {
     DeleteAnchors,
     Raise,
     Lower,
-    DocumentUndo,
-    SelectionUndo,
-    DocumentRedo,
-    SelectionRedo,
 }
 
 fn key_action_for(keystroke: &Keystroke) -> Option<KeyAction> {
@@ -47,13 +51,11 @@ fn key_action_for_modified_key(keystroke: &Keystroke) -> Option<KeyAction> {
     let is_secondary = keystroke.modifiers.secondary();
     let is_shift = keystroke.modifiers.shift;
 
+    // Note: Undo/Redo (z/y with secondary) are now handled by the action bridge.
+    // Do not add them here as this handler calls stop_propagation().
     match (key, is_secondary, is_shift) {
         ("]", true, false) => Some(KeyAction::Raise),
         ("[", true, false) => Some(KeyAction::Lower),
-        ("z", true, true) => Some(KeyAction::SelectionUndo),
-        ("z", true, false) => Some(KeyAction::DocumentUndo),
-        ("y", true, true) => Some(KeyAction::SelectionRedo),
-        ("y", true, false) => Some(KeyAction::DocumentRedo),
         _ => None,
     }
 }
@@ -153,22 +155,6 @@ impl Phase0Shell {
             KeyAction::DeleteAnchors => self.delete_selected_anchors(),
             KeyAction::Raise => self.raise_selected_shapes(),
             KeyAction::Lower => self.lower_selected_shapes(),
-            KeyAction::DocumentUndo => {
-                self.undo_document();
-                true
-            }
-            KeyAction::SelectionUndo => {
-                self.undo_selection();
-                true
-            }
-            KeyAction::DocumentRedo => {
-                self.redo_document();
-                true
-            }
-            KeyAction::SelectionRedo => {
-                self.redo_selection();
-                true
-            }
         }
     }
 
@@ -184,5 +170,32 @@ impl Phase0Shell {
         }
 
         cx.notify();
+    }
+
+    /// Select all shapes in the document.
+    pub(super) fn select_all(&mut self, cx: &mut Context<Self>) {
+        let all_shapes: Vec<SelItem> = self
+            .document
+            .shapes
+            .iter()
+            .map(|shape| SelItem::Shape(shape.id))
+            .collect();
+
+        self.apply_selection_change(Selection { items: all_shapes }, cx);
+    }
+
+    /// Clear the current selection.
+    pub(super) fn deselect_all(&mut self, cx: &mut Context<Self>) {
+        self.apply_selection_change(Selection::empty(), cx);
+    }
+
+    /// Apply a selection change, recording it in history if different from current.
+    fn apply_selection_change(&mut self, new_selection: Selection, cx: &mut Context<Self>) {
+        if new_selection != self.selection {
+            let previous = self.selection.clone();
+            self.record_selection_change(previous, new_selection.clone());
+            self.selection = new_selection;
+            cx.notify();
+        }
     }
 }
