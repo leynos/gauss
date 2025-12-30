@@ -44,16 +44,15 @@ impl ResourceStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::rstest;
 
-    #[rstest]
+    #[test]
     fn new_resource_store_is_empty() {
         let store = ResourceStore::new();
         // Stub has no contents to verify; just ensure construction works
         assert_eq!(store, ResourceStore::default());
     }
 
-    #[rstest]
+    #[test]
     fn resource_store_is_clone() {
         let store = ResourceStore::new();
         let cloned = store.clone();

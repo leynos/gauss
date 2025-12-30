@@ -41,16 +41,15 @@ impl StyleStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::rstest;
 
-    #[rstest]
+    #[test]
     fn new_style_store_is_empty() {
         let store = StyleStore::new();
         // Stub has no contents to verify; just ensure construction works
         assert_eq!(store, StyleStore::default());
     }
 
-    #[rstest]
+    #[test]
     fn style_store_is_clone() {
         let store = StyleStore::new();
         let cloned = store.clone();
