@@ -123,7 +123,7 @@ async fn apply_save_path(
         return;
     };
 
-    let Ok(doc) = this.update(&mut cx, |view, _view_cx| view.document.clone()) else {
+    let Ok(doc) = this.update(&mut cx, |view, _view_cx| view.state.document.clone()) else {
         return;
     };
 
@@ -158,12 +158,12 @@ async fn apply_open_prompt(
 
     let _update_result = this.update(&mut cx, move |view, view_cx| {
         if let Some(doc) = loaded_doc {
-            view.document = doc;
+            view.state.document = doc;
             view.document_history = History::new();
             view.selection_history = History::new();
-            view.selection = Selection::empty();
+            view.state.selection = Selection::empty();
             view.drag_state = None;
-            view.draw_active_shape = None;
+            view.state.active_path = None;
             view.last_opened_path = Some(first_path);
             view.last_open_error = None;
         } else {

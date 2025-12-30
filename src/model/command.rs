@@ -47,20 +47,17 @@
 //! # Examples
 //!
 //! ```rust
-//! use gauss::model::{
-//!     Action, Command, Document, Selection, SelItem, Shape, prepare_command,
-//! };
+//! use gauss::model::{Action, EngineState, prepare_command};
 //!
-//! // Prepare a command from an action
-//! let doc = Document::default();
-//! let selection = Selection::default();
-//! let result = prepare_command(Action::DeleteSelection, &doc, &selection);
+//! // Prepare a command from an action using unified engine state
+//! let state = EngineState::new();
+//! let result = prepare_command(Action::DeleteSelection, &state);
 //!
 //! // Empty selection produces an error
 //! assert!(result.is_err());
 //! ```
 
-use crate::model::{Action, Document, Selection, Shape, ShapeId};
+use crate::model::{Action, Document, EngineState, Selection, Shape, ShapeId};
 
 /// Panic message for dispatcher bugs where editor actions reach `prepare_command`.
 ///
@@ -83,7 +80,7 @@ const DISPATCHER_BUG_MSG: &str = "dispatcher bug: this action does not produce a
 /// use gauss::model::{Action, UserError, prepare_command};
 ///
 /// // In UI action handler:
-/// match prepare_command(action, &doc, &selection) {
+/// match prepare_command(action, &state) {
 ///     Ok(cmd) => {
 ///         // Execute command, add to undo stack
 ///     }
@@ -291,17 +288,16 @@ impl CommandInverse {
     }
 }
 
-/// Prepare a command from an action and current editor state.
+/// Prepare a command from an action and current engine state.
 ///
 /// This function bridges user intent (Action) to concrete command (Command).
-/// It captures required context (selection, document state) at the moment
+/// It captures required context from the unified engine state at the moment
 /// the action is invoked.
 ///
 /// # Parameters
 ///
 /// - `action`: The user action to convert.
-/// - `doc`: The current document state (for capturing shape data).
-/// - `selection`: The current selection (for determining targets).
+/// - `state`: The current engine state (document, selection, viewport, etc.).
 ///
 /// # Returns
 ///
@@ -324,13 +320,12 @@ impl CommandInverse {
 /// # Examples
 ///
 /// ```rust
-/// use gauss::model::{Action, Document, Selection, prepare_command};
+/// use gauss::model::{Action, EngineState, prepare_command};
 ///
-/// let doc = Document::default();
-/// let selection = Selection::default();
+/// let state = EngineState::new();
 ///
 /// // Empty selection produces an error
-/// let result = prepare_command(Action::DeleteSelection, &doc, &selection);
+/// let result = prepare_command(Action::DeleteSelection, &state);
 /// assert!(result.is_err());
 /// ```
 #[expect(
@@ -338,13 +333,9 @@ impl CommandInverse {
     reason = "Panic is intentional fail-fast for dispatcher bugs; editor actions \
               should never reach this function in correct code"
 )]
-pub fn prepare_command(
-    action: Action,
-    doc: &Document,
-    selection: &Selection,
-) -> Result<Command, UserError> {
+pub fn prepare_command(action: Action, state: &EngineState) -> Result<Command, UserError> {
     match action {
-        Action::DeleteSelection => prepare_delete_selection(doc, selection),
+        Action::DeleteSelection => prepare_delete_selection(&state.document, &state.selection),
         // Editor actions do not produce commands; this is a dispatcher bug.
         // We panic unconditionally; the match arm is never reached in correct code.
         Action::SelectAll

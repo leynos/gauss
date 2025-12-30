@@ -286,9 +286,9 @@ impl Phase0Shell {
     }
 
     pub(super) fn set_tool_mode(&mut self, mode: ToolMode) {
-        self.tool_mode = mode;
+        self.state.tool_mode = mode;
         if mode == ToolMode::Manipulate {
-            self.draw_active_shape = None;
+            self.state.active_path = None;
         }
     }
 
@@ -297,6 +297,6 @@ impl Phase0Shell {
         reason = "Keep setter consistent with runtime tool-mode mutation."
     )]
     pub(super) fn set_edge_mode(&mut self, mode: DrawEdgeMode) {
-        self.edge_mode = mode;
+        self.state.edge_mode = mode;
     }
 }

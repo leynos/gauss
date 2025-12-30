@@ -91,9 +91,9 @@ impl Phase0Shell {
     }
 
     pub(super) fn handle_tab_action(&mut self, cx: &mut Context<Self>) {
-        let did_change = match self.tool_mode {
+        let did_change = match self.state.tool_mode {
             ToolMode::Draw => {
-                self.set_edge_mode(self.edge_mode.toggle());
+                self.set_edge_mode(self.state.edge_mode.toggle());
                 true
             }
             ToolMode::Manipulate => self.toggle_selected_segments_kind(),
@@ -159,13 +159,13 @@ impl Phase0Shell {
     }
 
     fn handle_escape(&mut self, cx: &mut Context<Self>) {
-        match self.tool_mode {
+        match self.state.tool_mode {
             ToolMode::Draw => {
-                self.tool_mode = ToolMode::Manipulate;
-                self.draw_active_shape = None;
+                self.state.tool_mode = ToolMode::Manipulate;
+                self.state.active_path = None;
             }
             ToolMode::Manipulate => {
-                self.tool_mode = ToolMode::Draw;
+                self.state.tool_mode = ToolMode::Draw;
             }
         }
 
@@ -175,6 +175,7 @@ impl Phase0Shell {
     /// Select all shapes in the document.
     pub(super) fn select_all(&mut self, cx: &mut Context<Self>) {
         let all_shapes: Vec<SelItem> = self
+            .state
             .document
             .shapes
             .iter()
@@ -191,10 +192,10 @@ impl Phase0Shell {
 
     /// Apply a selection change, recording it in history if different from current.
     fn apply_selection_change(&mut self, new_selection: Selection, cx: &mut Context<Self>) {
-        if new_selection != self.selection {
-            let previous = self.selection.clone();
+        if new_selection != self.state.selection {
+            let previous = self.state.selection.clone();
             self.record_selection_change(previous, new_selection.clone());
-            self.selection = new_selection;
+            self.state.selection = new_selection;
             cx.notify();
         }
     }

@@ -30,13 +30,11 @@ use std::path::PathBuf;
 use gpui::prelude::*;
 use gpui_component::history::History;
 
-use crate::model::{
-    Document, KeyContext, PaintStyle, ResizeAnchor, Selection, ShapeId, Vec2, Viewport,
-};
+use crate::model::{EngineState, KeyContext, Vec2};
 
 use super::phase0_support::demo_document;
 
-use self::{draw::DrawEdgeMode, file_dialogs::OpenPromptMode};
+use self::file_dialogs::OpenPromptMode;
 
 /// Trigger an “Open…” workflow for loading a document from disk.
 #[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
@@ -135,34 +133,43 @@ pub fn bind_keymap(app: &mut gpui::App) {
 ///
 /// This view exists to keep a stable "entrypoint view" for the `PoC` while the
 /// real UI is built out.
+///
+/// Engine state (document, selection, viewport, tool mode, etc.) is consolidated
+/// in the `state` field. This provides a single source of truth for editor state
+/// per architecture document section 2.
 pub struct Phase0Shell {
+    /// Unified engine state (document, selection, viewport, tools).
+    state: EngineState,
+
+    // GPUI-specific state (cannot move to EngineState due to dependencies)
     focus_handle: gpui::FocusHandle,
     did_focus: bool,
     did_request_quit: bool,
     open_prompt_mode: OpenPromptMode,
-    document: Document,
-    viewport: Viewport,
-    current_style: PaintStyle,
-    tool_mode: draw::ToolMode,
-    edge_mode: DrawEdgeMode,
-    draw_active_shape: Option<ShapeId>,
+
+    /// Document edit history (uses `gpui_component::History`).
     document_history: History<draw::DocHistoryItem>,
+    /// Selection change history (separate from document history).
     selection_history: History<selection_history::SelectionHistoryItem>,
-    selection: Selection,
+
+    // Interaction state
     drag_state: Option<manipulate::DragState>,
     last_canvas_click_screen: Option<Vec2>,
+
+    // File I/O state
     last_saved_path: Option<PathBuf>,
     last_save_error: Option<String>,
     last_opened_path: Option<PathBuf>,
     last_open_error: Option<String>,
+
+    // Style picker entities (GPUI-dependent)
     stroke_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
     fill_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
     style_picker_subscriptions: Vec<gpui::Subscription>,
     did_init_style_pickers: bool,
+
     /// Previous canvas size for resize anchoring.
     last_viewport_size: Option<gpui::Size<gpui::Pixels>>,
-    /// Anchor point for canvas content during window resize.
-    resize_anchor: ResizeAnchor,
     /// Cached maximized state to trigger re-render on window state change.
     last_maximized_state: Option<bool>,
     /// Test override for maximized state (used to test resize border visibility).
@@ -175,19 +182,13 @@ impl Phase0Shell {
     #[must_use]
     pub fn new(cx: &mut Context<Self>) -> Self {
         Self {
+            state: EngineState::with_document(demo_document()),
             focus_handle: cx.focus_handle(),
             did_focus: false,
             did_request_quit: false,
             open_prompt_mode: OpenPromptMode::Native,
-            document: demo_document(),
-            viewport: Viewport::new(),
-            current_style: PaintStyle::new(Some(crate::model::Rgba::new(0, 0, 0, 255)), 2.0, None),
-            tool_mode: draw::ToolMode::Draw,
-            edge_mode: DrawEdgeMode::Line,
-            draw_active_shape: None,
             document_history: History::new(),
             selection_history: History::new(),
-            selection: Selection::empty(),
             drag_state: None,
             last_canvas_click_screen: None,
             last_saved_path: None,
@@ -199,7 +200,6 @@ impl Phase0Shell {
             style_picker_subscriptions: Vec::new(),
             did_init_style_pickers: false,
             last_viewport_size: None,
-            resize_anchor: ResizeAnchor::default(),
             last_maximized_state: None,
             #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
             test_maximized_override: None,
@@ -215,8 +215,9 @@ impl Phase0Shell {
             if old_size != new_size {
                 let old_vec = Vec2::new(f32::from(old_size.width), f32::from(old_size.height));
                 let new_vec = Vec2::new(f32::from(new_size.width), f32::from(new_size.height));
-                let anchor_factor = self.resize_anchor.as_factor();
-                self.viewport
+                let anchor_factor = self.state.resize_anchor.as_factor();
+                self.state
+                    .viewport
                     .adjust_pan_for_resize(old_vec, new_vec, anchor_factor);
             }
         }

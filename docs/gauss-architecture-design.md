@@ -270,6 +270,47 @@ Recommended internal structure:
 
 This naturally maps to SVG: groups, shapes, and defs.
 
+### 5.4 EngineState (implemented 2025-12)
+
+The `EngineState` struct unifies all editor state into a single source of truth,
+per guiding principle §2.2. It lives in `src/model/engine_state.rs` and is
+GPUI-independent for testability and scripting.
+
+**Design decision:** EngineState consolidates document, selection, viewport,
+tool mode, and resources into a single struct, rather than scattering them
+across the view layer. This enables:
+
+- **Testability**: Tests can construct EngineState without GPUI.
+- **Scripting**: Scripts operate on a single state object.
+- **Consistency**: All state queries go through one structure.
+
+The struct contains:
+
+```rust
+pub struct EngineState {
+    pub document: Document,
+    pub selection: Selection,
+    pub viewport: Viewport,
+    pub tool_mode: ToolMode,
+    pub edge_mode: EdgeMode,
+    pub active_path: Option<ShapeId>,
+    pub current_style: PaintStyle,
+    pub resize_anchor: ResizeAnchor,
+    pub resources: ResourceStore,
+    pub styles: StyleStore,
+}
+```
+
+**Note on history stacks:** Undo/redo history is intentionally *not* part of
+EngineState. The `gpui_component::History` type has GPUI dependencies, so
+history stacks remain in the view layer (Phase0Shell). This preserves
+EngineState's GPUI-independence while delegating GPUI-specific concerns to the
+appropriate layer.
+
+**Relationship to prepare_command():** The command system's `prepare_command()`
+function takes `&EngineState` rather than individual state pieces, providing a
+unified entry point for action dispatch.
+
 ______________________________________________________________________
 
 ## 6. Tool System (Controller Layer)

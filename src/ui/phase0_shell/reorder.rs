@@ -27,16 +27,16 @@ impl Phase0Shell {
     }
 
     fn reorder_selected_shapes(&mut self, direction: Direction) -> bool {
-        if self.tool_mode != ToolMode::Manipulate {
+        if self.state.tool_mode != ToolMode::Manipulate {
             return false;
         }
 
-        let selected = selected_shape_ids(&self.selection.items);
+        let selected = selected_shape_ids(&self.state.selection.items);
         if selected.is_empty() {
             return false;
         }
 
-        let ops = reorder_ops(&self.document, &selected, direction);
+        let ops = reorder_ops(&self.state.document, &selected, direction);
         if ops.is_empty() {
             return false;
         }

@@ -13,15 +13,16 @@ use super::{Phase0Shell, draw::ToolMode};
 
 impl Phase0Shell {
     pub(super) fn insert_anchor_on_selected_segment(&mut self) -> bool {
-        if self.tool_mode != ToolMode::Manipulate {
+        if self.state.tool_mode != ToolMode::Manipulate {
             return false;
         }
 
-        let Some((shape_id, seg_index)) = first_selected_segment(&self.selection.items) else {
+        let Some((shape_id, seg_index)) = first_selected_segment(&self.state.selection.items)
+        else {
             return false;
         };
 
-        let mut working = self.document.clone();
+        let mut working = self.state.document.clone();
         let Some(index) = working.find_index(shape_id) else {
             return false;
         };
@@ -42,7 +43,7 @@ impl Phase0Shell {
 
         self.apply_doc_change(DocChange { ops });
 
-        let previous_selection = self.selection.clone();
+        let previous_selection = self.state.selection.clone();
         let new_selection = Selection {
             items: vec![SelItem::Anchor {
                 shape: shape_id,
@@ -50,22 +51,22 @@ impl Phase0Shell {
             }],
         };
         self.record_selection_change(previous_selection, new_selection.clone());
-        self.selection = new_selection;
+        self.state.selection = new_selection;
         self.drag_state = None;
         true
     }
 
     pub(super) fn delete_selected_anchors(&mut self) -> bool {
-        if self.tool_mode != ToolMode::Manipulate {
+        if self.state.tool_mode != ToolMode::Manipulate {
             return false;
         }
 
-        let grouped = group_selected_anchors(&self.selection.items);
+        let grouped = group_selected_anchors(&self.state.selection.items);
         if grouped.is_empty() {
             return false;
         }
 
-        let mut working = self.document.clone();
+        let mut working = self.state.document.clone();
         let mut ops = Vec::new();
         let mut edit = DocEditContext::new(&mut working, &mut ops);
 
@@ -79,10 +80,10 @@ impl Phase0Shell {
 
         self.apply_doc_change(DocChange { ops });
 
-        let previous_selection = self.selection.clone();
+        let previous_selection = self.state.selection.clone();
         let new_selection = Selection::empty();
         self.record_selection_change(previous_selection, new_selection.clone());
-        self.selection = new_selection;
+        self.state.selection = new_selection;
         self.drag_state = None;
         true
     }

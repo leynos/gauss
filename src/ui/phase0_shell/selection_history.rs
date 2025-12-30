@@ -54,7 +54,7 @@ impl Phase0Shell {
         };
 
         if let Some(last) = group.last() {
-            self.selection = last.change.from.clone();
+            self.state.selection = last.change.from.clone();
         }
 
         self.drag_state = None;
@@ -66,7 +66,7 @@ impl Phase0Shell {
         };
 
         if let Some(last) = group.last() {
-            self.selection = last.change.to.clone();
+            self.state.selection = last.change.to.clone();
         }
 
         self.drag_state = None;

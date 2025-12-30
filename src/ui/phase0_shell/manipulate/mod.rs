@@ -34,7 +34,7 @@ use selection::{can_drag_shape_bbox, selection_for_hit};
 
 impl Phase0Shell {
     pub(super) fn handle_canvas_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
-        if self.tool_mode != ToolMode::Manipulate {
+        if self.state.tool_mode != ToolMode::Manipulate {
             return false;
         }
 
@@ -42,26 +42,26 @@ impl Phase0Shell {
             return false;
         }
 
-        let cursor_world = cursor_world(&self.viewport, event.position);
-        let tolerance_world = 4.0 / self.viewport.zoom();
-        let hit = hit_under_cursor(&self.document, cursor_world, tolerance_world);
+        let cursor_world = cursor_world(&self.state.viewport, event.position);
+        let tolerance_world = 4.0 / self.state.viewport.zoom();
+        let hit = hit_under_cursor(&self.state.document, cursor_world, tolerance_world);
 
-        let previous_selection = self.selection.clone();
+        let previous_selection = self.state.selection.clone();
         let can_drag_shape_bbox = can_drag_shape_bbox(&previous_selection, hit);
         let new_selection = selection_for_hit(&previous_selection, hit, event.modifiers.shift);
         let did_change_selection = new_selection != previous_selection;
         if did_change_selection {
             self.record_selection_change(previous_selection, new_selection.clone());
         }
-        self.selection = new_selection;
+        self.state.selection = new_selection;
 
         self.drag_state = if event.modifiers.shift {
             None
         } else {
             start_drag(
                 &DragStartInput::new(
-                    &self.document,
-                    &self.selection,
+                    &self.state.document,
+                    &self.state.selection,
                     cursor_world,
                     can_drag_shape_bbox,
                 ),
@@ -73,7 +73,7 @@ impl Phase0Shell {
     }
 
     pub(super) fn handle_canvas_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
-        if self.tool_mode != ToolMode::Manipulate {
+        if self.state.tool_mode != ToolMode::Manipulate {
             return false;
         }
 
@@ -85,12 +85,12 @@ impl Phase0Shell {
             return false;
         };
 
-        let cursor_world = cursor_world(&self.viewport, event.position);
-        apply_drag_preview(&mut self.document, drag_state, cursor_world)
+        let cursor_world = cursor_world(&self.state.viewport, event.position);
+        apply_drag_preview(&mut self.state.document, drag_state, cursor_world)
     }
 
     pub(super) fn handle_canvas_mouse_up(&mut self, event: &MouseUpEvent) -> bool {
-        if self.tool_mode != ToolMode::Manipulate {
+        if self.state.tool_mode != ToolMode::Manipulate {
             return false;
         }
 
@@ -102,8 +102,8 @@ impl Phase0Shell {
             return false;
         };
 
-        let cursor_world = cursor_world(&self.viewport, event.position);
-        finish_drag(&mut self.document, drag_state, cursor_world)
+        let cursor_world = cursor_world(&self.state.viewport, event.position);
+        finish_drag(&mut self.state.document, drag_state, cursor_world)
             .map(|change| {
                 self.document_history.push(DocHistoryItem::new(change));
             })
