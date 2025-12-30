@@ -16,14 +16,14 @@ use super::Phase0Shell;
 
 impl Phase0Shell {
     pub(super) fn toggle_selected_segments_kind(&mut self) -> bool {
-        let segments = selected_segments(&self.selection.items);
+        let segments = selected_segments(&self.state.selection.items);
         if segments.is_empty() {
             return false;
         }
 
         let mut ops = Vec::new();
         for (shape_id, seg_index) in segments {
-            append_segment_toggle_ops(&self.document, shape_id, seg_index, &mut ops);
+            append_segment_toggle_ops(&self.state.document, shape_id, seg_index, &mut ops);
         }
 
         if ops.is_empty() {

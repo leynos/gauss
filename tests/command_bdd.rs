@@ -4,7 +4,8 @@
 //! Actions to undoable document mutations.
 
 use gauss::model::{
-    Action, Command, CommandInverse, Document, SelItem, Selection, UserError, prepare_command,
+    Action, Command, CommandInverse, Document, EngineState, SelItem, Selection, UserError,
+    prepare_command,
 };
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
@@ -14,8 +15,7 @@ use test_support::{TestSupportError, TestSupportResult};
 /// World state for command BDD tests.
 #[derive(Default)]
 struct CommandWorld {
-    doc: Document,
-    selection: Selection,
+    state: EngineState,
     command: Option<Result<Command, UserError>>,
     inverse: Option<CommandInverse>,
 }
@@ -29,30 +29,26 @@ fn world() -> CommandWorld {
 
 #[given("a document with two shapes")]
 fn given_doc_with_two_shapes(world: &mut CommandWorld) {
-    world.doc = Document {
+    world.state.document = Document {
         shapes: vec![sample_shape(shape_id(1), 0), sample_shape(shape_id(2), 1)],
     };
 }
 
 #[given("the first shape is selected")]
 fn given_first_shape_selected(world: &mut CommandWorld) {
-    world.selection.toggle(SelItem::Shape(shape_id(1)));
+    world.state.selection.toggle(SelItem::Shape(shape_id(1)));
 }
 
 #[given("nothing is selected")]
 fn given_nothing_selected(world: &mut CommandWorld) {
-    world.selection = Selection::default();
+    world.state.selection = Selection::default();
 }
 
 // === When steps ===
 
 #[when("I prepare DeleteSelection action")]
 fn when_prepare_delete_selection(world: &mut CommandWorld) {
-    world.command = Some(prepare_command(
-        Action::DeleteSelection,
-        &world.doc,
-        &world.selection,
-    ));
+    world.command = Some(prepare_command(Action::DeleteSelection, &world.state));
 }
 
 #[when("I apply the command")]
@@ -65,7 +61,7 @@ fn when_apply_command(world: &mut CommandWorld) -> TestSupportResult<()> {
         .map_err(|e| TestSupportError::expectation(format!("command failed: {e}")))?;
 
     let inverse = cmd
-        .apply(&mut world.doc)
+        .apply(&mut world.state.document)
         .map_err(|e| TestSupportError::expectation(format!("apply failed: {e}")))?;
 
     world.inverse = Some(inverse);
@@ -80,7 +76,7 @@ fn when_apply_inverse(world: &mut CommandWorld) -> TestSupportResult<()> {
         .ok_or_else(|| TestSupportError::missing("inverse", "undo"))?;
 
     inverse
-        .apply(&mut world.doc)
+        .apply(&mut world.state.document)
         .map_err(|e| TestSupportError::expectation(format!("undo failed: {e}")))?;
 
     Ok(())
@@ -112,14 +108,14 @@ fn then_command_targets_one_shape(world: &CommandWorld) -> TestSupportResult<()>
 
 /// Helper: assert document has expected number of shapes.
 fn assert_doc_shape_count(world: &CommandWorld, expected: usize) -> TestSupportResult<()> {
-    if world.doc.shapes.len() == expected {
+    if world.state.document.shapes.len() == expected {
         Ok(())
     } else {
         Err(TestSupportError::expectation(format!(
             "expected {} shape{}, got {}",
             expected,
             if expected == 1 { "" } else { "s" },
-            world.doc.shapes.len()
+            world.state.document.shapes.len()
         )))
     }
 }

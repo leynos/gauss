@@ -41,7 +41,7 @@ impl Phase0Shell {
     /// assembling the real UI.
     #[must_use]
     pub const fn document(&self) -> &Document {
-        &self.document
+        &self.state.document
     }
 
     /// Return the current viewport.
@@ -50,7 +50,7 @@ impl Phase0Shell {
     /// assembling the real editor UI.
     #[must_use]
     pub const fn viewport(&self) -> Viewport {
-        self.viewport
+        self.state.viewport
     }
 
     /// Return the current selection.
@@ -59,7 +59,7 @@ impl Phase0Shell {
     /// assembling the real editor UI.
     #[must_use]
     pub const fn selection(&self) -> &Selection {
-        &self.selection
+        &self.state.selection
     }
 
     /// Return the active shape identifier, if any.
@@ -67,7 +67,7 @@ impl Phase0Shell {
     /// This is intended for headless tests that validate tool mode switches.
     #[must_use]
     pub const fn draw_active_shape_for_tests(&self) -> Option<ShapeId> {
-        self.draw_active_shape
+        self.state.active_path
     }
 
     /// Override the active shape during tests.
@@ -75,7 +75,7 @@ impl Phase0Shell {
     /// This is used to verify that switching to manipulate mode clears the
     /// active draw state.
     pub const fn set_draw_active_shape_for_tests(&mut self, shape: Option<ShapeId>) {
-        self.draw_active_shape = shape;
+        self.state.active_path = shape;
     }
 
     /// Override the maximized state for tests.
@@ -95,9 +95,9 @@ impl Phase0Shell {
     /// preserve history; callers that need undo/redo should drive changes via
     /// editor operations instead.
     pub fn replace_document_for_tests(&mut self, document: Document) {
-        self.document = document;
+        self.state.document = document;
         self.drag_state = None;
-        self.draw_active_shape = None;
+        self.state.active_path = None;
     }
 
     /// Replace the current selection.
@@ -106,7 +106,7 @@ impl Phase0Shell {
     /// assembling the real editor UI. Selection history is not updated by this
     /// helper.
     pub fn replace_selection_for_tests(&mut self, selection: Selection) {
-        self.selection = selection;
+        self.state.selection = selection;
         self.drag_state = None;
     }
 
@@ -167,24 +167,24 @@ impl Phase0Shell {
     /// Check if the current tool mode is Draw.
     #[must_use]
     pub const fn is_draw_mode(&self) -> bool {
-        matches!(self.tool_mode, draw::ToolMode::Draw)
+        matches!(self.state.tool_mode, draw::ToolMode::Draw)
     }
 
     /// Check if the current tool mode is Manipulate.
     #[must_use]
     pub const fn is_manipulate_mode(&self) -> bool {
-        matches!(self.tool_mode, draw::ToolMode::Manipulate)
+        matches!(self.state.tool_mode, draw::ToolMode::Manipulate)
     }
 
     /// Check if the current edge mode is Line.
     #[must_use]
     pub const fn is_line_edge_mode(&self) -> bool {
-        matches!(self.edge_mode, draw::DrawEdgeMode::Line)
+        matches!(self.state.edge_mode, draw::DrawEdgeMode::Line)
     }
 
     /// Check if the current edge mode is Bezier (auto).
     #[must_use]
     pub const fn is_bezier_edge_mode(&self) -> bool {
-        matches!(self.edge_mode, draw::DrawEdgeMode::BezierAuto)
+        matches!(self.state.edge_mode, draw::DrawEdgeMode::BezierAuto)
     }
 }

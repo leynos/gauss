@@ -92,9 +92,9 @@ phases depend upon. See architecture document §20.
 
 ### 0.2. Core EngineState
 
-- [ ] 0.2.1. Consolidate engine state.
-  - [ ] Unify document, selection, viewport, and resources into `EngineState`.
-  - [ ] Ensure single source of truth per guiding principle §2.
+- [x] 0.2.1. Consolidate engine state.
+  - [x] Unify document, selection, viewport, and resources into `EngineState`.
+  - [x] Ensure single source of truth per guiding principle §2.
 - [ ] 0.2.2. Implement stable ID generation.
   - [ ] Use generational IDs (`slotmap` or similar). See architecture §5.1.
   - [ ] Ensure IDs are stable across frames for AccessKit.

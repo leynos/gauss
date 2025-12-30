@@ -4,8 +4,8 @@
 //! mutations.
 
 use gauss::model::{
-    Action, Command, CommandInverse, DeletedShape, Document, SelItem, Selection, UserError,
-    prepare_command,
+    Action, Command, CommandInverse, DeletedShape, Document, EngineState, SelItem, Selection,
+    UserError, prepare_command,
 };
 use rstest::{fixture, rstest};
 use test_support::shapes::{sample_shape, shape_id};
@@ -112,9 +112,9 @@ fn delete_restores_shape_at_correct_index(mut doc_with_two_shapes: Document) {
 
 #[rstest]
 fn prepare_delete_selection_fails_with_empty_selection(doc_with_two_shapes: Document) {
-    let selection = Selection::default();
+    let state = EngineState::with_document(doc_with_two_shapes);
 
-    let result = prepare_command(Action::DeleteSelection, &doc_with_two_shapes, &selection);
+    let result = prepare_command(Action::DeleteSelection, &state);
 
     assert!(matches!(result, Err(UserError::EmptySelection)));
 }
@@ -124,11 +124,10 @@ fn prepare_delete_selection_succeeds_with_selection(
     doc_with_two_shapes: Document,
     selection_with_first_shape: Selection,
 ) {
-    let result = prepare_command(
-        Action::DeleteSelection,
-        &doc_with_two_shapes,
-        &selection_with_first_shape,
-    );
+    let mut state = EngineState::with_document(doc_with_two_shapes);
+    state.selection = selection_with_first_shape;
+
+    let result = prepare_command(Action::DeleteSelection, &state);
 
     let cmd = result.expect("prepare_command should succeed");
     assert!(
@@ -144,10 +143,10 @@ fn prepare_delete_selection_succeeds_with_selection(
 
 #[rstest]
 fn prepare_delete_selection_fails_with_missing_shape(empty_doc: Document) {
-    let mut selection = Selection::default();
-    selection.toggle(SelItem::Shape(shape_id(999)));
+    let mut state = EngineState::with_document(empty_doc);
+    state.selection.toggle(SelItem::Shape(shape_id(999)));
 
-    let result = prepare_command(Action::DeleteSelection, &empty_doc, &selection);
+    let result = prepare_command(Action::DeleteSelection, &state);
 
     assert!(matches!(result, Err(UserError::ShapeNotFound(_))));
 }
@@ -244,42 +243,35 @@ fn delete_multiple_shapes_preserves_order(mut doc_with_two_shapes: Document) {
 
 #[rstest]
 fn full_round_trip_via_action(
-    mut doc_with_two_shapes: Document,
+    doc_with_two_shapes: Document,
     selection_with_first_shape: Selection,
 ) {
     let original = doc_with_two_shapes.clone();
+    let mut state = EngineState::with_document(doc_with_two_shapes);
+    state.selection = selection_with_first_shape;
 
     // Prepare command from action
-    let cmd = prepare_command(
-        Action::DeleteSelection,
-        &doc_with_two_shapes,
-        &selection_with_first_shape,
-    )
-    .expect("prepare succeeded");
+    let cmd = prepare_command(Action::DeleteSelection, &state).expect("prepare succeeded");
 
     // Apply command
-    let inverse = cmd
-        .apply(&mut doc_with_two_shapes)
-        .expect("apply succeeded");
-    assert_eq!(doc_with_two_shapes.shapes.len(), 1);
+    let inverse = cmd.apply(&mut state.document).expect("apply succeeded");
+    assert_eq!(state.document.shapes.len(), 1);
 
     // Undo via inverse
-    inverse
-        .apply(&mut doc_with_two_shapes)
-        .expect("undo succeeded");
-    assert_eq!(doc_with_two_shapes, original);
+    inverse.apply(&mut state.document).expect("undo succeeded");
+    assert_eq!(state.document, original);
 }
 
 #[rstest]
 fn selection_only_anchors_returns_empty_selection_error(doc_with_two_shapes: Document) {
-    let mut selection = Selection::default();
+    let mut state = EngineState::with_document(doc_with_two_shapes);
     // Select only an anchor, not the whole shape
-    selection.toggle(SelItem::Anchor {
+    state.selection.toggle(SelItem::Anchor {
         shape: shape_id(1),
         anchor: 0,
     });
 
-    let result = prepare_command(Action::DeleteSelection, &doc_with_two_shapes, &selection);
+    let result = prepare_command(Action::DeleteSelection, &state);
 
     assert!(matches!(result, Err(UserError::EmptySelection)));
 }
@@ -312,7 +304,6 @@ fn user_error_display_shape_not_found() {
 #[case::activate_select_tool(Action::ActivateSelectTool)]
 #[should_panic(expected = "dispatcher bug")]
 fn editor_action_panics(#[case] action: Action) {
-    let doc = Document::default();
-    let selection = Selection::default();
-    drop(prepare_command(action, &doc, &selection));
+    let state = EngineState::new();
+    drop(prepare_command(action, &state));
 }

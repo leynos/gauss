@@ -21,15 +21,19 @@ impl Phase0Shell {
         } else {
             ""
         };
-        match self.tool_mode {
+        match self.state.tool_mode {
             draw::ToolMode::Draw => format!(
                 "Mode: {} ({}){}",
-                self.tool_mode.label(),
-                self.edge_mode.label(),
+                self.state.tool_mode.label(),
+                self.state.edge_mode.label(),
                 maximized_indicator
             ),
             draw::ToolMode::Manipulate => {
-                format!("Mode: {}{}", self.tool_mode.label(), maximized_indicator)
+                format!(
+                    "Mode: {}{}",
+                    self.state.tool_mode.label(),
+                    maximized_indicator
+                )
             }
         }
     }
@@ -84,9 +88,9 @@ impl Phase0Shell {
             .on_click(cx.listener(Self::canvas_click))
             .on_scroll_wheel(cx.listener(Self::canvas_scroll_wheel))
             .child(super::super::canvas_paint::canvas_for_document(
-                &self.document,
-                &self.selection,
-                self.viewport,
+                &self.state.document,
+                &self.state.selection,
+                self.state.viewport,
             ))
     }
 
@@ -155,7 +159,7 @@ impl Phase0Shell {
     ) {
         let line_height = window.line_height();
         let did_change = super::super::viewport_input::apply_scroll_wheel_event(
-            &mut shell.viewport,
+            &mut shell.state.viewport,
             event,
             line_height,
         );
@@ -224,13 +228,13 @@ impl Phase0Shell {
         )
         .on_action(
             cx.listener(|shell: &mut Self, _: &GpuiActivatePenTool, _, action_cx| {
-                shell.tool_mode = draw::ToolMode::Draw;
+                shell.state.tool_mode = draw::ToolMode::Draw;
                 action_cx.notify();
             }),
         )
         .on_action(cx.listener(
             |shell: &mut Self, _: &GpuiActivateSelectTool, _, action_cx| {
-                shell.tool_mode = draw::ToolMode::Manipulate;
+                shell.state.tool_mode = draw::ToolMode::Manipulate;
                 action_cx.notify();
             },
         ))

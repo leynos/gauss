@@ -17,8 +17,8 @@ impl Phase0Shell {
             return;
         }
 
-        let stroke_default = self.current_style.stroke.map(model_rgba_to_hsla);
-        let fill_default = self.current_style.fill.map(model_rgba_to_hsla);
+        let stroke_default = self.state.current_style.stroke.map(model_rgba_to_hsla);
+        let fill_default = self.state.current_style.fill.map(model_rgba_to_hsla);
 
         let stroke_state = cx.new(|picker_cx| {
             let mut state = ColorPickerState::new(window, picker_cx);
@@ -130,13 +130,14 @@ impl Phase0Shell {
     fn apply_style_update(&mut self, update: StyleUpdate) -> bool {
         let selected_shapes = self.selected_shape_ids_for_style();
         if selected_shapes.is_empty() {
-            update.apply_to_style(&mut self.current_style);
+            update.apply_to_style(&mut self.state.current_style);
             return true;
         }
 
         let mut ops = Vec::new();
         for shape_id in selected_shapes {
             let Some(shape) = self
+                .state
                 .document
                 .shapes
                 .iter()
@@ -173,7 +174,7 @@ impl Phase0Shell {
 
         let mut seen = HashSet::new();
         let mut ids = Vec::new();
-        for item in &self.selection.items {
+        for item in &self.state.selection.items {
             let shape_id = shape_id_for_selection_item(item);
             if seen.insert(shape_id) {
                 ids.push(shape_id);

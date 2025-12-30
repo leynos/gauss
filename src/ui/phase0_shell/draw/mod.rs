@@ -16,7 +16,7 @@
 use gpui_component::history::HistoryItem;
 
 use crate::model::{
-    Anchor, DocChange, DocOp, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, Vec2,
+    Anchor, DocChange, DocOp, EdgeMode, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, Vec2,
 };
 
 use super::Phase0Shell;
@@ -27,42 +27,15 @@ use self::handles::{clear_line_segment_handles, close_shape, update_catmull_rom_
 
 const SNAP_RADIUS_PX: f32 = 10.0;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum ToolMode {
-    Draw,
-    Manipulate,
-}
+// Re-export tool types for backward compatibility within the UI layer.
+// These are now defined in src/model/tool.rs for GPUI-independence.
+pub(crate) use crate::model::ToolMode;
 
-impl ToolMode {
-    pub(crate) const fn label(self) -> &'static str {
-        match self {
-            Self::Draw => "Draw",
-            Self::Manipulate => "Manipulate",
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum DrawEdgeMode {
-    Line,
-    BezierAuto,
-}
-
-impl DrawEdgeMode {
-    pub(super) const fn label(self) -> &'static str {
-        match self {
-            Self::Line => "Line",
-            Self::BezierAuto => "Bezier (auto)",
-        }
-    }
-
-    pub(super) const fn toggle(self) -> Self {
-        match self {
-            Self::Line => Self::BezierAuto,
-            Self::BezierAuto => Self::Line,
-        }
-    }
-}
+/// Type alias for backward compatibility during migration.
+///
+/// The canonical type is now `EdgeMode` in the model layer. This alias
+/// preserves existing `DrawEdgeMode` references in the UI layer.
+pub(super) type DrawEdgeMode = EdgeMode;
 
 #[derive(Clone, Debug)]
 pub(super) struct DocHistoryItem {
@@ -97,56 +70,59 @@ impl Phase0Shell {
         let cursor_screen = Vec2::new(f32::from(position.x), f32::from(position.y));
         self.last_canvas_click_screen = Some(cursor_screen);
 
-        if self.tool_mode != ToolMode::Draw {
+        if self.state.tool_mode != ToolMode::Draw {
             return false;
         }
 
-        let cursor_world = self.viewport.screen_to_world(cursor_screen);
+        let cursor_world = self.state.viewport.screen_to_world(cursor_screen);
         self.draw_click_world(cursor_world)
     }
 
     fn draw_click_world(&mut self, cursor_world: Vec2) -> bool {
-        let Some(active) = self.draw_active_shape else {
+        let Some(active) = self.state.active_path else {
             return self.start_new_open_shape(cursor_world);
         };
 
-        let Some(index) = self.document.find_index(active) else {
-            self.draw_active_shape = None;
+        let Some(index) = self.state.document.find_index(active) else {
+            self.state.active_path = None;
             return self.start_new_open_shape(cursor_world);
         };
 
-        let Some(existing) = self.document.shapes.get(index).cloned() else {
-            self.draw_active_shape = None;
+        let Some(existing) = self.state.document.shapes.get(index).cloned() else {
+            self.state.active_path = None;
             return false;
         };
 
-        if should_close_path(&existing.path, cursor_world, self.viewport.zoom()) {
-            let closed = close_shape(existing.clone(), segment_kind_for_edge_mode(self.edge_mode));
+        if should_close_path(&existing.path, cursor_world, self.state.viewport.zoom()) {
+            let closed = close_shape(
+                existing.clone(),
+                segment_kind_for_edge_mode(self.state.edge_mode),
+            );
             self.apply_doc_change(replace_shape_change(index, existing, closed));
-            self.tool_mode = ToolMode::Manipulate;
-            self.draw_active_shape = None;
+            self.state.tool_mode = ToolMode::Manipulate;
+            self.state.active_path = None;
             return true;
         }
 
-        let appended = append_anchor(existing.clone(), cursor_world, self.edge_mode);
+        let appended = append_anchor(existing.clone(), cursor_world, self.state.edge_mode);
         self.apply_doc_change(replace_shape_change(index, existing, appended));
         true
     }
 
     fn start_new_open_shape(&mut self, cursor_world: Vec2) -> bool {
-        let shape = new_open_shape(cursor_world, self.current_style.clone());
+        let shape = new_open_shape(cursor_world, self.state.current_style.clone());
         let shape_id = shape.id;
-        let index = self.document.shapes.len();
+        let index = self.state.document.shapes.len();
         self.apply_doc_change(DocChange {
             ops: vec![DocOp::InsertShape { index, shape }],
         });
 
-        self.draw_active_shape = Some(shape_id);
+        self.state.active_path = Some(shape_id);
         true
     }
 
     pub(super) fn apply_doc_change(&mut self, change: DocChange) {
-        change.apply(&mut self.document);
+        change.apply(&mut self.state.document);
         self.document_history.push(DocHistoryItem::new(change));
     }
 
@@ -156,7 +132,7 @@ impl Phase0Shell {
         };
 
         for item in group {
-            item.change.apply_inverse(&mut self.document);
+            item.change.apply_inverse(&mut self.state.document);
         }
     }
 
@@ -166,7 +142,7 @@ impl Phase0Shell {
         };
 
         for item in group {
-            item.change.apply(&mut self.document);
+            item.change.apply(&mut self.state.document);
         }
     }
 }
