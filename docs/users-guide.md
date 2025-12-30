@@ -13,17 +13,17 @@ into contexts based on the current editor mode.
 
 These shortcuts work in any editor mode:
 
-| Action | macOS | Linux/Windows |
-|--------|-------|---------------|
-| Undo | Cmd+Z | Ctrl+Z |
-| Redo | Cmd+Y | Ctrl+Y |
-| Selection Undo | Cmd+Shift+Z | Ctrl+Shift+Z |
-| Selection Redo | Cmd+Shift+Y | Ctrl+Shift+Y |
-| Select All | Cmd+A | Ctrl+A |
-| Deselect All | Cmd+Shift+A | Ctrl+Shift+A |
-| Pen Tool | P | P |
-| Select Tool | V | V |
-| Toggle Edge Mode | Tab | Tab |
+| Action           | macOS       | Linux/Windows |
+| ---------------- | ----------- | ------------- |
+| Undo             | Cmd+Z       | Ctrl+Z        |
+| Redo             | Cmd+Y       | Ctrl+Y        |
+| Selection Undo   | Cmd+Shift+Z | Ctrl+Shift+Z  |
+| Selection Redo   | Cmd+Shift+Y | Ctrl+Shift+Y  |
+| Select All       | Cmd+A       | Ctrl+A        |
+| Deselect All     | Cmd+Shift+A | Ctrl+Shift+A  |
+| Pen Tool         | P           | P             |
+| Select Tool      | V           | V             |
+| Toggle Edge Mode | Tab         | Tab           |
 
 **Note:** Gauss uses Cmd+Shift+Z / Ctrl+Shift+Z for Selection Undo rather than
 the standard macOS Redo shortcut. This supports the dual history stack design
@@ -35,8 +35,8 @@ Some shortcuts only work in specific modes:
 
 #### Manipulate Mode (Select Tool Active)
 
-| Action | Shortcut |
-|--------|----------|
+| Action           | Shortcut            |
+| ---------------- | ------------------- |
 | Delete Selection | Backspace or Delete |
 
 ### Window Controls
@@ -44,15 +44,15 @@ Some shortcuts only work in specific modes:
 Gauss provides keyboard-accessible window controls following platform
 conventions:
 
-| Action | macOS | Linux/Windows |
-|--------|-------|---------------|
-| Close Window | Cmd+Q | Alt+F4 |
-| Minimize | Cmd+M | Alt+F9 |
-| Toggle Maximize | - | Alt+F10 |
-| Toggle Fullscreen | Ctrl+Cmd+F | Alt+F11 |
-| Window Menu | - | Alt+Space |
-| Move Window | - | Alt+F7 |
-| Resize Window | - | Alt+F8 |
+| Action            | macOS      | Linux/Windows |
+| ----------------- | ---------- | ------------- |
+| Close Window      | Cmd+Q      | Alt+F4        |
+| Minimize          | Cmd+M      | Alt+F9        |
+| Toggle Maximize   | -          | Alt+F10       |
+| Toggle Fullscreen | Ctrl+Cmd+F | Alt+F11       |
+| Window Menu       | -          | Alt+Space     |
+| Move Window       | -          | Alt+F7        |
+| Resize Window     | -          | Alt+F8        |
 
 ## Tool Modes
 
@@ -107,12 +107,12 @@ Gauss maintains separate history stacks for:
 
 - **Document changes** (Cmd+Z / Ctrl+Z, Cmd+Y / Ctrl+Y): Shape creation,
   movement, deletion, style changes
-- **Selection changes** (Cmd+Shift+Z / Ctrl+Shift+Z, Cmd+Shift+Y / Ctrl+Shift+Y):
-  What is currently selected
+- **Selection changes** (Cmd+Shift+Z / Ctrl+Shift+Z, Cmd+Shift+Y /
+  Ctrl+Shift+Y): What is currently selected
 
-This allows selection changes to be undone without affecting the document,
-and vice versa. For example, after selecting several shapes and then undoing
-the selection, the shapes themselves remain unchanged.
+This allows selection changes to be undone without affecting the document, and
+vice versa. For example, after selecting several shapes and then undoing the
+selection, the shapes themselves remain unchanged.
 
 ## Platform Differences
 
