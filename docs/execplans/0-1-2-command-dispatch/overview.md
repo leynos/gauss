@@ -22,13 +22,13 @@ DocChange / DocOp          e.g., RemoveShape { index, shape }
 
 ## Design Decisions
 
-| Decision               | Choice                                 | Rationale                                                                       |
-| ---------------------- | -------------------------------------- | ------------------------------------------------------------------------------- |
-| Command representation | **Enum with data**                     | Exhaustive matching, serialization-ready, consistent with Action design         |
-| Inverse storage        | **Pre-computed at apply time**         | Undo does not require re-deriving inverse from current state                    |
-| Serialization          | **`serde` derives (optional feature)** | Enables macro recording without blocking initial implementation                 |
-| Error handling         | **Separated by audience**              | User-facing errors (`UserError`) for UI; internal errors for dispatcher bugs    |
-| Module location        | `src/model/command.rs`                 | GPUI (Zed's UI framework)-independent for testability                           |
+| Decision               | Choice                                 | Rationale                                                                    |
+| ---------------------- | -------------------------------------- | ---------------------------------------------------------------------------- |
+| Command representation | **Enum with data**                     | Exhaustive matching, serialization-ready, consistent with Action design      |
+| Inverse storage        | **Pre-computed at apply time**         | Undo does not require re-deriving inverse from current state                 |
+| Serialization          | **`serde` derives (optional feature)** | Enables macro recording without blocking initial implementation              |
+| Error handling         | **Separated by audience**              | User-facing errors (`UserError`) for UI; internal errors for dispatcher bugs |
+| Module location        | `src/model/command.rs`                 | GPUI (Zed's UI framework)-independent for testability                        |
 
 ## Design Rationale
 
@@ -77,13 +77,13 @@ The `DeletedShape` captures everything needed to restore the shape on undo. See
 
 ## File Layout
 
-| File                             | Purpose                                            |
-| -------------------------------- | -------------------------------------------------- |
-| `src/model/command.rs`           | Command enum, CommandInverse, dispatch logic       |
-| `src/model/command/error.rs`     | UserError enum (optional: inline in command.rs)    |
-| `src/model/mod.rs`               | Add exports for Command types                      |
-| `tests/features/command.feature` | BDD scenarios for command dispatch                 |
-| `tests/command_bdd.rs`           | BDD step implementations                           |
+| File                             | Purpose                                         |
+| -------------------------------- | ----------------------------------------------- |
+| `src/model/command.rs`           | Command enum, CommandInverse, dispatch logic    |
+| `src/model/command/error.rs`     | UserError enum (optional: inline in command.rs) |
+| `src/model/mod.rs`               | Add exports for Command types                   |
+| `tests/features/command.feature` | BDD scenarios for command dispatch              |
+| `tests/command_bdd.rs`           | BDD step implementations                        |
 
 ## Integration Notes
 

@@ -272,9 +272,9 @@ This naturally maps to SVG: groups, shapes, and defs.
 
 ### 5.4 EngineState (implemented 2025-12)
 
-The `EngineState` struct unifies all editor state into a single source of truth,
-per guiding principle §2.2. It lives in `src/model/engine_state.rs` and is
-GPUI-independent for testability and scripting.
+The `EngineState` struct unifies all editor state into a single source of
+truth, per guiding principle §2.2. It lives in `src/model/engine_state.rs` and
+is GPUI-independent for testability and scripting.
 
 **Design decision:** EngineState consolidates document, selection, viewport,
 tool mode, and resources into a single struct, rather than scattering them
@@ -450,8 +450,8 @@ Key contexts determine which keyboard shortcuts are active based on the current
 editor state. The system enables mode-specific shortcuts while maintaining a
 central, GPUI-independent binding registry.
 
-**Design decision:** Key contexts are implemented as an **enum with `AsRef<str>`
-conversion** rather than raw strings, for the following reasons:
+**Design decision:** Key contexts are implemented as an **enum with
+`AsRef<str>` conversion** rather than raw strings, for the following reasons:
 
 - **Exhaustive matching**: All context variants can be matched at compile time.
 - **Type safety**: Prevents typos in context strings.
@@ -473,10 +473,10 @@ edits and selection changes:
 - **Selection history** (Ctrl+Shift+Z / Ctrl+Shift+Y): Changes to what is
   selected.
 
-This design enables users to traverse selection states independently of document
-edits. For example, after undoing a selection change, the user can redo the
-selection without affecting document state. This deviates from the macOS
-convention of Cmd+Shift+Z for Redo.
+This design enables users to traverse selection states independently of
+document edits. For example, after undoing a selection change, the user can
+redo the selection without affecting document state. This deviates from the
+macOS convention of Cmd+Shift+Z for Redo.
 
 Context strings use the format `gauss-{name}` for namespacing (e.g.,
 `"gauss-global"`, `"gauss-manipulate"`). Strings contain only letters, digits,
@@ -496,8 +496,8 @@ UI Layer (GPUI-dependent)
 ```
 
 The `Keystroke` type provides a platform-independent keystroke representation
-with a `secondary` modifier flag (Cmd on macOS, Ctrl elsewhere). The `ActionBinding`
-registry maps Actions to Keystrokes with context scoping.
+with a `secondary` modifier flag (Cmd on macOS, Ctrl elsewhere). The
+`ActionBinding` registry maps Actions to Keystrokes with context scoping.
 
 The UI layer bridges model Actions to GPUI Action structs (e.g., `GpuiUndo`,
 `GpuiSelectAll`) and registers keybindings via `register_action_bindings()`.
@@ -795,7 +795,7 @@ a workspace that enforces boundaries:
   gauss-desktop     # GPUI app wiring, views, panels, keymaps
 /docs
   ARCHITECTURE.md   # this doc
-  ADR/              # architectural decision records
+  adr-NNN-*.md      # architectural decision records
   ACCESSIBILITY.md  # a11y support matrix
 ```
 
@@ -809,7 +809,8 @@ ______________________________________________________________________
 
 ## 18. Architectural Decision Records (ADRs)
 
-Create `docs/ADR/` and record decisions that affect long-term maintainability.
+Create ADRs in `docs/` (see the documentation style guide) and record decisions
+that affect long-term maintainability.
 
 Initial ADR candidates:
 
