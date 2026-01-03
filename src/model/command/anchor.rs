@@ -198,29 +198,35 @@ fn remove_anchor_from_path(path: &mut PathGeom, idx: usize) {
     }
 }
 
+fn apply_shape_replacement(doc: &mut Document, replacement: &ShapeReplacement) {
+    if let Some(shape) = doc.shapes.get_mut(replacement.shape_index) {
+        *shape = replacement.new_shape.clone();
+    }
+}
+
+fn create_swapped_replacement(replacement: &ShapeReplacement) -> ShapeReplacement {
+    ShapeReplacement {
+        shape_index: replacement.shape_index,
+        old_shape: replacement.new_shape.clone(),
+        new_shape: replacement.old_shape.clone(),
+    }
+}
+
 pub(super) fn apply_insert_anchor(
     doc: &mut Document,
     replacement: &ShapeReplacement,
     command_name: &'static str,
 ) -> CommandInverse {
-    if let Some(shape) = doc.shapes.get_mut(replacement.shape_index) {
-        *shape = replacement.new_shape.clone();
-    }
+    apply_shape_replacement(doc, replacement);
 
     CommandInverse::RemoveAnchor {
         command_name,
-        replacement: ShapeReplacement {
-            shape_index: replacement.shape_index,
-            old_shape: replacement.new_shape.clone(),
-            new_shape: replacement.old_shape.clone(),
-        },
+        replacement: create_swapped_replacement(replacement),
     }
 }
 
 pub(super) fn apply_remove_anchor(doc: &mut Document, replacement: &ShapeReplacement) {
-    if let Some(shape) = doc.shapes.get_mut(replacement.shape_index) {
-        *shape = replacement.new_shape.clone();
-    }
+    apply_shape_replacement(doc, replacement);
 }
 
 pub(super) fn apply_delete_anchors(
@@ -299,22 +305,14 @@ pub(super) fn apply_close_path(
     replacement: &ShapeReplacement,
     command_name: &'static str,
 ) -> CommandInverse {
-    if let Some(shape) = doc.shapes.get_mut(replacement.shape_index) {
-        *shape = replacement.new_shape.clone();
-    }
+    apply_shape_replacement(doc, replacement);
 
     CommandInverse::ReopenPath {
         command_name,
-        replacement: ShapeReplacement {
-            shape_index: replacement.shape_index,
-            old_shape: replacement.new_shape.clone(),
-            new_shape: replacement.old_shape.clone(),
-        },
+        replacement: create_swapped_replacement(replacement),
     }
 }
 
 pub(super) fn apply_reopen_path(doc: &mut Document, replacement: &ShapeReplacement) {
-    if let Some(shape) = doc.shapes.get_mut(replacement.shape_index) {
-        *shape = replacement.new_shape.clone();
-    }
+    apply_shape_replacement(doc, replacement);
 }
