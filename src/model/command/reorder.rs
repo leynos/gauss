@@ -162,36 +162,60 @@ pub(super) fn apply_reorder(
     command_name: &'static str,
 ) -> CommandInverse {
     for op in operations {
-        if op.from_index == op.to_index {
-            continue;
-        }
-        if op.from_index >= doc.shapes.len() || op.to_index > doc.shapes.len() {
-            continue;
-        }
-        // Verify shape is at expected index
-        match doc.find_index(op.shape_id) {
-            Some(actual_from) if actual_from == op.from_index => {
-                let shape = doc.shapes.remove(op.from_index);
-                doc.shapes.insert(op.to_index, shape);
-            }
-            _ => {}
-        }
+        apply_single_reorder(doc, op);
     }
 
     // Create inverse with swapped from/to
-    let inverse_operations = operations
+    let inverse_operations = create_inverse_operations(operations);
+
+    CommandInverse::ReverseReorder {
+        command_name,
+        operations: inverse_operations,
+    }
+}
+
+fn apply_single_reorder(doc: &mut Document, op: &ReorderOp) {
+    if op.from_index == op.to_index {
+        return;
+    }
+
+    if !is_reorder_valid(doc, op) {
+        return;
+    }
+
+    // Verify shape is at expected index
+    if !is_shape_at_expected_index(doc, op) {
+        return;
+    }
+
+    perform_reorder(doc, op);
+}
+
+const fn is_reorder_valid(doc: &Document, op: &ReorderOp) -> bool {
+    op.from_index < doc.shapes.len() && op.to_index <= doc.shapes.len()
+}
+
+fn is_shape_at_expected_index(doc: &Document, op: &ReorderOp) -> bool {
+    matches!(
+        doc.find_index(op.shape_id),
+        Some(actual_from) if actual_from == op.from_index
+    )
+}
+
+fn perform_reorder(doc: &mut Document, op: &ReorderOp) {
+    let shape = doc.shapes.remove(op.from_index);
+    doc.shapes.insert(op.to_index, shape);
+}
+
+fn create_inverse_operations(operations: &[ReorderOp]) -> Vec<ReorderOp> {
+    operations
         .iter()
         .map(|op| ReorderOp {
             shape_id: op.shape_id,
             from_index: op.to_index,
             to_index: op.from_index,
         })
-        .collect();
-
-    CommandInverse::ReverseReorder {
-        command_name,
-        operations: inverse_operations,
-    }
+        .collect()
 }
 
 pub(super) fn apply_reverse_reorder(doc: &mut Document, operations: &[ReorderOp]) {
