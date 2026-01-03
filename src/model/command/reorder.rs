@@ -156,13 +156,34 @@ impl ReorderPlanner<'_> {
     }
 }
 
+const fn is_valid_reorder_op(op: &ReorderOp, doc: &Document) -> bool {
+    if op.from_index == op.to_index {
+        return false;
+    }
+
+    op.from_index < doc.shapes.len() && op.to_index <= doc.shapes.len()
+}
+
+fn try_move_shape(doc: &mut Document, op: &ReorderOp) -> bool {
+    match doc.find_index(op.shape_id) {
+        Some(actual_from) if actual_from == op.from_index => {
+            let shape = doc.shapes.remove(op.from_index);
+            doc.shapes.insert(op.to_index, shape);
+            true
+        }
+        _ => false,
+    }
+}
+
 pub(super) fn apply_reorder(
     doc: &mut Document,
     operations: &[ReorderOp],
     command_name: &'static str,
 ) -> CommandInverse {
     for op in operations {
-        apply_single_reorder(doc, op);
+        if is_valid_reorder_op(op, doc) {
+            try_move_shape(doc, op);
+        }
     }
 
     // Create inverse with swapped from/to
@@ -172,39 +193,6 @@ pub(super) fn apply_reorder(
         command_name,
         operations: inverse_operations,
     }
-}
-
-fn apply_single_reorder(doc: &mut Document, op: &ReorderOp) {
-    if op.from_index == op.to_index {
-        return;
-    }
-
-    if !is_reorder_valid(doc, op) {
-        return;
-    }
-
-    // Verify shape is at expected index
-    if !is_shape_at_expected_index(doc, op) {
-        return;
-    }
-
-    perform_reorder(doc, op);
-}
-
-const fn is_reorder_valid(doc: &Document, op: &ReorderOp) -> bool {
-    op.from_index < doc.shapes.len() && op.to_index <= doc.shapes.len()
-}
-
-fn is_shape_at_expected_index(doc: &Document, op: &ReorderOp) -> bool {
-    matches!(
-        doc.find_index(op.shape_id),
-        Some(actual_from) if actual_from == op.from_index
-    )
-}
-
-fn perform_reorder(doc: &mut Document, op: &ReorderOp) {
-    let shape = doc.shapes.remove(op.from_index);
-    doc.shapes.insert(op.to_index, shape);
 }
 
 fn create_inverse_operations(operations: &[ReorderOp]) -> Vec<ReorderOp> {
@@ -221,18 +209,8 @@ fn create_inverse_operations(operations: &[ReorderOp]) -> Vec<ReorderOp> {
 pub(super) fn apply_reverse_reorder(doc: &mut Document, operations: &[ReorderOp]) {
     // Apply operations in reverse order to correctly undo
     for op in operations.iter().rev() {
-        if op.from_index == op.to_index {
-            continue;
-        }
-        if op.from_index >= doc.shapes.len() || op.to_index > doc.shapes.len() {
-            continue;
-        }
-        match doc.find_index(op.shape_id) {
-            Some(actual_from) if actual_from == op.from_index => {
-                let shape = doc.shapes.remove(op.from_index);
-                doc.shapes.insert(op.to_index, shape);
-            }
-            _ => {}
+        if is_valid_reorder_op(op, doc) {
+            let _did_move = try_move_shape(doc, op);
         }
     }
 }
