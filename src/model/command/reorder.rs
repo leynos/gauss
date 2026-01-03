@@ -9,7 +9,11 @@ use super::error::UserError;
 use super::inverse::CommandInverse;
 use super::types::ReorderOp;
 
-pub(super) fn prepare_raise_selection(state: &EngineState) -> Result<Command, UserError> {
+fn prepare_reorder_selection(
+    state: &EngineState,
+    direction: ReorderDirection,
+    at_limit_msg: &'static str,
+) -> Result<Command, UserError> {
     if state.selection.is_empty() {
         return Err(UserError::EmptySelection);
     }
@@ -25,38 +29,21 @@ pub(super) fn prepare_raise_selection(state: &EngineState) -> Result<Command, Us
         }
     }
 
-    let operations = reorder_ops(&state.document, &shape_ids, ReorderDirection::Raise);
+    let operations = reorder_ops(&state.document, &shape_ids, direction);
 
     if operations.is_empty() {
-        return Err(UserError::InvalidOperation("Already at top"));
+        return Err(UserError::InvalidOperation(at_limit_msg));
     }
 
     Ok(Command::Reorder { operations })
 }
 
+pub(super) fn prepare_raise_selection(state: &EngineState) -> Result<Command, UserError> {
+    prepare_reorder_selection(state, ReorderDirection::Raise, "Already at top")
+}
+
 pub(super) fn prepare_lower_selection(state: &EngineState) -> Result<Command, UserError> {
-    if state.selection.is_empty() {
-        return Err(UserError::EmptySelection);
-    }
-
-    let shape_ids = selected_shape_ids_for_reorder(&state.selection);
-    if shape_ids.is_empty() {
-        return Err(UserError::EmptySelection);
-    }
-
-    for shape_id in &shape_ids {
-        if state.document.find_index(*shape_id).is_none() {
-            return Err(UserError::ShapeNotFound(*shape_id));
-        }
-    }
-
-    let operations = reorder_ops(&state.document, &shape_ids, ReorderDirection::Lower);
-
-    if operations.is_empty() {
-        return Err(UserError::InvalidOperation("Already at bottom"));
-    }
-
-    Ok(Command::Reorder { operations })
+    prepare_reorder_selection(state, ReorderDirection::Lower, "Already at bottom")
 }
 
 #[derive(Clone, Copy, Debug)]
