@@ -68,6 +68,21 @@ fn assert_prepare_command_returns_variant(
     assert!(matches_pattern(&cmd), "command matches expected variant");
 }
 
+#[derive(Debug, Clone, Copy)]
+enum ExpectedCommand {
+    InsertAnchor,
+    DeleteAnchors,
+}
+
+impl ExpectedCommand {
+    const fn matches(self, cmd: &Command) -> bool {
+        match self {
+            Self::InsertAnchor => matches!(cmd, Command::InsertAnchor { .. }),
+            Self::DeleteAnchors => matches!(cmd, Command::DeleteAnchors { .. }),
+        }
+    }
+}
+
 #[test]
 fn move_shapes_applies_and_undoes() {
     let shape = shape_with_handles(shape_id(1));
@@ -323,28 +338,27 @@ fn close_path_replaces_shape_and_undoes() {
     });
 }
 #[rstest]
-fn prepare_insert_anchor_on_segment_returns_command() {
-    assert_prepare_command_returns_variant(
-        shape_id(11),
-        SelItem::Segment {
-            shape: shape_id(11),
-            seg: 0,
-        },
-        Action::InsertAnchorOnSegment,
-        |cmd| matches!(cmd, Command::InsertAnchor { .. }),
-    );
-}
-#[rstest]
-fn prepare_delete_selected_anchors_returns_command() {
-    assert_prepare_command_returns_variant(
-        shape_id(12),
-        SelItem::Anchor {
-            shape: shape_id(12),
-            anchor: 0,
-        },
-        Action::DeleteSelectedAnchors,
-        |cmd| matches!(cmd, Command::DeleteAnchors { .. }),
-    );
+#[case(
+    shape_id(11),
+    SelItem::Segment { shape: shape_id(11), seg: 0 },
+    Action::InsertAnchorOnSegment,
+    ExpectedCommand::InsertAnchor
+)]
+#[case(
+    shape_id(12),
+    SelItem::Anchor { shape: shape_id(12), anchor: 0 },
+    Action::DeleteSelectedAnchors,
+    ExpectedCommand::DeleteAnchors
+)]
+fn prepare_command_returns_expected_variant(
+    #[case] shape_id_value: gauss::model::ShapeId,
+    #[case] selection_item: SelItem,
+    #[case] action: Action,
+    #[case] expected: ExpectedCommand,
+) {
+    assert_prepare_command_returns_variant(shape_id_value, selection_item, action, |cmd| {
+        expected.matches(cmd)
+    });
 }
 #[rstest]
 fn prepare_raise_selection_uses_anchor_selection() {
