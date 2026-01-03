@@ -222,18 +222,28 @@ fn apply_shape_replacement_with_inverse(
     create_inverse(command_name, create_swapped_replacement(replacement))
 }
 
-pub(super) fn apply_insert_anchor(
-    doc: &mut Document,
-    replacement: &ShapeReplacement,
-    command_name: &'static str,
-) -> CommandInverse {
-    apply_shape_replacement_with_inverse(doc, replacement, command_name, |name, repl| {
-        CommandInverse::RemoveAnchor {
-            command_name: name,
-            replacement: repl,
+/// Macro to generate shape replacement functions with inverses
+macro_rules! shape_replacement_command {
+    (
+        $fn_name:ident,
+        $inverse_variant:ident
+    ) => {
+        pub(super) fn $fn_name(
+            doc: &mut Document,
+            replacement: &ShapeReplacement,
+            command_name: &'static str,
+        ) -> CommandInverse {
+            apply_shape_replacement_with_inverse(doc, replacement, command_name, |name, repl| {
+                CommandInverse::$inverse_variant {
+                    command_name: name,
+                    replacement: repl,
+                }
+            })
         }
-    })
+    };
 }
+
+shape_replacement_command!(apply_insert_anchor, RemoveAnchor);
 
 pub(super) fn apply_remove_anchor(doc: &mut Document, replacement: &ShapeReplacement) {
     apply_shape_replacement(doc, replacement);
@@ -310,18 +320,7 @@ pub(super) fn apply_restore_anchors(doc: &mut Document, restorations: &[AnchorRe
     }
 }
 
-pub(super) fn apply_close_path(
-    doc: &mut Document,
-    replacement: &ShapeReplacement,
-    command_name: &'static str,
-) -> CommandInverse {
-    apply_shape_replacement_with_inverse(doc, replacement, command_name, |name, repl| {
-        CommandInverse::ReopenPath {
-            command_name: name,
-            replacement: repl,
-        }
-    })
-}
+shape_replacement_command!(apply_close_path, ReopenPath);
 
 pub(super) fn apply_reopen_path(doc: &mut Document, replacement: &ShapeReplacement) {
     apply_shape_replacement(doc, replacement);
