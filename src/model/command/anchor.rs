@@ -212,17 +212,27 @@ fn create_swapped_replacement(replacement: &ShapeReplacement) -> ShapeReplacemen
     }
 }
 
+fn apply_shape_replacement_with_inverse(
+    doc: &mut Document,
+    replacement: &ShapeReplacement,
+    command_name: &'static str,
+    create_inverse: impl FnOnce(&'static str, ShapeReplacement) -> CommandInverse,
+) -> CommandInverse {
+    apply_shape_replacement(doc, replacement);
+    create_inverse(command_name, create_swapped_replacement(replacement))
+}
+
 pub(super) fn apply_insert_anchor(
     doc: &mut Document,
     replacement: &ShapeReplacement,
     command_name: &'static str,
 ) -> CommandInverse {
-    apply_shape_replacement(doc, replacement);
-
-    CommandInverse::RemoveAnchor {
-        command_name,
-        replacement: create_swapped_replacement(replacement),
-    }
+    apply_shape_replacement_with_inverse(doc, replacement, command_name, |name, repl| {
+        CommandInverse::RemoveAnchor {
+            command_name: name,
+            replacement: repl,
+        }
+    })
 }
 
 pub(super) fn apply_remove_anchor(doc: &mut Document, replacement: &ShapeReplacement) {
@@ -305,12 +315,12 @@ pub(super) fn apply_close_path(
     replacement: &ShapeReplacement,
     command_name: &'static str,
 ) -> CommandInverse {
-    apply_shape_replacement(doc, replacement);
-
-    CommandInverse::ReopenPath {
-        command_name,
-        replacement: create_swapped_replacement(replacement),
-    }
+    apply_shape_replacement_with_inverse(doc, replacement, command_name, |name, repl| {
+        CommandInverse::ReopenPath {
+            command_name: name,
+            replacement: repl,
+        }
+    })
 }
 
 pub(super) fn apply_reopen_path(doc: &mut Document, replacement: &ShapeReplacement) {
