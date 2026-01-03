@@ -24,6 +24,12 @@ mod handles;
 
 use self::handles::{clear_line_segment_handles, close_shape, update_catmull_rom_handles};
 
+#[derive(Clone, Copy, Debug)]
+enum HistoryDirection {
+    Undo,
+    Redo,
+}
+
 const SNAP_RADIUS_PX: f32 = 10.0;
 
 // Re-export tool types for backward compatibility within the UI layer.
@@ -125,17 +131,7 @@ impl Phase0Shell {
             return;
         };
 
-        for item in group {
-            match item.into_edit() {
-                super::document_history::DocumentEdit::Change(change) => {
-                    change.apply_inverse(&mut self.state.document);
-                }
-                super::document_history::DocumentEdit::Command(entry) => {
-                    let entry_ref = entry.as_ref();
-                    apply_command_inverse(&mut self.state.document, &entry_ref.inverse);
-                }
-            }
-        }
+        self.apply_history_group(group, HistoryDirection::Undo);
     }
 
     pub(super) fn redo_document(&mut self) {
@@ -143,14 +139,27 @@ impl Phase0Shell {
             return;
         };
 
+        self.apply_history_group(group, HistoryDirection::Redo);
+    }
+
+    fn apply_history_group(
+        &mut self,
+        group: Vec<DocumentHistoryItem>,
+        direction: HistoryDirection,
+    ) {
         for item in group {
             match item.into_edit() {
                 super::document_history::DocumentEdit::Change(change) => {
-                    change.apply(&mut self.state.document);
+                    apply_change_for_direction(&mut self.state.document, &change, direction);
                 }
                 super::document_history::DocumentEdit::Command(entry) => {
                     let entry_ref = entry.as_ref();
-                    apply_command_again(&mut self.state.document, &entry_ref.command);
+                    apply_command_for_direction(
+                        &mut self.state.document,
+                        &entry_ref.command,
+                        &entry_ref.inverse,
+                        direction,
+                    );
                 }
             }
         }
@@ -166,6 +175,25 @@ fn apply_command_inverse(doc: &mut Document, inverse: &CommandInverse) {
 fn apply_command_again(doc: &mut Document, command: &Command) {
     if let Err(error) = command.apply(doc) {
         debug_assert!(false, "command redo failed: {error}");
+    }
+}
+
+fn apply_change_for_direction(doc: &mut Document, change: &DocChange, direction: HistoryDirection) {
+    match direction {
+        HistoryDirection::Undo => change.apply_inverse(doc),
+        HistoryDirection::Redo => change.apply(doc),
+    }
+}
+
+fn apply_command_for_direction(
+    doc: &mut Document,
+    command: &Command,
+    inverse: &CommandInverse,
+    direction: HistoryDirection,
+) {
+    match direction {
+        HistoryDirection::Undo => apply_command_inverse(doc, inverse),
+        HistoryDirection::Redo => apply_command_again(doc, command),
     }
 }
 
