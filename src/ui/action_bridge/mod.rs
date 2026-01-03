@@ -104,6 +104,41 @@ pub struct GpuiSelectionUndo;
 #[action(no_json)]
 pub struct GpuiSelectionRedo;
 
+/// GPUI action for [`Action::InsertAnchorOnSegment`].
+///
+/// Inserts an anchor on the selected segment.
+#[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
+#[action(no_json)]
+pub struct GpuiInsertAnchorOnSegment;
+
+/// GPUI action for [`Action::DeleteSelectedAnchors`].
+///
+/// Deletes the selected anchors.
+#[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
+#[action(no_json)]
+pub struct GpuiDeleteSelectedAnchors;
+
+/// GPUI action for [`Action::RaiseSelection`].
+///
+/// Raises selected shapes in the z-order.
+#[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
+#[action(no_json)]
+pub struct GpuiRaiseSelection;
+
+/// GPUI action for [`Action::LowerSelection`].
+///
+/// Lowers selected shapes in the z-order.
+#[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
+#[action(no_json)]
+pub struct GpuiLowerSelection;
+
+/// GPUI action for [`Action::ToggleSegmentKind`].
+///
+/// Toggles segment kind between Line and Cubic.
+#[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
+#[action(no_json)]
+pub struct GpuiToggleSegmentKind;
+
 // === Registration ===
 
 /// Collected keybindings grouped by action type.
@@ -121,6 +156,11 @@ struct CollectedBindings {
     redo: Vec<KeyBinding>,
     selection_undo: Vec<KeyBinding>,
     selection_redo: Vec<KeyBinding>,
+    insert_anchor_on_segment: Vec<KeyBinding>,
+    delete_selected_anchors: Vec<KeyBinding>,
+    raise_selection: Vec<KeyBinding>,
+    lower_selection: Vec<KeyBinding>,
+    toggle_segment_kind: Vec<KeyBinding>,
 }
 
 impl CollectedBindings {
@@ -179,52 +219,69 @@ impl CollectedBindings {
     }
 
     /// Add a single binding to the appropriate collection.
-    fn add_binding(&mut self, action: Action, keystroke: &str, context: Option<&str>) {
+    fn add_binding(&mut self, action: Action, keystroke: &str, ctx: Option<&str>) {
         match action {
             Action::DeleteSelection => {
-                self.delete_selection.push(KeyBinding::new(
-                    keystroke,
-                    GpuiDeleteSelection,
-                    context,
-                ));
+                self.delete_selection
+                    .push(KeyBinding::new(keystroke, GpuiDeleteSelection, ctx));
             }
             Action::SelectAll => {
                 self.select_all
-                    .push(KeyBinding::new(keystroke, GpuiSelectAll, context));
+                    .push(KeyBinding::new(keystroke, GpuiSelectAll, ctx));
             }
             Action::DeselectAll => {
                 self.deselect_all
-                    .push(KeyBinding::new(keystroke, GpuiDeselectAll, context));
+                    .push(KeyBinding::new(keystroke, GpuiDeselectAll, ctx));
             }
             Action::ActivatePenTool => {
-                self.activate_pen_tool.push(KeyBinding::new(
-                    keystroke,
-                    GpuiActivatePenTool,
-                    context,
-                ));
+                self.activate_pen_tool
+                    .push(KeyBinding::new(keystroke, GpuiActivatePenTool, ctx));
             }
             Action::ActivateSelectTool => {
                 self.activate_select_tool.push(KeyBinding::new(
                     keystroke,
                     GpuiActivateSelectTool,
-                    context,
+                    ctx,
                 ));
             }
-            Action::Undo => {
-                self.undo
-                    .push(KeyBinding::new(keystroke, GpuiUndo, context));
-            }
-            Action::Redo => {
-                self.redo
-                    .push(KeyBinding::new(keystroke, GpuiRedo, context));
-            }
+            Action::Undo => self.undo.push(KeyBinding::new(keystroke, GpuiUndo, ctx)),
+            Action::Redo => self.redo.push(KeyBinding::new(keystroke, GpuiRedo, ctx)),
             Action::SelectionUndo => {
                 self.selection_undo
-                    .push(KeyBinding::new(keystroke, GpuiSelectionUndo, context));
+                    .push(KeyBinding::new(keystroke, GpuiSelectionUndo, ctx));
             }
             Action::SelectionRedo => {
                 self.selection_redo
-                    .push(KeyBinding::new(keystroke, GpuiSelectionRedo, context));
+                    .push(KeyBinding::new(keystroke, GpuiSelectionRedo, ctx));
+            }
+            Action::InsertAnchorOnSegment => {
+                self.insert_anchor_on_segment.push(KeyBinding::new(
+                    keystroke,
+                    GpuiInsertAnchorOnSegment,
+                    ctx,
+                ));
+            }
+            Action::DeleteSelectedAnchors => {
+                self.delete_selected_anchors.push(KeyBinding::new(
+                    keystroke,
+                    GpuiDeleteSelectedAnchors,
+                    ctx,
+                ));
+            }
+            Action::RaiseSelection => {
+                self.raise_selection
+                    .push(KeyBinding::new(keystroke, GpuiRaiseSelection, ctx));
+            }
+            Action::LowerSelection => {
+                self.lower_selection
+                    .push(KeyBinding::new(keystroke, GpuiLowerSelection, ctx));
+            }
+            Action::ToggleSegmentKind => {
+                self.toggle_segment_kind.push(KeyBinding::new(
+                    keystroke,
+                    GpuiToggleSegmentKind,
+                    ctx,
+                ));
             }
         }
     }
@@ -240,6 +297,11 @@ impl CollectedBindings {
         app.bind_keys(self.redo);
         app.bind_keys(self.selection_undo);
         app.bind_keys(self.selection_redo);
+        app.bind_keys(self.insert_anchor_on_segment);
+        app.bind_keys(self.delete_selected_anchors);
+        app.bind_keys(self.raise_selection);
+        app.bind_keys(self.lower_selection);
+        app.bind_keys(self.toggle_segment_kind);
     }
 }
 
@@ -274,18 +336,7 @@ pub fn register_action_bindings(app: &mut gpui::App) {
 ///
 /// The [`KeyContext`] corresponding to the tool mode.
 ///
-/// # Note
-///
-/// This function is currently unused because GPUI's `key_context()` replaces
-/// rather than stacks contexts. It is retained for future use when mode-specific
-/// shortcuts can be properly supported.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "retained for future mode-specific context support"
-    )
-)]
+/// This helper is used by Phase 0 views to apply mode-specific key contexts.
 pub(crate) const fn context_for_tool_mode(mode: super::phase0_shell::draw::ToolMode) -> KeyContext {
     use super::phase0_shell::draw::ToolMode;
     match mode {

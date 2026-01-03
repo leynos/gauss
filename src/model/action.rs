@@ -96,6 +96,41 @@ pub enum Action {
     /// removes the selected shapes from the document.
     DeleteSelection,
 
+    /// Insert an anchor on the selected segment.
+    ///
+    /// Requires a segment to be selected. Inserts a new anchor at the
+    /// midpoint of the selected segment, splitting it into two segments.
+    InsertAnchorOnSegment,
+
+    /// Delete the selected anchors.
+    ///
+    /// Requires anchors to be selected. Removes the selected anchors from
+    /// their shapes. If a shape would have fewer than 2 anchors, the entire
+    /// shape is removed.
+    DeleteSelectedAnchors,
+
+    /// Raise selected shapes in the z-order.
+    ///
+    /// Moves selected shapes one position higher in the document's shape
+    /// list, causing them to render on top of shapes that were previously
+    /// above them.
+    RaiseSelection,
+
+    /// Lower selected shapes in the z-order.
+    ///
+    /// Moves selected shapes one position lower in the document's shape
+    /// list, causing them to render behind shapes that were previously
+    /// below them.
+    LowerSelection,
+
+    /// Toggle segment kind between Line and Cubic.
+    ///
+    /// Requires segments to be selected. Toggles each selected segment
+    /// between Line and Cubic kinds. When converting Line to Cubic,
+    /// Catmull-Rom handles are synthesised. When converting Cubic to Line,
+    /// handles are cleared.
+    ToggleSegmentKind,
+
     // === Selection changes ===
     /// Select all selectable objects in the document.
     ///
@@ -170,7 +205,12 @@ impl Action {
     pub const fn kind(&self) -> ActionKind {
         match self {
             // Document mutations require command dispatch
-            Self::DeleteSelection => ActionKind::Document,
+            Self::DeleteSelection
+            | Self::InsertAnchorOnSegment
+            | Self::DeleteSelectedAnchors
+            | Self::RaiseSelection
+            | Self::LowerSelection
+            | Self::ToggleSegmentKind => ActionKind::Document,
 
             // Editor state changes (selection, tools, history navigation)
             Self::SelectAll
@@ -212,6 +252,11 @@ impl Action {
     pub const fn name(&self) -> &'static str {
         match self {
             Self::DeleteSelection => "Delete Selection",
+            Self::InsertAnchorOnSegment => "Insert Anchor",
+            Self::DeleteSelectedAnchors => "Delete Anchors",
+            Self::RaiseSelection => "Raise",
+            Self::LowerSelection => "Lower",
+            Self::ToggleSegmentKind => "Toggle Segment",
             Self::SelectAll => "Select All",
             Self::DeselectAll => "Deselect All",
             Self::ActivatePenTool => "Pen Tool",
@@ -243,7 +288,15 @@ impl Action {
     /// ```
     #[must_use]
     pub const fn requires_selection(&self) -> bool {
-        matches!(self, Self::DeleteSelection)
+        matches!(
+            self,
+            Self::DeleteSelection
+                | Self::InsertAnchorOnSegment
+                | Self::DeleteSelectedAnchors
+                | Self::RaiseSelection
+                | Self::LowerSelection
+                | Self::ToggleSegmentKind
+        )
     }
 }
 
@@ -254,6 +307,11 @@ mod tests {
 
     #[rstest]
     #[case(Action::DeleteSelection, ActionKind::Document)]
+    #[case(Action::InsertAnchorOnSegment, ActionKind::Document)]
+    #[case(Action::DeleteSelectedAnchors, ActionKind::Document)]
+    #[case(Action::RaiseSelection, ActionKind::Document)]
+    #[case(Action::LowerSelection, ActionKind::Document)]
+    #[case(Action::ToggleSegmentKind, ActionKind::Document)]
     #[case(Action::SelectAll, ActionKind::Editor)]
     #[case(Action::DeselectAll, ActionKind::Editor)]
     #[case(Action::ActivatePenTool, ActionKind::Editor)]
@@ -268,6 +326,11 @@ mod tests {
 
     #[rstest]
     #[case(Action::DeleteSelection, "Delete Selection")]
+    #[case(Action::InsertAnchorOnSegment, "Insert Anchor")]
+    #[case(Action::DeleteSelectedAnchors, "Delete Anchors")]
+    #[case(Action::RaiseSelection, "Raise")]
+    #[case(Action::LowerSelection, "Lower")]
+    #[case(Action::ToggleSegmentKind, "Toggle Segment")]
     #[case(Action::SelectAll, "Select All")]
     #[case(Action::DeselectAll, "Deselect All")]
     #[case(Action::ActivatePenTool, "Pen Tool")]
@@ -282,6 +345,11 @@ mod tests {
 
     #[rstest]
     #[case(Action::DeleteSelection)]
+    #[case(Action::InsertAnchorOnSegment)]
+    #[case(Action::DeleteSelectedAnchors)]
+    #[case(Action::RaiseSelection)]
+    #[case(Action::LowerSelection)]
+    #[case(Action::ToggleSegmentKind)]
     #[case(Action::SelectAll)]
     #[case(Action::DeselectAll)]
     #[case(Action::ActivatePenTool)]
@@ -294,9 +362,15 @@ mod tests {
         assert!(!action.name().is_empty());
     }
 
-    #[test]
-    fn delete_selection_requires_selection() {
-        assert!(Action::DeleteSelection.requires_selection());
+    #[rstest]
+    #[case(Action::DeleteSelection)]
+    #[case(Action::InsertAnchorOnSegment)]
+    #[case(Action::DeleteSelectedAnchors)]
+    #[case(Action::RaiseSelection)]
+    #[case(Action::LowerSelection)]
+    #[case(Action::ToggleSegmentKind)]
+    fn document_actions_require_selection(#[case] action: Action) {
+        assert!(action.requires_selection());
     }
 
     #[rstest]
@@ -323,6 +397,11 @@ mod tests {
         // arms above will remind you to update this test.
         let all_actions = [
             Action::DeleteSelection,
+            Action::InsertAnchorOnSegment,
+            Action::DeleteSelectedAnchors,
+            Action::RaiseSelection,
+            Action::LowerSelection,
+            Action::ToggleSegmentKind,
             Action::SelectAll,
             Action::DeselectAll,
             Action::ActivatePenTool,

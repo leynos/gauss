@@ -168,6 +168,22 @@ static DEFAULT_BINDINGS: LazyLock<Vec<ActionBinding>> = LazyLock::new(|| {
             "delete",
             &[KeyContext::ManipulateMode],
         ),
+        // InsertAnchorOnSegment: I key, only in ManipulateMode
+        ActionBinding::new(
+            Action::InsertAnchorOnSegment,
+            "i",
+            &[KeyContext::ManipulateMode],
+        ),
+        // RaiseSelection: Cmd/Ctrl+], only in ManipulateMode
+        ActionBinding::secondary(Action::RaiseSelection, "]", &[KeyContext::ManipulateMode]),
+        // LowerSelection: Cmd/Ctrl+[, only in ManipulateMode
+        ActionBinding::secondary(Action::LowerSelection, "[", &[KeyContext::ManipulateMode]),
+        // ToggleSegmentKind: Tab, only in ManipulateMode
+        ActionBinding::new(
+            Action::ToggleSegmentKind,
+            "tab",
+            &[KeyContext::ManipulateMode],
+        ),
         // === Selection actions ===
         // SelectAll: Cmd/Ctrl+A, global
         ActionBinding::secondary(Action::SelectAll, "a", &[KeyContext::Global]),
@@ -201,7 +217,8 @@ static DEFAULT_BINDINGS: LazyLock<Vec<ActionBinding>> = LazyLock::new(|| {
 ///   Cmd/Ctrl+Shift+Y for Selection Redo
 /// - **Selection**: Cmd/Ctrl+A for Select All, Cmd/Ctrl+Shift+A for Deselect
 /// - **Tools**: Single letter keys (P for Pen, V for Selection)
-/// - **Editing**: Backspace/Delete for deletion (in Manipulate mode only)
+/// - **Editing**: Backspace/Delete for deletion, I for insert anchor, Tab for
+///   segment toggling, Cmd/Ctrl+[ and Cmd/Ctrl+] for z-order (Manipulate only)
 ///
 /// Note: Gauss maintains separate undo/redo stacks for document edits and
 /// selection changes, enabling independent traversal of edit and selection
@@ -305,7 +322,7 @@ pub fn bindings_for_context(context: KeyContext) -> Vec<ActionBinding> {
 ///
 /// let undo_key = primary_keystroke(Action::Undo);
 /// assert!(undo_key.is_some());
-/// assert_eq!(undo_key.unwrap().to_gpui_string(), "cmd-z");
+/// assert_eq!(undo_key.unwrap().to_gpui_string(), "secondary-z");
 /// ```
 #[must_use]
 pub fn primary_keystroke(action: Action) -> Option<Keystroke> {

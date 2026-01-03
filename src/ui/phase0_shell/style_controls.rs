@@ -2,12 +2,12 @@
 //!
 //! Phase 0 uses `gpui-component`’s `ColorPicker` to provide a ready-made UI for
 //! editing colours. When a shape is selected, changes apply to the selected
-//! shapes via `DocOp::SetStyle` so they participate in document undo/redo.
+//! shapes via `Command::SetStyle` so they participate in document undo/redo.
 
 use gpui::{AppContext as _, Context, Hsla, ParentElement as _, Styled as _, Window, div};
 use gpui_component::color_picker::{ColorPicker, ColorPickerEvent, ColorPickerState};
 
-use crate::model::{DocChange, DocOp, PaintStyle, Rgba, SelItem, ShapeId};
+use crate::model::{Command, PaintStyle, Rgba, SelItem, ShapeId, StyleChange};
 
 use super::Phase0Shell;
 
@@ -134,7 +134,7 @@ impl Phase0Shell {
             return true;
         }
 
-        let mut ops = Vec::new();
+        let mut changes = Vec::new();
         for shape_id in selected_shapes {
             let Some(shape) = self
                 .state
@@ -154,19 +154,14 @@ impl Phase0Shell {
                 continue;
             }
 
-            ops.push(DocOp::SetStyle {
-                shape: shape_id,
-                from,
-                to,
-            });
+            changes.push(StyleChange { shape_id, from, to });
         }
 
-        if ops.is_empty() {
+        if changes.is_empty() {
             return false;
         }
 
-        self.apply_doc_change(DocChange { ops });
-        true
+        self.apply_command(Command::SetStyle { changes }).is_ok()
     }
 
     fn selected_shape_ids_for_style(&self) -> Vec<ShapeId> {

@@ -84,7 +84,7 @@ fn new_creates_keystroke_without_modifiers() {
 }
 
 #[test]
-fn secondary_creates_keystroke_with_cmd() {
+fn secondary_creates_keystroke_with_secondary_modifier() {
     let ks = Keystroke::secondary("z");
     assert_eq!(ks.key, "z");
     assert!(ks.modifiers.secondary);
@@ -92,7 +92,7 @@ fn secondary_creates_keystroke_with_cmd() {
 }
 
 #[test]
-fn secondary_shift_creates_keystroke_with_cmd_and_shift() {
+fn secondary_shift_creates_keystroke_with_secondary_and_shift() {
     let ks = Keystroke::secondary_shift("z");
     assert_eq!(ks.key, "z");
     assert!(ks.modifiers.secondary);
@@ -118,16 +118,16 @@ fn to_gpui_string_simple_key(#[case] keystroke: Keystroke, #[case] expected: &st
 }
 
 #[rstest]
-#[case(Keystroke::secondary("z"), "cmd-z")]
-#[case(Keystroke::secondary("a"), "cmd-a")]
-#[case(Keystroke::secondary("y"), "cmd-y")]
+#[case(Keystroke::secondary("z"), "secondary-z")]
+#[case(Keystroke::secondary("a"), "secondary-a")]
+#[case(Keystroke::secondary("y"), "secondary-y")]
 fn to_gpui_string_secondary_modifier(#[case] keystroke: Keystroke, #[case] expected: &str) {
     assert_eq!(keystroke.to_gpui_string(), expected);
 }
 
 #[rstest]
-#[case(Keystroke::secondary_shift("z"), "shift-cmd-z")]
-#[case(Keystroke::secondary_shift("a"), "shift-cmd-a")]
+#[case(Keystroke::secondary_shift("z"), "shift-secondary-z")]
+#[case(Keystroke::secondary_shift("a"), "shift-secondary-a")]
 fn to_gpui_string_secondary_shift(#[case] keystroke: Keystroke, #[case] expected: &str) {
     assert_eq!(keystroke.to_gpui_string(), expected);
 }
@@ -148,7 +148,7 @@ fn to_gpui_string_all_modifiers() {
         .with_shift()
         .with_secondary();
     let ks = Keystroke::with_modifiers("a", mods);
-    assert_eq!(ks.to_gpui_string(), "ctrl-alt-shift-cmd-a");
+    assert_eq!(ks.to_gpui_string(), "ctrl-alt-shift-secondary-a");
 }
 
 // === Display tests ===

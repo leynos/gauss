@@ -29,7 +29,7 @@
 //!
 //! // Platform "secondary" modifier (Cmd on macOS, Ctrl elsewhere)
 //! let undo = Keystroke::secondary("z");
-//! // On macOS: "cmd-z", on Linux/Windows: "ctrl-z"
+//! assert_eq!(undo.to_gpui_string(), "secondary-z");
 //!
 //! // Multiple modifiers
 //! let redo = Keystroke::secondary_shift("z");
@@ -87,8 +87,8 @@ pub struct Modifiers {
     /// Platform "secondary" modifier: Cmd on macOS, Ctrl elsewhere.
     ///
     /// When this is true, the keystroke uses the platform's standard
-    /// "command" modifier, which GPUI renders as `cmd-` on macOS and
-    /// `ctrl-` on other platforms.
+    /// "command" modifier, which GPUI maps from `secondary-` to `cmd-`
+    /// on macOS and `ctrl-` on other platforms.
     pub secondary: bool,
 }
 
@@ -180,7 +180,7 @@ impl Modifiers {
 /// let deselect = Keystroke::secondary_shift("a");
 ///
 /// // Convert to GPUI format
-/// assert_eq!(select_all.to_gpui_string(), "cmd-a"); // macOS
+/// assert_eq!(select_all.to_gpui_string(), "secondary-a");
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Keystroke {
@@ -217,7 +217,7 @@ impl Keystroke {
     /// use gauss::model::Keystroke;
     ///
     /// let undo = Keystroke::secondary("z");
-    /// // On macOS: "cmd-z", on Linux/Windows: "ctrl-z"
+    /// assert_eq!(undo.to_gpui_string(), "secondary-z");
     /// ```
     #[must_use]
     pub fn secondary(key: impl Into<String>) -> Self {
@@ -235,7 +235,7 @@ impl Keystroke {
     /// use gauss::model::Keystroke;
     ///
     /// let redo = Keystroke::secondary_shift("z");
-    /// // On macOS: "shift-cmd-z", on Linux/Windows: "shift-ctrl-z"
+    /// assert_eq!(redo.to_gpui_string(), "shift-secondary-z");
     /// ```
     #[must_use]
     pub fn secondary_shift(key: impl Into<String>) -> Self {
@@ -287,12 +287,11 @@ impl Keystroke {
     /// The format follows GPUI conventions:
     ///
     /// - Modifiers are lowercase and hyphen-separated
-    /// - Order: ctrl, alt, shift, cmd/secondary
+    /// - Order: ctrl, alt, shift, secondary
     /// - Key is lowercase
     ///
-    /// Note: The `secondary` modifier is rendered as `cmd` on macOS and `ctrl`
-    /// on other platforms at runtime. This method always outputs `cmd` for
-    /// `secondary` because GPUI handles the platform mapping internally.
+    /// Note: The `secondary` modifier is encoded as `secondary` so GPUI maps it
+    /// to Command on macOS and Control on other platforms.
     ///
     /// # Examples
     ///
@@ -300,8 +299,11 @@ impl Keystroke {
     /// use gauss::model::Keystroke;
     ///
     /// assert_eq!(Keystroke::new("tab").to_gpui_string(), "tab");
-    /// assert_eq!(Keystroke::secondary("z").to_gpui_string(), "cmd-z");
-    /// assert_eq!(Keystroke::secondary_shift("a").to_gpui_string(), "shift-cmd-a");
+    /// assert_eq!(Keystroke::secondary("z").to_gpui_string(), "secondary-z");
+    /// assert_eq!(
+    ///     Keystroke::secondary_shift("a").to_gpui_string(),
+    ///     "shift-secondary-a"
+    /// );
     /// assert_eq!(Keystroke::alt("f4").to_gpui_string(), "alt-f4");
     /// ```
     #[must_use]
@@ -313,9 +315,9 @@ impl Keystroke {
                 Modifier::Control => "ctrl".to_owned(),
                 Modifier::Alt => "alt".to_owned(),
                 Modifier::Shift => "shift".to_owned(),
-                // GPUI uses "cmd" for the secondary modifier regardless of platform;
-                // the platform mapping happens at runtime in GPUI.
-                Modifier::Secondary => "cmd".to_owned(),
+                // `secondary` is parsed by GPUI as Command on macOS and Control
+                // elsewhere.
+                Modifier::Secondary => "secondary".to_owned(),
             })
             .collect();
 

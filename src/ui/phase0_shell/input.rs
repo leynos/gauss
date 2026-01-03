@@ -13,17 +13,13 @@ use super::{Phase0Shell, draw::ToolMode};
 
 /// Key actions handled directly by the Phase 0 shell.
 ///
-/// Note: Undo/Redo actions are now handled by the GPUI action bridge system
-/// (see `src/ui/action_bridge.rs`). Do not add them here, as this handler
-/// calls `stop_propagation()` which would prevent the action bridge from
-/// receiving the keystrokes.
+/// Note: Editing actions are handled by the GPUI action bridge system (see
+/// `src/ui/action_bridge.rs`). Do not add them here, as this handler calls
+/// `stop_propagation()` which would prevent the action bridge from receiving
+/// the keystrokes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum KeyAction {
     Escape,
-    InsertAnchor,
-    DeleteAnchors,
-    Raise,
-    Lower,
 }
 
 fn key_action_for(keystroke: &Keystroke) -> Option<KeyAction> {
@@ -31,33 +27,7 @@ fn key_action_for(keystroke: &Keystroke) -> Option<KeyAction> {
         return Some(KeyAction::Escape);
     }
 
-    if !keystroke.modifiers.modified() {
-        return key_action_for_unmodified_key(keystroke.key.as_str());
-    }
-
-    key_action_for_modified_key(keystroke)
-}
-
-fn key_action_for_unmodified_key(key: &str) -> Option<KeyAction> {
-    match key {
-        "i" => Some(KeyAction::InsertAnchor),
-        "backspace" | "delete" => Some(KeyAction::DeleteAnchors),
-        _ => None,
-    }
-}
-
-fn key_action_for_modified_key(keystroke: &Keystroke) -> Option<KeyAction> {
-    let key = keystroke.key.as_str();
-    let is_secondary = keystroke.modifiers.secondary();
-    let is_shift = keystroke.modifiers.shift;
-
-    // Note: Undo/Redo (z/y with secondary) are now handled by the action bridge.
-    // Do not add them here as this handler calls stop_propagation().
-    match (key, is_secondary, is_shift) {
-        ("]", true, false) => Some(KeyAction::Raise),
-        ("[", true, false) => Some(KeyAction::Lower),
-        _ => None,
-    }
+    None
 }
 
 impl Phase0Shell {
@@ -91,17 +61,12 @@ impl Phase0Shell {
     }
 
     pub(super) fn handle_tab_action(&mut self, cx: &mut Context<Self>) {
-        let did_change = match self.state.tool_mode {
-            ToolMode::Draw => {
-                self.set_edge_mode(self.state.edge_mode.toggle());
-                true
-            }
-            ToolMode::Manipulate => self.toggle_selected_segments_kind(),
-        };
-
-        if did_change {
-            cx.notify();
+        if self.state.tool_mode != ToolMode::Draw {
+            return;
         }
+
+        self.set_edge_mode(self.state.edge_mode.toggle());
+        cx.notify();
     }
 
     pub(super) fn handle_navigation_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
@@ -151,10 +116,6 @@ impl Phase0Shell {
                 // second `cx.notify()` from `handle_key_down`.
                 false
             }
-            KeyAction::InsertAnchor => self.insert_anchor_on_selected_segment(),
-            KeyAction::DeleteAnchors => self.delete_selected_anchors(),
-            KeyAction::Raise => self.raise_selected_shapes(),
-            KeyAction::Lower => self.lower_selected_shapes(),
         }
     }
 

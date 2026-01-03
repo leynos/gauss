@@ -36,3 +36,8 @@ Feature: Command dispatch
     When I prepare DeleteSelection action
     And I apply the command
     Then the inverse name should be "Delete"
+
+  Scenario: Raise selection produces reorder command
+    When I prepare RaiseSelection action
+    Then the command should be Reorder
+    And the command should include one reorder operation

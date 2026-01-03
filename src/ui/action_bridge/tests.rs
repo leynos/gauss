@@ -36,6 +36,11 @@ fn get_binding_field<'a>(collected: &'a CollectedBindings, name: &str) -> &'a [K
         "delete_selection" => &collected.delete_selection,
         "activate_pen_tool" => &collected.activate_pen_tool,
         "activate_select_tool" => &collected.activate_select_tool,
+        "insert_anchor_on_segment" => &collected.insert_anchor_on_segment,
+        "delete_selected_anchors" => &collected.delete_selected_anchors,
+        "raise_selection" => &collected.raise_selection,
+        "lower_selection" => &collected.lower_selection,
+        "toggle_segment_kind" => &collected.toggle_segment_kind,
         _ => panic!("unknown binding field: {name}"),
     }
 }
@@ -50,6 +55,10 @@ fn get_binding_field<'a>(collected: &'a CollectedBindings, name: &str) -> &'a [K
 #[case("delete_selection")]
 #[case("activate_pen_tool")]
 #[case("activate_select_tool")]
+#[case("insert_anchor_on_segment")]
+#[case("raise_selection")]
+#[case("lower_selection")]
+#[case("toggle_segment_kind")]
 fn collected_bindings_populates_action(#[case] action_name: &str) {
     let bindings = CollectedBindings::from_default_bindings();
     let field = get_binding_field(&bindings, action_name);
@@ -89,6 +98,11 @@ fn bindings_for_action(collected: &CollectedBindings, action: Action) -> &[KeyBi
         Action::Redo => &collected.redo,
         Action::SelectionUndo => &collected.selection_undo,
         Action::SelectionRedo => &collected.selection_redo,
+        Action::InsertAnchorOnSegment => &collected.insert_anchor_on_segment,
+        Action::DeleteSelectedAnchors => &collected.delete_selected_anchors,
+        Action::RaiseSelection => &collected.raise_selection,
+        Action::LowerSelection => &collected.lower_selection,
+        Action::ToggleSegmentKind => &collected.toggle_segment_kind,
     }
 }
 

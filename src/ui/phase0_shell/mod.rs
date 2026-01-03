@@ -9,6 +9,7 @@ mod anchor_edit;
 mod chrome;
 mod chrome_palette;
 mod chrome_panels;
+mod document_history;
 pub(crate) mod draw;
 mod file_dialogs;
 mod icon_button;
@@ -17,6 +18,7 @@ mod manipulate;
 mod reorder;
 mod resize_border;
 mod segment_toggle;
+mod selection_edit;
 mod selection_history;
 mod style_controls;
 #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
@@ -105,28 +107,35 @@ pub struct ShowWindowMenu;
 pub fn bind_keymap(app: &mut gpui::App) {
     use gpui::KeyBinding;
 
-    // Global context string for editor-wide shortcuts
-    let global = Some(KeyContext::Global.as_ref());
+    let mut bindings = Vec::new();
+    for context in KeyContext::all() {
+        let ctx = Some(context.as_ref());
+        // Cross-platform window controls
+        bindings.push(KeyBinding::new("alt-f4", CloseWindow, ctx));
+        bindings.push(KeyBinding::new("alt-f9", MinimizeWindow, ctx));
+        bindings.push(KeyBinding::new("alt-f10", ToggleMaximize, ctx));
+        bindings.push(KeyBinding::new("alt-f11", ToggleFullscreen, ctx));
+        bindings.push(KeyBinding::new("alt-space", ShowWindowMenu, ctx));
+        bindings.push(KeyBinding::new("alt-f7", StartWindowMove, ctx));
+        bindings.push(KeyBinding::new("alt-f8", StartWindowResize, ctx));
+    }
 
     // Editor-specific bindings (not in the model Action enum)
-    app.bind_keys([
-        KeyBinding::new("tab", ToggleEdgeMode, global),
-        // Cross-platform window controls
-        KeyBinding::new("alt-f4", CloseWindow, global),
-        KeyBinding::new("alt-f9", MinimizeWindow, global),
-        KeyBinding::new("alt-f10", ToggleMaximize, global),
-        KeyBinding::new("alt-f11", ToggleFullscreen, global),
-        KeyBinding::new("alt-space", ShowWindowMenu, global),
-        KeyBinding::new("alt-f7", StartWindowMove, global),
-        KeyBinding::new("alt-f8", StartWindowResize, global),
-    ]);
+    bindings.push(KeyBinding::new(
+        "tab",
+        ToggleEdgeMode,
+        Some(KeyContext::DrawMode.as_ref()),
+    ));
 
     #[cfg(target_os = "macos")]
-    app.bind_keys([
-        KeyBinding::new("cmd-m", MinimizeWindow, global),
-        KeyBinding::new("cmd-q", CloseWindow, global),
-        KeyBinding::new("ctrl-cmd-f", ToggleFullscreen, global),
-    ]);
+    for context in KeyContext::all() {
+        let ctx = Some(context.as_ref());
+        bindings.push(KeyBinding::new("cmd-m", MinimizeWindow, ctx));
+        bindings.push(KeyBinding::new("cmd-q", CloseWindow, ctx));
+        bindings.push(KeyBinding::new("ctrl-cmd-f", ToggleFullscreen, ctx));
+    }
+
+    app.bind_keys(bindings);
 }
 
 /// Minimal root view for Phase 0.
@@ -148,7 +157,7 @@ pub struct Phase0Shell {
     open_prompt_mode: OpenPromptMode,
 
     /// Document edit history (uses `gpui_component::History`).
-    document_history: History<draw::DocHistoryItem>,
+    document_history: History<document_history::DocumentHistoryItem>,
     /// Selection change history (separate from document history).
     selection_history: History<selection_history::SelectionHistoryItem>,
 

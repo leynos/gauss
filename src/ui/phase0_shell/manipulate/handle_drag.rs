@@ -1,9 +1,9 @@
 //! Handle dragging behaviour for Phase 0 manipulate mode.
 //!
-//! Handle drags are expressed as document operations (`DocOp::MoveHandleIn` /
-//! `DocOp::MoveHandleOut`) so they can be undone via the document history.
+//! Handle drags are expressed as Commands so they can be undone via command
+//! history.
 
-use crate::model::{DocOp, Document, ShapeId, Vec2};
+use crate::model::{Document, HandleKind, HandleMovement, ShapeId, Vec2};
 
 use super::hit_test::{HandleHit, HandleHitKind};
 
@@ -56,33 +56,25 @@ pub(super) fn finish_handle_drag(
     doc: &mut Document,
     drag: &HandleDragState,
     cursor_world: Vec2,
-) -> Option<DocOp> {
+) -> Option<HandleMovement> {
     let delta = cursor_world.sub(drag.start_cursor_world);
 
-    if delta.x.abs() <= f32::EPSILON && delta.y.abs() <= f32::EPSILON {
-        let _did_restore = apply_handle_drag_to_doc(doc, drag, Vec2::ZERO);
-        return None;
-    }
-
-    let did_update = apply_handle_drag_to_doc(doc, drag, delta);
-    if !did_update {
+    let did_move = delta.x.abs() > f32::EPSILON || delta.y.abs() > f32::EPSILON;
+    let did_restore = apply_handle_drag_to_doc(doc, drag, Vec2::ZERO);
+    if !did_restore || !did_move {
         return None;
     }
 
     let to = drag.original_handle.add(delta);
-    Some(match drag.kind {
-        HandleHitKind::In => DocOp::MoveHandleIn {
-            shape: drag.shape,
-            anchor: drag.anchor_index,
-            from: Some(drag.original_handle),
-            to: Some(to),
+    Some(HandleMovement {
+        shape_id: drag.shape,
+        anchor_index: drag.anchor_index,
+        kind: match drag.kind {
+            HandleHitKind::In => HandleKind::In,
+            HandleHitKind::Out => HandleKind::Out,
         },
-        HandleHitKind::Out => DocOp::MoveHandleOut {
-            shape: drag.shape,
-            anchor: drag.anchor_index,
-            from: Some(drag.original_handle),
-            to: Some(to),
-        },
+        from: Some(drag.original_handle),
+        to: Some(to),
     })
 }
 
