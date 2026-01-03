@@ -19,7 +19,7 @@ fn assert_shape_replacement_applies_and_undoes(
     old_shape: gauss::model::Shape,
     new_shape: gauss::model::Shape,
     create_command: impl Fn(ShapeReplacement) -> Command,
-) -> Result<(), String> {
+) {
     let expected_old = old_shape.clone();
     let expected_new = new_shape.clone();
     let mut doc = Document {
@@ -31,23 +31,22 @@ fn assert_shape_replacement_applies_and_undoes(
         new_shape,
     });
 
-    let inverse = cmd
-        .apply(&mut doc)
-        .map_err(|err| format!("apply succeeded: {err}"))?;
-    let updated = shape_at(&doc, 0).ok_or_else(|| "shape exists".to_owned())?;
-    if updated != &expected_new {
-        return Err("shape was updated".to_owned());
-    }
+    let inverse = match cmd.apply(&mut doc) {
+        Ok(inverse) => inverse,
+        Err(err) => panic!("apply succeeded: {err}"),
+    };
+    let Some(updated) = shape_at(&doc, 0) else {
+        panic!("shape exists");
+    };
+    assert_eq!(updated, &expected_new, "shape was updated");
 
-    inverse
-        .apply(&mut doc)
-        .map_err(|err| format!("undo succeeded: {err}"))?;
-    let restored = shape_at(&doc, 0).ok_or_else(|| "shape exists".to_owned())?;
-    if restored != &expected_old {
-        return Err("shape was restored".to_owned());
+    if let Err(err) = inverse.apply(&mut doc) {
+        panic!("undo succeeded: {err}");
     }
-
-    Ok(())
+    let Some(restored) = shape_at(&doc, 0) else {
+        panic!("shape exists");
+    };
+    assert_eq!(restored, &expected_old, "shape was restored");
 }
 
 fn assert_prepare_command_returns_variant(
@@ -55,19 +54,18 @@ fn assert_prepare_command_returns_variant(
     selection_item: SelItem,
     action: Action,
     matches_pattern: impl Fn(&Command) -> bool,
-) -> Result<(), String> {
+) {
     let shape = shape_with_handles(shape_id);
     let mut state = EngineState::with_document(Document {
         shapes: vec![shape],
     });
     state.selection.items = vec![selection_item];
 
-    let cmd = prepare_command(action, &state).map_err(|err| format!("prepare succeeded: {err}"))?;
-    if !matches_pattern(&cmd) {
-        return Err("command matches expected variant".to_owned());
-    }
-
-    Ok(())
+    let cmd = match prepare_command(action, &state) {
+        Ok(cmd) => cmd,
+        Err(err) => panic!("prepare succeeded: {err}"),
+    };
+    assert!(matches_pattern(&cmd), "command matches expected variant");
 }
 
 #[test]
@@ -270,8 +268,7 @@ fn insert_anchor_replaces_shape_and_undoes() {
 
     assert_shape_replacement_applies_and_undoes(0, old_shape, new_shape, |replacement| {
         Command::InsertAnchor { replacement }
-    })
-    .expect("assert succeeded");
+    });
 }
 #[test]
 fn delete_anchors_preserves_handles_and_undoes() {
@@ -323,8 +320,7 @@ fn close_path_replaces_shape_and_undoes() {
 
     assert_shape_replacement_applies_and_undoes(0, open_shape, closed_shape, |replacement| {
         Command::ClosePath { replacement }
-    })
-    .expect("assert succeeded");
+    });
 }
 #[rstest]
 fn prepare_insert_anchor_on_segment_returns_command() {
@@ -336,8 +332,7 @@ fn prepare_insert_anchor_on_segment_returns_command() {
         },
         Action::InsertAnchorOnSegment,
         |cmd| matches!(cmd, Command::InsertAnchor { .. }),
-    )
-    .expect("assert succeeded");
+    );
 }
 #[rstest]
 fn prepare_delete_selected_anchors_returns_command() {
@@ -349,8 +344,7 @@ fn prepare_delete_selected_anchors_returns_command() {
         },
         Action::DeleteSelectedAnchors,
         |cmd| matches!(cmd, Command::DeleteAnchors { .. }),
-    )
-    .expect("assert succeeded");
+    );
 }
 #[rstest]
 fn prepare_raise_selection_uses_anchor_selection() {
