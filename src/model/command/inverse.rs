@@ -119,8 +119,8 @@ impl CommandInverse {
     /// Return a human-readable name for this inverse command.
     ///
     /// This is the same name as the original command, for use in
-    /// "Undo {name}" menu entries. The name is derived from the variant,
-    /// not stored state, to keep the inverse lightweight and avoid coupling.
+    /// "Undo {name}" menu entries. The name is stored alongside each inverse
+    /// variant so it remains available without additional context.
     ///
     /// # Returns
     ///

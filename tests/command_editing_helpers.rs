@@ -3,13 +3,6 @@
 use gauss::model::{Anchor, Document, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, Vec2};
 
 /// Build a shape with two anchors and cubic handles.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// let shape = shape_with_handles(shape_id(1));
-/// assert_eq!(shape.path.anchors.len(), 2);
-/// ```
 #[must_use]
 pub fn shape_with_handles(id: ShapeId) -> Shape {
     let mut path = PathGeom::new();
@@ -34,13 +27,6 @@ pub fn shape_with_handles(id: ShapeId) -> Shape {
 }
 
 /// Build a shape with three anchors and mixed segments.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// let shape = shape_with_three_anchors(shape_id(1));
-/// assert_eq!(shape.path.anchors.len(), 3);
-/// ```
 #[must_use]
 pub fn shape_with_three_anchors(id: ShapeId) -> Shape {
     let mut path = PathGeom::new();
@@ -71,48 +57,24 @@ pub fn shape_with_three_anchors(id: ShapeId) -> Shape {
 }
 
 /// Fetch a shape by index from a document.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// let shape = shape_at(&doc, 0).expect("shape exists");
-/// ```
 #[must_use]
 pub fn shape_at(doc: &Document, index: usize) -> Option<&Shape> {
     doc.shapes.get(index)
 }
 
 /// Fetch an anchor by index from a shape.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// let anchor = anchor_at(&shape, 0).expect("anchor exists");
-/// ```
 #[must_use]
 pub fn anchor_at(shape: &Shape, index: usize) -> Option<&Anchor> {
     shape.path.anchors.get(index)
 }
 
 /// Fetch a segment kind by index from a shape.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// let segment = segment_at(&shape, 0).expect("segment exists");
-/// ```
 #[must_use]
 pub fn segment_at(shape: &Shape, index: usize) -> Option<&SegmentKind> {
     shape.path.segments.get(index)
 }
 
 /// Fetch a mutable segment kind by index from a shape.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// *segment_mut(&mut shape, 0).expect("segment exists") = SegmentKind::Line;
-/// ```
 #[must_use]
 pub fn segment_mut(shape: &mut Shape, index: usize) -> Option<&mut SegmentKind> {
     shape.path.segments.get_mut(index)

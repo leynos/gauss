@@ -27,6 +27,8 @@ pub(super) fn apply_move_shapes(
             for anchor in &mut shape.path.anchors {
                 translate_anchor(anchor, movement.delta);
             }
+        } else {
+            debug_assert!(false, "missing shape for move: {:?}", movement.shape_id);
         }
     }
 
@@ -52,6 +54,12 @@ pub(super) fn apply_move_shapes_back(doc: &mut Document, movements: &[ShapeMovem
             for anchor in &mut shape.path.anchors {
                 translate_anchor(anchor, movement.delta);
             }
+        } else {
+            debug_assert!(
+                false,
+                "missing shape for move back: {:?}",
+                movement.shape_id
+            );
         }
     }
 }

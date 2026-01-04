@@ -35,9 +35,13 @@ Some shortcuts only work in specific modes:
 
 #### Manipulate Mode (Select Tool Active)
 
-| Action           | Shortcut            |
-| ---------------- | ------------------- |
-| Delete Selection | Backspace or Delete |
+| Action              | Shortcut            |
+| ------------------- | ------------------- |
+| Delete Selection    | Backspace or Delete |
+| Insert Anchor       | I                   |
+| Raise Selection     | Cmd/Ctrl+]          |
+| Lower Selection     | Cmd/Ctrl+[          |
+| Toggle Segment Kind | Tab                 |
 
 ### Window Controls
 

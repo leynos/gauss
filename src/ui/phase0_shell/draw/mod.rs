@@ -168,12 +168,14 @@ impl Phase0Shell {
 
 fn apply_command_inverse(doc: &mut Document, inverse: &CommandInverse) {
     if let Err(error) = inverse.apply(doc) {
+        log::error!("command undo failed: {error}");
         debug_assert!(false, "command undo failed: {error}");
     }
 }
 
 fn apply_command_again(doc: &mut Document, command: &Command) {
     if let Err(error) = command.apply(doc) {
+        log::error!("command redo failed: {error}");
         debug_assert!(false, "command redo failed: {error}");
     }
 }

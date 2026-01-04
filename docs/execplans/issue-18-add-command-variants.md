@@ -87,7 +87,7 @@ redoing them, and by running the test suite with the new command coverage.
 - Decision: Encode secondary keybindings as `secondary-` for GPUI so platform
   mapping resolves to Cmd on macOS and Ctrl elsewhere. Rationale: Ensures
   cross-platform action bindings such as raise/lower work with
-  `Modifiers:: secondary_key()` in tests and the UI. Date/Author: 2026-01-03,
+  `Modifiers::secondary_key()` in tests and the UI. Date/Author: 2026-01-03,
   Codex.
 
 ## Outcomes & Retrospective

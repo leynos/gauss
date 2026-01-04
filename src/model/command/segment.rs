@@ -1,6 +1,6 @@
 //! Segment toggle command helpers.
 
-use crate::model::{Document, EngineState, SegmentKind, SelItem, Vec2};
+use crate::model::{Document, EngineState, SegmentKind, SelItem, Shape, Vec2};
 
 use super::Command;
 use super::error::UserError;
@@ -37,7 +37,7 @@ pub(super) fn prepare_toggle_segment_kind(state: &EngineState) -> Result<Command
 
         let (new_kind, new_start_handle_out, new_end_handle_in) = match old_kind {
             SegmentKind::Line => {
-                // Convert Line to Cubic: synthesise Catmull-Rom handles
+                // Convert Line to Cubic: synthesise linear handles
                 let (h_out, h_in) = if let (Some(start), Some(end)) = (start_anchor, end_anchor) {
                     // Simple handle synthesis: 1/3 of the way along the segment
                     let dx = end.pos.x - start.pos.x;
@@ -85,19 +85,7 @@ pub(super) fn apply_set_segment_kind(
 ) -> CommandInverse {
     for change in changes {
         if let Some(shape) = doc.get_mut(change.shape_id) {
-            // Update segment kind
-            if let Some(seg) = shape.path.segments.get_mut(change.segment_index) {
-                *seg = change.new_kind;
-            }
-            // Update handles on the start anchor (segment_index)
-            if let Some(anchor) = shape.path.anchors.get_mut(change.segment_index) {
-                anchor.handle_out = change.new_start_handle_out;
-            }
-            // Update handles on the end anchor (segment_index + 1)
-            let end_index = change.segment_index + 1;
-            if let Some(anchor) = shape.path.anchors.get_mut(end_index) {
-                anchor.handle_in = change.new_end_handle_in;
-            }
+            apply_segment_change(shape, change);
         }
     }
 
@@ -125,16 +113,20 @@ pub(super) fn apply_set_segment_kind(
 pub(super) fn apply_restore_segment_kinds(doc: &mut Document, changes: &[SegmentChange]) {
     for change in changes {
         if let Some(shape) = doc.get_mut(change.shape_id) {
-            if let Some(seg) = shape.path.segments.get_mut(change.segment_index) {
-                *seg = change.new_kind;
-            }
-            if let Some(anchor) = shape.path.anchors.get_mut(change.segment_index) {
-                anchor.handle_out = change.new_start_handle_out;
-            }
-            let end_index = change.segment_index + 1;
-            if let Some(anchor) = shape.path.anchors.get_mut(end_index) {
-                anchor.handle_in = change.new_end_handle_in;
-            }
+            apply_segment_change(shape, change);
         }
+    }
+}
+
+fn apply_segment_change(shape: &mut Shape, change: &SegmentChange) {
+    if let Some(seg) = shape.path.segments.get_mut(change.segment_index) {
+        *seg = change.new_kind;
+    }
+    if let Some(anchor) = shape.path.anchors.get_mut(change.segment_index) {
+        anchor.handle_out = change.new_start_handle_out;
+    }
+    let end_index = change.segment_index + 1;
+    if let Some(anchor) = shape.path.anchors.get_mut(end_index) {
+        anchor.handle_in = change.new_end_handle_in;
     }
 }

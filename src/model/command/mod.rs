@@ -56,7 +56,7 @@
 //! // Empty selection produces an error
 //! assert!(result.is_err());
 //! ```
-#![allow(
+#![expect(
     clippy::float_arithmetic,
     reason = "geometry calculations require arithmetic"
 )]

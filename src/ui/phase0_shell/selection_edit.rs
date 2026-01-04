@@ -8,11 +8,16 @@ use super::Phase0Shell;
 
 impl Phase0Shell {
     pub(super) fn delete_selected_shapes(&mut self) -> bool {
-        let Ok(command) = prepare_command(Action::DeleteSelection, &self.state) else {
-            return false;
+        let command = match prepare_command(Action::DeleteSelection, &self.state) {
+            Ok(command) => command,
+            Err(error) => {
+                log::error!("prepare delete selection command failed: {error}");
+                return false;
+            }
         };
 
-        if self.apply_command(command).is_err() {
+        if let Err(error) = self.apply_command(command) {
+            log::error!("apply delete selection command failed: {error}");
             return false;
         }
 

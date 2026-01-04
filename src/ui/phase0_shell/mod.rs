@@ -118,6 +118,13 @@ pub fn bind_keymap(app: &mut gpui::App) {
         bindings.push(KeyBinding::new("alt-space", ShowWindowMenu, ctx));
         bindings.push(KeyBinding::new("alt-f7", StartWindowMove, ctx));
         bindings.push(KeyBinding::new("alt-f8", StartWindowResize, ctx));
+
+        #[cfg(target_os = "macos")]
+        {
+            bindings.push(KeyBinding::new("cmd-m", MinimizeWindow, ctx));
+            bindings.push(KeyBinding::new("cmd-q", CloseWindow, ctx));
+            bindings.push(KeyBinding::new("ctrl-cmd-f", ToggleFullscreen, ctx));
+        }
     }
 
     // Editor-specific bindings (not in the model Action enum)
@@ -126,14 +133,6 @@ pub fn bind_keymap(app: &mut gpui::App) {
         ToggleEdgeMode,
         Some(KeyContext::DrawMode.as_ref()),
     ));
-
-    #[cfg(target_os = "macos")]
-    for context in KeyContext::all() {
-        let ctx = Some(context.as_ref());
-        bindings.push(KeyBinding::new("cmd-m", MinimizeWindow, ctx));
-        bindings.push(KeyBinding::new("cmd-q", CloseWindow, ctx));
-        bindings.push(KeyBinding::new("ctrl-cmd-f", ToggleFullscreen, ctx));
-    }
 
     app.bind_keys(bindings);
 }

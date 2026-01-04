@@ -5,83 +5,20 @@
 use gauss::model::{
     Action, Anchor, AnchorDeletion, AnchorDeletionResult, AnchorMovement, Command, Document,
     EngineState, HandleKind, HandleMovement, PaintStyle, ReorderOp, SegmentChange, SegmentKind,
-    SelItem, ShapeMovement, ShapeReplacement, StyleChange, Vec2, prepare_command,
+    SelItem, ShapeMovement, StyleChange, Vec2, prepare_command,
 };
 use rstest::rstest;
 use test_support::shapes::shape_id;
 mod command_editing_helpers;
+mod command_editing_unit_helpers;
 
 use command_editing_helpers::{
     anchor_at, segment_at, segment_mut, shape_at, shape_with_handles, shape_with_three_anchors,
 };
-fn assert_shape_replacement_applies_and_undoes(
-    shape_index: usize,
-    old_shape: gauss::model::Shape,
-    new_shape: gauss::model::Shape,
-    create_command: impl Fn(ShapeReplacement) -> Command,
-) {
-    let expected_old = old_shape.clone();
-    let expected_new = new_shape.clone();
-    let mut doc = Document {
-        shapes: vec![expected_old.clone()],
-    };
-    let cmd = create_command(ShapeReplacement {
-        shape_index,
-        old_shape,
-        new_shape,
-    });
-
-    let inverse = match cmd.apply(&mut doc) {
-        Ok(inverse) => inverse,
-        Err(err) => panic!("apply succeeded: {err}"),
-    };
-    let Some(updated) = shape_at(&doc, 0) else {
-        panic!("shape exists");
-    };
-    assert_eq!(updated, &expected_new, "shape was updated");
-
-    if let Err(err) = inverse.apply(&mut doc) {
-        panic!("undo succeeded: {err}");
-    }
-    let Some(restored) = shape_at(&doc, 0) else {
-        panic!("shape exists");
-    };
-    assert_eq!(restored, &expected_old, "shape was restored");
-}
-
-fn assert_prepare_command_returns_variant(
-    shape_id: gauss::model::ShapeId,
-    selection_item: SelItem,
-    action: Action,
-    matches_pattern: impl Fn(&Command) -> bool,
-) {
-    let shape = shape_with_handles(shape_id);
-    let mut state = EngineState::with_document(Document {
-        shapes: vec![shape],
-    });
-    state.selection.items = vec![selection_item];
-
-    let cmd = match prepare_command(action, &state) {
-        Ok(cmd) => cmd,
-        Err(err) => panic!("prepare succeeded: {err}"),
-    };
-    assert!(matches_pattern(&cmd), "command matches expected variant");
-}
-
-#[derive(Debug, Clone, Copy)]
-enum ExpectedCommand {
-    InsertAnchor,
-    DeleteAnchors,
-}
-
-impl ExpectedCommand {
-    const fn matches(self, cmd: &Command) -> bool {
-        match self {
-            Self::InsertAnchor => matches!(cmd, Command::InsertAnchor { .. }),
-            Self::DeleteAnchors => matches!(cmd, Command::DeleteAnchors { .. }),
-        }
-    }
-}
+use command_editing_unit_helpers::{
+    ExpectedCommand, assert_prepare_command_returns_variant,
+    assert_shape_replacement_applies_and_undoes,
+};
 
 #[test]
 fn move_shapes_applies_and_undoes() {
@@ -360,7 +297,7 @@ fn prepare_command_returns_expected_variant(
         expected.matches(cmd)
     });
 }
-#[rstest]
+#[test]
 fn prepare_raise_selection_uses_anchor_selection() {
     let shape_a = shape_with_handles(shape_id(13));
     let shape_b = shape_with_handles(shape_id(14));
@@ -381,7 +318,7 @@ fn prepare_raise_selection_uses_anchor_selection() {
     assert_eq!(operation.from_index, 0);
     assert_eq!(operation.to_index, 1);
 }
-#[rstest]
+#[test]
 fn prepare_toggle_segment_kind_requires_segment() {
     let shape = shape_with_handles(shape_id(15));
     let mut state = EngineState::with_document(Document {

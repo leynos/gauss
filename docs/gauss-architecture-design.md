@@ -435,6 +435,8 @@ The command system provides:
 - `Command::apply()` — executes mutation, returns `CommandInverse`
 - `CommandInverse::apply()` — reverses the mutation for undo
 - `UserError` — user-facing semantic errors (EmptySelection, ShapeNotFound)
+- Diagnostic logging uses the `log` crate to surface command failures in
+  release builds.
 
 Commands should be small and composable:
 

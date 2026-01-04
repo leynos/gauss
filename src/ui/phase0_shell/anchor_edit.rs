@@ -3,7 +3,7 @@
 //! Phase 0 keeps anchor edits minimal while routing the mutations through the
 //! Command pipeline so undo/redo stays consistent.
 
-use crate::model::{Action, SelItem, Selection, prepare_command};
+use crate::model::{Action, SelItem, Selection, ShapeId, prepare_command};
 
 use super::{Phase0Shell, draw::ToolMode};
 
@@ -18,11 +18,16 @@ impl Phase0Shell {
             return false;
         };
 
-        let Ok(command) = prepare_command(Action::InsertAnchorOnSegment, &self.state) else {
-            return false;
+        let command = match prepare_command(Action::InsertAnchorOnSegment, &self.state) {
+            Ok(command) => command,
+            Err(error) => {
+                log::error!("prepare insert anchor command failed: {error}");
+                return false;
+            }
         };
 
-        if self.apply_command(command).is_err() {
+        if let Err(error) = self.apply_command(command) {
+            log::error!("apply insert anchor command failed: {error}");
             return false;
         }
 
@@ -44,11 +49,16 @@ impl Phase0Shell {
             return false;
         }
 
-        let Ok(command) = prepare_command(Action::DeleteSelectedAnchors, &self.state) else {
-            return false;
+        let command = match prepare_command(Action::DeleteSelectedAnchors, &self.state) {
+            Ok(command) => command,
+            Err(error) => {
+                log::error!("prepare delete anchors command failed: {error}");
+                return false;
+            }
         };
 
-        if self.apply_command(command).is_err() {
+        if let Err(error) = self.apply_command(command) {
+            log::error!("apply delete anchors command failed: {error}");
             return false;
         }
 
@@ -61,7 +71,7 @@ impl Phase0Shell {
     }
 }
 
-fn first_selected_segment(items: &[SelItem]) -> Option<(crate::model::ShapeId, usize)> {
+fn first_selected_segment(items: &[SelItem]) -> Option<(ShapeId, usize)> {
     items.iter().find_map(|item| match item {
         SelItem::Segment { shape, seg } => Some((*shape, *seg)),
         _ => None,
