@@ -73,6 +73,12 @@ pub(super) fn apply_move_anchor(
         && let Some(anchor) = shape.path.anchors.get_mut(movement.anchor_index)
     {
         translate_anchor(anchor, movement.delta);
+    } else {
+        debug_assert!(
+            false,
+            "missing shape or anchor for move anchor: {:?} / {}",
+            movement.shape_id, movement.anchor_index
+        );
     }
 
     CommandInverse::MoveAnchorBack {
@@ -92,6 +98,12 @@ pub(super) fn apply_move_anchor_back(doc: &mut Document, movement: &AnchorMoveme
         && let Some(anchor) = shape.path.anchors.get_mut(movement.anchor_index)
     {
         *anchor = movement.original.clone();
+    } else {
+        debug_assert!(
+            false,
+            "missing shape or anchor for move anchor back: {:?} / {}",
+            movement.shape_id, movement.anchor_index
+        );
     }
 }
 

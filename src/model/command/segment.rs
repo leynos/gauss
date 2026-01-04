@@ -1,4 +1,8 @@
 //! Segment toggle command helpers.
+//!
+//! Converts selected segments between line and cubic forms, synthesising
+//! handles for line-to-cubic transitions and clearing handles when switching
+//! back to lines.
 
 use crate::model::{Document, EngineState, SegmentKind, SelItem, Shape, Vec2};
 

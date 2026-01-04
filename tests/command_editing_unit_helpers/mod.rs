@@ -23,18 +23,18 @@ pub(super) fn assert_shape_replacement_applies_and_undoes(
 
     let inverse = cmd
         .apply(&mut doc)
-        .map_err(|err| format!("apply succeeded: {err}"))?;
-    let updated = shape_at(&doc, 0).ok_or_else(|| "shape exists".to_owned())?;
+        .map_err(|err| format!("apply failed: {err}"))?;
+    let updated = shape_at(&doc, 0).ok_or_else(|| "shape missing".to_owned())?;
     if updated != &expected_new {
-        return Err("shape was updated".to_owned());
+        return Err("shape was not updated".to_owned());
     }
 
     inverse
         .apply(&mut doc)
-        .map_err(|err| format!("undo succeeded: {err}"))?;
-    let restored = shape_at(&doc, 0).ok_or_else(|| "shape exists".to_owned())?;
+        .map_err(|err| format!("undo failed: {err}"))?;
+    let restored = shape_at(&doc, 0).ok_or_else(|| "shape missing".to_owned())?;
     if restored != &expected_old {
-        return Err("shape was restored".to_owned());
+        return Err("shape was not restored".to_owned());
     }
 
     Ok(())
@@ -53,9 +53,9 @@ pub(super) fn assert_prepare_command_returns_variant(
     state.selection.items = vec![selection_item];
 
     let cmd = gauss::model::prepare_command(action, &state)
-        .map_err(|err| format!("prepare succeeded: {err}"))?;
+        .map_err(|err| format!("prepare failed: {err}"))?;
     if !matches_pattern(&cmd) {
-        return Err("command matches expected variant".to_owned());
+        return Err("command did not match expected variant".to_owned());
     }
 
     Ok(())
