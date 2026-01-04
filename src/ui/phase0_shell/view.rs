@@ -2,10 +2,11 @@
 
 use gpui::{Window, div, prelude::*, white};
 
-use crate::model::KeyContext;
 use crate::ui::action_bridge::{
-    GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeleteSelection, GpuiDeselectAll, GpuiRedo,
-    GpuiSelectAll, GpuiSelectionRedo, GpuiSelectionUndo, GpuiUndo,
+    GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeleteSelectedAnchors, GpuiDeleteSelection,
+    GpuiDeselectAll, GpuiInsertAnchorOnSegment, GpuiLowerSelection, GpuiRaiseSelection, GpuiRedo,
+    GpuiSelectAll, GpuiSelectionRedo, GpuiSelectionUndo, GpuiToggleSegmentKind, GpuiUndo,
+    context_for_tool_mode,
 };
 
 use super::{
@@ -208,7 +209,14 @@ impl Phase0Shell {
 
 impl Phase0Shell {
     /// Bind model action handlers (from the action bridge) to the root element.
-    fn bind_model_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
+    fn bind_model_actions(root: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
+        let mut el = Self::bind_selection_actions(root, cx);
+        el = Self::bind_edit_actions(el, cx);
+        el = Self::bind_tool_actions(el, cx);
+        Self::bind_history_actions(el, cx)
+    }
+
+    fn bind_selection_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
         el.on_action(
             cx.listener(|shell: &mut Self, _: &GpuiSelectAll, _, action_cx| {
                 shell.select_all(action_cx);
@@ -219,14 +227,61 @@ impl Phase0Shell {
                 shell.deselect_all(action_cx);
             }),
         )
-        .on_action(
+    }
+
+    fn bind_edit_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
+        el.on_action(
             cx.listener(|shell: &mut Self, _: &GpuiDeleteSelection, _, action_cx| {
+                let has_shape_selection = shell.state.selection.selected_shapes().next().is_some();
+                let did_change = if has_shape_selection {
+                    shell.delete_selected_shapes()
+                } else {
+                    shell.delete_selected_anchors()
+                };
+                if did_change {
+                    action_cx.notify();
+                }
+            }),
+        )
+        .on_action(cx.listener(
+            |shell: &mut Self, _: &GpuiInsertAnchorOnSegment, _, action_cx| {
+                if shell.insert_anchor_on_selected_segment() {
+                    action_cx.notify();
+                }
+            },
+        ))
+        .on_action(cx.listener(
+            |shell: &mut Self, _: &GpuiDeleteSelectedAnchors, _, action_cx| {
                 if shell.delete_selected_anchors() {
+                    action_cx.notify();
+                }
+            },
+        ))
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiRaiseSelection, _, action_cx| {
+                if shell.raise_selected_shapes() {
                     action_cx.notify();
                 }
             }),
         )
         .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiLowerSelection, _, action_cx| {
+                if shell.lower_selected_shapes() {
+                    action_cx.notify();
+                }
+            }),
+        )
+        .on_action(cx.listener(
+            |shell: &mut Self, _: &GpuiToggleSegmentKind, _, action_cx| {
+                if shell.toggle_selected_segments_kind() {
+                    action_cx.notify();
+                }
+            },
+        ))
+    }
+
+    fn bind_tool_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
+        el.on_action(
             cx.listener(|shell: &mut Self, _: &GpuiActivatePenTool, _, action_cx| {
                 shell.state.tool_mode = draw::ToolMode::Draw;
                 action_cx.notify();
@@ -238,7 +293,10 @@ impl Phase0Shell {
                 action_cx.notify();
             },
         ))
-        .on_action(cx.listener(|shell: &mut Self, _: &GpuiUndo, _, action_cx| {
+    }
+
+    fn bind_history_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
+        el.on_action(cx.listener(|shell: &mut Self, _: &GpuiUndo, _, action_cx| {
             shell.undo_document();
             action_cx.notify();
         }))
@@ -252,12 +310,12 @@ impl Phase0Shell {
                 action_cx.notify();
             }),
         )
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiSelectionRedo, _, action_cx| {
+        .on_action(cx.listener(
+            |shell: &mut Self, _: &GpuiSelectionRedo, _, action_cx| {
                 shell.redo_selection();
                 action_cx.notify();
-            }),
-        )
+            },
+        ))
     }
 }
 
@@ -276,18 +334,13 @@ impl Render for Phase0Shell {
         // Track viewport size changes and adjust pan to maintain anchor point
         self.handle_window_resize(window);
 
-        // Note: Mode-specific key contexts (for ManipulateMode-only shortcuts like
-        // Delete) would require a different approach since GPUI's key_context()
-        // replaces rather than adds. See action_bridge::context_for_tool_mode() for
-        // future use.
+        // Mode-specific key contexts are applied based on the active tool mode.
+        // Global shortcuts are registered for all contexts via the action bridge.
 
         let root = div()
             .size_full()
-            // Apply global context for global shortcuts (Undo, Redo, Tab, etc.)
-            // Note: We only use the global context for now. Mode-specific context
-            // (for ManipulateMode-only shortcuts) will need a different approach
-            // since GPUI's key_context() replaces rather than adds.
-            .key_context(KeyContext::Global.as_ref())
+            // Apply the active tool context so mode-specific shortcuts resolve.
+            .key_context(context_for_tool_mode(self.state.tool_mode).as_ref())
             .track_focus(&self.focus_handle)
             .flex()
             .flex_col()

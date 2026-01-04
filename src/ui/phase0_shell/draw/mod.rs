@@ -13,17 +13,22 @@
     reason = "draw mode operates on floating-point geometry and handles"
 )]
 
-use gpui_component::history::HistoryItem;
-
 use crate::model::{
-    Anchor, DocChange, DocOp, EdgeMode, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, Vec2,
+    Anchor, Command, CommandInverse, DocChange, DocOp, Document, EdgeMode, PaintStyle, PathGeom,
+    SegmentKind, Shape, ShapeId, UserError, Vec2,
 };
 
-use super::Phase0Shell;
+use super::{Phase0Shell, document_history::DocumentHistoryItem};
 
 mod handles;
 
 use self::handles::{clear_line_segment_handles, close_shape, update_catmull_rom_handles};
+
+#[derive(Clone, Copy, Debug)]
+enum HistoryDirection {
+    Undo,
+    Redo,
+}
 
 const SNAP_RADIUS_PX: f32 = 10.0;
 
@@ -36,34 +41,6 @@ pub(crate) use crate::model::ToolMode;
 /// The canonical type is now `EdgeMode` in the model layer. This alias
 /// preserves existing `DrawEdgeMode` references in the UI layer.
 pub(super) type DrawEdgeMode = EdgeMode;
-
-#[derive(Clone, Debug)]
-pub(super) struct DocHistoryItem {
-    version: usize,
-    pub(super) change: DocChange,
-}
-
-impl PartialEq for DocHistoryItem {
-    fn eq(&self, other: &Self) -> bool {
-        self.change == other.change
-    }
-}
-
-impl HistoryItem for DocHistoryItem {
-    fn version(&self) -> usize {
-        self.version
-    }
-
-    fn set_version(&mut self, version: usize) {
-        self.version = version;
-    }
-}
-
-impl DocHistoryItem {
-    pub(super) const fn new(change: DocChange) -> Self {
-        Self { version: 0, change }
-    }
-}
 
 impl Phase0Shell {
     pub(super) fn handle_canvas_click(&mut self, position: gpui::Point<gpui::Pixels>) -> bool {
@@ -98,15 +75,30 @@ impl Phase0Shell {
                 existing.clone(),
                 segment_kind_for_edge_mode(self.state.edge_mode),
             );
-            self.apply_doc_change(replace_shape_change(index, existing, closed));
+            let command = Command::ClosePath {
+                replacement: crate::model::ShapeReplacement {
+                    shape_index: index,
+                    old_shape: existing,
+                    new_shape: closed,
+                },
+            };
+            if self.apply_command(command).is_err() {
+                return false;
+            }
             self.state.tool_mode = ToolMode::Manipulate;
             self.state.active_path = None;
             return true;
         }
 
         let appended = append_anchor(existing.clone(), cursor_world, self.state.edge_mode);
-        self.apply_doc_change(replace_shape_change(index, existing, appended));
-        true
+        let command = Command::InsertAnchor {
+            replacement: crate::model::ShapeReplacement {
+                shape_index: index,
+                old_shape: existing,
+                new_shape: appended,
+            },
+        };
+        self.apply_command(command).is_ok()
     }
 
     fn start_new_open_shape(&mut self, cursor_world: Vec2) -> bool {
@@ -123,7 +115,15 @@ impl Phase0Shell {
 
     pub(super) fn apply_doc_change(&mut self, change: DocChange) {
         change.apply(&mut self.state.document);
-        self.document_history.push(DocHistoryItem::new(change));
+        self.document_history
+            .push(DocumentHistoryItem::new_doc_change(change));
+    }
+
+    pub(super) fn apply_command(&mut self, command: Command) -> Result<(), UserError> {
+        let inverse = command.apply(&mut self.state.document)?;
+        self.document_history
+            .push(DocumentHistoryItem::new_command(command, inverse));
+        Ok(())
     }
 
     pub(super) fn undo_document(&mut self) {
@@ -131,9 +131,7 @@ impl Phase0Shell {
             return;
         };
 
-        for item in group {
-            item.change.apply_inverse(&mut self.state.document);
-        }
+        self.apply_history_group(group, HistoryDirection::Undo);
     }
 
     pub(super) fn redo_document(&mut self) {
@@ -141,9 +139,63 @@ impl Phase0Shell {
             return;
         };
 
+        self.apply_history_group(group, HistoryDirection::Redo);
+    }
+
+    fn apply_history_group(
+        &mut self,
+        group: Vec<DocumentHistoryItem>,
+        direction: HistoryDirection,
+    ) {
         for item in group {
-            item.change.apply(&mut self.state.document);
+            match item.into_edit() {
+                super::document_history::DocumentEdit::Change(change) => {
+                    apply_change_for_direction(&mut self.state.document, &change, direction);
+                }
+                super::document_history::DocumentEdit::Command(entry) => {
+                    let entry_ref = entry.as_ref();
+                    apply_command_for_direction(
+                        &mut self.state.document,
+                        &entry_ref.command,
+                        &entry_ref.inverse,
+                        direction,
+                    );
+                }
+            }
         }
+    }
+}
+
+fn apply_command_inverse(doc: &mut Document, inverse: &CommandInverse) {
+    if let Err(error) = inverse.apply(doc) {
+        log::error!("command undo failed: {error}");
+        debug_assert!(false, "command undo failed: {error}");
+    }
+}
+
+fn apply_command_again(doc: &mut Document, command: &Command) {
+    if let Err(error) = command.apply(doc) {
+        log::error!("command redo failed: {error}");
+        debug_assert!(false, "command redo failed: {error}");
+    }
+}
+
+fn apply_change_for_direction(doc: &mut Document, change: &DocChange, direction: HistoryDirection) {
+    match direction {
+        HistoryDirection::Undo => change.apply_inverse(doc),
+        HistoryDirection::Redo => change.apply(doc),
+    }
+}
+
+fn apply_command_for_direction(
+    doc: &mut Document,
+    command: &Command,
+    inverse: &CommandInverse,
+    direction: HistoryDirection,
+) {
+    match direction {
+        HistoryDirection::Undo => apply_command_inverse(doc, inverse),
+        HistoryDirection::Redo => apply_command_again(doc, command),
     }
 }
 
@@ -186,15 +238,6 @@ fn append_anchor(mut shape: Shape, pos: Vec2, edge_mode: DrawEdgeMode) -> Shape 
     }
 
     shape
-}
-
-fn replace_shape_change(index: usize, from: Shape, to: Shape) -> DocChange {
-    DocChange {
-        ops: vec![
-            DocOp::RemoveShape { index, shape: from },
-            DocOp::InsertShape { index, shape: to },
-        ],
-    }
 }
 
 fn should_close_path(path: &PathGeom, cursor_world: Vec2, zoom: f32) -> bool {

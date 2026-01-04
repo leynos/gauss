@@ -3,7 +3,9 @@
 //! Drag handling is split out from the event wiring so the selection logic and
 //! hit-testing remain easier to follow.
 
-use crate::model::{Anchor, DocChange, DocOp, Document, SelItem, Shape, ShapeId, Vec2};
+use crate::model::{
+    Anchor, AnchorMovement, Command, Document, SelItem, Shape, ShapeId, ShapeMovement, Vec2,
+};
 
 use super::handle_drag::{
     HandleDragState, apply_handle_drag_preview, finish_handle_drag, start_handle_drag,
@@ -132,12 +134,12 @@ pub(super) fn finish_drag(
     doc: &mut Document,
     drag_state: DragState,
     cursor_world: Vec2,
-) -> Option<DocChange> {
+) -> Option<Command> {
     match drag_state.kind {
         DragKind::Shapes(shape_drag) => finish_shapes_drag(doc, &shape_drag, cursor_world),
         DragKind::Anchor(anchor_drag) => finish_anchor_drag(doc, &anchor_drag, cursor_world),
         DragKind::Handle(handle_drag) => finish_handle_drag(doc, &handle_drag, cursor_world)
-            .map(|op| DocChange { ops: vec![op] }),
+            .map(|movement| Command::MoveHandle { movement }),
     }
 }
 
@@ -262,74 +264,50 @@ fn finish_shapes_drag(
     doc: &mut Document,
     drag: &ShapesDragState,
     cursor_world: Vec2,
-) -> Option<DocChange> {
-    let delta = finalize_drag(drag.start_cursor_world, cursor_world, |delta| {
-        apply_shapes_drag_to_doc(doc, drag, delta)
-    })?;
+) -> Option<Command> {
+    let Some(delta) = drag_delta(drag.start_cursor_world, cursor_world) else {
+        let _did_restore = apply_shapes_drag_to_doc(doc, drag, Vec2::ZERO);
+        return None;
+    };
+    let _did_restore = apply_shapes_drag_to_doc(doc, drag, Vec2::ZERO);
 
-    let ops = drag
+    let movements = drag
         .shapes
         .iter()
-        .map(|dragged| DocOp::MoveShape {
-            shape: dragged.shape,
+        .map(|dragged| ShapeMovement {
+            shape_id: dragged.shape,
             delta,
         })
         .collect();
 
-    Some(DocChange { ops })
+    Some(Command::MoveShapes { movements })
 }
 
 fn finish_anchor_drag(
     doc: &mut Document,
     drag: &AnchorDragState,
     cursor_world: Vec2,
-) -> Option<DocChange> {
-    let delta = finalize_drag(drag.start_cursor_world, cursor_world, |delta| {
-        apply_anchor_drag_to_doc(doc, drag, delta)
-    })?;
+) -> Option<Command> {
+    let Some(delta) = drag_delta(drag.start_cursor_world, cursor_world) else {
+        let _did_restore = apply_anchor_drag_to_doc(doc, drag, Vec2::ZERO);
+        return None;
+    };
+    let _did_restore = apply_anchor_drag_to_doc(doc, drag, Vec2::ZERO);
 
-    let mut ops = vec![DocOp::MoveAnchor {
-        shape: drag.shape,
-        anchor: drag.anchor_index,
-        from: drag.original_anchor.pos,
-        to: drag.original_anchor.pos.add(delta),
-    }];
-
-    if drag.original_anchor.handle_in.is_some() {
-        ops.push(DocOp::MoveHandleIn {
-            shape: drag.shape,
-            anchor: drag.anchor_index,
-            from: drag.original_anchor.handle_in,
-            to: drag.original_anchor.handle_in.map(|p| p.add(delta)),
-        });
-    }
-
-    if drag.original_anchor.handle_out.is_some() {
-        ops.push(DocOp::MoveHandleOut {
-            shape: drag.shape,
-            anchor: drag.anchor_index,
-            from: drag.original_anchor.handle_out,
-            to: drag.original_anchor.handle_out.map(|p| p.add(delta)),
-        });
-    }
-
-    Some(DocChange { ops })
+    Some(Command::MoveAnchor {
+        movement: AnchorMovement {
+            shape_id: drag.shape,
+            anchor_index: drag.anchor_index,
+            original: drag.original_anchor.clone(),
+            delta,
+        },
+    })
 }
 
-fn finalize_drag(
-    start_cursor_world: Vec2,
-    cursor_world: Vec2,
-    mut apply: impl FnMut(Vec2) -> bool,
-) -> Option<Vec2> {
+fn drag_delta(start_cursor_world: Vec2, cursor_world: Vec2) -> Option<Vec2> {
     let delta = cursor_world.sub(start_cursor_world);
 
     if delta.x.abs() <= f32::EPSILON && delta.y.abs() <= f32::EPSILON {
-        let _did_restore = apply(Vec2::ZERO);
-        return None;
-    }
-
-    let did_update = apply(delta);
-    if !did_update {
         return None;
     }
 

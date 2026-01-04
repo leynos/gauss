@@ -51,6 +51,11 @@ fn when_prepare_delete_selection(world: &mut CommandWorld) {
     world.command = Some(prepare_command(Action::DeleteSelection, &world.state));
 }
 
+#[when("I prepare RaiseSelection action")]
+fn when_prepare_raise_selection(world: &mut CommandWorld) {
+    world.command = Some(prepare_command(Action::RaiseSelection, &world.state));
+}
+
 #[when("I apply the command")]
 fn when_apply_command(world: &mut CommandWorld) -> TestSupportResult<()> {
     let cmd = world
@@ -103,6 +108,28 @@ fn then_command_targets_one_shape(world: &CommandWorld) -> TestSupportResult<()>
             targets.len()
         ))),
         _ => Err(TestSupportError::expectation("expected DeleteShapes")),
+    }
+}
+
+#[then("the command should be Reorder")]
+fn then_command_is_reorder(world: &CommandWorld) -> TestSupportResult<()> {
+    let cmd = get_command(world)?;
+    match cmd {
+        Command::Reorder { .. } => Ok(()),
+        _ => Err(TestSupportError::expectation("expected Reorder")),
+    }
+}
+
+#[then("the command should include one reorder operation")]
+fn then_command_has_one_reorder_op(world: &CommandWorld) -> TestSupportResult<()> {
+    let cmd = get_command(world)?;
+    match cmd {
+        Command::Reorder { operations } if operations.len() == 1 => Ok(()),
+        Command::Reorder { operations } => Err(TestSupportError::expectation(format!(
+            "expected 1 operation, got {}",
+            operations.len()
+        ))),
+        _ => Err(TestSupportError::expectation("expected Reorder")),
     }
 }
 
@@ -222,6 +249,14 @@ fn delete_selection_requires_selection(world: CommandWorld) {
     name = "Command has human-readable name"
 )]
 fn command_has_human_readable_name(world: CommandWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/command.feature",
+    name = "Raise selection produces reorder command"
+)]
+fn raise_selection_produces_reorder_command(world: CommandWorld) {
     let _ = world;
 }
 

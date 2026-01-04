@@ -27,7 +27,11 @@ pub mod viewport;
 
 pub use action::{Action, ActionKind};
 pub(crate) use colour::{format_hex_rgb, parse_hex_rgb};
-pub use command::{Command, CommandInverse, DeletedShape, UserError, prepare_command};
+pub use command::{
+    AnchorDeletion, AnchorDeletionResult, AnchorMovement, AnchorRestoration, AnchorRestorationKind,
+    Command, CommandInverse, DeletedShape, HandleKind, HandleMovement, ReorderOp, SegmentChange,
+    ShapeMovement, ShapeReplacement, StyleChange, UserError, prepare_command,
+};
 pub use document::Document;
 pub use engine_state::EngineState;
 pub(crate) use geometry::{CubicSegment, cubic_point, shape_world_bounds};

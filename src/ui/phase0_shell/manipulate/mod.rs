@@ -16,10 +16,7 @@ use gpui::{MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels};
 
 use crate::model::Vec2;
 
-use super::{
-    Phase0Shell,
-    draw::{DocHistoryItem, ToolMode},
-};
+use super::{Phase0Shell, draw::ToolMode};
 
 mod drag;
 mod handle_drag;
@@ -104,9 +101,7 @@ impl Phase0Shell {
 
         let cursor_world = cursor_world(&self.state.viewport, event.position);
         finish_drag(&mut self.state.document, drag_state, cursor_world)
-            .map(|change| {
-                self.document_history.push(DocHistoryItem::new(change));
-            })
+            .and_then(|command| self.apply_command(command).ok())
             .is_some()
     }
 }
