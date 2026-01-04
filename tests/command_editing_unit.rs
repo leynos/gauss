@@ -205,7 +205,7 @@ fn set_segment_kind_updates_handles_and_undoes() {
     );
 }
 #[test]
-fn insert_anchor_replaces_shape_and_undoes() {
+fn insert_anchor_replaces_shape_and_undoes() -> Result<(), String> {
     let old_shape = shape_with_handles(shape_id(8));
     let mut new_shape = old_shape.clone();
     new_shape.path.anchors.insert(
@@ -220,7 +220,9 @@ fn insert_anchor_replaces_shape_and_undoes() {
 
     assert_shape_replacement_applies_and_undoes(0, old_shape, new_shape, |replacement| {
         Command::InsertAnchor { replacement }
-    });
+    })?;
+
+    Ok(())
 }
 #[test]
 fn delete_anchors_preserves_handles_and_undoes() {
@@ -264,7 +266,7 @@ fn delete_anchors_preserves_handles_and_undoes() {
     assert_eq!(shape_at(&doc, 0).expect("shape exists"), &old_shape);
 }
 #[test]
-fn close_path_replaces_shape_and_undoes() {
+fn close_path_replaces_shape_and_undoes() -> Result<(), String> {
     let open_shape = shape_with_handles(shape_id(10));
     let mut closed_shape = open_shape.clone();
     closed_shape.path.closed = true;
@@ -272,7 +274,9 @@ fn close_path_replaces_shape_and_undoes() {
 
     assert_shape_replacement_applies_and_undoes(0, open_shape, closed_shape, |replacement| {
         Command::ClosePath { replacement }
-    });
+    })?;
+
+    Ok(())
 }
 #[rstest]
 #[case(
@@ -292,10 +296,12 @@ fn prepare_command_returns_expected_variant(
     #[case] selection_item: SelItem,
     #[case] action: Action,
     #[case] expected: ExpectedCommand,
-) {
+) -> Result<(), String> {
     assert_prepare_command_returns_variant(shape_id_value, selection_item, action, |cmd| {
         expected.matches(cmd)
-    });
+    })?;
+
+    Ok(())
 }
 #[test]
 fn prepare_raise_selection_uses_anchor_selection() {
