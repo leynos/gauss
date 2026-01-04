@@ -1,4 +1,7 @@
 //! Helpers for command editing unit tests.
+//!
+//! These helpers assert shape replacement behaviour with undo/redo and verify
+//! that prepared commands match expected variants.
 
 use gauss::model::{Action, Command, Document, EngineState, SelItem, ShapeReplacement};
 
@@ -26,7 +29,9 @@ pub(super) fn assert_shape_replacement_applies_and_undoes(
         .map_err(|err| format!("apply failed: {err}"))?;
     let updated = shape_at(&doc, 0).ok_or_else(|| "shape missing".to_owned())?;
     if updated != &expected_new {
-        return Err("shape was not updated".to_owned());
+        return Err(format!(
+            "shape was not updated: expected {expected_new:?}, got {updated:?}"
+        ));
     }
 
     inverse
@@ -34,7 +39,9 @@ pub(super) fn assert_shape_replacement_applies_and_undoes(
         .map_err(|err| format!("undo failed: {err}"))?;
     let restored = shape_at(&doc, 0).ok_or_else(|| "shape missing".to_owned())?;
     if restored != &expected_old {
-        return Err("shape was not restored".to_owned());
+        return Err(format!(
+            "shape was not restored: expected {expected_old:?}, got {restored:?}"
+        ));
     }
 
     Ok(())

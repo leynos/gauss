@@ -119,6 +119,12 @@ pub(super) fn apply_move_handle(
             HandleKind::In => anchor.handle_in = movement.to,
             HandleKind::Out => anchor.handle_out = movement.to,
         }
+    } else {
+        debug_assert!(
+            false,
+            "missing shape or anchor for move handle: {:?} / {}",
+            movement.shape_id, movement.anchor_index
+        );
     }
 
     CommandInverse::MoveHandleBack {
@@ -141,5 +147,11 @@ pub(super) fn apply_move_handle_back(doc: &mut Document, movement: &HandleMoveme
             HandleKind::In => anchor.handle_in = movement.to,
             HandleKind::Out => anchor.handle_out = movement.to,
         }
+    } else {
+        debug_assert!(
+            false,
+            "missing shape or anchor for move handle back: {:?} / {}",
+            movement.shape_id, movement.anchor_index
+        );
     }
 }
