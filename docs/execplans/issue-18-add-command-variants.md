@@ -37,6 +37,12 @@ redoing them, and by running the test suite with the new command coverage.
   outcomes.
 - [x] (2026-01-03 03:55Z) Ran Markdown formatting, markdownlint, and nixie
   validation for documentation updates.
+- [x] (2026-01-04 18:12Z) Refactored movement command anchor handling with a
+  shared helper and grouped anchor identity inputs.
+- [x] (2026-01-04 18:12Z) Reworked command editing test helpers to propagate
+  typed errors and avoid oversized error variants.
+- [x] (2026-01-04 18:12Z) Ran check-fmt, typecheck, lint, and test gateways for
+  the refactors and recorded logs.
 
 ## Surprises & Discoveries
 
@@ -52,6 +58,9 @@ redoing them, and by running the test suite with the new command coverage.
   launches a browser process that the sandbox blocks. Evidence: Puppeteer
   failed with "Failed to launch the browser process" until rerun with elevated
   permissions.
+- Observation: Clippy flagged `result_large_err` for test helper errors when
+  they stored full shapes by value. Evidence: `make lint` failed until the
+  errors stored shapes behind `Arc`.
 
 ## Decision Log
 
@@ -89,6 +98,12 @@ redoing them, and by running the test suite with the new command coverage.
   cross-platform action bindings such as raise/lower work with
   `Modifiers::secondary_key()` in tests and the UI. Date/Author: 2026-01-03,
   Codex.
+- Decision: Group anchor identity inputs into a small struct for movement
+  helpers. Rationale: Keeps helper signatures within the clippy argument limit
+  while preserving debug diagnostics. Date/Author: 2026-01-04, Codex.
+- Decision: Store shapes behind `Arc` in test helper error variants. Rationale:
+  Avoids oversized error results while keeping detailed mismatch diagnostics.
+  Date/Author: 2026-01-04, Codex.
 
 ## Outcomes & Retrospective
 
@@ -274,3 +289,8 @@ and completes the remaining work.
 Updated the progress and discoveries after running Markdown formatting,
 markdownlint, and nixie validation; added the sandbox requirement for nixie to
 the discoveries log.
+
+Updated the progress log to capture the movement helper refactor, the test
+helper error propagation adjustments, and the latest quality gate runs. Added
+decision and discovery entries for the clippy-driven adjustments to the helper
+signatures and error storage.

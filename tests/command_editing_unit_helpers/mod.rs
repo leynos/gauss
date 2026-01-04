@@ -3,16 +3,42 @@
 //! These helpers assert shape replacement behaviour with undo/redo and verify
 //! that prepared commands match expected variants.
 
-use gauss::model::{Action, Command, Document, EngineState, SelItem, ShapeReplacement};
+use std::sync::Arc;
+
+use gauss::model::{Action, Command, Document, EngineState, SelItem, Shape, ShapeReplacement};
 
 use crate::command_editing_helpers::{shape_at, shape_with_handles};
+
+#[derive(Debug, thiserror::Error)]
+pub(super) enum CommandEditingTestError {
+    #[error("apply failed")]
+    Apply(#[source] gauss::model::UserError),
+    #[error("undo failed")]
+    Undo(#[source] gauss::model::UserError),
+    #[error("prepare failed")]
+    Prepare(#[source] gauss::model::UserError),
+    #[error("shape missing")]
+    ShapeMissing,
+    #[error("shape was not updated: expected {expected:?}, got {actual:?}")]
+    ShapeNotUpdated {
+        expected: Arc<Shape>,
+        actual: Arc<Shape>,
+    },
+    #[error("shape was not restored: expected {expected:?}, got {actual:?}")]
+    ShapeNotRestored {
+        expected: Arc<Shape>,
+        actual: Arc<Shape>,
+    },
+    #[error("command did not match expected variant")]
+    CommandMismatch,
+}
 
 pub(super) fn assert_shape_replacement_applies_and_undoes(
     shape_index: usize,
     old_shape: gauss::model::Shape,
     new_shape: gauss::model::Shape,
     create_command: impl Fn(ShapeReplacement) -> Command,
-) -> Result<(), String> {
+) -> Result<(), CommandEditingTestError> {
     let expected_old = old_shape.clone();
     let expected_new = new_shape.clone();
     let mut doc = Document {
@@ -26,22 +52,24 @@ pub(super) fn assert_shape_replacement_applies_and_undoes(
 
     let inverse = cmd
         .apply(&mut doc)
-        .map_err(|err| format!("apply failed: {err}"))?;
-    let updated = shape_at(&doc, 0).ok_or_else(|| "shape missing".to_owned())?;
+        .map_err(CommandEditingTestError::Apply)?;
+    let updated = shape_at(&doc, 0).ok_or(CommandEditingTestError::ShapeMissing)?;
     if updated != &expected_new {
-        return Err(format!(
-            "shape was not updated: expected {expected_new:?}, got {updated:?}"
-        ));
+        return Err(CommandEditingTestError::ShapeNotUpdated {
+            expected: Arc::new(expected_new.clone()),
+            actual: Arc::new(updated.clone()),
+        });
     }
 
     inverse
         .apply(&mut doc)
-        .map_err(|err| format!("undo failed: {err}"))?;
-    let restored = shape_at(&doc, 0).ok_or_else(|| "shape missing".to_owned())?;
+        .map_err(CommandEditingTestError::Undo)?;
+    let restored = shape_at(&doc, 0).ok_or(CommandEditingTestError::ShapeMissing)?;
     if restored != &expected_old {
-        return Err(format!(
-            "shape was not restored: expected {expected_old:?}, got {restored:?}"
-        ));
+        return Err(CommandEditingTestError::ShapeNotRestored {
+            expected: Arc::new(expected_old.clone()),
+            actual: Arc::new(restored.clone()),
+        });
     }
 
     Ok(())
@@ -52,17 +80,17 @@ pub(super) fn assert_prepare_command_returns_variant(
     selection_item: SelItem,
     action: Action,
     matches_pattern: impl Fn(&Command) -> bool,
-) -> Result<(), String> {
+) -> Result<(), CommandEditingTestError> {
     let shape = shape_with_handles(shape_id);
     let mut state = EngineState::with_document(Document {
         shapes: vec![shape],
     });
     state.selection.items = vec![selection_item];
 
-    let cmd = gauss::model::prepare_command(action, &state)
-        .map_err(|err| format!("prepare failed: {err}"))?;
+    let cmd =
+        gauss::model::prepare_command(action, &state).map_err(CommandEditingTestError::Prepare)?;
     if !matches_pattern(&cmd) {
-        return Err("command did not match expected variant".to_owned());
+        return Err(CommandEditingTestError::CommandMismatch);
     }
 
     Ok(())

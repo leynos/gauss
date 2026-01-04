@@ -16,7 +16,7 @@ use command_editing_helpers::{
     anchor_at, segment_at, segment_mut, shape_at, shape_with_handles, shape_with_three_anchors,
 };
 use command_editing_unit_helpers::{
-    ExpectedCommand, assert_prepare_command_returns_variant,
+    CommandEditingTestError, ExpectedCommand, assert_prepare_command_returns_variant,
     assert_shape_replacement_applies_and_undoes,
 };
 
@@ -205,7 +205,7 @@ fn set_segment_kind_updates_handles_and_undoes() {
     );
 }
 #[test]
-fn insert_anchor_replaces_shape_and_undoes() -> Result<(), String> {
+fn insert_anchor_replaces_shape_and_undoes() -> Result<(), CommandEditingTestError> {
     let old_shape = shape_with_handles(shape_id(8));
     let mut new_shape = old_shape.clone();
     new_shape.path.anchors.insert(
@@ -266,7 +266,7 @@ fn delete_anchors_preserves_handles_and_undoes() {
     assert_eq!(shape_at(&doc, 0).expect("shape exists"), &old_shape);
 }
 #[test]
-fn close_path_replaces_shape_and_undoes() -> Result<(), String> {
+fn close_path_replaces_shape_and_undoes() -> Result<(), CommandEditingTestError> {
     let open_shape = shape_with_handles(shape_id(10));
     let mut closed_shape = open_shape.clone();
     closed_shape.path.closed = true;
@@ -296,7 +296,7 @@ fn prepare_command_returns_expected_variant(
     #[case] selection_item: SelItem,
     #[case] action: Action,
     #[case] expected: ExpectedCommand,
-) -> Result<(), String> {
+) -> Result<(), CommandEditingTestError> {
     assert_prepare_command_returns_variant(shape_id_value, selection_item, action, |cmd| {
         expected.matches(cmd)
     })?;

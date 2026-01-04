@@ -17,6 +17,33 @@ fn translate_anchor(anchor: &mut Anchor, delta: Vec2) {
     }
 }
 
+#[derive(Clone, Copy)]
+struct AnchorTarget {
+    shape_id: crate::model::ShapeId,
+    anchor_index: usize,
+}
+
+/// Helper: Apply a mutation to an anchor if it exists, with debug assertion fallback.
+fn with_anchor_mut<F>(doc: &mut Document, target: AnchorTarget, operation: &str, mutate: F)
+where
+    F: FnOnce(&mut Anchor),
+{
+    let AnchorTarget {
+        shape_id,
+        anchor_index,
+    } = target;
+    if let Some(shape) = doc.get_mut(shape_id)
+        && let Some(anchor) = shape.path.anchors.get_mut(anchor_index)
+    {
+        mutate(anchor);
+    } else {
+        debug_assert!(
+            false,
+            "missing shape or anchor for {operation}: {shape_id:?} / {anchor_index}"
+        );
+    }
+}
+
 pub(super) fn apply_move_shapes(
     doc: &mut Document,
     movements: &[ShapeMovement],
@@ -69,17 +96,15 @@ pub(super) fn apply_move_anchor(
     movement: &AnchorMovement,
     command_name: &'static str,
 ) -> CommandInverse {
-    if let Some(shape) = doc.get_mut(movement.shape_id)
-        && let Some(anchor) = shape.path.anchors.get_mut(movement.anchor_index)
-    {
-        translate_anchor(anchor, movement.delta);
-    } else {
-        debug_assert!(
-            false,
-            "missing shape or anchor for move anchor: {:?} / {}",
-            movement.shape_id, movement.anchor_index
-        );
-    }
+    with_anchor_mut(
+        doc,
+        AnchorTarget {
+            shape_id: movement.shape_id,
+            anchor_index: movement.anchor_index,
+        },
+        "move anchor",
+        |anchor| translate_anchor(anchor, movement.delta),
+    );
 
     CommandInverse::MoveAnchorBack {
         command_name,
@@ -94,17 +119,15 @@ pub(super) fn apply_move_anchor(
 
 pub(super) fn apply_move_anchor_back(doc: &mut Document, movement: &AnchorMovement) {
     // Restore the original anchor state
-    if let Some(shape) = doc.get_mut(movement.shape_id)
-        && let Some(anchor) = shape.path.anchors.get_mut(movement.anchor_index)
-    {
-        *anchor = movement.original.clone();
-    } else {
-        debug_assert!(
-            false,
-            "missing shape or anchor for move anchor back: {:?} / {}",
-            movement.shape_id, movement.anchor_index
-        );
-    }
+    with_anchor_mut(
+        doc,
+        AnchorTarget {
+            shape_id: movement.shape_id,
+            anchor_index: movement.anchor_index,
+        },
+        "move anchor back",
+        |anchor| *anchor = movement.original.clone(),
+    );
 }
 
 pub(super) fn apply_move_handle(
@@ -112,20 +135,18 @@ pub(super) fn apply_move_handle(
     movement: &HandleMovement,
     command_name: &'static str,
 ) -> CommandInverse {
-    if let Some(shape) = doc.get_mut(movement.shape_id)
-        && let Some(anchor) = shape.path.anchors.get_mut(movement.anchor_index)
-    {
-        match movement.kind {
+    with_anchor_mut(
+        doc,
+        AnchorTarget {
+            shape_id: movement.shape_id,
+            anchor_index: movement.anchor_index,
+        },
+        "move handle",
+        |anchor| match movement.kind {
             HandleKind::In => anchor.handle_in = movement.to,
             HandleKind::Out => anchor.handle_out = movement.to,
-        }
-    } else {
-        debug_assert!(
-            false,
-            "missing shape or anchor for move handle: {:?} / {}",
-            movement.shape_id, movement.anchor_index
-        );
-    }
+        },
+    );
 
     CommandInverse::MoveHandleBack {
         command_name,
@@ -140,18 +161,16 @@ pub(super) fn apply_move_handle(
 }
 
 pub(super) fn apply_move_handle_back(doc: &mut Document, movement: &HandleMovement) {
-    if let Some(shape) = doc.get_mut(movement.shape_id)
-        && let Some(anchor) = shape.path.anchors.get_mut(movement.anchor_index)
-    {
-        match movement.kind {
+    with_anchor_mut(
+        doc,
+        AnchorTarget {
+            shape_id: movement.shape_id,
+            anchor_index: movement.anchor_index,
+        },
+        "move handle back",
+        |anchor| match movement.kind {
             HandleKind::In => anchor.handle_in = movement.to,
             HandleKind::Out => anchor.handle_out = movement.to,
-        }
-    } else {
-        debug_assert!(
-            false,
-            "missing shape or anchor for move handle back: {:?} / {}",
-            movement.shape_id, movement.anchor_index
-        );
-    }
+        },
+    );
 }
