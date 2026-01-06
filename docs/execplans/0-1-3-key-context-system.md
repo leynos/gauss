@@ -51,7 +51,10 @@ Future work may explore nested elements with different contexts if mode-
 specific shortcut scoping becomes necessary.
 
 **Architecture Reference**: This limitation is documented as an architectural
-constraint in section 7.2.1 of `docs/gauss-architecture-design.md`.
+constraint in [section 7.2.1][arch-key-context-limitation] of the architecture
+document.
+
+[arch-key-context-limitation]: ../gauss-architecture-design.md#721-gpui-key-context-limitation-and-workaround
 
 ### GPUI Action Bridge Pattern
 

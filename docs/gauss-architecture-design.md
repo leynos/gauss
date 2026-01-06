@@ -516,9 +516,9 @@ all known contexts at registration time. When a binding specifies
 across all context variants (DrawMode, ManipulateMode, etc.). The view layer
 currently sets only `KeyContext::Global` as the GPUI context.
 
-**Implementation Reference**: See `src/ui/action_bridge/mod.rs` lines 166–212
-for the binding expansion logic in `CollectedBindings::from_default_bindings()`
-and `add_binding_for_contexts()`.
+**Implementation Reference**: See `CollectedBindings::from_default_bindings()`
+and `add_binding_for_contexts()` in `src/ui/action_bridge/mod.rs` for the
+binding expansion logic.
 
 **Architectural Risk**: Mode-specific bindings are not enforced by GPUI's
 context isolation. The system relies on runtime mode checks within action
