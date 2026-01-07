@@ -504,6 +504,32 @@ with a `secondary` modifier flag (Cmd on macOS, Ctrl elsewhere). The
 The UI layer bridges model Actions to GPUI Action structs (e.g., `GpuiUndo`,
 `GpuiSelectAll`) and registers keybindings via `register_action_bindings()`.
 
+#### 7.2.1 GPUI Key Context Limitation and Workaround
+
+**Problem**: GPUI's `.key_context()` method *replaces* the previous context
+rather than stacking multiple contexts. This means it is not possible to apply
+both Global and mode-specific contexts to the same element simultaneously.
+
+**Current Workaround**: The `action_bridge` module expands Global bindings to
+all known contexts at registration time. When a binding specifies
+`KeyContext::Global`, the `add_binding_for_contexts()` function duplicates it
+across all context variants (DrawMode, ManipulateMode, etc.). The view layer
+currently sets only `KeyContext::Global` as the GPUI context.
+
+**Implementation Reference**: See `CollectedBindings::from_default_bindings()`
+and `add_binding_for_contexts()` in `src/ui/action_bridge/mod.rs` for the
+binding expansion logic.
+
+**Architectural Risk**: Mode-specific bindings are not enforced by GPUI's
+context isolation. The system relies on runtime mode checks within action
+handlers rather than GPUI's context-based dispatch. Keybinding conflicts must
+be managed manually.
+
+**Future Considerations**: If GPUI adds context stacking support, explore
+nested elements with different contexts for mode-specific shortcut scoping.
+The current enum-based `KeyContext` design supports migration to proper context
+stacking without API changes.
+
 ### 7.3 Grouping and "boring but essential" correctness
 
 To avoid user-hostile undo behavior:
