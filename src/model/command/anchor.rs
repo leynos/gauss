@@ -27,7 +27,7 @@ pub(super) fn prepare_insert_anchor_on_segment(state: &EngineState) -> Result<Co
         .find(|item| matches!(item, SelItem::Segment { .. }));
 
     let Some(SelItem::Segment { shape, seg }) = seg_selection else {
-        return Err(UserError::InvalidOperation("No segment selected"));
+        return Err(UserError::InvalidOperation("No segment selected".into()));
     };
 
     let Some(shape_index) = state.document.find_index(*shape) else {
@@ -41,7 +41,7 @@ pub(super) fn prepare_insert_anchor_on_segment(state: &EngineState) -> Result<Co
     // Create new shape with inserted anchor
     let Some(new_shape) = insert_anchor_into_shape(&old_shape, *seg) else {
         return Err(UserError::InvalidOperation(
-            "Cannot insert anchor on segment",
+            "Cannot insert anchor on segment".into(),
         ));
     };
 
@@ -139,7 +139,7 @@ pub(super) fn prepare_delete_selected_anchors(state: &EngineState) -> Result<Com
     }
 
     if anchors_by_shape.is_empty() {
-        return Err(UserError::InvalidOperation("No anchors selected"));
+        return Err(UserError::InvalidOperation("No anchors selected".into()));
     }
 
     let mut deletions = Vec::new();

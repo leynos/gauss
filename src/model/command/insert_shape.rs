@@ -1,4 +1,23 @@
 //! Insert shape command implementation.
+//!
+//! This module implements shape insertion within the command/undo system.
+//! It provides the forward operation ([`apply_insert_shape`]) that adds a
+//! shape to the document, and the inverse operation ([`apply_remove_shape`])
+//! that removes it during undo.
+//!
+//! The [`ShapeInsertion`] type captures the insertion index and shape data
+//! needed for both directions: applying the insertion and reversing it on
+//! undo. This symmetry between insertion and removal ensures consistent
+//! undo/redo behaviour.
+//!
+//! # Integration
+//!
+//! - [`Command::InsertShape`](super::Command::InsertShape) uses
+//!   [`apply_insert_shape`] to insert shapes and produce a
+//!   [`CommandInverse::RemoveShape`](super::CommandInverse::RemoveShape).
+//! - [`CommandInverse::RemoveShape`](super::CommandInverse::RemoveShape)
+//!   uses [`apply_remove_shape`] to restore the document state before
+//!   insertion.
 
 use crate::model::Document;
 
@@ -24,9 +43,11 @@ pub fn apply_insert_shape(
     );
 
     if insertion.index > doc.shapes.len() {
-        return Err(UserError::InvalidOperation(
-            "shape insertion index out of range",
-        ));
+        return Err(UserError::InvalidOperation(format!(
+            "shape insertion index {} out of range (len = {})",
+            insertion.index,
+            doc.shapes.len()
+        )));
     }
 
     doc.shapes.insert(insertion.index, insertion.shape.clone());
@@ -51,9 +72,11 @@ pub fn apply_remove_shape(doc: &mut Document, insertion: &ShapeInsertion) -> Res
     );
 
     if insertion.index >= doc.shapes.len() {
-        return Err(UserError::InvalidOperation(
-            "shape removal index out of range",
-        ));
+        return Err(UserError::InvalidOperation(format!(
+            "shape removal index {} out of range (len = {})",
+            insertion.index,
+            doc.shapes.len()
+        )));
     }
 
     doc.shapes.remove(insertion.index);
