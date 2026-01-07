@@ -312,70 +312,34 @@ fn editor_action_panics(#[case] action: Action) {
 // InsertShape Command Tests
 // ============================================================================
 
+/// Verify `InsertShape` inserts at the correct position across different scenarios.
 #[rstest]
-fn insert_shape_adds_to_empty_document(mut empty_doc: Document) {
-    let shape = sample_shape(shape_id(1), 0);
+#[case::empty_at_zero(empty_doc(), 0, 1, shape_id(100))]
+#[case::at_end(doc_with_two_shapes(), 2, 3, shape_id(100))]
+#[case::at_beginning(doc_with_two_shapes(), 0, 3, shape_id(100))]
+fn insert_shape_at_position(
+    #[case] mut doc: Document,
+    #[case] insert_index: usize,
+    #[case] expected_len: usize,
+    #[case] expected_id: gauss::model::ShapeId,
+) {
+    let shape = sample_shape(expected_id, 0);
     let cmd = Command::InsertShape {
         insertion: ShapeInsertion {
-            index: 0,
+            index: insert_index,
             shape: shape.clone(),
         },
     };
 
-    let result = cmd.apply(&mut empty_doc);
+    let result = cmd.apply(&mut doc);
     assert!(result.is_ok());
-    assert_eq!(empty_doc.shapes.len(), 1);
+    assert_eq!(doc.shapes.len(), expected_len);
     assert_eq!(
-        empty_doc.shapes.first().expect("should have shape").id,
-        shape.id
-    );
-}
-
-#[rstest]
-fn insert_shape_adds_at_end(mut doc_with_two_shapes: Document) {
-    let original_len = doc_with_two_shapes.shapes.len();
-    let shape = sample_shape(shape_id(100), 2);
-    let cmd = Command::InsertShape {
-        insertion: ShapeInsertion {
-            index: original_len,
-            shape: shape.clone(),
-        },
-    };
-
-    let result = cmd.apply(&mut doc_with_two_shapes);
-    assert!(result.is_ok());
-    assert_eq!(doc_with_two_shapes.shapes.len(), original_len + 1);
-    assert_eq!(
-        doc_with_two_shapes
-            .shapes
-            .last()
-            .expect("should have last shape")
+        doc.shapes
+            .get(insert_index)
+            .expect("should have shape at insert index")
             .id,
-        shape.id
-    );
-}
-
-#[rstest]
-fn insert_shape_adds_at_beginning(mut doc_with_two_shapes: Document) {
-    let original_len = doc_with_two_shapes.shapes.len();
-    let shape = sample_shape(shape_id(100), 0);
-    let cmd = Command::InsertShape {
-        insertion: ShapeInsertion {
-            index: 0,
-            shape: shape.clone(),
-        },
-    };
-
-    let result = cmd.apply(&mut doc_with_two_shapes);
-    assert!(result.is_ok());
-    assert_eq!(doc_with_two_shapes.shapes.len(), original_len + 1);
-    assert_eq!(
-        doc_with_two_shapes
-            .shapes
-            .first()
-            .expect("should have first shape")
-            .id,
-        shape.id
+        expected_id
     );
 }
 
