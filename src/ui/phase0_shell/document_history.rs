@@ -11,7 +11,7 @@ use crate::model::{Command, CommandInverse};
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct DocumentEdit {
     /// Command-based edit with a stored inverse for undo.
-    pub(super) entry: Box<CommandEntry>,
+    pub(super) entry: CommandEntry,
 }
 
 /// A command and its inverse used for undo/redo.
@@ -45,16 +45,16 @@ impl HistoryItem for DocumentHistoryItem {
 }
 
 impl DocumentHistoryItem {
-    pub(super) fn new_command(command: Command, inverse: CommandInverse) -> Self {
+    pub(super) const fn new_command(command: Command, inverse: CommandInverse) -> Self {
         Self {
             version: 0,
             edit: DocumentEdit {
-                entry: Box::new(CommandEntry { command, inverse }),
+                entry: CommandEntry { command, inverse },
             },
         }
     }
 
     pub(super) fn into_entry(self) -> CommandEntry {
-        *self.edit.entry
+        self.edit.entry
     }
 }

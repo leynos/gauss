@@ -323,11 +323,10 @@ fn insert_shape_at_position(
     #[case] expected_len: usize,
     #[case] expected_id: gauss::model::ShapeId,
 ) {
-    let shape = sample_shape(expected_id, 0);
     let cmd = Command::InsertShape {
         insertion: ShapeInsertion {
             index: insert_index,
-            shape: shape.clone(),
+            shape: sample_shape(expected_id, 0),
         },
     };
 
@@ -345,11 +344,10 @@ fn insert_shape_at_position(
 
 #[rstest]
 fn insert_shape_inverse_removes(mut empty_doc: Document) {
-    let shape = sample_shape(shape_id(1), 0);
     let cmd = Command::InsertShape {
         insertion: ShapeInsertion {
             index: 0,
-            shape: shape.clone(),
+            shape: sample_shape(shape_id(1), 0),
         },
     };
 

@@ -11,16 +11,16 @@ pub fn apply_insert_shape(
     insertion: &ShapeInsertion,
     command_name: &'static str,
 ) -> CommandInverse {
-    debug_assert!(
-        insertion.index <= doc.shapes.len(),
-        "apply_insert_shape: insertion index {} out of range (len = {}), \
-         this likely indicates a logic bug",
-        insertion.index,
-        doc.shapes.len()
-    );
-
     if insertion.index <= doc.shapes.len() {
         doc.shapes.insert(insertion.index, insertion.shape.clone());
+    } else {
+        log::error!(
+            "apply_insert_shape: insertion index {} out of range (len = {}), \
+             this likely indicates a logic bug",
+            insertion.index,
+            doc.shapes.len()
+        );
+        debug_assert!(false, "apply_insert_shape: insertion index out of range");
     }
 
     CommandInverse::RemoveShape {
@@ -31,15 +31,15 @@ pub fn apply_insert_shape(
 
 /// Apply the `RemoveShape` inverse command.
 pub fn apply_remove_shape(doc: &mut Document, insertion: &ShapeInsertion) {
-    debug_assert!(
-        insertion.index < doc.shapes.len(),
-        "apply_remove_shape: insertion index {} out of range (len = {}), \
-         this likely indicates a logic bug",
-        insertion.index,
-        doc.shapes.len()
-    );
-
     if insertion.index < doc.shapes.len() {
         doc.shapes.remove(insertion.index);
+    } else {
+        log::error!(
+            "apply_remove_shape: insertion index {} out of range (len = {}), \
+             this likely indicates a logic bug",
+            insertion.index,
+            doc.shapes.len()
+        );
+        debug_assert!(false, "apply_remove_shape: insertion index out of range");
     }
 }
