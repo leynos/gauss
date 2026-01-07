@@ -93,13 +93,20 @@ jobs:
             echo "::warning::pandoc not available, skipping man page generation"
           fi
 
+      - name: Install Linux system dependencies
+        if: inputs.platform == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev
+
       - name: Build release binary
         uses: >-
           leynos/shared-actions/.github/actions/rust-build-release@df81280dcc1d6e66134114dbc924313328b15f05
         with:
           target: ${{ inputs.target }}
           bin-name: ${{ inputs['bin-name'] }}
-          version: ${{ inputs.version }}
 
       - name: Package Linux artefacts
         if: inputs.platform == 'linux'
