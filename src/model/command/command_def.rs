@@ -191,7 +191,7 @@ impl Command {
                 Ok(apply_delete_anchors(doc, deletions, command_name))
             }
             Self::ClosePath { replacement } => Ok(apply_close_path(doc, replacement, command_name)),
-            Self::InsertShape { insertion } => Ok(apply_insert_shape(doc, insertion, command_name)),
+            Self::InsertShape { insertion } => apply_insert_shape(doc, insertion, command_name),
         }
     }
 }

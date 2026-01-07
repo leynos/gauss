@@ -215,10 +215,7 @@ impl CommandInverse {
                 apply_reopen_path(doc, replacement);
                 Ok(())
             }
-            Self::RemoveShape { insertion, .. } => {
-                apply_remove_shape(doc, insertion);
-                Ok(())
-            }
+            Self::RemoveShape { insertion, .. } => apply_remove_shape(doc, insertion),
         }
     }
 }
