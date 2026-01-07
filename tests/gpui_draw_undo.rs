@@ -4,7 +4,7 @@ mod common;
 
 use common::{
     canvas_points, ensure_initial_draw, init_test_app, read_document, require_canvas_click_changed,
-    require_draw_shape, require_last_canvas_click, simulate_document_undo,
+    require_draw_shape, require_last_canvas_click, simulate_document_redo, simulate_document_undo,
 };
 use gauss::ui::Phase0Shell;
 use gpui::TestAppContext;
@@ -128,4 +128,24 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
     let doc_after_second_undo = read_document(visual_cx, &view);
     assert_draw_shape_absent(&doc_after_second_undo, 1, "after undoing the first click")
         .expect("draw shape should be removed after undo");
+
+    // Redo should re-insert the shape with one anchor.
+    simulate_document_redo(visual_cx);
+    let doc_after_first_redo = read_document(visual_cx, &view);
+    assert_draw_shape_state(
+        &doc_after_first_redo,
+        ExpectedDrawShapeState::new(2, 1, 0, false),
+        "after first redo",
+    )
+    .expect("draw shape should be re-inserted with one anchor after redo");
+
+    // Second redo should restore the second anchor.
+    simulate_document_redo(visual_cx);
+    let doc_after_second_redo = read_document(visual_cx, &view);
+    assert_draw_shape_state(
+        &doc_after_second_redo,
+        ExpectedDrawShapeState::new(2, 2, 1, false),
+        "after second redo",
+    )
+    .expect("draw shape should have two anchors after second redo");
 }

@@ -10,6 +10,18 @@
 //! undo. This symmetry between insertion and removal ensures consistent
 //! undo/redo behaviour.
 //!
+//! # Index validity
+//!
+//! The stored insertion index in [`ShapeInsertion`] is only valid when
+//! commands are applied in strict undo/redo sequence order. The command
+//! history system guarantees this ordering: undo operations are applied in
+//! reverse chronological order, and redo operations replay in forward order.
+//!
+//! Intervening edits between undo and redo (i.e., forking the history by
+//! making new changes after an undo) invalidate the redo stack entirely,
+//! so stale indices are never applied. This design assumes the history
+//! manager clears the redo stack when new commands are executed.
+//!
 //! # Integration
 //!
 //! - [`Command::InsertShape`](super::Command::InsertShape) uses
