@@ -65,6 +65,7 @@ mod anchor;
 mod command_def;
 mod delete_shapes;
 mod error;
+mod insert_shape;
 mod inverse;
 mod movement;
 mod prepare;
@@ -79,6 +80,6 @@ pub use inverse::CommandInverse;
 pub use prepare::prepare_command;
 pub use types::{
     AnchorDeletion, AnchorDeletionResult, AnchorMovement, AnchorRestoration, AnchorRestorationKind,
-    DeletedShape, HandleKind, HandleMovement, ReorderOp, SegmentChange, ShapeMovement,
-    ShapeReplacement, StyleChange,
+    DeletedShape, HandleKind, HandleMovement, ReorderOp, SegmentChange, ShapeInsertion,
+    ShapeMovement, ShapeReplacement, StyleChange,
 };

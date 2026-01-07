@@ -30,7 +30,7 @@ pub(crate) use colour::{format_hex_rgb, parse_hex_rgb};
 pub use command::{
     AnchorDeletion, AnchorDeletionResult, AnchorMovement, AnchorRestoration, AnchorRestorationKind,
     Command, CommandInverse, DeletedShape, HandleKind, HandleMovement, ReorderOp, SegmentChange,
-    ShapeMovement, ShapeReplacement, StyleChange, UserError, prepare_command,
+    ShapeInsertion, ShapeMovement, ShapeReplacement, StyleChange, UserError, prepare_command,
 };
 pub use document::Document;
 pub use engine_state::EngineState;

@@ -1,20 +1,17 @@
 //! Document history entries for Phase 0.
 //!
-//! Phase 0 stores document edits as either low-level `DocChange` operations or
-//! higher-level Commands with their inverses. This keeps undo/redo behaviour
-//! consistent while the migration to Commands is in progress.
+//! Document edits are stored as Commands with their inverses, enabling
+//! consistent undo/redo behaviour and future session replay.
 
 use gpui_component::history::HistoryItem;
 
-use crate::model::{Command, CommandInverse, DocChange};
+use crate::model::{Command, CommandInverse};
 
 /// A document edit that can be undone and redone.
 #[derive(Clone, Debug, PartialEq)]
-pub(super) enum DocumentEdit {
-    /// Low-level document change captured as `DocOps`.
-    Change(DocChange),
+pub(super) struct DocumentEdit {
     /// Command-based edit with a stored inverse for undo.
-    Command(Box<CommandEntry>),
+    pub(super) entry: Box<CommandEntry>,
 }
 
 /// A command and its inverse used for undo/redo.
@@ -48,21 +45,16 @@ impl HistoryItem for DocumentHistoryItem {
 }
 
 impl DocumentHistoryItem {
-    pub(super) const fn new_doc_change(change: DocChange) -> Self {
-        Self {
-            version: 0,
-            edit: DocumentEdit::Change(change),
-        }
-    }
-
     pub(super) fn new_command(command: Command, inverse: CommandInverse) -> Self {
         Self {
             version: 0,
-            edit: DocumentEdit::Command(Box::new(CommandEntry { command, inverse })),
+            edit: DocumentEdit {
+                entry: Box::new(CommandEntry { command, inverse }),
+            },
         }
     }
 
-    pub(super) fn into_edit(self) -> DocumentEdit {
-        self.edit
+    pub(super) fn into_entry(self) -> CommandEntry {
+        *self.edit.entry
     }
 }

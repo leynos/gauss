@@ -5,13 +5,14 @@ use crate::model::Document;
 use super::anchor::{apply_remove_anchor, apply_reopen_path, apply_restore_anchors};
 use super::delete_shapes::apply_restore_shapes;
 use super::error::UserError;
+use super::insert_shape::apply_remove_shape;
 use super::movement::{apply_move_anchor_back, apply_move_handle_back, apply_move_shapes_back};
 use super::reorder::apply_reverse_reorder;
 use super::segment::apply_restore_segment_kinds;
 use super::style::apply_restore_styles;
 use super::types::{
     AnchorMovement, AnchorRestoration, DeletedShape, HandleMovement, ReorderOp, SegmentChange,
-    ShapeMovement, ShapeReplacement, StyleChange,
+    ShapeInsertion, ShapeMovement, ShapeReplacement, StyleChange,
 };
 
 /// The inverse of an applied command, used for undo.
@@ -113,6 +114,14 @@ pub enum CommandInverse {
         /// Shape replacement with old/new swapped.
         replacement: ShapeReplacement,
     },
+
+    /// Remove an inserted shape (restore document state before insertion).
+    RemoveShape {
+        /// Name of the original command.
+        command_name: &'static str,
+        /// Shape insertion data (for removal).
+        insertion: ShapeInsertion,
+    },
 }
 
 impl CommandInverse {
@@ -137,7 +146,8 @@ impl CommandInverse {
             | Self::RestoreSegmentKinds { command_name, .. }
             | Self::RemoveAnchor { command_name, .. }
             | Self::RestoreAnchors { command_name, .. }
-            | Self::ReopenPath { command_name, .. } => command_name,
+            | Self::ReopenPath { command_name, .. }
+            | Self::RemoveShape { command_name, .. } => command_name,
         }
     }
 
@@ -203,6 +213,10 @@ impl CommandInverse {
             }
             Self::ReopenPath { replacement, .. } => {
                 apply_reopen_path(doc, replacement);
+                Ok(())
+            }
+            Self::RemoveShape { insertion, .. } => {
+                apply_remove_shape(doc, insertion);
                 Ok(())
             }
         }

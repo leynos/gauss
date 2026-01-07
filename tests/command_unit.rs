@@ -5,7 +5,7 @@
 
 use gauss::model::{
     Action, Command, CommandInverse, DeletedShape, Document, EngineState, SelItem, Selection,
-    UserError, prepare_command,
+    ShapeInsertion, UserError, prepare_command,
 };
 use rstest::{fixture, rstest};
 use test_support::shapes::{sample_shape, shape_id};
@@ -306,4 +306,145 @@ fn user_error_display_shape_not_found() {
 fn editor_action_panics(#[case] action: Action) {
     let state = EngineState::new();
     drop(prepare_command(action, &state));
+}
+
+// ============================================================================
+// InsertShape Command Tests
+// ============================================================================
+
+#[rstest]
+fn insert_shape_adds_to_empty_document(mut empty_doc: Document) {
+    let shape = sample_shape(shape_id(1), 0);
+    let cmd = Command::InsertShape {
+        insertion: ShapeInsertion {
+            index: 0,
+            shape: shape.clone(),
+        },
+    };
+
+    let result = cmd.apply(&mut empty_doc);
+    assert!(result.is_ok());
+    assert_eq!(empty_doc.shapes.len(), 1);
+    assert_eq!(
+        empty_doc.shapes.first().expect("should have shape").id,
+        shape.id
+    );
+}
+
+#[rstest]
+fn insert_shape_adds_at_end(mut doc_with_two_shapes: Document) {
+    let original_len = doc_with_two_shapes.shapes.len();
+    let shape = sample_shape(shape_id(100), 2);
+    let cmd = Command::InsertShape {
+        insertion: ShapeInsertion {
+            index: original_len,
+            shape: shape.clone(),
+        },
+    };
+
+    let result = cmd.apply(&mut doc_with_two_shapes);
+    assert!(result.is_ok());
+    assert_eq!(doc_with_two_shapes.shapes.len(), original_len + 1);
+    assert_eq!(
+        doc_with_two_shapes
+            .shapes
+            .last()
+            .expect("should have last shape")
+            .id,
+        shape.id
+    );
+}
+
+#[rstest]
+fn insert_shape_adds_at_beginning(mut doc_with_two_shapes: Document) {
+    let original_len = doc_with_two_shapes.shapes.len();
+    let shape = sample_shape(shape_id(100), 0);
+    let cmd = Command::InsertShape {
+        insertion: ShapeInsertion {
+            index: 0,
+            shape: shape.clone(),
+        },
+    };
+
+    let result = cmd.apply(&mut doc_with_two_shapes);
+    assert!(result.is_ok());
+    assert_eq!(doc_with_two_shapes.shapes.len(), original_len + 1);
+    assert_eq!(
+        doc_with_two_shapes
+            .shapes
+            .first()
+            .expect("should have first shape")
+            .id,
+        shape.id
+    );
+}
+
+#[rstest]
+fn insert_shape_inverse_removes(mut empty_doc: Document) {
+    let shape = sample_shape(shape_id(1), 0);
+    let cmd = Command::InsertShape {
+        insertion: ShapeInsertion {
+            index: 0,
+            shape: shape.clone(),
+        },
+    };
+
+    let inverse = cmd.apply(&mut empty_doc).expect("apply succeeded");
+    assert_eq!(empty_doc.shapes.len(), 1);
+
+    inverse.apply(&mut empty_doc).expect("undo succeeded");
+    assert!(empty_doc.shapes.is_empty());
+}
+
+#[rstest]
+fn insert_shape_full_round_trip(mut doc_with_two_shapes: Document) {
+    let original = doc_with_two_shapes.clone();
+    let shape = sample_shape(shape_id(100), 2);
+    let cmd = Command::InsertShape {
+        insertion: ShapeInsertion {
+            index: 1,
+            shape: shape.clone(),
+        },
+    };
+
+    // Apply: insert shape at index 1
+    let inverse = cmd
+        .apply(&mut doc_with_two_shapes)
+        .expect("apply succeeded");
+    assert_eq!(doc_with_two_shapes.shapes.len(), 3);
+    assert_eq!(
+        doc_with_two_shapes
+            .shapes
+            .get(1)
+            .expect("should have shape at index 1")
+            .id,
+        shape.id
+    );
+
+    // Undo: remove the inserted shape
+    inverse
+        .apply(&mut doc_with_two_shapes)
+        .expect("undo succeeded");
+    assert_eq!(doc_with_two_shapes, original);
+}
+
+#[rstest]
+fn insert_shape_name_is_correct() {
+    let shape = sample_shape(shape_id(1), 0);
+    let cmd = Command::InsertShape {
+        insertion: ShapeInsertion { index: 0, shape },
+    };
+    assert_eq!(cmd.name(), "Insert Shape");
+}
+
+#[rstest]
+fn insert_shape_inverse_name_matches_command(mut empty_doc: Document) {
+    let shape = sample_shape(shape_id(1), 0);
+    let cmd = Command::InsertShape {
+        insertion: ShapeInsertion { index: 0, shape },
+    };
+
+    let inverse = cmd.apply(&mut empty_doc).expect("apply succeeded");
+    assert_eq!(inverse.name(), cmd.name());
+    assert_eq!(inverse.name(), "Insert Shape");
 }

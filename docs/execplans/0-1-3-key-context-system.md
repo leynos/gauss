@@ -54,7 +54,8 @@ specific shortcut scoping becomes necessary.
 constraint in [section 7.2.1][arch-key-context-limitation] of the architecture
 document.
 
-[arch-key-context-limitation]: ../gauss-architecture-design.md#721-gpui-key-context-limitation-and-workaround
+[arch-key-context-limitation]:
+../gauss-architecture-design.md#721-gpui-key-context-limitation-and-workaround
 
 ### GPUI Action Bridge Pattern
 

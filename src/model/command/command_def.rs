@@ -5,6 +5,7 @@ use crate::model::Document;
 use super::anchor::{apply_close_path, apply_delete_anchors, apply_insert_anchor};
 use super::delete_shapes::apply_delete_shapes;
 use super::error::UserError;
+use super::insert_shape::apply_insert_shape;
 use super::inverse::CommandInverse;
 use super::movement::{apply_move_anchor, apply_move_handle, apply_move_shapes};
 use super::reorder::apply_reorder;
@@ -12,7 +13,7 @@ use super::segment::apply_set_segment_kind;
 use super::style::apply_set_style;
 use super::types::{
     AnchorDeletion, AnchorMovement, DeletedShape, HandleMovement, ReorderOp, SegmentChange,
-    ShapeMovement, ShapeReplacement, StyleChange,
+    ShapeInsertion, ShapeMovement, ShapeReplacement, StyleChange,
 };
 
 /// Concrete, undoable state changes.
@@ -97,6 +98,12 @@ pub enum Command {
         /// Shape replacement data.
         replacement: ShapeReplacement,
     },
+
+    /// Insert a new shape into the document.
+    InsertShape {
+        /// Shape insertion data.
+        insertion: ShapeInsertion,
+    },
 }
 
 impl Command {
@@ -136,6 +143,7 @@ impl Command {
             Self::InsertAnchor { .. } => "Insert Anchor",
             Self::DeleteAnchors { .. } => "Delete Anchors",
             Self::ClosePath { .. } => "Close Path",
+            Self::InsertShape { .. } => "Insert Shape",
         }
     }
 
@@ -183,6 +191,7 @@ impl Command {
                 Ok(apply_delete_anchors(doc, deletions, command_name))
             }
             Self::ClosePath { replacement } => Ok(apply_close_path(doc, replacement, command_name)),
+            Self::InsertShape { insertion } => Ok(apply_insert_shape(doc, insertion, command_name)),
         }
     }
 }
