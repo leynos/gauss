@@ -32,7 +32,7 @@ fn prepare_reorder_selection(
     let operations = reorder_ops(&state.document, &shape_ids, direction);
 
     if operations.is_empty() {
-        return Err(UserError::InvalidOperation(at_limit_msg));
+        return Err(UserError::InvalidOperation(at_limit_msg.into()));
     }
 
     Ok(Command::Reorder { operations })

@@ -14,8 +14,8 @@
 )]
 
 use crate::model::{
-    Anchor, Command, CommandInverse, DocChange, DocOp, Document, EdgeMode, PaintStyle, PathGeom,
-    SegmentKind, Shape, ShapeId, UserError, Vec2,
+    Anchor, Command, CommandInverse, Document, EdgeMode, PaintStyle, PathGeom, SegmentKind, Shape,
+    ShapeId, ShapeInsertion, UserError, Vec2,
 };
 
 use super::{Phase0Shell, document_history::DocumentHistoryItem};
@@ -105,18 +105,17 @@ impl Phase0Shell {
         let shape = new_open_shape(cursor_world, self.state.current_style.clone());
         let shape_id = shape.id;
         let index = self.state.document.shapes.len();
-        self.apply_doc_change(DocChange {
-            ops: vec![DocOp::InsertShape { index, shape }],
-        });
+
+        let command = Command::InsertShape {
+            insertion: ShapeInsertion { index, shape },
+        };
+
+        if self.apply_command(command).is_err() {
+            return false;
+        }
 
         self.state.active_path = Some(shape_id);
         true
-    }
-
-    pub(super) fn apply_doc_change(&mut self, change: DocChange) {
-        change.apply(&mut self.state.document);
-        self.document_history
-            .push(DocumentHistoryItem::new_doc_change(change));
     }
 
     pub(super) fn apply_command(&mut self, command: Command) -> Result<(), UserError> {
@@ -148,20 +147,13 @@ impl Phase0Shell {
         direction: HistoryDirection,
     ) {
         for item in group {
-            match item.into_edit() {
-                super::document_history::DocumentEdit::Change(change) => {
-                    apply_change_for_direction(&mut self.state.document, &change, direction);
-                }
-                super::document_history::DocumentEdit::Command(entry) => {
-                    let entry_ref = entry.as_ref();
-                    apply_command_for_direction(
-                        &mut self.state.document,
-                        &entry_ref.command,
-                        &entry_ref.inverse,
-                        direction,
-                    );
-                }
-            }
+            let entry = item.into_entry();
+            apply_command_for_direction(
+                &mut self.state.document,
+                &entry.command,
+                &entry.inverse,
+                direction,
+            );
         }
     }
 }
@@ -177,13 +169,6 @@ fn apply_command_again(doc: &mut Document, command: &Command) {
     if let Err(error) = command.apply(doc) {
         log::error!("command redo failed: {error}");
         debug_assert!(false, "command redo failed: {error}");
-    }
-}
-
-fn apply_change_for_direction(doc: &mut Document, change: &DocChange, direction: HistoryDirection) {
-    match direction {
-        HistoryDirection::Undo => change.apply_inverse(doc),
-        HistoryDirection::Redo => change.apply(doc),
     }
 }
 

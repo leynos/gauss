@@ -76,7 +76,7 @@ pub(super) fn prepare_toggle_segment_kind(state: &EngineState) -> Result<Command
     }
 
     if changes.is_empty() {
-        return Err(UserError::InvalidOperation("No segments selected"));
+        return Err(UserError::InvalidOperation("No segments selected".into()));
     }
 
     Ok(Command::SetSegmentKind { changes })

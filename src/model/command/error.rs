@@ -49,5 +49,5 @@ pub enum UserError {
 
     /// The operation cannot be performed in the current state.
     #[error("{0}")]
-    InvalidOperation(&'static str),
+    InvalidOperation(String),
 }

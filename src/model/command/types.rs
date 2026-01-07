@@ -14,6 +14,18 @@ pub struct DeletedShape {
     pub shape: Shape,
 }
 
+/// A shape insertion with data needed for undo.
+///
+/// Captures the insertion index and the shape data for both
+/// application and reversal on undo.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ShapeInsertion {
+    /// Index to insert at in the document's shape list.
+    pub index: usize,
+    /// The shape to insert.
+    pub shape: Shape,
+}
+
 /// A style change for a single shape.
 #[derive(Clone, Debug, PartialEq)]
 pub struct StyleChange {

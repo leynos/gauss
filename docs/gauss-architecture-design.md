@@ -526,8 +526,8 @@ handlers rather than GPUI's context-based dispatch. Keybinding conflicts must
 be managed manually.
 
 **Future Considerations**: If GPUI adds context stacking support, explore
-nested elements with different contexts for mode-specific shortcut scoping.
-The current enum-based `KeyContext` design supports migration to proper context
+nested elements with different contexts for mode-specific shortcut scoping. The
+current enum-based `KeyContext` design supports migration to proper context
 stacking without API changes.
 
 ### 7.3 Grouping and "boring but essential" correctness
