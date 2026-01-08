@@ -179,18 +179,14 @@ impl Command {
             Self::MoveShapes { movements } => apply_move_shapes(doc, movements, command_name),
             Self::MoveAnchor { movement } => apply_move_anchor(doc, movement, command_name),
             Self::MoveHandle { movement } => apply_move_handle(doc, movement, command_name),
-            Self::SetStyle { changes } => Ok(apply_set_style(doc, changes, command_name)),
-            Self::Reorder { operations } => Ok(apply_reorder(doc, operations, command_name)),
-            Self::SetSegmentKind { changes } => {
-                Ok(apply_set_segment_kind(doc, changes, command_name))
-            }
+            Self::SetStyle { changes } => apply_set_style(doc, changes, command_name),
+            Self::Reorder { operations } => apply_reorder(doc, operations, command_name),
+            Self::SetSegmentKind { changes } => apply_set_segment_kind(doc, changes, command_name),
             Self::InsertAnchor { replacement } => {
-                Ok(apply_insert_anchor(doc, replacement, command_name))
+                apply_insert_anchor(doc, replacement, command_name)
             }
-            Self::DeleteAnchors { deletions } => {
-                Ok(apply_delete_anchors(doc, deletions, command_name))
-            }
-            Self::ClosePath { replacement } => Ok(apply_close_path(doc, replacement, command_name)),
+            Self::DeleteAnchors { deletions } => apply_delete_anchors(doc, deletions, command_name),
+            Self::ClosePath { replacement } => apply_close_path(doc, replacement, command_name),
             Self::InsertShape { insertion } => apply_insert_shape(doc, insertion, command_name),
         }
     }
