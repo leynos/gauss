@@ -634,7 +634,90 @@ SVG-native editors extend SVG.
 - Gauss metadata must not change rendering in other viewers
 - Provide an export mode that strips all Gauss metadata (“web-ready SVG”)
 
-### 10.2 When SVG becomes “not tenable”
+#### 10.1.1 SVG Path Parsing Architecture
+
+The following diagram illustrates the structure of the SVG path data parser,
+showing how raw path strings are tokenised and transformed into the internal
+`PathGeom` representation used by the document model.
+
+```mermaid
+classDiagram
+    class PathGeom {
+        +Vec~Anchor~ anchors
+        +Vec~SegmentKind~ segments
+        +bool closed
+        +SegmentKind closing_segment
+    }
+
+    class Anchor {
+        +Vec2 pos
+        +Option~Vec2~ handle_in
+        +Option~Vec2~ handle_out
+        +new(pos Vec2) Anchor
+    }
+
+    class Vec2 {
+        +f32 x
+        +f32 y
+        +new(x f32, y f32) Vec2
+    }
+
+    class SegmentKind {
+        <<enum>>
+        Line
+        Cubic
+    }
+
+    class SvgImportError {
+        <<enum>>
+        InvalidPathData
+        UnsupportedPathCommand
+    }
+
+    class parse_path_data {
+        +parse_path_data(d &str) Result~PathGeom, SvgImportError~
+    }
+
+    class helpers {
+        +next_vec2(it Iterator~PathToken~) Result~Vec2, SvgImportError~
+        +parse_move_command(it Iterator~PathToken~, geom PathGeom) Result~(), SvgImportError~
+        +parse_line_command(it Iterator~PathToken~, geom PathGeom) Result~SegmentKind, SvgImportError~
+        +parse_cubic_command(it Iterator~PathToken~, geom PathGeom) Result~SegmentKind, SvgImportError~
+        +close_path(geom PathGeom, last_segment Option~SegmentKind~) void
+    }
+
+    class PathToken {
+        <<enum>>
+        Command(char)
+        Number(f32)
+    }
+
+    PathGeom "*" o-- "*" Anchor : contains
+    PathGeom "*" o-- "*" SegmentKind : uses
+    Anchor "1" o-- "1" Vec2 : pos
+    Anchor "0..1" o-- "1" Vec2 : handle_in
+    Anchor "0..1" o-- "1" Vec2 : handle_out
+
+    parse_path_data ..> PathGeom : constructs
+    parse_path_data ..> SvgImportError : returns
+    parse_path_data ..> PathToken : consumes
+    parse_path_data ..> helpers : calls
+
+    helpers ..> PathGeom : mutates
+    helpers ..> Anchor : creates
+    helpers ..> SegmentKind : returns
+    helpers ..> Vec2 : creates
+    helpers ..> SvgImportError : returns
+    helpers ..> PathToken : consumes
+```
+
+*Figure 10.1: Class diagram showing the SVG path parsing pipeline. The
+`parse_path_data` function consumes a tokenised path string and constructs a
+`PathGeom` using command-specific helper functions. Each helper extracts
+coordinates via `next_vec2` and builds the appropriate anchor and segment
+structures.*
+
+### 10.2 When SVG becomes "not tenable"
 
 If future features require concepts SVG cannot represent cleanly (e.g.,
 advanced non-SVG effects stacks), the preferred approach is:
