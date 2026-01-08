@@ -162,24 +162,38 @@ fn try_move_shape(doc: &mut Document, op: &ReorderOp) -> bool {
     }
 }
 
+/// Apply reorder operations, returning the inverse command for undo.
+///
+/// # Errors
+///
+/// Returns `UserError::InvalidOperation` if any reorder operation is invalid.
+/// Returns `UserError::ShapeNotFound` if a shape is not at the expected index.
 pub(super) fn apply_reorder(
     doc: &mut Document,
     operations: &[ReorderOp],
     command_name: &'static str,
-) -> CommandInverse {
+) -> Result<CommandInverse, UserError> {
     for op in operations {
-        if is_valid_reorder_op(op, doc) {
-            try_move_shape(doc, op);
+        if !is_valid_reorder_op(op, doc) {
+            return Err(UserError::InvalidOperation(format!(
+                "invalid reorder: from {} to {} (doc len = {})",
+                op.from_index,
+                op.to_index,
+                doc.shapes.len()
+            )));
+        }
+        if !try_move_shape(doc, op) {
+            return Err(UserError::ShapeNotFound(op.shape_id));
         }
     }
 
     // Create inverse with swapped from/to
     let inverse_operations = create_inverse_operations(operations);
 
-    CommandInverse::ReverseReorder {
+    Ok(CommandInverse::ReverseReorder {
         command_name,
         operations: inverse_operations,
-    }
+    })
 }
 
 fn create_inverse_operations(operations: &[ReorderOp]) -> Vec<ReorderOp> {
@@ -193,11 +207,29 @@ fn create_inverse_operations(operations: &[ReorderOp]) -> Vec<ReorderOp> {
         .collect()
 }
 
-pub(super) fn apply_reverse_reorder(doc: &mut Document, operations: &[ReorderOp]) {
+/// Apply the inverse of reorder operations (for undo).
+///
+/// # Errors
+///
+/// Returns `UserError::InvalidOperation` if any reorder operation is invalid.
+/// Returns `UserError::ShapeNotFound` if a shape is not at the expected index.
+pub(super) fn apply_reverse_reorder(
+    doc: &mut Document,
+    operations: &[ReorderOp],
+) -> Result<(), UserError> {
     // Apply operations in reverse order to correctly undo
     for op in operations.iter().rev() {
-        if is_valid_reorder_op(op, doc) {
-            let _did_move = try_move_shape(doc, op);
+        if !is_valid_reorder_op(op, doc) {
+            return Err(UserError::InvalidOperation(format!(
+                "invalid reverse reorder: from {} to {} (doc len = {})",
+                op.from_index,
+                op.to_index,
+                doc.shapes.len()
+            )));
+        }
+        if !try_move_shape(doc, op) {
+            return Err(UserError::ShapeNotFound(op.shape_id));
         }
     }
+    Ok(())
 }
