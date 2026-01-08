@@ -637,7 +637,7 @@ SVG-native editors extend SVG.
 #### 10.1.1 SVG Path Parsing Architecture
 
 The following diagram illustrates the structure of the SVG path data parser,
-showing how raw path strings are tokenised and transformed into the internal
+showing how raw path strings are tokenized and transformed into the internal
 `PathGeom` representation used by the document model.
 
 ```mermaid
@@ -712,7 +712,7 @@ classDiagram
 ```
 
 *Figure 10.1: Class diagram showing the SVG path parsing pipeline. The
-`parse_path_data` function consumes a tokenised path string and constructs a
+`parse_path_data` function consumes a tokenized path string and constructs a
 `PathGeom` using command-specific helper functions. Each helper extracts
 coordinates via `next_vec2` and builds the appropriate anchor and segment
 structures.*
