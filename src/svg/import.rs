@@ -213,14 +213,22 @@ enum PathToken {
     Number(f32),
 }
 
-/// Parse a Move command, adding the initial anchor position.
-fn parse_move_command<I>(it: &mut I, geom: &mut PathGeom) -> Result<(), SvgImportError>
+/// Extract two consecutive numbers from the iterator as a coordinate pair.
+fn next_vec2<I>(it: &mut I) -> Result<Vec2, SvgImportError>
 where
     I: Iterator<Item = PathToken>,
 {
     let x = next_number(it)?;
     let y = next_number(it)?;
-    geom.anchors.push(Anchor::new(Vec2::new(x, y)));
+    Ok(Vec2::new(x, y))
+}
+
+/// Parse a Move command, adding the initial anchor position.
+fn parse_move_command<I>(it: &mut I, geom: &mut PathGeom) -> Result<(), SvgImportError>
+where
+    I: Iterator<Item = PathToken>,
+{
+    geom.anchors.push(Anchor::new(next_vec2(it)?));
     Ok(())
 }
 
@@ -231,10 +239,8 @@ fn parse_line_command<I>(it: &mut I, geom: &mut PathGeom) -> Result<SegmentKind,
 where
     I: Iterator<Item = PathToken>,
 {
-    let x = next_number(it)?;
-    let y = next_number(it)?;
     geom.segments.push(SegmentKind::Line);
-    geom.anchors.push(Anchor::new(Vec2::new(x, y)));
+    geom.anchors.push(Anchor::new(next_vec2(it)?));
     Ok(SegmentKind::Line)
 }
 
