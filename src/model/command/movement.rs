@@ -2,6 +2,7 @@
 
 use crate::model::{Anchor, Document, Vec2};
 
+use super::error::UserError;
 use super::inverse::CommandInverse;
 use super::types::{AnchorMovement, HandleKind, HandleMovement, ShapeMovement};
 
@@ -23,8 +24,13 @@ struct AnchorTarget {
     anchor_index: usize,
 }
 
-/// Helper: Apply a mutation to an anchor if it exists, with debug assertion fallback.
-fn with_anchor_mut<F>(doc: &mut Document, target: AnchorTarget, operation: &str, mutate: F)
+/// Apply a mutation to an anchor, returning an error if missing.
+///
+/// # Errors
+///
+/// Returns `UserError::ShapeNotFound` if the shape does not exist.
+/// Returns `UserError::AnchorNotFound` if the anchor index is out of range.
+fn with_anchor_mut<F>(doc: &mut Document, target: AnchorTarget, mutate: F) -> Result<(), UserError>
 where
     F: FnOnce(&mut Anchor),
 {
@@ -32,30 +38,34 @@ where
         shape_id,
         anchor_index,
     } = target;
-    if let Some(shape) = doc.get_mut(shape_id)
-        && let Some(anchor) = shape.path.anchors.get_mut(anchor_index)
-    {
-        mutate(anchor);
-    } else {
-        debug_assert!(
-            false,
-            "missing shape or anchor for {operation}: {shape_id:?} / {anchor_index}"
-        );
-    }
+    let shape = doc
+        .get_mut(shape_id)
+        .ok_or(UserError::ShapeNotFound(shape_id))?;
+    let anchor = shape
+        .path
+        .anchors
+        .get_mut(anchor_index)
+        .ok_or(UserError::AnchorNotFound(shape_id, anchor_index))?;
+    mutate(anchor);
+    Ok(())
 }
 
+/// Apply shape movements, returning the inverse command for undo.
+///
+/// # Errors
+///
+/// Returns `UserError::ShapeNotFound` if any referenced shape does not exist.
 pub(super) fn apply_move_shapes(
     doc: &mut Document,
     movements: &[ShapeMovement],
     command_name: &'static str,
-) -> CommandInverse {
+) -> Result<CommandInverse, UserError> {
     for movement in movements {
-        if let Some(shape) = doc.get_mut(movement.shape_id) {
-            for anchor in &mut shape.path.anchors {
-                translate_anchor(anchor, movement.delta);
-            }
-        } else {
-            debug_assert!(false, "missing shape for move: {:?}", movement.shape_id);
+        let shape = doc
+            .get_mut(movement.shape_id)
+            .ok_or(UserError::ShapeNotFound(movement.shape_id))?;
+        for anchor in &mut shape.path.anchors {
+            translate_anchor(anchor, movement.delta);
         }
     }
 
@@ -68,45 +78,54 @@ pub(super) fn apply_move_shapes(
         })
         .collect();
 
-    CommandInverse::MoveShapesBack {
+    Ok(CommandInverse::MoveShapesBack {
         command_name,
         movements: inverse_movements,
-    }
+    })
 }
 
-pub(super) fn apply_move_shapes_back(doc: &mut Document, movements: &[ShapeMovement]) {
+/// Apply the inverse of shape movements (for undo).
+///
+/// # Errors
+///
+/// Returns `UserError::ShapeNotFound` if any referenced shape does not exist.
+pub(super) fn apply_move_shapes_back(
+    doc: &mut Document,
+    movements: &[ShapeMovement],
+) -> Result<(), UserError> {
     // Same logic as apply_move_shapes, deltas are already negated
     for movement in movements {
-        if let Some(shape) = doc.get_mut(movement.shape_id) {
-            for anchor in &mut shape.path.anchors {
-                translate_anchor(anchor, movement.delta);
-            }
-        } else {
-            debug_assert!(
-                false,
-                "missing shape for move back: {:?}",
-                movement.shape_id
-            );
+        let shape = doc
+            .get_mut(movement.shape_id)
+            .ok_or(UserError::ShapeNotFound(movement.shape_id))?;
+        for anchor in &mut shape.path.anchors {
+            translate_anchor(anchor, movement.delta);
         }
     }
+    Ok(())
 }
 
+/// Apply an anchor movement, returning the inverse command for undo.
+///
+/// # Errors
+///
+/// Returns `UserError::ShapeNotFound` if the shape does not exist.
+/// Returns `UserError::AnchorNotFound` if the anchor index is out of range.
 pub(super) fn apply_move_anchor(
     doc: &mut Document,
     movement: &AnchorMovement,
     command_name: &'static str,
-) -> CommandInverse {
+) -> Result<CommandInverse, UserError> {
     with_anchor_mut(
         doc,
         AnchorTarget {
             shape_id: movement.shape_id,
             anchor_index: movement.anchor_index,
         },
-        "move anchor",
         |anchor| translate_anchor(anchor, movement.delta),
-    );
+    )?;
 
-    CommandInverse::MoveAnchorBack {
+    Ok(CommandInverse::MoveAnchorBack {
         command_name,
         movement: AnchorMovement {
             shape_id: movement.shape_id,
@@ -114,10 +133,19 @@ pub(super) fn apply_move_anchor(
             original: movement.original.clone(),
             delta: Vec2::new(-movement.delta.x, -movement.delta.y),
         },
-    }
+    })
 }
 
-pub(super) fn apply_move_anchor_back(doc: &mut Document, movement: &AnchorMovement) {
+/// Apply the inverse of an anchor movement (for undo).
+///
+/// # Errors
+///
+/// Returns `UserError::ShapeNotFound` if the shape does not exist.
+/// Returns `UserError::AnchorNotFound` if the anchor index is out of range.
+pub(super) fn apply_move_anchor_back(
+    doc: &mut Document,
+    movement: &AnchorMovement,
+) -> Result<(), UserError> {
     // Restore the original anchor state
     with_anchor_mut(
         doc,
@@ -125,30 +153,34 @@ pub(super) fn apply_move_anchor_back(doc: &mut Document, movement: &AnchorMoveme
             shape_id: movement.shape_id,
             anchor_index: movement.anchor_index,
         },
-        "move anchor back",
         |anchor| *anchor = movement.original.clone(),
-    );
+    )
 }
 
+/// Apply a handle movement, returning the inverse command for undo.
+///
+/// # Errors
+///
+/// Returns `UserError::ShapeNotFound` if the shape does not exist.
+/// Returns `UserError::AnchorNotFound` if the anchor index is out of range.
 pub(super) fn apply_move_handle(
     doc: &mut Document,
     movement: &HandleMovement,
     command_name: &'static str,
-) -> CommandInverse {
+) -> Result<CommandInverse, UserError> {
     with_anchor_mut(
         doc,
         AnchorTarget {
             shape_id: movement.shape_id,
             anchor_index: movement.anchor_index,
         },
-        "move handle",
         |anchor| match movement.kind {
             HandleKind::In => anchor.handle_in = movement.to,
             HandleKind::Out => anchor.handle_out = movement.to,
         },
-    );
+    )?;
 
-    CommandInverse::MoveHandleBack {
+    Ok(CommandInverse::MoveHandleBack {
         command_name,
         movement: HandleMovement {
             shape_id: movement.shape_id,
@@ -157,20 +189,28 @@ pub(super) fn apply_move_handle(
             from: movement.to,
             to: movement.from,
         },
-    }
+    })
 }
 
-pub(super) fn apply_move_handle_back(doc: &mut Document, movement: &HandleMovement) {
+/// Apply the inverse of a handle movement (for undo).
+///
+/// # Errors
+///
+/// Returns `UserError::ShapeNotFound` if the shape does not exist.
+/// Returns `UserError::AnchorNotFound` if the anchor index is out of range.
+pub(super) fn apply_move_handle_back(
+    doc: &mut Document,
+    movement: &HandleMovement,
+) -> Result<(), UserError> {
     with_anchor_mut(
         doc,
         AnchorTarget {
             shape_id: movement.shape_id,
             anchor_index: movement.anchor_index,
         },
-        "move handle back",
         |anchor| match movement.kind {
             HandleKind::In => anchor.handle_in = movement.to,
             HandleKind::Out => anchor.handle_out = movement.to,
         },
-    );
+    )
 }

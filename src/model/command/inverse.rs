@@ -179,18 +179,9 @@ impl CommandInverse {
                 apply_restore_shapes(doc, targets);
                 Ok(())
             }
-            Self::MoveShapesBack { movements, .. } => {
-                apply_move_shapes_back(doc, movements);
-                Ok(())
-            }
-            Self::MoveAnchorBack { movement, .. } => {
-                apply_move_anchor_back(doc, movement);
-                Ok(())
-            }
-            Self::MoveHandleBack { movement, .. } => {
-                apply_move_handle_back(doc, movement);
-                Ok(())
-            }
+            Self::MoveShapesBack { movements, .. } => apply_move_shapes_back(doc, movements),
+            Self::MoveAnchorBack { movement, .. } => apply_move_anchor_back(doc, movement),
+            Self::MoveHandleBack { movement, .. } => apply_move_handle_back(doc, movement),
             Self::RestoreStyles { changes, .. } => {
                 apply_restore_styles(doc, changes);
                 Ok(())
