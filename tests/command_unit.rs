@@ -4,8 +4,9 @@
 //! mutations.
 
 use gauss::model::{
-    Action, Command, CommandInverse, DeletedShape, Document, EngineState, SelItem, Selection,
-    ShapeInsertion, UserError, prepare_command,
+    Action, Anchor, AnchorMovement, Command, CommandInverse, DeletedShape, Document, EngineState,
+    HandleKind, HandleMovement, PaintStyle, ReorderOp, SegmentChange, SegmentKind, SelItem,
+    Selection, ShapeInsertion, ShapeMovement, StyleChange, UserError, Vec2, prepare_command,
 };
 use rstest::{fixture, rstest};
 use test_support::shapes::{sample_shape, shape_id};
@@ -409,4 +410,166 @@ fn insert_shape_inverse_name_matches_command(mut empty_doc: Document) {
     let inverse = cmd.apply(&mut empty_doc).expect("apply succeeded");
     assert_eq!(inverse.name(), cmd.name());
     assert_eq!(inverse.name(), "Insert Shape");
+}
+
+// ============================================================================
+// Error Condition Tests (Issue #28)
+// ============================================================================
+
+/// Verify `MoveShapes` returns an error for non-existent shapes.
+#[rstest]
+fn move_shapes_fails_for_missing_shape(mut empty_doc: Document) {
+    let cmd = Command::MoveShapes {
+        movements: vec![ShapeMovement {
+            shape_id: shape_id(999),
+            delta: Vec2::new(10.0, 10.0),
+        }],
+    };
+
+    let result = cmd.apply(&mut empty_doc);
+    assert!(matches!(result, Err(UserError::ShapeNotFound(_))));
+}
+
+/// Verify `MoveAnchor` returns an error for non-existent shapes.
+#[rstest]
+fn move_anchor_fails_for_missing_shape(mut empty_doc: Document) {
+    let cmd = Command::MoveAnchor {
+        movement: AnchorMovement {
+            shape_id: shape_id(999),
+            anchor_index: 0,
+            original: Anchor {
+                pos: Vec2::new(0.0, 0.0),
+                handle_in: None,
+                handle_out: None,
+            },
+            delta: Vec2::new(10.0, 10.0),
+        },
+    };
+
+    let result = cmd.apply(&mut empty_doc);
+    assert!(matches!(result, Err(UserError::ShapeNotFound(_))));
+}
+
+/// Verify `MoveAnchor` returns an error for non-existent anchors.
+#[rstest]
+fn move_anchor_fails_for_missing_anchor(mut doc_with_two_shapes: Document) {
+    let cmd = Command::MoveAnchor {
+        movement: AnchorMovement {
+            shape_id: shape_id(1),
+            anchor_index: 999,
+            original: Anchor {
+                pos: Vec2::new(0.0, 0.0),
+                handle_in: None,
+                handle_out: None,
+            },
+            delta: Vec2::new(10.0, 10.0),
+        },
+    };
+
+    let result = cmd.apply(&mut doc_with_two_shapes);
+    assert!(matches!(result, Err(UserError::AnchorNotFound(_, _))));
+}
+
+/// Verify `MoveHandle` returns an error for non-existent shapes.
+#[rstest]
+fn move_handle_fails_for_missing_shape(mut empty_doc: Document) {
+    let cmd = Command::MoveHandle {
+        movement: HandleMovement {
+            shape_id: shape_id(999),
+            anchor_index: 0,
+            kind: HandleKind::In,
+            from: None,
+            to: Some(Vec2::new(10.0, 10.0)),
+        },
+    };
+
+    let result = cmd.apply(&mut empty_doc);
+    assert!(matches!(result, Err(UserError::ShapeNotFound(_))));
+}
+
+/// Verify `MoveHandle` returns an error for non-existent anchors.
+#[rstest]
+fn move_handle_fails_for_missing_anchor(mut doc_with_two_shapes: Document) {
+    let cmd = Command::MoveHandle {
+        movement: HandleMovement {
+            shape_id: shape_id(1),
+            anchor_index: 999,
+            kind: HandleKind::In,
+            from: None,
+            to: Some(Vec2::new(10.0, 10.0)),
+        },
+    };
+
+    let result = cmd.apply(&mut doc_with_two_shapes);
+    assert!(matches!(result, Err(UserError::AnchorNotFound(_, _))));
+}
+
+/// Verify `SetStyle` returns an error for non-existent shapes.
+#[rstest]
+fn set_style_fails_for_missing_shape(mut empty_doc: Document) {
+    let cmd = Command::SetStyle {
+        changes: vec![StyleChange {
+            shape_id: shape_id(999),
+            from: PaintStyle::new(None, 1.0, None),
+            to: PaintStyle::new(None, 2.0, None),
+        }],
+    };
+
+    let result = cmd.apply(&mut empty_doc);
+    assert!(matches!(result, Err(UserError::ShapeNotFound(_))));
+}
+
+/// Verify `Reorder` returns an error for invalid indices.
+#[rstest]
+fn reorder_fails_for_invalid_indices(mut empty_doc: Document) {
+    let cmd = Command::Reorder {
+        operations: vec![ReorderOp {
+            shape_id: shape_id(999),
+            from_index: 0,
+            to_index: 1,
+        }],
+    };
+
+    let result = cmd.apply(&mut empty_doc);
+    assert!(matches!(result, Err(UserError::InvalidOperation(_))));
+}
+
+/// Verify `SetSegmentKind` returns an error for non-existent shapes.
+#[rstest]
+fn set_segment_kind_fails_for_missing_shape(mut empty_doc: Document) {
+    let cmd = Command::SetSegmentKind {
+        changes: vec![SegmentChange {
+            shape_id: shape_id(999),
+            segment_index: 0,
+            old_kind: SegmentKind::Line,
+            new_kind: SegmentKind::Cubic,
+            old_start_handle_out: None,
+            new_start_handle_out: Some(Vec2::new(1.0, 1.0)),
+            old_end_handle_in: None,
+            new_end_handle_in: Some(Vec2::new(2.0, 2.0)),
+        }],
+    };
+
+    let result = cmd.apply(&mut empty_doc);
+    assert!(matches!(result, Err(UserError::ShapeNotFound(_))));
+}
+
+/// Verify `SetSegmentKind` returns an error for non-existent segments.
+#[rstest]
+fn set_segment_kind_fails_for_missing_segment(mut doc_with_two_shapes: Document) {
+    let cmd = Command::SetSegmentKind {
+        changes: vec![SegmentChange {
+            shape_id: shape_id(1),
+            segment_index: 999,
+            old_kind: SegmentKind::Line,
+            new_kind: SegmentKind::Cubic,
+            old_start_handle_out: None,
+            new_start_handle_out: Some(Vec2::new(1.0, 1.0)),
+            old_end_handle_in: None,
+            new_end_handle_in: Some(Vec2::new(2.0, 2.0)),
+        }],
+    };
+
+    let result = cmd.apply(&mut doc_with_two_shapes);
+    assert!(matches!(result, Err(UserError::SegmentNotFound(_, _))));
 }
