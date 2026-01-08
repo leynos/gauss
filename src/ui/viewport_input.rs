@@ -19,6 +19,14 @@ use crate::model::{Vec2, Viewport};
 
 const ZOOM_FACTOR_PER_PIXEL: f32 = 0.001;
 
+/// Detects shift-scroll intended for horizontal panning.
+///
+/// Returns true when shift is held and the scroll delta is purely vertical,
+/// indicating the user intends to pan horizontally (common trackpad gesture).
+fn is_shift_vertical_scroll(event: &ScrollWheelEvent, dx: f32, dy: f32) -> bool {
+    event.shift && dx.abs() <= f32::EPSILON && dy.abs() > f32::EPSILON
+}
+
 pub(super) fn apply_scroll_wheel_event(
     viewport: &mut Viewport,
     event: &ScrollWheelEvent,
@@ -39,7 +47,7 @@ pub(super) fn apply_scroll_wheel_event(
         return false;
     }
 
-    if event.shift && dx.abs() <= f32::EPSILON && dy.abs() > f32::EPSILON {
+    if is_shift_vertical_scroll(event, dx, dy) {
         dx = dy;
         dy = 0.0;
     }
