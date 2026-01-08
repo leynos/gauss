@@ -175,7 +175,7 @@ impl Command {
     pub fn apply(&self, doc: &mut Document) -> Result<CommandInverse, UserError> {
         let command_name = self.name();
         match self {
-            Self::DeleteShapes { targets } => Ok(apply_delete_shapes(doc, targets, command_name)),
+            Self::DeleteShapes { targets } => apply_delete_shapes(doc, targets, command_name),
             Self::MoveShapes { movements } => apply_move_shapes(doc, movements, command_name),
             Self::MoveAnchor { movement } => apply_move_anchor(doc, movement, command_name),
             Self::MoveHandle { movement } => apply_move_handle(doc, movement, command_name),

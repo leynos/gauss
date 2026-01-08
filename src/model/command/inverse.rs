@@ -175,10 +175,7 @@ impl CommandInverse {
     /// ```
     pub fn apply(&self, doc: &mut Document) -> Result<(), UserError> {
         match self {
-            Self::RestoreShapes { targets, .. } => {
-                apply_restore_shapes(doc, targets);
-                Ok(())
-            }
+            Self::RestoreShapes { targets, .. } => apply_restore_shapes(doc, targets),
             Self::MoveShapesBack { movements, .. } => apply_move_shapes_back(doc, movements),
             Self::MoveAnchorBack { movement, .. } => apply_move_anchor_back(doc, movement),
             Self::MoveHandleBack { movement, .. } => apply_move_handle_back(doc, movement),
