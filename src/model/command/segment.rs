@@ -82,15 +82,22 @@ pub(super) fn prepare_toggle_segment_kind(state: &EngineState) -> Result<Command
     Ok(Command::SetSegmentKind { changes })
 }
 
+/// Apply segment kind changes, returning the inverse command for undo.
+///
+/// # Errors
+///
+/// Returns `UserError::ShapeNotFound` if any referenced shape does not exist.
+/// Returns `UserError::SegmentNotFound` if any segment index is out of range.
 pub(super) fn apply_set_segment_kind(
     doc: &mut Document,
     changes: &[SegmentChange],
     command_name: &'static str,
-) -> CommandInverse {
+) -> Result<CommandInverse, UserError> {
     for change in changes {
-        if let Some(shape) = doc.get_mut(change.shape_id) {
-            apply_segment_change(shape, change);
-        }
+        let shape = doc
+            .get_mut(change.shape_id)
+            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
+        apply_segment_change(shape, change)?;
     }
 
     // Create inverse with swapped old/new
@@ -108,29 +115,49 @@ pub(super) fn apply_set_segment_kind(
         })
         .collect();
 
-    CommandInverse::RestoreSegmentKinds {
+    Ok(CommandInverse::RestoreSegmentKinds {
         command_name,
         changes: inverse_changes,
-    }
+    })
 }
 
-pub(super) fn apply_restore_segment_kinds(doc: &mut Document, changes: &[SegmentChange]) {
+/// Apply the inverse of segment kind changes (for undo).
+///
+/// # Errors
+///
+/// Returns `UserError::ShapeNotFound` if any referenced shape does not exist.
+/// Returns `UserError::SegmentNotFound` if any segment index is out of range.
+pub(super) fn apply_restore_segment_kinds(
+    doc: &mut Document,
+    changes: &[SegmentChange],
+) -> Result<(), UserError> {
     for change in changes {
-        if let Some(shape) = doc.get_mut(change.shape_id) {
-            apply_segment_change(shape, change);
-        }
+        let shape = doc
+            .get_mut(change.shape_id)
+            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
+        apply_segment_change(shape, change)?;
     }
+    Ok(())
 }
 
-fn apply_segment_change(shape: &mut Shape, change: &SegmentChange) {
-    if let Some(seg) = shape.path.segments.get_mut(change.segment_index) {
-        *seg = change.new_kind;
-    }
+fn apply_segment_change(shape: &mut Shape, change: &SegmentChange) -> Result<(), UserError> {
+    let seg = shape
+        .path
+        .segments
+        .get_mut(change.segment_index)
+        .ok_or(UserError::SegmentNotFound(shape.id, change.segment_index))?;
+    *seg = change.new_kind;
+
+    // Update start anchor handle (may not exist for edge cases)
     if let Some(anchor) = shape.path.anchors.get_mut(change.segment_index) {
         anchor.handle_out = change.new_start_handle_out;
     }
+
+    // Update end anchor handle (may not exist for edge cases)
     let end_index = change.segment_index + 1;
     if let Some(anchor) = shape.path.anchors.get_mut(end_index) {
         anchor.handle_in = change.new_end_handle_in;
     }
+
+    Ok(())
 }
