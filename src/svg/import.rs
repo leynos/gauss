@@ -252,22 +252,19 @@ fn parse_cubic_command<I>(it: &mut I, geom: &mut PathGeom) -> Result<SegmentKind
 where
     I: Iterator<Item = PathToken>,
 {
-    let x1 = next_number(it)?;
-    let y1 = next_number(it)?;
-    let x2 = next_number(it)?;
-    let y2 = next_number(it)?;
-    let x = next_number(it)?;
-    let y = next_number(it)?;
+    let handle_out = next_vec2(it)?;
+    let handle_in = next_vec2(it)?;
+    let pos = next_vec2(it)?;
 
     let prev = geom
         .anchors
         .last_mut()
         .ok_or(SvgImportError::InvalidPathData)?;
-    prev.handle_out = Some(Vec2::new(x1, y1));
+    prev.handle_out = Some(handle_out);
     geom.segments.push(SegmentKind::Cubic);
     geom.anchors.push(Anchor {
-        pos: Vec2::new(x, y),
-        handle_in: Some(Vec2::new(x2, y2)),
+        pos,
+        handle_in: Some(handle_in),
         handle_out: None,
     });
     Ok(SegmentKind::Cubic)

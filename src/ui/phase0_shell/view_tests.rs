@@ -1,4 +1,12 @@
 //! Unit tests for the Phase 0 shell view.
+//!
+//! Tests the `file_status_line` display logic, verifying correct precedence:
+//!
+//! 1. Save errors take priority over all other statuses
+//! 2. Open errors take priority over path displays
+//! 3. Saved path is shown when no errors exist
+//! 4. Opened path is shown as a fallback
+//! 5. Returns `None` when no file operations have occurred
 
 use std::path::PathBuf;
 
