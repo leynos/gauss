@@ -213,6 +213,66 @@ enum PathToken {
     Number(f32),
 }
 
+/// Parse a Move command, adding the initial anchor position.
+fn parse_move_command<I>(it: &mut I, geom: &mut PathGeom) -> Result<(), SvgImportError>
+where
+    I: Iterator<Item = PathToken>,
+{
+    let x = next_number(it)?;
+    let y = next_number(it)?;
+    geom.anchors.push(Anchor::new(Vec2::new(x, y)));
+    Ok(())
+}
+
+/// Parse a Line command, adding a line segment and anchor.
+///
+/// Returns the segment kind that was added for tracking the closing segment.
+fn parse_line_command<I>(it: &mut I, geom: &mut PathGeom) -> Result<SegmentKind, SvgImportError>
+where
+    I: Iterator<Item = PathToken>,
+{
+    let x = next_number(it)?;
+    let y = next_number(it)?;
+    geom.segments.push(SegmentKind::Line);
+    geom.anchors.push(Anchor::new(Vec2::new(x, y)));
+    Ok(SegmentKind::Line)
+}
+
+/// Parse a Cubic Bezier command, setting the previous anchor's out-handle
+/// and adding a new anchor with an in-handle.
+///
+/// Returns the segment kind that was added for tracking the closing segment.
+fn parse_cubic_command<I>(it: &mut I, geom: &mut PathGeom) -> Result<SegmentKind, SvgImportError>
+where
+    I: Iterator<Item = PathToken>,
+{
+    let x1 = next_number(it)?;
+    let y1 = next_number(it)?;
+    let x2 = next_number(it)?;
+    let y2 = next_number(it)?;
+    let x = next_number(it)?;
+    let y = next_number(it)?;
+
+    let prev = geom
+        .anchors
+        .last_mut()
+        .ok_or(SvgImportError::InvalidPathData)?;
+    prev.handle_out = Some(Vec2::new(x1, y1));
+    geom.segments.push(SegmentKind::Cubic);
+    geom.anchors.push(Anchor {
+        pos: Vec2::new(x, y),
+        handle_in: Some(Vec2::new(x2, y2)),
+        handle_out: None,
+    });
+    Ok(SegmentKind::Cubic)
+}
+
+/// Mark the path as closed, using the last segment kind for the closing edge.
+fn close_path(geom: &mut PathGeom, last_segment: Option<SegmentKind>) {
+    geom.closed = true;
+    geom.closing_segment = last_segment.unwrap_or(SegmentKind::Line);
+}
+
 fn parse_path_data(d: &str) -> Result<PathGeom, SvgImportError> {
     let tokens = tokenize_path_data(d)?;
     let mut it = tokens.into_iter().peekable();
@@ -227,42 +287,10 @@ fn parse_path_data(d: &str) -> Result<PathGeom, SvgImportError> {
         };
 
         match cmd {
-            'M' => {
-                let x = next_number(&mut it)?;
-                let y = next_number(&mut it)?;
-                geom.anchors.push(Anchor::new(Vec2::new(x, y)));
-            }
-            'L' => {
-                let x = next_number(&mut it)?;
-                let y = next_number(&mut it)?;
-                geom.segments.push(SegmentKind::Line);
-                last_segment = Some(SegmentKind::Line);
-                geom.anchors.push(Anchor::new(Vec2::new(x, y)));
-            }
-            'C' => {
-                let x1 = next_number(&mut it)?;
-                let y1 = next_number(&mut it)?;
-                let x2 = next_number(&mut it)?;
-                let y2 = next_number(&mut it)?;
-                let x = next_number(&mut it)?;
-                let y = next_number(&mut it)?;
-
-                let Some(prev) = geom.anchors.last_mut() else {
-                    return Err(SvgImportError::InvalidPathData);
-                };
-                prev.handle_out = Some(Vec2::new(x1, y1));
-                geom.segments.push(SegmentKind::Cubic);
-                last_segment = Some(SegmentKind::Cubic);
-                geom.anchors.push(Anchor {
-                    pos: Vec2::new(x, y),
-                    handle_in: Some(Vec2::new(x2, y2)),
-                    handle_out: None,
-                });
-            }
-            'Z' => {
-                geom.closed = true;
-                geom.closing_segment = last_segment.unwrap_or(SegmentKind::Line);
-            }
+            'M' => parse_move_command(&mut it, &mut geom)?,
+            'L' => last_segment = Some(parse_line_command(&mut it, &mut geom)?),
+            'C' => last_segment = Some(parse_cubic_command(&mut it, &mut geom)?),
+            'Z' => close_path(&mut geom, last_segment),
             other => return Err(SvgImportError::UnsupportedPathCommand(other)),
         }
     }

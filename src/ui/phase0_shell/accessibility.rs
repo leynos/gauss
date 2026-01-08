@@ -17,19 +17,16 @@
 //! Note: Constants in this module are intentionally defined for future use
 //! and may appear unused until AccessKit integration is complete.
 
-/// Stable node IDs for window control elements.
-///
-/// These IDs are used to identify accessibility nodes for window controls.
-/// AccessKit requires stable IDs that persist across frames so assistive
-/// technologies can track focus and state changes.
-///
-/// The ID scheme uses a reserved range (0x1000–0x1FFF) for window chrome
-/// elements, leaving other ranges for document content.
 #[expect(
     dead_code,
     reason = "Constants prepared for future AccessKit integration"
 )]
 pub mod node_ids {
+    //! Stable node IDs for window control accessibility nodes.
+    //!
+    //! These constants assign deterministic identifiers to window chrome elements,
+    //! enabling AccessKit to track focus and state changes across frames.
+
     /// Minimize window button.
     pub const MINIMIZE_BUTTON: u64 = 0x1001;
     /// Maximize/restore window button.
@@ -44,15 +41,16 @@ pub mod node_ids {
     pub const TITLEBAR: u64 = 0x1006;
 }
 
-/// Accessible names for window control buttons.
-///
-/// These strings are announced by screen readers when focus moves to
-/// each control. They include keyboard shortcuts for discoverability.
 #[expect(
     dead_code,
     reason = "Constants prepared for future AccessKit integration"
 )]
 pub mod accessible_names {
+    //! Human-readable names announced by screen readers.
+    //!
+    //! These strings provide descriptive labels for assistive technologies,
+    //! enabling users to identify window controls by their spoken names.
+
     /// Accessible name for the minimize button.
     pub const MINIMIZE: &str = "Minimize window";
     /// Accessible name for the maximize button (when not maximized).
@@ -67,15 +65,16 @@ pub mod accessible_names {
     pub const WINDOW_MENU: &str = "Window menu";
 }
 
-/// Keyboard shortcut hints for accessibility announcements.
-///
-/// Screen readers can announce these along with button names to help
-/// users learn keyboard shortcuts.
 #[expect(
     dead_code,
     reason = "Constants prepared for future AccessKit integration"
 )]
 pub mod shortcut_hints {
+    //! Keyboard shortcut hints for accessibility announcements.
+    //!
+    //! Screen readers announce these alongside button names to help users
+    //! discover and remember keyboard shortcuts for common operations.
+
     /// Shortcut hint for minimize (cross-platform).
     pub const MINIMIZE: &str = "Alt+F9";
     /// Shortcut hint for maximize (cross-platform).
