@@ -99,7 +99,19 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev
+          sudo apt-get install -y \
+            libxcb1-dev \
+            libxcb-randr0-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-sync-dev \
+            libxcb-xfixes0-dev \
+            libxcb-xinput-dev \
+            libxcb-xkb-dev \
+            libxcb-cursor-dev \
+            libxcb-shm0-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev
 
       - name: Build release binary
         uses: >-
