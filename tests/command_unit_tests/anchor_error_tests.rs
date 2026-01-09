@@ -71,7 +71,7 @@ fn restore_anchors_fails_for_invalid_shape_index(empty_doc: Document) {
         }],
     };
 
-    assert_inverse_fails_with_invalid_operation(&empty_doc, &inverse, "out of range");
+    assert_inverse_fails_with_invalid_operation(empty_doc, &inverse, "out of range");
 }
 
 /// Verify `ReopenPath` (via inverse) returns an error for out-of-range indices.
@@ -86,5 +86,5 @@ fn reopen_path_fails_for_invalid_shape_index(empty_doc: Document) {
         },
     };
 
-    assert_inverse_fails_with_invalid_operation(&empty_doc, &inverse, "out of range");
+    assert_inverse_fails_with_invalid_operation(empty_doc, &inverse, "out of range");
 }

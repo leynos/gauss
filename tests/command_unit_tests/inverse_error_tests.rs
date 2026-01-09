@@ -27,7 +27,7 @@ fn restore_styles_fails_for_missing_shape(empty_doc: Document) {
         }],
     };
 
-    assert_inverse_fails_with_shape_not_found(&empty_doc, &inverse, missing_id);
+    assert_inverse_fails_with_shape_not_found(empty_doc, &inverse, missing_id);
 }
 
 /// Verify `RestoreSegmentKinds` (via inverse) returns an error for missing shapes.
@@ -48,7 +48,7 @@ fn restore_segment_kinds_fails_for_missing_shape(empty_doc: Document) {
         }],
     };
 
-    assert_inverse_fails_with_shape_not_found(&empty_doc, &inverse, missing_id);
+    assert_inverse_fails_with_shape_not_found(empty_doc, &inverse, missing_id);
 }
 
 /// Verify `RemoveAnchor` (via inverse) returns an error for invalid indices.
@@ -63,5 +63,5 @@ fn remove_anchor_fails_for_invalid_shape_index(empty_doc: Document) {
         },
     };
 
-    assert_inverse_fails_with_invalid_operation(&empty_doc, &inverse, "out of range");
+    assert_inverse_fails_with_invalid_operation(empty_doc, &inverse, "out of range");
 }

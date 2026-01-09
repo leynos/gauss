@@ -47,11 +47,11 @@ where
 
 /// Helper function to assert that an inverse returns a specific error and validate its fields.
 /// This reduces duplication across inverse error-condition tests whilst preserving field-level assertions.
-pub fn assert_inverse_error<F>(doc: &Document, inverse: &CommandInverse, error_validator: F)
+pub fn assert_inverse_error<F>(mut doc: Document, inverse: &CommandInverse, error_validator: F)
 where
     F: FnOnce(UserError),
 {
-    let Err(err) = inverse.apply(&mut doc.clone()) else {
+    let Err(err) = inverse.apply(&mut doc) else {
         panic!("expected inverse {inverse:?} to fail");
     };
     error_validator(err);
@@ -67,7 +67,7 @@ pub fn assert_fails_with_shape_not_found(doc: Document, cmd: &Command, expected_
 
 /// Assert that an inverse fails with `ShapeNotFound` for a specific shape ID.
 pub fn assert_inverse_fails_with_shape_not_found(
-    doc: &Document,
+    doc: Document,
     inverse: &CommandInverse,
     expected_id: ShapeId,
 ) {
@@ -128,7 +128,7 @@ pub fn assert_fails_with_invalid_operation(
 
 /// Assert that an inverse fails with `InvalidOperation` containing a specific message fragment.
 pub fn assert_inverse_fails_with_invalid_operation(
-    doc: &Document,
+    doc: Document,
     inverse: &CommandInverse,
     expected_message_fragment: &str,
 ) {
