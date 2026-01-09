@@ -40,7 +40,7 @@ where
     F: FnOnce(UserError),
 {
     let Err(err) = cmd.apply(&mut doc) else {
-        panic!("expected command to fail");
+        panic!("expected command {cmd:?} to fail");
     };
     error_validator(err);
 }
@@ -52,7 +52,7 @@ where
     F: FnOnce(UserError),
 {
     let Err(err) = inverse.apply(&mut doc.clone()) else {
-        panic!("expected inverse to fail");
+        panic!("expected inverse {inverse:?} to fail");
     };
     error_validator(err);
 }
