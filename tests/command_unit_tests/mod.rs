@@ -45,6 +45,18 @@ where
     error_validator(err);
 }
 
+/// Helper function to assert that an inverse returns a specific error and validate its fields.
+/// This reduces duplication across inverse error-condition tests whilst preserving field-level assertions.
+pub fn assert_inverse_error<F>(doc: &Document, inverse: &CommandInverse, error_validator: F)
+where
+    F: FnOnce(UserError),
+{
+    let Err(err) = inverse.apply(&mut doc.clone()) else {
+        panic!("expected inverse to fail");
+    };
+    error_validator(err);
+}
+
 /// Assert that a command fails with `ShapeNotFound` for a specific shape ID.
 pub fn assert_fails_with_shape_not_found(doc: Document, cmd: &Command, expected_id: ShapeId) {
     assert_command_error(doc, cmd, |err| match err {
@@ -59,13 +71,10 @@ pub fn assert_inverse_fails_with_shape_not_found(
     inverse: &CommandInverse,
     expected_id: ShapeId,
 ) {
-    let Err(err) = inverse.apply(&mut doc.clone()) else {
-        panic!("expected error");
-    };
-    match err {
+    assert_inverse_error(doc, inverse, |err| match err {
         UserError::ShapeNotFound(id) => assert_eq!(id, expected_id),
         other => panic!("unexpected error: {other:?}"),
-    }
+    });
 }
 
 /// Assert that a command fails with `AnchorNotFound` for a specific shape and anchor index.
@@ -123,10 +132,7 @@ pub fn assert_inverse_fails_with_invalid_operation(
     inverse: &CommandInverse,
     expected_message_fragment: &str,
 ) {
-    let Err(err) = inverse.apply(&mut doc.clone()) else {
-        panic!("expected error");
-    };
-    match err {
+    assert_inverse_error(doc, inverse, |err| match err {
         UserError::InvalidOperation(msg) => {
             assert!(
                 msg.contains(expected_message_fragment),
@@ -134,5 +140,5 @@ pub fn assert_inverse_fails_with_invalid_operation(
             );
         }
         other => panic!("unexpected error: {other:?}"),
-    }
+    });
 }
