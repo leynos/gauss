@@ -416,9 +416,22 @@ fn insert_shape_inverse_name_matches_command(mut empty_doc: Document) {
 // Error Condition Tests (Issue #28)
 // ============================================================================
 
+/// Helper function to assert that a command returns a specific error variant.
+/// This reduces duplication across error-condition tests.
+fn assert_command_fails_with<F>(mut doc: Document, cmd: &Command, error_matcher: F)
+where
+    F: FnOnce(&Result<CommandInverse, UserError>) -> bool,
+{
+    let result = cmd.apply(&mut doc);
+    assert!(
+        error_matcher(&result),
+        "Expected command to fail with specific error, got: {result:?}",
+    );
+}
+
 /// Verify `MoveShapes` returns an error for non-existent shapes.
 #[rstest]
-fn move_shapes_fails_for_missing_shape(mut empty_doc: Document) {
+fn move_shapes_fails_for_missing_shape(empty_doc: Document) {
     let missing_id = shape_id(999);
     let cmd = Command::MoveShapes {
         movements: vec![ShapeMovement {
@@ -427,18 +440,16 @@ fn move_shapes_fails_for_missing_shape(mut empty_doc: Document) {
         }],
     };
 
-    let err = cmd
-        .apply(&mut empty_doc)
-        .expect_err("expected ShapeNotFound error");
-    match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_command_fails_with(
+        empty_doc,
+        &cmd,
+        |r| matches!(r, Err(UserError::ShapeNotFound(id)) if *id == missing_id),
+    );
 }
 
 /// Verify `MoveAnchor` returns an error for non-existent shapes.
 #[rstest]
-fn move_anchor_fails_for_missing_shape(mut empty_doc: Document) {
+fn move_anchor_fails_for_missing_shape(empty_doc: Document) {
     let missing_id = shape_id(999);
     let cmd = Command::MoveAnchor {
         movement: AnchorMovement {
@@ -453,18 +464,16 @@ fn move_anchor_fails_for_missing_shape(mut empty_doc: Document) {
         },
     };
 
-    let err = cmd
-        .apply(&mut empty_doc)
-        .expect_err("expected ShapeNotFound error");
-    match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_command_fails_with(
+        empty_doc,
+        &cmd,
+        |r| matches!(r, Err(UserError::ShapeNotFound(id)) if *id == missing_id),
+    );
 }
 
 /// Verify `MoveAnchor` returns an error for non-existent anchors.
 #[rstest]
-fn move_anchor_fails_for_missing_anchor(mut doc_with_two_shapes: Document) {
+fn move_anchor_fails_for_missing_anchor(doc_with_two_shapes: Document) {
     let target_shape = shape_id(1);
     let missing_anchor = 999;
     let cmd = Command::MoveAnchor {
@@ -480,21 +489,16 @@ fn move_anchor_fails_for_missing_anchor(mut doc_with_two_shapes: Document) {
         },
     };
 
-    let err = cmd
-        .apply(&mut doc_with_two_shapes)
-        .expect_err("expected AnchorNotFound error");
-    match err {
-        UserError::AnchorNotFound(sid, idx) => {
-            assert_eq!(sid, target_shape);
-            assert_eq!(idx, missing_anchor);
-        }
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_command_fails_with(
+        doc_with_two_shapes,
+        &cmd,
+        |r| matches!(r, Err(UserError::AnchorNotFound(sid, idx)) if *sid == target_shape && *idx == missing_anchor),
+    );
 }
 
 /// Verify `MoveHandle` returns an error for non-existent shapes.
 #[rstest]
-fn move_handle_fails_for_missing_shape(mut empty_doc: Document) {
+fn move_handle_fails_for_missing_shape(empty_doc: Document) {
     let missing_id = shape_id(999);
     let cmd = Command::MoveHandle {
         movement: HandleMovement {
@@ -506,18 +510,16 @@ fn move_handle_fails_for_missing_shape(mut empty_doc: Document) {
         },
     };
 
-    let err = cmd
-        .apply(&mut empty_doc)
-        .expect_err("expected ShapeNotFound error");
-    match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_command_fails_with(
+        empty_doc,
+        &cmd,
+        |r| matches!(r, Err(UserError::ShapeNotFound(id)) if *id == missing_id),
+    );
 }
 
 /// Verify `MoveHandle` returns an error for non-existent anchors.
 #[rstest]
-fn move_handle_fails_for_missing_anchor(mut doc_with_two_shapes: Document) {
+fn move_handle_fails_for_missing_anchor(doc_with_two_shapes: Document) {
     let target_shape = shape_id(1);
     let missing_anchor = 999;
     let cmd = Command::MoveHandle {
@@ -530,21 +532,16 @@ fn move_handle_fails_for_missing_anchor(mut doc_with_two_shapes: Document) {
         },
     };
 
-    let err = cmd
-        .apply(&mut doc_with_two_shapes)
-        .expect_err("expected AnchorNotFound error");
-    match err {
-        UserError::AnchorNotFound(sid, idx) => {
-            assert_eq!(sid, target_shape);
-            assert_eq!(idx, missing_anchor);
-        }
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_command_fails_with(
+        doc_with_two_shapes,
+        &cmd,
+        |r| matches!(r, Err(UserError::AnchorNotFound(sid, idx)) if *sid == target_shape && *idx == missing_anchor),
+    );
 }
 
 /// Verify `SetStyle` returns an error for non-existent shapes.
 #[rstest]
-fn set_style_fails_for_missing_shape(mut empty_doc: Document) {
+fn set_style_fails_for_missing_shape(empty_doc: Document) {
     let missing_id = shape_id(999);
     let cmd = Command::SetStyle {
         changes: vec![StyleChange {
@@ -554,18 +551,16 @@ fn set_style_fails_for_missing_shape(mut empty_doc: Document) {
         }],
     };
 
-    let err = cmd
-        .apply(&mut empty_doc)
-        .expect_err("expected ShapeNotFound error");
-    match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_command_fails_with(
+        empty_doc,
+        &cmd,
+        |r| matches!(r, Err(UserError::ShapeNotFound(id)) if *id == missing_id),
+    );
 }
 
 /// Verify `Reorder` returns an error for invalid indices.
 #[rstest]
-fn reorder_fails_for_invalid_indices(mut empty_doc: Document) {
+fn reorder_fails_for_invalid_indices(empty_doc: Document) {
     let cmd = Command::Reorder {
         operations: vec![ReorderOp {
             shape_id: shape_id(999),
@@ -574,20 +569,16 @@ fn reorder_fails_for_invalid_indices(mut empty_doc: Document) {
         }],
     };
 
-    let err = cmd
-        .apply(&mut empty_doc)
-        .expect_err("expected InvalidOperation error");
-    match err {
-        UserError::InvalidOperation(msg) => {
-            assert!(msg.contains("invalid reorder"), "unexpected message: {msg}");
-        }
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_command_fails_with(
+        empty_doc,
+        &cmd,
+        |r| matches!(r, Err(UserError::InvalidOperation(msg)) if msg.contains("invalid reorder")),
+    );
 }
 
 /// Verify `SetSegmentKind` returns an error for non-existent shapes.
 #[rstest]
-fn set_segment_kind_fails_for_missing_shape(mut empty_doc: Document) {
+fn set_segment_kind_fails_for_missing_shape(empty_doc: Document) {
     let missing_id = shape_id(999);
     let cmd = Command::SetSegmentKind {
         changes: vec![SegmentChange {
@@ -602,18 +593,16 @@ fn set_segment_kind_fails_for_missing_shape(mut empty_doc: Document) {
         }],
     };
 
-    let err = cmd
-        .apply(&mut empty_doc)
-        .expect_err("expected ShapeNotFound error");
-    match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_command_fails_with(
+        empty_doc,
+        &cmd,
+        |r| matches!(r, Err(UserError::ShapeNotFound(id)) if *id == missing_id),
+    );
 }
 
 /// Verify `SetSegmentKind` returns an error for non-existent segments.
 #[rstest]
-fn set_segment_kind_fails_for_missing_segment(mut doc_with_two_shapes: Document) {
+fn set_segment_kind_fails_for_missing_segment(doc_with_two_shapes: Document) {
     let target_shape = shape_id(1);
     let missing_segment = 999;
     let cmd = Command::SetSegmentKind {
@@ -629,16 +618,11 @@ fn set_segment_kind_fails_for_missing_segment(mut doc_with_two_shapes: Document)
         }],
     };
 
-    let err = cmd
-        .apply(&mut doc_with_two_shapes)
-        .expect_err("expected SegmentNotFound error");
-    match err {
-        UserError::SegmentNotFound(sid, idx) => {
-            assert_eq!(sid, target_shape);
-            assert_eq!(idx, missing_segment);
-        }
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_command_fails_with(
+        doc_with_two_shapes,
+        &cmd,
+        |r| matches!(r, Err(UserError::SegmentNotFound(sid, idx)) if *sid == target_shape && *idx == missing_segment),
+    );
 }
 
 /// Verify that `CommandInverse::apply` propagates errors when the document
