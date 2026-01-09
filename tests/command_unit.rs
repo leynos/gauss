@@ -4,9 +4,11 @@
 //! mutations.
 
 use gauss::model::{
-    Action, Anchor, AnchorMovement, Command, CommandInverse, DeletedShape, Document, EngineState,
+    Action, Anchor, AnchorDeletion, AnchorDeletionResult, AnchorMovement, AnchorRestoration,
+    AnchorRestorationKind, Command, CommandInverse, DeletedShape, Document, EngineState,
     HandleKind, HandleMovement, PaintStyle, ReorderOp, SegmentChange, SegmentKind, SelItem,
-    Selection, ShapeInsertion, ShapeMovement, StyleChange, UserError, Vec2, prepare_command,
+    Selection, ShapeInsertion, ShapeMovement, ShapeReplacement, StyleChange, UserError, Vec2,
+    prepare_command,
 };
 use rstest::{fixture, rstest};
 use test_support::shapes::{sample_shape, shape_id};
@@ -657,4 +659,314 @@ fn inverse_apply_fails_when_document_state_changes(mut doc_with_two_shapes: Docu
         UserError::ShapeNotFound(id) => assert_eq!(id, target_id),
         other => panic!("unexpected error: {other:?}"),
     }
+}
+
+// ============================================================================
+// Anchor Operation Error Tests
+// ============================================================================
+
+/// Verify `InsertAnchor` returns an error for out-of-range shape indices.
+#[rstest]
+fn insert_anchor_fails_for_invalid_shape_index(empty_doc: Document) {
+    let cmd = Command::InsertAnchor {
+        replacement: ShapeReplacement {
+            shape_index: 999,
+            old_shape: sample_shape(shape_id(1), 0),
+            new_shape: sample_shape(shape_id(1), 0),
+        },
+    };
+
+    assert_command_error(empty_doc, &cmd, |err| match err {
+        UserError::InvalidOperation(msg) => {
+            assert!(
+                msg.contains("out of range"),
+                "expected 'out of range' in message: {msg}"
+            );
+        }
+        other => panic!("unexpected error: {other:?}"),
+    });
+}
+
+/// Verify `DeleteAnchors` returns an error for out-of-range shape indices.
+#[rstest]
+fn delete_anchors_fails_for_invalid_shape_index(empty_doc: Document) {
+    let cmd = Command::DeleteAnchors {
+        deletions: vec![AnchorDeletion {
+            shape_id: shape_id(999),
+            shape_index: 999,
+            old_shape: sample_shape(shape_id(999), 0),
+            result: AnchorDeletionResult::Removed,
+        }],
+    };
+
+    assert_command_error(empty_doc, &cmd, |err| match err {
+        UserError::InvalidOperation(msg) => {
+            assert!(
+                msg.contains("out of range"),
+                "expected 'out of range' in message: {msg}"
+            );
+        }
+        other => panic!("unexpected error: {other:?}"),
+    });
+}
+
+/// Verify `ClosePath` returns an error for out-of-range shape indices.
+#[rstest]
+fn close_path_fails_for_invalid_shape_index(empty_doc: Document) {
+    let cmd = Command::ClosePath {
+        replacement: ShapeReplacement {
+            shape_index: 999,
+            old_shape: sample_shape(shape_id(1), 0),
+            new_shape: sample_shape(shape_id(1), 0),
+        },
+    };
+
+    assert_command_error(empty_doc, &cmd, |err| match err {
+        UserError::InvalidOperation(msg) => {
+            assert!(
+                msg.contains("out of range"),
+                "expected 'out of range' in message: {msg}"
+            );
+        }
+        other => panic!("unexpected error: {other:?}"),
+    });
+}
+
+/// Verify `RestoreAnchors` (via inverse) returns an error for invalid indices.
+#[rstest]
+fn restore_anchors_fails_for_invalid_shape_index(empty_doc: Document) {
+    let inverse = CommandInverse::RestoreAnchors {
+        command_name: "Delete Anchors",
+        restorations: vec![AnchorRestoration {
+            shape_id: shape_id(999),
+            shape_index: 999,
+            restoration: AnchorRestorationKind::RestoreRemoved {
+                shape: sample_shape(shape_id(999), 0),
+            },
+        }],
+    };
+
+    let Err(err) = inverse.apply(&mut empty_doc.clone()) else {
+        panic!("expected error");
+    };
+    match err {
+        UserError::InvalidOperation(msg) => {
+            assert!(
+                msg.contains("out of range"),
+                "expected 'out of range' in message: {msg}"
+            );
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+}
+
+/// Verify `ReopenPath` (via inverse) returns an error for out-of-range indices.
+#[rstest]
+fn reopen_path_fails_for_invalid_shape_index(empty_doc: Document) {
+    let inverse = CommandInverse::ReopenPath {
+        command_name: "Close Path",
+        replacement: ShapeReplacement {
+            shape_index: 999,
+            old_shape: sample_shape(shape_id(1), 0),
+            new_shape: sample_shape(shape_id(1), 0),
+        },
+    };
+
+    let Err(err) = inverse.apply(&mut empty_doc.clone()) else {
+        panic!("expected error");
+    };
+    match err {
+        UserError::InvalidOperation(msg) => {
+            assert!(
+                msg.contains("out of range"),
+                "expected 'out of range' in message: {msg}"
+            );
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+}
+
+// ============================================================================
+// Inverse Operation Error Tests
+// ============================================================================
+
+/// Verify `RestoreStyles` (via inverse) returns an error for missing shapes.
+#[rstest]
+fn restore_styles_fails_for_missing_shape(empty_doc: Document) {
+    let missing_id = shape_id(999);
+    let inverse = CommandInverse::RestoreStyles {
+        command_name: "Set Style",
+        changes: vec![StyleChange {
+            shape_id: missing_id,
+            from: PaintStyle::new(None, 1.0, None),
+            to: PaintStyle::new(None, 2.0, None),
+        }],
+    };
+
+    let Err(err) = inverse.apply(&mut empty_doc.clone()) else {
+        panic!("expected error");
+    };
+    match err {
+        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
+        other => panic!("unexpected error: {other:?}"),
+    }
+}
+
+/// Verify `RestoreSegmentKinds` (via inverse) returns an error for missing shapes.
+#[rstest]
+fn restore_segment_kinds_fails_for_missing_shape(empty_doc: Document) {
+    let missing_id = shape_id(999);
+    let inverse = CommandInverse::RestoreSegmentKinds {
+        command_name: "Set Segment Kind",
+        changes: vec![SegmentChange {
+            shape_id: missing_id,
+            segment_index: 0,
+            old_kind: SegmentKind::Cubic,
+            new_kind: SegmentKind::Line,
+            old_start_handle_out: None,
+            new_start_handle_out: None,
+            old_end_handle_in: None,
+            new_end_handle_in: None,
+        }],
+    };
+
+    let Err(err) = inverse.apply(&mut empty_doc.clone()) else {
+        panic!("expected error");
+    };
+    match err {
+        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
+        other => panic!("unexpected error: {other:?}"),
+    }
+}
+
+/// Verify `RemoveAnchor` (via inverse) returns an error for invalid indices.
+#[rstest]
+fn remove_anchor_fails_for_invalid_shape_index(empty_doc: Document) {
+    let inverse = CommandInverse::RemoveAnchor {
+        command_name: "Insert Anchor",
+        replacement: ShapeReplacement {
+            shape_index: 999,
+            old_shape: sample_shape(shape_id(1), 0),
+            new_shape: sample_shape(shape_id(1), 0),
+        },
+    };
+
+    let Err(err) = inverse.apply(&mut empty_doc.clone()) else {
+        panic!("expected error");
+    };
+    match err {
+        UserError::InvalidOperation(msg) => {
+            assert!(
+                msg.contains("out of range"),
+                "expected 'out of range' in message: {msg}"
+            );
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+}
+
+// ============================================================================
+// Success Path Tests (Result-returning signatures)
+// ============================================================================
+
+/// Verify `MoveShapes` succeeds and returns a valid inverse for valid shapes.
+#[rstest]
+fn move_shapes_succeeds_with_valid_shapes(mut doc_with_two_shapes: Document) {
+    let target_id = shape_id(1);
+    let delta = Vec2::new(5.0, -3.0);
+    let cmd = Command::MoveShapes {
+        movements: vec![ShapeMovement {
+            shape_id: target_id,
+            delta,
+        }],
+    };
+
+    let inverse = cmd
+        .apply(&mut doc_with_two_shapes)
+        .expect("apply should succeed");
+
+    // Verify the inverse can be applied successfully
+    inverse
+        .apply(&mut doc_with_two_shapes)
+        .expect("inverse should succeed");
+}
+
+/// Verify `SetStyle` succeeds and returns a valid inverse for valid shapes.
+#[rstest]
+fn set_style_succeeds_with_valid_shapes(mut doc_with_two_shapes: Document) {
+    let target_id = shape_id(1);
+    let cmd = Command::SetStyle {
+        changes: vec![StyleChange {
+            shape_id: target_id,
+            from: PaintStyle::new(None, 1.0, None),
+            to: PaintStyle::new(None, 3.0, None),
+        }],
+    };
+
+    let inverse = cmd
+        .apply(&mut doc_with_two_shapes)
+        .expect("apply should succeed");
+
+    // Verify the inverse can be applied successfully
+    inverse
+        .apply(&mut doc_with_two_shapes)
+        .expect("inverse should succeed");
+}
+
+/// Verify `SetSegmentKind` succeeds and returns a valid inverse for valid segments.
+#[rstest]
+fn set_segment_kind_succeeds_with_valid_segments(mut doc_with_two_shapes: Document) {
+    let target_id = shape_id(1);
+    let cmd = Command::SetSegmentKind {
+        changes: vec![SegmentChange {
+            shape_id: target_id,
+            segment_index: 0,
+            old_kind: SegmentKind::Line,
+            new_kind: SegmentKind::Cubic,
+            old_start_handle_out: None,
+            new_start_handle_out: Some(Vec2::new(1.0, 1.0)),
+            old_end_handle_in: None,
+            new_end_handle_in: Some(Vec2::new(2.0, 2.0)),
+        }],
+    };
+
+    let inverse = cmd
+        .apply(&mut doc_with_two_shapes)
+        .expect("apply should succeed");
+
+    // Verify the inverse can be applied successfully
+    inverse
+        .apply(&mut doc_with_two_shapes)
+        .expect("inverse should succeed");
+}
+
+/// Verify `Reorder` succeeds with valid shape indices.
+#[rstest]
+fn reorder_succeeds_with_valid_indices(mut doc_with_two_shapes: Document) {
+    let cmd = Command::Reorder {
+        operations: vec![ReorderOp {
+            shape_id: shape_id(1),
+            from_index: 0,
+            to_index: 1,
+        }],
+    };
+
+    let inverse = cmd
+        .apply(&mut doc_with_two_shapes)
+        .expect("apply should succeed");
+
+    // Verify the shape order changed
+    assert_eq!(
+        doc_with_two_shapes.shapes.first().map(|s| s.id),
+        Some(shape_id(2))
+    );
+    assert_eq!(
+        doc_with_two_shapes.shapes.get(1).map(|s| s.id),
+        Some(shape_id(1))
+    );
+
+    // Verify the inverse can be applied successfully
+    inverse
+        .apply(&mut doc_with_two_shapes)
+        .expect("inverse should succeed");
 }
