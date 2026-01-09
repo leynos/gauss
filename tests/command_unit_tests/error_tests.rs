@@ -10,7 +10,11 @@ use gauss::model::{
 use rstest::rstest;
 use test_support::shapes::shape_id;
 
-use super::{assert_command_error, doc_with_two_shapes, empty_doc};
+use super::{
+    assert_fails_with_anchor_not_found, assert_fails_with_invalid_operation,
+    assert_fails_with_segment_not_found, assert_fails_with_shape_not_found, doc_with_two_shapes,
+    empty_doc,
+};
 
 /// Verify `MoveShapes` returns an error for non-existent shapes.
 #[rstest]
@@ -23,10 +27,7 @@ fn move_shapes_fails_for_missing_shape(empty_doc: Document) {
         }],
     };
 
-    assert_command_error(empty_doc, &cmd, |err| match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
-        other => panic!("unexpected error: {other:?}"),
-    });
+    assert_fails_with_shape_not_found(empty_doc, &cmd, missing_id);
 }
 
 /// Verify `MoveAnchor` returns an error for non-existent shapes.
@@ -46,10 +47,7 @@ fn move_anchor_fails_for_missing_shape(empty_doc: Document) {
         },
     };
 
-    assert_command_error(empty_doc, &cmd, |err| match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
-        other => panic!("unexpected error: {other:?}"),
-    });
+    assert_fails_with_shape_not_found(empty_doc, &cmd, missing_id);
 }
 
 /// Verify `MoveAnchor` returns an error for non-existent anchors.
@@ -70,13 +68,7 @@ fn move_anchor_fails_for_missing_anchor(doc_with_two_shapes: Document) {
         },
     };
 
-    assert_command_error(doc_with_two_shapes, &cmd, |err| match err {
-        UserError::AnchorNotFound(sid, idx) => {
-            assert_eq!(sid, target_shape);
-            assert_eq!(idx, missing_anchor);
-        }
-        other => panic!("unexpected error: {other:?}"),
-    });
+    assert_fails_with_anchor_not_found(doc_with_two_shapes, &cmd, target_shape, missing_anchor);
 }
 
 /// Verify `MoveHandle` returns an error for non-existent shapes.
@@ -93,10 +85,7 @@ fn move_handle_fails_for_missing_shape(empty_doc: Document) {
         },
     };
 
-    assert_command_error(empty_doc, &cmd, |err| match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
-        other => panic!("unexpected error: {other:?}"),
-    });
+    assert_fails_with_shape_not_found(empty_doc, &cmd, missing_id);
 }
 
 /// Verify `MoveHandle` returns an error for non-existent anchors.
@@ -114,13 +103,7 @@ fn move_handle_fails_for_missing_anchor(doc_with_two_shapes: Document) {
         },
     };
 
-    assert_command_error(doc_with_two_shapes, &cmd, |err| match err {
-        UserError::AnchorNotFound(sid, idx) => {
-            assert_eq!(sid, target_shape);
-            assert_eq!(idx, missing_anchor);
-        }
-        other => panic!("unexpected error: {other:?}"),
-    });
+    assert_fails_with_anchor_not_found(doc_with_two_shapes, &cmd, target_shape, missing_anchor);
 }
 
 /// Verify `SetStyle` returns an error for non-existent shapes.
@@ -135,10 +118,7 @@ fn set_style_fails_for_missing_shape(empty_doc: Document) {
         }],
     };
 
-    assert_command_error(empty_doc, &cmd, |err| match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
-        other => panic!("unexpected error: {other:?}"),
-    });
+    assert_fails_with_shape_not_found(empty_doc, &cmd, missing_id);
 }
 
 /// Verify `Reorder` returns an error for invalid indices.
@@ -152,12 +132,7 @@ fn reorder_fails_for_invalid_indices(empty_doc: Document) {
         }],
     };
 
-    assert_command_error(empty_doc, &cmd, |err| match err {
-        UserError::InvalidOperation(msg) => {
-            assert!(msg.contains("invalid reorder"), "unexpected message: {msg}");
-        }
-        other => panic!("unexpected error: {other:?}"),
-    });
+    assert_fails_with_invalid_operation(empty_doc, &cmd, "invalid reorder");
 }
 
 /// Verify `SetSegmentKind` returns an error for non-existent shapes.
@@ -177,10 +152,7 @@ fn set_segment_kind_fails_for_missing_shape(empty_doc: Document) {
         }],
     };
 
-    assert_command_error(empty_doc, &cmd, |err| match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
-        other => panic!("unexpected error: {other:?}"),
-    });
+    assert_fails_with_shape_not_found(empty_doc, &cmd, missing_id);
 }
 
 /// Verify `SetSegmentKind` returns an error for non-existent segments.
@@ -201,13 +173,7 @@ fn set_segment_kind_fails_for_missing_segment(doc_with_two_shapes: Document) {
         }],
     };
 
-    assert_command_error(doc_with_two_shapes, &cmd, |err| match err {
-        UserError::SegmentNotFound(sid, idx) => {
-            assert_eq!(sid, target_shape);
-            assert_eq!(idx, missing_segment);
-        }
-        other => panic!("unexpected error: {other:?}"),
-    });
+    assert_fails_with_segment_not_found(doc_with_two_shapes, &cmd, target_shape, missing_segment);
 }
 
 /// Verify that `CommandInverse::apply` propagates errors when the document

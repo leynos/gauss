@@ -4,13 +4,15 @@
 //! when operating on missing shapes or invalid indices.
 
 use gauss::model::{
-    CommandInverse, Document, PaintStyle, SegmentChange, SegmentKind, ShapeReplacement,
-    StyleChange, UserError,
+    CommandInverse, Document, PaintStyle, SegmentChange, SegmentKind, ShapeReplacement, StyleChange,
 };
 use rstest::rstest;
 use test_support::shapes::{sample_shape, shape_id};
 
-use super::empty_doc;
+use super::{
+    assert_inverse_fails_with_invalid_operation, assert_inverse_fails_with_shape_not_found,
+    empty_doc,
+};
 
 /// Verify `RestoreStyles` (via inverse) returns an error for missing shapes.
 #[rstest]
@@ -25,13 +27,7 @@ fn restore_styles_fails_for_missing_shape(empty_doc: Document) {
         }],
     };
 
-    let Err(err) = inverse.apply(&mut empty_doc.clone()) else {
-        panic!("expected error");
-    };
-    match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_inverse_fails_with_shape_not_found(&empty_doc, &inverse, missing_id);
 }
 
 /// Verify `RestoreSegmentKinds` (via inverse) returns an error for missing shapes.
@@ -52,13 +48,7 @@ fn restore_segment_kinds_fails_for_missing_shape(empty_doc: Document) {
         }],
     };
 
-    let Err(err) = inverse.apply(&mut empty_doc.clone()) else {
-        panic!("expected error");
-    };
-    match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, missing_id),
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_inverse_fails_with_shape_not_found(&empty_doc, &inverse, missing_id);
 }
 
 /// Verify `RemoveAnchor` (via inverse) returns an error for invalid indices.
@@ -73,16 +63,5 @@ fn remove_anchor_fails_for_invalid_shape_index(empty_doc: Document) {
         },
     };
 
-    let Err(err) = inverse.apply(&mut empty_doc.clone()) else {
-        panic!("expected error");
-    };
-    match err {
-        UserError::InvalidOperation(msg) => {
-            assert!(
-                msg.contains("out of range"),
-                "expected 'out of range' in message: {msg}"
-            );
-        }
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_inverse_fails_with_invalid_operation(&empty_doc, &inverse, "out of range");
 }

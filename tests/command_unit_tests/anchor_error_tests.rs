@@ -5,12 +5,14 @@
 
 use gauss::model::{
     AnchorDeletion, AnchorDeletionResult, AnchorRestoration, AnchorRestorationKind, Command,
-    CommandInverse, Document, ShapeReplacement, UserError,
+    CommandInverse, Document, ShapeReplacement,
 };
 use rstest::rstest;
 use test_support::shapes::{sample_shape, shape_id};
 
-use super::{assert_command_error, empty_doc};
+use super::{
+    assert_fails_with_invalid_operation, assert_inverse_fails_with_invalid_operation, empty_doc,
+};
 
 /// Verify `InsertAnchor` returns an error for out-of-range shape indices.
 #[rstest]
@@ -23,15 +25,7 @@ fn insert_anchor_fails_for_invalid_shape_index(empty_doc: Document) {
         },
     };
 
-    assert_command_error(empty_doc, &cmd, |err| match err {
-        UserError::InvalidOperation(msg) => {
-            assert!(
-                msg.contains("out of range"),
-                "expected 'out of range' in message: {msg}"
-            );
-        }
-        other => panic!("unexpected error: {other:?}"),
-    });
+    assert_fails_with_invalid_operation(empty_doc, &cmd, "out of range");
 }
 
 /// Verify `DeleteAnchors` returns an error for out-of-range shape indices.
@@ -46,15 +40,7 @@ fn delete_anchors_fails_for_invalid_shape_index(empty_doc: Document) {
         }],
     };
 
-    assert_command_error(empty_doc, &cmd, |err| match err {
-        UserError::InvalidOperation(msg) => {
-            assert!(
-                msg.contains("out of range"),
-                "expected 'out of range' in message: {msg}"
-            );
-        }
-        other => panic!("unexpected error: {other:?}"),
-    });
+    assert_fails_with_invalid_operation(empty_doc, &cmd, "out of range");
 }
 
 /// Verify `ClosePath` returns an error for out-of-range shape indices.
@@ -68,15 +54,7 @@ fn close_path_fails_for_invalid_shape_index(empty_doc: Document) {
         },
     };
 
-    assert_command_error(empty_doc, &cmd, |err| match err {
-        UserError::InvalidOperation(msg) => {
-            assert!(
-                msg.contains("out of range"),
-                "expected 'out of range' in message: {msg}"
-            );
-        }
-        other => panic!("unexpected error: {other:?}"),
-    });
+    assert_fails_with_invalid_operation(empty_doc, &cmd, "out of range");
 }
 
 /// Verify `RestoreAnchors` (via inverse) returns an error for invalid indices.
@@ -93,18 +71,7 @@ fn restore_anchors_fails_for_invalid_shape_index(empty_doc: Document) {
         }],
     };
 
-    let Err(err) = inverse.apply(&mut empty_doc.clone()) else {
-        panic!("expected error");
-    };
-    match err {
-        UserError::InvalidOperation(msg) => {
-            assert!(
-                msg.contains("out of range"),
-                "expected 'out of range' in message: {msg}"
-            );
-        }
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_inverse_fails_with_invalid_operation(&empty_doc, &inverse, "out of range");
 }
 
 /// Verify `ReopenPath` (via inverse) returns an error for out-of-range indices.
@@ -119,16 +86,5 @@ fn reopen_path_fails_for_invalid_shape_index(empty_doc: Document) {
         },
     };
 
-    let Err(err) = inverse.apply(&mut empty_doc.clone()) else {
-        panic!("expected error");
-    };
-    match err {
-        UserError::InvalidOperation(msg) => {
-            assert!(
-                msg.contains("out of range"),
-                "expected 'out of range' in message: {msg}"
-            );
-        }
-        other => panic!("unexpected error: {other:?}"),
-    }
+    assert_inverse_fails_with_invalid_operation(&empty_doc, &inverse, "out of range");
 }
