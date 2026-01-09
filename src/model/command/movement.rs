@@ -50,6 +50,19 @@ where
     Ok(())
 }
 
+/// Validate that all referenced shapes exist in the document.
+///
+/// # Errors
+///
+/// Returns `UserError::ShapeNotFound` if any referenced shape does not exist.
+fn validate_shapes_exist(doc: &Document, movements: &[ShapeMovement]) -> Result<(), UserError> {
+    movements.iter().try_for_each(|movement| {
+        doc.find_index(movement.shape_id)
+            .ok_or(UserError::ShapeNotFound(movement.shape_id))
+            .map(|_| ())
+    })
+}
+
 /// Apply shape movements, returning the inverse command for undo.
 ///
 /// Pre-validates all shape IDs before applying any changes to ensure atomicity:
@@ -64,11 +77,7 @@ pub(super) fn apply_move_shapes(
     command_name: &'static str,
 ) -> Result<CommandInverse, UserError> {
     // Pre-validate: ensure all shapes exist before applying any changes.
-    for movement in movements {
-        if doc.find_index(movement.shape_id).is_none() {
-            return Err(UserError::ShapeNotFound(movement.shape_id));
-        }
-    }
+    validate_shapes_exist(doc, movements)?;
 
     // Apply changes (safe now that all shapes are validated).
     for movement in movements {
@@ -108,11 +117,7 @@ pub(super) fn apply_move_shapes_back(
     movements: &[ShapeMovement],
 ) -> Result<(), UserError> {
     // Pre-validate: ensure all shapes exist before applying any changes.
-    for movement in movements {
-        if doc.find_index(movement.shape_id).is_none() {
-            return Err(UserError::ShapeNotFound(movement.shape_id));
-        }
-    }
+    validate_shapes_exist(doc, movements)?;
 
     // Apply changes (safe now that all shapes are validated).
     for movement in movements {
