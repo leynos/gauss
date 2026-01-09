@@ -84,6 +84,9 @@ pub(super) fn prepare_toggle_segment_kind(state: &EngineState) -> Result<Command
 
 /// Apply segment kind changes, returning the inverse command for undo.
 ///
+/// Pre-validates all shapes and segments before applying any changes to ensure
+/// atomicity: either all changes succeed or none are applied.
+///
 /// # Errors
 ///
 /// Returns `UserError::ShapeNotFound` if any referenced shape does not exist.
@@ -93,11 +96,29 @@ pub(super) fn apply_set_segment_kind(
     changes: &[SegmentChange],
     command_name: &'static str,
 ) -> Result<CommandInverse, UserError> {
+    // Pre-validate: ensure all shapes and segments exist before applying any changes.
+    for change in changes {
+        let idx = doc
+            .find_index(change.shape_id)
+            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
+        let shape = doc
+            .shapes
+            .get(idx)
+            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
+        if shape.path.segments.get(change.segment_index).is_none() {
+            return Err(UserError::SegmentNotFound(
+                change.shape_id,
+                change.segment_index,
+            ));
+        }
+    }
+
+    // Apply changes (safe now that all shapes and segments are validated).
     for change in changes {
         let shape = doc
             .get_mut(change.shape_id)
             .ok_or(UserError::ShapeNotFound(change.shape_id))?;
-        apply_segment_change(shape, change)?;
+        apply_segment_change_unchecked(shape, change);
     }
 
     // Create inverse with swapped old/new
@@ -123,6 +144,9 @@ pub(super) fn apply_set_segment_kind(
 
 /// Apply the inverse of segment kind changes (for undo).
 ///
+/// Pre-validates all shapes and segments before applying any changes to ensure
+/// atomicity: either all changes succeed or none are applied.
+///
 /// # Errors
 ///
 /// Returns `UserError::ShapeNotFound` if any referenced shape does not exist.
@@ -131,22 +155,39 @@ pub(super) fn apply_restore_segment_kinds(
     doc: &mut Document,
     changes: &[SegmentChange],
 ) -> Result<(), UserError> {
+    // Pre-validate: ensure all shapes and segments exist before applying any changes.
+    for change in changes {
+        let idx = doc
+            .find_index(change.shape_id)
+            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
+        let shape = doc
+            .shapes
+            .get(idx)
+            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
+        if shape.path.segments.get(change.segment_index).is_none() {
+            return Err(UserError::SegmentNotFound(
+                change.shape_id,
+                change.segment_index,
+            ));
+        }
+    }
+
+    // Apply changes (safe now that all shapes and segments are validated).
     for change in changes {
         let shape = doc
             .get_mut(change.shape_id)
             .ok_or(UserError::ShapeNotFound(change.shape_id))?;
-        apply_segment_change(shape, change)?;
+        apply_segment_change_unchecked(shape, change);
     }
     Ok(())
 }
 
-fn apply_segment_change(shape: &mut Shape, change: &SegmentChange) -> Result<(), UserError> {
-    let seg = shape
-        .path
-        .segments
-        .get_mut(change.segment_index)
-        .ok_or(UserError::SegmentNotFound(shape.id, change.segment_index))?;
-    *seg = change.new_kind;
+/// Apply a segment change without validation (caller must ensure validity).
+fn apply_segment_change_unchecked(shape: &mut Shape, change: &SegmentChange) {
+    // SAFETY: Caller must ensure segment exists.
+    if let Some(seg) = shape.path.segments.get_mut(change.segment_index) {
+        *seg = change.new_kind;
+    }
 
     // Update start anchor handle (may not exist for edge cases)
     if let Some(anchor) = shape.path.anchors.get_mut(change.segment_index) {
@@ -158,6 +199,4 @@ fn apply_segment_change(shape: &mut Shape, change: &SegmentChange) -> Result<(),
     if let Some(anchor) = shape.path.anchors.get_mut(end_index) {
         anchor.handle_in = change.new_end_handle_in;
     }
-
-    Ok(())
 }

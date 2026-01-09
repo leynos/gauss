@@ -52,6 +52,9 @@ where
 
 /// Apply shape movements, returning the inverse command for undo.
 ///
+/// Pre-validates all shape IDs before applying any changes to ensure atomicity:
+/// either all changes succeed or none are applied.
+///
 /// # Errors
 ///
 /// Returns `UserError::ShapeNotFound` if any referenced shape does not exist.
@@ -60,6 +63,14 @@ pub(super) fn apply_move_shapes(
     movements: &[ShapeMovement],
     command_name: &'static str,
 ) -> Result<CommandInverse, UserError> {
+    // Pre-validate: ensure all shapes exist before applying any changes.
+    for movement in movements {
+        if doc.find_index(movement.shape_id).is_none() {
+            return Err(UserError::ShapeNotFound(movement.shape_id));
+        }
+    }
+
+    // Apply changes (safe now that all shapes are validated).
     for movement in movements {
         let shape = doc
             .get_mut(movement.shape_id)
@@ -86,6 +97,9 @@ pub(super) fn apply_move_shapes(
 
 /// Apply the inverse of shape movements (for undo).
 ///
+/// Pre-validates all shape IDs before applying any changes to ensure atomicity:
+/// either all changes succeed or none are applied.
+///
 /// # Errors
 ///
 /// Returns `UserError::ShapeNotFound` if any referenced shape does not exist.
@@ -93,7 +107,14 @@ pub(super) fn apply_move_shapes_back(
     doc: &mut Document,
     movements: &[ShapeMovement],
 ) -> Result<(), UserError> {
-    // Same logic as apply_move_shapes, deltas are already negated
+    // Pre-validate: ensure all shapes exist before applying any changes.
+    for movement in movements {
+        if doc.find_index(movement.shape_id).is_none() {
+            return Err(UserError::ShapeNotFound(movement.shape_id));
+        }
+    }
+
+    // Apply changes (safe now that all shapes are validated).
     for movement in movements {
         let shape = doc
             .get_mut(movement.shape_id)
