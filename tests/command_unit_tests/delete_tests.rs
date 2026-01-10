@@ -1,5 +1,8 @@
 //! Tests for delete shape commands.
 
+use std::any::Any;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+
 use gauss::model::{
     Action, Command, CommandInverse, DeletedShape, Document, EngineState, SelItem, Selection,
     UserError, prepare_command,
@@ -282,8 +285,26 @@ fn user_error_display_shape_not_found() {
 #[case::redo(Action::Redo)]
 #[case::activate_pen_tool(Action::ActivatePenTool)]
 #[case::activate_select_tool(Action::ActivateSelectTool)]
-#[should_panic(expected = "dispatcher bug")]
 fn editor_action_panics(#[case] action: Action) {
     let state = EngineState::new();
-    drop(prepare_command(action, &state));
+
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        drop(prepare_command(action, &state));
+    }));
+
+    let panic_payload = result.expect_err("expected prepare_command to panic");
+    let message = extract_panic_message(&panic_payload);
+    assert!(
+        message.contains("dispatcher bug"),
+        "expected panic message to contain 'dispatcher bug', got: {message}"
+    );
+}
+
+/// Extract a panic message from a panic payload.
+fn extract_panic_message(payload: &Box<dyn Any + Send>) -> String {
+    payload
+        .downcast_ref::<&str>()
+        .map(|s| (*s).to_owned())
+        .or_else(|| payload.downcast_ref::<String>().cloned())
+        .unwrap_or_else(|| "<unknown panic payload>".to_owned())
 }
