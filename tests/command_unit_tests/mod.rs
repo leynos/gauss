@@ -10,6 +10,8 @@ mod insert_tests;
 mod inverse_error_tests;
 mod success_tests;
 
+use std::any::Any;
+
 use gauss::model::{Command, CommandInverse, Document, SelItem, Selection, ShapeId, UserError};
 use rstest::fixture;
 use test_support::shapes::{sample_shape, shape_id};
@@ -141,4 +143,16 @@ pub fn assert_inverse_fails_with_invalid_operation(
         }
         other => panic!("unexpected error: {other:?}"),
     });
+}
+
+/// Extract a panic message from a panic payload.
+///
+/// Downcasts the payload to either `&str` or `String` and returns the message.
+/// Returns a placeholder string for unrecognised payload types.
+pub fn extract_panic_message(payload: &Box<dyn Any + Send>) -> String {
+    payload
+        .downcast_ref::<&str>()
+        .map(|s| (*s).to_owned())
+        .or_else(|| payload.downcast_ref::<String>().cloned())
+        .unwrap_or_else(|| "<unknown panic payload>".to_owned())
 }

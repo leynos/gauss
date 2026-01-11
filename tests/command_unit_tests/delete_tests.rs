@@ -1,6 +1,44 @@
 //! Tests for delete shape commands.
+//!
+//! This module provides comprehensive test coverage for the `DeleteShapes` command
+//! and its inverse `RestoreShapes` operation.
+//!
+//! ## Success Paths
+//!
+//! - Deleting a single shape via `DeleteShapes` command
+//! - Bulk deletion of multiple shapes with correct index handling
+//! - Delete via `prepare_command` with `DeleteSelection` action
+//! - Full round-trip: action → command → apply → inverse → restore
+//!
+//! ## Inverse Operations
+//!
+//! - `RestoreShapes` inverse correctly restores deleted shapes at original indices
+//! - Round-trip apply/undo preserves document state exactly
+//! - Inverse name matches the originating command name
+//!
+//! ## Error Conditions
+//!
+//! - `EmptySelection` when no shapes are selected
+//! - `ShapeNotFound` for missing shape IDs in selection
+//! - `EmptySelection` when selection contains only anchors (not whole shapes)
+//!
+//! ## Display Formatting
+//!
+//! - Validates `UserError` display strings for `EmptySelection` and `ShapeNotFound`
+//!
+//! ## Edge Cases
+//!
+//! - Multiple deletions preserve correct index adjustments during restore
+//! - `SelectionScope` filtering between `WholeShapes` and `Anchors`
+//! - Editor actions (non-document actions) panic with "dispatcher bug" message
+//!
+//! ## Key Tests
+//!
+//! - `delete_shapes_removes_from_document`: Basic deletion functionality
+//! - `delete_restores_shape_at_correct_index`: Index preservation on restore
+//! - `prepare_delete_selection_fails_with_empty_selection`: Error on empty selection
+//! - `editor_action_panics`: Verifies dispatcher routing assertions
 
-use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use gauss::model::{
@@ -10,25 +48,39 @@ use gauss::model::{
 use rstest::rstest;
 use test_support::shapes::{sample_shape, shape_id};
 
-use super::{doc_with_two_shapes, empty_doc, selection_with_first_shape};
+use super::{doc_with_two_shapes, empty_doc, extract_panic_message, selection_with_first_shape};
 
 #[rstest]
 fn delete_shapes_removes_from_document(mut doc_with_two_shapes: Document) {
-    let shape = doc_with_two_shapes
+    let first_shape = doc_with_two_shapes
         .shapes
         .first()
         .cloned()
         .expect("fixture should have shapes");
+    let second_shape_id = doc_with_two_shapes
+        .shapes
+        .get(1)
+        .expect("fixture should have two shapes")
+        .id;
     let cmd = Command::DeleteShapes {
         targets: vec![DeletedShape {
             index: 0,
-            shape: shape.clone(),
+            shape: first_shape.clone(),
         }],
     };
 
-    let result = cmd.apply(&mut doc_with_two_shapes);
-    assert!(result.is_ok());
+    cmd.apply(&mut doc_with_two_shapes)
+        .expect("delete should succeed");
     assert_eq!(doc_with_two_shapes.shapes.len(), 1);
+    assert_eq!(
+        doc_with_two_shapes
+            .shapes
+            .first()
+            .expect("should have remaining shape")
+            .id,
+        second_shape_id,
+        "remaining shape should be the second shape"
+    );
 }
 
 #[rstest]
@@ -126,26 +178,35 @@ fn prepare_delete_selection_succeeds_with_selection(
 
 #[rstest]
 fn prepare_delete_selection_fails_with_missing_shape(empty_doc: Document) {
+    let missing_id = shape_id(999);
     let mut state = EngineState::with_document(empty_doc);
-    state.selection.toggle(SelItem::Shape(shape_id(999)));
+    state.selection.toggle(SelItem::Shape(missing_id));
 
     let result = prepare_command(Action::DeleteSelection, &state);
 
-    assert!(matches!(result, Err(UserError::ShapeNotFound(_))));
+    let Err(UserError::ShapeNotFound(id)) = result else {
+        panic!("expected ShapeNotFound error, got: {result:?}");
+    };
+    assert_eq!(
+        id, missing_id,
+        "error should reference the missing shape ID"
+    );
 }
 
+/// Validate command and inverse naming conventions.
 #[rstest]
-fn command_name_is_nonempty() {
+#[case::command_name_is_nonempty("non-empty", true)]
+#[case::command_name_is_delete("Delete", false)]
+fn command_naming_validation(#[case] expected: &str, #[case] check_nonempty: bool) {
     let cmd = Command::DeleteShapes { targets: vec![] };
-    assert!(!cmd.name().is_empty());
+    if check_nonempty {
+        assert!(!cmd.name().is_empty(), "command name should not be empty");
+    } else {
+        assert_eq!(cmd.name(), expected);
+    }
 }
 
-#[rstest]
-fn command_name_is_delete() {
-    let cmd = Command::DeleteShapes { targets: vec![] };
-    assert_eq!(cmd.name(), "Delete");
-}
-
+/// Validate that `CommandInverse` preserves the command name.
 #[rstest]
 fn command_inverse_name_is_delete() {
     let inverse = CommandInverse::RestoreShapes {
@@ -259,14 +320,14 @@ fn selection_only_anchors_returns_empty_selection_error(doc_with_two_shapes: Doc
     assert!(matches!(result, Err(UserError::EmptySelection)));
 }
 
-#[test]
+#[rstest]
 fn user_error_display_empty_selection() {
     let err = UserError::EmptySelection;
     let msg = format!("{err}");
     assert_eq!(msg, "No selection");
 }
 
-#[test]
+#[rstest]
 fn user_error_display_shape_not_found() {
     let err = UserError::ShapeNotFound(shape_id(42));
     let msg = format!("{err}");
@@ -298,13 +359,4 @@ fn editor_action_panics(#[case] action: Action) {
         message.contains("dispatcher bug"),
         "expected panic message to contain 'dispatcher bug', got: {message}"
     );
-}
-
-/// Extract a panic message from a panic payload.
-fn extract_panic_message(payload: &Box<dyn Any + Send>) -> String {
-    payload
-        .downcast_ref::<&str>()
-        .map(|s| (*s).to_owned())
-        .or_else(|| payload.downcast_ref::<String>().cloned())
-        .unwrap_or_else(|| "<unknown panic payload>".to_owned())
 }
