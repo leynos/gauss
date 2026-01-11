@@ -193,17 +193,11 @@ fn prepare_delete_selection_fails_with_missing_shape(empty_doc: Document) {
     );
 }
 
-/// Validate command and inverse naming conventions.
+/// Validate that `DeleteShapes` command has the expected name.
 #[rstest]
-#[case::command_name_is_nonempty("non-empty", true)]
-#[case::command_name_is_delete("Delete", false)]
-fn command_naming_validation(#[case] expected: &str, #[case] check_nonempty: bool) {
+fn delete_command_name() {
     let cmd = Command::DeleteShapes { targets: vec![] };
-    if check_nonempty {
-        assert!(!cmd.name().is_empty(), "command name should not be empty");
-    } else {
-        assert_eq!(cmd.name(), expected);
-    }
+    assert_eq!(cmd.name(), "Delete");
 }
 
 /// Validate that `CommandInverse` preserves the command name.
