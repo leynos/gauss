@@ -198,10 +198,19 @@ fn remove_anchor_from_path(path: &mut PathGeom, idx: usize) {
     }
 }
 
-fn apply_shape_replacement(doc: &mut Document, replacement: &ShapeReplacement) {
-    if let Some(shape) = doc.shapes.get_mut(replacement.shape_index) {
-        *shape = replacement.new_shape.clone();
-    }
+fn apply_shape_replacement(
+    doc: &mut Document,
+    replacement: &ShapeReplacement,
+) -> Result<(), UserError> {
+    let shapes_len = doc.shapes.len();
+    let shape = doc.shapes.get_mut(replacement.shape_index).ok_or_else(|| {
+        UserError::InvalidOperation(format!(
+            "shape replacement index {} out of range (len = {})",
+            replacement.shape_index, shapes_len
+        ))
+    })?;
+    *shape = replacement.new_shape.clone();
+    Ok(())
 }
 
 fn create_swapped_replacement(replacement: &ShapeReplacement) -> ShapeReplacement {
@@ -217,9 +226,12 @@ fn apply_shape_replacement_with_inverse(
     replacement: &ShapeReplacement,
     command_name: &'static str,
     create_inverse: impl FnOnce(&'static str, ShapeReplacement) -> CommandInverse,
-) -> CommandInverse {
-    apply_shape_replacement(doc, replacement);
-    create_inverse(command_name, create_swapped_replacement(replacement))
+) -> Result<CommandInverse, UserError> {
+    apply_shape_replacement(doc, replacement)?;
+    Ok(create_inverse(
+        command_name,
+        create_swapped_replacement(replacement),
+    ))
 }
 
 /// Macro to generate shape replacement functions with inverses
@@ -232,7 +244,7 @@ macro_rules! shape_replacement_command {
             doc: &mut Document,
             replacement: &ShapeReplacement,
             command_name: &'static str,
-        ) -> CommandInverse {
+        ) -> Result<CommandInverse, UserError> {
             apply_shape_replacement_with_inverse(doc, replacement, command_name, |name, repl| {
                 CommandInverse::$inverse_variant {
                     command_name: name,
@@ -245,30 +257,47 @@ macro_rules! shape_replacement_command {
 
 shape_replacement_command!(apply_insert_anchor, RemoveAnchor);
 
-pub(super) fn apply_remove_anchor(doc: &mut Document, replacement: &ShapeReplacement) {
-    apply_shape_replacement(doc, replacement);
+pub(super) fn apply_remove_anchor(
+    doc: &mut Document,
+    replacement: &ShapeReplacement,
+) -> Result<(), UserError> {
+    apply_shape_replacement(doc, replacement)
 }
 
+/// Apply anchor deletions, returning the inverse command for undo.
+///
+/// # Errors
+///
+/// Returns `UserError::InvalidOperation` if any shape index is out of range.
 pub(super) fn apply_delete_anchors(
     doc: &mut Document,
     deletions: &[AnchorDeletion],
     command_name: &'static str,
-) -> CommandInverse {
+) -> Result<CommandInverse, UserError> {
     // Sort by index in reverse order for safe removal
     let mut sorted_deletions: Vec<_> = deletions.iter().collect();
     sorted_deletions.sort_by(|a, b| b.shape_index.cmp(&a.shape_index));
 
     for deletion in &sorted_deletions {
+        let shapes_len = doc.shapes.len();
         match &deletion.result {
             AnchorDeletionResult::Modified(new_shape) => {
-                if let Some(shape) = doc.shapes.get_mut(deletion.shape_index) {
-                    *shape = new_shape.clone();
-                }
+                let shape = doc.shapes.get_mut(deletion.shape_index).ok_or_else(|| {
+                    UserError::InvalidOperation(format!(
+                        "anchor deletion shape index {} out of range (len = {})",
+                        deletion.shape_index, shapes_len
+                    ))
+                })?;
+                *shape = new_shape.clone();
             }
             AnchorDeletionResult::Removed => {
-                if deletion.shape_index < doc.shapes.len() {
-                    doc.shapes.remove(deletion.shape_index);
+                if deletion.shape_index >= shapes_len {
+                    return Err(UserError::InvalidOperation(format!(
+                        "anchor deletion shape removal index {} out of range (len = {})",
+                        deletion.shape_index, shapes_len
+                    )));
                 }
+                doc.shapes.remove(deletion.shape_index);
             }
         }
     }
@@ -293,35 +322,56 @@ pub(super) fn apply_delete_anchors(
         })
         .collect();
 
-    CommandInverse::RestoreAnchors {
+    Ok(CommandInverse::RestoreAnchors {
         command_name,
         restorations,
-    }
+    })
 }
 
-pub(super) fn apply_restore_anchors(doc: &mut Document, restorations: &[AnchorRestoration]) {
+/// Apply anchor restorations (for undo).
+///
+/// # Errors
+///
+/// Returns `UserError::InvalidOperation` if any shape index is out of range.
+pub(super) fn apply_restore_anchors(
+    doc: &mut Document,
+    restorations: &[AnchorRestoration],
+) -> Result<(), UserError> {
     // Sort by index in forward order for safe insertion
     let mut sorted_restorations: Vec<_> = restorations.iter().collect();
     sorted_restorations.sort_by_key(|r| r.shape_index);
 
     for restoration in sorted_restorations {
+        let shapes_len = doc.shapes.len();
         match &restoration.restoration {
             AnchorRestorationKind::RestoreModified { to, .. } => {
-                if let Some(shape) = doc.shapes.get_mut(restoration.shape_index) {
-                    *shape = to.clone();
-                }
+                let shape = doc.shapes.get_mut(restoration.shape_index).ok_or_else(|| {
+                    UserError::InvalidOperation(format!(
+                        "anchor restoration shape index {} out of range (len = {})",
+                        restoration.shape_index, shapes_len
+                    ))
+                })?;
+                *shape = to.clone();
             }
             AnchorRestorationKind::RestoreRemoved { shape } => {
-                if restoration.shape_index <= doc.shapes.len() {
-                    doc.shapes.insert(restoration.shape_index, shape.clone());
+                if restoration.shape_index > shapes_len {
+                    return Err(UserError::InvalidOperation(format!(
+                        "anchor restoration shape insertion index {} out of range (len = {})",
+                        restoration.shape_index, shapes_len
+                    )));
                 }
+                doc.shapes.insert(restoration.shape_index, shape.clone());
             }
         }
     }
+    Ok(())
 }
 
 shape_replacement_command!(apply_close_path, ReopenPath);
 
-pub(super) fn apply_reopen_path(doc: &mut Document, replacement: &ShapeReplacement) {
-    apply_shape_replacement(doc, replacement);
+pub(super) fn apply_reopen_path(
+    doc: &mut Document,
+    replacement: &ShapeReplacement,
+) -> Result<(), UserError> {
+    apply_shape_replacement(doc, replacement)
 }

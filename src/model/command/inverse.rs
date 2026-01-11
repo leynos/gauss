@@ -175,46 +175,16 @@ impl CommandInverse {
     /// ```
     pub fn apply(&self, doc: &mut Document) -> Result<(), UserError> {
         match self {
-            Self::RestoreShapes { targets, .. } => {
-                apply_restore_shapes(doc, targets);
-                Ok(())
-            }
-            Self::MoveShapesBack { movements, .. } => {
-                apply_move_shapes_back(doc, movements);
-                Ok(())
-            }
-            Self::MoveAnchorBack { movement, .. } => {
-                apply_move_anchor_back(doc, movement);
-                Ok(())
-            }
-            Self::MoveHandleBack { movement, .. } => {
-                apply_move_handle_back(doc, movement);
-                Ok(())
-            }
-            Self::RestoreStyles { changes, .. } => {
-                apply_restore_styles(doc, changes);
-                Ok(())
-            }
-            Self::ReverseReorder { operations, .. } => {
-                apply_reverse_reorder(doc, operations);
-                Ok(())
-            }
-            Self::RestoreSegmentKinds { changes, .. } => {
-                apply_restore_segment_kinds(doc, changes);
-                Ok(())
-            }
-            Self::RemoveAnchor { replacement, .. } => {
-                apply_remove_anchor(doc, replacement);
-                Ok(())
-            }
-            Self::RestoreAnchors { restorations, .. } => {
-                apply_restore_anchors(doc, restorations);
-                Ok(())
-            }
-            Self::ReopenPath { replacement, .. } => {
-                apply_reopen_path(doc, replacement);
-                Ok(())
-            }
+            Self::RestoreShapes { targets, .. } => apply_restore_shapes(doc, targets),
+            Self::MoveShapesBack { movements, .. } => apply_move_shapes_back(doc, movements),
+            Self::MoveAnchorBack { movement, .. } => apply_move_anchor_back(doc, movement),
+            Self::MoveHandleBack { movement, .. } => apply_move_handle_back(doc, movement),
+            Self::RestoreStyles { changes, .. } => apply_restore_styles(doc, changes),
+            Self::ReverseReorder { operations, .. } => apply_reverse_reorder(doc, operations),
+            Self::RestoreSegmentKinds { changes, .. } => apply_restore_segment_kinds(doc, changes),
+            Self::RemoveAnchor { replacement, .. } => apply_remove_anchor(doc, replacement),
+            Self::RestoreAnchors { restorations, .. } => apply_restore_anchors(doc, restorations),
+            Self::ReopenPath { replacement, .. } => apply_reopen_path(doc, replacement),
             Self::RemoveShape { insertion, .. } => apply_remove_shape(doc, insertion),
         }
     }
