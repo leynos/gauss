@@ -165,15 +165,11 @@ fn prepare_delete_selection_succeeds_with_selection(
     let result = prepare_command(Action::DeleteSelection, &state);
 
     let cmd = result.expect("prepare_command should succeed");
-    assert!(
-        matches!(cmd, Command::DeleteShapes { .. }),
-        "expected DeleteShapes command"
-    );
-
-    if let Command::DeleteShapes { targets } = cmd {
-        assert_eq!(targets.len(), 1);
-        assert_eq!(targets.first().expect("should have one target").index, 0);
-    }
+    let Command::DeleteShapes { targets } = cmd else {
+        panic!("expected DeleteShapes command, got: {cmd:?}");
+    };
+    assert_eq!(targets.len(), 1);
+    assert_eq!(targets.first().expect("should have one target").index, 0);
 }
 
 #[rstest]
