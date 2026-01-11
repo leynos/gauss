@@ -419,15 +419,32 @@ than a trait, for the following reasons:
 The `Command` enum lives in `src/model/command.rs` and is GPUI-independent for
 testability. The relationship between Actions, Commands, and DocOps is:
 
+For screen readers: The following diagram shows Actions flowing to Commands,
+then to DocOps.
+
 ```text
 Action (user intent)       e.g., DeleteSelection
    │
    ▼  prepare_command()
-Command (undoable mutation) e.g., DeleteShapes { targets: [...] }
+Command (undoable mutation) e.g., DeleteSelectionCommand { ids: [...] }
    │
    ▼  apply()
-Document mutation          Direct shape removal with inverse capture
+DocChange / DocOp          e.g., RemoveShape { index, shape }
 ```
+
+DocOps are atomic, invertible document mutations defined in `src/model/ops.rs`.
+A `DocChange` batches multiple DocOps into a single unit of application.
+
+Commands sit above DocOps as user-intent operations and the unit of undo/redo.
+Command implementations may either emit DocOps/DocChanges or mutate the
+document directly for simple cases; both patterns are valid and coexist. The
+undo stack records Commands and their inverses, not individual DocOps. See
+[ADR 001](adr-001-command-docop-relationship.md) for the formal decision.
+
+DocOps may be applied directly for transient previews (for example, during drag
+interactions) against a scratch document or preview layer. These previews must
+not be recorded in history and should be reconciled into a final Command or
+DocChange. This is a design decision; implementation remains future work.
 
 The command system provides:
 
