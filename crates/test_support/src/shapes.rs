@@ -32,3 +32,27 @@ pub fn sample_shape(id: ShapeId, z: i32) -> Shape {
         path,
     }
 }
+
+/// Create a sample shape with two anchors and cubic handles.
+#[must_use]
+pub fn shape_with_handles(id: ShapeId) -> Shape {
+    let mut path = PathGeom::new();
+    path.anchors.push(Anchor {
+        pos: Vec2::new(0.0, 0.0),
+        handle_in: Some(Vec2::new(-1.0, -1.0)),
+        handle_out: Some(Vec2::new(1.0, 1.0)),
+    });
+    path.anchors.push(Anchor {
+        pos: Vec2::new(10.0, 0.0),
+        handle_in: Some(Vec2::new(9.0, -1.0)),
+        handle_out: Some(Vec2::new(11.0, 1.0)),
+    });
+    path.segments.push(SegmentKind::Cubic);
+
+    Shape {
+        id,
+        z: 0,
+        style: PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), 2.0, None),
+        path,
+    }
+}
