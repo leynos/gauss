@@ -417,17 +417,52 @@ than a trait, for the following reasons:
 - **Simplicity**: No type erasure or dynamic dispatch complexity.
 
 The `Command` enum lives in `src/model/command.rs` and is GPUI-independent for
-testability. The relationship between Actions, Commands, and DocOps is:
+testability. The relationship between Actions, Commands, and DocOps (document
+operations) is:
+
+For screen readers: The following diagram shows Actions flowing to Commands,
+then to DocOps.
 
 ```text
 Action (user intent)       e.g., DeleteSelection
    │
    ▼  prepare_command()
-Command (undoable mutation) e.g., DeleteShapes { targets: [...] }
+Command (undoable mutation) e.g., DeleteSelectionCommand { ids: [...] }
    │
    ▼  apply()
-Document mutation          Direct shape removal with inverse capture
+DocChange (one or more DocOps) e.g., RemoveShape { index, shape }
 ```
+
+Terminology:
+
+- **DocOp (document operation; plural DocOps)**: An atomic, invertible document
+  mutation.
+- **DocChange (plural DocChanges)**: An ordered batch of DocOps applied as a
+  single unit.
+
+DocOps are atomic, invertible document mutations defined in `src/model/ops.rs`.
+A `DocChange` batches multiple DocOps into a single unit of application.
+
+Commands sit above DocOps as user-intent operations and the unit of undo/redo.
+Command implementations may either emit DocOps/DocChanges or mutate the
+document directly for simple cases; both patterns are valid and coexist. The
+undo stack records Commands and their inverses, not individual DocOps. Direct
+mutations must still capture enough data to produce a correct inverse. See
+[ADR 001](adr-001-command-docop-relationship.md) for the formal decision.
+
+Rule of thumb:
+
+- Prefer DocOps/DocChanges when a mutation is already expressed as a DocOp, or
+  when multiple atomic edits need batching or reuse across Commands.
+- Prefer direct document mutation when the change is simple, local to one
+  Command, the inverse is trivial to capture, and expressing it as DocOps would
+  add boilerplate without reuse.
+
+DocOps may be applied directly for transient previews (for example, during drag
+interactions) against a scratch document or preview layer. These previews must
+never be recorded in history; the final commit is recorded as a Command, which
+may apply a DocChange payload. This is a design decision; implementation
+remains future work.
 
 The command system provides:
 
