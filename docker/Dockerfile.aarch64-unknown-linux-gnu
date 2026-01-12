@@ -3,8 +3,16 @@ FROM ghcr.io/cross-rs/aarch64-unknown-linux-gnu:0.2.5
 # The cross-rs 0.2.5 base image uses Ubuntu 16.04 which does not include
 # libxcb-xinput-dev. We add Ubuntu 20.04 (focal) repositories to install
 # the missing packages required by x11rb with the xinput feature.
+#
+# The base image has sources.list entries without architecture restrictions.
+# When we add arm64 architecture, apt would try to fetch arm64 packages from
+# those repositories too, which fails. We must:
+# 1. Restrict existing sources to amd64/i386 only
+# 2. Add arm64-specific sources from ports.ubuntu.com
 
-RUN echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal main universe" >> /etc/apt/sources.list && \
+RUN sed -i 's/^deb /deb [arch=amd64,i386] /' /etc/apt/sources.list && \
+    sed -i 's/^deb-src /deb-src [arch=amd64,i386] /' /etc/apt/sources.list && \
+    echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal main universe" >> /etc/apt/sources.list && \
     echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal-updates main universe" >> /etc/apt/sources.list && \
     dpkg --add-architecture arm64 && \
     apt-get update && \
