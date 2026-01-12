@@ -45,7 +45,7 @@ pub(super) fn prepare_insert_anchor_on_segment(state: &EngineState) -> Result<Co
         ));
     };
 
-    Ok(Command::InsertAnchor {
+    Ok(Command::InsertAnchorOnSegment {
         replacement: ShapeReplacement {
             shape_index,
             old_shape,
@@ -256,6 +256,7 @@ macro_rules! shape_replacement_command {
 }
 
 shape_replacement_command!(apply_insert_anchor, RemoveAnchor);
+shape_replacement_command!(apply_insert_anchor_on_segment, RemoveAnchorFromSegment);
 
 pub(super) fn apply_remove_anchor(
     doc: &mut Document,

@@ -169,7 +169,8 @@ pub struct HandleMovement {
     pub to: Option<Vec2>,
 }
 
-/// Data for a shape replacement (used by `InsertAnchor`, `ClosePath`).
+/// Data for a shape replacement (used by `InsertAnchor`,
+/// `InsertAnchorOnSegment`, `ClosePath`).
 #[derive(Clone, Debug, PartialEq)]
 pub struct ShapeReplacement {
     /// Shape index in the document.

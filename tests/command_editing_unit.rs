@@ -283,7 +283,7 @@ fn close_path_replaces_shape_and_undoes() -> Result<(), CommandEditingTestError>
     shape_id(11),
     SelItem::Segment { shape: shape_id(11), seg: 0 },
     Action::InsertAnchorOnSegment,
-    ExpectedCommand::InsertAnchor
+    ExpectedCommand::InsertAnchorOnSegment
 )]
 #[case(
     shape_id(12),

@@ -2,7 +2,9 @@
 
 use crate::model::Document;
 
-use super::anchor::{apply_close_path, apply_delete_anchors, apply_insert_anchor};
+use super::anchor::{
+    apply_close_path, apply_delete_anchors, apply_insert_anchor, apply_insert_anchor_on_segment,
+};
 use super::delete_shapes::apply_delete_shapes;
 use super::error::UserError;
 use super::insert_shape::apply_insert_shape;
@@ -87,6 +89,12 @@ pub enum Command {
         replacement: ShapeReplacement,
     },
 
+    /// Insert an anchor on an existing segment.
+    InsertAnchorOnSegment {
+        /// Shape replacement data.
+        replacement: ShapeReplacement,
+    },
+
     /// Delete selected anchors.
     DeleteAnchors {
         /// Anchor deletions to apply.
@@ -141,6 +149,7 @@ impl Command {
             Self::Reorder { .. } => "Reorder",
             Self::SetSegmentKind { .. } => "Toggle Segment",
             Self::InsertAnchor { .. } => "Insert Anchor",
+            Self::InsertAnchorOnSegment { .. } => "Insert Anchor on Segment",
             Self::DeleteAnchors { .. } => "Delete Anchors",
             Self::ClosePath { .. } => "Close Path",
             Self::InsertShape { .. } => "Insert Shape",
@@ -184,6 +193,9 @@ impl Command {
             Self::SetSegmentKind { changes } => apply_set_segment_kind(doc, changes, command_name),
             Self::InsertAnchor { replacement } => {
                 apply_insert_anchor(doc, replacement, command_name)
+            }
+            Self::InsertAnchorOnSegment { replacement } => {
+                apply_insert_anchor_on_segment(doc, replacement, command_name)
             }
             Self::DeleteAnchors { deletions } => apply_delete_anchors(doc, deletions, command_name),
             Self::ClosePath { replacement } => apply_close_path(doc, replacement, command_name),

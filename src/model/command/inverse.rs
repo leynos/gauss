@@ -99,6 +99,14 @@ pub enum CommandInverse {
         replacement: ShapeReplacement,
     },
 
+    /// Remove anchor inserted on a segment (restore original shape).
+    RemoveAnchorFromSegment {
+        /// Name of the original command.
+        command_name: &'static str,
+        /// Shape replacement with old/new swapped.
+        replacement: ShapeReplacement,
+    },
+
     /// Restore anchors that were deleted.
     RestoreAnchors {
         /// Name of the original command.
@@ -145,6 +153,7 @@ impl CommandInverse {
             | Self::ReverseReorder { command_name, .. }
             | Self::RestoreSegmentKinds { command_name, .. }
             | Self::RemoveAnchor { command_name, .. }
+            | Self::RemoveAnchorFromSegment { command_name, .. }
             | Self::RestoreAnchors { command_name, .. }
             | Self::ReopenPath { command_name, .. }
             | Self::RemoveShape { command_name, .. } => command_name,
@@ -183,6 +192,9 @@ impl CommandInverse {
             Self::ReverseReorder { operations, .. } => apply_reverse_reorder(doc, operations),
             Self::RestoreSegmentKinds { changes, .. } => apply_restore_segment_kinds(doc, changes),
             Self::RemoveAnchor { replacement, .. } => apply_remove_anchor(doc, replacement),
+            Self::RemoveAnchorFromSegment { replacement, .. } => {
+                apply_remove_anchor(doc, replacement)
+            }
             Self::RestoreAnchors { restorations, .. } => apply_restore_anchors(doc, restorations),
             Self::ReopenPath { replacement, .. } => apply_reopen_path(doc, replacement),
             Self::RemoveShape { insertion, .. } => apply_remove_shape(doc, insertion),

@@ -98,14 +98,14 @@ pub(super) fn assert_prepare_command_returns_variant(
 
 #[derive(Debug, Clone, Copy)]
 pub(super) enum ExpectedCommand {
-    InsertAnchor,
+    InsertAnchorOnSegment,
     DeleteAnchors,
 }
 
 impl ExpectedCommand {
     pub(super) const fn matches(self, cmd: &Command) -> bool {
         match self {
-            Self::InsertAnchor => matches!(cmd, Command::InsertAnchor { .. }),
+            Self::InsertAnchorOnSegment => matches!(cmd, Command::InsertAnchorOnSegment { .. }),
             Self::DeleteAnchors => matches!(cmd, Command::DeleteAnchors { .. }),
         }
     }

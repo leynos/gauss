@@ -90,6 +90,11 @@ redoing them, and by running the test suite with the new command coverage.
   than introducing a new command variant. Rationale: Shape replacement already
   captures the change, keeping the command surface minimal. Date/Author:
   2026-01-03, Codex.
+- Decision: Segment-based anchor insertion uses a dedicated
+  `Command::InsertAnchorOnSegment` variant while keeping draw-mode insertions
+  on `Command::InsertAnchor`. Rationale: Preserve action intent in command
+  history and future serialization, superseding the earlier decision for
+  segment insertions. Date/Author: 2026-01-12, Codex.
 - Decision: Split `src/model/command` into feature submodules. Rationale:
   Enforces the 400-line file limit and keeps command logic grouped by feature.
   Date/Author: 2026-01-03, Codex.
@@ -294,3 +299,7 @@ Updated the progress log to capture the movement helper refactor, the test
 helper error propagation adjustments, and the latest quality gate runs. Added
 decision and discovery entries for the clippy-driven adjustments to the helper
 signatures and error storage.
+
+Updated the decision log and plan notes to adopt a dedicated
+`Command::InsertAnchorOnSegment` variant for segment insertions, addressing
+issue 26's command specificity concerns.
