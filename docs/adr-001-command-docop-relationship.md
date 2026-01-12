@@ -1,4 +1,4 @@
-# Architectural decision record (ADR) 001: clarify Command and DocOp roles
+# Architectural decision record (ADR) 001: clarify Command and document operation (DocOp) roles
 
 ## Status
 
@@ -18,6 +18,12 @@ DocChange as the atomic, invertible mutation layer, while newer work adds
 Commands for user intent and undo/redo. This ambiguity risks inconsistent
 patterns for contributors and makes it unclear how preview operations should be
 implemented. Issue #19 tracks the documentation gap.[^issue]
+
+## Terminology
+
+- **DocOp (document operation)**: An atomic, invertible document mutation.
+- **DocChange**: An ordered batch of DocOps applied as a single unit.
+- **Command**: A user-intent operation that is recorded for undo/redo.
 
 ## Decision Drivers
 
@@ -61,6 +67,13 @@ DocChange. Command implementations may emit DocOps/DocChanges or mutate the
 Document directly for simple cases. DocOps may be used directly for transient
 previews (for example, drag interactions) against a scratch document or preview
 layer, but the final commit must be represented as a Command or DocChange.
+
+Rule of thumb:
+
+- Prefer DocOps/DocChanges when a mutation is already expressed as a DocOp, or
+  when multiple atomic edits need batching or reuse across Commands.
+- Prefer direct document mutation when the change is simple, local to one
+  Command, and expressing it as DocOps would add boilerplate without reuse.
 
 ## Known Risks and Limitations
 
