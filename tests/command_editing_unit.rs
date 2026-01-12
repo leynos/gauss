@@ -16,8 +16,9 @@ use command_editing_helpers::{
     anchor_at, segment_at, segment_mut, shape_at, shape_with_handles, shape_with_three_anchors,
 };
 use command_editing_unit_helpers::{
-    CommandEditingTestError, ExpectedCommand, assert_prepare_command_returns_variant,
-    assert_shape_replacement_applies_and_undoes,
+    CommandEditingTestError, ExpectedCommand, assert_insert_anchor_on_segment_command,
+    assert_insert_anchor_on_segment_effect, assert_insert_anchor_on_segment_lengths,
+    assert_prepare_command_returns_variant, assert_shape_replacement_applies_and_undoes,
 };
 
 #[test]
@@ -225,6 +226,51 @@ fn insert_anchor_replaces_shape_and_undoes() -> Result<(), CommandEditingTestErr
     Ok(())
 }
 #[test]
+fn insert_anchor_on_segment_undo_redo() {
+    let shape_id_value = shape_id(9);
+    let original_shape = shape_with_handles(shape_id_value);
+    let mut state = EngineState::with_document(Document {
+        shapes: vec![original_shape.clone()],
+    });
+    let anchor_count = original_shape.path.anchors.len();
+    let segment_count = original_shape.path.segments.len();
+    assert_eq!(anchor_count, 2, "expected fixture to have two anchors");
+    assert_eq!(segment_count, 1, "expected fixture to have one segment");
+    state.selection.items = vec![SelItem::Segment {
+        shape: shape_id_value,
+        seg: 0,
+    }];
+
+    let cmd =
+        assert_insert_anchor_on_segment_command(&state).expect("prepare insert anchor on segment");
+
+    let mut doc = Document {
+        shapes: vec![original_shape.clone()],
+    };
+    let (inverse, after_insert) = assert_insert_anchor_on_segment_effect(&cmd, &mut doc)
+        .expect("apply insert anchor on segment");
+    assert_insert_anchor_on_segment_lengths(&original_shape, &after_insert)
+        .expect("insert anchor should add one anchor and segment");
+
+    inverse
+        .apply(&mut doc)
+        .expect("undo insert anchor on segment");
+    let restored = shape_at(&doc, 0).expect("shape exists");
+    assert_eq!(
+        restored, &original_shape,
+        "undo after InsertAnchorOnSegment should restore the original path"
+    );
+
+    let (_, redone) = assert_insert_anchor_on_segment_effect(&cmd, &mut doc)
+        .expect("redo insert anchor on segment");
+    assert_insert_anchor_on_segment_lengths(&original_shape, &redone)
+        .expect("redo should reapply anchor insertion");
+    assert_eq!(
+        redone, after_insert,
+        "redo after InsertAnchorOnSegment should restore the modified path"
+    );
+}
+#[test]
 fn delete_anchors_preserves_handles_and_undoes() {
     let old_shape = shape_with_three_anchors(shape_id(9));
     let mut doc = Document {
@@ -283,7 +329,7 @@ fn close_path_replaces_shape_and_undoes() -> Result<(), CommandEditingTestError>
     shape_id(11),
     SelItem::Segment { shape: shape_id(11), seg: 0 },
     Action::InsertAnchorOnSegment,
-    ExpectedCommand::InsertAnchor
+    ExpectedCommand::InsertAnchorOnSegment
 )]
 #[case(
     shape_id(12),

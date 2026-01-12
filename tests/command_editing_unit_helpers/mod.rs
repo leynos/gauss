@@ -5,7 +5,9 @@
 
 use std::sync::Arc;
 
-use gauss::model::{Action, Command, Document, EngineState, SelItem, Shape, ShapeReplacement};
+use gauss::model::{
+    Action, Command, CommandInverse, Document, EngineState, SelItem, Shape, ShapeReplacement,
+};
 
 use crate::command_editing_helpers::{shape_at, shape_with_handles};
 
@@ -28,6 +30,15 @@ pub(super) enum CommandEditingTestError {
     ShapeNotRestored {
         expected: Arc<Shape>,
         actual: Arc<Shape>,
+    },
+    #[error(
+        "unexpected anchor/segment counts: expected anchors {expected_anchors}, segments {expected_segments}, got anchors {actual_anchors}, segments {actual_segments}"
+    )]
+    UnexpectedShapeCounts {
+        expected_anchors: usize,
+        expected_segments: usize,
+        actual_anchors: usize,
+        actual_segments: usize,
     },
     #[error("command did not match expected variant")]
     CommandMismatch,
@@ -96,16 +107,61 @@ pub(super) fn assert_prepare_command_returns_variant(
     Ok(())
 }
 
+pub(super) fn assert_insert_anchor_on_segment_effect(
+    cmd: &Command,
+    doc: &mut Document,
+) -> Result<(CommandInverse, Shape), CommandEditingTestError> {
+    let inverse = cmd.apply(doc).map_err(CommandEditingTestError::Apply)?;
+    if !matches!(inverse, CommandInverse::RemoveAnchorFromSegment { .. }) {
+        return Err(CommandEditingTestError::CommandMismatch);
+    }
+
+    let updated = shape_at(doc, 0).ok_or(CommandEditingTestError::ShapeMissing)?;
+    Ok((inverse, updated.clone()))
+}
+
+pub(super) fn assert_insert_anchor_on_segment_command(
+    state: &EngineState,
+) -> Result<Command, CommandEditingTestError> {
+    let cmd = gauss::model::prepare_command(Action::InsertAnchorOnSegment, state)
+        .map_err(CommandEditingTestError::Prepare)?;
+    if !matches!(cmd, Command::InsertAnchorOnSegment { .. }) {
+        return Err(CommandEditingTestError::CommandMismatch);
+    }
+
+    Ok(cmd)
+}
+
+pub(super) const fn assert_insert_anchor_on_segment_lengths(
+    original_shape: &Shape,
+    updated: &Shape,
+) -> Result<(), CommandEditingTestError> {
+    let expected_anchors = original_shape.path.anchors.len() + 1;
+    let expected_segments = original_shape.path.segments.len() + 1;
+    let actual_anchors = updated.path.anchors.len();
+    let actual_segments = updated.path.segments.len();
+    if expected_anchors != actual_anchors || expected_segments != actual_segments {
+        return Err(CommandEditingTestError::UnexpectedShapeCounts {
+            expected_anchors,
+            expected_segments,
+            actual_anchors,
+            actual_segments,
+        });
+    }
+
+    Ok(())
+}
+
 #[derive(Debug, Clone, Copy)]
 pub(super) enum ExpectedCommand {
-    InsertAnchor,
+    InsertAnchorOnSegment,
     DeleteAnchors,
 }
 
 impl ExpectedCommand {
     pub(super) const fn matches(self, cmd: &Command) -> bool {
         match self {
-            Self::InsertAnchor => matches!(cmd, Command::InsertAnchor { .. }),
+            Self::InsertAnchorOnSegment => matches!(cmd, Command::InsertAnchorOnSegment { .. }),
             Self::DeleteAnchors => matches!(cmd, Command::DeleteAnchors { .. }),
         }
     }
