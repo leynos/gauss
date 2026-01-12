@@ -1,14 +1,14 @@
-# Architectural decision record (ADR) 001: clarify Command and document operation (DocOp) roles
+# Architectural Decision Record (ADR) 001: clarify Command and document operation (DocOp) roles
 
 ## Status
 
-Accepted (2026-01-11): Adopt a layered Command/DocOp model where Commands
+Accepted (2026-01-12): Adopt a layered Command/DocOp model where Commands
 express user intent and DocOps remain the atomic mutation layer. DocOps may be
 used for transient previews, with final commits captured as Commands.
 
 ## Date
 
-2026-01-11.
+2026-01-12
 
 ## Context and Problem Statement
 
@@ -21,8 +21,10 @@ implemented. Issue #19 tracks the documentation gap.[^issue]
 
 ## Terminology
 
-- **DocOp (document operation)**: An atomic, invertible document mutation.
-- **DocChange**: An ordered batch of DocOps applied as a single unit.
+- **DocOp (document operation; plural DocOps)**: An atomic, invertible document
+  mutation.
+- **DocChange (plural DocChanges)**: An ordered batch of DocOps applied as a
+  single unit.
 - **Command**: A user-intent operation that is recorded for undo/redo.
 
 ## Decision Drivers
@@ -64,16 +66,21 @@ _Table 1: Trade-offs between Command-only, DocOp-only, and layered options._
 Adopt Option C. Commands represent user intent and are the unit of undo/redo.
 DocOps remain the atomic, invertible document operations and can be batched as
 DocChange. Command implementations may emit DocOps/DocChanges or mutate the
-Document directly for simple cases. DocOps may be used directly for transient
-previews (for example, drag interactions) against a scratch document or preview
-layer, but the final commit must be represented as a Command or DocChange.
+Document directly for simple cases, but history always records Commands. DocOps
+may be used directly for transient previews (for example, drag interactions)
+against a scratch document or preview layer; these previews never enter history
+and are committed as Commands that may apply DocChange payloads.
 
 Rule of thumb:
 
 - Prefer DocOps/DocChanges when a mutation is already expressed as a DocOp, or
   when multiple atomic edits need batching or reuse across Commands.
 - Prefer direct document mutation when the change is simple, local to one
-  Command, and expressing it as DocOps would add boilerplate without reuse.
+  Command, the inverse is trivial to capture, and expressing it as DocOps would
+  add boilerplate without reuse.
+
+  If a Command mutates the Document directly, it must still capture enough data
+  to produce a correct inverse.
 
 ## Known Risks and Limitations
 
