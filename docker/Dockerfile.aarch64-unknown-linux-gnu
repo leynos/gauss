@@ -4,8 +4,8 @@ FROM ghcr.io/cross-rs/aarch64-unknown-linux-gnu:0.2.5
 # libxcb-xinput-dev. We add Ubuntu 20.04 (focal) repositories to install
 # the missing packages required by x11rb with the xinput feature.
 
-RUN echo "deb http://ports.ubuntu.com/ubuntu-ports focal main universe" >> /etc/apt/sources.list && \
-    echo "deb http://ports.ubuntu.com/ubuntu-ports focal-updates main universe" >> /etc/apt/sources.list && \
+RUN echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal main universe" >> /etc/apt/sources.list && \
+    echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal-updates main universe" >> /etc/apt/sources.list && \
     dpkg --add-architecture arm64 && \
     apt-get update && \
     apt-get install --assume-yes --no-install-recommends \
