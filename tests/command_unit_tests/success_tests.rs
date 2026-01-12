@@ -5,7 +5,7 @@
 
 use gauss::model::{
     Action, Command, CommandInverse, Document, EngineState, PaintStyle, ReorderOp, SegmentChange,
-    SegmentKind, SelItem, ShapeMovement, StyleChange, Vec2, prepare_command,
+    SegmentKind, SelItem, Shape, ShapeMovement, StyleChange, Vec2, prepare_command,
 };
 use rstest::rstest;
 use test_support::shapes::{sample_shape, shape_id, shape_with_handles};
@@ -114,10 +114,11 @@ fn reorder_succeeds_with_valid_indices(mut doc_with_two_shapes: Document) {
         .expect("inverse should succeed");
 }
 
+/// Verify `InsertAnchorOnSegment` succeeds and restores via inverse.
 #[rstest]
 #[case(sample_shape(shape_id(3), 0))]
 #[case(shape_with_handles(shape_id(4)))]
-fn insert_anchor_on_segment_succeeds(#[case] shape: gauss::model::Shape) {
+fn insert_anchor_on_segment_succeeds(#[case] shape: Shape) {
     let shape_id = shape.id;
     let mut state = EngineState::with_document(Document {
         shapes: vec![shape.clone()],
