@@ -471,7 +471,8 @@ The command system provides:
 - `CommandInverse::apply()` — reverses the mutation for undo
 - `UserError` — user-facing semantic errors (EmptySelection, ShapeNotFound)
 - Diagnostic logging uses the `log` crate to surface command failures in
-  release builds.
+  release builds, and Phase 0 surfaces undo/redo failures in the status line so
+  users see history drift immediately.
 
 Commands should be small and composable:
 

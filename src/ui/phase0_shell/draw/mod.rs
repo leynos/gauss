@@ -122,6 +122,7 @@ impl Phase0Shell {
         let inverse = command.apply(&mut self.state.document)?;
         self.document_history
             .push(DocumentHistoryItem::new_command(command, inverse));
+        self.last_history_error = None;
         Ok(())
     }
 
@@ -130,7 +131,15 @@ impl Phase0Shell {
             return;
         };
 
-        self.apply_history_group(group, HistoryDirection::Undo);
+        match self.apply_history_group(group, HistoryDirection::Undo) {
+            Ok(()) => {
+                self.last_history_error = None;
+            }
+            Err(error) => {
+                log::error!("{error}");
+                self.last_history_error = Some(error);
+            }
+        }
     }
 
     pub(super) fn redo_document(&mut self) {
@@ -138,38 +147,52 @@ impl Phase0Shell {
             return;
         };
 
-        self.apply_history_group(group, HistoryDirection::Redo);
+        match self.apply_history_group(group, HistoryDirection::Redo) {
+            Ok(()) => {
+                self.last_history_error = None;
+            }
+            Err(error) => {
+                log::error!("{error}");
+                self.last_history_error = Some(error);
+            }
+        }
     }
 
     fn apply_history_group(
         &mut self,
         group: Vec<DocumentHistoryItem>,
         direction: HistoryDirection,
-    ) {
+    ) -> Result<(), String> {
         for item in group {
             let entry = item.into_entry();
-            apply_command_for_direction(
+            if let Err(error) = apply_command_for_direction(
                 &mut self.state.document,
                 &entry.command,
                 &entry.inverse,
                 direction,
-            );
+            ) {
+                let operation = match direction {
+                    HistoryDirection::Undo => "Undo",
+                    HistoryDirection::Redo => "Redo",
+                };
+                let command_name = match direction {
+                    HistoryDirection::Undo => entry.inverse.name(),
+                    HistoryDirection::Redo => entry.command.name(),
+                };
+                return Err(format!("{operation} failed for '{command_name}': {error}"));
+            }
         }
+
+        Ok(())
     }
 }
 
-fn apply_command_inverse(doc: &mut Document, inverse: &CommandInverse) {
-    if let Err(error) = inverse.apply(doc) {
-        log::error!("command undo failed: {error}");
-        debug_assert!(false, "command undo failed: {error}");
-    }
+fn apply_command_inverse(doc: &mut Document, inverse: &CommandInverse) -> Result<(), UserError> {
+    inverse.apply(doc)
 }
 
-fn apply_command_again(doc: &mut Document, command: &Command) {
-    if let Err(error) = command.apply(doc) {
-        log::error!("command redo failed: {error}");
-        debug_assert!(false, "command redo failed: {error}");
-    }
+fn apply_command_again(doc: &mut Document, command: &Command) -> Result<(), UserError> {
+    command.apply(doc).map(|_| ())
 }
 
 fn apply_command_for_direction(
@@ -177,7 +200,7 @@ fn apply_command_for_direction(
     command: &Command,
     inverse: &CommandInverse,
     direction: HistoryDirection,
-) {
+) -> Result<(), UserError> {
     match direction {
         HistoryDirection::Undo => apply_command_inverse(doc, inverse),
         HistoryDirection::Redo => apply_command_again(doc, command),

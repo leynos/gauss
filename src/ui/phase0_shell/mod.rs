@@ -169,6 +169,7 @@ pub struct Phase0Shell {
     last_save_error: Option<String>,
     last_opened_path: Option<PathBuf>,
     last_open_error: Option<String>,
+    last_history_error: Option<String>,
 
     // Style picker entities (GPUI-dependent)
     stroke_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
@@ -203,6 +204,7 @@ impl Phase0Shell {
             last_save_error: None,
             last_opened_path: None,
             last_open_error: None,
+            last_history_error: None,
             stroke_picker: None,
             fill_picker: None,
             style_picker_subscriptions: Vec::new(),

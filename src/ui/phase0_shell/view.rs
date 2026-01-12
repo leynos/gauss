@@ -40,6 +40,10 @@ impl Phase0Shell {
     }
 
     pub(super) fn file_status_line(&self) -> Option<String> {
+        if let Some(error) = self.last_history_error.as_deref() {
+            return Some(format!("History error: {error}"));
+        }
+
         if let Some(error) = self.last_save_error.as_deref() {
             return Some(format!("Save failed: {error}"));
         }
