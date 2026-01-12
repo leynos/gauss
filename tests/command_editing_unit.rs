@@ -227,20 +227,34 @@ fn insert_anchor_replaces_shape_and_undoes() -> Result<(), CommandEditingTestErr
 fn assert_insert_anchor_on_segment_effect(
     cmd: &Command,
     doc: &mut Document,
-    original_shape: &gauss::model::Shape,
-) -> (CommandInverse, gauss::model::Shape) {
+) -> (CommandInverse, Option<gauss::model::Shape>) {
     let inverse = match cmd.apply(doc) {
         Ok(inverse) => inverse,
-        Err(err) => panic!("apply succeeded: {err:?}"),
+        Err(err) => panic!("apply failed: {err:?}"),
     };
     assert!(
         matches!(inverse, CommandInverse::RemoveAnchorFromSegment { .. }),
         "expected RemoveAnchorFromSegment inverse"
     );
 
-    let Some(updated) = shape_at(doc, 0) else {
-        panic!("shape exists");
+    (inverse, shape_at(doc, 0).cloned())
+}
+fn assert_insert_anchor_on_segment_command(state: &EngineState) -> Command {
+    let cmd = match prepare_command(Action::InsertAnchorOnSegment, state) {
+        Ok(cmd) => cmd,
+        Err(err) => panic!("prepare failed: {err:?}"),
     };
+    assert!(
+        matches!(cmd, Command::InsertAnchorOnSegment { .. }),
+        "expected InsertAnchorOnSegment command"
+    );
+    cmd
+}
+
+fn assert_insert_anchor_on_segment_lengths(
+    original_shape: &gauss::model::Shape,
+    updated: &gauss::model::Shape,
+) {
     assert_eq!(
         updated.path.anchors.len(),
         original_shape.path.anchors.len() + 1
@@ -249,19 +263,6 @@ fn assert_insert_anchor_on_segment_effect(
         updated.path.segments.len(),
         original_shape.path.segments.len() + 1
     );
-
-    (inverse, updated.clone())
-}
-fn assert_insert_anchor_on_segment_command(state: &EngineState) -> Command {
-    let cmd = match prepare_command(Action::InsertAnchorOnSegment, state) {
-        Ok(cmd) => cmd,
-        Err(err) => panic!("prepare succeeded: {err:?}"),
-    };
-    assert!(
-        matches!(cmd, Command::InsertAnchorOnSegment { .. }),
-        "expected InsertAnchorOnSegment command"
-    );
-    cmd
 }
 #[test]
 fn insert_anchor_on_segment_undo_redo() {
@@ -282,14 +283,17 @@ fn insert_anchor_on_segment_undo_redo() {
     let mut doc = Document {
         shapes: vec![original_shape.clone()],
     };
-    let (inverse, after_insert) =
-        assert_insert_anchor_on_segment_effect(&cmd, &mut doc, &original_shape);
+    let (inverse, after_insert_opt) = assert_insert_anchor_on_segment_effect(&cmd, &mut doc);
+    let after_insert = after_insert_opt.expect("shape exists");
+    assert_insert_anchor_on_segment_lengths(&original_shape, &after_insert);
 
     inverse.apply(&mut doc).expect("undo succeeded");
     let restored = shape_at(&doc, 0).expect("shape exists");
     assert_eq!(restored, &original_shape);
 
-    let (_, redone) = assert_insert_anchor_on_segment_effect(&cmd, &mut doc, &original_shape);
+    let (_, redone_opt) = assert_insert_anchor_on_segment_effect(&cmd, &mut doc);
+    let redone = redone_opt.expect("shape exists");
+    assert_insert_anchor_on_segment_lengths(&original_shape, &redone);
     assert_eq!(redone, after_insert);
 }
 #[test]
