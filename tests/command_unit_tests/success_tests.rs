@@ -119,12 +119,12 @@ fn reorder_succeeds_with_valid_indices(mut doc_with_two_shapes: Document) {
 #[case(sample_shape(shape_id(3), 0))]
 #[case(shape_with_handles(shape_id(4)))]
 fn insert_anchor_on_segment_succeeds(#[case] shape: Shape) {
-    let shape_id = shape.id;
+    let shape_key = shape.id;
     let mut state = EngineState::with_document(Document {
         shapes: vec![shape.clone()],
     });
     state.selection.items = vec![SelItem::Segment {
-        shape: shape_id,
+        shape: shape_key,
         seg: 0,
     }];
 

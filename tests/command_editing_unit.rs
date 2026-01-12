@@ -227,74 +227,98 @@ fn insert_anchor_replaces_shape_and_undoes() -> Result<(), CommandEditingTestErr
 fn assert_insert_anchor_on_segment_effect(
     cmd: &Command,
     doc: &mut Document,
-) -> (CommandInverse, Option<gauss::model::Shape>) {
-    let inverse = match cmd.apply(doc) {
-        Ok(inverse) => inverse,
-        Err(err) => panic!("apply failed: {err:?}"),
-    };
-    assert!(
-        matches!(inverse, CommandInverse::RemoveAnchorFromSegment { .. }),
-        "expected RemoveAnchorFromSegment inverse"
-    );
+) -> Result<(CommandInverse, gauss::model::Shape), CommandEditingTestError> {
+    let inverse = cmd.apply(doc).map_err(CommandEditingTestError::Apply)?;
+    if !matches!(inverse, CommandInverse::RemoveAnchorFromSegment { .. }) {
+        return Err(CommandEditingTestError::CommandMismatch);
+    }
 
-    (inverse, shape_at(doc, 0).cloned())
+    let updated = shape_at(doc, 0).ok_or(CommandEditingTestError::ShapeMissing)?;
+    Ok((inverse, updated.clone()))
 }
-fn assert_insert_anchor_on_segment_command(state: &EngineState) -> Command {
-    let cmd = match prepare_command(Action::InsertAnchorOnSegment, state) {
-        Ok(cmd) => cmd,
-        Err(err) => panic!("prepare failed: {err:?}"),
-    };
-    assert!(
-        matches!(cmd, Command::InsertAnchorOnSegment { .. }),
-        "expected InsertAnchorOnSegment command"
-    );
-    cmd
+fn assert_insert_anchor_on_segment_command(
+    state: &EngineState,
+) -> Result<Command, CommandEditingTestError> {
+    let cmd = prepare_command(Action::InsertAnchorOnSegment, state)
+        .map_err(CommandEditingTestError::Prepare)?;
+    if !matches!(cmd, Command::InsertAnchorOnSegment { .. }) {
+        return Err(CommandEditingTestError::CommandMismatch);
+    }
+    Ok(cmd)
 }
 
-fn assert_insert_anchor_on_segment_lengths(
+const fn assert_insert_anchor_on_segment_lengths(
     original_shape: &gauss::model::Shape,
     updated: &gauss::model::Shape,
-) {
-    assert_eq!(
-        updated.path.anchors.len(),
-        original_shape.path.anchors.len() + 1
-    );
-    assert_eq!(
-        updated.path.segments.len(),
-        original_shape.path.segments.len() + 1
-    );
+) -> Result<(), CommandEditingTestError> {
+    let expected_anchors = original_shape.path.anchors.len() + 1;
+    let expected_segments = original_shape.path.segments.len() + 1;
+    let actual_anchors = updated.path.anchors.len();
+    let actual_segments = updated.path.segments.len();
+    if expected_anchors != actual_anchors || expected_segments != actual_segments {
+        return Err(CommandEditingTestError::UnexpectedShapeCounts {
+            expected_anchors,
+            expected_segments,
+            actual_anchors,
+            actual_segments,
+        });
+    }
+
+    Ok(())
 }
 #[test]
-fn insert_anchor_on_segment_undo_redo() {
+fn insert_anchor_on_segment_undo_redo() -> Result<(), CommandEditingTestError> {
     let shape_id_value = shape_id(9);
     let original_shape = shape_with_handles(shape_id_value);
     let mut state = EngineState::with_document(Document {
         shapes: vec![original_shape.clone()],
     });
-    assert_eq!(original_shape.path.anchors.len(), 2);
-    assert_eq!(original_shape.path.segments.len(), 1);
+    if original_shape.path.anchors.len() != 2 {
+        return Err(CommandEditingTestError::ShapeNotUpdated {
+            expected: std::sync::Arc::new(original_shape.clone()),
+            actual: std::sync::Arc::new(original_shape.clone()),
+        });
+    }
+    if original_shape.path.segments.len() != 1 {
+        return Err(CommandEditingTestError::ShapeNotUpdated {
+            expected: std::sync::Arc::new(original_shape.clone()),
+            actual: std::sync::Arc::new(original_shape.clone()),
+        });
+    }
     state.selection.items = vec![SelItem::Segment {
         shape: shape_id_value,
         seg: 0,
     }];
 
-    let cmd = assert_insert_anchor_on_segment_command(&state);
+    let cmd = assert_insert_anchor_on_segment_command(&state)?;
 
     let mut doc = Document {
         shapes: vec![original_shape.clone()],
     };
-    let (inverse, after_insert_opt) = assert_insert_anchor_on_segment_effect(&cmd, &mut doc);
-    let after_insert = after_insert_opt.expect("shape exists");
-    assert_insert_anchor_on_segment_lengths(&original_shape, &after_insert);
+    let (inverse, after_insert) = assert_insert_anchor_on_segment_effect(&cmd, &mut doc)?;
+    assert_insert_anchor_on_segment_lengths(&original_shape, &after_insert)?;
 
-    inverse.apply(&mut doc).expect("undo succeeded");
-    let restored = shape_at(&doc, 0).expect("shape exists");
-    assert_eq!(restored, &original_shape);
+    inverse
+        .apply(&mut doc)
+        .map_err(CommandEditingTestError::Undo)?;
+    let restored = shape_at(&doc, 0).ok_or(CommandEditingTestError::ShapeMissing)?;
+    if restored != &original_shape {
+        return Err(CommandEditingTestError::ShapeNotRestored {
+            expected: std::sync::Arc::new(original_shape.clone()),
+            actual: std::sync::Arc::new(restored.clone()),
+        });
+    }
 
-    let (_, redone_opt) = assert_insert_anchor_on_segment_effect(&cmd, &mut doc);
-    let redone = redone_opt.expect("shape exists");
-    assert_insert_anchor_on_segment_lengths(&original_shape, &redone);
-    assert_eq!(redone, after_insert);
+    let (_, redone) = assert_insert_anchor_on_segment_effect(&cmd, &mut doc)?;
+    assert_insert_anchor_on_segment_lengths(&original_shape, &redone)?;
+    if redone != after_insert {
+        return Err(CommandEditingTestError::ShapeNotUpdated {
+            expected: std::sync::Arc::new(after_insert.clone()),
+            actual: std::sync::Arc::new(redone.clone()),
+        });
+    }
+
+    Ok(())
 }
 #[test]
 fn delete_anchors_preserves_handles_and_undoes() {

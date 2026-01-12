@@ -29,6 +29,15 @@ pub(super) enum CommandEditingTestError {
         expected: Arc<Shape>,
         actual: Arc<Shape>,
     },
+    #[error(
+        "unexpected anchor/segment counts: expected anchors {expected_anchors}, segments {expected_segments}, got anchors {actual_anchors}, segments {actual_segments}"
+    )]
+    UnexpectedShapeCounts {
+        expected_anchors: usize,
+        expected_segments: usize,
+        actual_anchors: usize,
+        actual_segments: usize,
+    },
     #[error("command did not match expected variant")]
     CommandMismatch,
 }
