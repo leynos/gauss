@@ -1,4 +1,4 @@
-# Architectural Decision Record (ADR) 001: clarify Command and document operation (DocOp) roles
+# Architectural Decision Record (ADR) 001: Clarify Command and document operation (DocOp) roles
 
 ## Status
 
