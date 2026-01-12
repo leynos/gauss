@@ -24,7 +24,7 @@ implemented. Issue #19 tracks the documentation gap.[^issue]
 - Preserve the existing Phase 0 DocOp investment.
 - Keep undo/redo entries aligned with user intent, not every atomic change.
 - Allow transient previews for drag interactions without polluting history.
-- Minimise churn in the current command implementation.
+- Minimize churn in the current command implementation.
 
 ## Options Considered
 
