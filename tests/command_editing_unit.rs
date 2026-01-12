@@ -3,9 +3,9 @@
 //! These tests validate command apply and inverse behaviour for the Phase 0
 //! migration to Commands.
 use gauss::model::{
-    Action, Anchor, AnchorDeletion, AnchorDeletionResult, AnchorMovement, Command, Document,
-    EngineState, HandleKind, HandleMovement, PaintStyle, ReorderOp, SegmentChange, SegmentKind,
-    SelItem, ShapeMovement, StyleChange, Vec2, prepare_command,
+    Action, Anchor, AnchorDeletion, AnchorDeletionResult, AnchorMovement, Command, CommandInverse,
+    Document, EngineState, HandleKind, HandleMovement, PaintStyle, ReorderOp, SegmentChange,
+    SegmentKind, SelItem, ShapeMovement, StyleChange, Vec2, prepare_command,
 };
 use rstest::rstest;
 use test_support::shapes::shape_id;
@@ -223,6 +223,52 @@ fn insert_anchor_replaces_shape_and_undoes() -> Result<(), CommandEditingTestErr
     })?;
 
     Ok(())
+}
+#[test]
+fn insert_anchor_on_segment_undo_redo() {
+    let shape_id_value = shape_id(9);
+    let original_shape = shape_with_handles(shape_id_value);
+    let mut state = EngineState::with_document(Document {
+        shapes: vec![original_shape.clone()],
+    });
+    state.selection.items = vec![SelItem::Segment {
+        shape: shape_id_value,
+        seg: 0,
+    }];
+
+    let cmd = prepare_command(Action::InsertAnchorOnSegment, &state).expect("prepare succeeded");
+    assert!(
+        matches!(cmd, Command::InsertAnchorOnSegment { .. }),
+        "expected InsertAnchorOnSegment command"
+    );
+
+    let mut doc = Document {
+        shapes: vec![original_shape.clone()],
+    };
+    let inverse = cmd.apply(&mut doc).expect("apply succeeded");
+    assert!(
+        matches!(inverse, CommandInverse::RemoveAnchorFromSegment { .. }),
+        "expected RemoveAnchorFromSegment inverse"
+    );
+
+    let updated = shape_at(&doc, 0).expect("shape exists");
+    assert_eq!(
+        updated.path.anchors.len(),
+        original_shape.path.anchors.len() + 1
+    );
+    assert_eq!(
+        updated.path.segments.len(),
+        original_shape.path.segments.len() + 1
+    );
+    let after_insert = updated.clone();
+
+    inverse.apply(&mut doc).expect("undo succeeded");
+    let restored = shape_at(&doc, 0).expect("shape exists");
+    assert_eq!(restored, &original_shape);
+
+    cmd.apply(&mut doc).expect("redo succeeded");
+    let redone = shape_at(&doc, 0).expect("shape exists");
+    assert_eq!(redone, &after_insert);
 }
 #[test]
 fn delete_anchors_preserves_handles_and_undoes() {

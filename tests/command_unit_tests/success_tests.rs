@@ -4,13 +4,36 @@
 //! inverse operations also succeed.
 
 use gauss::model::{
-    Command, Document, PaintStyle, ReorderOp, SegmentChange, SegmentKind, ShapeMovement,
-    StyleChange, Vec2,
+    Action, Anchor, Command, CommandInverse, Document, EngineState, PaintStyle, PathGeom,
+    ReorderOp, SegmentChange, SegmentKind, SelItem, Shape, ShapeId, ShapeMovement, StyleChange,
+    Vec2, prepare_command,
 };
 use rstest::rstest;
 use test_support::shapes::shape_id;
 
 use super::doc_with_two_shapes;
+
+fn cubic_shape(id: ShapeId) -> Shape {
+    let mut path = PathGeom::new();
+    path.anchors.push(Anchor {
+        pos: Vec2::new(0.0, 0.0),
+        handle_in: Some(Vec2::new(-1.0, -1.0)),
+        handle_out: Some(Vec2::new(1.0, 1.0)),
+    });
+    path.anchors.push(Anchor {
+        pos: Vec2::new(10.0, 0.0),
+        handle_in: Some(Vec2::new(9.0, -1.0)),
+        handle_out: Some(Vec2::new(11.0, 1.0)),
+    });
+    path.segments.push(SegmentKind::Cubic);
+
+    Shape {
+        id,
+        z: 0,
+        style: PaintStyle::new(None, 1.0, None),
+        path,
+    }
+}
 
 /// Verify `MoveShapes` succeeds and returns a valid inverse for valid shapes.
 #[rstest]
@@ -112,4 +135,82 @@ fn reorder_succeeds_with_valid_indices(mut doc_with_two_shapes: Document) {
     inverse
         .apply(&mut doc_with_two_shapes)
         .expect("inverse should succeed");
+}
+
+#[test]
+fn insert_anchor_on_segment_succeeds_for_line_segment() {
+    let shape = test_support::shapes::sample_shape(shape_id(3), 0);
+    let shape_id = shape.id;
+    let mut state = EngineState::with_document(Document {
+        shapes: vec![shape.clone()],
+    });
+    state.selection.items = vec![SelItem::Segment {
+        shape: shape_id,
+        seg: 0,
+    }];
+
+    let cmd = prepare_command(Action::InsertAnchorOnSegment, &state)
+        .expect("prepare insert anchor on segment");
+    assert!(
+        matches!(cmd, Command::InsertAnchorOnSegment { .. }),
+        "expected InsertAnchorOnSegment command"
+    );
+
+    let mut doc = Document {
+        shapes: vec![shape.clone()],
+    };
+    let inverse = cmd.apply(&mut doc).expect("apply insert anchor on segment");
+    assert!(matches!(
+        inverse,
+        CommandInverse::RemoveAnchorFromSegment { .. }
+    ));
+
+    let updated = doc.shapes.first().expect("shape exists");
+    assert_eq!(updated.path.anchors.len(), shape.path.anchors.len() + 1);
+    assert_eq!(updated.path.segments.len(), shape.path.segments.len() + 1);
+
+    inverse
+        .apply(&mut doc)
+        .expect("inverse remove anchor from segment");
+    let restored = doc.shapes.first().expect("shape exists");
+    assert_eq!(restored, &shape);
+}
+
+#[test]
+fn insert_anchor_on_segment_succeeds_for_cubic_segment() {
+    let shape = cubic_shape(shape_id(4));
+    let shape_id = shape.id;
+    let mut state = EngineState::with_document(Document {
+        shapes: vec![shape.clone()],
+    });
+    state.selection.items = vec![SelItem::Segment {
+        shape: shape_id,
+        seg: 0,
+    }];
+
+    let cmd = prepare_command(Action::InsertAnchorOnSegment, &state)
+        .expect("prepare insert anchor on segment");
+    assert!(
+        matches!(cmd, Command::InsertAnchorOnSegment { .. }),
+        "expected InsertAnchorOnSegment command"
+    );
+
+    let mut doc = Document {
+        shapes: vec![shape.clone()],
+    };
+    let inverse = cmd.apply(&mut doc).expect("apply insert anchor on segment");
+    assert!(matches!(
+        inverse,
+        CommandInverse::RemoveAnchorFromSegment { .. }
+    ));
+
+    let updated = doc.shapes.first().expect("shape exists");
+    assert_eq!(updated.path.anchors.len(), shape.path.anchors.len() + 1);
+    assert_eq!(updated.path.segments.len(), shape.path.segments.len() + 1);
+
+    inverse
+        .apply(&mut doc)
+        .expect("inverse remove anchor from segment");
+    let restored = doc.shapes.first().expect("shape exists");
+    assert_eq!(restored, &shape);
 }
