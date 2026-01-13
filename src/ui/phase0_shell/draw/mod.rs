@@ -127,27 +127,23 @@ impl Phase0Shell {
     }
 
     pub(super) fn undo_document(&mut self) {
-        let Some(group) = self.document_history.undo() else {
-            return;
-        };
-
-        match self.apply_history_group(group, HistoryDirection::Undo) {
-            Ok(()) => {
-                self.last_history_error = None;
-            }
-            Err(error) => {
-                log::error!("{error}");
-                self.last_history_error = Some(error);
-            }
-        }
+        self.apply_history_operation(HistoryDirection::Undo);
     }
 
     pub(super) fn redo_document(&mut self) {
-        let Some(group) = self.document_history.redo() else {
+        self.apply_history_operation(HistoryDirection::Redo);
+    }
+
+    fn apply_history_operation(&mut self, direction: HistoryDirection) {
+        let history_group = match direction {
+            HistoryDirection::Undo => self.document_history.undo(),
+            HistoryDirection::Redo => self.document_history.redo(),
+        };
+        let Some(entries) = history_group else {
             return;
         };
 
-        match self.apply_history_group(group, HistoryDirection::Redo) {
+        match self.apply_history_group(entries, direction) {
             Ok(()) => {
                 self.last_history_error = None;
             }
