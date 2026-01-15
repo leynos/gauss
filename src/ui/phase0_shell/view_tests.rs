@@ -17,7 +17,7 @@
 
 use std::path::PathBuf;
 
-use gpui::TestAppContext;
+use gpui::{Entity, TestAppContext, VisualTestContext};
 
 use crate::model::{Command, ShapeMovement, Vec2};
 
@@ -141,6 +141,31 @@ fn file_status_line_returns_none_when_empty(cx: &mut TestAppContext) {
 // verifying that command failures are properly surfaced via last_history_error.
 // ============================================================================
 
+/// Update the shell via a closure and run until parked.
+fn update_shell<F>(visual_cx: &mut VisualTestContext, view: &Entity<Phase0Shell>, f: F)
+where
+    F: FnOnce(&mut Phase0Shell) + 'static,
+{
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _cx| {
+            f(shell);
+        });
+    });
+    visual_cx.run_until_parked();
+}
+
+/// Read and clone the last history error from the shell.
+fn read_last_history_error(
+    visual_cx: &VisualTestContext,
+    view: &Entity<Phase0Shell>,
+) -> Option<String> {
+    visual_cx.read(|app| {
+        view.read(app)
+            .last_history_error_for_tests()
+            .map(str::to_owned)
+    })
+}
+
 /// Verify that undo failures propagate to `last_history_error`.
 ///
 /// This test:
@@ -151,53 +176,39 @@ fn file_status_line_returns_none_when_empty(cx: &mut TestAppContext) {
 #[gpui::test]
 fn undo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
     cx.update(crate::ui::init);
-
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
 
     // Get the shape ID from the demo document and apply a MoveShapes command.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            let id = shell
-                .document()
-                .shapes
-                .first()
-                .expect("demo document has at least one shape")
-                .id;
-            let command = Command::MoveShapes {
-                movements: vec![ShapeMovement {
-                    shape_id: id,
-                    delta: Vec2::new(10.0, 10.0),
-                }],
-            };
-            shell
-                .apply_command_for_tests(command)
-                .expect("command should apply");
-        });
+    update_shell(visual_cx, &view, |shell| {
+        let id = shell
+            .document()
+            .shapes
+            .first()
+            .expect("demo document has at least one shape")
+            .id;
+        let command = Command::MoveShapes {
+            movements: vec![ShapeMovement {
+                shape_id: id,
+                delta: Vec2::new(10.0, 10.0),
+            }],
+        };
+        shell
+            .apply_command_for_tests(command)
+            .expect("command should apply");
     });
-    visual_cx.run_until_parked();
 
     // Mutate the document to remove the shape, making the inverse invalid.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.document_mut_for_tests().shapes.clear();
-        });
+    update_shell(visual_cx, &view, |shell| {
+        shell.document_mut_for_tests().shapes.clear();
     });
-    visual_cx.run_until_parked();
 
     // Trigger undo—should fail because the shape no longer exists.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.undo_document_for_tests();
-        });
+    update_shell(visual_cx, &view, |shell| {
+        shell.undo_document_for_tests();
     });
-    visual_cx.run_until_parked();
 
     // Verify error is surfaced with operation type and error description.
-    let error = visual_cx.read(|app| {
-        view.read(app)
-            .last_history_error_for_tests()
-            .map(str::to_owned)
-    });
+    let error = read_last_history_error(visual_cx, &view);
     assert!(error.is_some(), "expected last_history_error to be set");
     let error_msg = error.expect("checked above");
     assert!(
@@ -220,65 +231,47 @@ fn undo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
 #[gpui::test]
 fn redo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
     cx.update(crate::ui::init);
-
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
 
     // Get the shape ID, apply a command, then undo to set up redo stack.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            let id = shell
-                .document()
-                .shapes
-                .first()
-                .expect("demo document has at least one shape")
-                .id;
-            let command = Command::MoveShapes {
-                movements: vec![ShapeMovement {
-                    shape_id: id,
-                    delta: Vec2::new(10.0, 10.0),
-                }],
-            };
-            shell
-                .apply_command_for_tests(command)
-                .expect("command should apply");
-            shell.undo_document_for_tests();
-        });
+    update_shell(visual_cx, &view, |shell| {
+        let id = shell
+            .document()
+            .shapes
+            .first()
+            .expect("demo document has at least one shape")
+            .id;
+        let command = Command::MoveShapes {
+            movements: vec![ShapeMovement {
+                shape_id: id,
+                delta: Vec2::new(10.0, 10.0),
+            }],
+        };
+        shell
+            .apply_command_for_tests(command)
+            .expect("command should apply");
+        shell.undo_document_for_tests();
     });
-    visual_cx.run_until_parked();
 
     // Verify undo succeeded (no error).
-    let error_after_undo = visual_cx.read(|app| {
-        view.read(app)
-            .last_history_error_for_tests()
-            .map(str::to_owned)
-    });
+    let error_after_undo = read_last_history_error(visual_cx, &view);
     assert!(
         error_after_undo.is_none(),
         "expected no error after successful undo"
     );
 
     // Mutate the document to remove the shape, making the redo invalid.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.document_mut_for_tests().shapes.clear();
-        });
+    update_shell(visual_cx, &view, |shell| {
+        shell.document_mut_for_tests().shapes.clear();
     });
-    visual_cx.run_until_parked();
 
     // Trigger redo—should fail because the shape no longer exists.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.redo_document_for_tests();
-        });
+    update_shell(visual_cx, &view, |shell| {
+        shell.redo_document_for_tests();
     });
-    visual_cx.run_until_parked();
 
     // Verify error is surfaced with operation type and error description.
-    let error = visual_cx.read(|app| {
-        view.read(app)
-            .last_history_error_for_tests()
-            .map(str::to_owned)
-    });
+    let error = read_last_history_error(visual_cx, &view);
     assert!(error.is_some(), "expected last_history_error to be set");
     let error_msg = error.expect("checked above");
     assert!(
@@ -300,54 +293,39 @@ fn redo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
 #[gpui::test]
 fn successful_undo_clears_last_history_error(cx: &mut TestAppContext) {
     cx.update(crate::ui::init);
-
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
 
     // Apply a command, then manually set an error to simulate prior failure.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            let id = shell
-                .document()
-                .shapes
-                .first()
-                .expect("demo document has at least one shape")
-                .id;
-            let command = Command::MoveShapes {
-                movements: vec![ShapeMovement {
-                    shape_id: id,
-                    delta: Vec2::new(10.0, 10.0),
-                }],
-            };
-            shell
-                .apply_command_for_tests(command)
-                .expect("command should apply");
-            shell.last_history_error = Some("simulated prior error".to_owned());
-        });
+    update_shell(visual_cx, &view, |shell| {
+        let id = shell
+            .document()
+            .shapes
+            .first()
+            .expect("demo document has at least one shape")
+            .id;
+        let command = Command::MoveShapes {
+            movements: vec![ShapeMovement {
+                shape_id: id,
+                delta: Vec2::new(10.0, 10.0),
+            }],
+        };
+        shell
+            .apply_command_for_tests(command)
+            .expect("command should apply");
+        shell.last_history_error = Some("simulated prior error".to_owned());
     });
-    visual_cx.run_until_parked();
 
     // Verify the error is present.
-    let error_before = visual_cx.read(|app| {
-        view.read(app)
-            .last_history_error_for_tests()
-            .map(str::to_owned)
-    });
+    let error_before = read_last_history_error(visual_cx, &view);
     assert!(error_before.is_some(), "expected error to be set initially");
 
     // Trigger undo—should succeed and clear the error.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.undo_document_for_tests();
-        });
+    update_shell(visual_cx, &view, |shell| {
+        shell.undo_document_for_tests();
     });
-    visual_cx.run_until_parked();
 
     // Verify error is cleared.
-    let error_after = visual_cx.read(|app| {
-        view.read(app)
-            .last_history_error_for_tests()
-            .map(str::to_owned)
-    });
+    let error_after = read_last_history_error(visual_cx, &view);
     assert!(
         error_after.is_none(),
         "expected last_history_error to be cleared after successful undo"
@@ -363,55 +341,40 @@ fn successful_undo_clears_last_history_error(cx: &mut TestAppContext) {
 #[gpui::test]
 fn successful_redo_clears_last_history_error(cx: &mut TestAppContext) {
     cx.update(crate::ui::init);
-
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
 
     // Apply a command and undo it, then manually set an error.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            let id = shell
-                .document()
-                .shapes
-                .first()
-                .expect("demo document has at least one shape")
-                .id;
-            let command = Command::MoveShapes {
-                movements: vec![ShapeMovement {
-                    shape_id: id,
-                    delta: Vec2::new(10.0, 10.0),
-                }],
-            };
-            shell
-                .apply_command_for_tests(command)
-                .expect("command should apply");
-            shell.undo_document_for_tests();
-            shell.last_history_error = Some("simulated prior error".to_owned());
-        });
+    update_shell(visual_cx, &view, |shell| {
+        let id = shell
+            .document()
+            .shapes
+            .first()
+            .expect("demo document has at least one shape")
+            .id;
+        let command = Command::MoveShapes {
+            movements: vec![ShapeMovement {
+                shape_id: id,
+                delta: Vec2::new(10.0, 10.0),
+            }],
+        };
+        shell
+            .apply_command_for_tests(command)
+            .expect("command should apply");
+        shell.undo_document_for_tests();
+        shell.last_history_error = Some("simulated prior error".to_owned());
     });
-    visual_cx.run_until_parked();
 
     // Verify the error is present.
-    let error_before = visual_cx.read(|app| {
-        view.read(app)
-            .last_history_error_for_tests()
-            .map(str::to_owned)
-    });
+    let error_before = read_last_history_error(visual_cx, &view);
     assert!(error_before.is_some(), "expected error to be set initially");
 
     // Trigger redo—should succeed and clear the error.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.redo_document_for_tests();
-        });
+    update_shell(visual_cx, &view, |shell| {
+        shell.redo_document_for_tests();
     });
-    visual_cx.run_until_parked();
 
     // Verify error is cleared.
-    let error_after = visual_cx.read(|app| {
-        view.read(app)
-            .last_history_error_for_tests()
-            .map(str::to_owned)
-    });
+    let error_after = read_last_history_error(visual_cx, &view);
     assert!(
         error_after.is_none(),
         "expected last_history_error to be cleared after successful redo"
@@ -425,53 +388,38 @@ fn successful_redo_clears_last_history_error(cx: &mut TestAppContext) {
 #[gpui::test]
 fn apply_command_clears_last_history_error_on_success(cx: &mut TestAppContext) {
     cx.update(crate::ui::init);
-
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
 
     // Manually set an error to simulate a prior failure.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.last_history_error = Some("simulated prior error".to_owned());
-        });
+    update_shell(visual_cx, &view, |shell| {
+        shell.last_history_error = Some("simulated prior error".to_owned());
     });
-    visual_cx.run_until_parked();
 
     // Verify the error is present.
-    let error_before = visual_cx.read(|app| {
-        view.read(app)
-            .last_history_error_for_tests()
-            .map(str::to_owned)
-    });
+    let error_before = read_last_history_error(visual_cx, &view);
     assert!(error_before.is_some(), "expected error to be set initially");
 
     // Apply a new command—should succeed and clear the error.
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            let id = shell
-                .document()
-                .shapes
-                .first()
-                .expect("demo document has at least one shape")
-                .id;
-            let command = Command::MoveShapes {
-                movements: vec![ShapeMovement {
-                    shape_id: id,
-                    delta: Vec2::new(5.0, 5.0),
-                }],
-            };
-            shell
-                .apply_command_for_tests(command)
-                .expect("command should apply");
-        });
+    update_shell(visual_cx, &view, |shell| {
+        let id = shell
+            .document()
+            .shapes
+            .first()
+            .expect("demo document has at least one shape")
+            .id;
+        let command = Command::MoveShapes {
+            movements: vec![ShapeMovement {
+                shape_id: id,
+                delta: Vec2::new(5.0, 5.0),
+            }],
+        };
+        shell
+            .apply_command_for_tests(command)
+            .expect("command should apply");
     });
-    visual_cx.run_until_parked();
 
     // Verify error is cleared.
-    let error_after = visual_cx.read(|app| {
-        view.read(app)
-            .last_history_error_for_tests()
-            .map(str::to_owned)
-    });
+    let error_after = read_last_history_error(visual_cx, &view);
     assert!(
         error_after.is_none(),
         "expected last_history_error to be cleared after successful command"
