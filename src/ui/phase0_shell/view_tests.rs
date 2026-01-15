@@ -23,23 +23,35 @@ use crate::model::{Command, ShapeMovement, Vec2};
 
 use super::Phase0Shell;
 
-#[gpui::test]
-fn file_status_line_prefers_history_error(cx: &mut TestAppContext) {
+/// Helper to set up a shell, configure it via a closure, and read `file_status_line()`.
+///
+/// Reduces boilerplate for tests that only need a single state configuration.
+fn with_phase0_shell_status<F>(cx: &mut TestAppContext, configure: F) -> Option<String>
+where
+    F: FnOnce(&mut Phase0Shell),
+{
     cx.update(crate::ui::init);
 
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     visual_cx.update(|_window, app| {
         view.update(app, |shell, _cx| {
-            shell.last_history_error = Some("undo failed".to_owned());
-            shell.last_save_error = Some("disk full".to_owned());
-            shell.last_open_error = Some("missing file".to_owned());
-            shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
-            shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
+            configure(shell);
         });
     });
     visual_cx.run_until_parked();
 
-    let status = visual_cx.read(|app| view.read(app).file_status_line());
+    visual_cx.read(|app| view.read(app).file_status_line())
+}
+
+#[gpui::test]
+fn file_status_line_prefers_history_error(cx: &mut TestAppContext) {
+    let status = with_phase0_shell_status(cx, |shell| {
+        shell.last_history_error = Some("undo failed".to_owned());
+        shell.last_save_error = Some("disk full".to_owned());
+        shell.last_open_error = Some("missing file".to_owned());
+        shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
+        shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
+    });
     assert_eq!(status, Some("History error: undo failed".to_owned()));
 }
 
@@ -72,55 +84,35 @@ fn file_status_line_clears_history_error_after_success(cx: &mut TestAppContext) 
 
 #[gpui::test]
 fn file_status_line_prefers_save_error(cx: &mut TestAppContext) {
-    cx.update(crate::ui::init);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.last_save_error = Some("disk full".to_owned());
-            shell.last_open_error = Some("missing file".to_owned());
-            shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
-            shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
-        });
+    let status = with_phase0_shell_status(cx, |shell| {
+        shell.last_save_error = Some("disk full".to_owned());
+        shell.last_open_error = Some("missing file".to_owned());
+        shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
+        shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
     });
-    visual_cx.run_until_parked();
-
-    let status = visual_cx.read(|app| view.read(app).file_status_line());
     assert_eq!(status, Some("Save failed: disk full".to_owned()));
 }
 
 #[gpui::test]
 fn file_status_line_falls_back_to_open_error(cx: &mut TestAppContext) {
-    cx.update(crate::ui::init);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.last_open_error = Some("missing file".to_owned());
-            shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
-        });
+    let status = with_phase0_shell_status(cx, |shell| {
+        shell.last_open_error = Some("missing file".to_owned());
+        shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
     });
-    visual_cx.run_until_parked();
-
-    let status = visual_cx.read(|app| view.read(app).file_status_line());
     assert_eq!(status, Some("Open failed: missing file".to_owned()));
 }
 
 #[gpui::test]
 fn file_status_line_reports_paths_when_no_errors(cx: &mut TestAppContext) {
-    cx.update(crate::ui::init);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
-        });
+    // First assertion: saved path is shown.
+    let status = with_phase0_shell_status(cx, |shell| {
+        shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
     });
-    visual_cx.run_until_parked();
-
-    let status = visual_cx.read(|app| view.read(app).file_status_line());
     assert_eq!(status, Some("Saved: /tmp/out.svg".to_owned()));
 
+    // Second assertion requires multiple state transitions—use manual setup.
+    cx.update(crate::ui::init);
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     visual_cx.update(|_window, app| {
         view.update(app, |shell, _cx| {
             shell.last_saved_path = None;
@@ -135,12 +127,9 @@ fn file_status_line_reports_paths_when_no_errors(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn file_status_line_returns_none_when_empty(cx: &mut TestAppContext) {
-    cx.update(crate::ui::init);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    visual_cx.run_until_parked();
-
-    let status = visual_cx.read(|app| view.read(app).file_status_line());
+    let status = with_phase0_shell_status(cx, |_shell| {
+        // No configuration—shell starts with no file state.
+    });
     assert_eq!(status, None);
 }
 
