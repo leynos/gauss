@@ -141,6 +141,14 @@ fn file_status_line_returns_none_when_empty(cx: &mut TestAppContext) {
 // verifying that command failures are properly surfaced via last_history_error.
 // ============================================================================
 
+/// Set up a `Phase0Shell` in a test window.
+///
+/// Initialises the UI and creates a window/view pair for history error tests.
+fn setup_phase0_shell(cx: &mut TestAppContext) -> (Entity<Phase0Shell>, &mut VisualTestContext) {
+    cx.update(crate::ui::init);
+    cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx))
+}
+
 /// Update the shell via a closure and run until parked.
 fn update_shell<F>(visual_cx: &mut VisualTestContext, view: &Entity<Phase0Shell>, f: F)
 where
@@ -175,8 +183,7 @@ fn read_last_history_error(
 /// 4. Asserts that `last_history_error` contains the expected error message
 #[gpui::test]
 fn undo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
-    cx.update(crate::ui::init);
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    let (view, visual_cx) = setup_phase0_shell(cx);
 
     // Get the shape ID from the demo document and apply a MoveShapes command.
     update_shell(visual_cx, &view, |shell| {
@@ -230,8 +237,7 @@ fn undo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
 /// 4. Asserts that `last_history_error` contains the expected error message
 #[gpui::test]
 fn redo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
-    cx.update(crate::ui::init);
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    let (view, visual_cx) = setup_phase0_shell(cx);
 
     // Get the shape ID, apply a command, then undo to set up redo stack.
     update_shell(visual_cx, &view, |shell| {
@@ -351,16 +357,14 @@ fn assert_successful_history_op_clears_error(
 /// Verify that successful undo clears `last_history_error`.
 #[gpui::test]
 fn successful_undo_clears_last_history_error(cx: &mut TestAppContext) {
-    cx.update(crate::ui::init);
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    let (view, visual_cx) = setup_phase0_shell(cx);
     assert_successful_history_op_clears_error(visual_cx, &view, HistoryOp::Undo);
 }
 
 /// Verify that successful redo clears `last_history_error`.
 #[gpui::test]
 fn successful_redo_clears_last_history_error(cx: &mut TestAppContext) {
-    cx.update(crate::ui::init);
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    let (view, visual_cx) = setup_phase0_shell(cx);
     assert_successful_history_op_clears_error(visual_cx, &view, HistoryOp::Redo);
 }
 
@@ -370,8 +374,7 @@ fn successful_redo_clears_last_history_error(cx: &mut TestAppContext) {
 /// failed history operations, providing a recovery path for users.
 #[gpui::test]
 fn apply_command_clears_last_history_error_on_success(cx: &mut TestAppContext) {
-    cx.update(crate::ui::init);
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    let (view, visual_cx) = setup_phase0_shell(cx);
 
     // Manually set an error to simulate a prior failure.
     update_shell(visual_cx, &view, |shell| {
