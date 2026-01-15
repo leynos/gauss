@@ -284,101 +284,84 @@ fn redo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
     );
 }
 
-/// Verify that successful undo clears `last_history_error`.
+/// History operation type for parameterised tests.
+#[derive(Clone, Copy)]
+enum HistoryOp {
+    Undo,
+    Redo,
+}
+
+/// Verify that successful history operations clear `last_history_error`.
 ///
-/// This test:
-/// 1. Manually sets `last_history_error` to simulate a prior failure
-/// 2. Applies a command and successfully undoes it
-/// 3. Asserts that `last_history_error` is cleared
+/// This helper:
+/// 1. Applies a command (and undoes it if testing redo, to enable redo)
+/// 2. Manually sets `last_history_error` to simulate a prior failure
+/// 3. Triggers the specified history operation
+/// 4. Asserts that `last_history_error` is cleared
+fn assert_successful_history_op_clears_error(
+    visual_cx: &mut VisualTestContext,
+    view: &Entity<Phase0Shell>,
+    op: HistoryOp,
+) {
+    // Apply a command (and undo if testing redo), then set an error.
+    update_shell(visual_cx, view, move |shell| {
+        let id = shell
+            .document()
+            .shapes
+            .first()
+            .expect("demo document has at least one shape")
+            .id;
+        let command = Command::MoveShapes {
+            movements: vec![ShapeMovement {
+                shape_id: id,
+                delta: Vec2::new(10.0, 10.0),
+            }],
+        };
+        shell
+            .apply_command_for_tests(command)
+            .expect("command should apply");
+        if matches!(op, HistoryOp::Redo) {
+            shell.undo_document_for_tests();
+        }
+        shell.last_history_error = Some("simulated prior error".to_owned());
+    });
+
+    // Verify the error is present.
+    let error_before = read_last_history_error(visual_cx, view);
+    assert!(error_before.is_some(), "expected error to be set initially");
+
+    // Trigger the history operation—should succeed and clear the error.
+    update_shell(visual_cx, view, move |shell| match op {
+        HistoryOp::Undo => shell.undo_document_for_tests(),
+        HistoryOp::Redo => shell.redo_document_for_tests(),
+    });
+
+    // Verify error is cleared.
+    let error_after = read_last_history_error(visual_cx, view);
+    let op_name = match op {
+        HistoryOp::Undo => "undo",
+        HistoryOp::Redo => "redo",
+    };
+    assert!(
+        error_after.is_none(),
+        "expected last_history_error to be cleared after successful {op_name}"
+    );
+}
+
+/// Verify that successful undo clears `last_history_error`.
 #[gpui::test]
 fn successful_undo_clears_last_history_error(cx: &mut TestAppContext) {
     cx.update(crate::ui::init);
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-
-    // Apply a command, then manually set an error to simulate prior failure.
-    update_shell(visual_cx, &view, |shell| {
-        let id = shell
-            .document()
-            .shapes
-            .first()
-            .expect("demo document has at least one shape")
-            .id;
-        let command = Command::MoveShapes {
-            movements: vec![ShapeMovement {
-                shape_id: id,
-                delta: Vec2::new(10.0, 10.0),
-            }],
-        };
-        shell
-            .apply_command_for_tests(command)
-            .expect("command should apply");
-        shell.last_history_error = Some("simulated prior error".to_owned());
-    });
-
-    // Verify the error is present.
-    let error_before = read_last_history_error(visual_cx, &view);
-    assert!(error_before.is_some(), "expected error to be set initially");
-
-    // Trigger undo—should succeed and clear the error.
-    update_shell(visual_cx, &view, |shell| {
-        shell.undo_document_for_tests();
-    });
-
-    // Verify error is cleared.
-    let error_after = read_last_history_error(visual_cx, &view);
-    assert!(
-        error_after.is_none(),
-        "expected last_history_error to be cleared after successful undo"
-    );
+    assert_successful_history_op_clears_error(visual_cx, &view, HistoryOp::Undo);
 }
 
 /// Verify that successful redo clears `last_history_error`.
-///
-/// This test:
-/// 1. Applies a command, undoes it, and manually sets an error
-/// 2. Successfully redoes the command
-/// 3. Asserts that `last_history_error` is cleared
 #[gpui::test]
 fn successful_redo_clears_last_history_error(cx: &mut TestAppContext) {
     cx.update(crate::ui::init);
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-
-    // Apply a command and undo it, then manually set an error.
-    update_shell(visual_cx, &view, |shell| {
-        let id = shell
-            .document()
-            .shapes
-            .first()
-            .expect("demo document has at least one shape")
-            .id;
-        let command = Command::MoveShapes {
-            movements: vec![ShapeMovement {
-                shape_id: id,
-                delta: Vec2::new(10.0, 10.0),
-            }],
-        };
-        shell
-            .apply_command_for_tests(command)
-            .expect("command should apply");
-        shell.undo_document_for_tests();
-        shell.last_history_error = Some("simulated prior error".to_owned());
-    });
-
-    // Verify the error is present.
-    let error_before = read_last_history_error(visual_cx, &view);
-    assert!(error_before.is_some(), "expected error to be set initially");
-
-    // Trigger redo—should succeed and clear the error.
-    update_shell(visual_cx, &view, |shell| {
-        shell.redo_document_for_tests();
-    });
-
-    // Verify error is cleared.
-    let error_after = read_last_history_error(visual_cx, &view);
-    assert!(
-        error_after.is_none(),
-        "expected last_history_error to be cleared after successful redo"
-    );
+    assert_successful_history_op_clears_error(visual_cx, &view, HistoryOp::Redo);
 }
 
 /// Verify that `apply_command` clears `last_history_error` on success.
