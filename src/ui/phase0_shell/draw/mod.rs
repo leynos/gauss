@@ -159,27 +159,31 @@ impl Phase0Shell {
         group: Vec<DocumentHistoryItem>,
         direction: HistoryDirection,
     ) -> Result<(), String> {
+        let mut first_error = None;
         for item in group {
             let entry = item.into_entry();
-            if let Err(error) = apply_command_for_direction(
+            let error = match apply_command_for_direction(
                 &mut self.state.document,
                 &entry.command,
                 &entry.inverse,
                 direction,
             ) {
-                let operation = match direction {
-                    HistoryDirection::Undo => "Undo",
-                    HistoryDirection::Redo => "Redo",
-                };
-                let command_name = match direction {
-                    HistoryDirection::Undo => entry.inverse.name(),
-                    HistoryDirection::Redo => entry.command.name(),
-                };
-                return Err(format!("{operation} failed for '{command_name}': {error}"));
-            }
+                Ok(()) => continue,
+                Err(error) => error,
+            };
+            let operation = match direction {
+                HistoryDirection::Undo => "Undo",
+                HistoryDirection::Redo => "Redo",
+            };
+            let command_name = match direction {
+                HistoryDirection::Undo => entry.inverse.name(),
+                HistoryDirection::Redo => entry.command.name(),
+            };
+            let message = format!("{operation} failed for '{command_name}': {error}");
+            first_error.get_or_insert(message);
         }
 
-        Ok(())
+        first_error.map_or(Ok(()), Err)
     }
 }
 
