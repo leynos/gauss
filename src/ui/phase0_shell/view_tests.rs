@@ -155,7 +155,7 @@ fn undo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
 
     // Get the shape ID from the demo document and apply a MoveShapes command.
-    let shape_id = visual_cx.update(|_window, app| {
+    visual_cx.update(|_window, app| {
         view.update(app, |shell, _cx| {
             let id = shell
                 .document()
@@ -172,8 +172,7 @@ fn undo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
             shell
                 .apply_command_for_tests(command)
                 .expect("command should apply");
-            id
-        })
+        });
     });
     visual_cx.run_until_parked();
 
@@ -209,9 +208,6 @@ fn undo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
         error_msg.contains("Shape not found"),
         "expected 'Shape not found' in error: {error_msg}"
     );
-
-    // Suppress unused variable warning - shape_id is needed to construct the command.
-    let _ = shape_id;
 }
 
 /// Verify that redo failures propagate to `last_history_error`.
@@ -228,7 +224,7 @@ fn redo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
 
     // Get the shape ID, apply a command, then undo to set up redo stack.
-    let shape_id = visual_cx.update(|_window, app| {
+    visual_cx.update(|_window, app| {
         view.update(app, |shell, _cx| {
             let id = shell
                 .document()
@@ -246,8 +242,7 @@ fn redo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
                 .apply_command_for_tests(command)
                 .expect("command should apply");
             shell.undo_document_for_tests();
-            id
-        })
+        });
     });
     visual_cx.run_until_parked();
 
@@ -294,9 +289,6 @@ fn redo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
         error_msg.contains("Shape not found"),
         "expected 'Shape not found' in error: {error_msg}"
     );
-
-    // Suppress unused variable warning - shape_id is needed to construct the command.
-    let _ = shape_id;
 }
 
 /// Verify that successful undo clears `last_history_error`.
