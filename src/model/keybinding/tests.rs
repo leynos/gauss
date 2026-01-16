@@ -3,6 +3,32 @@
 use super::*;
 use rstest::rstest;
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Test helper mirrors explicit per-modifier assertions required by the test cases."
+)]
+#[expect(
+    clippy::fn_params_excessive_bools,
+    reason = "Test helper mirrors explicit per-modifier assertions required by the test cases."
+)]
+fn assert_single_binding_with_modifiers(
+    action: Action,
+    expected_key: &str,
+    expected_secondary: bool,
+    expected_shift: bool,
+    expected_control: bool,
+    expected_alt: bool,
+) {
+    let bindings = bindings_for_action(action);
+    assert_eq!(bindings.len(), 1);
+    let binding = bindings.first().expect("should have at least one binding");
+    assert_eq!(binding.keystroke.key, expected_key);
+    assert_eq!(binding.keystroke.modifiers.secondary, expected_secondary);
+    assert_eq!(binding.keystroke.modifiers.shift, expected_shift);
+    assert_eq!(binding.keystroke.modifiers.control, expected_control);
+    assert_eq!(binding.keystroke.modifiers.alt, expected_alt);
+}
+
 #[test]
 fn default_bindings_is_not_empty() {
     assert!(!default_bindings().is_empty());
@@ -36,27 +62,13 @@ fn redo_has_one_binding() {
 #[test]
 fn selection_undo_has_shift_modifier() {
     // SelectionUndo should be Cmd+Shift+Z
-    let bindings = bindings_for_action(Action::SelectionUndo);
-    assert_eq!(bindings.len(), 1);
-    let binding = bindings.first().expect("should have at least one binding");
-    assert_eq!(binding.keystroke.key, "z");
-    assert!(binding.keystroke.modifiers.secondary);
-    assert!(binding.keystroke.modifiers.shift);
-    assert!(!binding.keystroke.modifiers.control);
-    assert!(!binding.keystroke.modifiers.alt);
+    assert_single_binding_with_modifiers(Action::SelectionUndo, "z", true, true, false, false);
 }
 
 #[test]
 fn selection_redo_has_shift_modifier() {
     // SelectionRedo should be Cmd+Shift+Y
-    let bindings = bindings_for_action(Action::SelectionRedo);
-    assert_eq!(bindings.len(), 1);
-    let binding = bindings.first().expect("should have at least one binding");
-    assert_eq!(binding.keystroke.key, "y");
-    assert!(binding.keystroke.modifiers.secondary);
-    assert!(binding.keystroke.modifiers.shift);
-    assert!(!binding.keystroke.modifiers.control);
-    assert!(!binding.keystroke.modifiers.alt);
+    assert_single_binding_with_modifiers(Action::SelectionRedo, "y", true, true, false, false);
 }
 
 #[test]
