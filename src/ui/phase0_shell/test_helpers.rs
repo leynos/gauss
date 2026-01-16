@@ -6,7 +6,7 @@
 
 use std::path::Path;
 
-use crate::model::{Document, Selection, ShapeId, Vec2, Viewport};
+use crate::model::{Command, Document, Selection, ShapeId, UserError, Vec2, Viewport};
 
 use super::{Phase0Shell, draw, file_dialogs::OpenPromptMode};
 
@@ -186,5 +186,51 @@ impl Phase0Shell {
     #[must_use]
     pub const fn is_bezier_edge_mode(&self) -> bool {
         matches!(self.state.edge_mode, draw::DrawEdgeMode::BezierAuto)
+    }
+
+    /// Apply a command through the shell's history system.
+    ///
+    /// This is the test entry point for building undo history. The command
+    /// is applied to the document and recorded in the history stack.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`UserError`] if the command fails to apply to the document
+    /// (e.g., the target shape does not exist).
+    pub fn apply_command_for_tests(&mut self, command: Command) -> Result<(), UserError> {
+        self.apply_command(command)
+    }
+
+    /// Return a mutable reference to the document for direct mutation.
+    ///
+    /// Unlike [`replace_document_for_tests`], this preserves the history stack,
+    /// allowing tests to create invalid states that trigger history errors.
+    pub const fn document_mut_for_tests(&mut self) -> &mut Document {
+        &mut self.state.document
+    }
+
+    /// Trigger an undo operation through the shell's history system.
+    ///
+    /// This exercises the full error propagation path through
+    /// `apply_history_operation` → `apply_history_group`.
+    pub fn undo_document_for_tests(&mut self) {
+        self.undo_document();
+    }
+
+    /// Trigger a redo operation through the shell's history system.
+    ///
+    /// This exercises the full error propagation path through
+    /// `apply_history_operation` → `apply_history_group`.
+    pub fn redo_document_for_tests(&mut self) {
+        self.redo_document();
+    }
+
+    /// Return the last history error, if any.
+    ///
+    /// This allows tests to verify that history operation failures are
+    /// properly surfaced through the error propagation path.
+    #[must_use]
+    pub fn last_history_error_for_tests(&self) -> Option<&str> {
+        self.last_history_error.as_deref()
     }
 }
