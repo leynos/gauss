@@ -43,16 +43,92 @@ where
     visual_cx.read(|app| view.read(app).file_status_line())
 }
 
+/// Test case for `file_status_line` precedence verification.
+struct StatusLineTestCase {
+    name: &'static str,
+    history_error: Option<&'static str>,
+    save_error: Option<&'static str>,
+    open_error: Option<&'static str>,
+    saved_path: Option<&'static str>,
+    opened_path: Option<&'static str>,
+    expected: Option<&'static str>,
+}
+
 #[gpui::test]
-fn file_status_line_prefers_history_error(cx: &mut TestAppContext) {
-    let status = with_phase0_shell_status(cx, |shell| {
-        shell.last_history_error = Some("undo failed".to_owned());
-        shell.last_save_error = Some("disk full".to_owned());
-        shell.last_open_error = Some("missing file".to_owned());
-        shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
-        shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
-    });
-    assert_eq!(status, Some("History error: undo failed".to_owned()));
+#[expect(clippy::too_many_lines, reason = "table-driven test with inline test cases")]
+fn file_status_line_precedence(cx: &mut TestAppContext) {
+    let cases = [
+        StatusLineTestCase {
+            name: "history error takes priority",
+            history_error: Some("undo failed"),
+            save_error: Some("disk full"),
+            open_error: Some("missing file"),
+            saved_path: Some("/tmp/out.svg"),
+            opened_path: Some("/tmp/in.svg"),
+            expected: Some("History error: undo failed"),
+        },
+        StatusLineTestCase {
+            name: "save error takes priority over open error and paths",
+            history_error: None,
+            save_error: Some("disk full"),
+            open_error: Some("missing file"),
+            saved_path: Some("/tmp/out.svg"),
+            opened_path: Some("/tmp/in.svg"),
+            expected: Some("Save failed: disk full"),
+        },
+        StatusLineTestCase {
+            name: "open error takes priority over paths",
+            history_error: None,
+            save_error: None,
+            open_error: Some("missing file"),
+            saved_path: Some("/tmp/out.svg"),
+            opened_path: None,
+            expected: Some("Open failed: missing file"),
+        },
+        StatusLineTestCase {
+            name: "saved path shown when no errors",
+            history_error: None,
+            save_error: None,
+            open_error: None,
+            saved_path: Some("/tmp/out.svg"),
+            opened_path: None,
+            expected: Some("Saved: /tmp/out.svg"),
+        },
+        StatusLineTestCase {
+            name: "opened path as fallback",
+            history_error: None,
+            save_error: None,
+            open_error: None,
+            saved_path: None,
+            opened_path: Some("/tmp/in.svg"),
+            expected: Some("Opened: /tmp/in.svg"),
+        },
+        StatusLineTestCase {
+            name: "returns None when empty",
+            history_error: None,
+            save_error: None,
+            open_error: None,
+            saved_path: None,
+            opened_path: None,
+            expected: None,
+        },
+    ];
+
+    for case in cases {
+        let status = with_phase0_shell_status(cx, |shell| {
+            shell.last_history_error = case.history_error.map(str::to_owned);
+            shell.last_save_error = case.save_error.map(str::to_owned);
+            shell.last_open_error = case.open_error.map(str::to_owned);
+            shell.last_saved_path = case.saved_path.map(PathBuf::from);
+            shell.last_opened_path = case.opened_path.map(PathBuf::from);
+        });
+        assert_eq!(
+            status,
+            case.expected.map(str::to_owned),
+            "case '{}' failed",
+            case.name
+        );
+    }
 }
 
 #[gpui::test]
@@ -80,50 +156,6 @@ fn file_status_line_clears_history_error_after_success(cx: &mut TestAppContext) 
 
     let status_after = visual_cx.read(|app| view.read(app).file_status_line());
     assert_eq!(status_after, Some("Save failed: disk full".to_owned()));
-}
-
-#[gpui::test]
-fn file_status_line_prefers_save_error(cx: &mut TestAppContext) {
-    let status = with_phase0_shell_status(cx, |shell| {
-        shell.last_save_error = Some("disk full".to_owned());
-        shell.last_open_error = Some("missing file".to_owned());
-        shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
-        shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
-    });
-    assert_eq!(status, Some("Save failed: disk full".to_owned()));
-}
-
-#[gpui::test]
-fn file_status_line_falls_back_to_open_error(cx: &mut TestAppContext) {
-    let status = with_phase0_shell_status(cx, |shell| {
-        shell.last_open_error = Some("missing file".to_owned());
-        shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
-    });
-    assert_eq!(status, Some("Open failed: missing file".to_owned()));
-}
-
-#[gpui::test]
-fn file_status_line_reports_saved_path(cx: &mut TestAppContext) {
-    let status = with_phase0_shell_status(cx, |shell| {
-        shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
-    });
-    assert_eq!(status, Some("Saved: /tmp/out.svg".to_owned()));
-}
-
-#[gpui::test]
-fn file_status_line_reports_opened_path_as_fallback(cx: &mut TestAppContext) {
-    let status = with_phase0_shell_status(cx, |shell| {
-        shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
-    });
-    assert_eq!(status, Some("Opened: /tmp/in.svg".to_owned()));
-}
-
-#[gpui::test]
-fn file_status_line_returns_none_when_empty(cx: &mut TestAppContext) {
-    let status = with_phase0_shell_status(cx, |_shell| {
-        // No configuration—shell starts with no file state.
-    });
-    assert_eq!(status, None);
 }
 
 // ============================================================================
