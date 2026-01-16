@@ -35,9 +35,13 @@
 #[cfg(test)]
 mod tests;
 
+mod keystroke;
+
 use gpui::KeyBinding;
 
 use crate::model::{Action, KeyContext, default_bindings};
+
+pub use keystroke::KeystrokeFormatter;
 
 // === GPUI Action structs ===
 

@@ -39,7 +39,11 @@ fn selection_undo_has_shift_modifier() {
     let bindings = bindings_for_action(Action::SelectionUndo);
     assert_eq!(bindings.len(), 1);
     let binding = bindings.first().expect("should have at least one binding");
-    assert_eq!(binding.keystroke.to_gpui_string(), "shift-secondary-z");
+    assert_eq!(binding.keystroke.key, "z");
+    assert!(binding.keystroke.modifiers.secondary);
+    assert!(binding.keystroke.modifiers.shift);
+    assert!(!binding.keystroke.modifiers.control);
+    assert!(!binding.keystroke.modifiers.alt);
 }
 
 #[test]
@@ -48,7 +52,11 @@ fn selection_redo_has_shift_modifier() {
     let bindings = bindings_for_action(Action::SelectionRedo);
     assert_eq!(bindings.len(), 1);
     let binding = bindings.first().expect("should have at least one binding");
-    assert_eq!(binding.keystroke.to_gpui_string(), "shift-secondary-y");
+    assert_eq!(binding.keystroke.key, "y");
+    assert!(binding.keystroke.modifiers.secondary);
+    assert!(binding.keystroke.modifiers.shift);
+    assert!(!binding.keystroke.modifiers.control);
+    assert!(!binding.keystroke.modifiers.alt);
 }
 
 #[test]
@@ -128,7 +136,11 @@ fn bindings_for_context_manipulate_includes_delete() {
 fn primary_keystroke_returns_first_binding() {
     let undo = primary_keystroke(Action::Undo);
     let keystroke = undo.expect("Undo should have a binding");
-    assert_eq!(keystroke.to_gpui_string(), "secondary-z");
+    assert_eq!(keystroke.key, "z");
+    assert!(keystroke.modifiers.secondary);
+    assert!(!keystroke.modifiers.shift);
+    assert!(!keystroke.modifiers.control);
+    assert!(!keystroke.modifiers.alt);
 }
 
 #[test]
