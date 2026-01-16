@@ -229,12 +229,6 @@ fn apply_move_to_first_shape(shell: &mut Phase0Shell) {
 }
 
 /// Assert that a history operation fails with the expected error message.
-///
-/// This helper:
-/// 1. Applies a command (and undoes it if testing redo, to enable redo)
-/// 2. Clears the document shapes to invalidate the operation
-/// 3. Triggers the specified history operation
-/// 4. Asserts that `last_history_error` contains the appropriate prefix and error
 fn assert_history_op_fails_with_error(
     visual_cx: &mut VisualTestContext,
     view: &Entity<Phase0Shell>,
@@ -291,13 +285,7 @@ fn redo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
     assert_history_op_fails_with_error(visual_cx, &view, HistoryOp::Redo);
 }
 
-/// Verify that successful history operations clear `last_history_error`.
-///
-/// This helper:
-/// 1. Applies a command (and undoes it if testing redo, to enable redo)
-/// 2. Manually sets `last_history_error` to simulate a prior failure
-/// 3. Triggers the specified history operation
-/// 4. Asserts that `last_history_error` is cleared
+/// Assert that a successful history operation clears `last_history_error`.
 fn assert_successful_history_op_clears_error(
     visual_cx: &mut VisualTestContext,
     view: &Entity<Phase0Shell>,
