@@ -206,6 +206,28 @@ enum HistoryOp {
     Redo,
 }
 
+/// Apply a `MoveShapes` command to the first shape in the document.
+///
+/// Gets the first shape ID, builds a move command with delta (10.0, 10.0),
+/// and applies it via `apply_command_for_tests`.
+fn apply_move_to_first_shape(shell: &mut Phase0Shell) {
+    let id = shell
+        .document()
+        .shapes
+        .first()
+        .expect("demo document has at least one shape")
+        .id;
+    let command = Command::MoveShapes {
+        movements: vec![ShapeMovement {
+            shape_id: id,
+            delta: Vec2::new(10.0, 10.0),
+        }],
+    };
+    shell
+        .apply_command_for_tests(command)
+        .expect("command should apply");
+}
+
 /// Assert that a history operation fails with the expected error message.
 ///
 /// This helper:
@@ -218,23 +240,9 @@ fn assert_history_op_fails_with_error(
     view: &Entity<Phase0Shell>,
     op: HistoryOp,
 ) {
-    // Get the shape ID and apply a MoveShapes command.
+    // Apply a MoveShapes command (and undo if testing redo).
     update_shell(visual_cx, view, move |shell| {
-        let id = shell
-            .document()
-            .shapes
-            .first()
-            .expect("demo document has at least one shape")
-            .id;
-        let command = Command::MoveShapes {
-            movements: vec![ShapeMovement {
-                shape_id: id,
-                delta: Vec2::new(10.0, 10.0),
-            }],
-        };
-        shell
-            .apply_command_for_tests(command)
-            .expect("command should apply");
+        apply_move_to_first_shape(shell);
         if matches!(op, HistoryOp::Redo) {
             shell.undo_document_for_tests();
         }
@@ -297,21 +305,7 @@ fn assert_successful_history_op_clears_error(
 ) {
     // Apply a command (and undo if testing redo), then set an error.
     update_shell(visual_cx, view, move |shell| {
-        let id = shell
-            .document()
-            .shapes
-            .first()
-            .expect("demo document has at least one shape")
-            .id;
-        let command = Command::MoveShapes {
-            movements: vec![ShapeMovement {
-                shape_id: id,
-                delta: Vec2::new(10.0, 10.0),
-            }],
-        };
-        shell
-            .apply_command_for_tests(command)
-            .expect("command should apply");
+        apply_move_to_first_shape(shell);
         if matches!(op, HistoryOp::Redo) {
             shell.undo_document_for_tests();
         }
@@ -368,23 +362,7 @@ fn apply_command_clears_last_history_error_on_success(cx: &mut TestAppContext) {
     assert!(error_before.is_some(), "expected error to be set initially");
 
     // Apply a new command—should succeed and clear the error.
-    update_shell(visual_cx, &view, |shell| {
-        let id = shell
-            .document()
-            .shapes
-            .first()
-            .expect("demo document has at least one shape")
-            .id;
-        let command = Command::MoveShapes {
-            movements: vec![ShapeMovement {
-                shape_id: id,
-                delta: Vec2::new(5.0, 5.0),
-            }],
-        };
-        shell
-            .apply_command_for_tests(command)
-            .expect("command should apply");
-    });
+    update_shell(visual_cx, &view, apply_move_to_first_shape);
 
     // Verify error is cleared.
     let error_after = read_last_history_error(visual_cx, &view);
