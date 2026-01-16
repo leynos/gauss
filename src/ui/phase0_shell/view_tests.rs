@@ -54,67 +54,67 @@ struct StatusLineTestCase {
     expected: Option<&'static str>,
 }
 
-#[gpui::test]
-#[expect(clippy::too_many_lines, reason = "table-driven test with inline test cases")]
-fn file_status_line_precedence(cx: &mut TestAppContext) {
-    let cases = [
-        StatusLineTestCase {
-            name: "history error takes priority",
-            history_error: Some("undo failed"),
-            save_error: Some("disk full"),
-            open_error: Some("missing file"),
-            saved_path: Some("/tmp/out.svg"),
-            opened_path: Some("/tmp/in.svg"),
-            expected: Some("History error: undo failed"),
-        },
-        StatusLineTestCase {
-            name: "save error takes priority over open error and paths",
-            history_error: None,
-            save_error: Some("disk full"),
-            open_error: Some("missing file"),
-            saved_path: Some("/tmp/out.svg"),
-            opened_path: Some("/tmp/in.svg"),
-            expected: Some("Save failed: disk full"),
-        },
-        StatusLineTestCase {
-            name: "open error takes priority over paths",
-            history_error: None,
-            save_error: None,
-            open_error: Some("missing file"),
-            saved_path: Some("/tmp/out.svg"),
-            opened_path: None,
-            expected: Some("Open failed: missing file"),
-        },
-        StatusLineTestCase {
-            name: "saved path shown when no errors",
-            history_error: None,
-            save_error: None,
-            open_error: None,
-            saved_path: Some("/tmp/out.svg"),
-            opened_path: None,
-            expected: Some("Saved: /tmp/out.svg"),
-        },
-        StatusLineTestCase {
-            name: "opened path as fallback",
-            history_error: None,
-            save_error: None,
-            open_error: None,
-            saved_path: None,
-            opened_path: Some("/tmp/in.svg"),
-            expected: Some("Opened: /tmp/in.svg"),
-        },
-        StatusLineTestCase {
-            name: "returns None when empty",
-            history_error: None,
-            save_error: None,
-            open_error: None,
-            saved_path: None,
-            opened_path: None,
-            expected: None,
-        },
-    ];
+/// Test cases for status line precedence verification.
+const STATUS_LINE_TEST_CASES: &[StatusLineTestCase] = &[
+    StatusLineTestCase {
+        name: "history error takes priority",
+        history_error: Some("undo failed"),
+        save_error: Some("disk full"),
+        open_error: Some("missing file"),
+        saved_path: Some("/tmp/out.svg"),
+        opened_path: Some("/tmp/in.svg"),
+        expected: Some("History error: undo failed"),
+    },
+    StatusLineTestCase {
+        name: "save error takes priority over open error and paths",
+        history_error: None,
+        save_error: Some("disk full"),
+        open_error: Some("missing file"),
+        saved_path: Some("/tmp/out.svg"),
+        opened_path: Some("/tmp/in.svg"),
+        expected: Some("Save failed: disk full"),
+    },
+    StatusLineTestCase {
+        name: "open error takes priority over paths",
+        history_error: None,
+        save_error: None,
+        open_error: Some("missing file"),
+        saved_path: Some("/tmp/out.svg"),
+        opened_path: None,
+        expected: Some("Open failed: missing file"),
+    },
+    StatusLineTestCase {
+        name: "saved path shown when no errors",
+        history_error: None,
+        save_error: None,
+        open_error: None,
+        saved_path: Some("/tmp/out.svg"),
+        opened_path: None,
+        expected: Some("Saved: /tmp/out.svg"),
+    },
+    StatusLineTestCase {
+        name: "opened path as fallback",
+        history_error: None,
+        save_error: None,
+        open_error: None,
+        saved_path: None,
+        opened_path: Some("/tmp/in.svg"),
+        expected: Some("Opened: /tmp/in.svg"),
+    },
+    StatusLineTestCase {
+        name: "returns None when empty",
+        history_error: None,
+        save_error: None,
+        open_error: None,
+        saved_path: None,
+        opened_path: None,
+        expected: None,
+    },
+];
 
-    for case in cases {
+#[gpui::test]
+fn file_status_line_precedence(cx: &mut TestAppContext) {
+    for case in STATUS_LINE_TEST_CASES {
         let status = with_phase0_shell_status(cx, |shell| {
             shell.last_history_error = case.history_error.map(str::to_owned);
             shell.last_save_error = case.save_error.map(str::to_owned);
