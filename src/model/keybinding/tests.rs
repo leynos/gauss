@@ -5,28 +5,60 @@ use rstest::rstest;
 
 #[expect(
     clippy::too_many_arguments,
-    reason = "Test helper mirrors explicit per-modifier assertions required by the test cases."
+    reason = "Helper keeps tests readable by spelling out expected modifiers."
 )]
 #[expect(
     clippy::fn_params_excessive_bools,
-    reason = "Test helper mirrors explicit per-modifier assertions required by the test cases."
+    reason = "Helper mirrors the explicit modifier expectations in tests."
 )]
-fn assert_single_binding_with_modifiers(
-    action: Action,
-    expected_key: &str,
-    expected_secondary: bool,
-    expected_shift: bool,
-    expected_control: bool,
-    expected_alt: bool,
+fn assert_keystroke_eq(
+    keystroke: &Keystroke,
+    key: &str,
+    secondary: bool,
+    shift: bool,
+    control: bool,
+    alt: bool,
 ) {
-    let bindings = bindings_for_action(action);
-    assert_eq!(bindings.len(), 1);
-    let binding = bindings.first().expect("should have at least one binding");
-    assert_eq!(binding.keystroke.key, expected_key);
-    assert_eq!(binding.keystroke.modifiers.secondary, expected_secondary);
-    assert_eq!(binding.keystroke.modifiers.shift, expected_shift);
-    assert_eq!(binding.keystroke.modifiers.control, expected_control);
-    assert_eq!(binding.keystroke.modifiers.alt, expected_alt);
+    assert_eq!(
+        keystroke.key, key,
+        "expected key '{key}', got '{}'",
+        keystroke.key
+    );
+    assert_eq!(
+        keystroke.modifiers.secondary, secondary,
+        "expected secondary modifier {secondary} for key '{key}'"
+    );
+    assert_eq!(
+        keystroke.modifiers.shift, shift,
+        "expected shift modifier {shift} for key '{key}'"
+    );
+    assert_eq!(
+        keystroke.modifiers.control, control,
+        "expected control modifier {control} for key '{key}'"
+    );
+    assert_eq!(
+        keystroke.modifiers.alt, alt,
+        "expected alt modifier {alt} for key '{key}'"
+    );
+}
+
+fn assert_active_contexts(binding: &ActionBinding, active: &[KeyContext], inactive: &[KeyContext]) {
+    for context in active {
+        assert!(
+            binding.is_active_in(*context),
+            "expected binding {:?} to be active in {:?}",
+            binding.action,
+            context
+        );
+    }
+    for context in inactive {
+        assert!(
+            !binding.is_active_in(*context),
+            "expected binding {:?} to be inactive in {:?}",
+            binding.action,
+            context
+        );
+    }
 }
 
 #[test]
@@ -62,13 +94,19 @@ fn redo_has_one_binding() {
 #[test]
 fn selection_undo_has_shift_modifier() {
     // SelectionUndo should be Cmd+Shift+Z
-    assert_single_binding_with_modifiers(Action::SelectionUndo, "z", true, true, false, false);
+    let bindings = bindings_for_action(Action::SelectionUndo);
+    assert_eq!(bindings.len(), 1);
+    let binding = bindings.first().expect("should have at least one binding");
+    assert_keystroke_eq(&binding.keystroke, "z", true, true, false, false);
 }
 
 #[test]
 fn selection_redo_has_shift_modifier() {
     // SelectionRedo should be Cmd+Shift+Y
-    assert_single_binding_with_modifiers(Action::SelectionRedo, "y", true, true, false, false);
+    let bindings = bindings_for_action(Action::SelectionRedo);
+    assert_eq!(bindings.len(), 1);
+    let binding = bindings.first().expect("should have at least one binding");
+    assert_keystroke_eq(&binding.keystroke, "y", true, true, false, false);
 }
 
 #[test]
@@ -148,21 +186,23 @@ fn bindings_for_context_manipulate_includes_delete() {
 fn primary_keystroke_returns_first_binding() {
     let undo = primary_keystroke(Action::Undo);
     let keystroke = undo.expect("Undo should have a binding");
-    assert_eq!(keystroke.key, "z");
-    assert!(keystroke.modifiers.secondary);
-    assert!(!keystroke.modifiers.shift);
-    assert!(!keystroke.modifiers.control);
-    assert!(!keystroke.modifiers.alt);
+    assert_keystroke_eq(&keystroke, "z", true, false, false, false);
 }
 
 #[test]
 fn is_active_in_global_context_matches_all() {
     let binding = ActionBinding::secondary(Action::Undo, "z", &[KeyContext::Global]);
 
-    assert!(binding.is_active_in(KeyContext::Global));
-    assert!(binding.is_active_in(KeyContext::DrawMode));
-    assert!(binding.is_active_in(KeyContext::ManipulateMode));
-    assert!(binding.is_active_in(KeyContext::TextEdit));
+    assert_active_contexts(
+        &binding,
+        &[
+            KeyContext::Global,
+            KeyContext::DrawMode,
+            KeyContext::ManipulateMode,
+            KeyContext::TextEdit,
+        ],
+        &[],
+    );
 }
 
 #[test]
@@ -173,10 +213,15 @@ fn is_active_in_specific_context_only_matches_listed() {
         &[KeyContext::ManipulateMode],
     );
 
-    assert!(binding.is_active_in(KeyContext::ManipulateMode));
-    assert!(!binding.is_active_in(KeyContext::DrawMode));
-    assert!(!binding.is_active_in(KeyContext::TextEdit));
     // Note: Global is not in the contexts list, so it doesn't match Global
     // But Global acts as a wildcard in the opposite direction
-    assert!(!binding.is_active_in(KeyContext::Global));
+    assert_active_contexts(
+        &binding,
+        &[KeyContext::ManipulateMode],
+        &[
+            KeyContext::DrawMode,
+            KeyContext::TextEdit,
+            KeyContext::Global,
+        ],
+    );
 }
