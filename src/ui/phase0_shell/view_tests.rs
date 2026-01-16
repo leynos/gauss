@@ -103,26 +103,19 @@ fn file_status_line_falls_back_to_open_error(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
-fn file_status_line_reports_paths_when_no_errors(cx: &mut TestAppContext) {
-    // First assertion: saved path is shown.
+fn file_status_line_reports_saved_path(cx: &mut TestAppContext) {
     let status = with_phase0_shell_status(cx, |shell| {
         shell.last_saved_path = Some(PathBuf::from("/tmp/out.svg"));
     });
     assert_eq!(status, Some("Saved: /tmp/out.svg".to_owned()));
+}
 
-    // Second assertion requires multiple state transitions—use manual setup.
-    cx.update(crate::ui::init);
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.last_saved_path = None;
-            shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
-        });
+#[gpui::test]
+fn file_status_line_reports_opened_path_as_fallback(cx: &mut TestAppContext) {
+    let status = with_phase0_shell_status(cx, |shell| {
+        shell.last_opened_path = Some(PathBuf::from("/tmp/in.svg"));
     });
-    visual_cx.run_until_parked();
-
-    let status_after = visual_cx.read(|app| view.read(app).file_status_line());
-    assert_eq!(status_after, Some("Opened: /tmp/in.svg".to_owned()));
+    assert_eq!(status, Some("Opened: /tmp/in.svg".to_owned()));
 }
 
 #[gpui::test]
@@ -291,7 +284,7 @@ fn redo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
 }
 
 /// History operation type for parameterised tests.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum HistoryOp {
     Undo,
     Redo,
@@ -344,13 +337,9 @@ fn assert_successful_history_op_clears_error(
 
     // Verify error is cleared.
     let error_after = read_last_history_error(visual_cx, view);
-    let op_name = match op {
-        HistoryOp::Undo => "undo",
-        HistoryOp::Redo => "redo",
-    };
     assert!(
         error_after.is_none(),
-        "expected last_history_error to be cleared after successful {op_name}"
+        "expected last_history_error to be cleared after successful {op:?}"
     );
 }
 
