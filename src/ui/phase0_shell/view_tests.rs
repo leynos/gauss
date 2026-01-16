@@ -167,127 +167,88 @@ fn read_last_history_error(
     })
 }
 
-/// Verify that undo failures propagate to `last_history_error`.
-///
-/// This test:
-/// 1. Applies a command to build undo history
-/// 2. Mutates the document to invalidate the inverse (removes the shape)
-/// 3. Triggers undo, which should fail
-/// 4. Asserts that `last_history_error` contains the expected error message
-#[gpui::test]
-fn undo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
-    let (view, visual_cx) = setup_phase0_shell(cx);
-
-    // Get the shape ID from the demo document and apply a MoveShapes command.
-    update_shell(visual_cx, &view, |shell| {
-        let id = shell
-            .document()
-            .shapes
-            .first()
-            .expect("demo document has at least one shape")
-            .id;
-        let command = Command::MoveShapes {
-            movements: vec![ShapeMovement {
-                shape_id: id,
-                delta: Vec2::new(10.0, 10.0),
-            }],
-        };
-        shell
-            .apply_command_for_tests(command)
-            .expect("command should apply");
-    });
-
-    // Mutate the document to remove the shape, making the inverse invalid.
-    update_shell(visual_cx, &view, |shell| {
-        shell.document_mut_for_tests().shapes.clear();
-    });
-
-    // Trigger undo—should fail because the shape no longer exists.
-    update_shell(visual_cx, &view, |shell| {
-        shell.undo_document_for_tests();
-    });
-
-    // Verify error is surfaced with operation type and error description.
-    let error = read_last_history_error(visual_cx, &view);
-    assert!(error.is_some(), "expected last_history_error to be set");
-    let error_msg = error.expect("checked above");
-    assert!(
-        error_msg.contains("Undo failed"),
-        "expected 'Undo failed' in error: {error_msg}"
-    );
-    assert!(
-        error_msg.contains("Shape not found"),
-        "expected 'Shape not found' in error: {error_msg}"
-    );
-}
-
-/// Verify that redo failures propagate to `last_history_error`.
-///
-/// This test:
-/// 1. Applies a command and undoes it to set up the redo stack
-/// 2. Mutates the document to invalidate the command (removes the shape)
-/// 3. Triggers redo, which should fail
-/// 4. Asserts that `last_history_error` contains the expected error message
-#[gpui::test]
-fn redo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
-    let (view, visual_cx) = setup_phase0_shell(cx);
-
-    // Get the shape ID, apply a command, then undo to set up redo stack.
-    update_shell(visual_cx, &view, |shell| {
-        let id = shell
-            .document()
-            .shapes
-            .first()
-            .expect("demo document has at least one shape")
-            .id;
-        let command = Command::MoveShapes {
-            movements: vec![ShapeMovement {
-                shape_id: id,
-                delta: Vec2::new(10.0, 10.0),
-            }],
-        };
-        shell
-            .apply_command_for_tests(command)
-            .expect("command should apply");
-        shell.undo_document_for_tests();
-    });
-
-    // Verify undo succeeded (no error).
-    let error_after_undo = read_last_history_error(visual_cx, &view);
-    assert!(
-        error_after_undo.is_none(),
-        "expected no error after successful undo"
-    );
-
-    // Mutate the document to remove the shape, making the redo invalid.
-    update_shell(visual_cx, &view, |shell| {
-        shell.document_mut_for_tests().shapes.clear();
-    });
-
-    // Trigger redo—should fail because the shape no longer exists.
-    update_shell(visual_cx, &view, |shell| {
-        shell.redo_document_for_tests();
-    });
-
-    // Verify error is surfaced with operation type and error description.
-    let error = read_last_history_error(visual_cx, &view);
-    assert!(error.is_some(), "expected last_history_error to be set");
-    let error_msg = error.expect("checked above");
-    assert!(
-        error_msg.contains("Redo failed"),
-        "expected 'Redo failed' in error: {error_msg}"
-    );
-    assert!(
-        error_msg.contains("Shape not found"),
-        "expected 'Shape not found' in error: {error_msg}"
-    );
-}
-
 /// History operation type for parameterised tests.
 #[derive(Clone, Copy, Debug)]
 enum HistoryOp {
     Undo,
     Redo,
+}
+
+/// Assert that a history operation fails with the expected error message.
+///
+/// This helper:
+/// 1. Applies a command (and undoes it if testing redo, to enable redo)
+/// 2. Clears the document shapes to invalidate the operation
+/// 3. Triggers the specified history operation
+/// 4. Asserts that `last_history_error` contains the appropriate prefix and error
+fn assert_history_op_fails_with_error(
+    visual_cx: &mut VisualTestContext,
+    view: &Entity<Phase0Shell>,
+    op: HistoryOp,
+) {
+    // Get the shape ID and apply a MoveShapes command.
+    update_shell(visual_cx, view, move |shell| {
+        let id = shell
+            .document()
+            .shapes
+            .first()
+            .expect("demo document has at least one shape")
+            .id;
+        let command = Command::MoveShapes {
+            movements: vec![ShapeMovement {
+                shape_id: id,
+                delta: Vec2::new(10.0, 10.0),
+            }],
+        };
+        shell
+            .apply_command_for_tests(command)
+            .expect("command should apply");
+        if matches!(op, HistoryOp::Redo) {
+            shell.undo_document_for_tests();
+        }
+    });
+
+    // Clear shapes to invalidate the operation.
+    update_shell(visual_cx, view, |shell| {
+        shell.document_mut_for_tests().shapes.clear();
+    });
+
+    // Trigger the history operation—should fail because the shape no longer exists.
+    update_shell(visual_cx, view, move |shell| match op {
+        HistoryOp::Undo => shell.undo_document_for_tests(),
+        HistoryOp::Redo => shell.redo_document_for_tests(),
+    });
+
+    // Verify error is surfaced with operation type and error description.
+    let error = read_last_history_error(visual_cx, view);
+    assert!(error.is_some(), "expected last_history_error to be set");
+    let error_msg = error.expect("checked above");
+    let expected_prefix = match op {
+        HistoryOp::Undo => "Undo failed",
+        HistoryOp::Redo => "Redo failed",
+    };
+    assert!(
+        error_msg.contains(expected_prefix),
+        "expected '{expected_prefix}' in error: {error_msg}"
+    );
+    assert!(
+        error_msg.contains("Shape not found"),
+        "expected 'Shape not found' in error: {error_msg}"
+    );
+}
+
+/// Verify that undo failures propagate to `last_history_error`.
+#[gpui::test]
+fn undo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
+    let (view, visual_cx) = setup_phase0_shell(cx);
+    assert_history_op_fails_with_error(visual_cx, &view, HistoryOp::Undo);
+}
+
+/// Verify that redo failures propagate to `last_history_error`.
+#[gpui::test]
+fn redo_sets_last_history_error_on_failure(cx: &mut TestAppContext) {
+    let (view, visual_cx) = setup_phase0_shell(cx);
+    assert_history_op_fails_with_error(visual_cx, &view, HistoryOp::Redo);
 }
 
 /// Verify that successful history operations clear `last_history_error`.
