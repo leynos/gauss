@@ -10,7 +10,7 @@
 //! - Testing of keybinding logic without a UI framework
 //! - Generation of framework-specific keybindings at startup
 //! - Display of shortcuts in menus and tooltips
-//! - Future serialisation to user preferences
+//! - Future serialization to user preferences
 //!
 //! # Default Bindings
 //!

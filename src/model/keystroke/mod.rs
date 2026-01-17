@@ -1,7 +1,7 @@
 //! Platform-independent keystroke representation.
 //!
 //! This module provides types for representing keyboard shortcuts without
-//! depending on a UI framework, enabling testing and serialisation of
+//! depending on a UI framework, enabling testing and serialization of
 //! keybindings.
 //!
 //! # Design
@@ -11,7 +11,7 @@
 //!
 //! - Builder methods for ergonomic construction
 //! - Human-readable display for UI and documentation
-//! - Stable modifier ordering for external serialisers
+//! - Stable modifier ordering for external serializers
 //!
 //! # Platform Modifiers
 //!
@@ -139,7 +139,7 @@ impl Modifiers {
     /// formatters: Control, Alt, Shift, Secondary (Cmd/Ctrl).
     ///
     /// This centralises modifier ordering logic so all output methods
-    /// (serialisers, display names) share a single source of truth.
+    /// (serializers, display names) share a single source of truth.
     ///
     /// # Examples
     ///
@@ -165,7 +165,7 @@ impl Modifiers {
 /// A platform-independent keystroke representation.
 ///
 /// This type captures keyboard shortcuts without UI framework dependency,
-/// enabling testing and serialisation of keybindings.
+/// enabling testing and serialization of keybindings.
 ///
 /// # Examples
 ///
@@ -335,7 +335,7 @@ impl Keystroke {
             .map(|m| match m {
                 // Control and Secondary both render as "Ctrl" on non-macOS,
                 // but are output independently to preserve information when
-                // both flags are set (matching serialiser behaviour).
+                // both flags are set (matching serializer behaviour).
                 Modifier::Control | Modifier::Secondary => "Ctrl".to_owned(),
                 Modifier::Alt => "Alt".to_owned(),
                 Modifier::Shift => "Shift".to_owned(),

@@ -91,8 +91,9 @@ fn global_bindings_are_expanded_to_all_contexts() {
 #[case(Keystroke::new("backspace"), "backspace")]
 #[case(Keystroke::new("delete"), "delete")]
 #[case(Keystroke::new("escape"), "escape")]
+#[case(Keystroke::new("A"), "a")]
 fn to_gpui_string_simple_key(#[case] keystroke: Keystroke, #[case] expected: &str) {
-    assert_eq!(keystroke.to_gpui_string(), expected);
+    assert_eq!(keystroke_to_gpui_string(&keystroke), expected);
 }
 
 #[rstest]
@@ -100,14 +101,14 @@ fn to_gpui_string_simple_key(#[case] keystroke: Keystroke, #[case] expected: &st
 #[case(Keystroke::secondary("a"), "secondary-a")]
 #[case(Keystroke::secondary("y"), "secondary-y")]
 fn to_gpui_string_secondary_modifier(#[case] keystroke: Keystroke, #[case] expected: &str) {
-    assert_eq!(keystroke.to_gpui_string(), expected);
+    assert_eq!(keystroke_to_gpui_string(&keystroke), expected);
 }
 
 #[rstest]
 #[case(Keystroke::secondary_shift("z"), "shift-secondary-z")]
 #[case(Keystroke::secondary_shift("a"), "shift-secondary-a")]
 fn to_gpui_string_secondary_shift(#[case] keystroke: Keystroke, #[case] expected: &str) {
-    assert_eq!(keystroke.to_gpui_string(), expected);
+    assert_eq!(keystroke_to_gpui_string(&keystroke), expected);
 }
 
 #[rstest]
@@ -115,7 +116,7 @@ fn to_gpui_string_secondary_shift(#[case] keystroke: Keystroke, #[case] expected
 #[case(Keystroke::alt("f9"), "alt-f9")]
 #[case(Keystroke::alt("space"), "alt-space")]
 fn to_gpui_string_alt_modifier(#[case] keystroke: Keystroke, #[case] expected: &str) {
-    assert_eq!(keystroke.to_gpui_string(), expected);
+    assert_eq!(keystroke_to_gpui_string(&keystroke), expected);
 }
 
 #[test]
@@ -126,7 +127,33 @@ fn to_gpui_string_all_modifiers() {
         .with_shift()
         .with_secondary();
     let ks = Keystroke::with_modifiers("a", mods);
-    assert_eq!(ks.to_gpui_string(), "ctrl-alt-shift-secondary-a");
+    assert_eq!(keystroke_to_gpui_string(&ks), "ctrl-alt-shift-secondary-a");
+}
+
+#[test]
+fn collected_bindings_use_gpui_formatted_keystrokes() {
+    let collected = CollectedBindings::from_default_bindings();
+    let binding = collected
+        .selection_undo
+        .first()
+        .expect("selection undo should have a binding");
+    let keystroke = binding
+        .keystrokes()
+        .first()
+        .expect("selection undo binding should include a keystroke")
+        .inner();
+
+    assert_eq!(keystroke.key, "z");
+    assert!(keystroke.modifiers.shift);
+
+    #[cfg(target_os = "macos")]
+    {
+        assert!(keystroke.modifiers.platform);
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        assert!(keystroke.modifiers.control);
+    }
 }
 
 // === Action mapping coverage ===

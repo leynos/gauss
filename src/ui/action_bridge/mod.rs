@@ -41,7 +41,7 @@ use gpui::KeyBinding;
 
 use crate::model::{Action, KeyContext, default_bindings};
 
-pub use keystroke::KeystrokeFormatter;
+pub use keystroke::keystroke_to_gpui_string;
 
 // === GPUI Action structs ===
 
@@ -185,7 +185,7 @@ impl CollectedBindings {
         let mut collected = Self::default();
 
         for binding in default_bindings() {
-            let keystroke = binding.keystroke.to_gpui_string();
+            let keystroke = keystroke_to_gpui_string(&binding.keystroke);
             collected.add_binding_for_contexts(binding.action, &keystroke, &binding.contexts);
         }
 

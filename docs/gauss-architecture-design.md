@@ -541,7 +541,7 @@ with a `secondary` modifier flag (Cmd on macOS, Ctrl elsewhere). The
 The UI layer bridges model Actions to GPUI Action structs (e.g., `GpuiUndo`,
 `GpuiSelectAll`) and registers keybindings via `register_action_bindings()`. It
 also formats model keystrokes into GPUI keybinding strings via the
-`KeystrokeFormatter` trait in `src/ui/action_bridge/keystroke.rs`.
+`keystroke_to_gpui_string` helper in `src/ui/action_bridge/keystroke.rs`.
 
 #### 7.2.1 GPUI Key Context Limitation and Workaround
 
