@@ -51,6 +51,18 @@ fn assert_active_contexts(binding: &ActionBinding, active: &[KeyContext], inacti
     }
 }
 
+/// Helper to assert that an action has exactly one binding with specific keystroke and modifiers
+fn assert_action_has_single_binding_with_modifiers(
+    action: Action,
+    expected_key: &str,
+    expected_modifiers: Modifiers,
+) {
+    let bindings = bindings_for_action(action);
+    assert_eq!(bindings.len(), 1);
+    let binding = bindings.first().expect("should have at least one binding");
+    assert_keystroke_eq(&binding.keystroke, expected_key, expected_modifiers);
+}
+
 #[test]
 fn default_bindings_is_not_empty() {
     assert!(!default_bindings().is_empty());
@@ -84,11 +96,8 @@ fn redo_has_one_binding() {
 #[test]
 fn selection_undo_has_shift_modifier() {
     // SelectionUndo should be Cmd+Shift+Z
-    let bindings = bindings_for_action(Action::SelectionUndo);
-    assert_eq!(bindings.len(), 1);
-    let binding = bindings.first().expect("should have at least one binding");
-    assert_keystroke_eq(
-        &binding.keystroke,
+    assert_action_has_single_binding_with_modifiers(
+        Action::SelectionUndo,
         "z",
         Modifiers {
             secondary: true,
@@ -102,11 +111,8 @@ fn selection_undo_has_shift_modifier() {
 #[test]
 fn selection_redo_has_shift_modifier() {
     // SelectionRedo should be Cmd+Shift+Y
-    let bindings = bindings_for_action(Action::SelectionRedo);
-    assert_eq!(bindings.len(), 1);
-    let binding = bindings.first().expect("should have at least one binding");
-    assert_keystroke_eq(
-        &binding.keystroke,
+    assert_action_has_single_binding_with_modifiers(
+        Action::SelectionRedo,
         "y",
         Modifiers {
             secondary: true,
