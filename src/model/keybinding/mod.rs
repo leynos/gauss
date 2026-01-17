@@ -5,10 +5,10 @@
 //!
 //! # Design
 //!
-//! The keybinding registry is GPUI-independent, enabling:
+//! The keybinding registry is UI-framework independent, enabling:
 //!
-//! - Testing of keybinding logic without GPUI
-//! - Generation of GPUI keybindings at startup
+//! - Testing of keybinding logic without a UI framework
+//! - Generation of framework-specific keybindings at startup
 //! - Display of shortcuts in menus and tooltips
 //! - Future serialization to user preferences
 //!
@@ -322,7 +322,9 @@ pub fn bindings_for_context(context: KeyContext) -> Vec<ActionBinding> {
 ///
 /// let undo_key = primary_keystroke(Action::Undo);
 /// assert!(undo_key.is_some());
-/// assert_eq!(undo_key.unwrap().to_gpui_string(), "secondary-z");
+/// let undo_key = undo_key.expect("expected primary_keystroke(Action::Undo) to be Some(...) in doc example");
+/// assert_eq!(undo_key.key, "z");
+/// assert!(undo_key.modifiers.secondary);
 /// ```
 #[must_use]
 pub fn primary_keystroke(action: Action) -> Option<Keystroke> {

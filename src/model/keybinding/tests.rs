@@ -1,7 +1,67 @@
 //! Tests for keybinding module.
 
 use super::*;
+use crate::model::Modifiers;
 use rstest::rstest;
+
+fn assert_keystroke_eq(keystroke: &Keystroke, key: &str, expected_modifiers: Modifiers) {
+    assert_eq!(
+        keystroke.key, key,
+        "expected key '{key}', got '{}'",
+        keystroke.key
+    );
+    assert_eq!(
+        keystroke.modifiers.secondary, expected_modifiers.secondary,
+        "expected secondary modifier {} for key '{key}'",
+        expected_modifiers.secondary
+    );
+    assert_eq!(
+        keystroke.modifiers.shift, expected_modifiers.shift,
+        "expected shift modifier {} for key '{key}'",
+        expected_modifiers.shift
+    );
+    assert_eq!(
+        keystroke.modifiers.control, expected_modifiers.control,
+        "expected control modifier {} for key '{key}'",
+        expected_modifiers.control
+    );
+    assert_eq!(
+        keystroke.modifiers.alt, expected_modifiers.alt,
+        "expected alt modifier {} for key '{key}'",
+        expected_modifiers.alt
+    );
+}
+
+fn assert_active_contexts(binding: &ActionBinding, active: &[KeyContext], inactive: &[KeyContext]) {
+    for context in active {
+        assert!(
+            binding.is_active_in(*context),
+            "expected binding {:?} to be active in {:?}",
+            binding.action,
+            context
+        );
+    }
+    for context in inactive {
+        assert!(
+            !binding.is_active_in(*context),
+            "expected binding {:?} to be inactive in {:?}",
+            binding.action,
+            context
+        );
+    }
+}
+
+/// Helper to assert that an action has exactly one binding with specific keystroke and modifiers
+fn assert_action_has_single_binding_with_modifiers(
+    action: Action,
+    expected_key: &str,
+    expected_modifiers: Modifiers,
+) {
+    let bindings = bindings_for_action(action);
+    assert_eq!(bindings.len(), 1);
+    let binding = bindings.first().expect("should have at least one binding");
+    assert_keystroke_eq(&binding.keystroke, expected_key, expected_modifiers);
+}
 
 #[test]
 fn default_bindings_is_not_empty() {
@@ -33,22 +93,21 @@ fn redo_has_one_binding() {
     assert_eq!(bindings.len(), 1);
 }
 
-#[test]
-fn selection_undo_has_shift_modifier() {
-    // SelectionUndo should be Cmd+Shift+Z
-    let bindings = bindings_for_action(Action::SelectionUndo);
-    assert_eq!(bindings.len(), 1);
-    let binding = bindings.first().expect("should have at least one binding");
-    assert_eq!(binding.keystroke.to_gpui_string(), "shift-secondary-z");
-}
-
-#[test]
-fn selection_redo_has_shift_modifier() {
-    // SelectionRedo should be Cmd+Shift+Y
-    let bindings = bindings_for_action(Action::SelectionRedo);
-    assert_eq!(bindings.len(), 1);
-    let binding = bindings.first().expect("should have at least one binding");
-    assert_eq!(binding.keystroke.to_gpui_string(), "shift-secondary-y");
+#[rstest]
+#[case(Action::SelectionUndo, "z")]
+#[case(Action::SelectionRedo, "y")]
+fn selection_actions_have_shift_modifier(#[case] action: Action, #[case] key: &str) {
+    // Selection undo/redo should be Cmd+Shift+[Z/Y]
+    assert_action_has_single_binding_with_modifiers(
+        action,
+        key,
+        Modifiers {
+            secondary: true,
+            shift: true,
+            control: false,
+            alt: false,
+        },
+    );
 }
 
 #[test]
@@ -128,17 +187,32 @@ fn bindings_for_context_manipulate_includes_delete() {
 fn primary_keystroke_returns_first_binding() {
     let undo = primary_keystroke(Action::Undo);
     let keystroke = undo.expect("Undo should have a binding");
-    assert_eq!(keystroke.to_gpui_string(), "secondary-z");
+    assert_keystroke_eq(
+        &keystroke,
+        "z",
+        Modifiers {
+            secondary: true,
+            shift: false,
+            control: false,
+            alt: false,
+        },
+    );
 }
 
 #[test]
 fn is_active_in_global_context_matches_all() {
     let binding = ActionBinding::secondary(Action::Undo, "z", &[KeyContext::Global]);
 
-    assert!(binding.is_active_in(KeyContext::Global));
-    assert!(binding.is_active_in(KeyContext::DrawMode));
-    assert!(binding.is_active_in(KeyContext::ManipulateMode));
-    assert!(binding.is_active_in(KeyContext::TextEdit));
+    assert_active_contexts(
+        &binding,
+        &[
+            KeyContext::Global,
+            KeyContext::DrawMode,
+            KeyContext::ManipulateMode,
+            KeyContext::TextEdit,
+        ],
+        &[],
+    );
 }
 
 #[test]
@@ -149,10 +223,15 @@ fn is_active_in_specific_context_only_matches_listed() {
         &[KeyContext::ManipulateMode],
     );
 
-    assert!(binding.is_active_in(KeyContext::ManipulateMode));
-    assert!(!binding.is_active_in(KeyContext::DrawMode));
-    assert!(!binding.is_active_in(KeyContext::TextEdit));
     // Note: Global is not in the contexts list, so it doesn't match Global
     // But Global acts as a wildcard in the opposite direction
-    assert!(!binding.is_active_in(KeyContext::Global));
+    assert_active_contexts(
+        &binding,
+        &[KeyContext::ManipulateMode],
+        &[
+            KeyContext::DrawMode,
+            KeyContext::TextEdit,
+            KeyContext::Global,
+        ],
+    );
 }

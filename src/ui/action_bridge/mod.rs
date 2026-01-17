@@ -35,9 +35,13 @@
 #[cfg(test)]
 mod tests;
 
+mod keystroke;
+
 use gpui::KeyBinding;
 
 use crate::model::{Action, KeyContext, default_bindings};
+
+pub use keystroke::keystroke_to_gpui_string;
 
 // === GPUI Action structs ===
 
@@ -181,7 +185,7 @@ impl CollectedBindings {
         let mut collected = Self::default();
 
         for binding in default_bindings() {
-            let keystroke = binding.keystroke.to_gpui_string();
+            let keystroke = keystroke_to_gpui_string(&binding.keystroke);
             collected.add_binding_for_contexts(binding.action, &keystroke, &binding.contexts);
         }
 
@@ -316,7 +320,7 @@ impl CollectedBindings {
 ///
 /// # Note
 ///
-/// This should be called during application initialisation, typically from
+/// This should be called during application initialization, typically from
 /// [`crate::ui::init`].
 pub fn register_action_bindings(app: &mut gpui::App) {
     let bindings = CollectedBindings::from_default_bindings();

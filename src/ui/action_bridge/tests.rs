@@ -10,7 +10,7 @@
 use rstest::rstest;
 
 use super::*;
-use crate::model::{Action, default_bindings};
+use crate::model::{Action, Keystroke, Modifiers, default_bindings};
 use crate::ui::phase0_shell::draw::ToolMode;
 
 // === context_for_tool_mode tests ===
@@ -82,6 +82,78 @@ fn global_bindings_are_expanded_to_all_contexts() {
         context_count,
         collected.undo.len()
     );
+}
+
+// === GPUI keystroke formatting ===
+
+#[rstest]
+#[case(Keystroke::new("tab"), "tab")]
+#[case(Keystroke::new("backspace"), "backspace")]
+#[case(Keystroke::new("delete"), "delete")]
+#[case(Keystroke::new("escape"), "escape")]
+#[case(Keystroke::new("A"), "a")]
+fn to_gpui_string_simple_key(#[case] keystroke: Keystroke, #[case] expected: &str) {
+    assert_eq!(keystroke_to_gpui_string(&keystroke), expected);
+}
+
+#[rstest]
+#[case(Keystroke::secondary("z"), "secondary-z")]
+#[case(Keystroke::secondary("a"), "secondary-a")]
+#[case(Keystroke::secondary("y"), "secondary-y")]
+fn to_gpui_string_secondary_modifier(#[case] keystroke: Keystroke, #[case] expected: &str) {
+    assert_eq!(keystroke_to_gpui_string(&keystroke), expected);
+}
+
+#[rstest]
+#[case(Keystroke::secondary_shift("z"), "shift-secondary-z")]
+#[case(Keystroke::secondary_shift("a"), "shift-secondary-a")]
+fn to_gpui_string_secondary_shift(#[case] keystroke: Keystroke, #[case] expected: &str) {
+    assert_eq!(keystroke_to_gpui_string(&keystroke), expected);
+}
+
+#[rstest]
+#[case(Keystroke::alt("f4"), "alt-f4")]
+#[case(Keystroke::alt("f9"), "alt-f9")]
+#[case(Keystroke::alt("space"), "alt-space")]
+fn to_gpui_string_alt_modifier(#[case] keystroke: Keystroke, #[case] expected: &str) {
+    assert_eq!(keystroke_to_gpui_string(&keystroke), expected);
+}
+
+#[test]
+fn to_gpui_string_all_modifiers() {
+    let mods = Modifiers::default()
+        .with_control()
+        .with_alt()
+        .with_shift()
+        .with_secondary();
+    let ks = Keystroke::with_modifiers("a", mods);
+    assert_eq!(keystroke_to_gpui_string(&ks), "ctrl-alt-shift-secondary-a");
+}
+
+#[test]
+fn collected_bindings_use_gpui_formatted_keystrokes() {
+    let collected = CollectedBindings::from_default_bindings();
+    let binding = collected
+        .selection_undo
+        .first()
+        .expect("selection undo should have a binding");
+    let keystroke = binding
+        .keystrokes()
+        .first()
+        .expect("selection undo binding should include a keystroke")
+        .inner();
+
+    assert_eq!(keystroke.key, "z");
+    assert!(keystroke.modifiers.shift);
+
+    #[cfg(target_os = "macos")]
+    {
+        assert!(keystroke.modifiers.platform);
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        assert!(keystroke.modifiers.control);
+    }
 }
 
 // === Action mapping coverage ===

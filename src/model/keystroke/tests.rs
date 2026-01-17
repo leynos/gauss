@@ -106,51 +106,6 @@ fn alt_creates_keystroke_with_alt() {
     assert!(ks.modifiers.alt);
 }
 
-// === GPUI string conversion tests ===
-
-#[rstest]
-#[case(Keystroke::new("tab"), "tab")]
-#[case(Keystroke::new("backspace"), "backspace")]
-#[case(Keystroke::new("delete"), "delete")]
-#[case(Keystroke::new("escape"), "escape")]
-fn to_gpui_string_simple_key(#[case] keystroke: Keystroke, #[case] expected: &str) {
-    assert_eq!(keystroke.to_gpui_string(), expected);
-}
-
-#[rstest]
-#[case(Keystroke::secondary("z"), "secondary-z")]
-#[case(Keystroke::secondary("a"), "secondary-a")]
-#[case(Keystroke::secondary("y"), "secondary-y")]
-fn to_gpui_string_secondary_modifier(#[case] keystroke: Keystroke, #[case] expected: &str) {
-    assert_eq!(keystroke.to_gpui_string(), expected);
-}
-
-#[rstest]
-#[case(Keystroke::secondary_shift("z"), "shift-secondary-z")]
-#[case(Keystroke::secondary_shift("a"), "shift-secondary-a")]
-fn to_gpui_string_secondary_shift(#[case] keystroke: Keystroke, #[case] expected: &str) {
-    assert_eq!(keystroke.to_gpui_string(), expected);
-}
-
-#[rstest]
-#[case(Keystroke::alt("f4"), "alt-f4")]
-#[case(Keystroke::alt("f9"), "alt-f9")]
-#[case(Keystroke::alt("space"), "alt-space")]
-fn to_gpui_string_alt_modifier(#[case] keystroke: Keystroke, #[case] expected: &str) {
-    assert_eq!(keystroke.to_gpui_string(), expected);
-}
-
-#[test]
-fn to_gpui_string_all_modifiers() {
-    let mods = Modifiers::default()
-        .with_control()
-        .with_alt()
-        .with_shift()
-        .with_secondary();
-    let ks = Keystroke::with_modifiers("a", mods);
-    assert_eq!(ks.to_gpui_string(), "ctrl-alt-shift-secondary-a");
-}
-
 // === Display tests ===
 
 #[cfg(not(target_os = "macos"))]
