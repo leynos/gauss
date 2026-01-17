@@ -93,27 +93,14 @@ fn redo_has_one_binding() {
     assert_eq!(bindings.len(), 1);
 }
 
-#[test]
-fn selection_undo_has_shift_modifier() {
-    // SelectionUndo should be Cmd+Shift+Z
+#[rstest]
+#[case(Action::SelectionUndo, "z")]
+#[case(Action::SelectionRedo, "y")]
+fn selection_actions_have_shift_modifier(#[case] action: Action, #[case] key: &str) {
+    // Selection undo/redo should be Cmd+Shift+[Z/Y]
     assert_action_has_single_binding_with_modifiers(
-        Action::SelectionUndo,
-        "z",
-        Modifiers {
-            secondary: true,
-            shift: true,
-            control: false,
-            alt: false,
-        },
-    );
-}
-
-#[test]
-fn selection_redo_has_shift_modifier() {
-    // SelectionRedo should be Cmd+Shift+Y
-    assert_action_has_single_binding_with_modifiers(
-        Action::SelectionRedo,
-        "y",
+        action,
+        key,
         Modifiers {
             secondary: true,
             shift: true,
