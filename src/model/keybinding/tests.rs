@@ -1,44 +1,34 @@
 //! Tests for keybinding module.
 
 use super::*;
+use crate::model::Modifiers;
 use rstest::rstest;
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "Helper keeps tests readable by spelling out expected modifiers."
-)]
-#[expect(
-    clippy::fn_params_excessive_bools,
-    reason = "Helper mirrors the explicit modifier expectations in tests."
-)]
-fn assert_keystroke_eq(
-    keystroke: &Keystroke,
-    key: &str,
-    secondary: bool,
-    shift: bool,
-    control: bool,
-    alt: bool,
-) {
+fn assert_keystroke_eq(keystroke: &Keystroke, key: &str, expected_modifiers: Modifiers) {
     assert_eq!(
         keystroke.key, key,
         "expected key '{key}', got '{}'",
         keystroke.key
     );
     assert_eq!(
-        keystroke.modifiers.secondary, secondary,
-        "expected secondary modifier {secondary} for key '{key}'"
+        keystroke.modifiers.secondary, expected_modifiers.secondary,
+        "expected secondary modifier {} for key '{key}'",
+        expected_modifiers.secondary
     );
     assert_eq!(
-        keystroke.modifiers.shift, shift,
-        "expected shift modifier {shift} for key '{key}'"
+        keystroke.modifiers.shift, expected_modifiers.shift,
+        "expected shift modifier {} for key '{key}'",
+        expected_modifiers.shift
     );
     assert_eq!(
-        keystroke.modifiers.control, control,
-        "expected control modifier {control} for key '{key}'"
+        keystroke.modifiers.control, expected_modifiers.control,
+        "expected control modifier {} for key '{key}'",
+        expected_modifiers.control
     );
     assert_eq!(
-        keystroke.modifiers.alt, alt,
-        "expected alt modifier {alt} for key '{key}'"
+        keystroke.modifiers.alt, expected_modifiers.alt,
+        "expected alt modifier {} for key '{key}'",
+        expected_modifiers.alt
     );
 }
 
@@ -97,7 +87,16 @@ fn selection_undo_has_shift_modifier() {
     let bindings = bindings_for_action(Action::SelectionUndo);
     assert_eq!(bindings.len(), 1);
     let binding = bindings.first().expect("should have at least one binding");
-    assert_keystroke_eq(&binding.keystroke, "z", true, true, false, false);
+    assert_keystroke_eq(
+        &binding.keystroke,
+        "z",
+        Modifiers {
+            secondary: true,
+            shift: true,
+            control: false,
+            alt: false,
+        },
+    );
 }
 
 #[test]
@@ -106,7 +105,16 @@ fn selection_redo_has_shift_modifier() {
     let bindings = bindings_for_action(Action::SelectionRedo);
     assert_eq!(bindings.len(), 1);
     let binding = bindings.first().expect("should have at least one binding");
-    assert_keystroke_eq(&binding.keystroke, "y", true, true, false, false);
+    assert_keystroke_eq(
+        &binding.keystroke,
+        "y",
+        Modifiers {
+            secondary: true,
+            shift: true,
+            control: false,
+            alt: false,
+        },
+    );
 }
 
 #[test]
@@ -186,7 +194,16 @@ fn bindings_for_context_manipulate_includes_delete() {
 fn primary_keystroke_returns_first_binding() {
     let undo = primary_keystroke(Action::Undo);
     let keystroke = undo.expect("Undo should have a binding");
-    assert_keystroke_eq(&keystroke, "z", true, false, false, false);
+    assert_keystroke_eq(
+        &keystroke,
+        "z",
+        Modifiers {
+            secondary: true,
+            shift: false,
+            control: false,
+            alt: false,
+        },
+    );
 }
 
 #[test]
