@@ -322,7 +322,7 @@ pub fn bindings_for_context(context: KeyContext) -> Vec<ActionBinding> {
 ///
 /// let undo_key = primary_keystroke(Action::Undo);
 /// assert!(undo_key.is_some());
-/// let undo_key = undo_key.unwrap();
+/// let undo_key = undo_key.expect("expected primary_keystroke(Action::Undo) to be Some(...) in doc example");
 /// assert_eq!(undo_key.key, "z");
 /// assert!(undo_key.modifiers.secondary);
 /// ```
