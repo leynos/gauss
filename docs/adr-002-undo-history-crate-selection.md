@@ -11,15 +11,16 @@ Proposed.
 ## Context and Problem Statement
 
 Gauss currently relies on `gpui_component::History` for undo/redo. This
-introduces a GPUI dependency that keeps history out of `EngineState`, forcing
-the model layer and view layer to remain split. The architecture document
-explicitly seeks a GPUI-independent model layer, so we need an alternative undo
-crate that can live in `EngineState` without bringing in GPUI.
+introduces a dependency on the GPUI (GPU-accelerated UI) framework that keeps
+history out of `EngineState`, forcing the model layer and view layer to remain
+split. The architecture document explicitly seeks a GPUI-independent model
+layer, so an alternative undo crate is required to keep history inside
+`EngineState` without bringing in GPUI.
 
 ## Decision Drivers
 
 - Keep `EngineState` GPUI-independent and model-focused.
-- Align undo/redo with the Command and DocOp architecture.
+- Align undo/redo with the Command and document operation (DocOp) architecture.
 - Support command grouping and merging for continuous edits.
 - Maintain predictable redo behaviour without surprising history loss.
 - Prefer crates with clear maintenance signals and stable APIs.
@@ -48,7 +49,8 @@ and checkpointing for more advanced history behaviour.[^undo-docs]
 
 Maintenance and sustainability notes:
 
-- Latest release 0.52.0 (2025-03-08) with a GitHub repository.[^undo-versions]
+- Release metadata is published on docs.rs alongside a GitHub repository.
+  [^undo-versions]
 
 ### Option B: `undo_2` (historical undo actions)
 
@@ -58,7 +60,8 @@ apply rather than mutating state itself.[^undo2-docs]
 
 Maintenance and sustainability notes:
 
-- Latest release 0.2.1 (2024-12-12) with a GitLab repository.[^undo2-versions]
+- Release metadata is published on docs.rs alongside a GitLab repository.
+  [^undo2-versions]
 
 ### Option C: `undo_stack` (value stack with buffering)
 
@@ -76,17 +79,19 @@ Maintenance and sustainability notes:
 
 `gur` defines an `Action` trait and provides `Ur` and `Cur` wrappers that use
 snapshots or cloning to manage state. Undoing is described as regenerating old
-state by replaying commands, with snapshots reducing replay costs.[^gur-docs]
+state by replaying commands, with snapshots reducing replay costs and offering
+ways to tune the replay burden.[^gur-docs]
 
 Maintenance and sustainability notes:
 
-- Latest release 0.2.1 (2023-01-08) with a GitHub repository.[^gur-versions]
+- Release metadata is published on docs.rs alongside a GitHub repository.
+  [^gur-versions]
 
-| Topic               | undo                                                                 | undo_2                                                              | undo_stack                                                                         | gur                                                           |
-| ------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Undo model          | Command objects with `UndoCmd`, `Record`, and `History`.[^undo-docs] | Command log returning actions to apply.[^undo2-docs]                | Value stack with `Undoable` restore.[^undo-stack-docs]                             | Action replay with snapshots or clone-based state.[^gur-docs] |
-| History semantics   | Merging, queueing, and checkpoints.[^undo-docs]                      | Historical undo sequence retains commands after edits.[^undo2-docs] | Linear stack with buffer for continuous edits.[^undo-stack-docs]                   | Replay with periodic snapshots.[^gur-docs]                    |
-| Maintenance signals | Latest 0.52.0 (2025-03-08).[^undo-versions]                          | Latest 0.2.1 (2024-12-12).[^undo2-versions]                         | Latest 0.2.4 (2024-08-11) and WIP warning.[^undo-stack-docs][^undo-stack-versions] | Latest 0.2.1 (2023-01-08).[^gur-versions]                     |
+| Topic               | undo                                                                 | undo_2                                                              | undo_stack                                                                                              | gur                                                           |
+| ------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Undo model          | Command objects with `UndoCmd`, `Record`, and `History`.[^undo-docs] | Command log returning actions to apply.[^undo2-docs]                | Value stack with `Undoable` restore.[^undo-stack-docs]                                                  | Action replay with snapshots or clone-based state.[^gur-docs] |
+| History semantics   | Merging, queueing, and checkpoints.[^undo-docs]                      | Historical undo sequence retains commands after edits.[^undo2-docs] | Linear stack with buffer for continuous edits.[^undo-stack-docs]                                        | Replay with periodic snapshots.[^gur-docs]                    |
+| Maintenance signals | Release metadata on docs.rs.[^undo-versions]                         | Release metadata on docs.rs.[^undo2-versions]                       | Release metadata on docs.rs and work in progress (WIP) warning.[^undo-stack-docs][^undo-stack-versions] | Release metadata on docs.rs.[^gur-versions]                   |
 
 _Table 1: Trade-offs between candidate undo crates._
 
@@ -98,8 +103,7 @@ reviewed.[^undo-docs][^undo2-docs][^undo-versions][^undo2-versions]
 Deprioritise `undo_stack` due to its work-in-progress warning and value-stack
 focus, and deprioritise `gur` because its replay-and-snapshot model implies
 replay overhead for large documents (inference based on its design
-description), and it has not shipped a release since 2023.
-[^undo-stack-docs][^gur-docs][^gur-versions]
+description). [^undo-stack-docs][^gur-docs][^gur-versions]
 
 ## Known Risks and Limitations
 
@@ -119,23 +123,23 @@ description), and it has not shipped a release since 2023.
 ## Architectural Rationale
 
 Moving history into `EngineState` preserves the GPUI-independent model layer
-and aligns with the Command and DocOp architecture, while keeping the view
-layer focused on rendering and interaction.
+and aligns with the Command and document operation (DocOp) architecture, while
+keeping the view layer focused on rendering and interaction.
 
 [^undo-docs]:
   undo crate documentation. <https://docs.rs/undo/latest/undo/>.
 [^undo-versions]:
-  undo versions on docs.rs. <https://docs.rs/crate/undo/0.7.0>.
+  undo versions on docs.rs. <https://docs.rs/crate/undo>.
 [^undo2-docs]:
-  undo_2 crate documentation. <https://docs.rs/undo_2/0.2.1/undo_2/>.
+  undo_2 crate documentation. <https://docs.rs/undo_2/latest/undo_2/>.
 [^undo2-versions]:
-  undo_2 versions on docs.rs. <https://docs.rs/crate/undo_2/0.2.1>.
+  undo_2 versions on docs.rs. <https://docs.rs/crate/undo_2>.
 [^undo-stack-docs]:
   undo_stack crate documentation.
-  <https://docs.rs/undo_stack/0.2.4/undo_stack/>.
+  <https://docs.rs/undo_stack/latest/undo_stack/>.
 [^undo-stack-versions]:
-  undo_stack versions on docs.rs. <https://docs.rs/crate/undo_stack/0.2.4>.
+  undo_stack versions on docs.rs. <https://docs.rs/crate/undo_stack>.
 [^gur-docs]:
-  gur crate documentation. <https://docs.rs/gur/0.2.1/gur/>.
+  gur crate documentation. <https://docs.rs/gur/latest/gur/>.
 [^gur-versions]:
-  gur versions on docs.rs. <https://docs.rs/crate/gur/0.2.1>.
+  gur versions on docs.rs. <https://docs.rs/crate/gur>.
