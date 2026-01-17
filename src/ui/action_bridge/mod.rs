@@ -320,7 +320,7 @@ impl CollectedBindings {
 ///
 /// # Note
 ///
-/// This should be called during application initialisation, typically from
+/// This should be called during application initialization, typically from
 /// [`crate::ui::init`].
 pub fn register_action_bindings(app: &mut gpui::App) {
     let bindings = CollectedBindings::from_default_bindings();
