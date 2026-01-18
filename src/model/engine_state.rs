@@ -157,6 +157,8 @@ const fn default_style() -> PaintStyle {
 
 #[cfg(test)]
 mod tests {
+    //! Tests for engine state defaults and helpers.
+
     use super::*;
     use rstest::rstest;
 

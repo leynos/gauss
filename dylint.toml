@@ -1,0 +1,4 @@
+# Dylint configuration for Whitaker.
+
+[no_expect_outside_tests]
+additional_test_attributes = ["rstest", "gpui::test"]

@@ -167,6 +167,8 @@ impl fmt::Display for KeyContext {
 
 #[cfg(test)]
 mod tests {
+    //! Tests for key context naming and formatting.
+
     use super::*;
     use rstest::rstest;
 

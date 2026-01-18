@@ -40,6 +40,8 @@ impl StyleStore {
 
 #[cfg(test)]
 mod tests {
+    //! Tests for style store defaults.
+
     use super::*;
 
     #[test]

@@ -91,6 +91,8 @@ fn svg_image(bytes: &'static [u8]) -> Arc<Image> {
 
 #[cfg(test)]
 mod tests {
+    //! Tests for icon asset rendering.
+
     use gpui::{Render, TestAppContext, Window, div, prelude::*};
 
     use super::{ICON_COUNT, ICON_IMAGES, UiIcon, icon_element};

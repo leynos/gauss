@@ -4,32 +4,40 @@
 //! Phase 0 therefore routes “Open…” through `prompt_for_new_path` when the
 //! `Phase0Shell` is constructed via `Phase0Shell::new_for_tests`.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 mod common;
 
+use camino::{Utf8Path, Utf8PathBuf};
+use cap_std::{ambient_authority, fs_utf8::Dir};
 use common::{ensure_initial_draw, init_test_app};
 use gauss::ui::{OpenSvg, Phase0Shell};
 use gpui::TestAppContext;
 use uuid::Uuid;
 
 struct TempFileGuard {
-    path: PathBuf,
+    dir: Dir,
+    file_name: Utf8PathBuf,
+    path: Utf8PathBuf,
 }
 
 impl TempFileGuard {
-    const fn new(path: PathBuf) -> Self {
-        Self { path }
+    const fn new(dir: Dir, file_name: Utf8PathBuf, path: Utf8PathBuf) -> Self {
+        Self {
+            dir,
+            file_name,
+            path,
+        }
     }
 
-    fn path(&self) -> &Path {
-        &self.path
+    fn path(&self) -> &Utf8Path {
+        self.path.as_path()
     }
 }
 
 impl Drop for TempFileGuard {
     fn drop(&mut self) {
-        let _cleanup = std::fs::remove_file(&self.path);
+        let _cleanup = self.dir.remove_file(self.file_name.as_path());
     }
 }
 
@@ -37,16 +45,21 @@ impl Drop for TempFileGuard {
 fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
     init_test_app(cx);
 
-    let cleanup = TempFileGuard::new(
-        std::env::temp_dir().join(format!("gauss-test-open-{}.svg", Uuid::new_v4())),
-    );
-    let svg_path = cleanup.path();
+    let temp_dir =
+        Utf8PathBuf::from_path_buf(std::env::temp_dir()).expect("temp dir should be valid UTF-8");
+    let file_name = Utf8PathBuf::from(format!("gauss-test-open-{}.svg", Uuid::new_v4()));
+    let svg_path = temp_dir.join(&file_name);
+    let dir =
+        Dir::open_ambient_dir(&temp_dir, ambient_authority()).expect("temp dir should be readable");
     let svg = r##"
         <svg xmlns="http://www.w3.org/2000/svg">
           <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
         </svg>
     "##;
-    std::fs::write(svg_path, svg).expect("Test SVG file should be writable");
+    dir.write(file_name.as_path(), svg.as_bytes())
+        .expect("test SVG file should be writable");
+    let cleanup = TempFileGuard::new(dir, file_name, svg_path);
+    let svg_path_ref = cleanup.path();
 
     assert!(
         !cx.did_prompt_for_new_path(),
@@ -70,11 +83,13 @@ fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
         "Open action should prompt for a path (test backend uses new-path prompt)"
     );
 
-    cx.simulate_new_path_selection(|_directory: &Path| Some(svg_path.to_path_buf()));
+    cx.simulate_new_path_selection(|_directory: &Path| {
+        Some(svg_path_ref.as_std_path().to_path_buf())
+    });
     cx.run_until_parked();
 
     let opened = cx.read(|app| view.read(app).last_opened_path().map(Path::to_path_buf));
-    assert_eq!(opened.as_deref(), Some(svg_path));
+    assert_eq!(opened.as_deref(), Some(svg_path_ref.as_std_path()));
 
     let shape_count = cx.read(|app| view.read(app).document().shapes.len());
     assert_eq!(shape_count, 1);

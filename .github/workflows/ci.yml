@@ -30,6 +30,10 @@ jobs:
             **/*.md
             !**/target/**
             !**/dist/**
+      - name: Install Whitaker
+        run: |
+          cargo binstall whitaker
+          whitaker-installer --experimental
       - name: Lint
         run: make lint
       - name: Test and Measure Coverage

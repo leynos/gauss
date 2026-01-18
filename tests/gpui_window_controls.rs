@@ -46,9 +46,9 @@ fn assert_element_has_size(
     min_width: Pixels,
     min_height: Pixels,
 ) {
-    let bounds = visual_cx
-        .debug_bounds(selector)
-        .unwrap_or_else(|| panic!("element {selector} should exist"));
+    let Some(bounds) = visual_cx.debug_bounds(selector) else {
+        panic!("element {selector} should exist");
+    };
 
     assert!(
         bounds.size.width > min_width,

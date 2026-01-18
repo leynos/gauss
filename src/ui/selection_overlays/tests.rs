@@ -50,11 +50,15 @@ fn bbox_from_edges(edges: &[OverlayLine]) -> Option<(Vec2, Vec2)> {
         max_y = max_y.max(edge.start.y).max(edge.end.y);
     }
 
-    if !min_x.is_finite() || !min_y.is_finite() || !max_x.is_finite() || !max_y.is_finite() {
+    if !bounds_are_finite(min_x, min_y, max_x, max_y) {
         return None;
     }
 
     Some((Vec2::new(min_x, min_y), Vec2::new(max_x, max_y)))
+}
+
+fn bounds_are_finite(min_x: f32, min_y: f32, max_x: f32, max_y: f32) -> bool {
+    [min_x, min_y, max_x, max_y].into_iter().all(f32::is_finite)
 }
 
 #[rstest]

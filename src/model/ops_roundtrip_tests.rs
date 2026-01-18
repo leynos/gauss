@@ -58,11 +58,10 @@ fn insert_shape_inverts() {
 #[rstest]
 fn remove_shape_inverts() {
     let doc = sample_doc();
-    let shape = doc
-        .shapes
-        .first()
-        .cloned()
-        .expect("expected sample document to contain a shape");
+    let Some(found_shape) = doc.shapes.first() else {
+        panic!("expected sample document to contain a shape");
+    };
+    let shape = found_shape.clone();
     assert_round_trip(doc, &DocOp::RemoveShape { index: 0, shape });
 }
 
