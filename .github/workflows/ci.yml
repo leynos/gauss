@@ -32,7 +32,7 @@ jobs:
             !**/dist/**
       - name: Install Whitaker
         run: |
-          cargo binstall whitaker
+          cargo binstall whitaker-installer
           whitaker-installer --experimental
       - name: Lint
         run: make lint
