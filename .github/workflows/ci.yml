@@ -33,7 +33,7 @@ jobs:
       - name: Install Whitaker
         run: |
           cargo binstall whitaker-installer
-          rustup toolchain install nightly-2025-09-18
+          rustup toolchain install --component rustc-dev,llvm-tools-preview,rust-src nightly-2025-09-18
           whitaker-installer --experimental
       - name: Lint
         run: make lint
