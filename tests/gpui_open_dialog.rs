@@ -8,38 +8,12 @@ use std::path::Path;
 
 mod common;
 
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};
-use common::{ensure_initial_draw, init_test_app};
+use common::{TempFileGuard, ensure_initial_draw, init_test_app};
 use gauss::ui::{OpenSvg, Phase0Shell};
 use gpui::TestAppContext;
 use uuid::Uuid;
-
-struct TempFileGuard {
-    dir: Dir,
-    file_name: Utf8PathBuf,
-    path: Utf8PathBuf,
-}
-
-impl TempFileGuard {
-    const fn new(dir: Dir, file_name: Utf8PathBuf, path: Utf8PathBuf) -> Self {
-        Self {
-            dir,
-            file_name,
-            path,
-        }
-    }
-
-    fn path(&self) -> &Utf8Path {
-        self.path.as_path()
-    }
-}
-
-impl Drop for TempFileGuard {
-    fn drop(&mut self) {
-        let _cleanup = self.dir.remove_file(self.file_name.as_path());
-    }
-}
 
 #[gpui::test]
 fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
@@ -58,8 +32,10 @@ fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
     "##;
     dir.write(file_name.as_path(), svg.as_bytes())
         .expect("test SVG file should be writable");
-    let cleanup = TempFileGuard::new(dir, file_name, svg_path);
-    let svg_path_ref = cleanup.path();
+    let cleanup = TempFileGuard::new_with_path(dir, file_name, svg_path);
+    let Some(svg_path_ref) = cleanup.path() else {
+        panic!("temp file path should be set");
+    };
 
     assert!(
         !cx.did_prompt_for_new_path(),

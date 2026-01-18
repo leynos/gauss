@@ -9,27 +9,10 @@ mod common;
 
 use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};
-use common::{ensure_initial_draw, init_test_app};
+use common::{TempFileGuard, ensure_initial_draw, init_test_app};
 use gauss::ui::{Phase0Shell, SaveSvg};
 use gpui::TestAppContext;
 use uuid::Uuid;
-
-struct TempFileGuard {
-    dir: Dir,
-    file_name: Utf8PathBuf,
-}
-
-impl TempFileGuard {
-    const fn new(dir: Dir, file_name: Utf8PathBuf) -> Self {
-        Self { dir, file_name }
-    }
-}
-
-impl Drop for TempFileGuard {
-    fn drop(&mut self) {
-        let _cleanup = self.dir.remove_file(self.file_name.as_path());
-    }
-}
 
 #[gpui::test]
 fn save_action_prompts_for_path(cx: &mut TestAppContext) {
