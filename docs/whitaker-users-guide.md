@@ -289,7 +289,8 @@ excluded_crates = ["my_cli_entrypoint", "my_test_utilities"]
 The `excluded_crates` option allows specified crates to use `std::fs`
 operations without triggering diagnostics. This is useful for:
 
-- CLI entry points where ambient filesystem access is the intended boundary
+- command-line interface (CLI) entry points where ambient filesystem access is
+  the intended boundary
 - Test support utilities that manage fixtures with ambient access
 - Build scripts or code generators that require direct filesystem operations
 

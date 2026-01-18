@@ -32,8 +32,12 @@ jobs:
             !**/dist/**
       - name: Install Whitaker
         run: |
-          cargo binstall whitaker-installer
-          rustup toolchain install --component rustc-dev,llvm-tools-preview,rust-src nightly-2025-09-18
+          if ! command -v cargo-binstall >/dev/null; then
+            cargo install cargo-binstall
+          fi
+          cargo binstall --no-confirm whitaker-installer
+          rustup toolchain install nightly-2025-09-18 \
+            --component rustc-dev llvm-tools-preview rust-src
           whitaker-installer --experimental
       - name: Lint
         run: make lint

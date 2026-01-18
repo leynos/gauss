@@ -60,16 +60,17 @@ fn save_action_prompts_for_path(cx: &mut TestAppContext) {
     let expected = temp_dir.join(&file_name);
     let temp_dir_handle =
         Dir::open_ambient_dir(&temp_dir, ambient_authority()).expect("temp dir should be readable");
-    let _cleanup = TempFileGuard::new(temp_dir_handle, file_name.clone());
+    let cleanup_dir = temp_dir_handle
+        .try_clone()
+        .expect("temp dir handle should be clonable");
+    let _cleanup = TempFileGuard::new(cleanup_dir, file_name.clone());
     cx.simulate_new_path_selection(|_directory: &Path| Some(expected.as_std_path().to_path_buf()));
     cx.run_until_parked();
 
     let saved = cx.read(|app| view.read(app).last_saved_path().map(Path::to_path_buf));
     assert_eq!(saved.as_deref(), Some(expected.as_std_path()));
 
-    let read_dir =
-        Dir::open_ambient_dir(&temp_dir, ambient_authority()).expect("temp dir should be readable");
-    let contents = read_dir
+    let contents = temp_dir_handle
         .read_to_string(file_name.as_path())
         .expect("Saved SVG file should be readable");
     assert!(
