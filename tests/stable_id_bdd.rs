@@ -20,16 +20,12 @@ fn world() -> IdWorld {
     IdWorld::default()
 }
 
-#[given("an empty document")]
-fn empty_document(world: &mut IdWorld) {
-    world.doc = Document::new();
-    world.original_ids.clear();
-    world.round_tripped = None;
-}
+fn append_shapes(world: &mut IdWorld, count: usize, clear_existing: bool) {
+    if clear_existing {
+        world.original_ids.clear();
+    }
 
-#[when("I append two shapes")]
-fn append_two_shapes(world: &mut IdWorld) {
-    for _ in 0..2 {
+    for _ in 0..count {
         let shape = Shape {
             id: ShapeId::default(),
             z: 0,
@@ -39,6 +35,18 @@ fn append_two_shapes(world: &mut IdWorld) {
         let id = world.doc.append_shape(shape);
         world.original_ids.push(id);
     }
+}
+
+#[given("an empty document")]
+fn empty_document(world: &mut IdWorld) {
+    world.doc = Document::new();
+    world.original_ids.clear();
+    world.round_tripped = None;
+}
+
+#[when("I append two shapes")]
+fn append_two_shapes(world: &mut IdWorld) {
+    append_shapes(world, 2, false);
 }
 
 #[when("I reorder the first shape to the end")]
@@ -70,14 +78,8 @@ fn document_contains_same_ids(world: &IdWorld) -> TestSupportResult<()> {
 
 #[when("I append a shape")]
 fn append_shape(world: &mut IdWorld) {
-    let shape = Shape {
-        id: ShapeId::default(),
-        z: 0,
-        style: PaintStyle::new(None, 1.0, None),
-        path: PathGeom::new(),
-    };
-    let id = world.doc.append_shape(shape);
-    world.original_ids = vec![id];
+    world.original_ids.clear();
+    append_shapes(world, 1, false);
 }
 
 #[when("I convert the shape id to an AccessKit node id")]
