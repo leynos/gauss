@@ -47,6 +47,10 @@ impl TempFileGuard {
         }
     }
 
+    pub const fn dir(&self) -> &Dir {
+        &self.dir
+    }
+
     pub fn path(&self) -> Option<&Utf8Path> {
         self.path.as_ref().map(Utf8PathBuf::as_path)
     }
