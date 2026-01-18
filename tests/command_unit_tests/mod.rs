@@ -23,9 +23,10 @@ pub fn empty_doc() -> Document {
 
 #[fixture]
 pub fn doc_with_two_shapes() -> Document {
-    Document {
-        shapes: vec![sample_shape(shape_id(1), 0), sample_shape(shape_id(2), 1)],
-    }
+    let mut doc = Document::new();
+    doc.append_shape(sample_shape(shape_id(1), 0));
+    doc.append_shape(sample_shape(shape_id(2), 1));
+    doc
 }
 
 #[fixture]

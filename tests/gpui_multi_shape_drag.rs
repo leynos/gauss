@@ -15,13 +15,10 @@ use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, Shap
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, px};
 use test_support::{TestSupportError, TestSupportResult, math};
-use uuid::Uuid;
 
 fn find_shape<'a>(doc: &'a Document, id: ShapeId, context: &str) -> TestSupportResult<&'a Shape> {
     let message = format!("shape {id:?}: {context}");
-    doc.shapes
-        .iter()
-        .find(|shape| shape.id == id)
+    doc.shape(id)
         .ok_or_else(|| TestSupportError::missing("shape", message))
 }
 
@@ -51,10 +48,10 @@ const fn viewport_to_screen_point(
     gpui::point(px(screen.x), px(screen.y))
 }
 
-fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) -> TestSupportResult<()> {
-    doc.shapes.push(Shape {
-        id,
-        z: i32::try_from(doc.shapes.len())
+fn add_square(doc: &mut Document, min: Vec2, max: Vec2) -> TestSupportResult<ShapeId> {
+    let shape = Shape {
+        id: ShapeId::default(),
+        z: i32::try_from(doc.len())
             .map_err(|error| TestSupportError::z_order_overflow("z-ordering", error))?,
         style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
         path: gauss::model::PathGeom {
@@ -68,8 +65,8 @@ fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) -> TestSupp
             closed: true,
             closing_segment: SegmentKind::Line,
         },
-    });
-    Ok(())
+    };
+    Ok(doc.append_shape(shape))
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -82,16 +79,16 @@ fn arrange_multi_shape_selection(
     visual_cx: &mut VisualTestContext,
     view: &gpui::Entity<Phase0Shell>,
     origin: Vec2,
-    shapes: ShapePair,
-) -> TestSupportResult<()> {
+) -> TestSupportResult<ShapePair> {
     let min1 = origin.add(Vec2::new(10.0, 10.0));
     let max1 = origin.add(Vec2::new(110.0, 110.0));
     let min2 = origin.add(Vec2::new(160.0, 10.0));
     let max2 = origin.add(Vec2::new(260.0, 110.0));
 
     let mut doc = visual_cx.read(|app| view.read(app).document().clone());
-    add_square(&mut doc, shapes.first, min1, max1)?;
-    add_square(&mut doc, shapes.second, min2, max2)?;
+    let first = add_square(&mut doc, min1, max1)?;
+    let second = add_square(&mut doc, min2, max2)?;
+    let shapes = ShapePair { first, second };
 
     visual_cx.update(move |_window, app| {
         view.update(app, |shell, view_cx| {
@@ -104,7 +101,7 @@ fn arrange_multi_shape_selection(
         });
     });
     visual_cx.run_until_parked();
-    Ok(())
+    Ok(shapes)
 }
 
 fn assert_selection_contains_shapes(
@@ -144,18 +141,10 @@ fn dragging_a_selected_shape_moves_all_selected_shapes_and_preserves_selection(
     let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
 
     // Arrange: add two extra shapes so we can multi-select and move them.
-    let shape1_id = ShapeId::from(Uuid::from_u128(0x1111_1111_1111_1111_1111_1111_1111_1111));
-    let shape2_id = ShapeId::from(Uuid::from_u128(0x2222_2222_2222_2222_2222_2222_2222_2222));
-    arrange_multi_shape_selection(
-        visual_cx,
-        &view,
-        origin,
-        ShapePair {
-            first: shape1_id,
-            second: shape2_id,
-        },
-    )
-    .expect("expected to arrange multi-shape selection");
+    let shapes = arrange_multi_shape_selection(visual_cx, &view, origin)
+        .expect("expected to arrange multi-shape selection");
+    let shape1_id = shapes.first;
+    let shape2_id = shapes.second;
 
     let viewport = visual_cx.read(|app| view.read(app).viewport());
 

@@ -2,7 +2,7 @@
 
 mod common;
 
-use common::{click_left_and_wait, demo_shape_id, ensure_initial_draw, init_test_app};
+use common::{click_left_and_wait, ensure_initial_draw, init_test_app};
 use gauss::ui::Phase0Shell;
 use gpui::{TestAppContext, point, px};
 
@@ -23,7 +23,11 @@ fn tool_rail_select_enters_manipulate_and_clears_active_shape(cx: &mut TestAppCo
 
     visual_cx.update(|_window, app| {
         view.update(app, |shell, _cx| {
-            shell.set_draw_active_shape_for_tests(Some(demo_shape_id()));
+            let demo_id = shell
+                .document()
+                .shape_id_at(0)
+                .expect("demo document should include a shape");
+            shell.set_draw_active_shape_for_tests(Some(demo_id));
         });
     });
     visual_cx.run_until_parked();

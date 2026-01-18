@@ -38,7 +38,7 @@ fn triangle_points(
 }
 
 fn assert_open_triangle(doc: &Document) -> TestSupportResult<ShapeId> {
-    if doc.shapes.len() != 2 {
+    if doc.len() != 2 {
         return Err(TestSupportError::expectation(
             "expected demo + one draw shape before close",
         ));
@@ -81,7 +81,7 @@ fn close_path_by_clicking_first_anchor(
 }
 
 fn assert_closed_shape(doc: &Document, expected_shape_id: ShapeId) -> TestSupportResult<()> {
-    if doc.shapes.len() != 2 {
+    if doc.len() != 2 {
         return Err(TestSupportError::expectation(
             "closing the path should not create a new shape",
         ));
@@ -119,7 +119,7 @@ fn assert_click_does_not_place_points(
     draw_point(visual_cx, click_point);
 
     let doc_after_click = visual_cx.read(|app| view.read(app).document().clone());
-    if doc_after_click.shapes.len() != 2 {
+    if doc_after_click.len() != 2 {
         return Err(TestSupportError::expectation(
             "after closing, additional clicks should not place draw points",
         ));

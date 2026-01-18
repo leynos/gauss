@@ -158,8 +158,7 @@ fn start_shapes_drag(
 
     let mut shapes = Vec::new();
     let mut hit_index_hint = Some(hit.shape_index).filter(|index| {
-        doc.shapes
-            .get(*index)
+        doc.shape_at(*index)
             .is_some_and(|shape| shape.id == hit.shape_id)
     });
 
@@ -170,7 +169,7 @@ fn start_shapes_drag(
             doc.find_index(shape_id)?
         };
 
-        let shape = doc.shapes.get(index)?;
+        let shape = doc.shape_at(index)?;
         if shape.id != shape_id {
             continue;
         }
@@ -193,7 +192,7 @@ fn start_anchor_drag(
     hit: AnchorHit,
     cursor_world: Vec2,
 ) -> Option<AnchorDragState> {
-    let shape = doc.shapes.get(hit.shape_index)?;
+    let shape = doc.shape_at(hit.shape_index)?;
     if shape.id != hit.shape_id {
         return None;
     }
@@ -221,7 +220,7 @@ fn apply_shapes_drag_to_doc(doc: &mut Document, drag: &ShapesDragState, delta: V
     let mut did_update_any = false;
 
     for dragged in &drag.shapes {
-        let Some(shape) = doc.shapes.get_mut(dragged.index) else {
+        let Some(shape) = doc.shape_at_mut(dragged.index) else {
             continue;
         };
         if shape.id != dragged.shape {
@@ -244,7 +243,7 @@ fn apply_anchor_drag_preview(
 }
 
 fn apply_anchor_drag_to_doc(doc: &mut Document, drag: &AnchorDragState, delta: Vec2) -> bool {
-    let Some(shape) = doc.shapes.get_mut(drag.shape_index) else {
+    let Some(shape) = doc.shape_at_mut(drag.shape_index) else {
         return false;
     };
     if shape.id != drag.shape {

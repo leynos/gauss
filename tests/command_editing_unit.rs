@@ -21,13 +21,19 @@ use command_editing_unit_helpers::{
     assert_prepare_command_returns_variant, assert_shape_replacement_applies_and_undoes,
 };
 
+fn doc_with_shapes(shapes: Vec<gauss::model::Shape>) -> Document {
+    let mut doc = Document::new();
+    for shape in shapes {
+        doc.append_shape(shape);
+    }
+    doc
+}
+
 #[test]
 fn move_shapes_applies_and_undoes() {
     let shape = shape_with_handles(shape_id(1));
     let original = shape.clone();
-    let mut doc = Document {
-        shapes: vec![shape],
-    };
+    let mut doc = doc_with_shapes(vec![shape]);
 
     let cmd = Command::MoveShapes {
         movements: vec![ShapeMovement {
@@ -49,9 +55,7 @@ fn move_shapes_applies_and_undoes() {
 fn move_anchor_translates_handles_and_undoes() {
     let shape = shape_with_handles(shape_id(2));
     let original_anchor = anchor_at(&shape, 0).expect("anchor exists").clone();
-    let mut doc = Document {
-        shapes: vec![shape],
-    };
+    let mut doc = doc_with_shapes(vec![shape]);
 
     let cmd = Command::MoveAnchor {
         movement: AnchorMovement {
@@ -78,9 +82,7 @@ fn move_anchor_translates_handles_and_undoes() {
 fn move_handle_updates_and_undoes() {
     let shape = shape_with_handles(shape_id(3));
     let original = anchor_at(&shape, 1).expect("anchor exists").handle_in;
-    let mut doc = Document {
-        shapes: vec![shape],
-    };
+    let mut doc = doc_with_shapes(vec![shape]);
 
     let cmd = Command::MoveHandle {
         movement: HandleMovement {
@@ -110,9 +112,7 @@ fn move_handle_updates_and_undoes() {
 }
 #[test]
 fn set_style_updates_and_undoes() {
-    let mut doc = Document {
-        shapes: vec![shape_with_handles(shape_id(4))],
-    };
+    let mut doc = doc_with_shapes(vec![shape_with_handles(shape_id(4))]);
     let original = shape_at(&doc, 0).expect("shape exists").style.clone();
     let updated = PaintStyle::new(None, 4.0, None);
 
@@ -134,9 +134,7 @@ fn set_style_updates_and_undoes() {
 fn reorder_moves_and_undoes() {
     let shape_a = shape_with_handles(shape_id(5));
     let shape_b = shape_with_handles(shape_id(6));
-    let mut doc = Document {
-        shapes: vec![shape_a.clone(), shape_b.clone()],
-    };
+    let mut doc = doc_with_shapes(vec![shape_a.clone(), shape_b.clone()]);
 
     let cmd = Command::Reorder {
         operations: vec![ReorderOp {
@@ -158,9 +156,7 @@ fn reorder_moves_and_undoes() {
 fn set_segment_kind_updates_handles_and_undoes() {
     let mut shape = shape_with_handles(shape_id(7));
     *segment_mut(&mut shape, 0).expect("segment exists") = SegmentKind::Line;
-    let mut doc = Document {
-        shapes: vec![shape],
-    };
+    let mut doc = doc_with_shapes(vec![shape]);
 
     let cmd = Command::SetSegmentKind {
         changes: vec![SegmentChange {
@@ -229,9 +225,8 @@ fn insert_anchor_replaces_shape_and_undoes() -> Result<(), CommandEditingTestErr
 fn insert_anchor_on_segment_undo_redo() {
     let shape_id_value = shape_id(9);
     let original_shape = shape_with_handles(shape_id_value);
-    let mut state = EngineState::with_document(Document {
-        shapes: vec![original_shape.clone()],
-    });
+    let seed_doc = doc_with_shapes(vec![original_shape.clone()]);
+    let mut state = EngineState::with_document(seed_doc.clone());
     let anchor_count = original_shape.path.anchors.len();
     let segment_count = original_shape.path.segments.len();
     assert_eq!(anchor_count, 2, "expected fixture to have two anchors");
@@ -244,9 +239,7 @@ fn insert_anchor_on_segment_undo_redo() {
     let cmd =
         assert_insert_anchor_on_segment_command(&state).expect("prepare insert anchor on segment");
 
-    let mut doc = Document {
-        shapes: vec![original_shape.clone()],
-    };
+    let mut doc = seed_doc;
     let (inverse, after_insert) = assert_insert_anchor_on_segment_effect(&cmd, &mut doc)
         .expect("apply insert anchor on segment");
     assert_insert_anchor_on_segment_lengths(&original_shape, &after_insert)
@@ -273,9 +266,7 @@ fn insert_anchor_on_segment_undo_redo() {
 #[test]
 fn delete_anchors_preserves_handles_and_undoes() {
     let old_shape = shape_with_three_anchors(shape_id(9));
-    let mut doc = Document {
-        shapes: vec![old_shape.clone()],
-    };
+    let mut doc = doc_with_shapes(vec![old_shape.clone()]);
 
     let cmd = Command::DeleteAnchors {
         deletions: vec![AnchorDeletion {
@@ -353,9 +344,7 @@ fn prepare_command_returns_expected_variant(
 fn prepare_raise_selection_uses_anchor_selection() {
     let shape_a = shape_with_handles(shape_id(13));
     let shape_b = shape_with_handles(shape_id(14));
-    let mut state = EngineState::with_document(Document {
-        shapes: vec![shape_a, shape_b],
-    });
+    let mut state = EngineState::with_document(doc_with_shapes(vec![shape_a, shape_b]));
     state.selection.items = vec![SelItem::Anchor {
         shape: shape_id(13),
         anchor: 0,
@@ -373,9 +362,7 @@ fn prepare_raise_selection_uses_anchor_selection() {
 #[test]
 fn prepare_toggle_segment_kind_requires_segment() {
     let shape = shape_with_handles(shape_id(15));
-    let mut state = EngineState::with_document(Document {
-        shapes: vec![shape],
-    });
+    let mut state = EngineState::with_document(doc_with_shapes(vec![shape]));
     state.selection.items = vec![SelItem::Shape(shape_id(15))];
 
     let result = prepare_command(Action::ToggleSegmentKind, &state);
@@ -383,9 +370,7 @@ fn prepare_toggle_segment_kind_requires_segment() {
 }
 #[test]
 fn command_inverse_name_matches_after_apply() {
-    let mut doc = Document {
-        shapes: vec![shape_with_handles(shape_id(16))],
-    };
+    let mut doc = doc_with_shapes(vec![shape_with_handles(shape_id(16))]);
     let cmd = Command::MoveShapes {
         movements: vec![ShapeMovement {
             shape_id: shape_id(16),

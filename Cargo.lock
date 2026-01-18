@@ -2173,6 +2173,7 @@ dependencies = [
  "rstest",
  "rstest-bdd",
  "rstest-bdd-macros",
+ "slotmap",
  "test_support",
  "thiserror 2.0.17",
  "uuid",
@@ -6232,7 +6233,6 @@ version = "0.1.0"
 dependencies = [
  "gauss",
  "thiserror 2.0.17",
- "uuid",
 ]
 
 [[package]]

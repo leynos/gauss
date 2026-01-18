@@ -68,10 +68,10 @@ fn draw_two_points_and_anchor_points(
     visual_cx.run_until_parked();
 
     let doc = visual_cx.read(|app| view.read(app).document().clone());
-    if doc.shapes.len() != 2 {
+    if doc.len() != 2 {
         return Err(TestSupportError::expectation(format!(
             "expected demo + one drawn shape; shapes={:?}",
-            doc.shapes.iter().map(|shape| shape.id).collect::<Vec<_>>()
+            doc.iter_ids_in_draw_order().collect::<Vec<_>>()
         )));
     }
     let shape = require_draw_shape(&doc, "after drawing two points")?;

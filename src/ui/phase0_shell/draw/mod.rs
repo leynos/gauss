@@ -65,7 +65,7 @@ impl Phase0Shell {
             return self.start_new_open_shape(cursor_world);
         };
 
-        let Some(existing) = self.state.document.shapes.get(index).cloned() else {
+        let Some(existing) = self.state.document.shape_at(index).cloned() else {
             self.state.active_path = None;
             return false;
         };
@@ -102,9 +102,9 @@ impl Phase0Shell {
     }
 
     fn start_new_open_shape(&mut self, cursor_world: Vec2) -> bool {
-        let shape = new_open_shape(cursor_world, self.state.current_style.clone());
-        let shape_id = shape.id;
-        let index = self.state.document.shapes.len();
+        let shape_id = self.state.document.allocate_shape_id();
+        let shape = new_open_shape(shape_id, cursor_world, self.state.current_style.clone());
+        let index = self.state.document.len();
 
         let command = Command::InsertShape {
             insertion: ShapeInsertion { index, shape },
@@ -207,9 +207,9 @@ fn apply_command_for_direction(
     }
 }
 
-fn new_open_shape(first_anchor: Vec2, style: PaintStyle) -> Shape {
+fn new_open_shape(id: ShapeId, first_anchor: Vec2, style: PaintStyle) -> Shape {
     Shape {
-        id: ShapeId::new_v4(),
+        id,
         z: 0,
         style,
         path: PathGeom {

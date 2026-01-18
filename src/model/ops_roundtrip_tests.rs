@@ -8,11 +8,10 @@ use crate::model::{
     Vec2,
 };
 use rstest::rstest;
-use uuid::Uuid;
 
-#[must_use]
-fn shape_id(seed: u128) -> ShapeId {
-    ShapeId::from(Uuid::from_u128(seed))
+struct SampleDoc {
+    doc: Document,
+    ids: [ShapeId; 2],
 }
 
 #[must_use]
@@ -35,9 +34,13 @@ fn sample_shape(id: ShapeId, z: i32) -> Shape {
 }
 
 #[must_use]
-fn sample_doc() -> Document {
-    Document {
-        shapes: vec![sample_shape(shape_id(1), 0), sample_shape(shape_id(2), 1)],
+fn sample_doc() -> SampleDoc {
+    let mut doc = Document::new();
+    let first = doc.append_shape(sample_shape(ShapeId::default(), 0));
+    let second = doc.append_shape(sample_shape(ShapeId::default(), 1));
+    SampleDoc {
+        doc,
+        ids: [first, second],
     }
 }
 
@@ -50,30 +53,30 @@ fn assert_round_trip(mut doc: Document, op: &DocOp) {
 
 #[rstest]
 fn insert_shape_inverts() {
-    let doc = sample_doc();
-    let shape = sample_shape(shape_id(3), 2);
-    assert_round_trip(doc, &DocOp::InsertShape { index: 1, shape });
+    let sample = sample_doc();
+    let shape = sample_shape(ShapeId::default(), 2);
+    assert_round_trip(sample.doc, &DocOp::InsertShape { index: 1, shape });
 }
 
 #[rstest]
 fn remove_shape_inverts() -> Result<(), Box<dyn std::error::Error>> {
-    let doc = sample_doc();
-    let found_shape = doc
-        .shapes
-        .first()
+    let sample = sample_doc();
+    let found_shape = sample
+        .doc
+        .shape_at(0)
         .ok_or("expected sample document to contain a shape")?;
     let shape = found_shape.clone();
-    assert_round_trip(doc, &DocOp::RemoveShape { index: 0, shape });
+    assert_round_trip(sample.doc, &DocOp::RemoveShape { index: 0, shape });
     Ok(())
 }
 
 #[rstest]
 fn move_anchor_inverts() {
-    let doc = sample_doc();
+    let sample = sample_doc();
     assert_round_trip(
-        doc,
+        sample.doc,
         &DocOp::MoveAnchor {
-            shape: shape_id(1),
+            shape: sample.ids[0],
             anchor: 0,
             from: Vec2::new(10.0, 20.0),
             to: Vec2::new(11.0, 21.0),
@@ -83,11 +86,11 @@ fn move_anchor_inverts() {
 
 #[rstest]
 fn move_handle_in_inverts() {
-    let doc = sample_doc();
+    let sample = sample_doc();
     assert_round_trip(
-        doc,
+        sample.doc,
         &DocOp::MoveHandleIn {
-            shape: shape_id(1),
+            shape: sample.ids[0],
             anchor: 0,
             from: None,
             to: Some(Vec2::new(5.0, 6.0)),
@@ -97,11 +100,11 @@ fn move_handle_in_inverts() {
 
 #[rstest]
 fn move_handle_out_inverts() {
-    let doc = sample_doc();
+    let sample = sample_doc();
     assert_round_trip(
-        doc,
+        sample.doc,
         &DocOp::MoveHandleOut {
-            shape: shape_id(2),
+            shape: sample.ids[1],
             anchor: 0,
             from: None,
             to: Some(Vec2::new(50.0, 60.0)),
@@ -111,11 +114,11 @@ fn move_handle_out_inverts() {
 
 #[rstest]
 fn move_shape_inverts() {
-    let doc = sample_doc();
+    let sample = sample_doc();
     assert_round_trip(
-        doc,
+        sample.doc,
         &DocOp::MoveShape {
-            shape: shape_id(1),
+            shape: sample.ids[0],
             delta: Vec2::new(3.0, -2.0),
         },
     );
@@ -123,13 +126,13 @@ fn move_shape_inverts() {
 
 #[rstest]
 fn set_style_inverts() {
-    let doc = sample_doc();
+    let sample = sample_doc();
     let from = PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), 2.0, None);
     let to = PaintStyle::new(None, 5.0, Some(Rgba::new(0, 0, 255, 255)));
     assert_round_trip(
-        doc,
+        sample.doc,
         &DocOp::SetStyle {
-            shape: shape_id(1),
+            shape: sample.ids[0],
             from,
             to,
         },
@@ -138,11 +141,11 @@ fn set_style_inverts() {
 
 #[rstest]
 fn set_segment_kind_inverts() {
-    let doc = sample_doc();
+    let sample = sample_doc();
     assert_round_trip(
-        doc,
+        sample.doc,
         &DocOp::SetSegmentKind {
-            shape: shape_id(1),
+            shape: sample.ids[0],
             seg: 0,
             from: SegmentKind::Line,
             to: SegmentKind::Cubic,
@@ -152,11 +155,11 @@ fn set_segment_kind_inverts() {
 
 #[rstest]
 fn reorder_inverts() {
-    let doc = sample_doc();
+    let sample = sample_doc();
     assert_round_trip(
-        doc,
+        sample.doc,
         &DocOp::Reorder {
-            shape: shape_id(1),
+            shape: sample.ids[0],
             from: 0,
             to: 1,
         },
@@ -165,17 +168,18 @@ fn reorder_inverts() {
 
 #[rstest]
 fn doc_change_apply_then_inverse_restores_document() {
-    let mut doc = sample_doc();
+    let sample = sample_doc();
+    let mut doc = sample.doc;
     let before = doc.clone();
 
     let change = DocChange {
         ops: vec![
             DocOp::MoveShape {
-                shape: shape_id(1),
+                shape: sample.ids[0],
                 delta: Vec2::new(4.0, 7.0),
             },
             DocOp::SetSegmentKind {
-                shape: shape_id(2),
+                shape: sample.ids[1],
                 seg: 0,
                 from: SegmentKind::Line,
                 to: SegmentKind::Cubic,

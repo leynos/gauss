@@ -87,8 +87,7 @@ pub(super) fn hit_test_topmost_handle(
     tolerance_world: f32,
 ) -> Option<HandleHit> {
     let tolerance_squared = tolerance_world * tolerance_world;
-    doc.shapes
-        .iter()
+    doc.iter_in_draw_order()
         .enumerate()
         .rev()
         .find_map(|(shape_index, shape)| {
@@ -133,8 +132,7 @@ pub(super) fn hit_test_topmost_segment(
     tolerance_world: f32,
 ) -> Option<SegmentHit> {
     let tolerance_squared = tolerance_world * tolerance_world;
-    doc.shapes
-        .iter()
+    doc.iter_in_draw_order()
         .enumerate()
         .rev()
         .find_map(|(shape_index, shape)| {
@@ -154,8 +152,7 @@ pub(super) fn hit_test_topmost_anchor(
     tolerance_world: f32,
 ) -> Option<AnchorHit> {
     let tolerance_squared = tolerance_world * tolerance_world;
-    doc.shapes
-        .iter()
+    doc.iter_in_draw_order()
         .enumerate()
         .rev()
         .find_map(|(shape_index, shape)| {
@@ -181,8 +178,7 @@ pub(super) fn hit_test_topmost_shape(
     cursor_world: Vec2,
     tolerance_world: f32,
 ) -> Option<ShapeHit> {
-    doc.shapes
-        .iter()
+    doc.iter_in_draw_order()
         .enumerate()
         .rev()
         .find_map(|(shape_index, shape)| {

@@ -26,10 +26,9 @@ fn insert_shape_at_position(
 
     let result = cmd.apply(&mut doc);
     assert!(result.is_ok());
-    assert_eq!(doc.shapes.len(), expected_len);
+    assert_eq!(doc.len(), expected_len);
     assert_eq!(
-        doc.shapes
-            .get(insert_index)
+        doc.shape_at(insert_index)
             .expect("should have shape at insert index")
             .id,
         expected_id
@@ -46,10 +45,10 @@ fn insert_shape_inverse_removes(mut empty_doc: Document) {
     };
 
     let inverse = cmd.apply(&mut empty_doc).expect("apply succeeded");
-    assert_eq!(empty_doc.shapes.len(), 1);
+    assert_eq!(empty_doc.len(), 1);
 
     inverse.apply(&mut empty_doc).expect("undo succeeded");
-    assert!(empty_doc.shapes.is_empty());
+    assert!(empty_doc.is_empty());
 }
 
 #[rstest]
@@ -67,11 +66,10 @@ fn insert_shape_full_round_trip(mut doc_with_two_shapes: Document) {
     let inverse = cmd
         .apply(&mut doc_with_two_shapes)
         .expect("apply succeeded");
-    assert_eq!(doc_with_two_shapes.shapes.len(), 3);
+    assert_eq!(doc_with_two_shapes.len(), 3);
     assert_eq!(
         doc_with_two_shapes
-            .shapes
-            .get(1)
+            .shape_at(1)
             .expect("should have shape at index 1")
             .id,
         shape.id

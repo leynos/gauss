@@ -15,12 +15,11 @@
 mod common;
 
 use common::{ensure_initial_draw, init_test_app, read_selection_items};
-use gauss::model::{PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
+use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::{
     GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeselectAll, GpuiSelectAll, Phase0Shell,
 };
 use gpui::TestAppContext;
-use uuid::Uuid;
 
 fn demo_square(id: ShapeId) -> Shape {
     Shape {
@@ -65,16 +64,15 @@ fn gpui_select_all_action_selects_all_shapes(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let first_shape = ShapeId::from(Uuid::from_u128(0x1111_1111_1111_1111_1111_1111_1111_1111));
-    let second_shape = ShapeId::from(Uuid::from_u128(0x2222_2222_2222_2222_2222_2222_2222_2222));
+    let mut doc = Document::new();
+    let first_shape = doc.allocate_shape_id();
+    let second_shape = doc.allocate_shape_id();
+    doc.append_shape(demo_square(first_shape));
+    doc.append_shape(demo_square(second_shape));
 
     // Add two shapes to the document.
     visual_cx.update(|_window, app| {
         view.update(app, |shell, view_cx| {
-            let mut doc = shell.document().clone();
-            doc.shapes.clear();
-            doc.shapes.push(demo_square(first_shape));
-            doc.shapes.push(demo_square(second_shape));
             shell.replace_document_for_tests(doc);
             shell.replace_selection_for_tests(gauss::model::Selection::empty());
             view_cx.notify();
@@ -111,14 +109,13 @@ fn gpui_deselect_all_action_clears_selection(cx: &mut TestAppContext) {
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let shape_id = ShapeId::from(Uuid::from_u128(0x3333_3333_3333_3333_3333_3333_3333_3333));
+    let mut doc = Document::new();
+    let shape_id = doc.allocate_shape_id();
+    doc.append_shape(demo_square(shape_id));
 
     // Add a shape and select it.
     visual_cx.update(|_window, app| {
         view.update(app, |shell, view_cx| {
-            let mut doc = shell.document().clone();
-            doc.shapes.clear();
-            doc.shapes.push(demo_square(shape_id));
             shell.replace_document_for_tests(doc);
             shell.replace_selection_for_tests(gauss::model::Selection {
                 items: vec![SelItem::Shape(shape_id)],

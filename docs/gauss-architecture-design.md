@@ -224,6 +224,12 @@ UI. 【110†accesskit-based-accessibility-in-gpui.md】
 `generational-arena`, or an internal generational index type). Store IDs as
 opaque newtypes to prevent mixing.
 
+**Implementation note (2026-01):** `ShapeId` now uses `slotmap` keys. The
+document allocates IDs via a `SlotMap` registry and keeps them stable across
+reorder and undo. AccessKit node IDs are derived using the key's `as_ffi`
+representation and reconstructed via `from_ffi`, providing stable, reversible
+mapping between document objects and a11y nodes.
+
 ### 5.2 Two kinds of state
 
 #### Document state (saved)

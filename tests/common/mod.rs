@@ -19,7 +19,6 @@ use gpui::{
     VisualTestContext, point, px,
 };
 use test_support::{TestSupportError, TestSupportResult};
-use uuid::Uuid;
 
 pub const CANVAS_PADDING_PX: f32 = 2.0;
 pub const MIN_CANVAS_HEIGHT_PX: f32 = 200.0;
@@ -73,8 +72,8 @@ pub fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
     visual_cx.run_until_parked();
 }
 
-pub fn demo_shape_id() -> ShapeId {
-    ShapeId::from(Uuid::from_u128(0x6d3c_0fb4_43a8_48f1_9f14_623a_70d5_2e1a))
+pub fn demo_shape_id(doc: &Document) -> Option<ShapeId> {
+    doc.shape_id_at(0)
 }
 
 pub fn canvas_bounds(visual_cx: &mut VisualTestContext) -> TestSupportResult<Bounds<Pixels>> {
@@ -181,8 +180,8 @@ pub fn read_selection_items(
 }
 
 pub fn find_draw_shape(doc: &Document) -> Option<&Shape> {
-    let demo_id = demo_shape_id();
-    doc.shapes.iter().find(|shape| shape.id != demo_id)
+    let demo_id = demo_shape_id(doc)?;
+    doc.iter_in_draw_order().find(|shape| shape.id != demo_id)
 }
 
 pub fn require_draw_shape<'a>(doc: &'a Document, context: &str) -> TestSupportResult<&'a Shape> {

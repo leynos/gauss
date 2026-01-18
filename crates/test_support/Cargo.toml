@@ -6,4 +6,3 @@ edition = "2024"
 [dependencies]
 gauss = { path = "../.." }
 thiserror = "2.0.17"
-uuid = { version = "1.19.0", features = ["v4"] }

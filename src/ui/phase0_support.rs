@@ -11,14 +11,12 @@
 
 use std::path::Path;
 
-use camino::{Utf8Path, Utf8PathBuf};
-use cap_std::{ambient_authority, fs_utf8::Dir};
-use uuid::Uuid;
-
 use crate::{
     model::{Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2},
     svg::import::import_svg,
 };
+use camino::{Utf8Path, Utf8PathBuf};
+use cap_std::{ambient_authority, fs_utf8::Dir};
 
 /// Write an SVG string to the provided filesystem path.
 ///
@@ -62,7 +60,7 @@ pub(super) fn load_document_from_path(path: &Path) -> Result<Document, String> {
 /// Build a deterministic document for Phase 0 rendering and export.
 pub(super) fn demo_document() -> Document {
     let shape = Shape {
-        id: ShapeId::from(Uuid::from_u128(0x6d3c_0fb4_43a8_48f1_9f14_623a_70d5_2e1a)),
+        id: ShapeId::default(),
         z: 0,
         style: PaintStyle::new(
             Some(Rgba::new(0, 0, 0, 255)),
@@ -82,7 +80,7 @@ pub(super) fn demo_document() -> Document {
         },
     };
 
-    Document {
-        shapes: vec![shape],
-    }
+    let mut doc = Document::new();
+    doc.append_shape(shape);
+    doc
 }

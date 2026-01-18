@@ -36,7 +36,7 @@ pub fn prepare_delete_selection(
         };
         // find_index guarantees valid index; if violated, treat as shape not found
         // (defensive: avoids panic in production while preserving error semantics)
-        let Some(shape) = doc.shapes.get(index).cloned() else {
+        let Some(shape) = doc.shape_at(index).cloned() else {
             return Err(UserError::ShapeNotFound(id));
         };
         targets.push(DeletedShape { index, shape });
@@ -60,14 +60,14 @@ pub fn apply_delete_shapes(
     sorted_indices.sort_unstable_by(|a, b| b.cmp(a));
 
     for &index in &sorted_indices {
-        if index >= doc.shapes.len() {
+        if index >= doc.len() {
             return Err(UserError::InvalidOperation(format!(
                 "shape deletion index {} out of range (len = {})",
                 index,
-                doc.shapes.len()
+                doc.len()
             )));
         }
-        doc.shapes.remove(index);
+        let _ = doc.remove_shape(index);
     }
 
     Ok(CommandInverse::RestoreShapes {
@@ -87,14 +87,14 @@ pub fn apply_restore_shapes(doc: &mut Document, targets: &[DeletedShape]) -> Res
     sorted_targets.sort_by_key(|t| t.index);
 
     for target in sorted_targets {
-        if target.index > doc.shapes.len() {
+        if target.index > doc.len() {
             return Err(UserError::InvalidOperation(format!(
                 "shape restoration index {} out of range (len = {})",
                 target.index,
-                doc.shapes.len()
+                doc.len()
             )));
         }
-        doc.shapes.insert(target.index, target.shape);
+        let _ = doc.insert_shape(target.index, target.shape);
     }
     Ok(())
 }

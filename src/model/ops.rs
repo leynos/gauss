@@ -208,19 +208,15 @@ impl DocOp {
 }
 
 fn apply_insert_shape(doc: &mut Document, index: usize, shape: &Shape) {
-    if index <= doc.shapes.len() {
-        doc.shapes.insert(index, shape.clone());
-    }
+    let _ = doc.insert_shape(index, shape.clone());
 }
 
 fn apply_remove_shape(doc: &mut Document, index: usize) {
-    if doc.shapes.len() > index {
-        doc.shapes.remove(index);
-    }
+    let _ = doc.remove_shape(index);
 }
 
 fn apply_move_anchor(doc: &mut Document, shape: ShapeId, anchor: usize, to: Vec2) {
-    let Some(target) = doc.get_mut(shape) else {
+    let Some(target) = doc.shape_mut(shape) else {
         return;
     };
     let Some(item) = target.path.anchors.get_mut(anchor) else {
@@ -230,7 +226,7 @@ fn apply_move_anchor(doc: &mut Document, shape: ShapeId, anchor: usize, to: Vec2
 }
 
 fn apply_move_handle_in(doc: &mut Document, shape: ShapeId, anchor: usize, to: Option<Vec2>) {
-    let Some(target) = doc.get_mut(shape) else {
+    let Some(target) = doc.shape_mut(shape) else {
         return;
     };
     let Some(item) = target.path.anchors.get_mut(anchor) else {
@@ -240,7 +236,7 @@ fn apply_move_handle_in(doc: &mut Document, shape: ShapeId, anchor: usize, to: O
 }
 
 fn apply_move_handle_out(doc: &mut Document, shape: ShapeId, anchor: usize, to: Option<Vec2>) {
-    let Some(target) = doc.get_mut(shape) else {
+    let Some(target) = doc.shape_mut(shape) else {
         return;
     };
     let Some(item) = target.path.anchors.get_mut(anchor) else {
@@ -250,7 +246,7 @@ fn apply_move_handle_out(doc: &mut Document, shape: ShapeId, anchor: usize, to: 
 }
 
 fn apply_move_shape(doc: &mut Document, shape: ShapeId, delta: Vec2) {
-    let Some(target) = doc.get_mut(shape) else {
+    let Some(target) = doc.shape_mut(shape) else {
         return;
     };
 
@@ -275,14 +271,14 @@ fn translate_anchor(anchor: &mut crate::model::Anchor, delta: Vec2) {
 }
 
 fn apply_set_style(doc: &mut Document, shape: ShapeId, to: &PaintStyle) {
-    let Some(target) = doc.get_mut(shape) else {
+    let Some(target) = doc.shape_mut(shape) else {
         return;
     };
     target.style = to.clone();
 }
 
 fn apply_set_segment_kind(doc: &mut Document, shape: ShapeId, seg: usize, to: SegmentKind) {
-    let Some(target) = doc.get_mut(shape) else {
+    let Some(target) = doc.shape_mut(shape) else {
         return;
     };
     let Some(kind) = target.path.segments.get_mut(seg) else {
@@ -296,7 +292,7 @@ fn apply_reorder(doc: &mut Document, shape: ShapeId, from: usize, to: usize) {
         return;
     }
 
-    if doc.shapes.len() <= from || to > doc.shapes.len() {
+    if doc.len() <= from || to > doc.len() {
         return;
     }
 
@@ -306,9 +302,7 @@ fn apply_reorder(doc: &mut Document, shape: ShapeId, from: usize, to: usize) {
     if actual_from != from {
         return;
     }
-
-    let item = doc.shapes.remove(from);
-    doc.shapes.insert(to, item);
+    let _ = doc.reorder(from, to);
 }
 
 /// A group of operations treated as one undo/redo unit.

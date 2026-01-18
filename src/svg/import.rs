@@ -66,7 +66,7 @@ impl Error for SvgImportError {}
 /// Returns an [`SvgImportError`] when the input is not valid SVG, contains
 /// unsupported path commands, or uses attributes outside the supported subset.
 pub fn import_svg(svg: &str) -> Result<Document, SvgImportError> {
-    let mut shapes = Vec::new();
+    let mut doc = Document::new();
 
     for (index, tag) in extract_path_tags(svg).into_iter().enumerate() {
         let d = attribute_value(&tag, "d").ok_or(SvgImportError::MissingPathData)?;
@@ -91,15 +91,16 @@ pub fn import_svg(svg: &str) -> Result<Document, SvgImportError> {
             fill.map(|rgb| with_alpha(rgb, fill_alpha)),
         );
 
-        shapes.push(Shape {
-            id: ShapeId::new_v4(),
+        let shape = Shape {
+            id: ShapeId::default(),
             z: index.try_into().map_err(|_| SvgImportError::MalformedSvg)?,
             style,
             path,
-        });
+        };
+        doc.append_shape(shape);
     }
 
-    Ok(Document { shapes })
+    Ok(doc)
 }
 
 const fn with_alpha(mut rgb: Rgba, alpha: u8) -> Rgba {

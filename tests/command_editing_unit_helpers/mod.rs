@@ -52,9 +52,8 @@ pub(super) fn assert_shape_replacement_applies_and_undoes(
 ) -> Result<(), CommandEditingTestError> {
     let expected_old = old_shape.clone();
     let expected_new = new_shape.clone();
-    let mut doc = Document {
-        shapes: vec![expected_old.clone()],
-    };
+    let mut doc = Document::new();
+    doc.append_shape(expected_old.clone());
     let cmd = create_command(ShapeReplacement {
         shape_index,
         old_shape,
@@ -93,9 +92,9 @@ pub(super) fn assert_prepare_command_returns_variant(
     matches_pattern: impl Fn(&Command) -> bool,
 ) -> Result<(), CommandEditingTestError> {
     let shape = shape_with_handles(shape_id);
-    let mut state = EngineState::with_document(Document {
-        shapes: vec![shape],
-    });
+    let mut doc = Document::new();
+    doc.append_shape(shape);
+    let mut state = EngineState::with_document(doc);
     state.selection.items = vec![selection_item];
 
     let cmd =

@@ -29,9 +29,10 @@ fn world() -> CommandWorld {
 
 #[given("a document with two shapes")]
 fn given_doc_with_two_shapes(world: &mut CommandWorld) {
-    world.state.document = Document {
-        shapes: vec![sample_shape(shape_id(1), 0), sample_shape(shape_id(2), 1)],
-    };
+    let mut doc = Document::new();
+    doc.append_shape(sample_shape(shape_id(1), 0));
+    doc.append_shape(sample_shape(shape_id(2), 1));
+    world.state.document = doc;
 }
 
 #[given("the first shape is selected")]
@@ -135,14 +136,14 @@ fn then_command_has_one_reorder_op(world: &CommandWorld) -> TestSupportResult<()
 
 /// Helper: assert document has expected number of shapes.
 fn assert_doc_shape_count(world: &CommandWorld, expected: usize) -> TestSupportResult<()> {
-    if world.state.document.shapes.len() == expected {
+    if world.state.document.len() == expected {
         Ok(())
     } else {
         Err(TestSupportError::expectation(format!(
             "expected {} shape{}, got {}",
             expected,
             if expected == 1 { "" } else { "s" },
-            world.state.document.shapes.len()
+            world.state.document.len()
         )))
     }
 }

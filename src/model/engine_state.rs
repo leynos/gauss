@@ -16,7 +16,7 @@
 //!
 //! // Create empty state
 //! let state = EngineState::new();
-//! assert!(state.document.shapes.is_empty());
+//! assert!(state.document.is_empty());
 //! assert!(state.selection.is_empty());
 //! assert_eq!(state.tool_mode, ToolMode::Draw);
 //!
@@ -101,7 +101,7 @@ impl EngineState {
     /// use gauss::model::EngineState;
     ///
     /// let state = EngineState::new();
-    /// assert!(state.document.shapes.is_empty());
+    /// assert!(state.document.is_empty());
     /// ```
     #[must_use]
     pub fn new() -> Self {
@@ -165,7 +165,7 @@ mod tests {
     #[rstest]
     fn new_state_has_empty_document() {
         let state = EngineState::new();
-        assert!(state.document.shapes.is_empty());
+        assert!(state.document.is_empty());
     }
 
     #[rstest]
@@ -202,8 +202,8 @@ mod tests {
     fn with_document_preserves_document() {
         let mut doc = Document::new();
         // Insert a shape manually to verify preservation
-        doc.shapes.push(crate::model::Shape {
-            id: ShapeId::new_v4(),
+        doc.append_shape(crate::model::Shape {
+            id: ShapeId::default(),
             z: 0,
             style: default_style(),
             path: crate::model::PathGeom {
@@ -215,7 +215,7 @@ mod tests {
         });
 
         let state = EngineState::with_document(doc.clone());
-        assert_eq!(state.document.shapes.len(), 1);
+        assert_eq!(state.document.len(), 1);
     }
 
     #[rstest]

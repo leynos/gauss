@@ -34,7 +34,7 @@ fn assert_draw_shape_state(
     expected: ExpectedDrawShapeState,
     context: &str,
 ) -> TestSupportResult<()> {
-    if doc.shapes.len() != expected.total_shapes {
+    if doc.len() != expected.total_shapes {
         return Err(TestSupportError::expectation(format!(
             "unexpected shape count: {context}"
         )));
@@ -64,7 +64,7 @@ fn assert_draw_shape_absent(
     expected_total_shapes: usize,
     context: &str,
 ) -> TestSupportResult<()> {
-    if doc.shapes.len() != expected_total_shapes {
+    if doc.len() != expected_total_shapes {
         return Err(TestSupportError::expectation(format!(
             "unexpected shape count: {context}"
         )));

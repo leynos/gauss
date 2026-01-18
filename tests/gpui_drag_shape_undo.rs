@@ -34,11 +34,11 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     simulate_escape(visual_cx);
     visual_cx.run_until_parked();
 
-    let shapes_after_escape = read_document(visual_cx, &view).shapes.len();
+    let shapes_after_escape = read_document(visual_cx, &view).len();
     visual_cx.simulate_mouse_move(scenario.first, None, Modifiers::none());
     visual_cx.simulate_click(scenario.first, Modifiers::none());
     visual_cx.run_until_parked();
-    let shapes_after_escape_click = read_document(visual_cx, &view).shapes.len();
+    let shapes_after_escape_click = read_document(visual_cx, &view).len();
     assert_eq!(
         shapes_after_escape_click, shapes_after_escape,
         "escape should switch to manipulate mode, where clicks do not add points"
