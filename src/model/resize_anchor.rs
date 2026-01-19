@@ -41,6 +41,8 @@ impl ResizeAnchor {
 
 #[cfg(test)]
 mod tests {
+    //! Tests for resize anchor normalisation.
+
     use super::*;
     use rstest::rstest;
 

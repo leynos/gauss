@@ -190,6 +190,8 @@ fn draw_button_state(
 
 #[cfg(test)]
 mod tests {
+    //! Tests for tool rail button state helpers.
+
     use super::{DrawEdgeMode, IconButtonState, ToolMode};
     use super::{draw_button_state, select_button_state};
 

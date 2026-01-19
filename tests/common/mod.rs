@@ -10,6 +10,8 @@
 // Each integration test pulls in this module but only uses a subset of the
 // helpers, so allow dead code to keep the shared test surface in one place.
 
+use camino::{Utf8Path, Utf8PathBuf};
+use cap_std::fs_utf8::Dir;
 use gauss::model::{Document, SelItem, Selection, Shape, ShapeId, Vec2};
 use gauss::ui::{GpuiRedo, GpuiSelectionRedo, GpuiSelectionUndo, GpuiUndo, Phase0Shell};
 use gpui::{
@@ -21,6 +23,44 @@ use uuid::Uuid;
 
 pub const CANVAS_PADDING_PX: f32 = 2.0;
 pub const MIN_CANVAS_HEIGHT_PX: f32 = 200.0;
+
+pub struct TempFileGuard {
+    dir: Dir,
+    file_name: Utf8PathBuf,
+    path: Option<Utf8PathBuf>,
+}
+
+impl TempFileGuard {
+    pub const fn new(dir: Dir, file_name: Utf8PathBuf) -> Self {
+        Self {
+            dir,
+            file_name,
+            path: None,
+        }
+    }
+
+    pub const fn new_with_path(dir: Dir, file_name: Utf8PathBuf, path: Utf8PathBuf) -> Self {
+        Self {
+            dir,
+            file_name,
+            path: Some(path),
+        }
+    }
+
+    pub const fn dir(&self) -> &Dir {
+        &self.dir
+    }
+
+    pub fn path(&self) -> Option<&Utf8Path> {
+        self.path.as_ref().map(Utf8PathBuf::as_path)
+    }
+}
+
+impl Drop for TempFileGuard {
+    fn drop(&mut self) {
+        let _cleanup = self.dir.remove_file(self.file_name.as_path());
+    }
+}
 
 pub fn init_test_app(cx: &mut TestAppContext) {
     cx.update(gauss::ui::init);

@@ -92,6 +92,8 @@ impl EdgeMode {
 
 #[cfg(test)]
 mod tests {
+    //! Tests for tool and edge mode helpers.
+
     use super::*;
     use rstest::rstest;
 

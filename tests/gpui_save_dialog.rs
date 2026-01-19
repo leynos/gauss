@@ -3,22 +3,16 @@
 //! These tests validate Save prompt wiring and SVG file output without needing
 //! a real window manager.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 mod common;
 
-use common::{ensure_initial_draw, init_test_app};
+use camino::Utf8PathBuf;
+use cap_std::{ambient_authority, fs_utf8::Dir};
+use common::{TempFileGuard, ensure_initial_draw, init_test_app};
 use gauss::ui::{Phase0Shell, SaveSvg};
 use gpui::TestAppContext;
 use uuid::Uuid;
-
-struct TempFileGuard(PathBuf);
-
-impl Drop for TempFileGuard {
-    fn drop(&mut self) {
-        let _cleanup = std::fs::remove_file(&self.0);
-    }
-}
 
 #[gpui::test]
 fn save_action_prompts_for_path(cx: &mut TestAppContext) {
@@ -43,15 +37,23 @@ fn save_action_prompts_for_path(cx: &mut TestAppContext) {
         "Save action should prompt for a new path"
     );
 
-    let expected = std::env::temp_dir().join(format!("gauss-test-save-{}.svg", Uuid::new_v4()));
-    let _cleanup = TempFileGuard(expected.clone());
-    cx.simulate_new_path_selection(|_directory: &Path| Some(expected.clone()));
+    let temp_dir =
+        Utf8PathBuf::from_path_buf(std::env::temp_dir()).expect("temp dir should be valid UTF-8");
+    let file_name = Utf8PathBuf::from(format!("gauss-test-save-{}.svg", Uuid::new_v4()));
+    let expected = temp_dir.join(&file_name);
+    let temp_dir_handle =
+        Dir::open_ambient_dir(&temp_dir, ambient_authority()).expect("temp dir should be readable");
+    let cleanup = TempFileGuard::new(temp_dir_handle, file_name.clone());
+    cx.simulate_new_path_selection(|_directory: &Path| Some(expected.as_std_path().to_path_buf()));
     cx.run_until_parked();
 
     let saved = cx.read(|app| view.read(app).last_saved_path().map(Path::to_path_buf));
-    assert_eq!(saved, Some(expected.clone()));
+    assert_eq!(saved.as_deref(), Some(expected.as_std_path()));
 
-    let contents = std::fs::read_to_string(&expected).expect("Saved SVG file should be readable");
+    let contents = cleanup
+        .dir()
+        .read_to_string(file_name.as_path())
+        .expect("Saved SVG file should be readable");
     assert!(
         contents.contains(r#"<path d="M 10 10 L 90 10 L 90 90 L 10 90 Z""#),
         "Saved SVG should include the demo shape path"

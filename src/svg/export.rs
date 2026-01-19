@@ -149,6 +149,8 @@ fn write_fmt(out: &mut String, args: Arguments<'_>) {
 
 #[cfg(test)]
 mod tests {
+    //! Tests for SVG export output.
+
     use super::*;
     use crate::model::{Anchor, PaintStyle, PathGeom, Shape, ShapeId, Vec2};
     use rstest::rstest;

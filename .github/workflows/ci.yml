@@ -30,6 +30,16 @@ jobs:
             **/*.md
             !**/target/**
             !**/dist/**
+      - name: Install Whitaker
+        run: |
+          if ! command -v cargo-binstall >/dev/null; then
+            cargo install cargo-binstall
+          fi
+          cargo binstall --no-confirm whitaker-installer
+          rustup toolchain install \
+            --component rustc-dev,llvm-tools-preview,rust-src \
+            nightly-2025-09-18
+          whitaker-installer --experimental
       - name: Lint
         run: make lint
       - name: Test and Measure Coverage

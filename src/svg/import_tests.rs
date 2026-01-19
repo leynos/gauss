@@ -23,13 +23,15 @@ fn imports_minimal_line_path() {
         </svg>
     "##;
 
-    let doc = import_svg(svg).expect("Expected import to succeed");
+    let doc = match import_svg(svg) {
+        Ok(doc) => doc,
+        Err(err) => panic!("Expected import to succeed: {err}"),
+    };
     assert_eq!(doc.shapes.len(), 1);
 
-    let shape = doc
-        .shapes
-        .first()
-        .expect("Expected imported SVG to contain a shape");
+    let Some(shape) = doc.shapes.first() else {
+        panic!("Expected imported SVG to contain a shape");
+    };
     assert_eq!(shape.path.anchors.len(), 2);
     assert_eq!(shape.path.segments, vec![SegmentKind::Line]);
     assert!(!shape.path.closed);
@@ -64,16 +66,18 @@ fn round_trips_exported_svg() {
     };
 
     let exported = export_svg(&doc, 100.0, 100.0);
-    let mut imported = import_svg(&exported).expect("Expected re-import to succeed");
+    let mut imported = match import_svg(&exported) {
+        Ok(imported_doc) => imported_doc,
+        Err(err) => panic!("Expected re-import to succeed: {err}"),
+    };
 
     if let Some(imported_shape_mut) = imported.shapes.first_mut() {
         imported_shape_mut.id = ShapeId::from(Uuid::from_u128(1));
     }
 
-    let imported_shape = imported
-        .shapes
-        .first()
-        .expect("Expected re-imported SVG to contain a shape");
+    let Some(imported_shape) = imported.shapes.first() else {
+        panic!("Expected re-imported SVG to contain a shape");
+    };
     assert!(
         (imported_shape.style.stroke_width - 1.0).abs() < 0.000_1,
         "Stroke width should round-trip through SVG"

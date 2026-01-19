@@ -43,6 +43,8 @@ impl ResourceStore {
 
 #[cfg(test)]
 mod tests {
+    //! Tests for resource store defaults.
+
     use super::*;
 
     #[test]

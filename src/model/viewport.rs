@@ -119,6 +119,8 @@ impl Default for Viewport {
 
 #[cfg(test)]
 mod tests {
+    //! Tests for viewport pan and zoom behaviour.
+
     use super::*;
     use rstest::rstest;
 
