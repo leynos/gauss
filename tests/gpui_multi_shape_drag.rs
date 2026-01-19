@@ -8,10 +8,10 @@
 mod common;
 
 use common::{
-    assert_shape_translated_by_delta, canvas_bounds, ensure_initial_draw, init_test_app,
-    read_document,
+    add_square, assert_shape_translated_by_delta, canvas_bounds, ensure_initial_draw,
+    init_test_app, read_document,
 };
-use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
+use gauss::model::{Document, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, px};
 use test_support::{TestSupportError, TestSupportResult, math};
@@ -46,27 +46,6 @@ const fn viewport_to_screen_point(
 ) -> gpui::Point<gpui::Pixels> {
     let screen = viewport.world_to_screen(world);
     gpui::point(px(screen.x), px(screen.y))
-}
-
-fn add_square(doc: &mut Document, min: Vec2, max: Vec2) -> TestSupportResult<ShapeId> {
-    let shape = Shape {
-        id: ShapeId::default(),
-        z: i32::try_from(doc.len())
-            .map_err(|error| TestSupportError::z_order_overflow("z-ordering", error))?,
-        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
-        path: gauss::model::PathGeom {
-            anchors: vec![
-                gauss::model::Anchor::new(min),
-                gauss::model::Anchor::new(Vec2::new(max.x, min.y)),
-                gauss::model::Anchor::new(max),
-                gauss::model::Anchor::new(Vec2::new(min.x, max.y)),
-            ],
-            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
-            closed: true,
-            closing_segment: SegmentKind::Line,
-        },
-    };
-    Ok(doc.append_shape(shape))
 }
 
 #[derive(Clone, Copy, Debug)]

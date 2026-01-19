@@ -2,17 +2,11 @@
 
 use super::*;
 use crate::model::{
-    Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, SelItem, Selection, Shape, ShapeId,
-    Vec2, Viewport,
+    Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, SelItem, Selection, Shape, Vec2,
+    Viewport,
 };
+use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::rstest;
-
-const TEST_ID_VERSION: u32 = 0xffff_fffe;
-
-fn shape_id(seed: u32) -> ShapeId {
-    let raw = (u64::from(TEST_ID_VERSION) << 32) | u64::from(seed);
-    ShapeId::from_accesskit_node_id(raw)
-}
 
 fn two_anchor_cubic_shape() -> Shape {
     Shape {

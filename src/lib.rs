@@ -12,6 +12,8 @@
 
 pub mod model;
 pub mod svg;
+#[cfg(any(test, feature = "test-support"))]
+pub mod test_helpers;
 pub mod ui;
 
 /// Returns a greeting for the library.

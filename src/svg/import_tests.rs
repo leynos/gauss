@@ -28,8 +28,7 @@ fn imports_minimal_line_path() {
     };
     assert_eq!(doc.len(), 1);
 
-    let Some(shape) = doc
-        .shape_at(0) else {
+    let Some(shape) = doc.shape_at(0) else {
         panic!("Expected imported SVG to contain a shape");
     };
     assert_eq!(shape.path.anchors.len(), 2);
@@ -70,8 +69,7 @@ fn round_trips_exported_svg() {
         Err(err) => panic!("Expected re-import to succeed: {err}"),
     };
 
-    let Some(imported_shape) = imported
-        .shape_at(0) else {
+    let Some(imported_shape) = imported.shape_at(0) else {
         panic!("Expected re-imported SVG to contain a shape");
     };
     assert!(

@@ -1,5 +1,7 @@
 //! Document structure and shape ordering.
 
+use std::collections::HashSet;
+
 use slotmap::{Key, SlotMap};
 
 use crate::model::{Shape, ShapeId};
@@ -9,6 +11,10 @@ use crate::model::{Shape, ShapeId};
 pub struct Document {
     shapes: Vec<Shape>,
     id_registry: SlotMap<ShapeId, ()>,
+    /// IDs currently assigned to shapes in this document.
+    active_ids: HashSet<ShapeId>,
+    /// IDs reserved for this document to avoid allocator collisions.
+    reserved_ids: HashSet<ShapeId>,
 }
 
 impl Document {
@@ -18,6 +24,8 @@ impl Document {
         Self {
             shapes: Vec::new(),
             id_registry: SlotMap::with_key(),
+            active_ids: HashSet::new(),
+            reserved_ids: HashSet::new(),
         }
     }
 
@@ -29,7 +37,12 @@ impl Document {
 
     /// Allocate a new stable shape identifier.
     pub fn allocate_shape_id(&mut self) -> ShapeId {
-        self.id_registry.insert(())
+        loop {
+            let id = self.id_registry.insert(());
+            if self.reserved_ids.insert(id) {
+                return id;
+            }
+        }
     }
 
     /// Return whether the document contains no shapes.
@@ -115,7 +128,9 @@ impl Document {
         if index >= self.shapes.len() {
             return None;
         }
-        Some(self.shapes.remove(index))
+        let shape = self.shapes.remove(index);
+        self.active_ids.remove(&shape.id);
+        Some(shape)
     }
 
     /// Remove the shape with the given id.
@@ -123,13 +138,17 @@ impl Document {
     /// Returns the removed shape when the id is present.
     pub fn remove_shape_by_id(&mut self, id: ShapeId) -> Option<Shape> {
         let index = self.find_index(id)?;
-        Some(self.shapes.remove(index))
+        let shape = self.shapes.remove(index);
+        self.active_ids.remove(&shape.id);
+        Some(shape)
     }
 
     /// Clear all shapes from the document and reset the ID registry.
     pub fn clear(&mut self) {
         self.shapes.clear();
         self.id_registry = SlotMap::with_key();
+        self.active_ids.clear();
+        self.reserved_ids.clear();
     }
 
     /// Reorder a shape by draw-order indices.
@@ -138,7 +157,7 @@ impl Document {
             return true;
         }
 
-        if from >= self.shapes.len() || to > self.shapes.len() {
+        if from >= self.shapes.len() || to >= self.shapes.len() {
             return false;
         }
 
@@ -147,17 +166,38 @@ impl Document {
         true
     }
 
+    /// Ensure the shape has a unique ID, reserving external IDs to avoid collisions.
     fn ensure_shape_id(&mut self, shape: &mut Shape) -> ShapeId {
         if shape.id.is_null() {
-            let id = self.id_registry.insert(());
+            let id = self.allocate_shape_id();
             shape.id = id;
+            let _active = self.active_ids.insert(id);
+            return id;
         }
+
+        if self.active_ids.contains(&shape.id) {
+            let id = self.allocate_shape_id();
+            shape.id = id;
+            return id;
+        }
+
+        let _reserved = self.reserved_ids.insert(shape.id);
+        let _active = self.active_ids.insert(shape.id);
         shape.id
     }
 }
 
+// `PartialEq` compares visual content only; registry state is ignored.
 impl PartialEq for Document {
     fn eq(&self, other: &Self) -> bool {
+        self.visually_eq(other)
+    }
+}
+
+impl Document {
+    /// Compare documents by visual content (shape order and properties).
+    #[must_use]
+    pub fn visually_eq(&self, other: &Self) -> bool {
         self.shapes == other.shapes
     }
 }
@@ -170,6 +210,8 @@ impl Default for Document {
 
 #[cfg(test)]
 mod tests {
+    //! Tests for document ID management and ordering.
+
     use super::Document;
     use crate::model::{PaintStyle, PathGeom, Shape, ShapeId};
     use rstest::rstest;
@@ -191,6 +233,16 @@ mod tests {
 
         assert_eq!(returned, existing_id);
         assert_eq!(doc.shape_id_at(0), Some(existing_id));
+    }
+
+    #[rstest]
+    fn allocate_shape_id_avoids_existing_external_id() {
+        let mut doc = Document::new();
+        let existing_id = ShapeId::from_accesskit_node_id(0x0000_0001_0000_0001);
+        doc.append_shape(sample_shape(existing_id));
+
+        let new_id = doc.allocate_shape_id();
+        assert_ne!(new_id, existing_id);
     }
 
     #[rstest]

@@ -361,7 +361,14 @@ pub(super) fn apply_restore_anchors(
                         restoration.shape_index, shapes_len
                     )));
                 }
-                let _ = doc.insert_shape(restoration.shape_index, shape.clone());
+                let _shape_id = doc
+                    .insert_shape(restoration.shape_index, shape.clone())
+                    .ok_or_else(|| {
+                        UserError::InvalidOperation(format!(
+                            "anchor restoration failed to insert at index {} (len = {})",
+                            restoration.shape_index, shapes_len
+                        ))
+                    })?;
             }
         }
     }

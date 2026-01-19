@@ -10,32 +10,11 @@
 
 mod common;
 
-use common::{canvas_bounds, ensure_initial_draw, init_test_app};
-use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
+use common::{add_square, canvas_bounds, ensure_initial_draw, init_test_app};
+use gauss::model::{Document, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, px};
 use test_support::{TestSupportError, TestSupportResult, math};
-
-fn add_square(doc: &mut Document, min: Vec2, max: Vec2) -> TestSupportResult<ShapeId> {
-    let shape = Shape {
-        id: ShapeId::default(),
-        z: i32::try_from(doc.len())
-            .map_err(|error| TestSupportError::z_order_overflow("z-ordering", error))?,
-        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
-        path: gauss::model::PathGeom {
-            anchors: vec![
-                gauss::model::Anchor::new(min),
-                gauss::model::Anchor::new(Vec2::new(max.x, min.y)),
-                gauss::model::Anchor::new(max),
-                gauss::model::Anchor::new(Vec2::new(min.x, max.y)),
-            ],
-            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
-            closed: true,
-            closing_segment: SegmentKind::Line,
-        },
-    };
-    Ok(doc.append_shape(shape))
-}
 
 fn require_shape<'a>(
     doc: &'a Document,

@@ -152,15 +152,9 @@ mod tests {
     //! Tests for SVG export output.
 
     use super::*;
-    use crate::model::{Anchor, PaintStyle, PathGeom, Shape, ShapeId, Vec2};
+    use crate::model::{Anchor, PaintStyle, PathGeom, Shape, Vec2};
+    use crate::test_helpers::shape_id_from_seed as shape_id;
     use rstest::rstest;
-
-    const TEST_ID_VERSION: u32 = 0xffff_fffe;
-
-    fn shape_id(seed: u32) -> ShapeId {
-        let raw = (u64::from(TEST_ID_VERSION) << 32) | u64::from(seed);
-        ShapeId::from_accesskit_node_id(raw)
-    }
 
     #[rstest]
     fn exports_empty_document_with_valid_svg_root() {

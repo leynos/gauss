@@ -1,8 +1,9 @@
 # Implement Stable ID Generation (0.2.2)
 
-This ExecPlan is a living document. The sections `Constraints`, `Tolerances`,
-`Risks`, `Progress`, `Surprises & Discoveries`, `Decision Log`, and
-`Outcomes & Retrospective` must be kept up to date as work proceeds.
+This Execution Plan (ExecPlan) is a living document. The sections
+`Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
+`Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
+proceeds.
 
 Status: COMPLETE
 
@@ -12,10 +13,11 @@ No `PLANS.md` exists in this repository.
 
 Gauss needs stable, generational IDs for document objects so that the same
 objects keep the same identifiers across frames, which is required for the
-future AccessKit accessibility tree. Success is observable when document
-objects are created with generational IDs, those IDs remain stable across UI
-frames and reorder operations, and tests (unit, BDD, and GPUI integration)
-prove the stability and regeneration behaviour.
+future AccessKit (the accessibility toolkit used by GPUI, the GPU-accelerated
+UI framework) accessibility tree. Success is observable when document objects
+are created with generational IDs, those IDs remain stable across UI frames and
+reorder operations, and tests (unit, behaviour-driven development (BDD), and
+GPUI integration) prove the stability and regeneration behaviour.
 
 ## Constraints
 
@@ -67,9 +69,10 @@ prove the stability and regeneration behaviour.
   `u64` node IDs. Severity: medium Likelihood: medium Mitigation: add explicit
   conversion helpers and tests that lock the mapping.
 
-- Risk: Code Graph MCP is unavailable in this environment.
-  Severity: low Likelihood: high Mitigation: fall back to `rg` and manual code
-  inspection; record this in `Surprises & Discoveries` if it happens.
+- Risk: Code Graph Model Context Protocol (MCP) is unavailable in this
+  environment. Severity: low Likelihood: high Mitigation: fall back to `rg` and
+  manual code inspection; record this in `Surprises & Discoveries` if it
+  happens.
 
 ## Progress
 
@@ -138,11 +141,13 @@ Stage A: confirm scope and choose approach (no code changes)
 
 - Read `docs/gauss-architecture-design.md` section 5.1 and confirm the stable
   ID expectations for document objects and AccessKit node IDs.
-- Use Code Graph MCP if available; if not, document the absence and use
-  `rg -n "ShapeId"` and `rg -n "Document"` to list all impacted files.
+- Use Code Graph Model Context Protocol (MCP) if available; if not, document
+  the absence and use `rg -n "ShapeId"` and `rg -n "Document"` to list all
+  impacted files.
 - Decide whether to use `slotmap` or `generational-arena` based on the
   requirement and ergonomics for ordering. Record the decision in
-  `docs/gauss-architecture-design.md` (and optionally an ADR entry if created).
+  `docs/gauss-architecture-design.md` (and optionally an Architecture Decision
+  Record (ADR) entry if created).
 - Define how a `ShapeId` (generational) maps to an AccessKit `u64` node ID.
 
 Go/no-go: if the scope demands a full node tree redesign beyond shape IDs, stop
