@@ -228,7 +228,9 @@ opaque newtypes to prevent mixing.
 document allocates IDs via a `SlotMap` registry and keeps them stable across
 reorder and undo. AccessKit node IDs are derived using the key's `as_ffi`
 representation and reconstructed via `from_ffi`, providing stable, reversible
-mapping between document objects and a11y nodes.
+mapping between document objects and a11y nodes. See ADR 003
+(`docs/adr-003-slotmap-shapeid-accesskit-id-mapping.md`) for the decision
+record.
 
 ### 5.2 Two kinds of state
 

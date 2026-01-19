@@ -33,6 +33,8 @@ impl ShapeId {
     }
 
     /// Reconstruct a shape ID from an AccessKit node identifier.
+    ///
+    /// The `raw` value must originate from [`ShapeId::to_accesskit_node_id`].
     #[must_use]
     pub fn from_accesskit_node_id(raw: u64) -> Self {
         KeyData::from_ffi(raw).into()

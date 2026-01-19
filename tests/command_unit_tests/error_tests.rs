@@ -197,7 +197,9 @@ fn inverse_apply_fails_when_document_state_changes(mut doc_with_two_shapes: Docu
 
     // Mutate the document into an invalid state: remove the shape the inverse
     // expects to operate on.
-    let _ = doc_with_two_shapes.remove_shape_by_id(target_id);
+    doc_with_two_shapes
+        .remove_shape_by_id(target_id)
+        .expect("expected to remove target shape");
 
     // Applying the inverse should now fail instead of silently corrupting state.
     let err = inverse
