@@ -33,9 +33,7 @@ fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
     dir.write(file_name.as_path(), svg.as_bytes())
         .expect("test SVG file should be writable");
     let cleanup = TempFileGuard::new_with_path(dir, file_name, svg_path);
-    let Some(svg_path_ref) = cleanup.path() else {
-        panic!("temp file path should be set");
-    };
+    let svg_path_ref = cleanup.path().expect("temp file path should be set");
 
     assert!(
         !cx.did_prompt_for_new_path(),
