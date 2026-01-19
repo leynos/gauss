@@ -292,7 +292,7 @@ fn apply_reorder(doc: &mut Document, shape: ShapeId, from: usize, to: usize) {
         return;
     }
 
-    if doc.len() <= from || to >= doc.len() {
+    if doc.len() <= from || to > doc.len() {
         return;
     }
 

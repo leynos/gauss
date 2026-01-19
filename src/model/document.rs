@@ -157,12 +157,13 @@ impl Document {
             return true;
         }
 
-        if from >= self.shapes.len() || to >= self.shapes.len() {
+        if from >= self.shapes.len() || to > self.shapes.len() {
             return false;
         }
 
         let shape = self.shapes.remove(from);
-        self.shapes.insert(to, shape);
+        let insert_at = std::cmp::min(to, self.shapes.len());
+        self.shapes.insert(insert_at, shape);
         true
     }
 

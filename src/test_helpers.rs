@@ -2,9 +2,13 @@
 
 use crate::model::ShapeId;
 
-const TEST_ID_VERSION: u64 = 0xffff_fffe;
+/// The AccessKit test ID version used for deterministic fixtures.
+pub const TEST_ID_VERSION: u64 = 0xffff_fffe;
 
 /// Create a deterministic `ShapeId` from a seed value.
+///
+/// The low 32 bits of the seed are used to avoid collisions when values exceed
+/// `u32::MAX`.
 ///
 /// # Examples
 ///
@@ -15,7 +19,7 @@ const TEST_ID_VERSION: u64 = 0xffff_fffe;
 /// ```
 #[must_use]
 pub fn shape_id_from_seed(seed: u128) -> ShapeId {
-    let idx = u32::try_from(seed).unwrap_or(u32::MAX);
+    let idx = u32::try_from(seed & u128::from(u32::MAX)).unwrap_or(u32::MAX);
     let raw = (TEST_ID_VERSION << 32) | u64::from(idx);
     ShapeId::from_accesskit_node_id(raw)
 }

@@ -62,16 +62,15 @@ pub fn apply_insert_shape(
         )));
     }
 
-    if doc
+    let _shape_id = doc
         .insert_shape(insertion.index, insertion.shape.clone())
-        .is_none()
-    {
-        return Err(UserError::InvalidOperation(format!(
-            "shape insertion index {} out of range (len = {})",
-            insertion.index,
-            doc.len()
-        )));
-    }
+        .ok_or_else(|| {
+            UserError::InvalidOperation(format!(
+                "insert_shape failed for index {} (len = {})",
+                insertion.index,
+                doc.len()
+            ))
+        })?;
 
     Ok(CommandInverse::RemoveShape {
         command_name,
@@ -100,6 +99,12 @@ pub fn apply_remove_shape(doc: &mut Document, insertion: &ShapeInsertion) -> Res
         )));
     }
 
-    let _ = doc.remove_shape(insertion.index);
+    doc.remove_shape(insertion.index).ok_or_else(|| {
+        UserError::InvalidOperation(format!(
+            "remove_shape failed for index {} (len = {})",
+            insertion.index,
+            doc.len()
+        ))
+    })?;
     Ok(())
 }

@@ -78,8 +78,7 @@ fn document_contains_same_ids(world: &IdWorld) -> TestSupportResult<()> {
 
 #[when("I append a shape")]
 fn append_shape(world: &mut IdWorld) {
-    world.original_ids.clear();
-    append_shapes(world, 1, false);
+    append_shapes(world, 1, true);
 }
 
 #[when("I convert the shape id to an AccessKit node id")]
