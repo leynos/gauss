@@ -19,7 +19,13 @@ pub const TEST_ID_VERSION: u64 = 0xffff_fffe;
 /// ```
 #[must_use]
 pub fn shape_id_from_seed(seed: u128) -> ShapeId {
-    let idx = u32::try_from(seed & u128::from(u32::MAX)).unwrap_or(u32::MAX);
+    let masked = seed & u128::from(u32::MAX);
+    // Masking constrains the value to the `u32` range; clippy cannot infer it.
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "masking limits the value to the u32 range"
+    )]
+    let idx = masked as u32;
     let raw = (TEST_ID_VERSION << 32) | u64::from(idx);
     ShapeId::from_accesskit_node_id(raw)
 }

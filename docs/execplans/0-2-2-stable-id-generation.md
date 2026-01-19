@@ -257,9 +257,10 @@ Avoid destructive commands such as `git reset --hard`.
 
 Expected new or modified artifacts:
 
-- `src/model/stable_id.rs` (or equivalent) for generational ID definitions.
+- `src/model/stable_id.rs` (or the chosen equivalent) for generational ID
+  definitions.
 - Updated `src/model/path.rs` and `src/model/document.rs`.
-- New tests under `tests/` and/or `crates/test_support/`.
+- New tests under `tests/` or `crates/test_support/` (as appropriate).
 - Updated `docs/gauss-architecture-design.md` decision entry.
 - Updated `docs/roadmap.md` entry for 0.2.2.
 - Updated `docs/users-guide.md` if applicable.

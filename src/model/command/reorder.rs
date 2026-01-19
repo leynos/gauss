@@ -96,13 +96,17 @@ fn reorder_ops(
                 return ops;
             };
             for index in (0..last_movable).rev() {
-                planner.try_reorder(index, index + 1);
+                if !planner.try_reorder(index, index + 1) {
+                    break;
+                }
             }
         }
         ReorderDirection::Lower => {
             let shape_count = planner.working.len();
             for index in 1..shape_count {
-                planner.try_reorder(index, index - 1);
+                if !planner.try_reorder(index, index - 1) {
+                    break;
+                }
             }
         }
     }
@@ -117,19 +121,19 @@ struct ReorderPlanner<'a> {
 }
 
 impl ReorderPlanner<'_> {
-    fn try_reorder(&mut self, from: usize, to: usize) {
+    fn try_reorder(&mut self, from: usize, to: usize) -> bool {
         let Some(shape) = self.working.shape_at(from) else {
-            return;
+            return false;
         };
         if !self.selected.contains(&shape.id) {
-            return;
+            return true;
         }
 
         let Some(other_shape) = self.working.shape_at(to) else {
-            return;
+            return false;
         };
         if self.selected.contains(&other_shape.id) {
-            return;
+            return true;
         }
 
         let op = ReorderOp {
@@ -137,8 +141,11 @@ impl ReorderPlanner<'_> {
             from_index: from,
             to_index: to,
         };
-        let _ = self.working.reorder(from, to);
-        self.ops.push(op);
+        if self.working.reorder(from, to) {
+            self.ops.push(op);
+            return true;
+        }
+        false
     }
 }
 
