@@ -5103,9 +5103,9 @@ dependencies = [
 
 [[package]]
 name = "rstest-bdd"
-version = "0.3.0"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ba31adad257da60b8ff09eab6892baf0717d4b7941fed413afb87b8b57cb1dd"
+checksum = "b7451d147800bd8b0b8621116a2c553b13408f2b7914a5b818eccaa37240ed9a"
 dependencies = [
  "ctor 0.2.9",
  "derive_more",
@@ -5150,10 +5150,11 @@ dependencies = [
 
 [[package]]
 name = "rstest-bdd-patterns"
-version = "0.3.0"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b6c9f3f3de341bdc0b9a51a6cfe2f947a59b696141e68cc9c4bc03d066a78c6"
+checksum = "59a52766aaee3793eec30ff351a5ebddba34dddab8500b18891cddece364a66d"
 dependencies = [
+ "gherkin",
  "regex",
  "thiserror 1.0.69",
 ]
