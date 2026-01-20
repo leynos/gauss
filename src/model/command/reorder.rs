@@ -91,27 +91,31 @@ fn reorder_ops(
     };
 
     match direction {
-        ReorderDirection::Raise => {
-            let Some(last_movable) = planner.working.len().checked_sub(1) else {
-                return ops;
-            };
-            for index in (0..last_movable).rev() {
-                if !planner.try_reorder(index, index + 1) {
-                    break;
-                }
-            }
-        }
-        ReorderDirection::Lower => {
-            let shape_count = planner.working.len();
-            for index in 1..shape_count {
-                if !planner.try_reorder(index, index - 1) {
-                    break;
-                }
-            }
-        }
+        ReorderDirection::Raise => reorder_raise(&mut planner),
+        ReorderDirection::Lower => reorder_lower(&mut planner),
     }
 
     ops
+}
+
+fn reorder_raise(planner: &mut ReorderPlanner) {
+    let Some(last_movable) = planner.working.len().checked_sub(1) else {
+        return;
+    };
+    for index in (0..last_movable).rev() {
+        if !planner.try_reorder(index, index + 1) {
+            break;
+        }
+    }
+}
+
+fn reorder_lower(planner: &mut ReorderPlanner) {
+    let shape_count = planner.working.len();
+    for index in 1..shape_count {
+        if !planner.try_reorder(index, index - 1) {
+            break;
+        }
+    }
 }
 
 struct ReorderPlanner<'a> {
