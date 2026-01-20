@@ -30,8 +30,12 @@ impl Document {
     }
 
     /// Return the number of shapes in the document.
+    #[expect(
+        clippy::missing_const_for_fn,
+        reason = "Vec::len() is not const in stable Rust"
+    )]
     #[must_use]
-    pub const fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.shapes.len()
     }
 
@@ -46,8 +50,12 @@ impl Document {
     }
 
     /// Return whether the document contains no shapes.
+    #[expect(
+        clippy::missing_const_for_fn,
+        reason = "Vec::is_empty() is not const in stable Rust"
+    )]
     #[must_use]
-    pub const fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.shapes.is_empty()
     }
 

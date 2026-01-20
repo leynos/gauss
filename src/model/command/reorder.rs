@@ -76,13 +76,13 @@ fn reorder_ops(
     selected: &[ShapeId],
     direction: ReorderDirection,
 ) -> Vec<ReorderOp> {
+    if doc.len() < 2 {
+        return Vec::new();
+    }
+
     let mut working = doc.clone();
     let mut ops = Vec::new();
     let selected_set: HashSet<ShapeId> = selected.iter().copied().collect();
-
-    if working.len() < 2 {
-        return ops;
-    }
 
     let mut planner = ReorderPlanner {
         working: &mut working,
@@ -153,7 +153,7 @@ impl ReorderPlanner<'_> {
     }
 }
 
-const fn is_valid_reorder_op(op: &ReorderOp, doc: &Document) -> bool {
+fn is_valid_reorder_op(op: &ReorderOp, doc: &Document) -> bool {
     if op.from_index == op.to_index {
         return false;
     }

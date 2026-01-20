@@ -66,7 +66,7 @@ GPUI integration) prove the stability and regeneration behaviour.
   sites in one focused commit.
 
 - Risk: GPUI tests assume deterministic IDs via `Uuid`; refactoring may break
-  test fixtures. Severity: medium Likelihood: high Mitigation: create
+  test fixtures. Severity: medium. Likelihood: high. Mitigation: create
   deterministic test helpers for stable IDs and update fixtures to use them.
 
 - Risk: AccessKit ID stability requires a clear mapping from document IDs to

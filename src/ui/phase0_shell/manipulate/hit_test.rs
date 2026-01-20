@@ -185,6 +185,9 @@ pub(super) fn hit_test_topmost_shape(
         })
 }
 
+/// Iterate shapes in draw order, yielding `(index, &Shape)` pairs.
+///
+/// The index is compatible with [`Document::shape_at`] and [`Document::shape_at_mut`].
 fn iter_shapes_in_draw_order(doc: &Document) -> impl DoubleEndedIterator<Item = (usize, &Shape)> {
     doc.iter_in_draw_order().enumerate()
 }
