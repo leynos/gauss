@@ -187,6 +187,7 @@ impl Document {
         if self.active_ids.contains(&shape.id) {
             let id = self.allocate_shape_id();
             shape.id = id;
+            let _active = self.active_ids.insert(id);
             return id;
         }
 

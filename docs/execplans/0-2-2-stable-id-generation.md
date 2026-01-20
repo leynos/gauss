@@ -70,12 +70,12 @@ GPUI integration) prove the stability and regeneration behaviour.
   deterministic test helpers for stable IDs and update fixtures to use them.
 
 - Risk: AccessKit ID stability requires a clear mapping from document IDs to
-  `u64` node IDs. Severity: medium Likelihood: medium Mitigation: add explicit
+  `u64` node IDs. Severity: medium. Likelihood: medium. Mitigation: add explicit
   conversion helpers and tests that lock the mapping.
 
 - Risk: Code Graph Model Context Protocol (MCP) is unavailable in this
-  environment. Severity: low Likelihood: high Mitigation: fall back to `rg` and
-  manual code inspection; record this in `Surprises & Discoveries` if it
+  environment. Severity: low. Likelihood: high. Mitigation: fall back to `rg`
+  and manual code inspection; record this in `Surprises & Discoveries` if it
   happens.
 
 ## Progress
