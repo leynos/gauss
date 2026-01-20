@@ -95,9 +95,9 @@ phases depend upon. See architecture document §20.
 - [x] 0.2.1. Consolidate engine state.
   - [x] Unify document, selection, viewport, and resources into `EngineState`.
   - [x] Ensure single source of truth per guiding principle §2.
-- [ ] 0.2.2. Implement stable ID generation.
-  - [ ] Use generational IDs (`slotmap` or similar). See architecture §5.1.
-  - [ ] Ensure IDs are stable across frames for AccessKit.
+- [x] 0.2.2. Implement stable ID generation.
+  - [x] Use generational IDs (`slotmap` or similar). See architecture §5.1.
+  - [x] Ensure IDs are stable across frames for AccessKit.
 - [ ] 0.2.3. Define resource stores.
   - [ ] `StyleStore`, `ResourceStore` for gradients, patterns, symbols.
   - [ ] Prepare for Phase 4 colour and effects features.

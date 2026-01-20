@@ -22,7 +22,7 @@ pub(super) fn start_handle_drag(
     hit: HandleHit,
     cursor_world: Vec2,
 ) -> Option<HandleDragState> {
-    let shape = doc.shapes.get(hit.shape_index)?;
+    let shape = doc.shape_at(hit.shape_index)?;
     if shape.id != hit.shape_id {
         return None;
     }
@@ -79,7 +79,7 @@ pub(super) fn finish_handle_drag(
 }
 
 fn apply_handle_drag_to_doc(doc: &mut Document, drag: &HandleDragState, delta: Vec2) -> bool {
-    let Some(shape) = doc.shapes.get_mut(drag.shape_index) else {
+    let Some(shape) = doc.shape_at_mut(drag.shape_index) else {
         return false;
     };
     if shape.id != drag.shape {

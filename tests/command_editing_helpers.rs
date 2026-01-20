@@ -37,7 +37,7 @@ pub fn shape_with_three_anchors(id: ShapeId) -> Shape {
 /// Fetch a shape by index from a document.
 #[must_use]
 pub fn shape_at(doc: &Document, index: usize) -> Option<&Shape> {
-    doc.shapes.get(index)
+    doc.shape_at(index)
 }
 
 /// Fetch an anchor by index from a shape.

@@ -24,7 +24,7 @@ use crate::model::{Document, Rgba, SegmentKind, format_hex_rgb};
 pub fn export_svg(doc: &Document, canvas_width: f32, canvas_height: f32) -> String {
     let mut out = String::new();
     write_svg_header(&mut out, canvas_width, canvas_height);
-    for shape in &doc.shapes {
+    for shape in doc.iter_in_draw_order() {
         write_shape_path(&mut out, shape);
     }
     out.push_str("</svg>\n");
@@ -152,9 +152,9 @@ mod tests {
     //! Tests for SVG export output.
 
     use super::*;
-    use crate::model::{Anchor, PaintStyle, PathGeom, Shape, ShapeId, Vec2};
+    use crate::model::{Anchor, PaintStyle, PathGeom, Shape, Vec2};
+    use crate::test_helpers::shape_id_from_seed as shape_id;
     use rstest::rstest;
-    use uuid::Uuid;
 
     #[rstest]
     fn exports_empty_document_with_valid_svg_root() {
@@ -167,7 +167,7 @@ mod tests {
     #[rstest]
     fn exports_simple_line_path() {
         let shape = Shape {
-            id: ShapeId::from(Uuid::from_u128(1)),
+            id: shape_id(1),
             z: 0,
             style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None),
             path: PathGeom {
@@ -181,9 +181,8 @@ mod tests {
             },
         };
 
-        let doc = Document {
-            shapes: vec![shape],
-        };
+        let mut doc = Document::new();
+        doc.append_shape(shape);
         let svg = export_svg(&doc, 10.0, 10.0);
 
         assert!(svg.contains(r#"d="M 1 2 L 3 4""#));
@@ -195,7 +194,7 @@ mod tests {
     #[rstest]
     fn exports_opacity_when_alpha_is_not_opaque() {
         let shape = Shape {
-            id: ShapeId::from(Uuid::from_u128(2)),
+            id: shape_id(2),
             z: 0,
             style: PaintStyle::new(
                 Some(Rgba::new(255, 0, 0, 128)),
@@ -213,9 +212,8 @@ mod tests {
             },
         };
 
-        let doc = Document {
-            shapes: vec![shape],
-        };
+        let mut doc = Document::new();
+        doc.append_shape(shape);
         let svg = export_svg(&doc, 10.0, 10.0);
 
         assert!(svg.contains(r#"stroke-opacity=""#));

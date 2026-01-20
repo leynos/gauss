@@ -213,8 +213,7 @@ enum HistoryOp {
 fn apply_move_to_first_shape(shell: &mut Phase0Shell) {
     let id = shell
         .document()
-        .shapes
-        .first()
+        .shape_at(0)
         .expect("demo document has at least one shape")
         .id;
     let command = Command::MoveShapes {
@@ -244,7 +243,7 @@ fn assert_history_op_fails_with_error(
 
     // Clear shapes to invalidate the operation.
     update_shell(visual_cx, view, |shell| {
-        shell.document_mut_for_tests().shapes.clear();
+        shell.document_mut_for_tests().clear();
     });
 
     // Trigger the history operation—should fail because the shape no longer exists.

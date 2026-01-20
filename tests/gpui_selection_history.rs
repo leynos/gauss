@@ -38,7 +38,7 @@ fn selection_undo_uses_shift_modified_stack(cx: &mut TestAppContext) {
     let doc_before = visual_cx.read(|app| view.read(app).document().clone());
     let draw_shape = require_draw_shape(&doc_before, "after drawing")
         .expect("expected draw shape after drawing");
-    let shapes_len_before = doc_before.shapes.len();
+    let shapes_len_before = doc_before.len();
 
     simulate_escape(visual_cx);
 
@@ -85,7 +85,7 @@ fn selection_undo_uses_shift_modified_stack(cx: &mut TestAppContext) {
 
     let doc_after = visual_cx.read(|app| view.read(app).document().clone());
     assert_eq!(
-        doc_after.shapes.len(),
+        doc_after.len(),
         shapes_len_before,
         "selection undo/redo should not change the document"
     );

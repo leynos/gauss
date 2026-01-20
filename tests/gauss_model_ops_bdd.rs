@@ -34,7 +34,7 @@ fn empty_document(world: &mut DocWorld) {
 #[when("I insert a shape")]
 fn insert_shape(world: &mut DocWorld) {
     let shape = Shape {
-        id: ShapeId::new_v4(),
+        id: ShapeId::default(),
         z: 0,
         style: PaintStyle::new(None, 1.0, None),
         path: PathGeom::new(),
@@ -60,7 +60,7 @@ fn undo_insertion(world: &mut DocWorld) -> TestSupportResult<()> {
 #[when("I add a closed triangle path")]
 fn add_closed_triangle(world: &mut DocWorld) {
     let shape = Shape {
-        id: ShapeId::new_v4(),
+        id: ShapeId::default(),
         z: 0,
         style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None),
         path: PathGeom {
@@ -74,7 +74,7 @@ fn add_closed_triangle(world: &mut DocWorld) {
             closing_segment: SegmentKind::Line,
         },
     };
-    world.doc.shapes.push(shape);
+    world.doc.append_shape(shape);
 }
 
 #[when("I export the document as an SVG")]
@@ -85,10 +85,10 @@ fn export_document_as_svg(world: &mut DocWorld) {
 
 #[then("the document contains {count:usize} shapes")]
 fn document_contains_shapes(world: &DocWorld, count: usize) -> TestSupportResult<()> {
-    if world.doc.shapes.len() != count {
+    if world.doc.len() != count {
         return Err(TestSupportError::expectation(format!(
             "expected {count} shapes, got {}",
-            world.doc.shapes.len()
+            world.doc.len()
         )));
     }
     Ok(())

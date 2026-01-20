@@ -29,7 +29,7 @@ pub(super) fn apply_set_style(
     // Apply changes (safe now that all shapes are validated).
     for change in changes {
         let shape = doc
-            .get_mut(change.shape_id)
+            .shape_mut(change.shape_id)
             .ok_or(UserError::ShapeNotFound(change.shape_id))?;
         shape.style = change.to.clone();
     }
@@ -72,7 +72,7 @@ pub(super) fn apply_restore_styles(
     // Apply changes (safe now that all shapes are validated).
     for change in changes {
         let shape = doc
-            .get_mut(change.shape_id)
+            .shape_mut(change.shape_id)
             .ok_or(UserError::ShapeNotFound(change.shape_id))?;
         shape.style = change.to.clone();
     }

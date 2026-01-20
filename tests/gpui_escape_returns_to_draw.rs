@@ -11,7 +11,7 @@ use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, TestAppContext, VisualTestContext, point, px};
 
 fn read_shape_count(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> usize {
-    visual_cx.read(|app| view.read(app).document().shapes.len())
+    visual_cx.read(|app| view.read(app).document().len())
 }
 
 #[gpui::test]

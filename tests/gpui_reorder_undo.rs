@@ -33,12 +33,11 @@ fn selected_shape_id(selection: &Selection) -> Option<ShapeId> {
 }
 
 fn require_drawn_shape_ids(doc: &Document) -> TestSupportResult<(ShapeId, ShapeId)> {
-    let demo_id = demo_shape_id();
+    let demo_id = demo_shape_id(doc)
+        .ok_or_else(|| TestSupportError::missing("demo shape", "after drawing"))?;
     let mut ids = doc
-        .shapes
-        .iter()
-        .filter(|shape| shape.id != demo_id)
-        .map(|shape| shape.id);
+        .iter_ids_in_draw_order()
+        .filter(|shape_id| *shape_id != demo_id);
 
     let first = ids
         .next()
@@ -52,6 +51,13 @@ fn require_drawn_shape_ids(doc: &Document) -> TestSupportResult<(ShapeId, ShapeI
         ));
     }
     Ok((first, second))
+}
+
+fn require_sorted_drawn_shape_ids(doc: &Document) -> TestSupportResult<Vec<ShapeId>> {
+    let (first, second) = require_drawn_shape_ids(doc)?;
+    let mut ids = vec![first, second];
+    ids.sort_by_key(|id| id.to_accesskit_node_id());
+    Ok(ids)
 }
 
 fn require_shape_index(
@@ -130,6 +136,8 @@ fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
 
     let doc = read_document(visual_cx, &view);
     let (a, b) = require_drawn_shape_ids(&doc).expect("expected two drawn shapes");
+    let expected_ids =
+        require_sorted_drawn_shape_ids(&doc).expect("expected stable drawn shape ids");
     let (lower, higher) =
         ordered_pair(&doc, a, b, "after drawing").expect("expected to order shapes by index");
     assert_relative_order(&doc, lower, higher, "after drawing")
@@ -148,6 +156,12 @@ fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
 
     simulate_key(visual_cx, "[", Modifiers::secondary_key());
     let doc_after_lower = read_document(visual_cx, &view);
+    let ids_after_lower = require_sorted_drawn_shape_ids(&doc_after_lower)
+        .expect("expected shape ids after lowering to remain stable");
+    assert_eq!(
+        ids_after_lower, expected_ids,
+        "expected shape ids to remain stable after lowering"
+    );
     assert_relative_order(
         &doc_after_lower,
         higher,
@@ -158,6 +172,12 @@ fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
 
     simulate_key(visual_cx, "]", Modifiers::secondary_key());
     let doc_after_raise = read_document(visual_cx, &view);
+    let ids_after_raise = require_sorted_drawn_shape_ids(&doc_after_raise)
+        .expect("expected shape ids after raising to remain stable");
+    assert_eq!(
+        ids_after_raise, expected_ids,
+        "expected shape ids to remain stable after raising"
+    );
     assert_relative_order(&doc_after_raise, lower, higher, "after raising back to top")
         .expect("expected order after raising back to top");
 

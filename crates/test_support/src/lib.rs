@@ -5,6 +5,7 @@ use std::{io, result};
 
 use thiserror::Error;
 
+pub mod fixtures;
 pub mod math;
 pub mod shapes;
 

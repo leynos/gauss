@@ -7,15 +7,14 @@
 mod common;
 
 use common::{canvas_bounds, ensure_initial_draw, init_test_app};
-use gauss::model::{PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
+use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 use test_support::math;
-use uuid::Uuid;
 
-fn demo_square(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
+fn demo_square(min: Vec2, max: Vec2) -> Shape {
     Shape {
-        id,
+        id: ShapeId::default(),
         z: 0,
         style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
         path: gauss::model::PathGeom {
@@ -42,7 +41,6 @@ fn clicking_inside_shape_bbox_selects_shape(cx: &mut TestAppContext) {
     let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
 
     let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
-    let shape_id = ShapeId::from(Uuid::from_u128(0x4444_4444_4444_4444_4444_4444_4444_4444));
 
     // Place a square far enough from the click point that segment hit-testing
     // should not trigger (we click the square's centre, not near edges).
@@ -50,11 +48,11 @@ fn clicking_inside_shape_bbox_selects_shape(cx: &mut TestAppContext) {
     let max = origin.add(Vec2::new(160.0, 160.0));
     let centre = Vec2::new(math::midpoint(min.x, max.x), math::midpoint(min.y, max.y));
 
+    let mut doc = Document::new();
+    let shape_id = doc.append_shape(demo_square(min, max));
+
     visual_cx.update(|_window, app| {
         view.update(app, |shell, view_cx| {
-            let mut doc = shell.document().clone();
-            doc.shapes.push(demo_square(shape_id, min, max));
-
             shell.enter_manipulate_mode_for_tests();
             shell.replace_document_for_tests(doc);
             shell.replace_selection_for_tests(gauss::model::Selection::empty());

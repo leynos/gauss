@@ -28,7 +28,7 @@ pub(super) fn prepare_toggle_segment_kind(state: &EngineState) -> Result<Command
             return Err(UserError::ShapeNotFound(*shape));
         };
 
-        let Some(shape_data) = state.document.shapes.get(shape_index) else {
+        let Some(shape_data) = state.document.shape_at(shape_index) else {
             return Err(UserError::ShapeNotFound(*shape));
         };
 
@@ -102,8 +102,7 @@ pub(super) fn apply_set_segment_kind(
             .find_index(change.shape_id)
             .ok_or(UserError::ShapeNotFound(change.shape_id))?;
         let shape = doc
-            .shapes
-            .get(idx)
+            .shape_at(idx)
             .ok_or(UserError::ShapeNotFound(change.shape_id))?;
         if shape.path.segments.get(change.segment_index).is_none() {
             return Err(UserError::SegmentNotFound(
@@ -116,7 +115,7 @@ pub(super) fn apply_set_segment_kind(
     // Apply changes (safe now that all shapes and segments are validated).
     for change in changes {
         let shape = doc
-            .get_mut(change.shape_id)
+            .shape_mut(change.shape_id)
             .ok_or(UserError::ShapeNotFound(change.shape_id))?;
         apply_segment_change_unchecked(shape, change);
     }
@@ -161,8 +160,7 @@ pub(super) fn apply_restore_segment_kinds(
             .find_index(change.shape_id)
             .ok_or(UserError::ShapeNotFound(change.shape_id))?;
         let shape = doc
-            .shapes
-            .get(idx)
+            .shape_at(idx)
             .ok_or(UserError::ShapeNotFound(change.shape_id))?;
         if shape.path.segments.get(change.segment_index).is_none() {
             return Err(UserError::SegmentNotFound(
@@ -175,7 +173,7 @@ pub(super) fn apply_restore_segment_kinds(
     // Apply changes (safe now that all shapes and segments are validated).
     for change in changes {
         let shape = doc
-            .get_mut(change.shape_id)
+            .shape_mut(change.shape_id)
             .ok_or(UserError::ShapeNotFound(change.shape_id))?;
         apply_segment_change_unchecked(shape, change);
     }

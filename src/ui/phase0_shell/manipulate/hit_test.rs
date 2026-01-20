@@ -87,9 +87,7 @@ pub(super) fn hit_test_topmost_handle(
     tolerance_world: f32,
 ) -> Option<HandleHit> {
     let tolerance_squared = tolerance_world * tolerance_world;
-    doc.shapes
-        .iter()
-        .enumerate()
+    iter_shapes_in_draw_order(doc)
         .rev()
         .find_map(|(shape_index, shape)| {
             shape
@@ -133,9 +131,7 @@ pub(super) fn hit_test_topmost_segment(
     tolerance_world: f32,
 ) -> Option<SegmentHit> {
     let tolerance_squared = tolerance_world * tolerance_world;
-    doc.shapes
-        .iter()
-        .enumerate()
+    iter_shapes_in_draw_order(doc)
         .rev()
         .find_map(|(shape_index, shape)| {
             find_best_segment_hit(shape, cursor_world, tolerance_squared).map(|seg_index| {
@@ -154,9 +150,7 @@ pub(super) fn hit_test_topmost_anchor(
     tolerance_world: f32,
 ) -> Option<AnchorHit> {
     let tolerance_squared = tolerance_world * tolerance_world;
-    doc.shapes
-        .iter()
-        .enumerate()
+    iter_shapes_in_draw_order(doc)
         .rev()
         .find_map(|(shape_index, shape)| {
             shape
@@ -181,9 +175,7 @@ pub(super) fn hit_test_topmost_shape(
     cursor_world: Vec2,
     tolerance_world: f32,
 ) -> Option<ShapeHit> {
-    doc.shapes
-        .iter()
-        .enumerate()
+    iter_shapes_in_draw_order(doc)
         .rev()
         .find_map(|(shape_index, shape)| {
             hit_test_shape_bbox(shape, cursor_world, tolerance_world).then_some(ShapeHit {
@@ -191,6 +183,13 @@ pub(super) fn hit_test_topmost_shape(
                 shape_id: shape.id,
             })
         })
+}
+
+/// Iterate shapes in draw order, yielding `(index, &Shape)` pairs.
+///
+/// The index is compatible with [`Document::shape_at`] and [`Document::shape_at_mut`].
+fn iter_shapes_in_draw_order(doc: &Document) -> impl DoubleEndedIterator<Item = (usize, &Shape)> {
+    doc.iter_in_draw_order().enumerate()
 }
 
 fn hit_test_shape_bbox(shape: &Shape, cursor_world: Vec2, tolerance_world: f32) -> bool {

@@ -138,8 +138,7 @@ impl Phase0Shell {
         let all_shapes: Vec<SelItem> = self
             .state
             .document
-            .shapes
-            .iter()
+            .iter_in_draw_order()
             .map(|shape| SelItem::Shape(shape.id))
             .collect();
 

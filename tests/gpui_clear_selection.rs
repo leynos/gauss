@@ -10,14 +10,13 @@
 mod common;
 
 use common::{click_left_and_wait, ensure_initial_draw, init_test_app, read_selection_items};
-use gauss::model::{PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
+use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{TestAppContext, point, px};
-use uuid::Uuid;
 
-fn demo_square(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
+fn demo_square(min: Vec2, max: Vec2) -> Shape {
     Shape {
-        id,
+        id: ShapeId::default(),
         z: 0,
         style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
         path: gauss::model::PathGeom {
@@ -47,17 +46,14 @@ fn clicking_empty_space_clears_selection(cx: &mut TestAppContext) {
     let width = f32::from(bounds.size.width);
     let height = f32::from(bounds.size.height);
 
-    let shape_id = ShapeId::from(Uuid::from_u128(0x3333_3333_3333_3333_3333_3333_3333_3333));
+    let mut doc = Document::new();
+    let shape_id = doc.append_shape(demo_square(
+        origin.add(Vec2::new(10.0, 10.0)),
+        origin.add(Vec2::new(60.0, 60.0)),
+    ));
 
     visual_cx.update(|_window, app| {
         view.update(app, |shell, view_cx| {
-            let mut doc = shell.document().clone();
-            doc.shapes.push(demo_square(
-                shape_id,
-                origin.add(Vec2::new(10.0, 10.0)),
-                origin.add(Vec2::new(60.0, 60.0)),
-            ));
-
             shell.enter_manipulate_mode_for_tests();
             shell.replace_document_for_tests(doc);
             shell.replace_selection_for_tests(gauss::model::Selection {

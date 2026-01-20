@@ -76,13 +76,13 @@ fn reorder_ops(
     selected: &[ShapeId],
     direction: ReorderDirection,
 ) -> Vec<ReorderOp> {
+    if doc.len() < 2 {
+        return Vec::new();
+    }
+
     let mut working = doc.clone();
     let mut ops = Vec::new();
     let selected_set: HashSet<ShapeId> = selected.iter().copied().collect();
-
-    if working.shapes.len() < 2 {
-        return ops;
-    }
 
     let mut planner = ReorderPlanner {
         working: &mut working,
@@ -91,23 +91,31 @@ fn reorder_ops(
     };
 
     match direction {
-        ReorderDirection::Raise => {
-            let Some(last_movable) = planner.working.shapes.len().checked_sub(1) else {
-                return ops;
-            };
-            for index in (0..last_movable).rev() {
-                planner.try_reorder(index, index + 1);
-            }
-        }
-        ReorderDirection::Lower => {
-            let shape_count = planner.working.shapes.len();
-            for index in 1..shape_count {
-                planner.try_reorder(index, index - 1);
-            }
-        }
+        ReorderDirection::Raise => reorder_raise(&mut planner),
+        ReorderDirection::Lower => reorder_lower(&mut planner),
     }
 
     ops
+}
+
+fn reorder_raise(planner: &mut ReorderPlanner) {
+    let Some(last_movable) = planner.working.len().checked_sub(1) else {
+        return;
+    };
+    for index in (0..last_movable).rev() {
+        if !planner.try_reorder(index, index + 1) {
+            break;
+        }
+    }
+}
+
+fn reorder_lower(planner: &mut ReorderPlanner) {
+    let shape_count = planner.working.len();
+    for index in 1..shape_count {
+        if !planner.try_reorder(index, index - 1) {
+            break;
+        }
+    }
 }
 
 struct ReorderPlanner<'a> {
@@ -117,19 +125,19 @@ struct ReorderPlanner<'a> {
 }
 
 impl ReorderPlanner<'_> {
-    fn try_reorder(&mut self, from: usize, to: usize) {
-        let Some(shape) = self.working.shapes.get(from) else {
-            return;
+    fn try_reorder(&mut self, from: usize, to: usize) -> bool {
+        let Some(shape) = self.working.shape_at(from) else {
+            return false;
         };
         if !self.selected.contains(&shape.id) {
-            return;
+            return true;
         }
 
-        let Some(other_shape) = self.working.shapes.get(to) else {
-            return;
+        let Some(other_shape) = self.working.shape_at(to) else {
+            return false;
         };
         if self.selected.contains(&other_shape.id) {
-            return;
+            return true;
         }
 
         let op = ReorderOp {
@@ -137,26 +145,26 @@ impl ReorderPlanner<'_> {
             from_index: from,
             to_index: to,
         };
-        let moved_shape = self.working.shapes.remove(from);
-        self.working.shapes.insert(to, moved_shape);
-        self.ops.push(op);
+        if self.working.reorder(from, to) {
+            self.ops.push(op);
+            return true;
+        }
+        false
     }
 }
 
-const fn is_valid_reorder_op(op: &ReorderOp, doc: &Document) -> bool {
+fn is_valid_reorder_op(op: &ReorderOp, doc: &Document) -> bool {
     if op.from_index == op.to_index {
         return false;
     }
 
-    op.from_index < doc.shapes.len() && op.to_index <= doc.shapes.len()
+    op.from_index < doc.len() && op.to_index < doc.len()
 }
 
 fn try_move_shape(doc: &mut Document, op: &ReorderOp) -> bool {
     match doc.find_index(op.shape_id) {
         Some(actual_from) if actual_from == op.from_index => {
-            let shape = doc.shapes.remove(op.from_index);
-            doc.shapes.insert(op.to_index, shape);
-            true
+            doc.reorder(op.from_index, op.to_index)
         }
         _ => false,
     }
@@ -179,7 +187,7 @@ pub(super) fn apply_reorder(
                 "invalid reorder: from {} to {} (doc len = {})",
                 op.from_index,
                 op.to_index,
-                doc.shapes.len()
+                doc.len()
             )));
         }
         if !try_move_shape(doc, op) {
@@ -224,7 +232,7 @@ pub(super) fn apply_reverse_reorder(
                 "invalid reverse reorder: from {} to {} (doc len = {})",
                 op.from_index,
                 op.to_index,
-                doc.shapes.len()
+                doc.len()
             )));
         }
         if !try_move_shape(doc, op) {

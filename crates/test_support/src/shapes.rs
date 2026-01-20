@@ -1,14 +1,14 @@
 //! Test helpers for creating shape fixtures.
 
 use gauss::model::{Anchor, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2};
-use uuid::Uuid;
+use gauss::test_helpers::shape_id_from_seed;
 
 /// Create a `ShapeId` from a seed value.
 ///
 /// Deterministic ID generation for test fixtures.
 #[must_use]
 pub fn shape_id(seed: u128) -> ShapeId {
-    ShapeId::from(Uuid::from_u128(seed))
+    shape_id_from_seed(seed)
 }
 
 /// Create a sample shape with the given ID and z-order.

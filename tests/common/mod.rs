@@ -12,14 +12,16 @@
 
 use camino::{Utf8Path, Utf8PathBuf};
 use cap_std::fs_utf8::Dir;
-use gauss::model::{Document, SelItem, Selection, Shape, ShapeId, Vec2};
+use gauss::model::{
+    Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, SelItem, Selection, Shape, ShapeId,
+    Vec2,
+};
 use gauss::ui::{GpuiRedo, GpuiSelectionRedo, GpuiSelectionUndo, GpuiUndo, Phase0Shell};
 use gpui::{
     Bounds, Entity, KeyDownEvent, Keystroke, Modifiers, MouseButton, Pixels, Point, TestAppContext,
     VisualTestContext, point, px,
 };
 use test_support::{TestSupportError, TestSupportResult};
-use uuid::Uuid;
 
 pub const CANVAS_PADDING_PX: f32 = 2.0;
 pub const MIN_CANVAS_HEIGHT_PX: f32 = 200.0;
@@ -73,8 +75,29 @@ pub fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
     visual_cx.run_until_parked();
 }
 
-pub fn demo_shape_id() -> ShapeId {
-    ShapeId::from(Uuid::from_u128(0x6d3c_0fb4_43a8_48f1_9f14_623a_70d5_2e1a))
+pub fn demo_shape_id(doc: &Document) -> Option<ShapeId> {
+    doc.shape_id_at(0)
+}
+
+pub fn add_square(doc: &mut Document, min: Vec2, max: Vec2) -> TestSupportResult<ShapeId> {
+    let shape = Shape {
+        id: ShapeId::default(),
+        z: i32::try_from(doc.len())
+            .map_err(|error| TestSupportError::z_order_overflow("z-ordering", error))?,
+        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
+        path: PathGeom {
+            anchors: vec![
+                Anchor::new(min),
+                Anchor::new(Vec2::new(max.x, min.y)),
+                Anchor::new(max),
+                Anchor::new(Vec2::new(min.x, max.y)),
+            ],
+            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
+            closed: true,
+            closing_segment: SegmentKind::Line,
+        },
+    };
+    Ok(doc.append_shape(shape))
 }
 
 pub fn canvas_bounds(visual_cx: &mut VisualTestContext) -> TestSupportResult<Bounds<Pixels>> {
@@ -181,8 +204,8 @@ pub fn read_selection_items(
 }
 
 pub fn find_draw_shape(doc: &Document) -> Option<&Shape> {
-    let demo_id = demo_shape_id();
-    doc.shapes.iter().find(|shape| shape.id != demo_id)
+    let demo_id = demo_shape_id(doc)?;
+    doc.iter_in_draw_order().find(|shape| shape.id != demo_id)
 }
 
 pub fn require_draw_shape<'a>(doc: &'a Document, context: &str) -> TestSupportResult<&'a Shape> {

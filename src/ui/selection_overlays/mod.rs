@@ -61,7 +61,7 @@ pub(super) fn compute_selection_overlays(
 ) -> SelectionOverlays {
     let mut overlays = SelectionOverlays::default();
     for shape_id in selected_shape_ids(selection) {
-        let Some(shape) = doc.shapes.iter().find(|shape| shape.id == shape_id) else {
+        let Some(shape) = doc.shape(shape_id) else {
             continue;
         };
 

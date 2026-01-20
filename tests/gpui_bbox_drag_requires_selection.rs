@@ -10,33 +10,11 @@
 
 mod common;
 
-use common::{canvas_bounds, ensure_initial_draw, init_test_app};
-use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
+use common::{add_square, canvas_bounds, ensure_initial_draw, init_test_app};
+use gauss::model::{Document, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, px};
 use test_support::{TestSupportError, TestSupportResult, math};
-use uuid::Uuid;
-
-fn add_square(doc: &mut Document, id: ShapeId, min: Vec2, max: Vec2) -> TestSupportResult<()> {
-    doc.shapes.push(Shape {
-        id,
-        z: i32::try_from(doc.shapes.len())
-            .map_err(|error| TestSupportError::z_order_overflow("z-ordering", error))?,
-        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
-        path: gauss::model::PathGeom {
-            anchors: vec![
-                gauss::model::Anchor::new(min),
-                gauss::model::Anchor::new(Vec2::new(max.x, min.y)),
-                gauss::model::Anchor::new(max),
-                gauss::model::Anchor::new(Vec2::new(min.x, max.y)),
-            ],
-            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
-            closed: true,
-            closing_segment: SegmentKind::Line,
-        },
-    });
-    Ok(())
-}
 
 fn require_shape<'a>(
     doc: &'a Document,
@@ -44,9 +22,7 @@ fn require_shape<'a>(
     context: &str,
 ) -> TestSupportResult<&'a Shape> {
     let message = format!("shape {id:?}: {context}");
-    doc.shapes
-        .iter()
-        .find(|shape| shape.id == id)
+    doc.shape(id)
         .ok_or_else(|| TestSupportError::missing("shape", message))
 }
 
@@ -102,14 +78,13 @@ fn bbox_dragging_requires_shape_to_be_preselected(cx: &mut TestAppContext) {
     let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
     let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
 
-    let shape_id = ShapeId::from(Uuid::from_u128(0x4444_4444_4444_4444_4444_4444_4444_4444));
     let min = origin.add(Vec2::new(10.0, 10.0));
     let max = origin.add(Vec2::new(110.0, 110.0));
+    let mut doc = Document::new();
+    let shape_id = add_square(&mut doc, min, max).expect("expected to build square shape");
 
     visual_cx.update(|_window, app| {
         view.update(app, |shell, view_cx| {
-            let mut doc = shell.document().clone();
-            add_square(&mut doc, shape_id, min, max).expect("expected to build square shape");
             shell.enter_manipulate_mode_for_tests();
             shell.replace_document_for_tests(doc);
             shell.replace_selection_for_tests(gauss::model::Selection::empty());

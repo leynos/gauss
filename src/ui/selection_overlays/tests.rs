@@ -2,19 +2,15 @@
 
 use super::*;
 use crate::model::{
-    Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, SelItem, Selection, Shape, ShapeId,
-    Vec2, Viewport,
+    Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, SelItem, Selection, Shape, Vec2,
+    Viewport,
 };
+use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::rstest;
-use uuid::Uuid;
-
-fn shape_id(value: u128) -> ShapeId {
-    ShapeId::from(Uuid::from_u128(value))
-}
 
 fn two_anchor_cubic_shape() -> Shape {
     Shape {
-        id: shape_id(0xaaaa_aaaa_aaaa_aaaa_aaaa_aaaa_aaaa_aaaa),
+        id: shape_id(0xaaaa_aaaa),
         z: 0,
         style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
         path: PathGeom {
@@ -64,9 +60,8 @@ fn bounds_are_finite(min_x: f32, min_y: f32, max_x: f32, max_y: f32) -> bool {
 #[rstest]
 fn selected_shape_overlays_include_anchor_and_handle_markers() {
     let shape = two_anchor_cubic_shape();
-    let doc = Document {
-        shapes: vec![shape.clone()],
-    };
+    let mut doc = Document::new();
+    doc.append_shape(shape.clone());
     let selection = Selection {
         items: vec![SelItem::Shape(shape.id)],
     };
@@ -143,9 +138,8 @@ fn selected_shape_overlays_include_anchor_and_handle_markers() {
 #[rstest]
 fn non_shape_selection_does_not_infer_parent_shape_overlays() {
     let shape = two_anchor_cubic_shape();
-    let doc = Document {
-        shapes: vec![shape.clone()],
-    };
+    let mut doc = Document::new();
+    doc.append_shape(shape.clone());
     let selection = Selection {
         items: vec![SelItem::HandleOut {
             shape: shape.id,
@@ -166,7 +160,7 @@ fn non_shape_selection_does_not_infer_parent_shape_overlays() {
 #[rstest]
 fn bbox_accounts_for_cubic_curve_extents() {
     let shape = Shape {
-        id: shape_id(0xbbbb_bbbb_bbbb_bbbb_bbbb_bbbb_bbbb_bbbb),
+        id: shape_id(0xbbbb_bbbb),
         z: 0,
         style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
         path: PathGeom {
@@ -188,9 +182,8 @@ fn bbox_accounts_for_cubic_curve_extents() {
         },
     };
 
-    let doc = Document {
-        shapes: vec![shape.clone()],
-    };
+    let mut doc = Document::new();
+    doc.append_shape(shape.clone());
     let selection = Selection {
         items: vec![SelItem::Shape(shape.id)],
     };

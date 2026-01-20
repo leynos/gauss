@@ -13,7 +13,6 @@ use crate::{
     svg::{export::export_svg, import::import_svg},
 };
 use rstest::rstest;
-use uuid::Uuid;
 
 #[rstest]
 fn imports_minimal_line_path() {
@@ -27,9 +26,9 @@ fn imports_minimal_line_path() {
         Ok(doc) => doc,
         Err(err) => panic!("Expected import to succeed: {err}"),
     };
-    assert_eq!(doc.shapes.len(), 1);
+    assert_eq!(doc.len(), 1);
 
-    let Some(shape) = doc.shapes.first() else {
+    let Some(shape) = doc.shape_at(0) else {
         panic!("Expected imported SVG to contain a shape");
     };
     assert_eq!(shape.path.anchors.len(), 2);
@@ -40,7 +39,7 @@ fn imports_minimal_line_path() {
 #[rstest]
 fn round_trips_exported_svg() {
     let shape = Shape {
-        id: ShapeId::from(Uuid::from_u128(1)),
+        id: ShapeId::default(),
         z: 0,
         style: PaintStyle::new(
             Some(Rgba::new(0, 0, 0, 255)),
@@ -61,21 +60,16 @@ fn round_trips_exported_svg() {
             closing_segment: SegmentKind::Line,
         },
     };
-    let doc = Document {
-        shapes: vec![shape],
-    };
+    let mut doc = Document::new();
+    doc.append_shape(shape);
 
     let exported = export_svg(&doc, 100.0, 100.0);
-    let mut imported = match import_svg(&exported) {
+    let imported = match import_svg(&exported) {
         Ok(imported_doc) => imported_doc,
         Err(err) => panic!("Expected re-import to succeed: {err}"),
     };
 
-    if let Some(imported_shape_mut) = imported.shapes.first_mut() {
-        imported_shape_mut.id = ShapeId::from(Uuid::from_u128(1));
-    }
-
-    let Some(imported_shape) = imported.shapes.first() else {
+    let Some(imported_shape) = imported.shape_at(0) else {
         panic!("Expected re-imported SVG to contain a shape");
     };
     assert!(

@@ -48,21 +48,29 @@ pub fn apply_insert_shape(
     command_name: &'static str,
 ) -> Result<CommandInverse, UserError> {
     debug_assert!(
-        insertion.index <= doc.shapes.len(),
+        insertion.index <= doc.len(),
         "apply_insert_shape: insertion index {} out of range (len = {})",
         insertion.index,
-        doc.shapes.len()
+        doc.len()
     );
 
-    if insertion.index > doc.shapes.len() {
+    if insertion.index > doc.len() {
         return Err(UserError::InvalidOperation(format!(
             "shape insertion index {} out of range (len = {})",
             insertion.index,
-            doc.shapes.len()
+            doc.len()
         )));
     }
 
-    doc.shapes.insert(insertion.index, insertion.shape.clone());
+    let _shape_id = doc
+        .insert_shape(insertion.index, insertion.shape.clone())
+        .ok_or_else(|| {
+            UserError::InvalidOperation(format!(
+                "insert_shape failed for index {} (len = {})",
+                insertion.index,
+                doc.len()
+            ))
+        })?;
 
     Ok(CommandInverse::RemoveShape {
         command_name,
@@ -77,20 +85,26 @@ pub fn apply_insert_shape(
 /// Returns `UserError::InvalidOperation` if the removal index is out of range.
 pub fn apply_remove_shape(doc: &mut Document, insertion: &ShapeInsertion) -> Result<(), UserError> {
     debug_assert!(
-        insertion.index < doc.shapes.len(),
+        insertion.index < doc.len(),
         "apply_remove_shape: insertion index {} out of range (len = {})",
         insertion.index,
-        doc.shapes.len()
+        doc.len()
     );
 
-    if insertion.index >= doc.shapes.len() {
+    if insertion.index >= doc.len() {
         return Err(UserError::InvalidOperation(format!(
             "shape removal index {} out of range (len = {})",
             insertion.index,
-            doc.shapes.len()
+            doc.len()
         )));
     }
 
-    doc.shapes.remove(insertion.index);
+    doc.remove_shape(insertion.index).ok_or_else(|| {
+        UserError::InvalidOperation(format!(
+            "remove_shape failed for index {} (len = {})",
+            insertion.index,
+            doc.len()
+        ))
+    })?;
     Ok(())
 }

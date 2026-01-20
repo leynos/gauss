@@ -100,11 +100,11 @@ fn reorder_succeeds_with_valid_indices(mut doc_with_two_shapes: Document) {
 
     // Verify the shape order changed
     assert_eq!(
-        doc_with_two_shapes.shapes.first().map(|s| s.id),
+        doc_with_two_shapes.shape_at(0).map(|s| s.id),
         Some(shape_id(2))
     );
     assert_eq!(
-        doc_with_two_shapes.shapes.get(1).map(|s| s.id),
+        doc_with_two_shapes.shape_at(1).map(|s| s.id),
         Some(shape_id(1))
     );
 
@@ -120,9 +120,9 @@ fn reorder_succeeds_with_valid_indices(mut doc_with_two_shapes: Document) {
 #[case(shape_with_handles(shape_id(4)))]
 fn insert_anchor_on_segment_succeeds(#[case] shape: Shape) {
     let shape_key = shape.id;
-    let mut state = EngineState::with_document(Document {
-        shapes: vec![shape.clone()],
-    });
+    let mut seed_doc = Document::new();
+    seed_doc.append_shape(shape.clone());
+    let mut state = EngineState::with_document(seed_doc);
     state.selection.items = vec![SelItem::Segment {
         shape: shape_key,
         seg: 0,
@@ -135,22 +135,21 @@ fn insert_anchor_on_segment_succeeds(#[case] shape: Shape) {
         "expected InsertAnchorOnSegment command"
     );
 
-    let mut doc = Document {
-        shapes: vec![shape.clone()],
-    };
+    let mut doc = Document::new();
+    doc.append_shape(shape.clone());
     let inverse = cmd.apply(&mut doc).expect("apply insert anchor on segment");
     assert!(matches!(
         inverse,
         CommandInverse::RemoveAnchorFromSegment { .. }
     ));
 
-    let updated = doc.shapes.first().expect("shape exists");
+    let updated = doc.shape_at(0).expect("shape exists");
     assert_eq!(updated.path.anchors.len(), shape.path.anchors.len() + 1);
     assert_eq!(updated.path.segments.len(), shape.path.segments.len() + 1);
 
     inverse
         .apply(&mut doc)
         .expect("inverse remove anchor from segment");
-    let restored = doc.shapes.first().expect("shape exists");
+    let restored = doc.shape_at(0).expect("shape exists");
     assert_eq!(restored, &shape);
 }

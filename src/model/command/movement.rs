@@ -39,7 +39,7 @@ where
         anchor_index,
     } = target;
     let shape = doc
-        .get_mut(shape_id)
+        .shape_mut(shape_id)
         .ok_or(UserError::ShapeNotFound(shape_id))?;
     let anchor = shape
         .path
@@ -82,7 +82,7 @@ pub(super) fn apply_move_shapes(
     // Apply changes (safe now that all shapes are validated).
     for movement in movements {
         let shape = doc
-            .get_mut(movement.shape_id)
+            .shape_mut(movement.shape_id)
             .ok_or(UserError::ShapeNotFound(movement.shape_id))?;
         for anchor in &mut shape.path.anchors {
             translate_anchor(anchor, movement.delta);
@@ -122,7 +122,7 @@ pub(super) fn apply_move_shapes_back(
     // Apply changes (safe now that all shapes are validated).
     for movement in movements {
         let shape = doc
-            .get_mut(movement.shape_id)
+            .shape_mut(movement.shape_id)
             .ok_or(UserError::ShapeNotFound(movement.shape_id))?;
         for anchor in &mut shape.path.anchors {
             translate_anchor(anchor, movement.delta);

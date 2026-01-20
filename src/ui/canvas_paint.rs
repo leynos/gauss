@@ -49,7 +49,7 @@ pub(super) fn canvas_for_document(
 fn paint_document(bounds: Bounds<Pixels>, state: &CanvasState, window: &mut Window) {
     window.paint_quad(fill(bounds, rgba(0xf8f8_f8ff)));
 
-    for shape in &state.document.shapes {
+    for shape in state.document.iter_in_draw_order() {
         paint_shape(shape, state.viewport, window);
     }
 
@@ -81,7 +81,7 @@ fn paint_selection_overlays(
 
     // Draw selection outlines last so the selection colour stays visible.
     for shape_id in selected_shape_ids(selection) {
-        let Some(shape) = doc.shapes.iter().find(|shape| shape.id == shape_id) else {
+        let Some(shape) = doc.shape(shape_id) else {
             continue;
         };
 

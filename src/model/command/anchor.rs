@@ -34,7 +34,7 @@ pub(super) fn prepare_insert_anchor_on_segment(state: &EngineState) -> Result<Co
         return Err(UserError::ShapeNotFound(*shape));
     };
 
-    let Some(old_shape) = state.document.shapes.get(shape_index).cloned() else {
+    let Some(old_shape) = state.document.shape_at(shape_index).cloned() else {
         return Err(UserError::ShapeNotFound(*shape));
     };
 
@@ -148,7 +148,7 @@ pub(super) fn prepare_delete_selected_anchors(state: &EngineState) -> Result<Com
         let Some(shape_index) = state.document.find_index(shape_id) else {
             return Err(UserError::ShapeNotFound(shape_id));
         };
-        let Some(old_shape) = state.document.shapes.get(shape_index).cloned() else {
+        let Some(old_shape) = state.document.shape_at(shape_index).cloned() else {
             return Err(UserError::ShapeNotFound(shape_id));
         };
 
@@ -202,8 +202,8 @@ fn apply_shape_replacement(
     doc: &mut Document,
     replacement: &ShapeReplacement,
 ) -> Result<(), UserError> {
-    let shapes_len = doc.shapes.len();
-    let shape = doc.shapes.get_mut(replacement.shape_index).ok_or_else(|| {
+    let shapes_len = doc.len();
+    let shape = doc.shape_at_mut(replacement.shape_index).ok_or_else(|| {
         UserError::InvalidOperation(format!(
             "shape replacement index {} out of range (len = {})",
             replacement.shape_index, shapes_len
@@ -280,10 +280,10 @@ pub(super) fn apply_delete_anchors(
     sorted_deletions.sort_by(|a, b| b.shape_index.cmp(&a.shape_index));
 
     for deletion in &sorted_deletions {
-        let shapes_len = doc.shapes.len();
+        let shapes_len = doc.len();
         match &deletion.result {
             AnchorDeletionResult::Modified(new_shape) => {
-                let shape = doc.shapes.get_mut(deletion.shape_index).ok_or_else(|| {
+                let shape = doc.shape_at_mut(deletion.shape_index).ok_or_else(|| {
                     UserError::InvalidOperation(format!(
                         "anchor deletion shape index {} out of range (len = {})",
                         deletion.shape_index, shapes_len
@@ -298,7 +298,7 @@ pub(super) fn apply_delete_anchors(
                         deletion.shape_index, shapes_len
                     )));
                 }
-                doc.shapes.remove(deletion.shape_index);
+                let _ = doc.remove_shape(deletion.shape_index);
             }
         }
     }
@@ -343,10 +343,10 @@ pub(super) fn apply_restore_anchors(
     sorted_restorations.sort_by_key(|r| r.shape_index);
 
     for restoration in sorted_restorations {
-        let shapes_len = doc.shapes.len();
+        let shapes_len = doc.len();
         match &restoration.restoration {
             AnchorRestorationKind::RestoreModified { to, .. } => {
-                let shape = doc.shapes.get_mut(restoration.shape_index).ok_or_else(|| {
+                let shape = doc.shape_at_mut(restoration.shape_index).ok_or_else(|| {
                     UserError::InvalidOperation(format!(
                         "anchor restoration shape index {} out of range (len = {})",
                         restoration.shape_index, shapes_len
@@ -361,7 +361,14 @@ pub(super) fn apply_restore_anchors(
                         restoration.shape_index, shapes_len
                     )));
                 }
-                doc.shapes.insert(restoration.shape_index, shape.clone());
+                let _shape_id = doc
+                    .insert_shape(restoration.shape_index, shape.clone())
+                    .ok_or_else(|| {
+                        UserError::InvalidOperation(format!(
+                            "anchor restoration failed to insert at index {} (len = {})",
+                            restoration.shape_index, shapes_len
+                        ))
+                    })?;
             }
         }
     }

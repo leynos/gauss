@@ -12,41 +12,32 @@
 
 use std::ops::{Add, Mul, Sub};
 
-use uuid::Uuid;
+use slotmap::{Key, KeyData, new_key_type};
 
-/// Identifier for a [`Shape`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct ShapeId(Uuid);
-
-impl ShapeId {
-    /// Create a new `ShapeId` from a UUID.
-    #[must_use]
-    pub const fn new(inner: Uuid) -> Self {
-        Self(inner)
-    }
-
-    /// Create a random v4 UUID-based `ShapeId`.
-    #[must_use]
-    pub fn new_v4() -> Self {
-        Self(Uuid::new_v4())
-    }
-
-    /// Return the underlying UUID by reference.
-    #[must_use]
-    pub const fn as_uuid(&self) -> &Uuid {
-        &self.0
-    }
-
-    /// Return the underlying UUID by value.
-    #[must_use]
-    pub const fn into_inner(self) -> Uuid {
-        self.0
-    }
+new_key_type! {
+    /// Identifier for a [`Shape`].
+    pub struct ShapeId;
 }
 
-impl From<Uuid> for ShapeId {
-    fn from(value: Uuid) -> Self {
-        Self::new(value)
+impl ShapeId {
+    /// Return the underlying key data.
+    #[must_use]
+    pub fn as_key_data(self) -> KeyData {
+        self.data()
+    }
+
+    /// Convert this ID into a stable AccessKit node identifier.
+    #[must_use]
+    pub fn to_accesskit_node_id(self) -> u64 {
+        self.data().as_ffi()
+    }
+
+    /// Reconstruct a shape ID from an AccessKit node identifier.
+    ///
+    /// The `raw` value must originate from [`ShapeId::to_accesskit_node_id`].
+    #[must_use]
+    pub fn from_accesskit_node_id(raw: u64) -> Self {
+        KeyData::from_ffi(raw).into()
     }
 }
 

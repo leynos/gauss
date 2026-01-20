@@ -53,13 +53,11 @@ use super::{doc_with_two_shapes, empty_doc, extract_panic_message, selection_wit
 #[rstest]
 fn delete_shapes_removes_from_document(mut doc_with_two_shapes: Document) {
     let first_shape = doc_with_two_shapes
-        .shapes
-        .first()
+        .shape_at(0)
         .cloned()
         .expect("fixture should have shapes");
     let second_shape_id = doc_with_two_shapes
-        .shapes
-        .get(1)
+        .shape_at(1)
         .expect("fixture should have two shapes")
         .id;
     let cmd = Command::DeleteShapes {
@@ -71,11 +69,10 @@ fn delete_shapes_removes_from_document(mut doc_with_two_shapes: Document) {
 
     cmd.apply(&mut doc_with_two_shapes)
         .expect("delete should succeed");
-    assert_eq!(doc_with_two_shapes.shapes.len(), 1);
+    assert_eq!(doc_with_two_shapes.len(), 1);
     assert_eq!(
         doc_with_two_shapes
-            .shapes
-            .first()
+            .shape_at(0)
             .expect("should have remaining shape")
             .id,
         second_shape_id,
@@ -85,10 +82,9 @@ fn delete_shapes_removes_from_document(mut doc_with_two_shapes: Document) {
 
 #[rstest]
 fn delete_shapes_inverse_restores(mut doc_with_two_shapes: Document) {
-    let original_len = doc_with_two_shapes.shapes.len();
+    let original_len = doc_with_two_shapes.len();
     let shape = doc_with_two_shapes
-        .shapes
-        .first()
+        .shape_at(0)
         .cloned()
         .expect("fixture should have shapes");
 
@@ -99,20 +95,19 @@ fn delete_shapes_inverse_restores(mut doc_with_two_shapes: Document) {
     let inverse = cmd
         .apply(&mut doc_with_two_shapes)
         .expect("apply succeeded");
-    assert_eq!(doc_with_two_shapes.shapes.len(), original_len - 1);
+    assert_eq!(doc_with_two_shapes.len(), original_len - 1);
 
     inverse
         .apply(&mut doc_with_two_shapes)
         .expect("undo succeeded");
-    assert_eq!(doc_with_two_shapes.shapes.len(), original_len);
+    assert_eq!(doc_with_two_shapes.len(), original_len);
 }
 
 #[rstest]
 fn delete_restores_shape_at_correct_index(mut doc_with_two_shapes: Document) {
-    let original_shapes = doc_with_two_shapes.shapes.clone();
+    let original_shapes: Vec<_> = doc_with_two_shapes.iter_in_draw_order().cloned().collect();
     let shape = doc_with_two_shapes
-        .shapes
-        .first()
+        .shape_at(0)
         .cloned()
         .expect("fixture should have shapes");
 
@@ -130,8 +125,7 @@ fn delete_restores_shape_at_correct_index(mut doc_with_two_shapes: Document) {
     // First shape should be removed, second should now be at index 0
     assert_eq!(
         doc_with_two_shapes
-            .shapes
-            .first()
+            .shape_at(0)
             .expect("should have remaining shape")
             .id,
         shape_id(2)
@@ -142,7 +136,8 @@ fn delete_restores_shape_at_correct_index(mut doc_with_two_shapes: Document) {
         .expect("undo succeeded");
 
     // After undo, shapes should match original order
-    assert_eq!(doc_with_two_shapes.shapes, original_shapes);
+    let restored_shapes: Vec<_> = doc_with_two_shapes.iter_in_draw_order().cloned().collect();
+    assert_eq!(restored_shapes, original_shapes);
 }
 
 #[rstest]
@@ -209,8 +204,7 @@ fn command_inverse_name_is_delete() {
 #[rstest]
 fn inverse_name_matches_command_after_apply(mut doc_with_two_shapes: Document) {
     let shape = doc_with_two_shapes
-        .shapes
-        .first()
+        .shape_at(0)
         .cloned()
         .expect("fixture should have shapes");
     let cmd = Command::DeleteShapes {
@@ -229,10 +223,8 @@ fn inverse_name_matches_command_after_apply(mut doc_with_two_shapes: Document) {
 #[rstest]
 fn delete_multiple_shapes_preserves_order(mut doc_with_two_shapes: Document) {
     // Add a third shape
-    doc_with_two_shapes
-        .shapes
-        .push(sample_shape(shape_id(3), 2));
-    let original_shapes = doc_with_two_shapes.shapes.clone();
+    doc_with_two_shapes.append_shape(sample_shape(shape_id(3), 2));
+    let original_shapes: Vec<_> = doc_with_two_shapes.iter_in_draw_order().cloned().collect();
 
     // Delete first and last shapes
     let targets = vec![
@@ -258,11 +250,10 @@ fn delete_multiple_shapes_preserves_order(mut doc_with_two_shapes: Document) {
         .expect("apply succeeded");
 
     // Only middle shape should remain
-    assert_eq!(doc_with_two_shapes.shapes.len(), 1);
+    assert_eq!(doc_with_two_shapes.len(), 1);
     assert_eq!(
         doc_with_two_shapes
-            .shapes
-            .first()
+            .shape_at(0)
             .expect("should have remaining shape")
             .id,
         shape_id(2)
@@ -272,7 +263,8 @@ fn delete_multiple_shapes_preserves_order(mut doc_with_two_shapes: Document) {
     inverse
         .apply(&mut doc_with_two_shapes)
         .expect("undo succeeded");
-    assert_eq!(doc_with_two_shapes.shapes, original_shapes);
+    let restored_shapes: Vec<_> = doc_with_two_shapes.iter_in_draw_order().cloned().collect();
+    assert_eq!(restored_shapes, original_shapes);
 }
 
 #[rstest]
@@ -289,7 +281,7 @@ fn full_round_trip_via_action(
 
     // Apply command
     let inverse = cmd.apply(&mut state.document).expect("apply succeeded");
-    assert_eq!(state.document.shapes.len(), 1);
+    assert_eq!(state.document.len(), 1);
 
     // Undo via inverse
     inverse.apply(&mut state.document).expect("undo succeeded");

@@ -65,6 +65,6 @@ fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
     let opened = cx.read(|app| view.read(app).last_opened_path().map(Path::to_path_buf));
     assert_eq!(opened.as_deref(), Some(svg_path_ref.as_std_path()));
 
-    let shape_count = cx.read(|app| view.read(app).document().shapes.len());
+    let shape_count = cx.read(|app| view.read(app).document().len());
     assert_eq!(shape_count, 1);
 }

@@ -136,13 +136,7 @@ impl Phase0Shell {
 
         let mut changes = Vec::new();
         for shape_id in selected_shapes {
-            let Some(shape) = self
-                .state
-                .document
-                .shapes
-                .iter()
-                .find(|shape| shape.id == shape_id)
-            else {
+            let Some(shape) = self.state.document.shape(shape_id) else {
                 continue;
             };
 
