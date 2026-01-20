@@ -12,8 +12,6 @@
     reason = "hit-testing relies on floating-point distance maths"
 )]
 
-use std::collections::HashMap;
-
 use crate::model::{
     Anchor, CubicSegment, Document, SegmentKind, Shape, ShapeId, Vec2, cubic_point,
     shape_world_bounds,
@@ -188,18 +186,7 @@ pub(super) fn hit_test_topmost_shape(
 }
 
 fn iter_shapes_in_draw_order(doc: &Document) -> impl DoubleEndedIterator<Item = (usize, &Shape)> {
-    let index_lookup: HashMap<ShapeId, usize> = doc
-        .iter_in_draw_order()
-        .enumerate()
-        .map(|(index, shape)| (shape.id, index))
-        .collect();
-
-    doc.iter_in_draw_order().filter_map(move |shape| {
-        index_lookup
-            .get(&shape.id)
-            .copied()
-            .map(|index| (index, shape))
-    })
+    doc.iter_in_draw_order().enumerate()
 }
 
 fn hit_test_shape_bbox(shape: &Shape, cursor_world: Vec2, tolerance_world: f32) -> bool {

@@ -158,7 +158,7 @@ const fn is_valid_reorder_op(op: &ReorderOp, doc: &Document) -> bool {
         return false;
     }
 
-    op.from_index < doc.len() && op.to_index <= doc.len()
+    op.from_index < doc.len() && op.to_index < doc.len()
 }
 
 fn try_move_shape(doc: &mut Document, op: &ReorderOp) -> bool {

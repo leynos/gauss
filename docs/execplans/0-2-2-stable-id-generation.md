@@ -34,9 +34,11 @@ GPUI integration) prove the stability and regeneration behaviour.
 - Avoid `unsafe` unless there is no reasonable alternative; document any
   usage with a `SAFETY` comment if it becomes necessary.
 - Commit after each logical change and gate each commit with:
+
   - `make check-fmt`
   - `make lint`
   - `make test`
+
 - Use Makefile targets and `tee` log files as described in `AGENTS.md`.
 - Update `docs/users-guide.md` if user-visible behaviour or UI changes.
 - Record design decisions in the design document.
@@ -59,9 +61,9 @@ GPUI integration) prove the stability and regeneration behaviour.
 ## Risks
 
 - Risk: Converting `Document` storage to generational IDs changes many call
-  sites and tests. Severity: medium Likelihood: high Mitigation: introduce
-  small, explicit `Document` APIs (insert/remove/lookup) and update call sites
-  in one focused commit.
+  sites and tests. Severity: medium. Likelihood: high. Mitigation: introduce
+  small, explicit `Document` APIs (`insert`/`remove`/`lookup`) and update call
+  sites in one focused commit.
 
 - Risk: GPUI tests assume deterministic IDs via `Uuid`; refactoring may break
   test fixtures. Severity: medium Likelihood: high Mitigation: create
@@ -214,7 +216,9 @@ All commands should run from the repository root.
 
 1. Discover scope (Code Graph MCP if available; otherwise `rg`):
 
-    rg -n "ShapeId|Document" -S src tests crates
+   ```bash
+   rg -n "ShapeId|Document" -S src tests crates
+   ```
 
 2. Create or update stable ID module and adjust model/document code.
 
@@ -225,15 +229,19 @@ All commands should run from the repository root.
 5. Run format and lint gates with `tee` logging, using the recommended log
    naming scheme from `AGENTS.md`:
 
-    make check-fmt | tee /tmp/check-fmt-$(get-project)-$(git branch --show).out
-    make lint | tee /tmp/lint-$(get-project)-$(git branch --show).out
-    make test | tee /tmp/test-$(get-project)-$(git branch --show).out
+   ```bash
+   make check-fmt | tee /tmp/check-fmt-$(get-project)-$(git branch --show).out
+   make lint | tee /tmp/lint-$(get-project)-$(git branch --show).out
+   make test | tee /tmp/test-$(get-project)-$(git branch --show).out
+   ```
 
 If documentation changed, also run:
 
-    make fmt | tee /tmp/fmt-$(get-project)-$(git branch --show).out
-    make markdownlint | tee /tmp/markdownlint-$(get-project)-$(git branch --show).out
-    make nixie | tee /tmp/nixie-$(get-project)-$(git branch --show).out
+```bash
+make fmt | tee /tmp/fmt-$(get-project)-$(git branch --show).out
+make markdownlint | tee /tmp/markdownlint-$(get-project)-$(git branch --show).out
+make nixie | tee /tmp/nixie-$(get-project)-$(git branch --show).out
+```
 
 ## Validation and Acceptance
 

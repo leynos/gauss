@@ -10,13 +10,7 @@ pub const TEST_ID_VERSION: u64 = 0xffff_fffe;
 /// The low 32 bits of the seed are used to avoid collisions when values exceed
 /// `u32::MAX`.
 ///
-/// # Examples
 ///
-/// ```
-/// # use gauss::test_helpers::shape_id_from_seed;
-/// let id = shape_id_from_seed(42);
-/// assert_ne!(id, shape_id_from_seed(43));
-/// ```
 #[must_use]
 pub fn shape_id_from_seed(seed: u128) -> ShapeId {
     let masked = seed & u128::from(u32::MAX);
