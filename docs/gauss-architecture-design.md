@@ -319,6 +319,37 @@ appropriate layer.
 function takes `&EngineState` rather than individual state pieces, providing a
 unified entry point for action dispatch.
 
+### 5.5 Resource and style stores (implemented 2026-02)
+
+Roadmap item 0.2.3 is implemented by introducing concrete `ResourceStore` and
+`StyleStore` types, plus paint references in `PaintStyle`.
+
+**Design decision:** model stroke and fill as `Paint` (none, solid colour,
+gradient reference, pattern reference) rather than `Option<Rgba>`. This keeps
+solid colour workflows simple while introducing a typed bridge to shared
+resources.
+
+- `ResourceStore` now owns gradients, patterns, and symbols using typed
+  identifiers (`GradientId`, `PatternId`, `SymbolId`) and keeps SVG `id`
+  indexes for deterministic `url(#...)` lookups and round-trip export.
+- `StyleStore` now owns named styles with stable `StyleId` keys, unique naming
+  behaviour, and optional default style tracking.
+- `EngineState` now persists these stores in `resources` and `styles`, keeping
+  document geometry and shared style data colocated for command preparation and
+  future effect pipelines.
+
+**SVG policy for resource references:** SVG import/export now round-trips
+`<defs>` resources and `url(#...)` paint references.
+
+- Export writes known gradients, patterns, and symbols into `<defs>`.
+- Import resolves resource references into typed paint IDs.
+- Import fails fast when a path references a missing resource, preventing
+  silent data corruption and preserving existing in-memory state when open
+  fails.
+
+This prepares the architecture for Phase 4 colour/effects features without
+requiring a UI gradient editor in Phase 0.
+
 ______________________________________________________________________
 
 ## 6. Tool System (Controller Layer)

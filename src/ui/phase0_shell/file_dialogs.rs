@@ -15,7 +15,7 @@ use gpui::{AsyncWindowContext, Context, PathPromptOptions, WeakEntity, Window};
 use gpui_component::history::History;
 
 use crate::model::Selection;
-use crate::svg::export::export_svg;
+use crate::svg::export::export_svg_with_resources;
 
 use super::Phase0Shell;
 
@@ -123,12 +123,14 @@ async fn apply_save_path(
         return;
     };
 
-    let Ok(doc) = this.update(&mut cx, |view, _view_cx| view.state.document.clone()) else {
+    let Ok((doc, resources)) = this.update(&mut cx, |view, _view_cx| {
+        (view.state.document.clone(), view.state.resources.clone())
+    }) else {
         return;
     };
 
     // TODO: derive canvas size from document bounds or viewport state.
-    let svg = export_svg(&doc, 100.0, 100.0);
+    let svg = export_svg_with_resources(&doc, &resources, 100.0, 100.0);
     let save_result = super::super::phase0_support::write_svg_to_path(&path, &svg);
     let error = save_result.err();
 
@@ -151,14 +153,15 @@ async fn apply_open_prompt(
     };
 
     let load_result = super::super::phase0_support::load_document_from_path(&first_path);
-    let (loaded_doc, error) = match load_result {
-        Ok(doc) => (Some(doc), None),
+    let (loaded_state, error) = match load_result {
+        Ok(imported) => (Some(imported), None),
         Err(err) => (None, Some(err)),
     };
 
     let _update_result = this.update(&mut cx, move |view, view_cx| {
-        if let Some(doc) = loaded_doc {
-            view.state.document = doc;
+        if let Some(imported) = loaded_state {
+            view.state.document = imported.document;
+            view.state.resources = imported.resources;
             view.document_history = History::new();
             view.selection_history = History::new();
             view.state.selection = Selection::empty();

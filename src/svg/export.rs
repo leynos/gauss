@@ -1,8 +1,8 @@
 //! SVG export for the Gauss document model.
 //!
 //! The exporter is intentionally conservative: it emits `<path>` elements with
-//! absolute commands (`M`, `L`, `C`, `Z`) and basic stroke/fill styling. This
-//! keeps the output easy to inspect and easy to round-trip.
+//! absolute commands (`M`, `L`, `C`, `Z`) and writes resource definitions from
+//! `ResourceStore` into `<defs>`.
 
 #![expect(
     clippy::float_arithmetic,
@@ -11,21 +11,32 @@
 
 use std::fmt::{Arguments, Write as _};
 
-use crate::model::{Document, Rgba, SegmentKind, format_hex_rgb};
+use crate::model::{
+    Document, GradientKind, Paint, PatternResource, ResourceStore, SegmentKind, SymbolResource,
+    format_hex_rgb,
+};
 
 /// Export a document to an SVG string.
 ///
-/// The returned string is a complete SVG document including XML declaration and
-/// root `<svg>` element with a `viewBox`.
-///
-/// `canvas_width` and `canvas_height` are treated as document units, which are
-/// interpreted as pixels for the Phase 0 `PoC`.
+/// This compatibility helper exports without shared resources.
 #[must_use]
 pub fn export_svg(doc: &Document, canvas_width: f32, canvas_height: f32) -> String {
+    export_svg_with_resources(doc, &ResourceStore::new(), canvas_width, canvas_height)
+}
+
+/// Export a document to an SVG string with explicit shared resources.
+#[must_use]
+pub fn export_svg_with_resources(
+    doc: &Document,
+    resources: &ResourceStore,
+    canvas_width: f32,
+    canvas_height: f32,
+) -> String {
     let mut out = String::new();
     write_svg_header(&mut out, canvas_width, canvas_height);
+    write_defs(&mut out, resources);
     for shape in doc.iter_in_draw_order() {
-        write_shape_path(&mut out, shape);
+        write_shape_path(&mut out, resources, shape);
     }
     out.push_str("</svg>\n");
     out
@@ -49,13 +60,107 @@ fn write_svg_header(out: &mut String, canvas_width: f32, canvas_height: f32) {
     out.push('\n');
 }
 
-fn write_shape_path(out: &mut String, shape: &crate::model::Shape) {
+fn write_defs(out: &mut String, resources: &ResourceStore) {
+    if resources.is_empty() {
+        return;
+    }
+
+    out.push_str("<defs>\n");
+
+    for (_id, gradient) in resources.gradients() {
+        match &gradient.kind {
+            GradientKind::Linear(data) => {
+                write_fmt(
+                    out,
+                    format_args!(
+                        r#"<linearGradient id="{}" x1="{}" y1="{}" x2="{}" y2="{}">"#,
+                        gradient.svg_id, data.start.x, data.start.y, data.end.x, data.end.y
+                    ),
+                );
+                out.push('\n');
+                for stop in &data.stops {
+                    let stop_colour = format_hex_rgb(stop.colour);
+                    write_fmt(
+                        out,
+                        format_args!(
+                            r#"<stop offset="{}" stop-color="{}" stop-opacity="{:.4}" />"#,
+                            stop.offset,
+                            stop_colour,
+                            opacity_from_alpha(stop.colour.a)
+                        ),
+                    );
+                    out.push('\n');
+                }
+                out.push_str("</linearGradient>\n");
+            }
+            GradientKind::Radial(data) => {
+                write_fmt(
+                    out,
+                    format_args!(
+                        r#"<radialGradient id="{}" cx="{}" cy="{}" r="{}""#,
+                        gradient.svg_id, data.centre.x, data.centre.y, data.radius
+                    ),
+                );
+                if let Some(focal) = data.focal {
+                    write_fmt(out, format_args!(r#" fx="{}" fy="{}""#, focal.x, focal.y));
+                }
+                out.push_str(">\n");
+                for stop in &data.stops {
+                    let stop_colour = format_hex_rgb(stop.colour);
+                    write_fmt(
+                        out,
+                        format_args!(
+                            r#"<stop offset="{}" stop-color="{}" stop-opacity="{:.4}" />"#,
+                            stop.offset,
+                            stop_colour,
+                            opacity_from_alpha(stop.colour.a)
+                        ),
+                    );
+                    out.push('\n');
+                }
+                out.push_str("</radialGradient>\n");
+            }
+        }
+    }
+
+    for (_id, pattern) in resources.patterns() {
+        write_pattern(out, pattern);
+    }
+
+    for (_id, symbol) in resources.symbols() {
+        write_symbol(out, symbol);
+    }
+
+    out.push_str("</defs>\n");
+}
+
+fn write_pattern(out: &mut String, pattern: &PatternResource) {
+    write_fmt(out, format_args!(r#"<pattern id="{}">"#, pattern.svg_id));
+    if !pattern.body.is_empty() {
+        out.push_str(pattern.body.as_str());
+    }
+    out.push_str("</pattern>\n");
+}
+
+fn write_symbol(out: &mut String, symbol: &SymbolResource) {
+    write_fmt(out, format_args!(r#"<symbol id="{}""#, symbol.svg_id));
+    if let Some(view_box) = symbol.view_box.as_deref() {
+        write_fmt(out, format_args!(r#" viewBox="{view_box}""#));
+    }
+    out.push('>');
+    if !symbol.body.is_empty() {
+        out.push_str(symbol.body.as_str());
+    }
+    out.push_str("</symbol>\n");
+}
+
+fn write_shape_path(out: &mut String, resources: &ResourceStore, shape: &crate::model::Shape) {
     let Some(path_data) = build_path_data(shape) else {
         return;
     };
 
-    let (stroke_attr, stroke_opacity) = format_paint(shape.style.stroke);
-    let (fill_attr, fill_opacity) = format_paint(shape.style.fill);
+    let (stroke_attr, stroke_opacity) = format_paint(shape.style.stroke, resources);
+    let (fill_attr, fill_opacity) = format_paint(shape.style.fill, resources);
 
     write_fmt(
         out,
@@ -124,16 +229,28 @@ fn build_path_data(shape: &crate::model::Shape) -> Option<String> {
     Some(d)
 }
 
-fn format_paint(paint: Option<Rgba>) -> (String, f32) {
-    paint.map_or_else(
-        || ("none".to_owned(), 1.0),
-        |c| (format_hex_rgb(c), opacity_from_alpha(c.a)),
-    )
+fn format_paint(paint: Paint, resources: &ResourceStore) -> (String, f32) {
+    match paint {
+        Paint::None => ("none".to_owned(), 1.0),
+        Paint::Solid(colour) => (format_hex_rgb(colour), opacity_from_alpha(colour.a)),
+        Paint::Gradient(id) => resources.gradient(id).map_or_else(
+            || ("none".to_owned(), 1.0),
+            |gradient| (format!("url(#{})", gradient.svg_id), 1.0),
+        ),
+        Paint::Pattern(id) => resources.pattern(id).map_or_else(
+            || ("none".to_owned(), 1.0),
+            |pattern| (format!("url(#{})", pattern.svg_id), 1.0),
+        ),
+    }
 }
 
 fn write_optional_opacity(out: &mut String, attr: &str, paint: &str, opacity: f32) {
     const OPACITY_EPSILON: f32 = 1.0e-6;
-    if paint == "none" || opacity >= 1.0 - OPACITY_EPSILON {
+    if paint == "none" || paint.starts_with("url(#") {
+        return;
+    }
+
+    if opacity >= 1.0 - OPACITY_EPSILON {
         return;
     }
 
@@ -152,7 +269,10 @@ mod tests {
     //! Tests for SVG export output.
 
     use super::*;
-    use crate::model::{Anchor, PaintStyle, PathGeom, Shape, Vec2};
+    use crate::model::{
+        Anchor, Gradient, GradientKind, GradientStop, LinearGradient, PaintStyle, PathGeom,
+        PatternResource, Rgba, Shape, Vec2,
+    };
     use crate::test_helpers::shape_id_from_seed as shape_id;
     use rstest::rstest;
 
@@ -218,5 +338,52 @@ mod tests {
 
         assert!(svg.contains(r#"stroke-opacity=""#));
         assert!(svg.contains(r#"fill-opacity=""#));
+    }
+
+    #[rstest]
+    fn exports_gradient_and_pattern_defs_and_references() {
+        let mut resources = ResourceStore::new();
+        let gradient_id = resources.insert_gradient(Gradient::new(
+            "sunset",
+            GradientKind::Linear(LinearGradient::new(
+                Vec2::new(0.0, 0.0),
+                Vec2::new(1.0, 0.0),
+                vec![
+                    GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
+                    GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
+                ],
+            )),
+        ));
+        let pattern_id = resources.insert_pattern(PatternResource::new("dots", "<circle />"));
+
+        let shape = Shape {
+            id: shape_id(3),
+            z: 0,
+            style: PaintStyle::new_with_paint(
+                Paint::Gradient(gradient_id),
+                1.5,
+                Paint::Pattern(pattern_id),
+            ),
+            path: PathGeom {
+                anchors: vec![
+                    Anchor::new(Vec2::new(0.0, 0.0)),
+                    Anchor::new(Vec2::new(5.0, 0.0)),
+                    Anchor::new(Vec2::new(5.0, 5.0)),
+                ],
+                segments: vec![SegmentKind::Line, SegmentKind::Line],
+                closed: true,
+                closing_segment: SegmentKind::Line,
+            },
+        };
+
+        let mut doc = Document::new();
+        doc.append_shape(shape);
+        let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
+
+        assert!(svg.contains("<defs>"));
+        assert!(svg.contains("<linearGradient id=\"sunset\""));
+        assert!(svg.contains("<pattern id=\"dots\""));
+        assert!(svg.contains("stroke=\"url(#sunset)\""));
+        assert!(svg.contains("fill=\"url(#dots)\""));
     }
 }

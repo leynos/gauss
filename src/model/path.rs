@@ -14,6 +14,8 @@ use std::ops::{Add, Mul, Sub};
 
 use slotmap::{Key, KeyData, new_key_type};
 
+use super::resource_store::{GradientId, PatternId};
+
 new_key_type! {
     /// Identifier for a [`Shape`].
     pub struct ShapeId;
@@ -152,21 +154,70 @@ impl Rgba {
     }
 }
 
+/// A paint source used for stroke or fill.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Paint {
+    /// No paint.
+    None,
+    /// A solid colour.
+    Solid(Rgba),
+    /// A reference to a gradient in [`crate::model::ResourceStore`].
+    Gradient(GradientId),
+    /// A reference to a pattern in [`crate::model::ResourceStore`].
+    Pattern(PatternId),
+}
+
+impl Paint {
+    /// Construct paint from an optional solid colour.
+    #[must_use]
+    pub const fn from_solid(colour: Option<Rgba>) -> Self {
+        match colour {
+            Some(value) => Self::Solid(value),
+            None => Self::None,
+        }
+    }
+
+    /// Return a solid colour if this paint variant is solid.
+    #[must_use]
+    pub const fn as_solid(self) -> Option<Rgba> {
+        match self {
+            Self::Solid(colour) => Some(colour),
+            Self::None | Self::Gradient(_) | Self::Pattern(_) => None,
+        }
+    }
+
+    /// Return whether paint is absent.
+    #[must_use]
+    pub const fn is_none(self) -> bool {
+        matches!(self, Self::None)
+    }
+}
+
 /// Stroke and fill styling for a [`Shape`].
 #[derive(Clone, Debug, PartialEq)]
 pub struct PaintStyle {
-    /// Stroke colour. `None` means no stroke.
-    pub stroke: Option<Rgba>,
+    /// Stroke paint source.
+    pub stroke: Paint,
     /// Stroke width in document units (treat as pixels for the `PoC`).
     pub stroke_width: f32,
-    /// Fill colour. `None` means no fill.
-    pub fill: Option<Rgba>,
+    /// Fill paint source.
+    pub fill: Paint,
 }
 
 impl PaintStyle {
-    /// Construct a new paint style.
+    /// Construct a new paint style from optional solid colours.
     #[must_use]
     pub const fn new(stroke: Option<Rgba>, stroke_width: f32, fill: Option<Rgba>) -> Self {
+        Self {
+            stroke: Paint::from_solid(stroke),
+            stroke_width,
+            fill: Paint::from_solid(fill),
+        }
+    }
+
+    /// Construct a paint style from explicit paint sources.
+    #[must_use]
+    pub const fn new_with_paint(stroke: Paint, stroke_width: f32, fill: Paint) -> Self {
         Self {
             stroke,
             stroke_width,

@@ -6,7 +6,7 @@ use common::{
     anchor_to_canvas_point, click_canvas_and_wait, ensure_initial_draw, init_test_app,
     read_document, require_draw_shape, simulate_escape,
 };
-use gauss::model::{Rgba, SelItem, ShapeId, Vec2};
+use gauss::model::{Paint, Rgba, SelItem, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Hsla, Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
 use test_support::{TestSupportError, TestSupportResult};
@@ -82,12 +82,12 @@ fn style_changes_apply_to_selected_shapes_and_are_undoable(cx: &mut TestAppConte
         .expect("expected draw shape after applying style");
     assert_eq!(
         shape_after.style.stroke,
-        Some(Rgba::new(255, 0, 0, 255)),
+        Paint::Solid(Rgba::new(255, 0, 0, 255)),
         "expected stroke to be updated to red"
     );
     assert_eq!(
         shape_after.style.fill,
-        Some(Rgba::new(0, 0, 255, 255)),
+        Paint::Solid(Rgba::new(0, 0, 255, 255)),
         "expected fill to be updated to blue"
     );
 

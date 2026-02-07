@@ -118,6 +118,21 @@ This allows selection changes to be undone without affecting the document, and
 vice versa. For example, after selecting several shapes and then undoing the
 selection, the shapes themselves remain unchanged.
 
+## SVG Resource Definitions
+
+Gauss now preserves shared SVG resource definitions in `<defs>` when opening
+and saving files.
+
+- **Supported resources**: linear gradients, radial gradients, patterns, and
+  symbols.
+- **Paint references**: paths that use `stroke="url(#...)"` or
+  `fill="url(#...)"` are loaded and saved with those references intact.
+- **Validation**: if an SVG path references a missing resource ID, Gauss
+  reports an open error and keeps the currently loaded document unchanged.
+
+In this phase, Gauss supports resource round-tripping and rendering, but does
+not yet provide dedicated editing controls for gradients, patterns, or symbols.
+
 ## Platform Differences
 
 Gauss adapts to platform conventions:

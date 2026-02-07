@@ -6,7 +6,9 @@
 
 use std::path::Path;
 
-use crate::model::{Command, Document, Selection, ShapeId, UserError, Vec2, Viewport};
+use crate::model::{
+    Command, Document, ResourceStore, Selection, ShapeId, UserError, Vec2, Viewport,
+};
 
 use super::{Phase0Shell, draw, file_dialogs::OpenPromptMode};
 
@@ -35,6 +37,12 @@ impl Phase0Shell {
         self.last_opened_path.as_deref()
     }
 
+    /// Return the latest open error, if any.
+    #[must_use]
+    pub fn last_open_error(&self) -> Option<&str> {
+        self.last_open_error.as_deref()
+    }
+
     /// Return the current document.
     ///
     /// This is intended for tests and debugging while Phase 0 is still
@@ -42,6 +50,12 @@ impl Phase0Shell {
     #[must_use]
     pub const fn document(&self) -> &Document {
         &self.state.document
+    }
+
+    /// Return the current shared resource store.
+    #[must_use]
+    pub const fn resources(&self) -> &ResourceStore {
+        &self.state.resources
     }
 
     /// Return the current viewport.

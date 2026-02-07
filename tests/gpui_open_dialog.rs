@@ -11,6 +11,7 @@ mod common;
 use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};
 use common::{TempFileGuard, ensure_initial_draw, init_test_app};
+use gauss::model::Paint;
 use gauss::ui::{OpenSvg, Phase0Shell};
 use gpui::TestAppContext;
 use uuid::Uuid;
@@ -67,4 +68,136 @@ fn open_action_loads_selected_svg(cx: &mut TestAppContext) {
 
     let shape_count = cx.read(|app| view.read(app).document().len());
     assert_eq!(shape_count, 1);
+
+    let gradient_count = cx.read(|app| view.read(app).resources().gradient_count());
+    let pattern_count = cx.read(|app| view.read(app).resources().pattern_count());
+    assert_eq!(gradient_count, 0);
+    assert_eq!(pattern_count, 0);
+}
+
+#[gpui::test]
+fn open_action_loads_resource_defs_and_paint_references(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let temp_dir =
+        Utf8PathBuf::from_path_buf(std::env::temp_dir()).expect("temp dir should be valid UTF-8");
+    let file_name = Utf8PathBuf::from(format!("gauss-test-open-resources-{}.svg", Uuid::new_v4()));
+    let svg_path = temp_dir.join(&file_name);
+    let dir =
+        Dir::open_ambient_dir(&temp_dir, ambient_authority()).expect("temp dir should be readable");
+    let svg = r##"
+        <svg xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="sunset" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#ff0000" />
+              <stop offset="1" stop-color="#ffff00" />
+            </linearGradient>
+            <pattern id="dots"><circle cx="1" cy="1" r="1" /></pattern>
+          </defs>
+          <path d="M 1 2 L 3 4 Z" stroke="url(#sunset)" stroke-width="1" fill="url(#dots)" />
+        </svg>
+    "##;
+    dir.write(file_name.as_path(), svg.as_bytes())
+        .expect("test SVG file should be writable");
+    let cleanup = TempFileGuard::new_with_path(dir, file_name, svg_path);
+    let svg_path_ref = cleanup.path().expect("temp file path should be set");
+
+    let view: gpui::Entity<Phase0Shell> = {
+        let (view, visual_cx) =
+            cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
+        ensure_initial_draw(visual_cx);
+        visual_cx.dispatch_action(OpenSvg);
+        visual_cx.run_until_parked();
+        view
+    };
+    cx.run_until_parked();
+
+    cx.simulate_new_path_selection(|_directory: &Path| {
+        Some(svg_path_ref.as_std_path().to_path_buf())
+    });
+    cx.run_until_parked();
+
+    let (gradient_count, pattern_count, shape_stroke, shape_fill, expected_stroke, expected_fill) =
+        cx.read(|app| {
+            let shell = view.read(app);
+            let gradient_id = shell
+                .resources()
+                .gradient_id_for_svg_id("sunset")
+                .expect("gradient id should exist");
+            let pattern_id = shell
+                .resources()
+                .pattern_id_for_svg_id("dots")
+                .expect("pattern id should exist");
+            let shape = shell
+                .document()
+                .shape_at(0)
+                .expect("shape should be imported");
+            (
+                shell.resources().gradient_count(),
+                shell.resources().pattern_count(),
+                shape.style.stroke,
+                shape.style.fill,
+                Paint::Gradient(gradient_id),
+                Paint::Pattern(pattern_id),
+            )
+        });
+
+    assert_eq!(gradient_count, 1);
+    assert_eq!(pattern_count, 1);
+    assert_eq!(shape_stroke, expected_stroke);
+    assert_eq!(shape_fill, expected_fill);
+}
+
+#[gpui::test]
+fn open_action_reports_missing_resource_reference(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let temp_dir =
+        Utf8PathBuf::from_path_buf(std::env::temp_dir()).expect("temp dir should be valid UTF-8");
+    let file_name = Utf8PathBuf::from(format!("gauss-test-open-invalid-{}.svg", Uuid::new_v4()));
+    let svg_path = temp_dir.join(&file_name);
+    let dir =
+        Dir::open_ambient_dir(&temp_dir, ambient_authority()).expect("temp dir should be readable");
+    let svg = r##"
+        <svg xmlns="http://www.w3.org/2000/svg">
+          <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="url(#missing)" />
+        </svg>
+    "##;
+    dir.write(file_name.as_path(), svg.as_bytes())
+        .expect("test SVG file should be writable");
+    let cleanup = TempFileGuard::new_with_path(dir, file_name, svg_path);
+    let svg_path_ref = cleanup.path().expect("temp file path should be set");
+
+    let view: gpui::Entity<Phase0Shell> = {
+        let (view, visual_cx) =
+            cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
+        ensure_initial_draw(visual_cx);
+        visual_cx.dispatch_action(OpenSvg);
+        visual_cx.run_until_parked();
+        view
+    };
+    cx.run_until_parked();
+
+    cx.simulate_new_path_selection(|_directory: &Path| {
+        Some(svg_path_ref.as_std_path().to_path_buf())
+    });
+    cx.run_until_parked();
+
+    let (shape_count, open_error) = cx.read(|app| {
+        let shell = view.read(app);
+        (
+            shell.document().len(),
+            shell.last_open_error().map(str::to_owned),
+        )
+    });
+
+    assert_eq!(
+        shape_count, 1,
+        "failed open should keep the pre-existing demo document"
+    );
+    let error_message = open_error.expect("open error should be populated");
+    assert!(
+        error_message.contains("missing resource"),
+        "error should describe missing referenced resources, got: {error_message}"
+    );
 }

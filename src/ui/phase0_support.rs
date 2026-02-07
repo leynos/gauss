@@ -13,7 +13,7 @@ use std::path::Path;
 
 use crate::{
     model::{Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2},
-    svg::import::import_svg,
+    svg::import::{ImportedSvg, import_svg_with_resources},
 };
 use camino::{Utf8Path, Utf8PathBuf};
 use cap_std::{ambient_authority, fs_utf8::Dir};
@@ -40,7 +40,7 @@ pub(super) fn write_svg_to_path(path: &Path, svg: &str) -> Result<(), String> {
 /// Load a document from the provided SVG file path.
 ///
 /// Phase 0 supports only a limited SVG subset (see `crate::svg::import`).
-pub(super) fn load_document_from_path(path: &Path) -> Result<Document, String> {
+pub(super) fn load_document_from_path(path: &Path) -> Result<ImportedSvg, String> {
     let utf8_path = Utf8PathBuf::from_path_buf(path.to_path_buf())
         .map_err(|_| "path is not valid UTF-8".to_owned())?;
     let directory = utf8_path.parent().unwrap_or_else(|| Utf8Path::new("."));
@@ -54,7 +54,7 @@ pub(super) fn load_document_from_path(path: &Path) -> Result<Document, String> {
         .read_to_string(Utf8Path::new(file_name))
         .map_err(|err| err.to_string())?;
 
-    import_svg(&svg).map_err(|err| err.to_string())
+    import_svg_with_resources(&svg).map_err(|err| err.to_string())
 }
 
 /// Build a deterministic document for Phase 0 rendering and export.
