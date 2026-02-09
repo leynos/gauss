@@ -371,11 +371,53 @@ mod tests {
 
     use super::*;
     use crate::model::{
-        Anchor, Gradient, GradientKind, GradientStop, LinearGradient, PaintStyle, PathGeom,
-        PatternResource, Rgba, Shape, SymbolResource, Vec2,
+        Anchor, Gradient, GradientId, GradientKind, GradientStop, LinearGradient, PaintStyle,
+        PathGeom, PatternId, PatternResource, Rgba, Shape, SymbolResource, Vec2,
     };
     use crate::test_helpers::shape_id_from_seed as shape_id;
     use rstest::rstest;
+
+    fn test_gradient_sunset(resources: &mut ResourceStore) -> GradientId {
+        resources.insert_gradient(Gradient::new(
+            "sunset",
+            GradientKind::Linear(LinearGradient::new(
+                Vec2::new(0.0, 0.0),
+                Vec2::new(1.0, 0.0),
+                vec![
+                    GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
+                    GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
+                ],
+            )),
+        ))
+    }
+
+    fn test_pattern_dots(resources: &mut ResourceStore) -> PatternId {
+        resources.insert_pattern(PatternResource::new("dots", "<circle />"))
+    }
+
+    fn create_test_triangle(seed: u32, style: PaintStyle) -> Shape {
+        Shape {
+            id: shape_id(seed.into()),
+            z: 0,
+            style,
+            path: PathGeom {
+                anchors: vec![
+                    Anchor::new(Vec2::new(0.0, 0.0)),
+                    Anchor::new(Vec2::new(5.0, 0.0)),
+                    Anchor::new(Vec2::new(5.0, 5.0)),
+                ],
+                segments: vec![SegmentKind::Line, SegmentKind::Line],
+                closed: true,
+                closing_segment: SegmentKind::Line,
+            },
+        }
+    }
+
+    fn build_doc_with_shape(shape: Shape) -> Document {
+        let mut doc = Document::new();
+        doc.append_shape(shape);
+        doc
+    }
 
     #[rstest]
     fn exports_empty_document_with_valid_svg_root() {
@@ -444,41 +486,17 @@ mod tests {
     #[rstest]
     fn exports_gradient_and_pattern_defs_and_references() {
         let mut resources = ResourceStore::new();
-        let gradient_id = resources.insert_gradient(Gradient::new(
-            "sunset",
-            GradientKind::Linear(LinearGradient::new(
-                Vec2::new(0.0, 0.0),
-                Vec2::new(1.0, 0.0),
-                vec![
-                    GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
-                    GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
-                ],
-            )),
-        ));
-        let pattern_id = resources.insert_pattern(PatternResource::new("dots", "<circle />"));
-
-        let shape = Shape {
-            id: shape_id(3),
-            z: 0,
-            style: PaintStyle::new_with_paint(
+        let gradient_id = test_gradient_sunset(&mut resources);
+        let pattern_id = test_pattern_dots(&mut resources);
+        let shape = create_test_triangle(
+            3,
+            PaintStyle::new_with_paint(
                 Paint::gradient(gradient_id),
                 1.5,
                 Paint::pattern(pattern_id),
             ),
-            path: PathGeom {
-                anchors: vec![
-                    Anchor::new(Vec2::new(0.0, 0.0)),
-                    Anchor::new(Vec2::new(5.0, 0.0)),
-                    Anchor::new(Vec2::new(5.0, 5.0)),
-                ],
-                segments: vec![SegmentKind::Line, SegmentKind::Line],
-                closed: true,
-                closing_segment: SegmentKind::Line,
-            },
-        };
-
-        let mut doc = Document::new();
-        doc.append_shape(shape);
+        );
+        let doc = build_doc_with_shape(shape);
         let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
 
         assert!(svg.contains("<defs>"));
@@ -491,41 +509,17 @@ mod tests {
     #[rstest]
     fn exports_paint_server_opacity_attributes() {
         let mut resources = ResourceStore::new();
-        let gradient_id = resources.insert_gradient(Gradient::new(
-            "sunset",
-            GradientKind::Linear(LinearGradient::new(
-                Vec2::new(0.0, 0.0),
-                Vec2::new(1.0, 0.0),
-                vec![
-                    GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
-                    GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
-                ],
-            )),
-        ));
-        let pattern_id = resources.insert_pattern(PatternResource::new("dots", "<circle />"));
-
-        let shape = Shape {
-            id: shape_id(30),
-            z: 0,
-            style: PaintStyle::new_with_paint(
+        let gradient_id = test_gradient_sunset(&mut resources);
+        let pattern_id = test_pattern_dots(&mut resources);
+        let shape = create_test_triangle(
+            30,
+            PaintStyle::new_with_paint(
                 Paint::gradient(gradient_id).with_opacity(128),
                 1.0,
                 Paint::pattern(pattern_id).with_opacity(64),
             ),
-            path: PathGeom {
-                anchors: vec![
-                    Anchor::new(Vec2::new(0.0, 0.0)),
-                    Anchor::new(Vec2::new(5.0, 0.0)),
-                    Anchor::new(Vec2::new(5.0, 5.0)),
-                ],
-                segments: vec![SegmentKind::Line, SegmentKind::Line],
-                closed: true,
-                closing_segment: SegmentKind::Line,
-            },
-        };
-
-        let mut doc = Document::new();
-        doc.append_shape(shape);
+        );
+        let doc = build_doc_with_shape(shape);
         let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
 
         assert!(svg.contains("stroke=\"url(#sunset)\""));
@@ -564,37 +558,13 @@ mod tests {
     #[rstest]
     fn checked_export_reports_missing_resource_references() {
         let mut resources = ResourceStore::new();
-        let dangling_gradient = resources.insert_gradient(Gradient::new(
-            "dangling",
-            GradientKind::Linear(LinearGradient::new(
-                Vec2::new(0.0, 0.0),
-                Vec2::new(1.0, 0.0),
-                vec![
-                    GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
-                    GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
-                ],
-            )),
-        ));
+        let dangling_gradient = test_gradient_sunset(&mut resources);
         let _removed = resources.remove_gradient(dangling_gradient);
-
-        let shape = Shape {
-            id: shape_id(31),
-            z: 0,
-            style: PaintStyle::new_with_paint(Paint::gradient(dangling_gradient), 1.0, Paint::None),
-            path: PathGeom {
-                anchors: vec![
-                    Anchor::new(Vec2::new(0.0, 0.0)),
-                    Anchor::new(Vec2::new(5.0, 0.0)),
-                    Anchor::new(Vec2::new(5.0, 5.0)),
-                ],
-                segments: vec![SegmentKind::Line, SegmentKind::Line],
-                closed: true,
-                closing_segment: SegmentKind::Line,
-            },
-        };
-
-        let mut doc = Document::new();
-        doc.append_shape(shape);
+        let shape = create_test_triangle(
+            31,
+            PaintStyle::new_with_paint(Paint::gradient(dangling_gradient), 1.0, Paint::None),
+        );
+        let doc = build_doc_with_shape(shape);
 
         let exported = export_svg_with_resources_checked(&doc, &resources, 10.0, 10.0);
         assert_eq!(
