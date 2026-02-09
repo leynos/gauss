@@ -98,39 +98,39 @@ where
     }
 }
 
+fn flush_number(
+    number_buf: &mut String,
+    tokens: &mut Vec<PathToken>,
+) -> Result<(), SvgImportError> {
+    if number_buf.is_empty() {
+        return Ok(());
+    }
+
+    let value = number_buf
+        .parse::<f32>()
+        .map_err(|_| SvgImportError::InvalidPathData)?;
+    tokens.push(PathToken::Number(value));
+    number_buf.clear();
+    Ok(())
+}
+
+const fn is_separator(ch: char) -> bool {
+    ch.is_ascii_whitespace() || ch == ','
+}
+
+const fn is_command(ch: char) -> bool {
+    matches!(ch, 'M' | 'L' | 'C' | 'Z')
+}
+
+const fn is_number_char(ch: char) -> bool {
+    ch.is_ascii_digit() || matches!(ch, '-' | '+' | '.')
+}
+
+const fn is_negative_number_start(ch: char, number_buf: &str) -> bool {
+    ch == '-' && !number_buf.is_empty()
+}
+
 fn tokenize_path_data(d: &str) -> Result<Vec<PathToken>, SvgImportError> {
-    fn flush_number(
-        number_buf: &mut String,
-        tokens: &mut Vec<PathToken>,
-    ) -> Result<(), SvgImportError> {
-        if number_buf.is_empty() {
-            return Ok(());
-        }
-
-        let value = number_buf
-            .parse::<f32>()
-            .map_err(|_| SvgImportError::InvalidPathData)?;
-        tokens.push(PathToken::Number(value));
-        number_buf.clear();
-        Ok(())
-    }
-
-    const fn is_separator(ch: char) -> bool {
-        ch.is_ascii_whitespace() || ch == ','
-    }
-
-    const fn is_command(ch: char) -> bool {
-        matches!(ch, 'M' | 'L' | 'C' | 'Z')
-    }
-
-    const fn is_number_char(ch: char) -> bool {
-        ch.is_ascii_digit() || matches!(ch, '-' | '+' | '.')
-    }
-
-    const fn is_negative_number_start(ch: char, number_buf: &str) -> bool {
-        ch == '-' && !number_buf.is_empty()
-    }
-
     let mut tokens = Vec::new();
     let mut number_buf = String::new();
 
