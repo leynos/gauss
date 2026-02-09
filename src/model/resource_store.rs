@@ -1,16 +1,8 @@
 //! Resource store for shared document resources.
 //!
-//! This module provides storage for reusable resources like gradients, patterns,
-//! symbols, and markers. Resources are referenced by ID from style definitions.
-//!
-//! 0.2.3 introduces concrete storage for:
-//!
-//! - gradients (`linearGradient` and `radialGradient`)
-//! - patterns (`pattern`)
-//! - symbols (`symbol`)
-//!
-//! SVG IDs are tracked alongside typed keys so the engine can keep strong
-//! references internally while still round-tripping to SVG URLs (`url(#id)`).
+//! Stores reusable gradient (`linearGradient`/`radialGradient`), pattern
+//! (`pattern`), and symbol (`symbol`) resources plus SVG-ID mappings for
+//! deterministic `url(#id)` round-trip references.
 
 use std::collections::HashMap;
 
@@ -210,36 +202,10 @@ pub struct ResourceStore {
 
 impl PartialEq for ResourceStore {
     fn eq(&self, other: &Self) -> bool {
-        if self.gradients.len() != other.gradients.len() {
-            return false;
-        }
-
-        if self.patterns.len() != other.patterns.len() || self.symbols.len() != other.symbols.len()
-        {
-            return false;
-        }
-
-        for (id, gradient) in &self.gradients {
-            if other.gradients.get(id) != Some(gradient) {
-                return false;
-            }
-        }
-
-        for (id, pattern) in &self.patterns {
-            if other.patterns.get(id) != Some(pattern) {
-                return false;
-            }
-        }
-
-        for (id, symbol) in &self.symbols {
-            if other.symbols.get(id) != Some(symbol) {
-                return false;
-            }
-        }
-
-        self.gradient_svg_ids == other.gradient_svg_ids
-            && self.pattern_svg_ids == other.pattern_svg_ids
-            && self.symbol_svg_ids == other.symbol_svg_ids
+        self.gradients_match(other)
+            && self.patterns_match(other)
+            && self.symbols_match(other)
+            && self.svg_id_maps_match(other)
     }
 }
 
@@ -371,6 +337,39 @@ impl ResourceStore {
     /// Iterate all symbols as `(id, symbol)` tuples.
     pub fn symbols(&self) -> impl Iterator<Item = (SymbolId, &SymbolResource)> + '_ {
         self.symbols.iter()
+    }
+
+    fn gradients_match(&self, other: &Self) -> bool {
+        if self.gradients.len() != other.gradients.len() {
+            return false;
+        }
+        self.gradients
+            .iter()
+            .all(|(id, gradient)| other.gradients.get(id) == Some(gradient))
+    }
+
+    fn patterns_match(&self, other: &Self) -> bool {
+        if self.patterns.len() != other.patterns.len() {
+            return false;
+        }
+        self.patterns
+            .iter()
+            .all(|(id, pattern)| other.patterns.get(id) == Some(pattern))
+    }
+
+    fn symbols_match(&self, other: &Self) -> bool {
+        if self.symbols.len() != other.symbols.len() {
+            return false;
+        }
+        self.symbols
+            .iter()
+            .all(|(id, symbol)| other.symbols.get(id) == Some(symbol))
+    }
+
+    fn svg_id_maps_match(&self, other: &Self) -> bool {
+        self.gradient_svg_ids == other.gradient_svg_ids
+            && self.pattern_svg_ids == other.pattern_svg_ids
+            && self.symbol_svg_ids == other.symbol_svg_ids
     }
 }
 
