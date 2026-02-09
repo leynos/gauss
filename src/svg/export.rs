@@ -118,59 +118,7 @@ fn write_defs(out: &mut String, resources: &ResourceStore) {
     out.push_str("<defs>\n");
 
     for (_id, gradient) in resources.gradients() {
-        match &gradient.kind {
-            GradientKind::Linear(data) => {
-                write_fmt(
-                    out,
-                    format_args!(
-                        r#"<linearGradient id="{}" x1="{}" y1="{}" x2="{}" y2="{}">"#,
-                        gradient.svg_id, data.start.x, data.start.y, data.end.x, data.end.y
-                    ),
-                );
-                out.push('\n');
-                for stop in &data.stops {
-                    let stop_colour = format_hex_rgb(stop.colour);
-                    write_fmt(
-                        out,
-                        format_args!(
-                            r#"<stop offset="{}" stop-color="{}" stop-opacity="{:.4}" />"#,
-                            stop.offset,
-                            stop_colour,
-                            opacity_from_alpha(stop.colour.a)
-                        ),
-                    );
-                    out.push('\n');
-                }
-                out.push_str("</linearGradient>\n");
-            }
-            GradientKind::Radial(data) => {
-                write_fmt(
-                    out,
-                    format_args!(
-                        r#"<radialGradient id="{}" cx="{}" cy="{}" r="{}""#,
-                        gradient.svg_id, data.centre.x, data.centre.y, data.radius
-                    ),
-                );
-                if let Some(focal) = data.focal {
-                    write_fmt(out, format_args!(r#" fx="{}" fy="{}""#, focal.x, focal.y));
-                }
-                out.push_str(">\n");
-                for stop in &data.stops {
-                    let stop_colour = format_hex_rgb(stop.colour);
-                    write_fmt(
-                        out,
-                        format_args!(
-                            r#"<stop offset="{}" stop-color="{}" stop-opacity="{:.4}" />"#,
-                            stop.offset,
-                            stop_colour,
-                            opacity_from_alpha(stop.colour.a)
-                        ),
-                    );
-                    out.push('\n');
-                }
-                out.push_str("</radialGradient>\n");
-            }
-        }
+        write_gradient(out, gradient);
     }
 
     for (_id, pattern) in resources.patterns() {
@@ -182,6 +130,66 @@ fn write_defs(out: &mut String, resources: &ResourceStore) {
     }
 
     out.push_str("</defs>\n");
+}
+
+fn write_gradient(out: &mut String, gradient: &crate::model::Gradient) {
+    match &gradient.kind {
+        GradientKind::Linear(data) => write_linear_gradient(out, gradient.svg_id.as_str(), data),
+        GradientKind::Radial(data) => write_radial_gradient(out, gradient.svg_id.as_str(), data),
+    }
+}
+
+fn write_linear_gradient(out: &mut String, svg_id: &str, data: &crate::model::LinearGradient) {
+    write_fmt(
+        out,
+        format_args!(
+            r#"<linearGradient id="{}" x1="{}" y1="{}" x2="{}" y2="{}">"#,
+            svg_id, data.start.x, data.start.y, data.end.x, data.end.y
+        ),
+    );
+    out.push('\n');
+
+    for stop in &data.stops {
+        write_gradient_stop(out, *stop);
+    }
+
+    out.push_str("</linearGradient>\n");
+}
+
+fn write_radial_gradient(out: &mut String, svg_id: &str, data: &crate::model::RadialGradient) {
+    write_fmt(
+        out,
+        format_args!(
+            r#"<radialGradient id="{}" cx="{}" cy="{}" r="{}""#,
+            svg_id, data.centre.x, data.centre.y, data.radius
+        ),
+    );
+
+    if let Some(focal) = data.focal {
+        write_fmt(out, format_args!(r#" fx="{}" fy="{}""#, focal.x, focal.y));
+    }
+
+    out.push_str(">\n");
+
+    for stop in &data.stops {
+        write_gradient_stop(out, *stop);
+    }
+
+    out.push_str("</radialGradient>\n");
+}
+
+fn write_gradient_stop(out: &mut String, stop: crate::model::GradientStop) {
+    let stop_colour = format_hex_rgb(stop.colour);
+    write_fmt(
+        out,
+        format_args!(
+            r#"<stop offset="{}" stop-color="{}" stop-opacity="{:.4}" />"#,
+            stop.offset,
+            stop_colour,
+            opacity_from_alpha(stop.colour.a)
+        ),
+    );
+    out.push('\n');
 }
 
 fn write_pattern(out: &mut String, pattern: &PatternResource) {
