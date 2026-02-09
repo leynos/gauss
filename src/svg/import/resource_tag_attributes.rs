@@ -15,56 +15,59 @@ pub(super) fn collect_extra_attributes(
         .collect()
 }
 
-fn parse_tag_attributes(tag: &str) -> Vec<(String, String)> {
-    let mut attributes = Vec::new();
+fn skip_to_attributes(tag: &str) -> &str {
     let mut rest = tag.trim();
-
     if let Some(start) = rest.find('<') {
         rest = rest.get((start + 1)..).unwrap_or_default();
     }
-
     while let Some(ch) = rest.chars().next() {
         if ch.is_whitespace() {
             break;
         }
         rest = rest.get(ch.len_utf8()..).unwrap_or_default();
     }
+    rest
+}
 
-    loop {
-        rest = rest.trim_start();
-        if rest.is_empty() {
-            break;
-        }
-        if rest.starts_with('>') || rest.starts_with("/>") {
-            break;
-        }
+fn try_parse_next_attribute(input: &str) -> Option<(String, String, &str)> {
+    let rest = input.trim_start();
+    if rest.is_empty() {
+        return None;
+    }
+    if rest.starts_with('>') {
+        return None;
+    }
+    if rest.starts_with("/>") {
+        return None;
+    }
 
-        let Some(eq_index) = rest.find('=') else {
-            break;
-        };
+    let eq_index = rest.find('=')?;
+    let name = rest.get(..eq_index)?.trim();
+    if name.is_empty() {
+        return None;
+    }
 
-        let name = rest.get(..eq_index).unwrap_or_default().trim();
-        rest = rest.get((eq_index + 1)..).unwrap_or_default().trim_start();
-        let Some(quote) = rest.chars().next() else {
-            break;
-        };
-        if quote != '"' && quote != '\'' {
-            break;
-        }
+    let value_start = rest.get((eq_index + 1)..)?.trim_start();
+    let quote = value_start.chars().next()?;
+    if quote != '"' && quote != '\'' {
+        return None;
+    }
 
-        rest = rest.get(quote.len_utf8()..).unwrap_or_default();
-        let Some(end_quote) = rest.find(quote) else {
-            break;
-        };
+    let value_input = value_start.get(quote.len_utf8()..)?;
+    let end_quote = value_input.find(quote)?;
+    let value = value_input.get(..end_quote)?;
+    let remaining = value_input.get((end_quote + quote.len_utf8())..)?;
 
-        let value = rest.get(..end_quote).unwrap_or_default();
-        if !name.is_empty() {
-            attributes.push((name.to_owned(), value.to_owned()));
-        }
+    Some((name.to_owned(), value.to_owned(), remaining))
+}
 
-        rest = rest
-            .get((end_quote + quote.len_utf8())..)
-            .unwrap_or_default();
+fn parse_tag_attributes(tag: &str) -> Vec<(String, String)> {
+    let mut attributes = Vec::new();
+    let mut rest = skip_to_attributes(tag);
+
+    while let Some((name, value, remaining)) = try_parse_next_attribute(rest) {
+        attributes.push((name, value));
+        rest = remaining;
     }
 
     attributes
