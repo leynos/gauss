@@ -17,7 +17,6 @@ pub(super) fn parse_resources(
     parse_radial_gradients(svg, resources)?;
     parse_patterns(svg, resources);
     parse_symbols(svg, resources);
-
     Ok(())
 }
 
@@ -55,7 +54,6 @@ fn parse_linear_gradients(
         );
         let _gradient_id = resources.insert_gradient(gradient);
     }
-
     Ok(())
 }
 
@@ -89,43 +87,57 @@ fn parse_radial_gradients(
         );
         let _gradient_id = resources.insert_gradient(gradient);
     }
-
     Ok(())
 }
 
 fn parse_patterns(svg: SvgContent<'_>, resources: &mut ResourceStore) {
-    for raw_block in extract_block_tags(svg, TagName::new("pattern")) {
-        let block_content = SvgContent::new(raw_block.as_str());
-        let id = attribute_value(block_content, AttributeName::new("id")).unwrap_or_default();
-        let body = inner_tag_body(block_content, TagName::new("pattern"));
-        let opening_tag = opening_tag(block_content.as_str());
-        let extra_attributes = opening_tag
-            .map(|tag| collect_extra_attributes(tag, &["id"]))
-            .unwrap_or_default();
-        let _pattern_id = resources.insert_pattern(PatternResource::new_with_attributes(
-            id,
-            body,
-            extra_attributes,
-        ));
-    }
+    parse_resource_blocks(
+        svg,
+        TagName::new("pattern"),
+        &["id"],
+        |id, body, extra_attributes, _block_content| {
+            let _pattern_id = resources.insert_pattern(PatternResource::new_with_attributes(
+                id,
+                body,
+                extra_attributes,
+            ));
+        },
+    );
 }
 
 fn parse_symbols(svg: SvgContent<'_>, resources: &mut ResourceStore) {
-    for raw_block in extract_block_tags(svg, TagName::new("symbol")) {
+    parse_resource_blocks(
+        svg,
+        TagName::new("symbol"),
+        &["id", "viewBox"],
+        |id, body, extra_attributes, block_content| {
+            let view_box = attribute_value(block_content, AttributeName::new("viewBox"));
+            let _symbol_id = resources.insert_symbol(SymbolResource::new_with_attributes(
+                id,
+                view_box,
+                body,
+                extra_attributes,
+            ));
+        },
+    );
+}
+
+fn parse_resource_blocks<F>(
+    svg: SvgContent<'_>,
+    tag_name: TagName<'_>,
+    excluded_attributes: &[&str],
+    mut insert_fn: F,
+) where
+    F: for<'a> FnMut(String, String, Vec<(String, String)>, SvgContent<'a>),
+{
+    for raw_block in extract_block_tags(svg, tag_name) {
         let block_content = SvgContent::new(raw_block.as_str());
         let id = attribute_value(block_content, AttributeName::new("id")).unwrap_or_default();
-        let view_box = attribute_value(block_content, AttributeName::new("viewBox"));
-        let body = inner_tag_body(block_content, TagName::new("symbol"));
-        let opening_tag = opening_tag(block_content.as_str());
-        let extra_attributes = opening_tag
-            .map(|tag| collect_extra_attributes(tag, &["id", "viewBox"]))
+        let body = inner_tag_body(block_content, tag_name);
+        let extra_attributes = opening_tag(block_content.as_str())
+            .map(|tag| collect_extra_attributes(tag, excluded_attributes))
             .unwrap_or_default();
-        let _symbol_id = resources.insert_symbol(SymbolResource::new_with_attributes(
-            id,
-            view_box,
-            body,
-            extra_attributes,
-        ));
+        insert_fn(id, body, extra_attributes, block_content);
     }
 }
 
@@ -139,12 +151,10 @@ pub(super) fn parse_paint_with_opacity(
         None => Paint::None,
         Some(value) => parse_colour_with_resources(value.as_str(), resources)?,
     };
-
     let alpha = match attribute_value(tag, opacity_attr) {
         None => 255,
         Some(value) => parse_opacity_to_alpha(value.as_str())?,
     };
-
     Ok(paint.with_opacity(alpha))
 }
 
