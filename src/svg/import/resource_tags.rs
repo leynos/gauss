@@ -7,18 +7,44 @@ use crate::model::{
 
 use super::SvgImportError;
 use super::resource_tag_attributes::{collect_extra_attributes, opening_tag};
+pub(super) use super::types::{AttributeName, SvgContent, TagName};
 
 pub(super) fn parse_resources(
-    svg: &str,
+    svg: SvgContent<'_>,
     resources: &mut ResourceStore,
 ) -> Result<(), SvgImportError> {
-    for block in extract_block_tags(svg, "linearGradient") {
-        let id = attribute_value(&block, "id").unwrap_or_default();
-        let x1 = parse_optional_f32(attribute_value(&block, "x1"), 0.0)?;
-        let y1 = parse_optional_f32(attribute_value(&block, "y1"), 0.0)?;
-        let x2 = parse_optional_f32(attribute_value(&block, "x2"), 1.0)?;
-        let y2 = parse_optional_f32(attribute_value(&block, "y2"), 0.0)?;
-        let stops = parse_gradient_stops(&block)?;
+    parse_linear_gradients(svg, resources)?;
+    parse_radial_gradients(svg, resources)?;
+    parse_patterns(svg, resources);
+    parse_symbols(svg, resources);
+
+    Ok(())
+}
+
+fn parse_linear_gradients(
+    svg: SvgContent<'_>,
+    resources: &mut ResourceStore,
+) -> Result<(), SvgImportError> {
+    for raw_block in extract_block_tags(svg, TagName::new("linearGradient")) {
+        let block_content = SvgContent::new(raw_block.as_str());
+        let id = attribute_value(block_content, AttributeName::new("id")).unwrap_or_default();
+        let x1 = parse_optional_f32(
+            attribute_value(block_content, AttributeName::new("x1")),
+            0.0,
+        )?;
+        let y1 = parse_optional_f32(
+            attribute_value(block_content, AttributeName::new("y1")),
+            0.0,
+        )?;
+        let x2 = parse_optional_f32(
+            attribute_value(block_content, AttributeName::new("x2")),
+            1.0,
+        )?;
+        let y2 = parse_optional_f32(
+            attribute_value(block_content, AttributeName::new("y2")),
+            0.0,
+        )?;
+        let stops = parse_gradient_stops(block_content)?;
         let gradient = Gradient::new(
             id,
             GradientKind::Linear(LinearGradient::new(
@@ -30,19 +56,33 @@ pub(super) fn parse_resources(
         let _gradient_id = resources.insert_gradient(gradient);
     }
 
-    for block in extract_block_tags(svg, "radialGradient") {
-        let id = attribute_value(&block, "id").unwrap_or_default();
-        let cx = parse_optional_f32(attribute_value(&block, "cx"), 0.5)?;
-        let cy = parse_optional_f32(attribute_value(&block, "cy"), 0.5)?;
-        let r = parse_optional_f32(attribute_value(&block, "r"), 0.5)?;
-        let fx = parse_optional_f32(attribute_value(&block, "fx"), cx)?;
-        let fy = parse_optional_f32(attribute_value(&block, "fy"), cy)?;
+    Ok(())
+}
+
+fn parse_radial_gradients(
+    svg: SvgContent<'_>,
+    resources: &mut ResourceStore,
+) -> Result<(), SvgImportError> {
+    for raw_block in extract_block_tags(svg, TagName::new("radialGradient")) {
+        let block_content = SvgContent::new(raw_block.as_str());
+        let id = attribute_value(block_content, AttributeName::new("id")).unwrap_or_default();
+        let cx = parse_optional_f32(
+            attribute_value(block_content, AttributeName::new("cx")),
+            0.5,
+        )?;
+        let cy = parse_optional_f32(
+            attribute_value(block_content, AttributeName::new("cy")),
+            0.5,
+        )?;
+        let r = parse_optional_f32(attribute_value(block_content, AttributeName::new("r")), 0.5)?;
+        let fx = parse_optional_f32(attribute_value(block_content, AttributeName::new("fx")), cx)?;
+        let fy = parse_optional_f32(attribute_value(block_content, AttributeName::new("fy")), cy)?;
         let focal = if (fx - cx).abs() <= f32::EPSILON && (fy - cy).abs() <= f32::EPSILON {
             None
         } else {
             Some(Vec2::new(fx, fy))
         };
-        let stops = parse_gradient_stops(&block)?;
+        let stops = parse_gradient_stops(block_content)?;
         let gradient = Gradient::new(
             id,
             GradientKind::Radial(RadialGradient::new(Vec2::new(cx, cy), r, focal, stops)),
@@ -50,10 +90,15 @@ pub(super) fn parse_resources(
         let _gradient_id = resources.insert_gradient(gradient);
     }
 
-    for block in extract_block_tags(svg, "pattern") {
-        let id = attribute_value(&block, "id").unwrap_or_default();
-        let body = inner_tag_body(&block, "pattern");
-        let opening_tag = opening_tag(&block);
+    Ok(())
+}
+
+fn parse_patterns(svg: SvgContent<'_>, resources: &mut ResourceStore) {
+    for raw_block in extract_block_tags(svg, TagName::new("pattern")) {
+        let block_content = SvgContent::new(raw_block.as_str());
+        let id = attribute_value(block_content, AttributeName::new("id")).unwrap_or_default();
+        let body = inner_tag_body(block_content, TagName::new("pattern"));
+        let opening_tag = opening_tag(block_content.as_str());
         let extra_attributes = opening_tag
             .map(|tag| collect_extra_attributes(tag, &["id"]))
             .unwrap_or_default();
@@ -63,12 +108,15 @@ pub(super) fn parse_resources(
             extra_attributes,
         ));
     }
+}
 
-    for block in extract_block_tags(svg, "symbol") {
-        let id = attribute_value(&block, "id").unwrap_or_default();
-        let view_box = attribute_value(&block, "viewBox");
-        let body = inner_tag_body(&block, "symbol");
-        let opening_tag = opening_tag(&block);
+fn parse_symbols(svg: SvgContent<'_>, resources: &mut ResourceStore) {
+    for raw_block in extract_block_tags(svg, TagName::new("symbol")) {
+        let block_content = SvgContent::new(raw_block.as_str());
+        let id = attribute_value(block_content, AttributeName::new("id")).unwrap_or_default();
+        let view_box = attribute_value(block_content, AttributeName::new("viewBox"));
+        let body = inner_tag_body(block_content, TagName::new("symbol"));
+        let opening_tag = opening_tag(block_content.as_str());
         let extra_attributes = opening_tag
             .map(|tag| collect_extra_attributes(tag, &["id", "viewBox"]))
             .unwrap_or_default();
@@ -79,14 +127,12 @@ pub(super) fn parse_resources(
             extra_attributes,
         ));
     }
-
-    Ok(())
 }
 
 pub(super) fn parse_paint_with_opacity(
-    tag: &str,
-    paint_attr: &str,
-    opacity_attr: &str,
+    tag: SvgContent<'_>,
+    paint_attr: AttributeName<'_>,
+    opacity_attr: AttributeName<'_>,
     resources: &ResourceStore,
 ) -> Result<Paint, SvgImportError> {
     let paint = match attribute_value(tag, paint_attr) {
@@ -102,10 +148,10 @@ pub(super) fn parse_paint_with_opacity(
     Ok(paint.with_opacity(alpha))
 }
 
-pub(super) fn extract_single_tags(svg: &str, tag_name: &str) -> Vec<String> {
+pub(super) fn extract_single_tags(svg: SvgContent<'_>, tag_name: TagName<'_>) -> Vec<String> {
     let mut tags = Vec::new();
-    let mut remaining = svg;
-    let tag_prefix = format!("<{tag_name}");
+    let mut remaining = svg.as_str();
+    let tag_prefix = format!("<{}", tag_name.as_str());
 
     while let Some(start) = remaining.find(tag_prefix.as_str()) {
         let Some(after_start) = remaining.get(start..) else {
@@ -124,13 +170,14 @@ pub(super) fn extract_single_tags(svg: &str, tag_name: &str) -> Vec<String> {
     tags
 }
 
-pub(super) fn attribute_value(tag: &str, name: &str) -> Option<String> {
+pub(super) fn attribute_value(tag: SvgContent<'_>, name: AttributeName<'_>) -> Option<String> {
+    let tag_content = tag.as_str();
     for quote in ['"', '\''] {
-        let needle = format!("{name}={quote}");
-        let Some(start) = tag.find(needle.as_str()) else {
+        let needle = format!("{}={quote}", name.as_str());
+        let Some(start) = tag_content.find(needle.as_str()) else {
             continue;
         };
-        let Some(after) = tag.get((start + needle.len())..) else {
+        let Some(after) = tag_content.get((start + needle.len())..) else {
             continue;
         };
         let Some(end) = after.find(quote) else {
@@ -144,20 +191,21 @@ pub(super) fn attribute_value(tag: &str, name: &str) -> Option<String> {
     None
 }
 
-fn parse_gradient_stops(block: &str) -> Result<Vec<GradientStop>, SvgImportError> {
+fn parse_gradient_stops(block: SvgContent<'_>) -> Result<Vec<GradientStop>, SvgImportError> {
     let mut stops = Vec::new();
 
-    for stop_tag in extract_single_tags(block, "stop") {
-        let offset = attribute_value(&stop_tag, "offset")
+    for raw_stop_tag in extract_single_tags(block, TagName::new("stop")) {
+        let stop_tag_content = SvgContent::new(raw_stop_tag.as_str());
+        let offset = attribute_value(stop_tag_content, AttributeName::new("offset"))
             .map(|value| parse_offset(value.as_str()))
             .transpose()?
             .unwrap_or(0.0);
 
-        let colour = attribute_value(&stop_tag, "stop-color")
+        let colour = attribute_value(stop_tag_content, AttributeName::new("stop-color"))
             .ok_or(SvgImportError::InvalidColour)
             .and_then(|value| parse_colour(value.as_str()))?;
 
-        let alpha = attribute_value(&stop_tag, "stop-opacity")
+        let alpha = attribute_value(stop_tag_content, AttributeName::new("stop-opacity"))
             .map(|value| parse_opacity_to_alpha(value.as_str()))
             .transpose()?
             .unwrap_or(255);
@@ -274,11 +322,11 @@ fn parse_offset(value: &str) -> Result<f32, SvgImportError> {
         .map_err(|_| SvgImportError::InvalidNumber)
 }
 
-fn extract_block_tags(svg: &str, tag_name: &str) -> Vec<String> {
+fn extract_block_tags(svg: SvgContent<'_>, tag_name: TagName<'_>) -> Vec<String> {
     let mut blocks = Vec::new();
-    let mut remaining = svg;
-    let open_prefix = format!("<{tag_name}");
-    let close_tag = format!("</{tag_name}>");
+    let mut remaining = svg.as_str();
+    let open_prefix = format!("<{}", tag_name.as_str());
+    let close_tag = format!("</{}>", tag_name.as_str());
 
     while let Some(start) = remaining.find(open_prefix.as_str()) {
         let Some(after_start) = remaining.get(start..) else {
@@ -315,24 +363,25 @@ fn extract_block_tags(svg: &str, tag_name: &str) -> Vec<String> {
     blocks
 }
 
-fn inner_tag_body(block: &str, tag_name: &str) -> String {
-    let Some(open_end) = block.find('>') else {
+fn inner_tag_body(block: SvgContent<'_>, tag_name: TagName<'_>) -> String {
+    let block_content = block.as_str();
+    let Some(open_end) = block_content.find('>') else {
         return String::new();
     };
 
-    let Some(open_tag) = block.get(..=open_end) else {
+    let Some(open_tag) = block_content.get(..=open_end) else {
         return String::new();
     };
     if open_tag.trim_end().ends_with("/>") {
         return String::new();
     }
 
-    let close_tag = format!("</{tag_name}>");
-    let Some(close_start) = block.rfind(close_tag.as_str()) else {
+    let close_tag = format!("</{}>", tag_name.as_str());
+    let Some(close_start) = block_content.rfind(close_tag.as_str()) else {
         return String::new();
     };
 
-    block
+    block_content
         .get((open_end + 1)..close_start)
         .map_or_else(String::new, ToOwned::to_owned)
 }

@@ -16,6 +16,7 @@ use crate::model::{Document, PaintStyle, Shape, ShapeId};
 mod path_data;
 mod resource_tag_attributes;
 mod resource_tags;
+mod types;
 
 /// Imported SVG state containing document geometry and shared resources.
 #[derive(Clone, Debug, PartialEq)]
@@ -87,29 +88,45 @@ pub fn import_svg(svg: &str) -> Result<Document, SvgImportError> {
 /// invalid references to resources.
 pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportError> {
     let mut resources = crate::model::ResourceStore::new();
-    resource_tags::parse_resources(svg, &mut resources)?;
+    resource_tags::parse_resources(resource_tags::SvgContent::new(svg), &mut resources)?;
 
     let mut doc = Document::new();
 
-    for (index, tag) in resource_tags::extract_single_tags(svg, "path")
-        .into_iter()
-        .enumerate()
+    for (index, raw_tag) in resource_tags::extract_single_tags(
+        resource_tags::SvgContent::new(svg),
+        resource_tags::TagName::new("path"),
+    )
+    .into_iter()
+    .enumerate()
     {
-        let d = resource_tags::attribute_value(&tag, "d").ok_or(SvgImportError::MissingPathData)?;
+        let tag_content = resource_tags::SvgContent::new(raw_tag.as_str());
+        let d = resource_tags::attribute_value(tag_content, resource_tags::AttributeName::new("d"))
+            .ok_or(SvgImportError::MissingPathData)?;
 
-        let stroke =
-            resource_tags::parse_paint_with_opacity(&tag, "stroke", "stroke-opacity", &resources)?;
-        let fill =
-            resource_tags::parse_paint_with_opacity(&tag, "fill", "fill-opacity", &resources)?;
+        let stroke = resource_tags::parse_paint_with_opacity(
+            tag_content,
+            resource_tags::AttributeName::new("stroke"),
+            resource_tags::AttributeName::new("stroke-opacity"),
+            &resources,
+        )?;
+        let fill = resource_tags::parse_paint_with_opacity(
+            tag_content,
+            resource_tags::AttributeName::new("fill"),
+            resource_tags::AttributeName::new("fill-opacity"),
+            &resources,
+        )?;
 
-        let stroke_width = resource_tags::attribute_value(&tag, "stroke-width")
-            .map(|value| {
-                value
-                    .parse::<f32>()
-                    .map_err(|_| SvgImportError::InvalidNumber)
-            })
-            .transpose()?
-            .unwrap_or(1.0);
+        let stroke_width = resource_tags::attribute_value(
+            tag_content,
+            resource_tags::AttributeName::new("stroke-width"),
+        )
+        .map(|value| {
+            value
+                .parse::<f32>()
+                .map_err(|_| SvgImportError::InvalidNumber)
+        })
+        .transpose()?
+        .unwrap_or(1.0);
 
         let path = path_data::parse_path_data(&d)?;
         let style = PaintStyle::new_with_paint(stroke, stroke_width, fill);
