@@ -43,6 +43,12 @@ impl Phase0Shell {
         self.last_open_error.as_deref()
     }
 
+    /// Return the latest save error, if any.
+    #[must_use]
+    pub fn last_save_error(&self) -> Option<&str> {
+        self.last_save_error.as_deref()
+    }
+
     /// Return the current document.
     ///
     /// This is intended for tests and debugging while Phase 0 is still
@@ -221,6 +227,14 @@ impl Phase0Shell {
     /// allowing tests to create invalid states that trigger history errors.
     pub const fn document_mut_for_tests(&mut self) -> &mut Document {
         &mut self.state.document
+    }
+
+    /// Return a mutable reference to shared resources for direct mutation.
+    ///
+    /// This helper supports headless tests that need to exercise validation
+    /// behaviour (for example, dangling paint references).
+    pub const fn resources_mut_for_tests(&mut self) -> &mut ResourceStore {
+        &mut self.state.resources
     }
 
     /// Trigger an undo operation through the shell's history system.

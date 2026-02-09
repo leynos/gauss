@@ -11,9 +11,10 @@
 
 use std::{error::Error, fmt};
 
-use crate::model::{Document, Paint, PaintStyle, Shape, ShapeId};
+use crate::model::{Document, PaintStyle, Shape, ShapeId};
 
 mod path_data;
+mod resource_tag_attributes;
 mod resource_tags;
 
 /// Imported SVG state containing document geometry and shared resources.
@@ -96,9 +97,9 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
     {
         let d = resource_tags::attribute_value(&tag, "d").ok_or(SvgImportError::MissingPathData)?;
 
-        let (stroke, stroke_alpha) =
+        let stroke =
             resource_tags::parse_paint_with_opacity(&tag, "stroke", "stroke-opacity", &resources)?;
-        let (fill, fill_alpha) =
+        let fill =
             resource_tags::parse_paint_with_opacity(&tag, "fill", "fill-opacity", &resources)?;
 
         let stroke_width = resource_tags::attribute_value(&tag, "stroke-width")
@@ -111,11 +112,7 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
             .unwrap_or(1.0);
 
         let path = path_data::parse_path_data(&d)?;
-        let style = PaintStyle::new_with_paint(
-            apply_alpha(stroke, stroke_alpha),
-            stroke_width,
-            apply_alpha(fill, fill_alpha),
-        );
+        let style = PaintStyle::new_with_paint(stroke, stroke_width, fill);
 
         let shape = Shape {
             id: ShapeId::default(),
@@ -130,14 +127,4 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
         document: doc,
         resources,
     })
-}
-
-const fn apply_alpha(paint: Paint, alpha: u8) -> Paint {
-    match paint {
-        Paint::Solid(mut colour) => {
-            colour.a = alpha;
-            Paint::Solid(colour)
-        }
-        Paint::None | Paint::Gradient(_) | Paint::Pattern(_) => paint,
-    }
 }

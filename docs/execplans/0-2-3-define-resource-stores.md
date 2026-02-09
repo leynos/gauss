@@ -63,9 +63,8 @@ prepare for Phase 4 colour and effects work. Success is observable when:
   behaviour. Mitigation: preserve compatibility wrappers and add round-trip
   tests for both resource and non-resource documents.
 - Risk: missing resource references could silently degrade rendering.
-  Mitigation:
-  fail import with explicit error and keep in-memory document unchanged on open
-  failure.
+  Mitigation: fail import with explicit error and keep in-memory document
+  unchanged on open failure.
 - Risk: `rstest-bdd` version drift can break macros. Mitigation: bump to
   `rstest-bdd`/`rstest-bdd-macros` 0.5.0 and validate with behavioural tests.
 

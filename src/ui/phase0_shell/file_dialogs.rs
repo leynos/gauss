@@ -15,7 +15,7 @@ use gpui::{AsyncWindowContext, Context, PathPromptOptions, WeakEntity, Window};
 use gpui_component::history::History;
 
 use crate::model::Selection;
-use crate::svg::export::export_svg_with_resources;
+use crate::svg::export::export_svg_with_resources_checked;
 
 use super::Phase0Shell;
 
@@ -130,8 +130,9 @@ async fn apply_save_path(
     };
 
     // TODO: derive canvas size from document bounds or viewport state.
-    let svg = export_svg_with_resources(&doc, &resources, 100.0, 100.0);
-    let save_result = super::super::phase0_support::write_svg_to_path(&path, &svg);
+    let save_result = export_svg_with_resources_checked(&doc, &resources, 100.0, 100.0)
+        .map_err(|err| err.to_string())
+        .and_then(|svg| super::super::phase0_support::write_svg_to_path(&path, &svg));
     let error = save_result.err();
 
     let _update_result = this.update(&mut cx, move |view, view_cx| {

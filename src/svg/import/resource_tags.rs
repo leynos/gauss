@@ -6,6 +6,7 @@ use crate::model::{
 };
 
 use super::SvgImportError;
+use super::resource_tag_attributes::{collect_extra_attributes, opening_tag};
 
 pub(super) fn parse_resources(
     svg: &str,
@@ -52,14 +53,31 @@ pub(super) fn parse_resources(
     for block in extract_block_tags(svg, "pattern") {
         let id = attribute_value(&block, "id").unwrap_or_default();
         let body = inner_tag_body(&block, "pattern");
-        let _pattern_id = resources.insert_pattern(PatternResource::new(id, body));
+        let opening_tag = opening_tag(&block);
+        let extra_attributes = opening_tag
+            .map(|tag| collect_extra_attributes(tag, &["id"]))
+            .unwrap_or_default();
+        let _pattern_id = resources.insert_pattern(PatternResource::new_with_attributes(
+            id,
+            body,
+            extra_attributes,
+        ));
     }
 
     for block in extract_block_tags(svg, "symbol") {
         let id = attribute_value(&block, "id").unwrap_or_default();
         let view_box = attribute_value(&block, "viewBox");
         let body = inner_tag_body(&block, "symbol");
-        let _symbol_id = resources.insert_symbol(SymbolResource::new(id, view_box, body));
+        let opening_tag = opening_tag(&block);
+        let extra_attributes = opening_tag
+            .map(|tag| collect_extra_attributes(tag, &["id", "viewBox"]))
+            .unwrap_or_default();
+        let _symbol_id = resources.insert_symbol(SymbolResource::new_with_attributes(
+            id,
+            view_box,
+            body,
+            extra_attributes,
+        ));
     }
 
     Ok(())
@@ -70,7 +88,7 @@ pub(super) fn parse_paint_with_opacity(
     paint_attr: &str,
     opacity_attr: &str,
     resources: &ResourceStore,
-) -> Result<(Paint, u8), SvgImportError> {
+) -> Result<Paint, SvgImportError> {
     let paint = match attribute_value(tag, paint_attr) {
         None => Paint::None,
         Some(value) => parse_colour_with_resources(value.as_str(), resources)?,
@@ -81,7 +99,7 @@ pub(super) fn parse_paint_with_opacity(
         Some(value) => parse_opacity_to_alpha(value.as_str())?,
     };
 
-    Ok((paint, alpha))
+    Ok(paint.with_opacity(alpha))
 }
 
 pub(super) fn extract_single_tags(svg: &str, tag_name: &str) -> Vec<String> {
@@ -165,11 +183,11 @@ fn parse_colour_with_resources(
 
     if let Some(svg_id) = parse_url_reference(trimmed) {
         if let Some(gradient_id) = resources.gradient_id_for_svg_id(svg_id.as_str()) {
-            return Ok(Paint::Gradient(gradient_id));
+            return Ok(Paint::gradient(gradient_id));
         }
 
         if let Some(pattern_id) = resources.pattern_id_for_svg_id(svg_id.as_str()) {
-            return Ok(Paint::Pattern(pattern_id));
+            return Ok(Paint::pattern(pattern_id));
         }
 
         return Err(SvgImportError::MissingReferencedResource(svg_id));

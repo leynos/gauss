@@ -46,9 +46,9 @@ fn given_document_with_resource_paints(world: &mut ResourceWorld) {
         id: shape_id(200),
         z: 0,
         style: PaintStyle::new_with_paint(
-            Paint::Gradient(gradient_id),
+            Paint::gradient(gradient_id),
             2.0,
-            Paint::Pattern(pattern_id),
+            Paint::pattern(pattern_id),
         ),
         path: PathGeom {
             anchors: vec![
@@ -129,14 +129,14 @@ fn then_resource_refs_round_trip(world: &ResourceWorld) -> TestSupportResult<()>
         ));
     };
 
-    if shape.style.stroke != Paint::Gradient(gradient_id) {
+    if shape.style.stroke != Paint::gradient(gradient_id) {
         return Err(TestSupportError::expectation(format!(
             "expected gradient stroke reference, got {:?}",
             shape.style.stroke
         )));
     }
 
-    if shape.style.fill != Paint::Pattern(pattern_id) {
+    if shape.style.fill != Paint::pattern(pattern_id) {
         return Err(TestSupportError::expectation(format!(
             "expected pattern fill reference, got {:?}",
             shape.style.fill

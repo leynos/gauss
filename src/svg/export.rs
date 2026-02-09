@@ -12,9 +12,33 @@
 use std::fmt::{Arguments, Write as _};
 
 use crate::model::{
-    Document, GradientKind, Paint, PatternResource, ResourceStore, SegmentKind, SymbolResource,
-    format_hex_rgb,
+    Document, GradientId, GradientKind, Paint, PatternId, PatternResource, ResourceStore,
+    SegmentKind, SymbolResource, format_hex_rgb,
 };
+
+/// Errors returned by [`export_svg_with_resources_checked`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SvgExportError {
+    /// A shape references a gradient ID that does not exist in `ResourceStore`.
+    MissingGradientReference(GradientId),
+    /// A shape references a pattern ID that does not exist in `ResourceStore`.
+    MissingPatternReference(PatternId),
+}
+
+impl std::fmt::Display for SvgExportError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::MissingGradientReference(id) => {
+                write!(f, "shape references missing gradient resource '{id:?}'")
+            }
+            Self::MissingPatternReference(id) => {
+                write!(f, "shape references missing pattern resource '{id:?}'")
+            }
+        }
+    }
+}
+
+impl std::error::Error for SvgExportError {}
 
 /// Export a document to an SVG string.
 ///
@@ -32,6 +56,8 @@ pub fn export_svg_with_resources(
     canvas_width: f32,
     canvas_height: f32,
 ) -> String {
+    // Compatibility path keeps lossy behaviour for callers that do not yet
+    // handle export validation errors.
     let mut out = String::new();
     write_svg_header(&mut out, canvas_width, canvas_height);
     write_defs(&mut out, resources);
@@ -40,6 +66,30 @@ pub fn export_svg_with_resources(
     }
     out.push_str("</svg>\n");
     out
+}
+
+/// Export a document to an SVG string with explicit shared resources.
+///
+/// This variant validates paint references first and returns an error when
+/// a shape refers to a missing resource.
+///
+/// # Errors
+///
+/// Returns [`SvgExportError`] if any gradient/pattern paint reference cannot
+/// be resolved in `resources`.
+pub fn export_svg_with_resources_checked(
+    doc: &Document,
+    resources: &ResourceStore,
+    canvas_width: f32,
+    canvas_height: f32,
+) -> Result<String, SvgExportError> {
+    validate_resource_references(doc, resources)?;
+    Ok(export_svg_with_resources(
+        doc,
+        resources,
+        canvas_width,
+        canvas_height,
+    ))
 }
 
 #[must_use]
@@ -135,7 +185,9 @@ fn write_defs(out: &mut String, resources: &ResourceStore) {
 }
 
 fn write_pattern(out: &mut String, pattern: &PatternResource) {
-    write_fmt(out, format_args!(r#"<pattern id="{}">"#, pattern.svg_id));
+    write_fmt(out, format_args!(r#"<pattern id="{}""#, pattern.svg_id));
+    write_extra_attributes(out, &pattern.extra_attributes);
+    out.push('>');
     if !pattern.body.is_empty() {
         out.push_str(pattern.body.as_str());
     }
@@ -147,11 +199,18 @@ fn write_symbol(out: &mut String, symbol: &SymbolResource) {
     if let Some(view_box) = symbol.view_box.as_deref() {
         write_fmt(out, format_args!(r#" viewBox="{view_box}""#));
     }
+    write_extra_attributes(out, &symbol.extra_attributes);
     out.push('>');
     if !symbol.body.is_empty() {
         out.push_str(symbol.body.as_str());
     }
     out.push_str("</symbol>\n");
+}
+
+fn write_extra_attributes(out: &mut String, attributes: &[(String, String)]) {
+    for (name, value) in attributes {
+        write_fmt(out, format_args!(r#" {name}="{value}""#));
+    }
 }
 
 fn write_shape_path(out: &mut String, resources: &ResourceStore, shape: &crate::model::Shape) {
@@ -233,20 +292,30 @@ fn format_paint(paint: Paint, resources: &ResourceStore) -> (String, f32) {
     match paint {
         Paint::None => ("none".to_owned(), 1.0),
         Paint::Solid(colour) => (format_hex_rgb(colour), opacity_from_alpha(colour.a)),
-        Paint::Gradient(id) => resources.gradient(id).map_or_else(
+        Paint::Gradient { id, opacity } => resources.gradient(id).map_or_else(
             || ("none".to_owned(), 1.0),
-            |gradient| (format!("url(#{})", gradient.svg_id), 1.0),
+            |gradient| {
+                (
+                    format!("url(#{})", gradient.svg_id),
+                    opacity_from_alpha(opacity),
+                )
+            },
         ),
-        Paint::Pattern(id) => resources.pattern(id).map_or_else(
+        Paint::Pattern { id, opacity } => resources.pattern(id).map_or_else(
             || ("none".to_owned(), 1.0),
-            |pattern| (format!("url(#{})", pattern.svg_id), 1.0),
+            |pattern| {
+                (
+                    format!("url(#{})", pattern.svg_id),
+                    opacity_from_alpha(opacity),
+                )
+            },
         ),
     }
 }
 
 fn write_optional_opacity(out: &mut String, attr: &str, paint: &str, opacity: f32) {
     const OPACITY_EPSILON: f32 = 1.0e-6;
-    if paint == "none" || paint.starts_with("url(#") {
+    if paint == "none" {
         return;
     }
 
@@ -255,6 +324,30 @@ fn write_optional_opacity(out: &mut String, attr: &str, paint: &str, opacity: f3
     }
 
     write_fmt(out, format_args!(r#" {attr}="{opacity:.4}""#));
+}
+
+fn validate_resource_references(
+    doc: &Document,
+    resources: &ResourceStore,
+) -> Result<(), SvgExportError> {
+    for shape in doc.iter_in_draw_order() {
+        validate_paint_reference(shape.style.stroke, resources)?;
+        validate_paint_reference(shape.style.fill, resources)?;
+    }
+
+    Ok(())
+}
+
+fn validate_paint_reference(paint: Paint, resources: &ResourceStore) -> Result<(), SvgExportError> {
+    match paint {
+        Paint::Gradient { id, .. } if resources.gradient(id).is_none() => {
+            Err(SvgExportError::MissingGradientReference(id))
+        }
+        Paint::Pattern { id, .. } if resources.pattern(id).is_none() => {
+            Err(SvgExportError::MissingPatternReference(id))
+        }
+        Paint::None | Paint::Solid(_) | Paint::Gradient { .. } | Paint::Pattern { .. } => Ok(()),
+    }
 }
 
 fn write_fmt(out: &mut String, args: Arguments<'_>) {
@@ -271,7 +364,7 @@ mod tests {
     use super::*;
     use crate::model::{
         Anchor, Gradient, GradientKind, GradientStop, LinearGradient, PaintStyle, PathGeom,
-        PatternResource, Rgba, Shape, Vec2,
+        PatternResource, Rgba, Shape, SymbolResource, Vec2,
     };
     use crate::test_helpers::shape_id_from_seed as shape_id;
     use rstest::rstest;
@@ -360,9 +453,9 @@ mod tests {
             id: shape_id(3),
             z: 0,
             style: PaintStyle::new_with_paint(
-                Paint::Gradient(gradient_id),
+                Paint::gradient(gradient_id),
                 1.5,
-                Paint::Pattern(pattern_id),
+                Paint::pattern(pattern_id),
             ),
             path: PathGeom {
                 anchors: vec![
@@ -385,5 +478,120 @@ mod tests {
         assert!(svg.contains("<pattern id=\"dots\""));
         assert!(svg.contains("stroke=\"url(#sunset)\""));
         assert!(svg.contains("fill=\"url(#dots)\""));
+    }
+
+    #[rstest]
+    fn exports_paint_server_opacity_attributes() {
+        let mut resources = ResourceStore::new();
+        let gradient_id = resources.insert_gradient(Gradient::new(
+            "sunset",
+            GradientKind::Linear(LinearGradient::new(
+                Vec2::new(0.0, 0.0),
+                Vec2::new(1.0, 0.0),
+                vec![
+                    GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
+                    GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
+                ],
+            )),
+        ));
+        let pattern_id = resources.insert_pattern(PatternResource::new("dots", "<circle />"));
+
+        let shape = Shape {
+            id: shape_id(30),
+            z: 0,
+            style: PaintStyle::new_with_paint(
+                Paint::gradient(gradient_id).with_opacity(128),
+                1.0,
+                Paint::pattern(pattern_id).with_opacity(64),
+            ),
+            path: PathGeom {
+                anchors: vec![
+                    Anchor::new(Vec2::new(0.0, 0.0)),
+                    Anchor::new(Vec2::new(5.0, 0.0)),
+                    Anchor::new(Vec2::new(5.0, 5.0)),
+                ],
+                segments: vec![SegmentKind::Line, SegmentKind::Line],
+                closed: true,
+                closing_segment: SegmentKind::Line,
+            },
+        };
+
+        let mut doc = Document::new();
+        doc.append_shape(shape);
+        let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
+
+        assert!(svg.contains("stroke=\"url(#sunset)\""));
+        assert!(svg.contains("fill=\"url(#dots)\""));
+        assert!(svg.contains("stroke-opacity=\"0.5020\""));
+        assert!(svg.contains("fill-opacity=\"0.2510\""));
+    }
+
+    #[rstest]
+    fn exports_pattern_and_symbol_extra_attributes() {
+        let mut resources = ResourceStore::new();
+        let _pattern_id = resources.insert_pattern(PatternResource::new_with_attributes(
+            "dots",
+            "<circle />",
+            vec![
+                ("patternUnits".to_owned(), "userSpaceOnUse".to_owned()),
+                ("patternTransform".to_owned(), "scale(2)".to_owned()),
+            ],
+        ));
+        let _symbol_id = resources.insert_symbol(SymbolResource::new_with_attributes(
+            "badge",
+            Some("0 0 10 10".to_owned()),
+            "<rect width=\"10\" height=\"10\" />",
+            vec![("preserveAspectRatio".to_owned(), "xMidYMid".to_owned())],
+        ));
+
+        let svg = export_svg_with_resources(&Document::new(), &resources, 10.0, 10.0);
+        assert!(svg.contains(
+            "<pattern id=\"dots\" patternUnits=\"userSpaceOnUse\" patternTransform=\"scale(2)\">"
+        ));
+        assert!(svg.contains(
+            "<symbol id=\"badge\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMidYMid\">"
+        ));
+    }
+
+    #[rstest]
+    fn checked_export_reports_missing_resource_references() {
+        let mut resources = ResourceStore::new();
+        let dangling_gradient = resources.insert_gradient(Gradient::new(
+            "dangling",
+            GradientKind::Linear(LinearGradient::new(
+                Vec2::new(0.0, 0.0),
+                Vec2::new(1.0, 0.0),
+                vec![
+                    GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
+                    GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
+                ],
+            )),
+        ));
+        let _removed = resources.remove_gradient(dangling_gradient);
+
+        let shape = Shape {
+            id: shape_id(31),
+            z: 0,
+            style: PaintStyle::new_with_paint(Paint::gradient(dangling_gradient), 1.0, Paint::None),
+            path: PathGeom {
+                anchors: vec![
+                    Anchor::new(Vec2::new(0.0, 0.0)),
+                    Anchor::new(Vec2::new(5.0, 0.0)),
+                    Anchor::new(Vec2::new(5.0, 5.0)),
+                ],
+                segments: vec![SegmentKind::Line, SegmentKind::Line],
+                closed: true,
+                closing_segment: SegmentKind::Line,
+            },
+        };
+
+        let mut doc = Document::new();
+        doc.append_shape(shape);
+
+        let exported = export_svg_with_resources_checked(&doc, &resources, 10.0, 10.0);
+        assert_eq!(
+            exported,
+            Err(SvgExportError::MissingGradientReference(dangling_gradient))
+        );
     }
 }

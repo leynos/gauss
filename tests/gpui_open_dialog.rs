@@ -137,8 +137,8 @@ fn open_action_loads_resource_defs_and_paint_references(cx: &mut TestAppContext)
                 shell.resources().pattern_count(),
                 shape.style.stroke,
                 shape.style.fill,
-                Paint::Gradient(gradient_id),
-                Paint::Pattern(pattern_id),
+                Paint::gradient(gradient_id),
+                Paint::pattern(pattern_id),
             )
         });
 

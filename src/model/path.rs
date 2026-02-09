@@ -162,9 +162,19 @@ pub enum Paint {
     /// A solid colour.
     Solid(Rgba),
     /// A reference to a gradient in [`crate::model::ResourceStore`].
-    Gradient(GradientId),
+    Gradient {
+        /// Referenced gradient identifier.
+        id: GradientId,
+        /// Paint opacity applied to the paint server (`0..=255`).
+        opacity: u8,
+    },
     /// A reference to a pattern in [`crate::model::ResourceStore`].
-    Pattern(PatternId),
+    Pattern {
+        /// Referenced pattern identifier.
+        id: PatternId,
+        /// Paint opacity applied to the paint server (`0..=255`).
+        opacity: u8,
+    },
 }
 
 impl Paint {
@@ -177,12 +187,24 @@ impl Paint {
         }
     }
 
+    /// Construct a fully-opaque gradient paint reference.
+    #[must_use]
+    pub const fn gradient(id: GradientId) -> Self {
+        Self::Gradient { id, opacity: 255 }
+    }
+
+    /// Construct a fully-opaque pattern paint reference.
+    #[must_use]
+    pub const fn pattern(id: PatternId) -> Self {
+        Self::Pattern { id, opacity: 255 }
+    }
+
     /// Return a solid colour if this paint variant is solid.
     #[must_use]
     pub const fn as_solid(self) -> Option<Rgba> {
         match self {
             Self::Solid(colour) => Some(colour),
-            Self::None | Self::Gradient(_) | Self::Pattern(_) => None,
+            Self::None | Self::Gradient { .. } | Self::Pattern { .. } => None,
         }
     }
 
@@ -190,6 +212,30 @@ impl Paint {
     #[must_use]
     pub const fn is_none(self) -> bool {
         matches!(self, Self::None)
+    }
+
+    /// Return paint opacity as an alpha byte (`0..=255`).
+    #[must_use]
+    pub const fn opacity(self) -> u8 {
+        match self {
+            Self::None => 255,
+            Self::Solid(colour) => colour.a,
+            Self::Gradient { opacity, .. } | Self::Pattern { opacity, .. } => opacity,
+        }
+    }
+
+    /// Return a copy of this paint with updated opacity.
+    #[must_use]
+    pub const fn with_opacity(self, opacity: u8) -> Self {
+        match self {
+            Self::None => Self::None,
+            Self::Solid(mut colour) => {
+                colour.a = opacity;
+                Self::Solid(colour)
+            }
+            Self::Gradient { id, .. } => Self::Gradient { id, opacity },
+            Self::Pattern { id, .. } => Self::Pattern { id, opacity },
+        }
     }
 }
 

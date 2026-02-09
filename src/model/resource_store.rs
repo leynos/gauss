@@ -128,6 +128,8 @@ impl Gradient {
 pub struct PatternResource {
     /// SVG identifier used in `url(#...)` references.
     pub svg_id: String,
+    /// Additional SVG attributes preserved for round-trip fidelity.
+    pub extra_attributes: Vec<(String, String)>,
     /// Raw child SVG payload inside `<pattern>...</pattern>`.
     pub body: String,
 }
@@ -136,8 +138,19 @@ impl PatternResource {
     /// Construct a pattern resource.
     #[must_use]
     pub fn new(svg_id: impl Into<String>, body: impl Into<String>) -> Self {
+        Self::new_with_attributes(svg_id, body, Vec::new())
+    }
+
+    /// Construct a pattern resource with explicit extra attributes.
+    #[must_use]
+    pub fn new_with_attributes(
+        svg_id: impl Into<String>,
+        body: impl Into<String>,
+        extra_attributes: Vec<(String, String)>,
+    ) -> Self {
         Self {
             svg_id: svg_id.into(),
+            extra_attributes,
             body: body.into(),
         }
     }
@@ -150,6 +163,8 @@ pub struct SymbolResource {
     pub svg_id: String,
     /// Optional SVG `viewBox`.
     pub view_box: Option<String>,
+    /// Additional SVG attributes preserved for round-trip fidelity.
+    pub extra_attributes: Vec<(String, String)>,
     /// Raw child SVG payload inside `<symbol>...</symbol>`.
     pub body: String,
 }
@@ -162,9 +177,21 @@ impl SymbolResource {
         view_box: Option<String>,
         body: impl Into<String>,
     ) -> Self {
+        Self::new_with_attributes(svg_id, view_box, body, Vec::new())
+    }
+
+    /// Construct a symbol resource with explicit extra attributes.
+    #[must_use]
+    pub fn new_with_attributes(
+        svg_id: impl Into<String>,
+        view_box: Option<String>,
+        body: impl Into<String>,
+        extra_attributes: Vec<(String, String)>,
+    ) -> Self {
         Self {
             svg_id: svg_id.into(),
             view_box,
+            extra_attributes,
             body: body.into(),
         }
     }

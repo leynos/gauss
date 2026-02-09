@@ -343,9 +343,15 @@ resources.
 
 - Export writes known gradients, patterns, and symbols into `<defs>`.
 - Import resolves resource references into typed paint IDs.
+- Pattern and symbol extra attributes are preserved for Phase 0.4 round-trip
+  goals.
+- Paint server opacity (`stroke-opacity` / `fill-opacity`) is preserved for
+  `url(#...)` paints.
 - Import fails fast when a path references a missing resource, preventing
   silent data corruption and preserving existing in-memory state when open
   fails.
+- Save/export validates gradient and pattern references before writing files
+  and reports an explicit error for dangling resource IDs.
 
 This prepares the architecture for Phase 4 colour/effects features without
 requiring a UI gradient editor in Phase 0.

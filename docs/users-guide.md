@@ -127,8 +127,16 @@ and saving files.
   symbols.
 - **Paint references**: paths that use `stroke="url(#...)"` or
   `fill="url(#...)"` are loaded and saved with those references intact.
+- **Resource attribute fidelity**: pattern and symbol attributes (for example,
+  `patternUnits`, `patternTransform`, and `preserveAspectRatio`) are preserved
+  when opening and saving.
+- **Paint-server opacity fidelity**: `stroke-opacity` and `fill-opacity` are
+  preserved for `url(#...)` paints.
 - **Validation**: if an SVG path references a missing resource ID, Gauss
   reports an open error and keeps the currently loaded document unchanged.
+- **Save invariants**: if the current document contains dangling gradient or
+  pattern references, save fails with an explicit error instead of silently
+  exporting `none`.
 
 In this phase, Gauss supports resource round-tripping and rendering, but does
 not yet provide dedicated editing controls for gradients, patterns, or symbols.
