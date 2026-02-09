@@ -115,28 +115,44 @@ fn tokenize_path_data(d: &str) -> Result<Vec<PathToken>, SvgImportError> {
         Ok(())
     }
 
+    const fn is_separator(ch: char) -> bool {
+        ch.is_ascii_whitespace() || ch == ','
+    }
+
+    const fn is_command(ch: char) -> bool {
+        matches!(ch, 'M' | 'L' | 'C' | 'Z')
+    }
+
+    const fn is_number_char(ch: char) -> bool {
+        ch.is_ascii_digit() || matches!(ch, '-' | '+' | '.')
+    }
+
+    const fn is_negative_number_start(ch: char, number_buf: &str) -> bool {
+        ch == '-' && !number_buf.is_empty()
+    }
+
     let mut tokens = Vec::new();
     let mut number_buf = String::new();
 
     for ch in d.chars() {
-        if ch.is_ascii_whitespace() || ch == ',' {
+        if is_separator(ch) {
             flush_number(&mut number_buf, &mut tokens)?;
             continue;
         }
 
-        if matches!(ch, 'M' | 'L' | 'C' | 'Z') {
+        if is_command(ch) {
             flush_number(&mut number_buf, &mut tokens)?;
             tokens.push(PathToken::Command(ch));
             continue;
         }
 
-        if ch == '-' && !number_buf.is_empty() {
+        if is_negative_number_start(ch, number_buf.as_str()) {
             flush_number(&mut number_buf, &mut tokens)?;
             number_buf.push(ch);
             continue;
         }
 
-        if ch.is_ascii_digit() || matches!(ch, '-' | '+' | '.') {
+        if is_number_char(ch) {
             number_buf.push(ch);
             continue;
         }
