@@ -10,9 +10,9 @@
 
 use crate::{
     model::{
-        Anchor, Document, Gradient, GradientKind, GradientStop, LinearGradient, Paint, PaintStyle,
-        PathGeom, PatternResource, ResourceStore, Rgba, SegmentKind, Shape, ShapeId,
-        SymbolResource, Vec2,
+        Anchor, Document, Gradient, GradientId, GradientKind, GradientStop, LinearGradient, Paint,
+        PaintStyle, PathGeom, PatternId, PatternResource, ResourceStore, Rgba, SegmentKind, Shape,
+        ShapeId, SymbolResource, Vec2,
     },
     svg::{
         export::export_svg_with_resources,
@@ -196,6 +196,22 @@ fn imports_pattern_and_symbol_extra_attributes() {
 
 #[rstest]
 fn resource_round_trip_preserves_defs_and_references() {
+    let (resources, gradient_id, pattern_id) = setup_test_resources();
+    let doc = setup_test_document(gradient_id, pattern_id);
+    let exported = export_svg_with_resources(&doc, &resources, 100.0, 100.0);
+    let imported = match import_svg_with_resources(&exported) {
+        Ok(imported) => imported,
+        Err(err) => panic!("Expected resource round-trip import to succeed: {err}"),
+    };
+    assert_eq!(imported.resources.gradient_count(), 1);
+    assert_eq!(imported.resources.pattern_count(), 1);
+    assert_eq!(imported.resources.symbol_count(), 1);
+    verify_imported_pattern(&imported.resources);
+    verify_imported_symbol(&imported.resources);
+    verify_shape_paint_references(&imported.document, gradient_id, pattern_id);
+}
+
+fn setup_test_resources() -> (ResourceStore, GradientId, PatternId) {
     let mut resources = ResourceStore::new();
     let gradient_id = resources.insert_gradient(Gradient::new(
         "sunset",
@@ -219,7 +235,10 @@ fn resource_round_trip_preserves_defs_and_references() {
         "<rect width=\"10\" height=\"10\" />",
         vec![("preserveAspectRatio".to_owned(), "xMidYMid".to_owned())],
     ));
+    (resources, gradient_id, pattern_id)
+}
 
+fn setup_test_document(gradient_id: GradientId, pattern_id: PatternId) -> Document {
     let shape = Shape {
         id: ShapeId::default(),
         z: 0,
@@ -238,34 +257,29 @@ fn resource_round_trip_preserves_defs_and_references() {
             closing_segment: SegmentKind::Line,
         },
     };
-
     let mut doc = Document::new();
     doc.append_shape(shape);
+    doc
+}
 
-    let exported = export_svg_with_resources(&doc, &resources, 100.0, 100.0);
-    let imported = match import_svg_with_resources(&exported) {
-        Ok(imported) => imported,
-        Err(err) => panic!("Expected resource round-trip import to succeed: {err}"),
-    };
-    assert_eq!(imported.resources.gradient_count(), 1);
-    assert_eq!(imported.resources.pattern_count(), 1);
-    assert_eq!(imported.resources.symbol_count(), 1);
-
-    let Some(imported_pattern_id) = imported.resources.pattern_id_for_svg_id("dots") else {
+fn verify_imported_pattern(resources: &ResourceStore) {
+    let Some(imported_pattern_id) = resources.pattern_id_for_svg_id("dots") else {
         panic!("Expected imported resources to include a dots pattern ID");
     };
-    let Some(imported_pattern) = imported.resources.pattern(imported_pattern_id) else {
+    let Some(imported_pattern) = resources.pattern(imported_pattern_id) else {
         panic!("Expected imported pattern to be retrievable");
     };
     assert_eq!(
         imported_pattern.extra_attributes,
         vec![("patternUnits".to_owned(), "userSpaceOnUse".to_owned())]
     );
+}
 
-    let Some(imported_symbol_id) = imported.resources.symbol_id_for_svg_id("badge") else {
+fn verify_imported_symbol(resources: &ResourceStore) {
+    let Some(imported_symbol_id) = resources.symbol_id_for_svg_id("badge") else {
         panic!("Expected imported resources to include a badge symbol ID");
     };
-    let Some(imported_symbol) = imported.resources.symbol(imported_symbol_id) else {
+    let Some(imported_symbol) = resources.symbol(imported_symbol_id) else {
         panic!("Expected imported symbol to be retrievable");
     };
     assert_eq!(imported_symbol.view_box.as_deref(), Some("0 0 10 10"));
@@ -273,10 +287,22 @@ fn resource_round_trip_preserves_defs_and_references() {
         imported_symbol.extra_attributes,
         vec![("preserveAspectRatio".to_owned(), "xMidYMid".to_owned())]
     );
+}
 
-    let Some(imported_shape) = imported.document.shape_at(0) else {
+fn verify_shape_paint_references(
+    document: &Document,
+    expected_gradient_id: GradientId,
+    expected_pattern_id: PatternId,
+) {
+    let Some(imported_shape) = document.shape_at(0) else {
         panic!("Expected one imported shape");
     };
-    assert_eq!(imported_shape.style.stroke, Paint::gradient(gradient_id));
-    assert_eq!(imported_shape.style.fill, Paint::pattern(pattern_id));
+    assert_eq!(
+        imported_shape.style.stroke,
+        Paint::gradient(expected_gradient_id)
+    );
+    assert_eq!(
+        imported_shape.style.fill,
+        Paint::pattern(expected_pattern_id)
+    );
 }
