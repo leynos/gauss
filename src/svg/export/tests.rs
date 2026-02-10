@@ -103,17 +103,13 @@ where
     (doc, resources)
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "Test helper keeps line-shape setup call sites concise and parameterised."
-)]
 fn create_line_shape_for_export(
     seed: u32,
-    start: Vec2,
-    end: Vec2,
+    line: (Vec2, Vec2),
     style: PaintStyle,
     closed: bool,
 ) -> Shape {
+    let (start, end) = line;
     Shape {
         id: shape_id(seed.into()),
         z: 0,
@@ -139,8 +135,7 @@ fn exports_empty_document_with_valid_svg_root() {
 fn exports_simple_line_path(build_doc_with_shape: impl Fn(Shape) -> Document) {
     let shape = create_line_shape_for_export(
         1,
-        Vec2::new(1.0, 2.0),
-        Vec2::new(3.0, 4.0),
+        (Vec2::new(1.0, 2.0), Vec2::new(3.0, 4.0)),
         PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None),
         false,
     );
@@ -158,8 +153,7 @@ fn exports_simple_line_path(build_doc_with_shape: impl Fn(Shape) -> Document) {
 fn exports_opacity_when_alpha_is_not_opaque(build_doc_with_shape: impl Fn(Shape) -> Document) {
     let shape = create_line_shape_for_export(
         2,
-        Vec2::new(0.0, 0.0),
-        Vec2::new(1.0, 1.0),
+        (Vec2::new(0.0, 0.0), Vec2::new(1.0, 1.0)),
         PaintStyle::new(
             Some(Rgba::new(255, 0, 0, 128)),
             2.0,
