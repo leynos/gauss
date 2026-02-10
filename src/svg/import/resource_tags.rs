@@ -169,16 +169,9 @@ pub(super) fn extract_single_tags(svg: SvgContent<'_>, tag_name: TagName<'_>) ->
 
 /// Extract drawable `<path>` tags while excluding resource-definition contexts.
 pub(super) fn extract_shape_path_tags(svg: SvgContent<'_>) -> Vec<String> {
-    with_parsed_document(svg.as_str(), |source, document| {
-        document
-            .root_element()
-            .descendants()
-            .filter(|node| node.is_element() && node.tag_name().name() == "path")
-            .filter(|node| !has_resource_ancestor(*node))
-            .filter_map(|node| source.get(node.range()).map(ToOwned::to_owned))
-            .collect()
+    extract_matching_tags(svg, |node| {
+        node.tag_name().name() == "path" && !has_resource_ancestor(node)
     })
-    .unwrap_or_default()
 }
 
 /// Read a named attribute value from the first element in `tag`.
@@ -330,11 +323,18 @@ fn parse_offset(value: &str) -> Result<f32, SvgImportError> {
 
 /// Extract full element blocks matching `tag_name` from `svg`.
 pub(super) fn extract_block_tags(svg: SvgContent<'_>, tag_name: TagName<'_>) -> Vec<String> {
+    extract_matching_tags(svg, |node| node.tag_name().name() == tag_name.as_str())
+}
+
+fn extract_matching_tags(
+    svg: SvgContent<'_>,
+    is_match: impl Fn(roxmltree::Node<'_, '_>) -> bool,
+) -> Vec<String> {
     with_parsed_document(svg.as_str(), |source, document| {
         document
             .root_element()
             .descendants()
-            .filter(|node| node.is_element() && node.tag_name().name() == tag_name.as_str())
+            .filter(|node| node.is_element() && is_match(*node))
             .filter_map(|node| source.get(node.range()).map(ToOwned::to_owned))
             .collect()
     })
