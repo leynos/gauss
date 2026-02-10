@@ -1,5 +1,10 @@
 //! Helpers for parsing attribute lists from SVG opening tags.
 
+/// Collect element attributes except for excluded names.
+///
+/// This helper is used for resource tags where selected attributes are parsed
+/// into typed fields and all remaining attributes must be preserved for
+/// round-trip export.
 pub(super) fn collect_extra_attributes(
     tag: &str,
     excluded_names: &[&str],

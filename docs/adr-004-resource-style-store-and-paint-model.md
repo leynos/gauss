@@ -15,9 +15,9 @@ reference shared gradient and pattern resources.
 Roadmap item 0.2.3 requires architecture foundations that allow SVG `<defs>`
 resources (gradients, patterns, symbols) to round-trip through open/save while
 preserving deterministic IDs. The previous model represented stroke/fill as
-`Option<Rgba>`, which could not encode references to shared resources. We
-needed a model that supports both simple solid colours and typed resource
-references without coupling model code to UI concerns.
+`Option<Rgba>`, which could not encode references to shared resources. The
+architecture requires a model that supports both simple solid colours and typed
+resource references without coupling model code to UI concerns.
 
 ## Decision Drivers
 
@@ -26,6 +26,22 @@ references without coupling model code to UI concerns.
 - Keep shape styling ergonomic for solid-colour workflows.
 - Provide stable typed IDs for resource/style references.
 - Fail fast on dangling references rather than silently degrading output.
+
+## Requirements
+
+### Functional requirements
+
+- Import and export must round-trip gradient, pattern, and symbol definitions.
+- Shapes must support both solid colour paints and shared resource references.
+- Open/save flows must surface missing resource references as explicit errors.
+- Existing solid-colour editing workflows must continue to operate.
+
+### Technical requirements
+
+- Model-layer APIs must remain independent of GPUI concerns.
+- Shared resources and styles must use stable typed identifiers.
+- SVG ID lookup must remain deterministic for `url(#...)` references.
+- Migration from `Option<Rgba>` to `Paint` must preserve compatibility paths.
 
 ## Options Considered
 
@@ -67,6 +83,14 @@ Adopt Option B.
   resource references.
 - Export with validation for missing resource references and import with
   explicit errors for unresolved `url(#...)` references.
+
+## Migration Plan
+
+1. Introduce typed resource/style stores in the model and `EngineState`.
+2. Add `Paint` alongside compatibility constructors for existing call sites.
+3. Update SVG import/export and open/save paths to use typed resources.
+4. Migrate UI and command paths from optional solid colours to typed paints.
+5. Remove deprecated compatibility paths once all call sites are converted.
 
 ## Known Risks and Limitations
 

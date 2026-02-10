@@ -9,6 +9,10 @@ use super::SvgImportError;
 use super::resource_tag_attributes::collect_extra_attributes;
 pub(super) use super::types::{AttributeName, SvgContent, TagName};
 
+/// Parse SVG resource definitions into a [`ResourceStore`].
+///
+/// This currently imports gradients, patterns, and symbols from supported SVG
+/// subsets used by Gauss import/export round-trip flows.
 pub(super) fn parse_resources(
     svg: SvgContent<'_>,
     resources: &mut ResourceStore,
@@ -140,6 +144,7 @@ fn parse_resource_blocks<F>(
     }
 }
 
+/// Parse a paint attribute and optional opacity attribute into typed paint.
 pub(super) fn parse_paint_with_opacity(
     tag: SvgContent<'_>,
     paint_attr: AttributeName<'_>,
@@ -157,10 +162,26 @@ pub(super) fn parse_paint_with_opacity(
     Ok(paint.with_opacity(alpha))
 }
 
+/// Extract all tags matching `tag_name` from `svg`.
 pub(super) fn extract_single_tags(svg: SvgContent<'_>, tag_name: TagName<'_>) -> Vec<String> {
     extract_block_tags(svg, tag_name)
 }
 
+/// Extract drawable `<path>` tags while excluding resource-definition contexts.
+pub(super) fn extract_shape_path_tags(svg: SvgContent<'_>) -> Vec<String> {
+    with_parsed_document(svg.as_str(), |source, document| {
+        document
+            .root_element()
+            .descendants()
+            .filter(|node| node.is_element() && node.tag_name().name() == "path")
+            .filter(|node| !has_resource_ancestor(*node))
+            .filter_map(|node| source.get(node.range()).map(ToOwned::to_owned))
+            .collect()
+    })
+    .unwrap_or_default()
+}
+
+/// Read a named attribute value from the first element in `tag`.
 pub(super) fn attribute_value(tag: SvgContent<'_>, name: AttributeName<'_>) -> Option<String> {
     with_parsed_document(tag.as_str(), |_source, document| {
         let root = document.root_element();
@@ -185,8 +206,10 @@ fn parse_gradient_stops(block: SvgContent<'_>) -> Result<Vec<GradientStop>, SvgI
             .unwrap_or(0.0);
 
         let colour = attribute_value(stop_tag_content, AttributeName::new("stop-color"))
-            .ok_or(SvgImportError::InvalidColour)
-            .and_then(|value| parse_colour(value.as_str()))?;
+            .map_or_else(
+                || Ok(Paint::Solid(crate::model::Rgba::new(0, 0, 0, 255))),
+                |value| parse_colour(value.as_str()),
+            )?;
 
         let alpha = attribute_value(stop_tag_content, AttributeName::new("stop-opacity"))
             .map(|value| parse_opacity_to_alpha(value.as_str()))
@@ -305,6 +328,7 @@ fn parse_offset(value: &str) -> Result<f32, SvgImportError> {
         .map_err(|_| SvgImportError::InvalidNumber)
 }
 
+/// Extract full element blocks matching `tag_name` from `svg`.
 pub(super) fn extract_block_tags(svg: SvgContent<'_>, tag_name: TagName<'_>) -> Vec<String> {
     with_parsed_document(svg.as_str(), |source, document| {
         document
@@ -335,6 +359,12 @@ fn inner_tag_body(block: SvgContent<'_>) -> String {
     })
     .flatten()
     .unwrap_or_default()
+}
+
+fn has_resource_ancestor(node: roxmltree::Node<'_, '_>) -> bool {
+    node.ancestors().skip(1).any(|ancestor| {
+        ancestor.is_element() && matches!(ancestor.tag_name().name(), "defs" | "pattern" | "symbol")
+    })
 }
 
 fn with_parsed_document<T>(

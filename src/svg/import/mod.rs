@@ -89,16 +89,13 @@ pub fn import_svg(svg: &str) -> Result<Document, SvgImportError> {
 pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportError> {
     let mut resources = crate::model::ResourceStore::new();
     resource_tags::parse_resources(resource_tags::SvgContent::from(svg), &mut resources)?;
-    let shape_scan_svg = strip_resource_blocks_for_shape_scan(svg);
 
     let mut doc = Document::new();
 
-    for (index, raw_tag) in resource_tags::extract_single_tags(
-        resource_tags::SvgContent::from(shape_scan_svg.as_str()),
-        resource_tags::TagName::from("path"),
-    )
-    .into_iter()
-    .enumerate()
+    for (index, raw_tag) in
+        resource_tags::extract_shape_path_tags(resource_tags::SvgContent::from(svg))
+            .into_iter()
+            .enumerate()
     {
         let tag_content = resource_tags::SvgContent::from(raw_tag.as_str());
         let d =
@@ -146,17 +143,4 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
         document: doc,
         resources,
     })
-}
-
-fn strip_resource_blocks_for_shape_scan(svg: &str) -> String {
-    let mut stripped = svg.to_owned();
-    for tag_name in ["defs", "pattern", "symbol"] {
-        for block in resource_tags::extract_block_tags(
-            resource_tags::SvgContent::from(svg),
-            resource_tags::TagName::from(tag_name),
-        ) {
-            stripped = stripped.replacen(block.as_str(), "", 1);
-        }
-    }
-    stripped
 }
