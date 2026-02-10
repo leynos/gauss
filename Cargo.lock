@@ -1929,7 +1929,7 @@ version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbc773e24e02d4ddd8395fd30dc147524273a83e54e0f312d986ea30de5f5646"
 dependencies = [
- "roxmltree",
+ "roxmltree 0.20.0",
 ]
 
 [[package]]
@@ -2170,6 +2170,7 @@ dependencies = [
  "gpui",
  "gpui-component",
  "log",
+ "roxmltree 0.21.1",
  "rstest",
  "rstest-bdd",
  "rstest-bdd-macros",
@@ -5091,6 +5092,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c20b6793b5c2fa6553b250154b78d6d0db37e72700ae35fad9387a46f487c97"
 
 [[package]]
+name = "roxmltree"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1964b10c76125c36f8afe190065a4bf9a87bf324842c05701330bba9f1cacbb"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "rstest"
 version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5103,9 +5113,9 @@ dependencies = [
 
 [[package]]
 name = "rstest-bdd"
-version = "0.3.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ba31adad257da60b8ff09eab6892baf0717d4b7941fed413afb87b8b57cb1dd"
+checksum = "138d8e4f97e16906ebeb0bfb12d2c94f0b05913a96fc522111bec62ca8328522"
 dependencies = [
  "ctor 0.2.9",
  "derive_more",
@@ -5115,9 +5125,9 @@ dependencies = [
  "i18n-embed",
  "inventory",
  "log",
- "once_cell",
  "regex",
  "rstest-bdd-patterns",
+ "rstest-bdd-policy",
  "rust-embed",
  "serde",
  "serde_json",
@@ -5127,9 +5137,9 @@ dependencies = [
 
 [[package]]
 name = "rstest-bdd-macros"
-version = "0.3.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55e76759696088b1a8040ec244bb8ea7fb5681a3cc1f66786c630278579a1569"
+checksum = "fe104196f61dc8911a8da1b10005e9401e7c2e14ad9302e2de6688311c0beec7"
 dependencies = [
  "camino",
  "cap-std 3.4.5",
@@ -5137,26 +5147,34 @@ dependencies = [
  "convert_case 0.6.0",
  "gherkin",
  "newt-hype",
- "once_cell",
  "proc-macro-crate",
  "proc-macro-error",
  "proc-macro2",
  "quote",
  "regex",
  "rstest-bdd-patterns",
+ "rstest-bdd-policy",
  "syn 2.0.111",
+ "thiserror 1.0.69",
  "walkdir",
 ]
 
 [[package]]
 name = "rstest-bdd-patterns"
-version = "0.3.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b6c9f3f3de341bdc0b9a51a6cfe2f947a59b696141e68cc9c4bc03d066a78c6"
+checksum = "39abaa69316cdbbad0512dc0f37b704b09e4cdb5018d80f197cbdb77a2269d06"
 dependencies = [
+ "gherkin",
  "regex",
  "thiserror 1.0.69",
 ]
+
+[[package]]
+name = "rstest-bdd-policy"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88f2ca584f7d9d359a09f616900be015302c959d58c2c2da6c075573352dfa0d"
 
 [[package]]
 name = "rstest_macros"
@@ -6855,7 +6873,7 @@ dependencies = [
  "kurbo",
  "log",
  "pico-args",
- "roxmltree",
+ "roxmltree 0.20.0",
  "rustybuzz 0.20.1",
  "simplecss",
  "siphasher",

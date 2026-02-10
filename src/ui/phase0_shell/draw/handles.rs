@@ -8,7 +8,7 @@
     reason = "Catmull–Rom handle synthesis is inherently floating-point"
 )]
 
-use crate::model::{Anchor, PathGeom, Rgba, SegmentKind, Shape, Vec2};
+use crate::model::{Anchor, Paint, PathGeom, Rgba, SegmentKind, Shape, Vec2};
 
 const CATMULL_ROM_TENSION: f32 = 1.0;
 
@@ -47,7 +47,7 @@ pub(super) fn close_shape(mut shape: Shape, closing_segment: SegmentKind) -> Sha
     shape.path.closed = true;
     shape.path.closing_segment = closing_segment;
     if shape.style.fill.is_none() {
-        shape.style.fill = Some(Rgba::new(0, 0, 0, 32));
+        shape.style.fill = Paint::Solid(Rgba::new(0, 0, 0, 32));
     }
 
     match shape.path.closing_segment {

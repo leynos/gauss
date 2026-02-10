@@ -319,6 +319,272 @@ appropriate layer.
 function takes `&EngineState` rather than individual state pieces, providing a
 unified entry point for action dispatch.
 
+### 5.5 Resource and style stores (implemented 2026-02)
+
+Roadmap item 0.2.3 is implemented by introducing concrete `ResourceStore` and
+`StyleStore` types, plus paint references in `PaintStyle`.
+
+Reference: [`ADR-004`](adr-004-resource-style-store-and-paint-model.md) records
+the architectural rationale and consequences for this change.
+
+**Design decision:** model stroke and fill as `Paint` (none, solid colour,
+gradient reference, pattern reference) rather than `Option<Rgba>`. This keeps
+solid colour workflows simple while introducing a typed bridge to shared
+resources.
+
+- `ResourceStore` now owns gradients, patterns, and symbols using typed
+  identifiers (`GradientId`, `PatternId`, `SymbolId`) and keeps SVG `id`
+  indexes for deterministic `url(#...)` lookups and round-trip export.
+- `StyleStore` now owns named styles with stable `StyleId` keys, unique naming
+  behaviour, and optional default style tracking.
+- `EngineState` now persists these stores in `resources` and `styles`, keeping
+  document geometry and shared style data colocated for command preparation and
+  future effect pipelines.
+
+**SVG policy for resource references:** SVG import/export now round-trips
+`<defs>` resources and `url(#...)` paint references.
+
+- Export writes known gradients, patterns, and symbols into `<defs>`.
+- Import resolves resource references into typed paint IDs.
+- Pattern and symbol extra attributes are preserved for Phase 0.4 round-trip
+  goals.
+- Paint server opacity (`stroke-opacity` / `fill-opacity`) is preserved for
+  `url(#...)` paints.
+- Import fails fast when a path references a missing resource, preventing
+  silent data corruption and preserving existing in-memory state when open
+  fails.
+- Save/export validates gradient and pattern references before writing files
+  and reports an explicit error for dangling resource IDs.
+
+This prepares the architecture for Phase 4 colour/effects features without
+requiring a UI gradient editor in Phase 0.
+
+#### 5.5.1 Resource, style, and SVG I/O class diagram
+
+The following class diagram captures the implemented model and SVG I/O
+relationships for `Document`, `ResourceStore`, `StyleStore`, and typed paint
+references introduced by roadmap item 0.2.3.
+
+<!-- markdownlint-disable-next-line MD013 -->
+For screen readers: `Document` shapes use typed paint references, `ResourceStore` and `StyleStore` hold typed IDs, and SVG import/export maps those relationships.
+
+```mermaid
+classDiagram
+    class Document {
+        +iter_in_draw_order() Iterator~&Shape~
+    }
+
+    class ResourceStore {
+        -SlotMap~GradientId, Gradient~ gradients
+        -SlotMap~PatternId, PatternResource~ patterns
+        -SlotMap~SymbolId, SymbolResource~ symbols
+        -HashMap~String, GradientId~ gradient_svg_ids
+        -HashMap~String, PatternId~ pattern_svg_ids
+        -HashMap~String, SymbolId~ symbol_svg_ids
+        +new() ResourceStore
+        +is_empty() bool
+        +gradient_count() usize
+        +pattern_count() usize
+        +symbol_count() usize
+        +insert_gradient(gradient Gradient) GradientId
+        +gradient(id GradientId) &Gradient
+        +gradient_id_for_svg_id(svg_id &str) Option~GradientId~
+        +remove_gradient(id GradientId) Option~Gradient~
+        +gradients() Iterator~(GradientId, &Gradient)~
+        +insert_pattern(pattern PatternResource) PatternId
+        +pattern(id PatternId) &PatternResource
+        +pattern_id_for_svg_id(svg_id &str) Option~PatternId~
+        +remove_pattern(id PatternId) Option~PatternResource~
+        +patterns() Iterator~(PatternId, &PatternResource)~
+        +insert_symbol(symbol SymbolResource) SymbolId
+        +symbol(id SymbolId) &SymbolResource
+        +symbol_id_for_svg_id(svg_id &str) Option~SymbolId~
+        +remove_symbol(id SymbolId) Option~SymbolResource~
+        +symbols() Iterator~(SymbolId, &SymbolResource)~
+    }
+
+    class GradientId
+    class PatternId
+    class SymbolId
+
+    class GradientStop {
+        +f32 offset
+        +Rgba colour
+        +new(offset f32, colour Rgba) GradientStop
+    }
+
+    class LinearGradient {
+        +Vec2 start
+        +Vec2 end
+        +Vec~GradientStop~ stops
+        +new(start Vec2, end Vec2, stops Vec~GradientStop~) LinearGradient
+    }
+
+    class RadialGradient {
+        +Vec2 centre
+        +f32 radius
+        +Option~Vec2~ focal
+        +Vec~GradientStop~ stops
+        +new(centre Vec2, radius f32, focal Option~Vec2~, stops Vec~GradientStop~) RadialGradient
+    }
+
+    class GradientKind {
+        <<enum>>
+        +Linear(LinearGradient)
+        +Radial(RadialGradient)
+    }
+
+    class Gradient {
+        +String svg_id
+        +GradientKind kind
+        +new(svg_id String, kind GradientKind) Gradient
+    }
+
+    class PatternResource {
+        +String svg_id
+        +Vec~(String, String)~ extra_attributes
+        +String body
+        +new(svg_id String, body String) PatternResource
+        +new_with_attributes(svg_id String, body String, extra_attributes Vec~(String, String)~) PatternResource
+    }
+
+    class SymbolResource {
+        +String svg_id
+        +Option~String~ view_box
+        +Vec~(String, String)~ extra_attributes
+        +String body
+        +new(svg_id String, view_box Option~String~, body String) SymbolResource
+        +new_with_attributes(svg_id String, view_box Option~String~, body String, attrs Vec~(String, String)~) SymbolResource
+    }
+
+    class StyleStore {
+        -SlotMap~StyleId, NamedStyle~ styles
+        -HashMap~String, StyleId~ names
+        -Option~StyleId~ default_style
+        +new() StyleStore
+        +is_empty() bool
+        +style_count() usize
+        +default_style() Option~StyleId~
+        +set_default_style(id StyleId) bool
+        +insert(style NamedStyle) StyleId
+        +style(id StyleId) &NamedStyle
+        +style_mut(id StyleId) &mut NamedStyle
+        +style_id_for_name(name &str) Option~StyleId~
+        +rename(id StyleId, requested_name &str) bool
+        +remove(id StyleId) Option~NamedStyle~
+        +iter() Iterator~(StyleId, &NamedStyle)~
+    }
+
+    class StyleId
+
+    class NamedStyle {
+        +String name
+        +PaintStyle style
+        +new(name String, style PaintStyle) NamedStyle
+    }
+
+    class Paint {
+        <<enum>>
+        +None
+        +Solid(Rgba)
+        +Gradient(id GradientId, opacity u8)
+        +Pattern(id PatternId, opacity u8)
+        +from_solid(colour Option~Rgba~) Paint
+        +gradient(id GradientId) Paint
+        +pattern(id PatternId) Paint
+        +as_solid() Option~Rgba~
+        +is_none() bool
+        +opacity() u8
+        +with_opacity(opacity u8) Paint
+    }
+
+    class PaintStyle {
+        +Paint stroke
+        +f32 stroke_width
+        +Paint fill
+        +new(stroke Option~Rgba~, stroke_width f32, fill Option~Rgba~) PaintStyle
+        +new_with_paint(stroke Paint, stroke_width f32, fill Paint) PaintStyle
+    }
+
+    class Shape {
+        +ShapeId id
+        +i64 z
+        +PaintStyle style
+        +PathGeom path
+    }
+
+    class ImportedSvg {
+        +Document document
+        +ResourceStore resources
+    }
+
+    class SvgExportError {
+        <<enum>>
+        +MissingGradientReference(GradientId)
+        +MissingPatternReference(PatternId)
+    }
+
+    class SvgImportError {
+        <<enum>>
+        +MalformedSvg
+        +MissingPathData
+        +UnsupportedPathCommand(char)
+        +InvalidPathData
+        +InvalidColour
+        +InvalidNumber
+        +InvalidOpacity
+        +MissingReferencedResource(String)
+    }
+
+    class svg_export_mod {
+        +export_svg(doc &Document, canvas_width f32, canvas_height f32) String
+        +export_svg_with_resources(doc &Document, resources &ResourceStore, canvas_width f32, canvas_height f32) String
+        +export_svg_with_resources_checked(&Document, &ResourceStore, f32, f32) Result~String, SvgExportError~
+    }
+
+    class svg_import_mod {
+        +import_svg(svg &str) Result~Document, SvgImportError~
+        +import_svg_with_resources(svg &str) Result~ImportedSvg, SvgImportError~
+    }
+
+    Document --> Shape : contains
+    Shape --> PaintStyle : uses
+    PaintStyle --> Paint : uses
+    Paint --> GradientId : may reference
+    Paint --> PatternId : may reference
+
+    ResourceStore o--> Gradient : manages
+    ResourceStore o--> PatternResource : manages
+    ResourceStore o--> SymbolResource : manages
+    ResourceStore --> GradientId : keys
+    ResourceStore --> PatternId : keys
+    ResourceStore --> SymbolId : keys
+
+    Gradient --> GradientKind : has
+    GradientKind --> LinearGradient : Linear
+    GradientKind --> RadialGradient : Radial
+    LinearGradient --> GradientStop : uses
+    RadialGradient --> GradientStop : uses
+
+    StyleStore o--> NamedStyle : manages
+    StyleStore --> StyleId : keys
+    NamedStyle --> PaintStyle : owns
+
+    ImportedSvg --> Document : contains
+    ImportedSvg --> ResourceStore : contains
+
+    svg_export_mod --> Document : reads
+    svg_export_mod --> ResourceStore : reads
+    svg_export_mod --> SvgExportError : returns
+
+    svg_import_mod --> Document : builds
+    svg_import_mod --> ImportedSvg : returns
+    svg_import_mod --> SvgImportError : returns
+```
+
+*Figure 5.1: Class diagram for the Phase 0.2.3 resource and style store model,
+including SVG import/export contracts and typed paint-resource relationships.*
+
 ______________________________________________________________________
 
 ## 6. Tool System (Controller Layer)

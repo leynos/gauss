@@ -98,9 +98,9 @@ phases depend upon. See architecture document §20.
 - [x] 0.2.2. Implement stable ID generation.
   - [x] Use generational IDs (`slotmap` or similar). See architecture §5.1.
   - [x] Ensure IDs are stable across frames for AccessKit.
-- [ ] 0.2.3. Define resource stores.
-  - [ ] `StyleStore`, `ResourceStore` for gradients, patterns, symbols.
-  - [ ] Prepare for Phase 4 colour and effects features.
+- [x] 0.2.3. Define resource stores.
+  - [x] `StyleStore`, `ResourceStore` for gradients, patterns, symbols.
+  - [x] Prepare for Phase 4 colour and effects features.
 
 ### 0.3. History and grouping
 

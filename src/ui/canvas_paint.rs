@@ -59,11 +59,11 @@ fn paint_document(bounds: Bounds<Pixels>, state: &CanvasState, window: &mut Wind
 fn paint_shape(shape: &Shape, viewport: Viewport, window: &mut Window) {
     let (fill_path, stroke_path) = build_paths(shape, viewport);
 
-    if let (Some(path), Some(fill)) = (fill_path, shape.style.fill) {
+    if let (Some(path), Some(fill)) = (fill_path, shape.style.fill.as_solid()) {
         window.paint_path(path, rgba(model_rgba_to_hex(fill)));
     }
 
-    if let (Some(path), Some(stroke)) = (stroke_path, shape.style.stroke) {
+    if let (Some(path), Some(stroke)) = (stroke_path, shape.style.stroke.as_solid()) {
         window.paint_path(path, rgba(model_rgba_to_hex(stroke)));
     }
 }
@@ -95,20 +95,20 @@ fn paint_selection_overlays(
 }
 
 fn build_paths(shape: &Shape, viewport: Viewport) -> (Option<Path<Pixels>>, Option<Path<Pixels>>) {
-    let fill_path = if shape.path.closed && shape.style.fill.is_some() {
+    let fill_path = if shape.path.closed && !shape.style.fill.is_none() {
         build_path(shape, viewport, PathBuilder::fill())
     } else {
         None
     };
 
-    let stroke_path = if shape.style.stroke.is_some() {
+    let stroke_path = if shape.style.stroke.is_none() {
+        None
+    } else {
         build_path(
             shape,
             viewport,
             PathBuilder::stroke(px(shape.style.stroke_width * viewport.zoom())),
         )
-    } else {
-        None
     };
 
     (fill_path, stroke_path)

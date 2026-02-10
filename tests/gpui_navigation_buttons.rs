@@ -13,7 +13,7 @@ use common::{
     anchor_to_canvas_point, canvas_bounds, draw_point, ensure_initial_draw, init_test_app,
     require_draw_shape, shift_secondary, simulate_escape,
 };
-use gauss::model::{Document, PaintStyle, Rgba, Vec2};
+use gauss::model::{Document, Paint, PaintStyle, Rgba, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{
     Hsla, Modifiers, MouseButton, NavigationDirection, TestAppContext, VisualTestContext, point, px,
@@ -119,7 +119,7 @@ fn apply_red_stroke(visual_cx: &mut VisualTestContext, view: &gpui::Entity<Phase
 
 fn expect_stroke_is_red(doc: &Document, context: &str) -> TestSupportResult<()> {
     let shape = require_draw_shape(doc, context)?;
-    if shape.style.stroke != Some(Rgba::new(255, 0, 0, 255)) {
+    if shape.style.stroke != Paint::Solid(Rgba::new(255, 0, 0, 255)) {
         return Err(TestSupportError::expectation(format!(
             "expected stroke to be red ({context})"
         )));

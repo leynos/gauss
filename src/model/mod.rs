@@ -23,6 +23,7 @@ pub mod resource_store;
 pub mod selection;
 pub mod style_store;
 pub mod tool;
+pub(crate) mod unique_string;
 pub mod viewport;
 
 pub use action::{Action, ActionKind};
@@ -41,13 +42,18 @@ pub use keybinding::{
 };
 pub use keystroke::{Keystroke, Modifier, Modifiers};
 pub use ops::{DocChange, DocOp};
-pub use path::{Anchor, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2};
+pub use path::{Anchor, Paint, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2};
 pub use resize_anchor::ResizeAnchor;
-pub use resource_store::ResourceStore;
+pub use resource_store::{
+    Gradient, GradientId, GradientKind, GradientStop, LinearGradient, PatternId, PatternResource,
+    RadialGradient, ResourceStore, SymbolId, SymbolResource,
+};
 pub use selection::{SelItem, Selection};
-pub use style_store::StyleStore;
+pub use style_store::{NamedStyle, StyleId, StyleStore};
 pub use tool::{EdgeMode, ToolMode};
 pub use viewport::Viewport;
 
 #[cfg(test)]
 mod ops_roundtrip_tests;
+#[cfg(test)]
+mod resource_store_tests;

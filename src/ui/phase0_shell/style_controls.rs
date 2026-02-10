@@ -7,7 +7,7 @@
 use gpui::{AppContext as _, Context, Hsla, ParentElement as _, Styled as _, Window, div};
 use gpui_component::color_picker::{ColorPicker, ColorPickerEvent, ColorPickerState};
 
-use crate::model::{Command, PaintStyle, Rgba, SelItem, ShapeId, StyleChange};
+use crate::model::{Command, Paint, PaintStyle, Rgba, SelItem, ShapeId, StyleChange};
 
 use super::Phase0Shell;
 
@@ -17,8 +17,18 @@ impl Phase0Shell {
             return;
         }
 
-        let stroke_default = self.state.current_style.stroke.map(model_rgba_to_hsla);
-        let fill_default = self.state.current_style.fill.map(model_rgba_to_hsla);
+        let stroke_default = self
+            .state
+            .current_style
+            .stroke
+            .as_solid()
+            .map(model_rgba_to_hsla);
+        let fill_default = self
+            .state
+            .current_style
+            .fill
+            .as_solid()
+            .map(model_rgba_to_hsla);
 
         let stroke_state = cx.new(|picker_cx| {
             let mut state = ColorPickerState::new(window, picker_cx);
@@ -183,10 +193,10 @@ impl StyleUpdate {
     const fn apply_to_style(self, style: &mut PaintStyle) {
         match self {
             Self::Stroke(stroke) => {
-                style.stroke = stroke;
+                style.stroke = Paint::from_solid(stroke);
             }
             Self::Fill(fill) => {
-                style.fill = fill;
+                style.fill = Paint::from_solid(fill);
             }
         }
     }

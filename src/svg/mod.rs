@@ -4,7 +4,7 @@
 //! deterministic (stable attribute ordering and command formatting), and the
 //! importer is intentionally limited to the subset of SVG we produce:
 //!
-//! - Elements: `<path ... />` only
+//! - Elements: `<path ... />` plus selected `<defs>` resources
 //! - Path commands: `M`, `L`, `C`, `Z` (absolute only)
 //! - Styling attributes: `stroke`, `stroke-width`, `stroke-opacity`, `fill`,
 //!   `fill-opacity`

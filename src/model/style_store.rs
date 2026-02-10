@@ -4,57 +4,220 @@
 //! to shapes. Styles capture appearance attributes like fill, stroke, opacity,
 //! and effects.
 //!
-//! This is a stub preparing for roadmap task 0.2.3 (Define resource stores).
-//! The full implementation will support:
-//!
-//! - Named styles (user-defined appearance presets)
-//! - Style inheritance (styles can extend other styles)
-//! - Style linking (shapes reference style by ID, updates propagate)
+//! 0.2.3 introduces a concrete style registry keyed by stable style IDs.
+//! The store keeps a name index for deterministic lookups and unique naming.
+
+use std::collections::HashMap;
+
+use slotmap::{SlotMap, new_key_type};
+
+use crate::model::PaintStyle;
+use crate::model::unique_string::make_unique_string;
+
+new_key_type! {
+    /// Identifier for a named style in [`StyleStore`].
+    pub struct StyleId;
+}
+
+/// A named reusable style definition.
+#[derive(Clone, Debug, PartialEq)]
+pub struct NamedStyle {
+    /// Human-readable style name.
+    pub name: String,
+    /// Style payload applied to shapes.
+    pub style: PaintStyle,
+}
+
+impl NamedStyle {
+    /// Construct a named style definition.
+    #[must_use]
+    pub fn new(name: impl Into<String>, style: PaintStyle) -> Self {
+        Self {
+            name: name.into(),
+            style,
+        }
+    }
+}
 
 /// Storage for named style definitions.
-///
-/// Named styles allow users to create reusable appearance presets. When a
-/// linked style is updated, all shapes using that style update automatically.
-///
-/// # Future Expansion
-///
-/// This struct will grow to include:
-///
-/// - `styles: HashMap<StyleId, NamedStyle>`
-/// - `default_style: StyleId`
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default)]
 pub struct StyleStore {
-    /// Placeholder field to prevent zero-sized type.
-    ///
-    /// This will be replaced with actual style storage in task 0.2.3.
-    _placeholder: (),
+    styles: SlotMap<StyleId, NamedStyle>,
+    names: HashMap<String, StyleId>,
+    default_style: Option<StyleId>,
+}
+
+impl PartialEq for StyleStore {
+    fn eq(&self, other: &Self) -> bool {
+        self.styles.len() == other.styles.len()
+            && self
+                .styles
+                .iter()
+                .all(|(id, style)| other.styles.get(id) == Some(style))
+            && self.names == other.names
+            && self.default_style == other.default_style
+    }
 }
 
 impl StyleStore {
     /// Construct an empty style store.
     #[must_use]
-    pub const fn new() -> Self {
-        Self { _placeholder: () }
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Return whether no styles exist.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.styles.is_empty()
+    }
+
+    /// Return the number of stored styles.
+    #[must_use]
+    pub fn style_count(&self) -> usize {
+        self.styles.len()
+    }
+
+    /// Return the default style identifier, if configured.
+    #[must_use]
+    pub const fn default_style(&self) -> Option<StyleId> {
+        self.default_style
+    }
+
+    /// Set the default style. Returns `true` when the style exists.
+    pub fn set_default_style(&mut self, id: StyleId) -> bool {
+        if self.styles.contains_key(id) {
+            self.default_style = Some(id);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Insert a style and return its assigned identifier.
+    pub fn insert(&mut self, mut style: NamedStyle) -> StyleId {
+        style.name = make_unique_string(&style.name, "Style", " ", &self.names);
+        let name = style.name.clone();
+        let id = self.styles.insert(style);
+        self.names.insert(name, id);
+        id
+    }
+
+    /// Return a style by identifier.
+    #[must_use]
+    pub fn style(&self, id: StyleId) -> Option<&NamedStyle> {
+        self.styles.get(id)
+    }
+
+    /// Return a mutable style by identifier.
+    #[must_use]
+    pub fn style_mut(&mut self, id: StyleId) -> Option<&mut NamedStyle> {
+        self.styles.get_mut(id)
+    }
+
+    /// Return a style identifier for a given name.
+    #[must_use]
+    pub fn style_id_for_name(&self, name: &str) -> Option<StyleId> {
+        self.names.get(name).copied()
+    }
+
+    /// Rename a style while preserving uniqueness.
+    pub fn rename(&mut self, id: StyleId, requested_name: &str) -> bool {
+        let Some(style) = self.styles.get_mut(id) else {
+            return false;
+        };
+
+        let old_name = style.name.clone();
+        self.names.remove(old_name.as_str());
+        let next_name = make_unique_string(requested_name, "Style", " ", &self.names);
+
+        style.name.clone_from(&next_name);
+        self.names.insert(next_name, id);
+        true
+    }
+
+    /// Remove a style by identifier.
+    pub fn remove(&mut self, id: StyleId) -> Option<NamedStyle> {
+        let removed = self.styles.remove(id)?;
+        self.names.remove(removed.name.as_str());
+        if self.default_style == Some(id) {
+            self.default_style = None;
+        }
+        Some(removed)
+    }
+
+    /// Iterate stored styles as `(id, style)` tuples.
+    pub fn iter(&self) -> impl Iterator<Item = (StyleId, &NamedStyle)> + '_ {
+        self.styles.iter()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    //! Tests for style store defaults.
+    //! Tests for style storage behaviour.
 
     use super::*;
+    use crate::model::Rgba;
+    use rstest::{fixture, rstest};
 
-    #[test]
-    fn new_style_store_is_empty() {
-        let store = StyleStore::new();
-        // Stub has no contents to verify; just ensure construction works
-        assert_eq!(store, StyleStore::default());
+    #[fixture]
+    fn sample_style() -> impl Fn(&str, f32) -> NamedStyle {
+        |name, width| {
+            NamedStyle::new(
+                name,
+                PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), width, None),
+            )
+        }
     }
 
-    #[test]
-    fn style_store_is_clone() {
+    #[rstest]
+    fn new_style_store_is_empty() {
         let store = StyleStore::new();
-        let cloned = store.clone();
-        assert_eq!(store, cloned);
+        assert!(store.is_empty());
+        assert_eq!(store.style_count(), 0);
+        assert_eq!(store.default_style(), None);
+    }
+
+    #[rstest]
+    fn style_names_are_unique(sample_style: impl Fn(&str, f32) -> NamedStyle) {
+        let mut store = StyleStore::new();
+        let first = store.insert(sample_style("Primary", 1.0));
+        let second = store.insert(sample_style("Primary", 2.0));
+
+        assert_ne!(first, second);
+        assert_eq!(
+            store.style(first).map(|style| style.name.as_str()),
+            Some("Primary")
+        );
+        assert_eq!(
+            store.style(second).map(|style| style.name.as_str()),
+            Some("Primary 1")
+        );
+    }
+
+    #[rstest]
+    fn rename_preserves_uniqueness(sample_style: impl Fn(&str, f32) -> NamedStyle) {
+        let mut store = StyleStore::new();
+        let first = store.insert(sample_style("Main", 1.0));
+        let _second = store.insert(sample_style("Accent", 2.0));
+
+        assert!(store.rename(first, "Accent"));
+        assert_eq!(
+            store.style(first).map(|style| style.name.as_str()),
+            Some("Accent 1")
+        );
+    }
+
+    #[rstest]
+    fn removing_default_style_clears_default_marker(
+        sample_style: impl Fn(&str, f32) -> NamedStyle,
+    ) {
+        let mut store = StyleStore::new();
+        let id = store.insert(sample_style("Default", 1.0));
+        assert!(store.set_default_style(id));
+        assert_eq!(store.default_style(), Some(id));
+
+        let _removed = store.remove(id);
+        assert_eq!(store.default_style(), None);
     }
 }
