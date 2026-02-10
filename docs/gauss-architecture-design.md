@@ -365,9 +365,8 @@ The following class diagram captures the implemented model and SVG I/O
 relationships for `Document`, `ResourceStore`, `StyleStore`, and typed paint
 references introduced by roadmap item 0.2.3.
 
-For screen readers: the diagram shows `Document` containing `Shape` values that
-use `PaintStyle`/`Paint`, while `ResourceStore` and `StyleStore` manage typed
-resource/style IDs and are read by SVG import/export boundaries.
+<!-- markdownlint-disable-next-line MD013 -->
+For screen readers: `Document` shapes use typed paint references, `ResourceStore` and `StyleStore` hold typed IDs, and SVG import/export maps those relationships.
 
 ```mermaid
 classDiagram
