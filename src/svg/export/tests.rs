@@ -58,6 +58,51 @@ fn build_doc_with_shape() -> impl Fn(Shape) -> Document {
     }
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Test setup helper centralises shared fixture wiring for two cases."
+)]
+fn setup_gradient_pattern_test<
+    TestGradientSunset,
+    TestPatternDots,
+    CreateTestTriangle,
+    BuildDocWithShape,
+>(
+    seed: u32,
+    stroke_width: f32,
+    stroke_opacity: Option<u8>,
+    fill_opacity: Option<u8>,
+    test_gradient_sunset: &TestGradientSunset,
+    test_pattern_dots: &TestPatternDots,
+    create_test_triangle: &CreateTestTriangle,
+    build_doc_with_shape: &BuildDocWithShape,
+) -> String
+where
+    TestGradientSunset: Fn(&mut ResourceStore) -> GradientId,
+    TestPatternDots: Fn(&mut ResourceStore) -> PatternId,
+    CreateTestTriangle: Fn(u32, PaintStyle) -> Shape,
+    BuildDocWithShape: Fn(Shape) -> Document,
+{
+    let mut resources = ResourceStore::new();
+    let gradient_id = test_gradient_sunset(&mut resources);
+    let pattern_id = test_pattern_dots(&mut resources);
+
+    let mut stroke = Paint::gradient(gradient_id);
+    if let Some(opacity) = stroke_opacity {
+        stroke = stroke.with_opacity(opacity);
+    }
+
+    let mut fill = Paint::pattern(pattern_id);
+    if let Some(opacity) = fill_opacity {
+        fill = fill.with_opacity(opacity);
+    }
+
+    let shape = create_test_triangle(seed, PaintStyle::new_with_paint(stroke, stroke_width, fill));
+    let doc = build_doc_with_shape(shape);
+
+    export_svg_with_resources(&doc, &resources, 10.0, 10.0)
+}
+
 #[rstest]
 fn exports_empty_document_with_valid_svg_root() {
     let doc = Document::new();
@@ -129,19 +174,16 @@ fn exports_gradient_and_pattern_defs_and_references(
     create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
     build_doc_with_shape: impl Fn(Shape) -> Document,
 ) {
-    let mut resources = ResourceStore::new();
-    let gradient_id = test_gradient_sunset(&mut resources);
-    let pattern_id = test_pattern_dots(&mut resources);
-    let shape = create_test_triangle(
+    let svg = setup_gradient_pattern_test(
         3,
-        PaintStyle::new_with_paint(
-            Paint::gradient(gradient_id),
-            1.5,
-            Paint::pattern(pattern_id),
-        ),
+        1.5,
+        None,
+        None,
+        &test_gradient_sunset,
+        &test_pattern_dots,
+        &create_test_triangle,
+        &build_doc_with_shape,
     );
-    let doc = build_doc_with_shape(shape);
-    let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
 
     assert!(svg.contains("<defs>"));
     assert!(svg.contains("<linearGradient id=\"sunset\""));
@@ -157,19 +199,16 @@ fn exports_paint_server_opacity_attributes(
     create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
     build_doc_with_shape: impl Fn(Shape) -> Document,
 ) {
-    let mut resources = ResourceStore::new();
-    let gradient_id = test_gradient_sunset(&mut resources);
-    let pattern_id = test_pattern_dots(&mut resources);
-    let shape = create_test_triangle(
+    let svg = setup_gradient_pattern_test(
         30,
-        PaintStyle::new_with_paint(
-            Paint::gradient(gradient_id).with_opacity(128),
-            1.0,
-            Paint::pattern(pattern_id).with_opacity(64),
-        ),
+        1.0,
+        Some(128),
+        Some(64),
+        &test_gradient_sunset,
+        &test_pattern_dots,
+        &create_test_triangle,
+        &build_doc_with_shape,
     );
-    let doc = build_doc_with_shape(shape);
-    let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
 
     assert!(svg.contains("stroke=\"url(#sunset)\""));
     assert!(svg.contains("fill=\"url(#dots)\""));
