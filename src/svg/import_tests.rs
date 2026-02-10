@@ -3,11 +3,6 @@
 //! These tests validate that we can import a small SVG subset and that
 //! Gauss-exported SVG round-trips through the importer.
 
-#![expect(
-    clippy::float_arithmetic,
-    reason = "tests perform floating-point comparisons for imported values"
-)]
-
 use crate::{
     model::{
         Anchor, Document, Gradient, GradientId, GradientKind, GradientStop, LinearGradient, Paint,
@@ -44,6 +39,10 @@ fn imports_minimal_line_path() {
 }
 
 #[rstest]
+#[expect(
+    clippy::float_arithmetic,
+    reason = "test compares round-tripped stroke width with tolerance"
+)]
 fn round_trips_exported_svg() {
     let shape = Shape {
         id: ShapeId::default(),
