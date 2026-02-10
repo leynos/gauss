@@ -6,6 +6,7 @@ use gauss::model::{
 };
 use gauss::svg::export::export_svg_with_resources;
 use gauss::svg::import::{ImportedSvg, SvgImportError, import_svg_with_resources};
+use gauss::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::shapes::shape_id;
@@ -76,6 +77,18 @@ fn given_svg_with_unknown_resource(world: &mut ResourceWorld) {
         "#
         .to_owned(),
     );
+}
+
+#[given("an SVG metadata block using Gauss URI without the gauss prefix declaration")]
+fn given_svg_with_gauss_uri_without_gauss_prefix(world: &mut ResourceWorld) {
+    world.export_svg = Some(format!(
+        r##"
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:g="{GAUSS_METADATA_NAMESPACE}">
+          <metadata><g:editor version="1" /></metadata>
+          <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
+        </svg>
+        "##
+    ));
 }
 
 #[when("I export and re-import the document with resources")]
@@ -164,6 +177,39 @@ fn then_missing_resource_error(world: &ResourceWorld) -> TestSupportResult<()> {
     }
 }
 
+#[then("the exported SVG should declare the canonical Gauss metadata namespace")]
+fn then_exported_svg_declares_namespace(world: &ResourceWorld) -> TestSupportResult<()> {
+    let svg = world
+        .export_svg
+        .as_ref()
+        .ok_or_else(|| TestSupportError::missing("exported svg", "namespace assertion"))?;
+    let expected = format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#);
+    if !svg.contains(expected.as_str()) {
+        return Err(TestSupportError::expectation(format!(
+            "expected exported SVG to include '{expected}', got: {svg}"
+        )));
+    }
+    Ok(())
+}
+
+#[then("the import should fail with a missing gauss namespace declaration error")]
+fn then_missing_gauss_namespace_error(world: &ResourceWorld) -> TestSupportResult<()> {
+    let result = world
+        .import_result
+        .as_ref()
+        .ok_or_else(|| TestSupportError::missing("import result", "namespace error assertion"))?;
+
+    match result {
+        Err(SvgImportError::MissingGaussNamespaceDeclaration) => Ok(()),
+        Err(other) => Err(TestSupportError::expectation(format!(
+            "expected MissingGaussNamespaceDeclaration, got {other}"
+        ))),
+        Ok(_) => Err(TestSupportError::expectation(
+            "expected import to fail for missing gauss namespace declaration",
+        )),
+    }
+}
+
 #[scenario(
     path = "tests/features/resource_store.feature",
     name = "Gradient and pattern references round-trip through SVG"
@@ -177,5 +223,21 @@ fn gradient_and_pattern_references_round_trip_through_svg(world: ResourceWorld) 
     name = "Missing resource reference is rejected"
 )]
 fn missing_resource_reference_is_rejected(world: ResourceWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/resource_store.feature",
+    name = "Exported SVG declares Gauss metadata namespace"
+)]
+fn exported_svg_declares_gauss_metadata_namespace(world: ResourceWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/resource_store.feature",
+    name = "Gauss metadata usage requires canonical gauss prefix declaration"
+)]
+fn gauss_metadata_usage_requires_canonical_prefix(world: ResourceWorld) {
     let _ = world;
 }

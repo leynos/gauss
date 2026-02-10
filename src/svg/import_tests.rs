@@ -12,6 +12,7 @@ use crate::{
     svg::{
         export::export_svg_with_resources,
         import::{SvgImportError, import_svg, import_svg_with_resources},
+        metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX},
     },
 };
 use rstest::rstest;
@@ -142,6 +143,63 @@ fn reports_missing_resource_refs() {
             "missing".to_owned()
         ))
     );
+}
+
+#[rstest]
+fn imports_svg_with_canonical_gauss_namespace_metadata_block() {
+    let svg = r##"
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:gauss="https://gauss.dev/ns/metadata/1">
+          <metadata>
+            <gauss:editor version="1" />
+          </metadata>
+          <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
+        </svg>
+    "##;
+
+    let imported = import_svg_with_resources(svg);
+    assert!(imported.is_ok(), "canonical gauss metadata should import");
+}
+
+#[rstest]
+fn reports_invalid_gauss_prefix_binding() {
+    let svg = r##"
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:gauss="https://example.com/not-gauss">
+          <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
+        </svg>
+    "##;
+
+    let result = import_svg_with_resources(svg);
+    assert_eq!(
+        result,
+        Err(SvgImportError::InvalidGaussNamespaceBinding(
+            "https://example.com/not-gauss".to_owned()
+        ))
+    );
+}
+
+#[rstest]
+fn reports_gauss_namespace_usage_without_canonical_prefix_declaration() {
+    let svg = r##"
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:g="https://gauss.dev/ns/metadata/1">
+          <metadata>
+            <g:editor version="1" />
+          </metadata>
+          <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
+        </svg>
+    "##;
+
+    let result = import_svg_with_resources(svg);
+    assert_eq!(
+        result,
+        Err(SvgImportError::MissingGaussNamespaceDeclaration)
+    );
+}
+
+#[rstest]
+fn exported_svg_declares_canonical_gauss_namespace() {
+    let exported = export_svg_with_resources(&Document::new(), &ResourceStore::new(), 10.0, 10.0);
+    let namespace = format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#);
+    assert!(exported.contains(namespace.as_str()));
 }
 
 #[rstest]

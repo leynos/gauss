@@ -5,6 +5,7 @@ use crate::model::{
     Anchor, Gradient, GradientId, GradientKind, GradientStop, LinearGradient, PaintStyle, PathGeom,
     PatternId, PatternResource, RadialGradient, Rgba, Shape, SymbolResource, Vec2,
 };
+use crate::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
 use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::{fixture, rstest};
 
@@ -127,7 +128,10 @@ fn create_line_shape_for_export(
 fn exports_empty_document_with_valid_svg_root() {
     let doc = Document::new();
     let svg = export_svg(&doc, 100.0, 50.0);
+    let metadata_namespace =
+        format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#);
     assert!(svg.contains(r#"<svg xmlns="http://www.w3.org/2000/svg""#));
+    assert!(svg.contains(metadata_namespace.as_str()));
     assert!(svg.contains(r#"viewBox="0 0 100 50""#));
 }
 

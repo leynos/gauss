@@ -12,6 +12,7 @@ use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};
 use common::{TempFileGuard, ensure_initial_draw, init_test_app};
 use gauss::model::Paint;
+use gauss::svg::metadata::GAUSS_METADATA_NAMESPACE;
 use gauss::ui::{OpenSvg, Phase0Shell};
 use gpui::TestAppContext;
 use uuid::Uuid;
@@ -214,5 +215,113 @@ fn open_action_reports_missing_resource_reference(cx: &mut TestAppContext) {
     assert!(
         error_message.contains("missing resource"),
         "error should describe missing referenced resources, got: {error_message}"
+    );
+}
+
+#[gpui::test]
+fn open_action_accepts_canonical_gauss_metadata_namespace(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let temp_dir =
+        Utf8PathBuf::from_path_buf(std::env::temp_dir()).expect("temp dir should be valid UTF-8");
+    let file_name = Utf8PathBuf::from(format!(
+        "gauss-test-open-gauss-metadata-{}.svg",
+        Uuid::new_v4()
+    ));
+    let svg_path = temp_dir.join(&file_name);
+    let dir =
+        Dir::open_ambient_dir(&temp_dir, ambient_authority()).expect("temp dir should be readable");
+    let svg = format!(
+        r##"
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:gauss="{GAUSS_METADATA_NAMESPACE}">
+          <metadata>
+            <gauss:editor version="1" />
+          </metadata>
+          <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
+        </svg>
+    "##
+    );
+    dir.write(file_name.as_path(), svg.as_bytes())
+        .expect("test SVG file should be writable");
+    let cleanup = TempFileGuard::new_with_path(dir, file_name, svg_path);
+    let svg_path_ref = cleanup.path().expect("temp file path should be set");
+
+    let view: gpui::Entity<Phase0Shell> = {
+        let (view, visual_cx) =
+            cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
+        ensure_initial_draw(visual_cx);
+        visual_cx.dispatch_action(OpenSvg);
+        visual_cx.run_until_parked();
+        view
+    };
+    cx.run_until_parked();
+
+    cx.simulate_new_path_selection(|_directory: &Path| {
+        Some(svg_path_ref.as_std_path().to_path_buf())
+    });
+    cx.run_until_parked();
+
+    let (shape_count, open_error) = cx.read(|app| {
+        let shell = view.read(app);
+        (
+            shell.document().len(),
+            shell.last_open_error().map(str::to_owned),
+        )
+    });
+    assert_eq!(shape_count, 1);
+    assert!(
+        open_error.is_none(),
+        "open should succeed for canonical metadata"
+    );
+}
+
+#[gpui::test]
+fn open_action_rejects_gauss_namespace_without_canonical_prefix(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let temp_dir =
+        Utf8PathBuf::from_path_buf(std::env::temp_dir()).expect("temp dir should be valid UTF-8");
+    let file_name = Utf8PathBuf::from(format!(
+        "gauss-test-open-invalid-gauss-{}.svg",
+        Uuid::new_v4()
+    ));
+    let svg_path = temp_dir.join(&file_name);
+    let dir =
+        Dir::open_ambient_dir(&temp_dir, ambient_authority()).expect("temp dir should be readable");
+    let svg = format!(
+        r##"
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:g="{GAUSS_METADATA_NAMESPACE}">
+          <metadata><g:editor version="1" /></metadata>
+          <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
+        </svg>
+    "##
+    );
+    dir.write(file_name.as_path(), svg.as_bytes())
+        .expect("test SVG file should be writable");
+    let cleanup = TempFileGuard::new_with_path(dir, file_name, svg_path);
+    let svg_path_ref = cleanup.path().expect("temp file path should be set");
+
+    let view: gpui::Entity<Phase0Shell> = {
+        let (view, visual_cx) =
+            cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
+        ensure_initial_draw(visual_cx);
+        visual_cx.dispatch_action(OpenSvg);
+        visual_cx.run_until_parked();
+        view
+    };
+    cx.run_until_parked();
+
+    cx.simulate_new_path_selection(|_directory: &Path| {
+        Some(svg_path_ref.as_std_path().to_path_buf())
+    });
+    cx.run_until_parked();
+
+    let open_error = cx.read(|app| view.read(app).last_open_error().map(str::to_owned));
+    let Some(error_message) = open_error else {
+        panic!("open should fail when gauss namespace policy is violated");
+    };
+    assert!(
+        error_message.contains("xmlns:gauss"),
+        "error should mention canonical gauss namespace declaration, got: {error_message}"
     );
 }

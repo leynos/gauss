@@ -13,6 +13,7 @@ use common::{TempFileGuard, ensure_initial_draw, init_test_app};
 use gauss::model::{
     Gradient, GradientKind, GradientStop, LinearGradient, Paint, PatternResource, Rgba, Vec2,
 };
+use gauss::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
 use gauss::ui::{Phase0Shell, SaveSvg};
 use gpui::TestAppContext;
 use uuid::Uuid;
@@ -98,6 +99,12 @@ fn save_action_prompts_for_path(cx: &mut TestAppContext) {
     assert!(
         contents.contains(r#"<path d="M 10 10 L 90 10 L 90 90 L 10 90 Z""#),
         "Saved SVG should include the demo shape path"
+    );
+    let expected_namespace =
+        format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#);
+    assert!(
+        contents.contains(expected_namespace.as_str()),
+        "Saved SVG should include canonical Gauss metadata namespace declaration"
     );
 }
 

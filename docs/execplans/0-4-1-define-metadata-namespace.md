@@ -5,7 +5,7 @@ This Execution Plan (ExecPlan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: DRAFT
+Status: COMPLETE
 
 No `PLANS.md` exists in this repository.
 
@@ -75,13 +75,18 @@ This creates the architectural boundary required by:
   points with `grepai` and `leta`.
 - [x] (2026-02-10) Drafted this ExecPlan with staged implementation and test
   strategy.
-- [ ] Implement namespace constants/policy in SVG load/save path.
-- [ ] Add unit tests (happy/unhappy/edge) for namespace policy helpers.
-- [ ] Add `rstest-bdd` behavioural scenarios for metadata namespace behaviour.
-- [ ] Add GPUI open/save tests for namespace persistence/error handling.
-- [ ] Write ADR for namespace policy and update architecture/user docs.
-- [ ] Mark roadmap item 0.4.1 as done.
-- [ ] Run quality gates and capture logs.
+- [x] (2026-02-10) Implemented namespace constants/policy in SVG load/save
+  path via `src/svg/metadata.rs`, `src/svg/export/mod.rs`, and
+  `src/svg/import/mod.rs`.
+- [x] (2026-02-10) Added unit tests for namespace helpers and SVG import/export
+  namespace behaviour.
+- [x] (2026-02-10) Added `rstest-bdd` behavioural scenarios for namespace
+  declaration and rejection policy in `tests/resource_store_bdd.rs`.
+- [x] (2026-02-10) Added GPUI open/save tests for namespace happy and unhappy
+  paths in `tests/gpui_open_dialog.rs` and `tests/gpui_save_dialog.rs`.
+- [x] (2026-02-10) Added ADR 005 and updated architecture/user documentation.
+- [x] (2026-02-10) Marked roadmap item 0.4.1 done.
+- [x] (2026-02-10) Ran full quality gates and captured logs.
 
 ## Surprises & Discoveries
 
@@ -95,6 +100,9 @@ This creates the architectural boundary required by:
 - Export root generation currently emits only the SVG namespace in
   `src/svg/export/mod.rs` via `write_svg_header`, which is the natural point to
   add explicit Gauss namespace policy output.
+- Rust raw string delimiters in test fixtures must use `r##"..."##` when
+  embedded XML includes colour literals such as `"#000000"`; otherwise
+  compilation fails before runtime assertions.
 
 ## Decision Log
 
@@ -107,11 +115,37 @@ This creates the architectural boundary required by:
 - Decision: keep 0.4.1 implementation minimal and seam-oriented, deferring full
   metadata payload round-trip to 0.4.2. Rationale: preserves roadmap sequencing
   and avoids scope bleed while still creating an enforceable namespace
-  contract. Date/Author: 2026-02-10 (assistant, draft)
+  contract. Date/Author: 2026-02-10 (assistant, finalized)
+
+- Decision: enforce canonical `gauss` prefix declaration during import even if
+  Gauss namespace URI appears under a different prefix. Rationale: avoids
+  alias drift and keeps deterministic metadata identity across load/save.
+  Date/Author: 2026-02-10 (assistant, finalized)
 
 ## Outcomes & Retrospective
 
-Not started. This section will be completed during and after implementation.
+Implemented outcomes:
+
+- Added namespace policy module at `src/svg/metadata.rs` with canonical prefix
+  and URI constants, plus import validation helpers.
+- Export now always emits canonical
+  `xmlns:gauss="https://gauss.dev/ns/metadata/1"` declaration.
+- Import now rejects invalid `gauss` namespace binding and rejects Gauss
+  namespace usage without canonical `xmlns:gauss` declaration.
+- Added unit coverage across metadata helper tests and SVG import/export tests.
+- Added behavioural coverage in `tests/resource_store_bdd.rs` and
+  `tests/features/resource_store.feature`.
+- Added GPUI integration coverage in `tests/gpui_open_dialog.rs` and
+  `tests/gpui_save_dialog.rs`.
+- Added ADR 005 and updated architecture (`docs/gauss-architecture-design.md`),
+  user guide (`docs/users-guide.md`), and roadmap (`docs/roadmap.md`).
+
+Retrospective:
+
+- The namespace policy seam is now in place for roadmap 0.4.2 metadata payload
+  round-trip work with minimal refactoring pressure.
+- Strict validation catches malformed namespace usage early, but this may
+  reject previously tolerated SVG aliases intentionally.
 
 ## Context and Orientation
 
@@ -283,3 +317,6 @@ Planned output artifacts:
 
 Initial draft created on 2026-02-10 to guide implementation of roadmap item
 0.4.1 with explicit testing and documentation deliverables.
+
+Updated on 2026-02-10 after implementation: status set to COMPLETE, progress
+items closed, and outcomes documented with final file-level results.
