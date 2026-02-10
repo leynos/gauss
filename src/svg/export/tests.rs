@@ -241,25 +241,51 @@ fn exports_radial_gradient_defs_with_and_without_focal_point() {
     ));
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Helper keeps fixture and resource constructors explicit for the paired error tests"
+)]
+fn assert_missing_resource_error<ResourceId, F, PaintFn, ErrorFn, CreateTriangleFn, BuildDocFn>(
+    create_and_remove: F,
+    seed: u32,
+    make_paint: PaintFn,
+    expected_error: ErrorFn,
+    create_test_triangle: CreateTriangleFn,
+    build_doc_with_shape: BuildDocFn,
+) where
+    F: FnOnce(&mut ResourceStore) -> ResourceId,
+    PaintFn: Fn(ResourceId) -> PaintStyle,
+    ErrorFn: Fn(ResourceId) -> SvgExportError,
+    CreateTriangleFn: Fn(u32, PaintStyle) -> Shape,
+    BuildDocFn: Fn(Shape) -> Document,
+    ResourceId: Copy,
+{
+    let mut resources = ResourceStore::new();
+    let dangling_id = create_and_remove(&mut resources);
+    let shape = create_test_triangle(seed, make_paint(dangling_id));
+    let doc = build_doc_with_shape(shape);
+
+    let exported = export_svg_with_resources_checked(&doc, &resources, 10.0, 10.0);
+    assert_eq!(exported, Err(expected_error(dangling_id)));
+}
+
 #[rstest]
 fn checked_export_reports_missing_resource_references(
     test_gradient_sunset: impl Fn(&mut ResourceStore) -> GradientId,
     create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
     build_doc_with_shape: impl Fn(Shape) -> Document,
 ) {
-    let mut resources = ResourceStore::new();
-    let dangling_gradient = test_gradient_sunset(&mut resources);
-    let _removed = resources.remove_gradient(dangling_gradient);
-    let shape = create_test_triangle(
+    assert_missing_resource_error(
+        |resources| {
+            let dangling_gradient = test_gradient_sunset(resources);
+            let _removed = resources.remove_gradient(dangling_gradient);
+            dangling_gradient
+        },
         31,
-        PaintStyle::new_with_paint(Paint::gradient(dangling_gradient), 1.0, Paint::None),
-    );
-    let doc = build_doc_with_shape(shape);
-
-    let exported = export_svg_with_resources_checked(&doc, &resources, 10.0, 10.0);
-    assert_eq!(
-        exported,
-        Err(SvgExportError::MissingGradientReference(dangling_gradient))
+        |id| PaintStyle::new_with_paint(Paint::gradient(id), 1.0, Paint::None),
+        SvgExportError::MissingGradientReference,
+        create_test_triangle,
+        build_doc_with_shape,
     );
 }
 
@@ -269,18 +295,16 @@ fn checked_export_reports_missing_pattern_references(
     create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
     build_doc_with_shape: impl Fn(Shape) -> Document,
 ) {
-    let mut resources = ResourceStore::new();
-    let dangling_pattern = test_pattern_dots(&mut resources);
-    let _removed = resources.remove_pattern(dangling_pattern);
-    let shape = create_test_triangle(
+    assert_missing_resource_error(
+        |resources| {
+            let dangling_pattern = test_pattern_dots(resources);
+            let _removed = resources.remove_pattern(dangling_pattern);
+            dangling_pattern
+        },
         32,
-        PaintStyle::new_with_paint(Paint::None, 1.0, Paint::pattern(dangling_pattern)),
-    );
-    let doc = build_doc_with_shape(shape);
-
-    let exported = export_svg_with_resources_checked(&doc, &resources, 10.0, 10.0);
-    assert_eq!(
-        exported,
-        Err(SvgExportError::MissingPatternReference(dangling_pattern))
+        |id| PaintStyle::new_with_paint(Paint::None, 1.0, Paint::pattern(id)),
+        SvgExportError::MissingPatternReference,
+        create_test_triangle,
+        build_doc_with_shape,
     );
 }
