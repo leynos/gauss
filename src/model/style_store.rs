@@ -123,18 +123,14 @@ impl StyleStore {
 
     /// Rename a style while preserving uniqueness.
     pub fn rename(&mut self, id: StyleId, requested_name: &str) -> bool {
-        let Some(existing) = self.styles.get(id) else {
+        let Some(style) = self.styles.get_mut(id) else {
             return false;
         };
 
-        let old_name = existing.name.clone();
+        let old_name = style.name.clone();
         self.names.remove(old_name.as_str());
         let next_name = make_unique_string(requested_name, "Style", " ", &self.names);
 
-        let Some(style) = self.styles.get_mut(id) else {
-            self.names.insert(old_name, id);
-            return false;
-        };
         style.name.clone_from(&next_name);
         self.names.insert(next_name, id);
         true

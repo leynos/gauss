@@ -118,8 +118,8 @@ fn exports_opacity_when_alpha_is_not_opaque() {
     doc.append_shape(shape);
     let svg = export_svg(&doc, 10.0, 10.0);
 
-    assert!(svg.contains(r#"stroke-opacity=""#));
-    assert!(svg.contains(r#"fill-opacity=""#));
+    assert!(svg.contains(r#"stroke-opacity="0.5020""#));
+    assert!(svg.contains(r#"fill-opacity="0.2510""#));
 }
 
 #[rstest]

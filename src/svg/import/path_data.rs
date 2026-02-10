@@ -117,6 +117,8 @@ const fn is_separator(ch: char) -> bool {
     ch.is_ascii_whitespace() || ch == ','
 }
 
+// This importer currently supports the absolute command subset emitted by
+// Gauss export (`M`, `L`, `C`, `Z`) and rejects relative commands.
 const fn is_command(ch: char) -> bool {
     matches!(ch, 'M' | 'L' | 'C' | 'Z')
 }
@@ -125,8 +127,8 @@ const fn is_number_char(ch: char) -> bool {
     ch.is_ascii_digit() || matches!(ch, '-' | '+' | '.')
 }
 
-const fn is_negative_number_start(ch: char, number_buf: &str) -> bool {
-    ch == '-' && !number_buf.is_empty()
+const fn is_implicit_number_separator(ch: char, number_buf: &str) -> bool {
+    !number_buf.is_empty() && matches!(ch, '-' | '+')
 }
 
 fn tokenize_path_data(d: &str) -> Result<Vec<PathToken>, SvgImportError> {
@@ -145,7 +147,7 @@ fn tokenize_path_data(d: &str) -> Result<Vec<PathToken>, SvgImportError> {
             continue;
         }
 
-        if is_negative_number_start(ch, number_buf.as_str()) {
+        if is_implicit_number_separator(ch, number_buf.as_str()) {
             flush_number(&mut number_buf, &mut tokens)?;
             number_buf.push(ch);
             continue;
@@ -161,4 +163,23 @@ fn tokenize_path_data(d: &str) -> Result<Vec<PathToken>, SvgImportError> {
 
     flush_number(&mut number_buf, &mut tokens)?;
     Ok(tokens)
+}
+
+#[cfg(test)]
+mod tests {
+    //! Tests for path-data tokenization and parsing.
+
+    use super::parse_path_data;
+    use rstest::rstest;
+
+    #[rstest]
+    fn parses_plus_as_number_separator() {
+        let parsed = parse_path_data("M 0 0 L 10+5").expect("path data should parse");
+        assert_eq!(parsed.anchors.len(), 2);
+        let Some(anchor) = parsed.anchors.get(1) else {
+            panic!("parsed path should include the line endpoint anchor");
+        };
+        assert_eq!(anchor.pos.x.to_bits(), 10.0_f32.to_bits());
+        assert_eq!(anchor.pos.y.to_bits(), 5.0_f32.to_bits());
+    }
 }

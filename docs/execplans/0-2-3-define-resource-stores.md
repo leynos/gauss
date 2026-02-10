@@ -28,7 +28,7 @@ prepare for Phase 4 colour and effects work. Success is observable when:
 - Follow roadmap item 0.2.3 in `docs/roadmap.md`.
 - Follow architecture guidance in `docs/gauss-architecture-design.md` section
   20 and related model guidance in section 5.
-- Keep model code independent from the Gauss Platform UI (GPUI) layer
+- Keep model code independent of the Gauss Platform UI (GPUI) layer
   (`src/model`).
 - Keep Rust module files under 400 lines.
 - Use typed, explicit model identifiers for shared resources and styles.

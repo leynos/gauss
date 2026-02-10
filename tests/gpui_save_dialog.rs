@@ -11,11 +11,60 @@ use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};
 use common::{TempFileGuard, ensure_initial_draw, init_test_app};
 use gauss::model::{
-    Gradient, GradientKind, GradientStop, LinearGradient, Paint, PatternResource, Vec2,
+    Gradient, GradientKind, GradientStop, LinearGradient, Paint, PatternResource, Rgba, Vec2,
 };
 use gauss::ui::{Phase0Shell, SaveSvg};
 use gpui::TestAppContext;
 use uuid::Uuid;
+
+fn setup_save_test_view(
+    cx: &mut TestAppContext,
+    mut configure_shell: impl FnMut(&mut Phase0Shell),
+) -> gpui::Entity<Phase0Shell> {
+    let view = {
+        let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+        ensure_initial_draw(visual_cx);
+        view.update(visual_cx, |shell, _cx| {
+            configure_shell(shell);
+        });
+        visual_cx.dispatch_action(SaveSvg);
+        visual_cx.run_until_parked();
+        view
+    };
+    cx.run_until_parked();
+    view
+}
+
+fn create_temp_save_target(
+    prefix: &str,
+) -> Result<(Utf8PathBuf, Utf8PathBuf, TempFileGuard), String> {
+    let temp_dir = Utf8PathBuf::from_path_buf(std::env::temp_dir())
+        .map_err(|_| "temp dir should be valid UTF-8".to_owned())?;
+    let file_name = Utf8PathBuf::from(format!("{prefix}-{}.svg", Uuid::new_v4()));
+    let expected = temp_dir.join(&file_name);
+    let temp_dir_handle = Dir::open_ambient_dir(&temp_dir, ambient_authority())
+        .map_err(|err| format!("temp dir should be readable: {err}"))?;
+    let cleanup = TempFileGuard::new(temp_dir_handle, file_name.clone());
+    Ok((expected, file_name, cleanup))
+}
+
+fn choose_save_path(cx: &mut TestAppContext, expected: &Utf8PathBuf) {
+    cx.simulate_new_path_selection(|_directory: &Path| Some(expected.as_std_path().to_path_buf()));
+    cx.run_until_parked();
+}
+
+fn read_save_outcome(
+    cx: &TestAppContext,
+    view: &gpui::Entity<Phase0Shell>,
+) -> (Option<std::path::PathBuf>, Option<String>) {
+    cx.read(|app| {
+        let shell = view.read(app);
+        (
+            shell.last_saved_path().map(Path::to_path_buf),
+            shell.last_save_error().map(str::to_owned),
+        )
+    })
+}
 
 #[gpui::test]
 fn save_action_prompts_for_path(cx: &mut TestAppContext) {
@@ -26,29 +75,18 @@ fn save_action_prompts_for_path(cx: &mut TestAppContext) {
         "No save prompt should be visible before triggering Save"
     );
 
-    let view: gpui::Entity<Phase0Shell> = {
-        let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-        ensure_initial_draw(visual_cx);
-        visual_cx.dispatch_action(SaveSvg);
-        visual_cx.run_until_parked();
-        view
-    };
-    cx.run_until_parked();
+    let view = setup_save_test_view(cx, |_shell| {});
 
     assert!(
         cx.did_prompt_for_new_path(),
         "Save action should prompt for a new path"
     );
 
-    let temp_dir =
-        Utf8PathBuf::from_path_buf(std::env::temp_dir()).expect("temp dir should be valid UTF-8");
-    let file_name = Utf8PathBuf::from(format!("gauss-test-save-{}.svg", Uuid::new_v4()));
-    let expected = temp_dir.join(&file_name);
-    let temp_dir_handle =
-        Dir::open_ambient_dir(&temp_dir, ambient_authority()).expect("temp dir should be readable");
-    let cleanup = TempFileGuard::new(temp_dir_handle, file_name.clone());
-    cx.simulate_new_path_selection(|_directory: &Path| Some(expected.as_std_path().to_path_buf()));
-    cx.run_until_parked();
+    let (expected, file_name, cleanup) = match create_temp_save_target("gauss-test-save") {
+        Ok(target) => target,
+        Err(err) => panic!("{err}"),
+    };
+    choose_save_path(cx, &expected);
 
     let saved = cx.read(|app| view.read(app).last_saved_path().map(Path::to_path_buf));
     assert_eq!(saved.as_deref(), Some(expected.as_std_path()));
@@ -67,63 +105,42 @@ fn save_action_prompts_for_path(cx: &mut TestAppContext) {
 fn save_action_reports_dangling_resource_references(cx: &mut TestAppContext) {
     init_test_app(cx);
 
-    let view: gpui::Entity<Phase0Shell> = {
-        let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-        ensure_initial_draw(visual_cx);
-        view.update(visual_cx, |shell, _cx| {
-            let dangling_gradient = shell
-                .resources_mut_for_tests()
-                .insert_gradient(Gradient::new(
-                    "dangling",
-                    GradientKind::Linear(LinearGradient::new(
-                        Vec2::new(0.0, 0.0),
-                        Vec2::new(1.0, 0.0),
-                        vec![
-                            GradientStop::new(0.0, gauss::model::Rgba::new(255, 0, 0, 255)),
-                            GradientStop::new(1.0, gauss::model::Rgba::new(255, 255, 0, 255)),
-                        ],
-                    )),
-                ));
-            let _removed = shell
-                .resources_mut_for_tests()
-                .remove_gradient(dangling_gradient);
-            if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
-                shape.style.fill = Paint::gradient(dangling_gradient);
-            }
-        });
-        visual_cx.dispatch_action(SaveSvg);
-        visual_cx.run_until_parked();
-        view
-    };
-    cx.run_until_parked();
-
-    let temp_dir =
-        Utf8PathBuf::from_path_buf(std::env::temp_dir()).expect("temp dir should be valid UTF-8");
-    let file_name = Utf8PathBuf::from(format!(
-        "gauss-test-save-dangling-resource-{}.svg",
-        Uuid::new_v4()
-    ));
-    let expected = temp_dir.join(&file_name);
-    let temp_dir_handle =
-        Dir::open_ambient_dir(&temp_dir, ambient_authority()).expect("temp dir should be readable");
-    let cleanup = TempFileGuard::new(temp_dir_handle, file_name.clone());
-
-    cx.simulate_new_path_selection(|_directory: &Path| Some(expected.as_std_path().to_path_buf()));
-    cx.run_until_parked();
-
-    let (saved, save_error) = cx.read(|app| {
-        let shell = view.read(app);
-        (
-            shell.last_saved_path().map(Path::to_path_buf),
-            shell.last_save_error().map(str::to_owned),
-        )
+    let view = setup_save_test_view(cx, |shell| {
+        let dangling_gradient = shell
+            .resources_mut_for_tests()
+            .insert_gradient(Gradient::new(
+                "dangling",
+                GradientKind::Linear(LinearGradient::new(
+                    Vec2::new(0.0, 0.0),
+                    Vec2::new(1.0, 0.0),
+                    vec![
+                        GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
+                        GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
+                    ],
+                )),
+            ));
+        let _removed = shell
+            .resources_mut_for_tests()
+            .remove_gradient(dangling_gradient);
+        if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
+            shape.style.fill = Paint::gradient(dangling_gradient);
+        }
     });
+    let (expected, file_name, cleanup) =
+        match create_temp_save_target("gauss-test-save-dangling-resource") {
+            Ok(target) => target,
+            Err(err) => panic!("{err}"),
+        };
+    choose_save_path(cx, &expected);
 
+    let (saved, save_error) = read_save_outcome(cx, &view);
     assert!(
         saved.is_none(),
         "save path should not be recorded when export validation fails"
     );
-    let error = save_error.expect("save error should be populated");
+    let Some(error) = save_error else {
+        panic!("save error should be populated");
+    };
     assert!(
         error.contains("missing gradient resource"),
         "save error should report missing gradient references, got: {error}"
@@ -139,53 +156,32 @@ fn save_action_reports_dangling_resource_references(cx: &mut TestAppContext) {
 fn save_action_reports_dangling_pattern_references(cx: &mut TestAppContext) {
     init_test_app(cx);
 
-    let view: gpui::Entity<Phase0Shell> = {
-        let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-        ensure_initial_draw(visual_cx);
-        view.update(visual_cx, |shell, _cx| {
-            let dangling_pattern = shell
-                .resources_mut_for_tests()
-                .insert_pattern(PatternResource::new("dangling-pattern", "<circle />"));
-            let _removed = shell
-                .resources_mut_for_tests()
-                .remove_pattern(dangling_pattern);
-            if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
-                shape.style.fill = Paint::pattern(dangling_pattern);
-            }
-        });
-        visual_cx.dispatch_action(SaveSvg);
-        visual_cx.run_until_parked();
-        view
-    };
-    cx.run_until_parked();
-
-    let temp_dir =
-        Utf8PathBuf::from_path_buf(std::env::temp_dir()).expect("temp dir should be valid UTF-8");
-    let file_name = Utf8PathBuf::from(format!(
-        "gauss-test-save-dangling-pattern-{}.svg",
-        Uuid::new_v4()
-    ));
-    let expected = temp_dir.join(&file_name);
-    let temp_dir_handle =
-        Dir::open_ambient_dir(&temp_dir, ambient_authority()).expect("temp dir should be readable");
-    let cleanup = TempFileGuard::new(temp_dir_handle, file_name.clone());
-
-    cx.simulate_new_path_selection(|_directory: &Path| Some(expected.as_std_path().to_path_buf()));
-    cx.run_until_parked();
-
-    let (saved, save_error) = cx.read(|app| {
-        let shell = view.read(app);
-        (
-            shell.last_saved_path().map(Path::to_path_buf),
-            shell.last_save_error().map(str::to_owned),
-        )
+    let view = setup_save_test_view(cx, |shell| {
+        let dangling_pattern = shell
+            .resources_mut_for_tests()
+            .insert_pattern(PatternResource::new("dangling-pattern", "<circle />"));
+        let _removed = shell
+            .resources_mut_for_tests()
+            .remove_pattern(dangling_pattern);
+        if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
+            shape.style.fill = Paint::pattern(dangling_pattern);
+        }
     });
+    let (expected, file_name, cleanup) =
+        match create_temp_save_target("gauss-test-save-dangling-pattern") {
+            Ok(target) => target,
+            Err(err) => panic!("{err}"),
+        };
+    choose_save_path(cx, &expected);
 
+    let (saved, save_error) = read_save_outcome(cx, &view);
     assert!(
         saved.is_none(),
         "save path should not be recorded when export validation fails"
     );
-    let error = save_error.expect("save error should be populated");
+    let Some(error) = save_error else {
+        panic!("save error should be populated");
+    };
     assert!(
         error.contains("missing pattern resource"),
         "save error should report missing pattern references, got: {error}"
