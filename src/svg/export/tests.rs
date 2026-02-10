@@ -103,6 +103,30 @@ where
     (doc, resources)
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Test helper keeps line-shape setup call sites concise and parameterised."
+)]
+fn create_line_shape_for_export(
+    seed: u32,
+    start: Vec2,
+    end: Vec2,
+    style: PaintStyle,
+    closed: bool,
+) -> Shape {
+    Shape {
+        id: shape_id(seed.into()),
+        z: 0,
+        style,
+        path: PathGeom {
+            anchors: vec![Anchor::new(start), Anchor::new(end)],
+            segments: vec![SegmentKind::Line],
+            closed,
+            closing_segment: SegmentKind::Line,
+        },
+    }
+}
+
 #[rstest]
 fn exports_empty_document_with_valid_svg_root() {
     let doc = Document::new();
@@ -113,20 +137,13 @@ fn exports_empty_document_with_valid_svg_root() {
 
 #[rstest]
 fn exports_simple_line_path(build_doc_with_shape: impl Fn(Shape) -> Document) {
-    let shape = Shape {
-        id: shape_id(1),
-        z: 0,
-        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None),
-        path: PathGeom {
-            anchors: vec![
-                Anchor::new(Vec2::new(1.0, 2.0)),
-                Anchor::new(Vec2::new(3.0, 4.0)),
-            ],
-            segments: vec![SegmentKind::Line],
-            closed: false,
-            closing_segment: SegmentKind::Line,
-        },
-    };
+    let shape = create_line_shape_for_export(
+        1,
+        Vec2::new(1.0, 2.0),
+        Vec2::new(3.0, 4.0),
+        PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None),
+        false,
+    );
 
     let doc = build_doc_with_shape(shape);
     let svg = export_svg(&doc, 10.0, 10.0);
@@ -139,24 +156,17 @@ fn exports_simple_line_path(build_doc_with_shape: impl Fn(Shape) -> Document) {
 
 #[rstest]
 fn exports_opacity_when_alpha_is_not_opaque(build_doc_with_shape: impl Fn(Shape) -> Document) {
-    let shape = Shape {
-        id: shape_id(2),
-        z: 0,
-        style: PaintStyle::new(
+    let shape = create_line_shape_for_export(
+        2,
+        Vec2::new(0.0, 0.0),
+        Vec2::new(1.0, 1.0),
+        PaintStyle::new(
             Some(Rgba::new(255, 0, 0, 128)),
             2.0,
             Some(Rgba::new(0, 0, 0, 64)),
         ),
-        path: PathGeom {
-            anchors: vec![
-                Anchor::new(Vec2::new(0.0, 0.0)),
-                Anchor::new(Vec2::new(1.0, 1.0)),
-            ],
-            segments: vec![SegmentKind::Line],
-            closed: true,
-            closing_segment: SegmentKind::Line,
-        },
-    };
+        true,
+    );
 
     let doc = build_doc_with_shape(shape);
     let svg = export_svg(&doc, 10.0, 10.0);
