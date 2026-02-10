@@ -6,7 +6,7 @@ use crate::model::{
 };
 
 use super::SvgImportError;
-use super::resource_tag_attributes::{collect_extra_attributes, opening_tag};
+use super::resource_tag_attributes::collect_extra_attributes;
 pub(super) use super::types::{AttributeName, SvgContent, TagName};
 
 pub(super) fn parse_resources(
@@ -133,10 +133,9 @@ fn parse_resource_blocks<F>(
     for raw_block in extract_block_tags(svg, tag_name) {
         let block_content = SvgContent::new(raw_block.as_str());
         let id = attribute_value(block_content, AttributeName::new("id")).unwrap_or_default();
-        let body = inner_tag_body(block_content, tag_name);
-        let extra_attributes = opening_tag(block_content.as_str())
-            .map(|tag| collect_extra_attributes(tag, excluded_attributes))
-            .unwrap_or_default();
+        let body = inner_tag_body(block_content);
+        let extra_attributes =
+            collect_extra_attributes(block_content.as_str(), excluded_attributes);
         insert_fn(id, body, extra_attributes, block_content);
     }
 }
@@ -159,46 +158,20 @@ pub(super) fn parse_paint_with_opacity(
 }
 
 pub(super) fn extract_single_tags(svg: SvgContent<'_>, tag_name: TagName<'_>) -> Vec<String> {
-    let mut tags = Vec::new();
-    let mut remaining = svg.as_str();
-    let tag_prefix = format!("<{}", tag_name.as_str());
-
-    while let Some(start) = remaining.find(tag_prefix.as_str()) {
-        let Some(after_start) = remaining.get(start..) else {
-            break;
-        };
-        let Some(end) = after_start.find('>') else {
-            break;
-        };
-        let Some(tag) = after_start.get(..=end) else {
-            break;
-        };
-        tags.push(tag.to_owned());
-        remaining = after_start.get((end + 1)..).unwrap_or_default();
-    }
-
-    tags
+    extract_block_tags(svg, tag_name)
 }
 
 pub(super) fn attribute_value(tag: SvgContent<'_>, name: AttributeName<'_>) -> Option<String> {
-    let tag_content = tag.as_str();
-    for quote in ['"', '\''] {
-        let needle = format!("{}={quote}", name.as_str());
-        let Some(start) = tag_content.find(needle.as_str()) else {
-            continue;
+    with_parsed_document(tag.as_str(), |_source, document| {
+        let root = document.root_element();
+        let element = if root.tag_name().name() == "gauss-import-wrapper" {
+            root.children().find(roxmltree::Node::is_element)?
+        } else {
+            root
         };
-        let Some(after) = tag_content.get((start + needle.len())..) else {
-            continue;
-        };
-        let Some(end) = after.find(quote) else {
-            continue;
-        };
-        if let Some(value) = after.get(..end) {
-            return Some(value.to_owned());
-        }
-    }
-
-    None
+        element.attribute(name.as_str()).map(ToOwned::to_owned)
+    })
+    .flatten()
 }
 
 fn parse_gradient_stops(block: SvgContent<'_>) -> Result<Vec<GradientStop>, SvgImportError> {
@@ -333,65 +306,46 @@ fn parse_offset(value: &str) -> Result<f32, SvgImportError> {
 }
 
 pub(super) fn extract_block_tags(svg: SvgContent<'_>, tag_name: TagName<'_>) -> Vec<String> {
-    let mut blocks = Vec::new();
-    let mut remaining = svg.as_str();
-    let open_prefix = format!("<{}", tag_name.as_str());
-    let close_tag = format!("</{}>", tag_name.as_str());
-
-    while let Some(start) = remaining.find(open_prefix.as_str()) {
-        let Some(after_start) = remaining.get(start..) else {
-            break;
-        };
-        let Some(open_end) = after_start.find('>') else {
-            break;
-        };
-
-        let Some(open_tag) = after_start.get(..=open_end) else {
-            break;
-        };
-
-        if open_tag.trim_end().ends_with("/>") {
-            blocks.push(open_tag.to_owned());
-            remaining = after_start.get((open_end + 1)..).unwrap_or_default();
-            continue;
-        }
-
-        let Some(close_index_rel) = after_start.get((open_end + 1)..).and_then(|rest| {
-            rest.find(close_tag.as_str())
-                .map(|index| index + open_end + 1 + close_tag.len())
-        }) else {
-            break;
-        };
-
-        let Some(block) = after_start.get(..close_index_rel) else {
-            break;
-        };
-        blocks.push(block.to_owned());
-        remaining = after_start.get(close_index_rel..).unwrap_or_default();
-    }
-
-    blocks
+    with_parsed_document(svg.as_str(), |source, document| {
+        document
+            .root_element()
+            .descendants()
+            .filter(|node| node.is_element() && node.tag_name().name() == tag_name.as_str())
+            .filter_map(|node| source.get(node.range()).map(ToOwned::to_owned))
+            .collect()
+    })
+    .unwrap_or_default()
 }
 
-fn inner_tag_body(block: SvgContent<'_>, tag_name: TagName<'_>) -> String {
-    let block_content = block.as_str();
-    let Some(open_end) = block_content.find('>') else {
-        return String::new();
-    };
+fn inner_tag_body(block: SvgContent<'_>) -> String {
+    with_parsed_document(block.as_str(), |source, document| {
+        let root = document.root_element();
+        let element = if root.tag_name().name() == "gauss-import-wrapper" {
+            root.children().find(roxmltree::Node::is_element)?
+        } else {
+            root
+        };
+        let mut children = element.children();
+        let first_child = children.next()?;
+        let last_child = children.next_back().unwrap_or(first_child);
 
-    let Some(open_tag) = block_content.get(..=open_end) else {
-        return String::new();
-    };
-    if open_tag.trim_end().ends_with("/>") {
-        return String::new();
+        source
+            .get(first_child.range().start..last_child.range().end)
+            .map(ToOwned::to_owned)
+    })
+    .flatten()
+    .unwrap_or_default()
+}
+
+fn with_parsed_document<T>(
+    fragment: &str,
+    map: impl FnOnce(&str, &roxmltree::Document<'_>) -> T,
+) -> Option<T> {
+    if let Ok(document) = roxmltree::Document::parse(fragment) {
+        return Some(map(fragment, &document));
     }
 
-    let close_tag = format!("</{}>", tag_name.as_str());
-    let Some(close_start) = block_content.rfind(close_tag.as_str()) else {
-        return String::new();
-    };
-
-    block_content
-        .get((open_end + 1)..close_start)
-        .map_or_else(String::new, ToOwned::to_owned)
+    let wrapped = format!("<gauss-import-wrapper>{fragment}</gauss-import-wrapper>");
+    let document = roxmltree::Document::parse(wrapped.as_str()).ok()?;
+    Some(map(wrapped.as_str(), &document))
 }

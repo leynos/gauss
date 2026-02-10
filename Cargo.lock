@@ -2170,6 +2170,7 @@ dependencies = [
  "gpui",
  "gpui-component",
  "log",
+ "roxmltree",
  "rstest",
  "rstest-bdd",
  "rstest-bdd-macros",

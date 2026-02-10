@@ -70,8 +70,9 @@ Adopt Option B.
 
 ## Known Risks and Limitations
 
-- The importer/exporter still uses lightweight string parsing for SVG tags and
-  attributes, so malformed edge cases may require future hardening.
+- Resource import now uses `roxmltree` for tag and attribute parsing, which is
+  substantially more robust than manual string scanning, but the supported SVG
+  subset is intentionally narrow and still omits broader SVG grammar support.
 - Compatibility constructors require ongoing maintenance until all call sites
   fully adopt typed paint APIs.
 
