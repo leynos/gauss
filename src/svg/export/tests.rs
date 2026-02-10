@@ -62,7 +62,7 @@ fn build_doc_with_shape() -> impl Fn(Shape) -> Document {
     clippy::too_many_arguments,
     reason = "Test setup helper centralises shared fixture wiring for two cases."
 )]
-fn setup_gradient_pattern_test<
+fn setup_gradient_pattern_export<
     TestGradientSunset,
     TestPatternDots,
     CreateTestTriangle,
@@ -76,7 +76,7 @@ fn setup_gradient_pattern_test<
     test_pattern_dots: &TestPatternDots,
     create_test_triangle: &CreateTestTriangle,
     build_doc_with_shape: &BuildDocWithShape,
-) -> String
+) -> (Document, ResourceStore)
 where
     TestGradientSunset: Fn(&mut ResourceStore) -> GradientId,
     TestPatternDots: Fn(&mut ResourceStore) -> PatternId,
@@ -100,7 +100,7 @@ where
     let shape = create_test_triangle(seed, PaintStyle::new_with_paint(stroke, stroke_width, fill));
     let doc = build_doc_with_shape(shape);
 
-    export_svg_with_resources(&doc, &resources, 10.0, 10.0)
+    (doc, resources)
 }
 
 #[rstest]
@@ -112,7 +112,7 @@ fn exports_empty_document_with_valid_svg_root() {
 }
 
 #[rstest]
-fn exports_simple_line_path() {
+fn exports_simple_line_path(build_doc_with_shape: impl Fn(Shape) -> Document) {
     let shape = Shape {
         id: shape_id(1),
         z: 0,
@@ -128,8 +128,7 @@ fn exports_simple_line_path() {
         },
     };
 
-    let mut doc = Document::new();
-    doc.append_shape(shape);
+    let doc = build_doc_with_shape(shape);
     let svg = export_svg(&doc, 10.0, 10.0);
 
     assert!(svg.contains(r#"d="M 1 2 L 3 4""#));
@@ -139,7 +138,7 @@ fn exports_simple_line_path() {
 }
 
 #[rstest]
-fn exports_opacity_when_alpha_is_not_opaque() {
+fn exports_opacity_when_alpha_is_not_opaque(build_doc_with_shape: impl Fn(Shape) -> Document) {
     let shape = Shape {
         id: shape_id(2),
         z: 0,
@@ -159,8 +158,7 @@ fn exports_opacity_when_alpha_is_not_opaque() {
         },
     };
 
-    let mut doc = Document::new();
-    doc.append_shape(shape);
+    let doc = build_doc_with_shape(shape);
     let svg = export_svg(&doc, 10.0, 10.0);
 
     assert!(svg.contains(r#"stroke-opacity="0.5020""#));
@@ -174,7 +172,7 @@ fn exports_gradient_and_pattern_defs_and_references(
     create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
     build_doc_with_shape: impl Fn(Shape) -> Document,
 ) {
-    let svg = setup_gradient_pattern_test(
+    let (doc, resources) = setup_gradient_pattern_export(
         3,
         1.5,
         None,
@@ -184,6 +182,7 @@ fn exports_gradient_and_pattern_defs_and_references(
         &create_test_triangle,
         &build_doc_with_shape,
     );
+    let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
 
     assert!(svg.contains("<defs>"));
     assert!(svg.contains("<linearGradient id=\"sunset\""));
@@ -199,7 +198,7 @@ fn exports_paint_server_opacity_attributes(
     create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
     build_doc_with_shape: impl Fn(Shape) -> Document,
 ) {
-    let svg = setup_gradient_pattern_test(
+    let (doc, resources) = setup_gradient_pattern_export(
         30,
         1.0,
         Some(128),
@@ -209,6 +208,7 @@ fn exports_paint_server_opacity_attributes(
         &create_test_triangle,
         &build_doc_with_shape,
     );
+    let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
 
     assert!(svg.contains("stroke=\"url(#sunset)\""));
     assert!(svg.contains("fill=\"url(#dots)\""));
