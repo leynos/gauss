@@ -28,7 +28,8 @@ prepare for Phase 4 colour and effects work. Success is observable when:
 - Follow roadmap item 0.2.3 in `docs/roadmap.md`.
 - Follow architecture guidance in `docs/gauss-architecture-design.md` section
   20 and related model guidance in section 5.
-- Keep model code GPUI-independent (`src/model`).
+- Keep model code independent from the Gauss Platform UI (GPUI) layer
+  (`src/model`).
 - Keep Rust module files under 400 lines.
 - Use typed, explicit model identifiers for shared resources and styles.
 - Preserve compatibility for existing callers where practical (for example,
@@ -90,8 +91,8 @@ prepare for Phase 4 colour and effects work. Success is observable when:
 - Clippy rule `self_named_module_files` rejected `src/svg/import.rs` when a
   sibling `src/svg/import/` directory was introduced. Import code was split
   into `src/svg/import/mod.rs`, `path_data.rs`, and `resource_tags.rs`.
-- `make test` was initially long-running due large test compilation; a fresh
-  run completed successfully after stabilising code shape.
+- `make test` was initially long-running due to large test compilation; a fresh
+  run completed successfully after stabilizing code shape.
 - Existing paint code assumed solid colours; adding `Paint::as_solid()` and
   `Paint::from_solid()` kept non-resource UI behaviour stable while enabling
   typed references.
@@ -180,11 +181,13 @@ Stage D: test and documentation completion
 
 Run commands from repository root:
 
-    project="$(basename "$PWD")"
-    branch="$(git branch --show)"
-    make check-fmt | tee "/tmp/check-fmt-${project}-${branch}.out"
-    make lint | tee "/tmp/lint-${project}-${branch}.out"
-    make test | tee "/tmp/test-${project}-${branch}.out"
+```shell
+project="$(basename "$PWD")"
+branch="$(git branch --show)"
+make check-fmt | tee "/tmp/check-fmt-${project}-${branch}.out"
+make lint | tee "/tmp/lint-${project}-${branch}.out"
+make test | tee "/tmp/test-${project}-${branch}.out"
+```
 
 Expected outcomes:
 

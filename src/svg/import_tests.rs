@@ -208,7 +208,7 @@ fn resource_round_trip_preserves_defs_and_references() {
     assert_eq!(imported.resources.symbol_count(), 1);
     verify_imported_pattern(&imported.resources);
     verify_imported_symbol(&imported.resources);
-    verify_shape_paint_references(&imported.document, gradient_id, pattern_id);
+    verify_shape_paint_references(&imported.document, &imported.resources);
 }
 
 fn setup_test_resources() -> (ResourceStore, GradientId, PatternId) {
@@ -289,11 +289,13 @@ fn verify_imported_symbol(resources: &ResourceStore) {
     );
 }
 
-fn verify_shape_paint_references(
-    document: &Document,
-    expected_gradient_id: GradientId,
-    expected_pattern_id: PatternId,
-) {
+fn verify_shape_paint_references(document: &Document, resources: &ResourceStore) {
+    let Some(expected_gradient_id) = resources.gradient_id_for_svg_id("sunset") else {
+        panic!("Expected imported resources to include a sunset gradient ID");
+    };
+    let Some(expected_pattern_id) = resources.pattern_id_for_svg_id("dots") else {
+        panic!("Expected imported resources to include a dots pattern ID");
+    };
     let Some(imported_shape) = document.shape_at(0) else {
         panic!("Expected one imported shape");
     };
@@ -304,5 +306,34 @@ fn verify_shape_paint_references(
     assert_eq!(
         imported_shape.style.fill,
         Paint::pattern(expected_pattern_id)
+    );
+}
+
+#[rstest]
+fn import_ignores_path_elements_inside_resource_blocks() {
+    let svg = r##"
+        <svg xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="dots">
+              <path d="M 0 0 L 1 0 Z" fill="#ff0000" />
+            </pattern>
+            <symbol id="badge">
+              <path d="M 2 2 L 3 2 Z" fill="#00ff00" />
+            </symbol>
+          </defs>
+          <path d="M 1 2 L 3 4 Z" stroke="#000000" stroke-width="1" fill="none" />
+        </svg>
+    "##;
+
+    let imported = match import_svg_with_resources(svg) {
+        Ok(imported) => imported,
+        Err(err) => panic!("Expected import with defs to succeed: {err}"),
+    };
+    assert_eq!(imported.resources.pattern_count(), 1);
+    assert_eq!(imported.resources.symbol_count(), 1);
+    assert_eq!(
+        imported.document.len(),
+        1,
+        "resource-local <path> tags must not become document geometry"
     );
 }

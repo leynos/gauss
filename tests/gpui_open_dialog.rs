@@ -178,15 +178,27 @@ fn open_action_reports_missing_resource_reference(cx: &mut TestAppContext) {
     };
     cx.run_until_parked();
 
+    let (initial_gradient_count, initial_pattern_count, initial_symbol_count) = cx.read(|app| {
+        let shell = view.read(app);
+        (
+            shell.resources().gradient_count(),
+            shell.resources().pattern_count(),
+            shell.resources().symbol_count(),
+        )
+    });
+
     cx.simulate_new_path_selection(|_directory: &Path| {
         Some(svg_path_ref.as_std_path().to_path_buf())
     });
     cx.run_until_parked();
 
-    let (shape_count, open_error) = cx.read(|app| {
+    let (shape_count, gradient_count, pattern_count, symbol_count, open_error) = cx.read(|app| {
         let shell = view.read(app);
         (
             shell.document().len(),
+            shell.resources().gradient_count(),
+            shell.resources().pattern_count(),
+            shell.resources().symbol_count(),
             shell.last_open_error().map(str::to_owned),
         )
     });
@@ -195,6 +207,9 @@ fn open_action_reports_missing_resource_reference(cx: &mut TestAppContext) {
         shape_count, 1,
         "failed open should keep the pre-existing demo document"
     );
+    assert_eq!(gradient_count, initial_gradient_count);
+    assert_eq!(pattern_count, initial_pattern_count);
+    assert_eq!(symbol_count, initial_symbol_count);
     let error_message = open_error.expect("open error should be populated");
     assert!(
         error_message.contains("missing resource"),

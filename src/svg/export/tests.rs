@@ -3,31 +3,36 @@
 use super::*;
 use crate::model::{
     Anchor, Gradient, GradientId, GradientKind, GradientStop, LinearGradient, PaintStyle, PathGeom,
-    PatternId, PatternResource, Rgba, Shape, SymbolResource, Vec2,
+    PatternId, PatternResource, RadialGradient, Rgba, Shape, SymbolResource, Vec2,
 };
 use crate::test_helpers::shape_id_from_seed as shape_id;
-use rstest::rstest;
+use rstest::{fixture, rstest};
 
-fn test_gradient_sunset(resources: &mut ResourceStore) -> GradientId {
-    resources.insert_gradient(Gradient::new(
-        "sunset",
-        GradientKind::Linear(LinearGradient::new(
-            Vec2::new(0.0, 0.0),
-            Vec2::new(1.0, 0.0),
-            vec![
-                GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
-                GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
-            ],
-        )),
-    ))
+#[fixture]
+fn test_gradient_sunset() -> impl Fn(&mut ResourceStore) -> GradientId {
+    |resources| {
+        resources.insert_gradient(Gradient::new(
+            "sunset",
+            GradientKind::Linear(LinearGradient::new(
+                Vec2::new(0.0, 0.0),
+                Vec2::new(1.0, 0.0),
+                vec![
+                    GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
+                    GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
+                ],
+            )),
+        ))
+    }
 }
 
-fn test_pattern_dots(resources: &mut ResourceStore) -> PatternId {
-    resources.insert_pattern(PatternResource::new("dots", "<circle />"))
+#[fixture]
+fn test_pattern_dots() -> impl Fn(&mut ResourceStore) -> PatternId {
+    |resources| resources.insert_pattern(PatternResource::new("dots", "<circle />"))
 }
 
-fn create_test_triangle(seed: u32, style: PaintStyle) -> Shape {
-    Shape {
+#[fixture]
+fn create_test_triangle() -> impl Fn(u32, PaintStyle) -> Shape {
+    |seed, style| Shape {
         id: shape_id(seed.into()),
         z: 0,
         style,
@@ -44,10 +49,13 @@ fn create_test_triangle(seed: u32, style: PaintStyle) -> Shape {
     }
 }
 
-fn build_doc_with_shape(shape: Shape) -> Document {
-    let mut doc = Document::new();
-    doc.append_shape(shape);
-    doc
+#[fixture]
+fn build_doc_with_shape() -> impl Fn(Shape) -> Document {
+    |shape| {
+        let mut doc = Document::new();
+        doc.append_shape(shape);
+        doc
+    }
 }
 
 #[rstest]
@@ -115,7 +123,12 @@ fn exports_opacity_when_alpha_is_not_opaque() {
 }
 
 #[rstest]
-fn exports_gradient_and_pattern_defs_and_references() {
+fn exports_gradient_and_pattern_defs_and_references(
+    test_gradient_sunset: impl Fn(&mut ResourceStore) -> GradientId,
+    test_pattern_dots: impl Fn(&mut ResourceStore) -> PatternId,
+    create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
+    build_doc_with_shape: impl Fn(Shape) -> Document,
+) {
     let mut resources = ResourceStore::new();
     let gradient_id = test_gradient_sunset(&mut resources);
     let pattern_id = test_pattern_dots(&mut resources);
@@ -138,7 +151,12 @@ fn exports_gradient_and_pattern_defs_and_references() {
 }
 
 #[rstest]
-fn exports_paint_server_opacity_attributes() {
+fn exports_paint_server_opacity_attributes(
+    test_gradient_sunset: impl Fn(&mut ResourceStore) -> GradientId,
+    test_pattern_dots: impl Fn(&mut ResourceStore) -> PatternId,
+    create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
+    build_doc_with_shape: impl Fn(Shape) -> Document,
+) {
     let mut resources = ResourceStore::new();
     let gradient_id = test_gradient_sunset(&mut resources);
     let pattern_id = test_pattern_dots(&mut resources);
@@ -189,7 +207,46 @@ fn exports_pattern_and_symbol_extra_attributes() {
 }
 
 #[rstest]
-fn checked_export_reports_missing_resource_references() {
+fn exports_radial_gradient_defs_with_and_without_focal_point() {
+    let mut resources = ResourceStore::new();
+    let _first = resources.insert_gradient(Gradient::new(
+        "radial-default",
+        GradientKind::Radial(RadialGradient::new(
+            Vec2::new(0.5, 0.5),
+            0.4,
+            None,
+            vec![
+                GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
+                GradientStop::new(1.0, Rgba::new(0, 0, 255, 255)),
+            ],
+        )),
+    ));
+    let _second = resources.insert_gradient(Gradient::new(
+        "radial-focal",
+        GradientKind::Radial(RadialGradient::new(
+            Vec2::new(0.5, 0.5),
+            0.4,
+            Some(Vec2::new(0.3, 0.2)),
+            vec![
+                GradientStop::new(0.0, Rgba::new(255, 255, 255, 255)),
+                GradientStop::new(1.0, Rgba::new(0, 0, 0, 255)),
+            ],
+        )),
+    ));
+
+    let svg = export_svg_with_resources(&Document::new(), &resources, 10.0, 10.0);
+    assert!(svg.contains(r#"<radialGradient id="radial-default" cx="0.5" cy="0.5" r="0.4">"#));
+    assert!(svg.contains(
+        r#"<radialGradient id="radial-focal" cx="0.5" cy="0.5" r="0.4" fx="0.3" fy="0.2">"#
+    ));
+}
+
+#[rstest]
+fn checked_export_reports_missing_resource_references(
+    test_gradient_sunset: impl Fn(&mut ResourceStore) -> GradientId,
+    create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
+    build_doc_with_shape: impl Fn(Shape) -> Document,
+) {
     let mut resources = ResourceStore::new();
     let dangling_gradient = test_gradient_sunset(&mut resources);
     let _removed = resources.remove_gradient(dangling_gradient);
@@ -203,5 +260,27 @@ fn checked_export_reports_missing_resource_references() {
     assert_eq!(
         exported,
         Err(SvgExportError::MissingGradientReference(dangling_gradient))
+    );
+}
+
+#[rstest]
+fn checked_export_reports_missing_pattern_references(
+    test_pattern_dots: impl Fn(&mut ResourceStore) -> PatternId,
+    create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
+    build_doc_with_shape: impl Fn(Shape) -> Document,
+) {
+    let mut resources = ResourceStore::new();
+    let dangling_pattern = test_pattern_dots(&mut resources);
+    let _removed = resources.remove_pattern(dangling_pattern);
+    let shape = create_test_triangle(
+        32,
+        PaintStyle::new_with_paint(Paint::None, 1.0, Paint::pattern(dangling_pattern)),
+    );
+    let doc = build_doc_with_shape(shape);
+
+    let exported = export_svg_with_resources_checked(&doc, &resources, 10.0, 10.0);
+    assert_eq!(
+        exported,
+        Err(SvgExportError::MissingPatternReference(dangling_pattern))
     );
 }

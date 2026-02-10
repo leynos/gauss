@@ -8,6 +8,7 @@ use std::collections::HashMap;
 
 use slotmap::{SlotMap, new_key_type};
 
+use crate::model::unique_string::make_unique_string;
 use crate::model::{Rgba, Vec2};
 
 new_key_type! {
@@ -242,7 +243,8 @@ impl ResourceStore {
 
     /// Insert a gradient, normalising duplicate SVG IDs.
     pub fn insert_gradient(&mut self, mut gradient: Gradient) -> GradientId {
-        gradient.svg_id = make_unique_id(&gradient.svg_id, "gradient", &self.gradient_svg_ids);
+        gradient.svg_id =
+            make_unique_string(&gradient.svg_id, "gradient", "-", &self.gradient_svg_ids);
         let svg_id = gradient.svg_id.clone();
         let id = self.gradients.insert(gradient);
         self.gradient_svg_ids.insert(svg_id, id);
@@ -275,7 +277,7 @@ impl ResourceStore {
 
     /// Insert a pattern, normalising duplicate SVG IDs.
     pub fn insert_pattern(&mut self, mut pattern: PatternResource) -> PatternId {
-        pattern.svg_id = make_unique_id(&pattern.svg_id, "pattern", &self.pattern_svg_ids);
+        pattern.svg_id = make_unique_string(&pattern.svg_id, "pattern", "-", &self.pattern_svg_ids);
         let svg_id = pattern.svg_id.clone();
         let id = self.patterns.insert(pattern);
         self.pattern_svg_ids.insert(svg_id, id);
@@ -308,7 +310,7 @@ impl ResourceStore {
 
     /// Insert a symbol, normalising duplicate SVG IDs.
     pub fn insert_symbol(&mut self, mut symbol: SymbolResource) -> SymbolId {
-        symbol.svg_id = make_unique_id(&symbol.svg_id, "symbol", &self.symbol_svg_ids);
+        symbol.svg_id = make_unique_string(&symbol.svg_id, "symbol", "-", &self.symbol_svg_ids);
         let svg_id = symbol.svg_id.clone();
         let id = self.symbols.insert(symbol);
         self.symbol_svg_ids.insert(svg_id, id);
@@ -370,27 +372,5 @@ impl ResourceStore {
         self.gradient_svg_ids == other.gradient_svg_ids
             && self.pattern_svg_ids == other.pattern_svg_ids
             && self.symbol_svg_ids == other.symbol_svg_ids
-    }
-}
-
-fn make_unique_id<T>(requested: &str, prefix: &str, existing: &HashMap<String, T>) -> String {
-    let trimmed = requested.trim();
-    let base = if trimmed.is_empty() {
-        prefix.to_owned()
-    } else {
-        trimmed.to_owned()
-    };
-
-    if !existing.contains_key(base.as_str()) {
-        return base;
-    }
-
-    let mut suffix = 1_u32;
-    loop {
-        let candidate = format!("{base}-{suffix}");
-        if !existing.contains_key(candidate.as_str()) {
-            return candidate;
-        }
-        suffix += 1;
     }
 }

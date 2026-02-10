@@ -332,7 +332,7 @@ fn parse_offset(value: &str) -> Result<f32, SvgImportError> {
         .map_err(|_| SvgImportError::InvalidNumber)
 }
 
-fn extract_block_tags(svg: SvgContent<'_>, tag_name: TagName<'_>) -> Vec<String> {
+pub(super) fn extract_block_tags(svg: SvgContent<'_>, tag_name: TagName<'_>) -> Vec<String> {
     let mut blocks = Vec::new();
     let mut remaining = svg.as_str();
     let open_prefix = format!("<{}", tag_name.as_str());

@@ -15,7 +15,6 @@ pub(super) fn parse_path_data(d: &str) -> Result<PathGeom, SvgImportError> {
     let mut it = tokens.into_iter().peekable();
 
     let mut geom = PathGeom::new();
-    geom.closing_segment = SegmentKind::Line;
     let mut last_segment = None;
 
     while let Some(token) = it.next() {

@@ -23,6 +23,7 @@ pub mod resource_store;
 pub mod selection;
 pub mod style_store;
 pub mod tool;
+pub(crate) mod unique_string;
 pub mod viewport;
 
 pub use action::{Action, ActionKind};

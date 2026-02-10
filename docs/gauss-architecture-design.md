@@ -324,6 +324,9 @@ unified entry point for action dispatch.
 Roadmap item 0.2.3 is implemented by introducing concrete `ResourceStore` and
 `StyleStore` types, plus paint references in `PaintStyle`.
 
+Reference: [`ADR-004`](adr-004-resource-style-store-and-paint-model.md) records
+the architectural rationale and consequences for this change.
+
 **Design decision:** model stroke and fill as `Paint` (none, solid colour,
 gradient reference, pattern reference) rather than `Option<Rgba>`. This keeps
 solid colour workflows simple while introducing a typed bridge to shared

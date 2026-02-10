@@ -106,6 +106,10 @@ Fixtures are the replacement for Cucumber's shared `World` object.
 The flow below shows a recommended decision path for migrating shared mutable
 state to fixture-based scenario isolation.
 
+Screen reader description: This flowchart starts at migration kickoff, checks
+for cross-scenario mutable state, and then routes teams toward per-scenario
+fixtures with optional `#[once]` infrastructure before documentation updates.
+
 ```mermaid
 flowchart TD
     A[Start migration] --> B{Does the suite rely on

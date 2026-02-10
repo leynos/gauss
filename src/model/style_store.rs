@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use slotmap::{SlotMap, new_key_type};
 
 use crate::model::PaintStyle;
+use crate::model::unique_string::make_unique_string;
 
 new_key_type! {
     /// Identifier for a named style in [`StyleStore`].
@@ -48,17 +49,13 @@ pub struct StyleStore {
 
 impl PartialEq for StyleStore {
     fn eq(&self, other: &Self) -> bool {
-        if self.styles.len() != other.styles.len() {
-            return false;
-        }
-
-        for (id, style) in &self.styles {
-            if other.styles.get(id) != Some(style) {
-                return false;
-            }
-        }
-
-        self.names == other.names && self.default_style == other.default_style
+        self.styles.len() == other.styles.len()
+            && self
+                .styles
+                .iter()
+                .all(|(id, style)| other.styles.get(id) == Some(style))
+            && self.names == other.names
+            && self.default_style == other.default_style
     }
 }
 
@@ -99,7 +96,7 @@ impl StyleStore {
 
     /// Insert a style and return its assigned identifier.
     pub fn insert(&mut self, mut style: NamedStyle) -> StyleId {
-        style.name = make_unique_name(&style.name, &self.names);
+        style.name = make_unique_string(&style.name, "Style", " ", &self.names);
         let name = style.name.clone();
         let id = self.styles.insert(style);
         self.names.insert(name, id);
@@ -131,15 +128,14 @@ impl StyleStore {
         };
 
         let old_name = existing.name.clone();
-        let mut candidate_names = self.names.clone();
-        candidate_names.remove(old_name.as_str());
-        let next_name = make_unique_name(requested_name, &candidate_names);
+        self.names.remove(old_name.as_str());
+        let next_name = make_unique_string(requested_name, "Style", " ", &self.names);
 
         let Some(style) = self.styles.get_mut(id) else {
+            self.names.insert(old_name, id);
             return false;
         };
         style.name.clone_from(&next_name);
-        self.names.remove(old_name.as_str());
         self.names.insert(next_name, id);
         true
     }
@@ -160,41 +156,22 @@ impl StyleStore {
     }
 }
 
-fn make_unique_name<T>(requested: &str, existing: &HashMap<String, T>) -> String {
-    let trimmed = requested.trim();
-    let base = if trimmed.is_empty() {
-        "Style".to_owned()
-    } else {
-        trimmed.to_owned()
-    };
-
-    if !existing.contains_key(base.as_str()) {
-        return base;
-    }
-
-    let mut suffix = 1_u32;
-    loop {
-        let candidate = format!("{base} {suffix}");
-        if !existing.contains_key(candidate.as_str()) {
-            return candidate;
-        }
-        suffix += 1;
-    }
-}
-
 #[cfg(test)]
 mod tests {
     //! Tests for style storage behaviour.
 
     use super::*;
     use crate::model::Rgba;
-    use rstest::rstest;
+    use rstest::{fixture, rstest};
 
-    fn sample_style(name: &str, width: f32) -> NamedStyle {
-        NamedStyle::new(
-            name,
-            PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), width, None),
-        )
+    #[fixture]
+    fn sample_style() -> impl Fn(&str, f32) -> NamedStyle {
+        |name, width| {
+            NamedStyle::new(
+                name,
+                PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), width, None),
+            )
+        }
     }
 
     #[rstest]
@@ -206,7 +183,7 @@ mod tests {
     }
 
     #[rstest]
-    fn style_names_are_unique() {
+    fn style_names_are_unique(sample_style: impl Fn(&str, f32) -> NamedStyle) {
         let mut store = StyleStore::new();
         let first = store.insert(sample_style("Primary", 1.0));
         let second = store.insert(sample_style("Primary", 2.0));
@@ -223,7 +200,7 @@ mod tests {
     }
 
     #[rstest]
-    fn rename_preserves_uniqueness() {
+    fn rename_preserves_uniqueness(sample_style: impl Fn(&str, f32) -> NamedStyle) {
         let mut store = StyleStore::new();
         let first = store.insert(sample_style("Main", 1.0));
         let _second = store.insert(sample_style("Accent", 2.0));
@@ -236,7 +213,9 @@ mod tests {
     }
 
     #[rstest]
-    fn removing_default_style_clears_default_marker() {
+    fn removing_default_style_clears_default_marker(
+        sample_style: impl Fn(&str, f32) -> NamedStyle,
+    ) {
         let mut store = StyleStore::new();
         let id = store.insert(sample_style("Default", 1.0));
         assert!(store.set_default_style(id));

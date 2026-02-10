@@ -123,16 +123,14 @@ async fn apply_save_path(
         return;
     };
 
-    let Ok((doc, resources)) = this.update(&mut cx, |view, _view_cx| {
-        (view.state.document.clone(), view.state.resources.clone())
+    let Ok(save_result) = this.update(&mut cx, |view, _view_cx| {
+        // TODO: derive canvas size from document bounds or viewport state.
+        export_svg_with_resources_checked(&view.state.document, &view.state.resources, 100.0, 100.0)
+            .map_err(|err| err.to_string())
+            .and_then(|svg| super::super::phase0_support::write_svg_to_path(&path, &svg))
     }) else {
         return;
     };
-
-    // TODO: derive canvas size from document bounds or viewport state.
-    let save_result = export_svg_with_resources_checked(&doc, &resources, 100.0, 100.0)
-        .map_err(|err| err.to_string())
-        .and_then(|svg| super::super::phase0_support::write_svg_to_path(&path, &svg));
     let error = save_result.err();
 
     let _update_result = this.update(&mut cx, move |view, view_cx| {
