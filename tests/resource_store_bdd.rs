@@ -159,16 +159,18 @@ fn then_resource_refs_round_trip(world: &ResourceWorld) -> TestSupportResult<()>
     Ok(())
 }
 
+/// Configuration for import error assertions.
+#[derive(Clone, Copy)]
+struct ImportErrorAssertion {
+    context: &'static str,
+    expected: &'static str,
+    failure_message: &'static str,
+}
+
 /// Helper function to assert that an import fails with a specific error.
-#[expect(
-    clippy::too_many_arguments,
-    reason = "BDD assertions pass explicit context and matcher for clear failures"
-)]
 fn assert_import_error<F>(
     world: &ResourceWorld,
-    assertion_context: &str,
-    expected_error_desc: &str,
-    success_failure_msg: &str,
+    assertion: ImportErrorAssertion,
     error_matcher: F,
 ) -> TestSupportResult<()>
 where
@@ -177,14 +179,15 @@ where
     let result = world
         .import_result
         .as_ref()
-        .ok_or_else(|| TestSupportError::missing("import result", assertion_context))?;
+        .ok_or_else(|| TestSupportError::missing("import result", assertion.context))?;
 
     match result {
         Err(error) if error_matcher(error) => Ok(()),
         Err(other) => Err(TestSupportError::expectation(format!(
-            "expected {expected_error_desc}, got {other}"
+            "expected {}, got {other}",
+            assertion.expected
         ))),
-        Ok(_) => Err(TestSupportError::expectation(success_failure_msg)),
+        Ok(_) => Err(TestSupportError::expectation(assertion.failure_message)),
     }
 }
 
@@ -192,9 +195,11 @@ where
 fn then_missing_resource_error(world: &ResourceWorld) -> TestSupportResult<()> {
     assert_import_error(
         world,
-        "error assertion",
-        "MissingReferencedResource('missing')",
-        "expected import to fail for missing referenced resource",
+        ImportErrorAssertion {
+            context: "error assertion",
+            expected: "MissingReferencedResource('missing')",
+            failure_message: "expected import to fail for missing referenced resource",
+        },
         |error| matches!(error, SvgImportError::MissingReferencedResource(id) if id == "missing"),
     )
 }
@@ -218,9 +223,11 @@ fn then_exported_svg_declares_namespace(world: &ResourceWorld) -> TestSupportRes
 fn then_missing_gauss_namespace_error(world: &ResourceWorld) -> TestSupportResult<()> {
     assert_import_error(
         world,
-        "namespace error assertion",
-        "MissingGaussNamespaceDeclaration",
-        "expected import to fail for missing gauss namespace declaration",
+        ImportErrorAssertion {
+            context: "namespace error assertion",
+            expected: "MissingGaussNamespaceDeclaration",
+            failure_message: "expected import to fail for missing gauss namespace declaration",
+        },
         |error| matches!(error, SvgImportError::MissingGaussNamespaceDeclaration),
     )
 }
