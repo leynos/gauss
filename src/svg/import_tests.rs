@@ -158,8 +158,9 @@ fn imports_svg_with_canonical_gauss_namespace_metadata_block() {
     "##
     );
 
-    let imported = import_svg_with_resources(svg.as_str());
-    assert!(imported.is_ok(), "canonical gauss metadata should import");
+    if let Err(error) = import_svg_with_resources(svg.as_str()) {
+        panic!("canonical gauss metadata should import: {error}");
+    }
 }
 
 #[rstest]
