@@ -21,31 +21,21 @@ fn imports_svg_with_canonical_gauss_namespace_metadata_block() {
 }
 
 #[rstest]
-fn reports_invalid_gauss_prefix_binding() {
+#[case::with_resources(true)]
+#[case::without_resources(false)]
+fn rejects_invalid_gauss_prefix_binding(#[case] with_resources: bool) {
     let svg = r##"
         <svg xmlns="http://www.w3.org/2000/svg" xmlns:gauss="https://example.com/not-gauss">
           <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
         </svg>
     "##;
 
-    let result = import_svg_with_resources(svg);
-    assert_eq!(
-        result,
-        Err(SvgImportError::InvalidGaussNamespaceBinding(
-            "https://example.com/not-gauss".to_owned()
-        ))
-    );
-}
+    let result = if with_resources {
+        import_svg_with_resources(svg).map(|imported| imported.document)
+    } else {
+        import_svg(svg)
+    };
 
-#[rstest]
-fn import_svg_rejects_invalid_gauss_prefix_binding() {
-    let svg = r##"
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:gauss="https://example.com/not-gauss">
-          <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
-        </svg>
-    "##;
-
-    let result = import_svg(svg);
     assert_eq!(
         result,
         Err(SvgImportError::InvalidGaussNamespaceBinding(
