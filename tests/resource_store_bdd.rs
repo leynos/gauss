@@ -159,22 +159,44 @@ fn then_resource_refs_round_trip(world: &ResourceWorld) -> TestSupportResult<()>
     Ok(())
 }
 
-#[then("the import should fail with a missing referenced resource error")]
-fn then_missing_resource_error(world: &ResourceWorld) -> TestSupportResult<()> {
+/// Helper function to assert that an import fails with a specific error.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "BDD assertions pass explicit context and matcher for clear failures"
+)]
+fn assert_import_error<F>(
+    world: &ResourceWorld,
+    assertion_context: &str,
+    expected_error_desc: &str,
+    success_failure_msg: &str,
+    error_matcher: F,
+) -> TestSupportResult<()>
+where
+    F: FnOnce(&SvgImportError) -> bool,
+{
     let result = world
         .import_result
         .as_ref()
-        .ok_or_else(|| TestSupportError::missing("import result", "error assertion"))?;
+        .ok_or_else(|| TestSupportError::missing("import result", assertion_context))?;
 
     match result {
-        Err(SvgImportError::MissingReferencedResource(id)) if id == "missing" => Ok(()),
+        Err(error) if error_matcher(error) => Ok(()),
         Err(other) => Err(TestSupportError::expectation(format!(
-            "expected MissingReferencedResource('missing'), got {other}"
+            "expected {expected_error_desc}, got {other}"
         ))),
-        Ok(_) => Err(TestSupportError::expectation(
-            "expected import to fail for missing referenced resource",
-        )),
+        Ok(_) => Err(TestSupportError::expectation(success_failure_msg)),
     }
+}
+
+#[then("the import should fail with a missing referenced resource error")]
+fn then_missing_resource_error(world: &ResourceWorld) -> TestSupportResult<()> {
+    assert_import_error(
+        world,
+        "error assertion",
+        "MissingReferencedResource('missing')",
+        "expected import to fail for missing referenced resource",
+        |error| matches!(error, SvgImportError::MissingReferencedResource(id) if id == "missing"),
+    )
 }
 
 #[then("the exported SVG should declare the canonical Gauss metadata namespace")]
@@ -194,20 +216,13 @@ fn then_exported_svg_declares_namespace(world: &ResourceWorld) -> TestSupportRes
 
 #[then("the import should fail with a missing gauss namespace declaration error")]
 fn then_missing_gauss_namespace_error(world: &ResourceWorld) -> TestSupportResult<()> {
-    let result = world
-        .import_result
-        .as_ref()
-        .ok_or_else(|| TestSupportError::missing("import result", "namespace error assertion"))?;
-
-    match result {
-        Err(SvgImportError::MissingGaussNamespaceDeclaration) => Ok(()),
-        Err(other) => Err(TestSupportError::expectation(format!(
-            "expected MissingGaussNamespaceDeclaration, got {other}"
-        ))),
-        Ok(_) => Err(TestSupportError::expectation(
-            "expected import to fail for missing gauss namespace declaration",
-        )),
-    }
+    assert_import_error(
+        world,
+        "namespace error assertion",
+        "MissingGaussNamespaceDeclaration",
+        "expected import to fail for missing gauss namespace declaration",
+        |error| matches!(error, SvgImportError::MissingGaussNamespaceDeclaration),
+    )
 }
 
 #[scenario(
