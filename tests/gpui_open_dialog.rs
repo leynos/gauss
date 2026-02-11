@@ -12,7 +12,7 @@ use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};
 use common::{TempFileGuard, ensure_initial_draw, init_test_app};
 use gauss::model::Paint;
-use gauss::svg::metadata::GAUSS_METADATA_NAMESPACE;
+use gauss::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
 use gauss::ui::{OpenSvg, Phase0Shell};
 use gpui::TestAppContext;
 use uuid::Uuid;
@@ -320,8 +320,9 @@ fn open_action_rejects_gauss_namespace_without_canonical_prefix(cx: &mut TestApp
     let Some(error_message) = open_error else {
         panic!("open should fail when gauss namespace policy is violated");
     };
+    let expected_namespace = format!("xmlns:{GAUSS_METADATA_PREFIX}");
     assert!(
-        error_message.contains("xmlns:gauss"),
+        error_message.contains(expected_namespace.as_str()),
         "error should mention canonical gauss namespace declaration, got: {error_message}"
     );
 }

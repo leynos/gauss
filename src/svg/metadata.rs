@@ -46,8 +46,8 @@ impl Error for NamespacePolicyError {}
 
 /// Returns canonical `xmlns:gauss="..."` declaration.
 #[must_use]
-pub const fn gauss_namespace_declaration() -> &'static str {
-    r#"xmlns:gauss="https://gauss.dev/ns/metadata/1""#
+pub fn gauss_namespace_declaration() -> String {
+    format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#)
 }
 
 /// Validate Gauss metadata namespace usage for imported SVG content.
@@ -70,15 +70,13 @@ pub fn validate_namespace_policy(svg: &str) -> Result<(), NamespacePolicyError> 
     let document = roxmltree::Document::parse(svg).map_err(|_| NamespacePolicyError::InvalidXml)?;
     let root = document.root_element();
 
-    let declared_uri = root.lookup_namespace_uri(Some(GAUSS_METADATA_PREFIX));
-    if let Some(uri) = declared_uri
-        && uri != GAUSS_METADATA_NAMESPACE
-    {
+    if let Some(non_canonical) = first_non_canonical_gauss_binding(&document) {
         return Err(NamespacePolicyError::InvalidGaussNamespaceBinding(
-            uri.to_owned(),
+            non_canonical,
         ));
     }
 
+    let declared_uri = root.lookup_namespace_uri(Some(GAUSS_METADATA_PREFIX));
     let uses_gauss_namespace = document.descendants().any(node_uses_gauss_namespace);
     if uses_gauss_namespace && declared_uri != Some(GAUSS_METADATA_NAMESPACE) {
         return Err(NamespacePolicyError::MissingGaussNamespaceDeclaration);
@@ -93,6 +91,17 @@ fn node_uses_gauss_namespace(node: roxmltree::Node<'_, '_>) -> bool {
             || node
                 .attributes()
                 .any(|attribute| attribute.namespace() == Some(GAUSS_METADATA_NAMESPACE)))
+}
+
+fn first_non_canonical_gauss_binding(document: &roxmltree::Document<'_>) -> Option<String> {
+    document
+        .descendants()
+        .filter(roxmltree::Node::is_element)
+        .find_map(|node| {
+            node.lookup_namespace_uri(Some(GAUSS_METADATA_PREFIX))
+                .filter(|uri| *uri != GAUSS_METADATA_NAMESPACE)
+                .map(ToOwned::to_owned)
+        })
 }
 
 #[cfg(test)]
@@ -183,6 +192,26 @@ mod tests {
         assert_eq!(
             result,
             Err(NamespacePolicyError::MissingGaussNamespaceDeclaration)
+        );
+    }
+
+    #[rstest]
+    fn validate_rejects_descendant_rebinding_of_gauss_prefix() {
+        let svg = r#"
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:gauss="https://gauss.dev/ns/metadata/1">
+              <metadata xmlns:gauss="https://example.com/not-gauss">
+                <gauss:editor version="1" />
+              </metadata>
+              <path d="M 0 0 L 1 1" />
+            </svg>
+        "#;
+
+        let result = validate_namespace_policy(svg);
+        assert_eq!(
+            result,
+            Err(NamespacePolicyError::InvalidGaussNamespaceBinding(
+                "https://example.com/not-gauss".to_owned()
+            ))
         );
     }
 }

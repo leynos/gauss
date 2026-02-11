@@ -68,7 +68,7 @@ impl fmt::Display for SvgImportError {
                 write!(f, "paint references missing resource id '{id}'")
             }
             Self::InvalidGaussNamespaceBinding(found) => {
-                write!(f, "invalid gauss namespace binding '{found}'")
+                write!(f, "invalid Gauss namespace binding '{found}'")
             }
             Self::MissingGaussNamespaceDeclaration => write!(
                 f,

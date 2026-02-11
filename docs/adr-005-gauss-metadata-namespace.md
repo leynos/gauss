@@ -4,7 +4,7 @@
 
 Accepted (2026-02-10): Define a canonical Gauss metadata namespace using
 `xmlns:gauss="https://gauss.dev/ns/metadata/1"` and enforce namespace policy in
-SVG import/export.
+Scalable Vector Graphics (SVG) import/export.
 
 ## Date
 
@@ -24,7 +24,8 @@ round-trips.
 ## Decision Drivers
 
 - Keep visible artwork standard SVG and viewer-compatible.
-- Provide one canonical namespace URI and prefix for deterministic tooling.
+- Provide one canonical namespace Uniform Resource Identifier (URI) and prefix
+  for deterministic tooling.
 - Keep import validation strict enough to detect malformed Gauss namespace
   usage.
 - Keep 0.4.1 scoped to namespace policy, not payload schema definition.
@@ -34,11 +35,12 @@ round-trips.
 ### Functional requirements
 
 - Exported SVG must include a canonical Gauss metadata namespace declaration.
-- Import must accept canonical namespace declaration.
-- Import must reject invalid `gauss` prefix bindings.
-- Import must reject Gauss namespace usage when canonical `xmlns:gauss`
+- Canonical namespace declaration must be accepted on import.
+- Files with invalid `gauss` prefix bindings must be rejected.
+- Gauss namespace usage must be rejected when canonical `xmlns:gauss`
   declaration is missing.
-- Behaviour must be covered by unit tests, behavioural tests, and GPUI tests.
+- Behaviour must be covered by unit tests, behavioural tests, and Gauss UI
+  framework tests (GPUI tests).
 
 ### Technical requirements
 

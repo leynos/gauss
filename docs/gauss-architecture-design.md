@@ -961,8 +961,8 @@ Gauss defines one canonical metadata namespace identity:
 Namespace usage policy:
 
 - Export writes the canonical `xmlns:gauss` declaration on the SVG root.
-- Metadata may be represented using `gauss:*` namespaced attributes and/or
-  namespaced payload inside `<metadata>`.
+- Metadata may use `gauss:*` namespaced attributes and/or namespaced payload
+  inside `<metadata>`.
 - Import rejects SVG where `gauss` is bound to a non-canonical URI.
 - Import rejects Gauss namespace usage when canonical `xmlns:gauss`
   declaration is missing.

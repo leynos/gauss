@@ -147,16 +147,18 @@ fn reports_missing_resource_refs() {
 
 #[rstest]
 fn imports_svg_with_canonical_gauss_namespace_metadata_block() {
-    let svg = r##"
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:gauss="https://gauss.dev/ns/metadata/1">
+    let svg = format!(
+        r##"
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}">
           <metadata>
-            <gauss:editor version="1" />
+            <{GAUSS_METADATA_PREFIX}:editor version="1" />
           </metadata>
           <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
         </svg>
-    "##;
+    "##
+    );
 
-    let imported = import_svg_with_resources(svg);
+    let imported = import_svg_with_resources(svg.as_str());
     assert!(imported.is_ok(), "canonical gauss metadata should import");
 }
 

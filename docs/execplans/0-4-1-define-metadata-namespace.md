@@ -15,7 +15,7 @@ Roadmap item 0.4.1 establishes the namespace contract that all later metadata
 work depends on. After this work, Gauss will have a documented and
 implementation-backed metadata namespace policy for SVG load/save, with tests
 that prove happy and unhappy paths at unit, behavioural (`rstest-bdd`), and
-GPUI integration layers.
+Gauss UI framework (GPUI) integration layers.
 
 This creates the architectural boundary required by:
 
@@ -31,8 +31,8 @@ This creates the architectural boundary required by:
 - Keep model-layer code GPUI-independent.
 - Keep files under 400 lines; split modules where needed.
 - Use British English (en-GB-oxendict) in docs.
-- Add or update an ADR documenting namespace policy according to
-  `docs/documentation-style-guide.md`.
+- Add or update an architectural decision record (ADR) documenting namespace
+  policy according to `docs/documentation-style-guide.md`.
 - Validate with `make check-fmt`, `make lint`, and `make test`.
 - Use `rstest` for unit tests, `rstest-bdd` (v0.5.0) for behavioural tests,
   and `#[gpui::test]` for integration tests.
@@ -118,8 +118,8 @@ This creates the architectural boundary required by:
   contract. Date/Author: 2026-02-10 (assistant, finalized)
 
 - Decision: enforce canonical `gauss` prefix declaration during import even if
-  Gauss namespace URI appears under a different prefix. Rationale: avoids
-  alias drift and keeps deterministic metadata identity across load/save.
+  Gauss namespace URI appears under a different prefix. Rationale: avoids alias
+  drift and keeps deterministic metadata identity across load/save.
   Date/Author: 2026-02-10 (assistant, finalized)
 
 ## Outcomes & Retrospective
@@ -267,7 +267,7 @@ Implementation is accepted when all of the following are true:
 
 - Exported SVGs include the documented Gauss metadata namespace declaration in
   the canonical form.
-- Import path recognises canonical namespace usage and handles invalid/missing
+- Import path recognizes canonical namespace usage and handles invalid/missing
   namespace conditions according to the defined unhappy-path policy.
 - Unit tests (`rstest`) cover:
   - canonical namespace emission and parsing,
@@ -304,9 +304,9 @@ Planned internal interfaces (exact names may be finalized during Stage A):
 
 No new external dependencies are expected.
 
-## Artifacts and Notes
+## Artefacts and Notes
 
-Planned output artifacts:
+Planned output artefacts:
 
 - New/updated ADR file (`docs/adr-005-gauss-metadata-namespace.md` expected).
 - Updated users guide section describing metadata namespace behaviour.
