@@ -3,12 +3,15 @@
 //! This module defines the canonical Gauss metadata namespace and validates
 //! namespace usage in imported SVG documents.
 
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, sync::LazyLock};
 
 /// Canonical namespace prefix for Gauss metadata.
 pub const GAUSS_METADATA_PREFIX: &str = "gauss";
 /// Canonical namespace URI for Gauss metadata.
 pub const GAUSS_METADATA_NAMESPACE: &str = "https://gauss.dev/ns/metadata/1";
+
+static GAUSS_NAMESPACE_DECLARATION: LazyLock<String> =
+    LazyLock::new(|| format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#));
 
 /// Errors produced while validating namespace policy in imported SVG content.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -46,8 +49,8 @@ impl Error for NamespacePolicyError {}
 
 /// Returns canonical `xmlns:gauss="..."` declaration.
 #[must_use]
-pub fn gauss_namespace_declaration() -> String {
-    format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#)
+pub fn gauss_namespace_declaration() -> &'static str {
+    GAUSS_NAMESPACE_DECLARATION.as_str()
 }
 
 /// Validate Gauss metadata namespace usage for imported SVG content.

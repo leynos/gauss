@@ -180,6 +180,23 @@ fn reports_invalid_gauss_prefix_binding() {
 }
 
 #[rstest]
+fn import_svg_rejects_invalid_gauss_prefix_binding() {
+    let svg = r##"
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:gauss="https://example.com/not-gauss">
+          <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
+        </svg>
+    "##;
+
+    let result = import_svg(svg);
+    assert_eq!(
+        result,
+        Err(SvgImportError::InvalidGaussNamespaceBinding(
+            "https://example.com/not-gauss".to_owned()
+        ))
+    );
+}
+
+#[rstest]
 fn reports_gauss_namespace_usage_without_canonical_prefix_declaration() {
     let svg = r##"
         <svg xmlns="http://www.w3.org/2000/svg" xmlns:g="https://gauss.dev/ns/metadata/1">

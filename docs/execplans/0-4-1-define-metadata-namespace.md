@@ -273,7 +273,7 @@ Implementation is accepted when all of the following are true:
   - canonical namespace emission and parsing,
   - invalid namespace forms,
   - edge cases such as duplicate/unknown prefixes.
-- Behaviour tests (`rstest-bdd`) cover:
+- Behavioural tests (`rstest-bdd`) cover:
   - happy path save/open namespace observability,
   - unhappy path behaviour with malformed or conflicting namespace input.
 - GPUI tests cover:

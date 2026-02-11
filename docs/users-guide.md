@@ -151,8 +151,8 @@ This prepares metadata round-tripping work while keeping rendered artwork
 standard SVG.
 
 - Gauss accepts SVG files that use this canonical `gauss` namespace.
-- If an SVG binds `gauss` to a different URI, open fails with an explicit
-  error.
+- If an SVG binds `gauss` to a different Uniform Resource Identifier (URI),
+  open fails with an explicit error.
 - If Gauss metadata namespace content is present without canonical
   `xmlns:gauss` declaration, open fails with an explicit error.
 

@@ -100,6 +100,9 @@ pub fn import_svg(svg: &str) -> Result<Document, SvgImportError> {
 /// Returns an [`SvgImportError`] for malformed SVG, unsupported commands, or
 /// invalid references to resources.
 pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportError> {
+    // Namespace policy currently runs as an XML preflight check. If import
+    // profiling shows the duplicate parse as hot, fold this into a single
+    // shared XML parse path.
     metadata::validate_namespace_policy(svg).map_err(map_namespace_policy_error)?;
 
     let mut resources = crate::model::ResourceStore::new();
