@@ -124,24 +124,64 @@ fn create_line_shape_for_export(
     }
 }
 
-#[rstest]
-fn exports_empty_document_with_valid_svg_root() {
-    let doc = Document::new();
-    let svg = export_svg(&doc, 100.0, 50.0);
+/// Custom assertion: verify SVG root element structure.
+fn assert_valid_svg_root(svg: &str, expected_width: f32, expected_height: f32) {
     let document =
-        roxmltree::Document::parse(svg.as_str()).expect("exported SVG should always be valid XML");
+        roxmltree::Document::parse(svg).expect("exported SVG should always be valid XML");
     let root = document.root_element();
     let metadata_namespace =
         format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#);
 
     assert!(svg.contains(r#"<svg xmlns="http://www.w3.org/2000/svg""#));
-    assert!(svg.contains(r#"viewBox="0 0 100 50""#));
+    assert!(svg.contains(&format!(
+        r#"viewBox="0 0 {expected_width} {expected_height}""#
+    )));
     assert_eq!(root.tag_name().name(), "svg");
     assert_eq!(
         root.lookup_namespace_uri(Some(GAUSS_METADATA_PREFIX)),
         Some(GAUSS_METADATA_NAMESPACE)
     );
     assert_eq!(svg.matches(metadata_namespace.as_str()).count(), 1);
+}
+
+/// Expected path attributes for SVG path assertions.
+type SvgPathExpectation<'a> = (&'a str, &'a str, &'a str, &'a str);
+
+/// Custom assertion: verify path with stroke and fill attributes.
+fn assert_svg_path(svg: &str, expected: SvgPathExpectation<'_>) {
+    let (d, stroke, stroke_width, fill) = expected;
+    assert!(svg.contains(&format!(r#"d="{d}""#)));
+    assert!(svg.contains(&format!(r#"stroke="{stroke}""#)));
+    assert!(svg.contains(&format!(r#"stroke-width="{stroke_width}""#)));
+    assert!(svg.contains(&format!(r#"fill="{fill}""#)));
+}
+
+/// Custom assertion: verify gradient and pattern definitions and references.
+fn assert_gradient_pattern_defs(svg: &str, gradient_id: &str, pattern_id: &str) {
+    assert!(svg.contains("<defs>"));
+    assert!(svg.contains(&format!(r#"<linearGradient id="{gradient_id}""#)));
+    assert!(svg.contains(&format!(r#"<pattern id="{pattern_id}""#)));
+    assert!(svg.contains(&format!(r#"stroke="url(#{gradient_id})""#)));
+    assert!(svg.contains(&format!(r#"fill="url(#{pattern_id})""#)));
+}
+
+/// Expected paint server opacity attributes for SVG assertions.
+type PaintServerOpacityExpectation<'a> = (&'a str, &'a str, &'a str, &'a str);
+
+/// Custom assertion: verify paint server opacity attributes.
+fn assert_paint_server_opacity(svg: &str, expected: PaintServerOpacityExpectation<'_>) {
+    let (gradient_id, pattern_id, stroke_opacity, fill_opacity) = expected;
+    assert!(svg.contains(&format!(r#"stroke="url(#{gradient_id})""#)));
+    assert!(svg.contains(&format!(r#"fill="url(#{pattern_id})""#)));
+    assert!(svg.contains(&format!(r#"stroke-opacity="{stroke_opacity}""#)));
+    assert!(svg.contains(&format!(r#"fill-opacity="{fill_opacity}""#)));
+}
+
+#[rstest]
+fn exports_empty_document_with_valid_svg_root() {
+    let doc = Document::new();
+    let svg = export_svg(&doc, 100.0, 50.0);
+    assert_valid_svg_root(&svg, 100.0, 50.0);
 }
 
 #[rstest]
@@ -156,10 +196,7 @@ fn exports_simple_line_path(build_doc_with_shape: impl Fn(Shape) -> Document) {
     let doc = build_doc_with_shape(shape);
     let svg = export_svg(&doc, 10.0, 10.0);
 
-    assert!(svg.contains(r#"d="M 1 2 L 3 4""#));
-    assert!(svg.contains(r##"stroke="#000000""##));
-    assert!(svg.contains(r#"stroke-width="1""#));
-    assert!(svg.contains(r#"fill="none""#));
+    assert_svg_path(&svg, ("M 1 2 L 3 4", "#000000", "1", "none"));
 }
 
 #[rstest]
@@ -201,11 +238,7 @@ fn exports_gradient_and_pattern_defs_and_references(
     );
     let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
 
-    assert!(svg.contains("<defs>"));
-    assert!(svg.contains("<linearGradient id=\"sunset\""));
-    assert!(svg.contains("<pattern id=\"dots\""));
-    assert!(svg.contains("stroke=\"url(#sunset)\""));
-    assert!(svg.contains("fill=\"url(#dots)\""));
+    assert_gradient_pattern_defs(&svg, "sunset", "dots");
 }
 
 #[rstest]
@@ -227,10 +260,7 @@ fn exports_paint_server_opacity_attributes(
     );
     let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
 
-    assert!(svg.contains("stroke=\"url(#sunset)\""));
-    assert!(svg.contains("fill=\"url(#dots)\""));
-    assert!(svg.contains("stroke-opacity=\"0.5020\""));
-    assert!(svg.contains("fill-opacity=\"0.2510\""));
+    assert_paint_server_opacity(&svg, ("sunset", "dots", "0.5020", "0.2510"));
 }
 
 #[rstest]
