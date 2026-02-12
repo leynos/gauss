@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed.
+Accepted — `undo_2` selected for document history.
 
 ## Date
 
@@ -97,28 +97,59 @@ _Table 1: Trade-offs between candidate undo crates._
 
 ## Decision Outcome / Proposed Direction
 
-Shortlist `undo` and `undo_2` for a focused spike in the model layer because
-they are command-oriented and have the most recent releases of the options
-reviewed.[^undo-docs][^undo2-docs][^undo-versions][^undo2-versions]
-Deprioritise `undo_stack` due to its work-in-progress warning and value-stack
-focus, and deprioritise `gur` because its replay-and-snapshot model implies
-replay overhead for large documents (inference based on its design
-description). [^undo-stack-docs][^gur-docs][^gur-versions]
+`undo_2` is accepted for document history. The spike demonstrated that its
+action-iterator API maps cleanly to the existing `Command`/`CommandInverse`
+model, and the adapter is small enough to replace if
+needed.[^undo2-docs][^undo2-versions]
+
+`undo` (option A) is deferred — `undo_2` meets all current requirements and its
+historical undo semantics are acceptable for Gauss.[^undo-docs][^undo-versions]
+
+Selection history remains on `gpui_component::History` because it is a separate
+concern with different ownership and lifecycle requirements.
+
+`undo_stack` and `gur` remain deprioritised for the reasons documented
+above.[^undo-stack-docs][^gur-docs][^gur-versions]
+
+## Spike Findings
+
+- **Suitability**: `undo_2` successfully wraps command/inverse pairs and
+  provides historical undo. The adapter (`DocumentUndoHistory`) is 157 lines
+  and provides `record`/`undo`/`redo`/`clear`/`can_undo`/`can_redo`.
+- **Historical undo behaviour**: `undo_2` retains all commands after branch
+  edits (do A, do B, undo, do C — A, B, C all remain navigable). This differs
+  from classical redo truncation where B would be lost. For Gauss, this is
+  acceptable and arguably beneficial — users never lose work.
+- **Integration effort**: The adapter required a single stored type
+  (`HistoryEntry` containing `Command` + `CommandInverse`). The `undo_2` action
+  iterator returns `(Action::Do, &entry)` or `(Action::Undo, &entry)` pairs
+  that map cleanly to `command.apply()` and `inverse.apply()`.
+- **Error handling**: First error from batched actions is surfaced as a
+  formatted string. This preserves the existing `last_history_error` semantics.
+- **Performance**: No measurable overhead. The adapter is a thin wrapper.
 
 ## Known Risks and Limitations
 
 - Command-based histories require careful inverse capture; memory usage depends
   on the size of command payloads.
 - `undo_2` keeps a historical sequence of commands after edits, which may need
-  a clear policy for pruning or user-facing behaviour.[^undo2-docs]
+  a clear policy for pruning or user-facing behaviour. The spike confirmed this
+  behaviour is acceptable for Gauss, but a pruning policy remains future
+  work.[^undo2-docs]
 - Replay-oriented approaches such as `gur` may incur higher CPU or memory costs
   for large documents (inference based on its design description).[^gur-docs]
+- The adapter surfaces only the first error from a batched undo/redo action
+  sequence. If future commands produce multiple distinct errors, a richer
+  error-collection strategy may be needed.
 
 ## Outstanding Decisions
 
-- Decide between `undo` and `undo_2` after a prototype in `EngineState`.
-- Define history pruning and merge policies (for example, drag edits).
-- Specify how history interacts with transient preview operations.
+- ~~Decide between `undo` and `undo_2` after a prototype in `EngineState`.~~
+  Resolved: `undo_2` accepted after spike implementation and testing.
+- Define history pruning and merge policies (for example, drag edits). Remains
+  future work.
+- Specify how history interacts with transient preview operations. Remains
+  future work.
 
 ## Architectural Rationale
 

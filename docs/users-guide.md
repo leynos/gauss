@@ -118,6 +118,12 @@ This allows selection changes to be undone without affecting the document, and
 vice versa. For example, after selecting several shapes and then undoing the
 selection, the shapes themselves remain unchanged.
 
+**Historical undo behaviour:** Document undo uses historical undo — all
+commands remain navigable even after branching. For example, if actions A, B
+are performed, then B is undone, and C is performed, undoing C will redo B in
+the historical sequence rather than discarding it. This means work is never
+lost through undo/redo branching.
+
 ## SVG Resource Definitions
 
 Gauss now preserves shared SVG resource definitions in `<defs>` when opening

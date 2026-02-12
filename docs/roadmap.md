@@ -104,14 +104,18 @@ phases depend upon. See architecture document §20.
 
 ### 0.3. History and grouping
 
-- [ ] 0.3.1. Audit existing undo/redo implementation.
+- [ ] 0.3.1. Audit existing undo/redo implementation. (Partially done — the
+  `undo_2` spike migrated document history to a model-layer adapter
+  `DocumentUndoHistory`, validated undo/redo round-trips, and confirmed
+  history-clear-on-open semantics. Command grouping for multi-step interactions
+  remains future work.)
   - [ ] Verify multi-step interactions create single undo entries.
-  - [ ] Test history clear on document open. See architecture §7.2.
+  - [x] Test history clear on document open. See architecture §7.2.
 - [ ] 0.3.2. Implement command grouping API.
   - [ ] Begin/end transaction for compound operations.
-  - [ ] Integrate with GPUI Component `History`.
-- [ ] 0.3.3. Add inverse command generation.
-  - [ ] All commands produce `CommandInverse` for undo. See architecture §7.1.
+  - [ ] Integrate with model-layer `DocumentUndoHistory`.
+- [x] 0.3.3. Add inverse command generation.
+  - [x] All commands produce `CommandInverse` for undo. See architecture §7.1.
 
 ### 0.4. SVG load/save and metadata policy
 
@@ -278,11 +282,14 @@ feature plan while integrating the architectural foundations.
 
 ### 1.6. Undo/redo and history
 
-(Partially complete. The dual history stack is implemented.)
+(Partially complete. The dual history stack is implemented. Document history
+has been migrated to the model-layer `DocumentUndoHistory` adapter backed by
+`undo_2` — see [ADR-002](adr-002-undo-history-crate-selection.md). Selection
+history remains on `gpui_component::History`.)
 
 - [ ] 1.6.1. Audit history grouping.
   - [ ] Ensure multi-step interactions create single undo entries.
-  - [ ] Verify history clears correctly on document open.
+  - [x] Verify history clears correctly on document open.
         See architecture §7.2.
 - [ ] 1.6.2. Add History panel (optional).
   - [ ] Display list of recent operations.
