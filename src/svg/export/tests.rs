@@ -168,12 +168,14 @@ fn assert_svg_path(svg: &str, expected: SvgPathExpectation<'_>) {
 }
 
 /// Custom assertion: verify gradient and pattern definitions and references.
-fn assert_gradient_pattern_defs(svg: &str, gradient_id: &str, pattern_id: &str) {
+fn assert_gradient_pattern_defs(svg: &str) {
+    const EXPECTED_GRADIENT_ID: &str = "sunset";
+    const EXPECTED_PATTERN_ID: &str = "dots";
     assert!(svg.contains("<defs>"));
-    assert!(svg.contains(&format!(r#"<linearGradient id="{gradient_id}""#)));
-    assert!(svg.contains(&format!(r#"<pattern id="{pattern_id}""#)));
-    assert!(svg.contains(&format!(r#"stroke="url(#{gradient_id})""#)));
-    assert!(svg.contains(&format!(r#"fill="url(#{pattern_id})""#)));
+    assert!(svg.contains(&format!(r#"<linearGradient id="{EXPECTED_GRADIENT_ID}""#)));
+    assert!(svg.contains(&format!(r#"<pattern id="{EXPECTED_PATTERN_ID}""#)));
+    assert!(svg.contains(&format!(r#"stroke="url(#{EXPECTED_GRADIENT_ID})""#)));
+    assert!(svg.contains(&format!(r#"fill="url(#{EXPECTED_PATTERN_ID})""#)));
 }
 
 /// Expected paint server opacity attributes for SVG assertions.
@@ -244,7 +246,7 @@ fn exports_gradient_and_pattern_defs_and_references(
         &build_doc_with_shape,
     );
     let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
-    assert_gradient_pattern_defs(&svg, "sunset", "dots");
+    assert_gradient_pattern_defs(&svg);
 }
 
 #[rstest]
