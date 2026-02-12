@@ -1,0 +1,157 @@
+//! Model-layer document undo/redo history.
+//!
+//! This module provides GPUI-independent undo/redo backed by the `undo_2`
+//! crate.  [`DocumentUndoHistory`] wraps `undo_2::Commands` and stores
+//! paired [`Command`] / [`CommandInverse`] entries so that both forward
+//! replay and reversal are possible without recomputing inverses.
+//!
+//! `undo_2` implements *historical* undo — commands are never discarded
+//! after a branch edit, making the full edit history navigable.
+
+use undo_2::Action;
+
+use super::command::Command;
+use super::command::CommandInverse;
+use super::document::Document;
+
+#[cfg(test)]
+mod tests;
+
+/// A paired command and its inverse, stored in the undo history.
+///
+/// Both sides are retained so that `undo_2` can instruct the adapter to
+/// apply either the forward or reverse operation without recomputing.
+#[derive(Clone, Debug, PartialEq)]
+struct HistoryEntry {
+    command: Command,
+    inverse: CommandInverse,
+}
+
+/// GPUI-independent document undo/redo history.
+///
+/// Wraps [`undo_2::Commands`] to provide a high-level `record` / `undo` /
+/// `redo` API over [`Command`] and [`CommandInverse`] pairs.
+///
+/// # Examples
+///
+/// ```rust
+/// use gauss::model::history::DocumentUndoHistory;
+/// use gauss::model::{Command, Document};
+///
+/// let mut doc = Document::default();
+/// let mut history = DocumentUndoHistory::new();
+///
+/// // After recording a command, undo is available.
+/// let cmd = Command::DeleteShapes { targets: vec![] };
+/// let inverse = cmd.apply(&mut doc).expect("apply succeeds");
+/// history.record(cmd, inverse);
+/// assert!(history.can_undo());
+/// ```
+pub struct DocumentUndoHistory {
+    commands: undo_2::Commands<HistoryEntry>,
+}
+
+impl DocumentUndoHistory {
+    /// Create an empty history with no recorded commands.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            commands: undo_2::Commands::new(),
+        }
+    }
+
+    /// Record a command that has already been applied to the document.
+    ///
+    /// The caller is responsible for applying `command` to the document
+    /// *before* calling this method and passing the resulting `inverse`.
+    pub fn record(&mut self, command: Command, inverse: CommandInverse) {
+        self.commands.push(HistoryEntry { command, inverse });
+    }
+
+    /// Undo the most recent action, mutating the document accordingly.
+    ///
+    /// When the history is empty or fully undone this is a no-op returning
+    /// `Ok(())`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a description if any individual command or inverse
+    /// application fails.
+    pub fn undo(&mut self, doc: &mut Document) -> Result<(), String> {
+        let actions: Vec<_> = self.commands.undo().collect();
+        Self::apply_actions(doc, &actions, "Undo")
+    }
+
+    /// Redo the most recently undone action, mutating the document.
+    ///
+    /// When there is nothing to redo this is a no-op returning `Ok(())`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a description if any individual command or inverse
+    /// application fails.
+    pub fn redo(&mut self, doc: &mut Document) -> Result<(), String> {
+        let actions: Vec<_> = self.commands.redo().collect();
+        Self::apply_actions(doc, &actions, "Redo")
+    }
+
+    /// Discard all recorded commands, resetting the history to empty.
+    pub fn clear(&mut self) {
+        self.commands.clear();
+    }
+
+    /// Return whether there is at least one action that can be undone.
+    #[must_use]
+    pub fn can_undo(&self) -> bool {
+        self.commands.iter_realized().next().is_some()
+    }
+
+    /// Return whether there is at least one action that can be redone.
+    #[must_use]
+    pub fn can_redo(&self) -> bool {
+        self.commands.is_undoing()
+    }
+
+    /// Apply a collected list of `(Action, &HistoryEntry)` pairs to the
+    /// document, returning the first error encountered.
+    fn apply_actions(
+        doc: &mut Document,
+        actions: &[(Action, &HistoryEntry)],
+        label: &str,
+    ) -> Result<(), String> {
+        for (action, entry) in actions {
+            Self::apply_single(doc, *action, entry, label)?;
+        }
+        Ok(())
+    }
+
+    /// Execute one `(Action, HistoryEntry)` step against the document.
+    fn apply_single(
+        doc: &mut Document,
+        action: Action,
+        entry: &HistoryEntry,
+        label: &str,
+    ) -> Result<(), String> {
+        match action {
+            Action::Undo => entry
+                .inverse
+                .apply(doc)
+                .map_err(|e| format!("{label} failed for '{}': {e}", entry.inverse.name())),
+            Action::Do => {
+                // The new inverse is intentionally discarded — the stored
+                // inverse remains correct for future undo cycles.
+                entry
+                    .command
+                    .apply(doc)
+                    .map(|_inverse| ())
+                    .map_err(|e| format!("{label} failed for '{}': {e}", entry.command.name()))
+            }
+        }
+    }
+}
+
+impl Default for DocumentUndoHistory {
+    fn default() -> Self {
+        Self::new()
+    }
+}

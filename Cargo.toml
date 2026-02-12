@@ -16,6 +16,7 @@ log = "0.4.29"
 roxmltree = "0.21.1"
 slotmap = "1.1.1"
 thiserror = "2.0.17"
+undo_2 = "0.2.1"
 
 [dev-dependencies]
 gpui = { version = "0.2.2", features = ["test-support"] }
