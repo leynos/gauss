@@ -87,7 +87,6 @@ where
     let mut resources = ResourceStore::new();
     let gradient_id = test_gradient_sunset(&mut resources);
     let pattern_id = test_pattern_dots(&mut resources);
-
     let mut stroke = Paint::gradient(gradient_id);
     if let Some(opacity) = stroke_opacity {
         stroke = stroke.with_opacity(opacity);
@@ -124,24 +123,36 @@ fn create_line_shape_for_export(
     }
 }
 
-/// Custom assertion: verify SVG root element structure.
-fn assert_valid_svg_root(svg: &str, expected_width: f32, expected_height: f32) {
+/// Verify SVG root element structure (without namespace checks).
+fn assert_svg_root_element(svg: &str, expected_width: f32, expected_height: f32) {
     let document =
         roxmltree::Document::parse(svg).expect("exported SVG should always be valid XML");
     let root = document.root_element();
-    let metadata_namespace =
-        format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#);
-
     assert!(svg.contains(r#"<svg xmlns="http://www.w3.org/2000/svg""#));
     assert!(svg.contains(&format!(
         r#"viewBox="0 0 {expected_width} {expected_height}""#
     )));
     assert_eq!(root.tag_name().name(), "svg");
+}
+
+/// Verify Gauss metadata namespace declaration on root.
+fn assert_gauss_namespace_declared(svg: &str) {
+    let document =
+        roxmltree::Document::parse(svg).expect("exported SVG should always be valid XML");
+    let root = document.root_element();
+    let metadata_namespace =
+        format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#);
     assert_eq!(
         root.lookup_namespace_uri(Some(GAUSS_METADATA_PREFIX)),
         Some(GAUSS_METADATA_NAMESPACE)
     );
     assert_eq!(svg.matches(metadata_namespace.as_str()).count(), 1);
+}
+
+/// Combined assertion: verify complete SVG root structure.
+fn assert_valid_svg_root(svg: &str, expected_width: f32, expected_height: f32) {
+    assert_svg_root_element(svg, expected_width, expected_height);
+    assert_gauss_namespace_declared(svg);
 }
 
 /// Expected path attributes for SVG path assertions.
@@ -192,10 +203,8 @@ fn exports_simple_line_path(build_doc_with_shape: impl Fn(Shape) -> Document) {
         PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None),
         false,
     );
-
     let doc = build_doc_with_shape(shape);
     let svg = export_svg(&doc, 10.0, 10.0);
-
     assert_svg_path(&svg, ("M 1 2 L 3 4", "#000000", "1", "none"));
 }
 
@@ -211,10 +220,8 @@ fn exports_opacity_when_alpha_is_not_opaque(build_doc_with_shape: impl Fn(Shape)
         ),
         true,
     );
-
     let doc = build_doc_with_shape(shape);
     let svg = export_svg(&doc, 10.0, 10.0);
-
     assert!(svg.contains(r#"stroke-opacity="0.5020""#));
     assert!(svg.contains(r#"fill-opacity="0.2510""#));
 }
@@ -237,7 +244,6 @@ fn exports_gradient_and_pattern_defs_and_references(
         &build_doc_with_shape,
     );
     let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
-
     assert_gradient_pattern_defs(&svg, "sunset", "dots");
 }
 
@@ -259,7 +265,6 @@ fn exports_paint_server_opacity_attributes(
         &build_doc_with_shape,
     );
     let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
-
     assert_paint_server_opacity(&svg, ("sunset", "dots", "0.5020", "0.2510"));
 }
 
@@ -280,7 +285,6 @@ fn exports_pattern_and_symbol_extra_attributes() {
         "<rect width=\"10\" height=\"10\" />",
         vec![("preserveAspectRatio".to_owned(), "xMidYMid".to_owned())],
     ));
-
     let svg = export_svg_with_resources(&Document::new(), &resources, 10.0, 10.0);
     assert!(svg.contains(
         "<pattern id=\"dots\" patternUnits=\"userSpaceOnUse\" patternTransform=\"scale(2)\">"
@@ -319,7 +323,6 @@ fn exports_radial_gradient_defs_with_and_without_focal_point() {
             ],
         )),
     ));
-
     let svg = export_svg_with_resources(&Document::new(), &resources, 10.0, 10.0);
     assert!(svg.contains(r#"<radialGradient id="radial-default" cx="0.5" cy="0.5" r="0.4">"#));
     assert!(svg.contains(
@@ -350,7 +353,6 @@ fn assert_missing_resource_error<ResourceId, F, PaintFn, ErrorFn, CreateTriangle
     let dangling_id = create_and_remove(&mut resources);
     let shape = create_test_triangle(seed, make_paint(dangling_id));
     let doc = build_doc_with_shape(shape);
-
     let exported = export_svg_with_resources_checked(&doc, &resources, 10.0, 10.0);
     assert_eq!(exported, Err(expected_error(dangling_id)));
 }
