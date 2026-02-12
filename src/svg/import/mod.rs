@@ -12,6 +12,8 @@
 use std::{error::Error, fmt};
 
 use crate::model::{Document, PaintStyle, Shape, ShapeId};
+use crate::svg::metadata;
+use crate::svg::metadata::NamespacePolicyError;
 
 mod path_data;
 mod resource_tag_attributes;
@@ -46,6 +48,10 @@ pub enum SvgImportError {
     InvalidOpacity,
     /// A paint reference points to a missing resource.
     MissingReferencedResource(String),
+    /// `gauss` prefix points to the wrong namespace URI.
+    InvalidGaussNamespaceBinding(String),
+    /// Gauss metadata was used without canonical `xmlns:gauss` declaration.
+    MissingGaussNamespaceDeclaration,
 }
 
 impl fmt::Display for SvgImportError {
@@ -61,6 +67,13 @@ impl fmt::Display for SvgImportError {
             Self::MissingReferencedResource(id) => {
                 write!(f, "paint references missing resource id '{id}'")
             }
+            Self::InvalidGaussNamespaceBinding(found) => {
+                write!(f, "invalid Gauss namespace binding '{found}'")
+            }
+            Self::MissingGaussNamespaceDeclaration => write!(
+                f,
+                "Gauss metadata requires canonical xmlns:gauss namespace declaration"
+            ),
         }
     }
 }
@@ -87,6 +100,11 @@ pub fn import_svg(svg: &str) -> Result<Document, SvgImportError> {
 /// Returns an [`SvgImportError`] for malformed SVG, unsupported commands, or
 /// invalid references to resources.
 pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportError> {
+    // Namespace policy currently runs as an XML preflight check. If import
+    // profiling shows the duplicate parse as hot, fold this into a single
+    // shared XML parse path.
+    metadata::validate_namespace_policy(svg).map_err(map_namespace_policy_error)?;
+
     let mut resources = crate::model::ResourceStore::new();
     resource_tags::parse_resources(resource_tags::SvgContent::from(svg), &mut resources)?;
 
@@ -143,4 +161,16 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
         document: doc,
         resources,
     })
+}
+
+fn map_namespace_policy_error(error: NamespacePolicyError) -> SvgImportError {
+    match error {
+        NamespacePolicyError::InvalidXml => SvgImportError::MalformedSvg,
+        NamespacePolicyError::InvalidGaussNamespaceBinding(found) => {
+            SvgImportError::InvalidGaussNamespaceBinding(found)
+        }
+        NamespacePolicyError::MissingGaussNamespaceDeclaration => {
+            SvgImportError::MissingGaussNamespaceDeclaration
+        }
+    }
 }

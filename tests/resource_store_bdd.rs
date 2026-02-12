@@ -6,6 +6,7 @@ use gauss::model::{
 };
 use gauss::svg::export::export_svg_with_resources;
 use gauss::svg::import::{ImportedSvg, SvgImportError, import_svg_with_resources};
+use gauss::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::shapes::shape_id;
@@ -78,6 +79,18 @@ fn given_svg_with_unknown_resource(world: &mut ResourceWorld) {
     );
 }
 
+#[given("an SVG metadata block using Gauss URI without the gauss prefix declaration")]
+fn given_svg_with_gauss_uri_without_gauss_prefix(world: &mut ResourceWorld) {
+    world.export_svg = Some(format!(
+        r##"
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:g="{GAUSS_METADATA_NAMESPACE}">
+          <metadata><g:editor version="1" /></metadata>
+          <path d="M 1 2 L 3 4" stroke="#000000" stroke-width="1" fill="none" />
+        </svg>
+        "##
+    ));
+}
+
 #[when("I export and re-import the document with resources")]
 fn when_export_and_reimport(world: &mut ResourceWorld) {
     let svg = export_svg_with_resources(&world.doc, &world.resources, 100.0, 100.0);
@@ -146,22 +159,77 @@ fn then_resource_refs_round_trip(world: &ResourceWorld) -> TestSupportResult<()>
     Ok(())
 }
 
-#[then("the import should fail with a missing referenced resource error")]
-fn then_missing_resource_error(world: &ResourceWorld) -> TestSupportResult<()> {
+/// Configuration for import error assertions.
+#[derive(Clone, Copy)]
+struct ImportErrorAssertion {
+    context: &'static str,
+    expected: &'static str,
+    failure_message: &'static str,
+}
+
+/// Helper function to assert that an import fails with a specific error.
+fn assert_import_error<F>(
+    world: &ResourceWorld,
+    assertion: ImportErrorAssertion,
+    error_matcher: F,
+) -> TestSupportResult<()>
+where
+    F: FnOnce(&SvgImportError) -> bool,
+{
     let result = world
         .import_result
         .as_ref()
-        .ok_or_else(|| TestSupportError::missing("import result", "error assertion"))?;
+        .ok_or_else(|| TestSupportError::missing("import result", assertion.context))?;
 
     match result {
-        Err(SvgImportError::MissingReferencedResource(id)) if id == "missing" => Ok(()),
+        Err(error) if error_matcher(error) => Ok(()),
         Err(other) => Err(TestSupportError::expectation(format!(
-            "expected MissingReferencedResource('missing'), got {other}"
+            "expected {}, got {other}",
+            assertion.expected
         ))),
-        Ok(_) => Err(TestSupportError::expectation(
-            "expected import to fail for missing referenced resource",
-        )),
+        Ok(_) => Err(TestSupportError::expectation(assertion.failure_message)),
     }
+}
+
+#[then("the import should fail with a missing referenced resource error")]
+fn then_missing_resource_error(world: &ResourceWorld) -> TestSupportResult<()> {
+    assert_import_error(
+        world,
+        ImportErrorAssertion {
+            context: "error assertion",
+            expected: "MissingReferencedResource('missing')",
+            failure_message: "expected import to fail for missing referenced resource",
+        },
+        |error| matches!(error, SvgImportError::MissingReferencedResource(id) if id == "missing"),
+    )
+}
+
+#[then("the exported SVG should declare the canonical Gauss metadata namespace")]
+fn then_exported_svg_declares_namespace(world: &ResourceWorld) -> TestSupportResult<()> {
+    let svg = world
+        .export_svg
+        .as_ref()
+        .ok_or_else(|| TestSupportError::missing("exported svg", "namespace assertion"))?;
+    let expected = format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#);
+    if !svg.contains(expected.as_str()) {
+        return Err(TestSupportError::expectation(format!(
+            "expected exported SVG to include '{expected}', got: {svg}"
+        )));
+    }
+    Ok(())
+}
+
+#[then("the import should fail with a missing gauss namespace declaration error")]
+fn then_missing_gauss_namespace_error(world: &ResourceWorld) -> TestSupportResult<()> {
+    assert_import_error(
+        world,
+        ImportErrorAssertion {
+            context: "namespace error assertion",
+            expected: "MissingGaussNamespaceDeclaration",
+            failure_message: "expected import to fail for missing gauss namespace declaration",
+        },
+        |error| matches!(error, SvgImportError::MissingGaussNamespaceDeclaration),
+    )
 }
 
 #[scenario(
@@ -177,5 +245,21 @@ fn gradient_and_pattern_references_round_trip_through_svg(world: ResourceWorld) 
     name = "Missing resource reference is rejected"
 )]
 fn missing_resource_reference_is_rejected(world: ResourceWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/resource_store.feature",
+    name = "Exported SVG declares Gauss metadata namespace"
+)]
+fn exported_svg_declares_gauss_metadata_namespace(world: ResourceWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/resource_store.feature",
+    name = "Gauss metadata usage requires canonical gauss prefix declaration"
+)]
+fn gauss_metadata_usage_requires_canonical_prefix(world: ResourceWorld) {
     let _ = world;
 }

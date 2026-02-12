@@ -115,9 +115,9 @@ phases depend upon. See architecture document §20.
 
 ### 0.4. SVG load/save and metadata policy
 
-- [ ] 0.4.1. Define Gauss metadata namespace.
-  - [ ] Use `gauss:` prefixed attributes or `<metadata>` block.
-  - [ ] Document namespace in ADR. See architecture §10.1.
+- [x] 0.4.1. Define Gauss metadata namespace.
+  - [x] Use `gauss:` prefixed attributes or `<metadata>` block.
+  - [x] Document namespace in ADR. See architecture §10.1.
 - [ ] 0.4.2. Implement metadata round-trip.
   - [ ] Editor-only data survives load/save cycle.
   - [ ] Add golden tests for round-trip fidelity.

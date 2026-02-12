@@ -14,6 +14,7 @@
 
 pub mod export;
 pub mod import;
+pub mod metadata;
 
 #[cfg(test)]
 mod import_tests;

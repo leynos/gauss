@@ -15,6 +15,7 @@ use crate::model::{
     Document, GradientId, GradientKind, Paint, PatternId, PatternResource, ResourceStore,
     SegmentKind, SymbolResource, format_hex_rgb,
 };
+use crate::svg::metadata::gauss_namespace_declaration;
 
 /// Errors returned by [`export_svg_with_resources_checked`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -101,10 +102,11 @@ fn write_svg_header(out: &mut String, canvas_width: f32, canvas_height: f32) {
     out.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
     out.push('\n');
 
+    let gauss_namespace = gauss_namespace_declaration();
     write_fmt(
         out,
         format_args!(
-            r#"<svg xmlns="http://www.w3.org/2000/svg" width="{canvas_width}" height="{canvas_height}" viewBox="0 0 {canvas_width} {canvas_height}">"#
+            r#"<svg xmlns="http://www.w3.org/2000/svg" {gauss_namespace} width="{canvas_width}" height="{canvas_height}" viewBox="0 0 {canvas_width} {canvas_height}">"#
         ),
     );
     out.push('\n');

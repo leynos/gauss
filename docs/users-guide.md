@@ -141,6 +141,21 @@ and saving files.
 In this phase, Gauss supports resource round-tripping and rendering, but does
 not yet provide dedicated editing controls for gradients, patterns, or symbols.
 
+## SVG Metadata Namespace
+
+Gauss now writes a canonical metadata namespace declaration on saved SVG files:
+
+- `xmlns:gauss="https://gauss.dev/ns/metadata/1"`
+
+This prepares metadata round-tripping work while keeping rendered artwork
+standard SVG.
+
+- Gauss accepts SVG files that use this canonical `gauss` namespace.
+- If an SVG binds `gauss` to a different Uniform Resource Identifier (URI),
+  open fails with an explicit error.
+- If Gauss metadata namespace content is present without canonical
+  `xmlns:gauss` declaration, open fails with an explicit error.
+
 ## Platform Differences
 
 Gauss adapts to platform conventions:

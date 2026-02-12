@@ -366,7 +366,9 @@ relationships for `Document`, `ResourceStore`, `StyleStore`, and typed paint
 references introduced by roadmap item 0.2.3.
 
 <!-- markdownlint-disable-next-line MD013 -->
-For screen readers: `Document` shapes use typed paint references, `ResourceStore` and `StyleStore` hold typed IDs, and SVG import/export maps those relationships.
+For screen readers: `Document` shapes use typed paint references,
+`ResourceStore` and `StyleStore` hold typed IDs, and SVG import/export maps
+those relationships.
 
 ```mermaid
 classDiagram
@@ -947,7 +949,27 @@ SVG-native editors extend SVG.
 - Gauss metadata must not change rendering in other viewers
 - Provide an export mode that strips all Gauss metadata (“web-ready SVG”)
 
-#### 10.1.1 SVG Path Parsing Architecture
+#### 10.1.1 Gauss metadata namespace policy
+
+Gauss defines one canonical metadata namespace identity:
+
+- Prefix: `gauss`
+- URI: `https://gauss.dev/ns/metadata/1`
+- SVG declaration:
+  `xmlns:gauss="https://gauss.dev/ns/metadata/1"`
+
+Namespace usage policy:
+
+- Export writes the canonical `xmlns:gauss` declaration on the SVG root.
+- Metadata may use `gauss:*` namespaced attributes and/or namespaced payload
+  inside `<metadata>`.
+- Import rejects SVG where `gauss` is bound to a non-canonical URI.
+- Import rejects Gauss namespace usage when canonical `xmlns:gauss`
+  declaration is missing.
+
+This policy is documented in `docs/adr-005-gauss-metadata-namespace.md`.
+
+#### 10.1.2 SVG Path Parsing Architecture
 
 The following diagram illustrates the structure of the SVG path data parser,
 showing how raw path strings are tokenized and transformed into the internal
