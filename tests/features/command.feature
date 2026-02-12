@@ -41,3 +41,13 @@ Feature: Command dispatch
     When I prepare RaiseSelection action
     Then the command should be Reorder
     And the command should include one reorder operation
+
+  Scenario: Undo restores document after delete
+    When I prepare DeleteSelection action
+    And I apply the command
+    And I apply the inverse
+    Then the document should have two shapes
+
+  Scenario: Empty history undo is safe
+    When I undo on an empty history
+    Then the document should have two shapes

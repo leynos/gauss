@@ -187,3 +187,158 @@ fn default_impl_matches_new() {
     assert!(!a.can_undo());
     assert!(!b.can_undo());
 }
+
+/// Build and apply an `InsertShape` command, returning the command and inverse.
+fn apply_insert(
+    doc: &mut Document,
+    index: usize,
+) -> (Command, crate::model::command::CommandInverse) {
+    let shape = sample_shape();
+    let cmd = Command::InsertShape {
+        insertion: crate::model::ShapeInsertion { index, shape },
+    };
+    let inverse = cmd.apply(doc).expect("apply_insert should succeed");
+    (cmd, inverse)
+}
+
+// ---------------------------------------------------------------------------
+// Historical undo (branch-edit) tests
+// ---------------------------------------------------------------------------
+
+/// Do A, do B, undo B, do C — then undo walks through C and the
+/// historical branch containing B.
+///
+/// This validates `undo_2`'s key behavioural difference from classical
+/// redo truncation: B is not discarded after the branch edit.
+#[rstest]
+fn branch_edit_preserves_historical_undo() {
+    let (mut doc, id) = doc_with_one_shape();
+    let state_0 = doc.clone();
+    let mut history = DocumentUndoHistory::new();
+
+    // A: move right
+    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
+    let state_a = doc.clone();
+    history.record(cmd_a, inv_a);
+
+    // B: move down
+    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0);
+    history.record(cmd_b, inv_b);
+
+    // Undo B — back to state_a
+    history.undo(&mut doc).expect("undo B should succeed");
+    assert_eq!(doc, state_a);
+
+    // C: move left (branch edit after undoing B)
+    let (cmd_c, inv_c) = apply_move(&mut doc, id, -3.0, 0.0);
+    history.record(cmd_c, inv_c);
+
+    // Undo C — back to state_a
+    history.undo(&mut doc).expect("undo C should succeed");
+    assert_eq!(doc, state_a);
+
+    // Undo the historical branch — this redoes B (undo_2 brings it back)
+    history.undo(&mut doc).expect("undo branch should succeed");
+
+    // Undo B again
+    history
+        .undo(&mut doc)
+        .expect("undo B-replay should succeed");
+
+    // Undo A — back to state_0
+    history.undo(&mut doc).expect("undo A should succeed");
+    assert_eq!(doc, state_0);
+}
+
+/// Do A, B, C then undo C, undo B, redo B, redo C — state matches
+/// the state after all three commands.
+#[rstest]
+fn multiple_undo_then_redo_round_trip() {
+    let (mut doc, id) = doc_with_one_shape();
+    let mut history = DocumentUndoHistory::new();
+
+    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
+    history.record(cmd_a, inv_a);
+
+    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0);
+    history.record(cmd_b, inv_b);
+
+    let (cmd_c, inv_c) = apply_move(&mut doc, id, -1.0, 0.0);
+    let state_abc = doc.clone();
+    history.record(cmd_c, inv_c);
+
+    // Undo C, then B
+    history.undo(&mut doc).expect("undo C");
+    history.undo(&mut doc).expect("undo B");
+
+    // Redo B, then C
+    history.redo(&mut doc).expect("redo B");
+    history.redo(&mut doc).expect("redo C");
+
+    assert_eq!(doc, state_abc);
+}
+
+/// Do A, B then undo B, clear — history is fully reset.
+#[rstest]
+fn clear_after_partial_undo() {
+    let (mut doc, id) = doc_with_one_shape();
+    let mut history = DocumentUndoHistory::new();
+
+    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
+    history.record(cmd_a, inv_a);
+
+    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0);
+    history.record(cmd_b, inv_b);
+
+    history.undo(&mut doc).expect("undo B");
+
+    history.clear();
+
+    assert!(!history.can_undo());
+    assert!(!history.can_redo());
+}
+
+/// Do A, clear, undo — document is unchanged (undo is a no-op).
+#[rstest]
+fn undo_after_clear_is_noop() {
+    let (mut doc, id) = doc_with_one_shape();
+    let mut history = DocumentUndoHistory::new();
+
+    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
+    let state_after_a = doc.clone();
+    history.record(cmd_a, inv_a);
+
+    history.clear();
+    history
+        .undo(&mut doc)
+        .expect("undo after clear should be noop");
+
+    assert_eq!(doc, state_after_a);
+}
+
+/// `InsertShape` round-trip through history: insert, undo removes it,
+/// redo re-inserts it.
+#[rstest]
+fn insert_shape_round_trip_through_history() {
+    let mut doc = Document::new();
+    let mut history = DocumentUndoHistory::new();
+
+    assert!(doc.is_empty());
+
+    let (cmd, inverse) = apply_insert(&mut doc, 0);
+    assert_eq!(doc.len(), 1);
+    let original_path = doc.shape_at(0).expect("shape exists").path.clone();
+    history.record(cmd, inverse);
+
+    // Undo — shape removed
+    history.undo(&mut doc).expect("undo insert should succeed");
+    assert!(doc.is_empty());
+
+    // Redo — shape re-inserted
+    history.redo(&mut doc).expect("redo insert should succeed");
+    assert_eq!(doc.len(), 1);
+    assert_eq!(
+        doc.shape_at(0).expect("shape exists after redo").path,
+        original_path
+    );
+}
