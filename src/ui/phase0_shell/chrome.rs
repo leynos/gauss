@@ -190,13 +190,13 @@ impl Phase0Shell {
     }
 
     fn top_bar_edit_actions(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
-        let can_undo = !self.document_history.undos().is_empty();
+        let can_undo = self.document_history.can_undo();
         let undo_state = if can_undo {
             IconButtonState::Enabled
         } else {
             IconButtonState::Disabled
         };
-        let can_redo = !self.document_history.redos().is_empty();
+        let can_redo = self.document_history.can_redo();
         let redo_state = if can_redo {
             IconButtonState::Enabled
         } else {

@@ -9,7 +9,6 @@ mod anchor_edit;
 mod chrome;
 mod chrome_palette;
 mod chrome_panels;
-mod document_history;
 pub(crate) mod draw;
 mod file_dialogs;
 mod icon_button;
@@ -155,8 +154,8 @@ pub struct Phase0Shell {
     did_request_quit: bool,
     open_prompt_mode: OpenPromptMode,
 
-    /// Document edit history (uses `gpui_component::History`).
-    document_history: History<document_history::DocumentHistoryItem>,
+    /// Document edit history (model-layer, GPUI-independent).
+    document_history: crate::model::DocumentUndoHistory,
     /// Selection change history (separate from document history).
     selection_history: History<selection_history::SelectionHistoryItem>,
 
@@ -196,7 +195,7 @@ impl Phase0Shell {
             did_focus: false,
             did_request_quit: false,
             open_prompt_mode: OpenPromptMode::Native,
-            document_history: History::new(),
+            document_history: crate::model::DocumentUndoHistory::new(),
             selection_history: History::new(),
             drag_state: None,
             last_canvas_click_screen: None,
