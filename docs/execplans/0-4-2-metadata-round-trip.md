@@ -28,8 +28,8 @@ Status: COMPLETE
   exporter must not add another; otherwise the second round-trip would gain an
   extra newline.
 - Whitaker custom lint rules forbid `expect_used`, `unwrap_or_else` with panic
-  closures, and `std::fs` operations. All test code was written using `match`
-  + `panic!` patterns, `TestSupportResult<()>` return types, and
+  closures, and `std::fs` operations. All test code was written using
+  `match`/`panic!` patterns, `TestSupportResult<()>` return types, and
   `cap_std::fs_utf8::Dir` for filesystem access.
 
 ## Decision Log
