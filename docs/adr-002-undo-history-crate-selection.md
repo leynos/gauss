@@ -98,15 +98,27 @@ _Table 1: Trade-offs between candidate undo crates._
 ## Decision Outcome / Proposed Direction
 
 `undo_2` is accepted for document history. The spike demonstrated that its
-action-iterator API maps cleanly to the existing
-`Command`/`CommandInverse` model, and the adapter is small enough to
-replace if needed.[^undo2-docs][^undo2-versions]
+action-iterator API maps cleanly to the existing `Command`/`CommandInverse`
+model, and the adapter is small enough to replace if
+needed.[^undo2-docs][^undo2-versions]
 
 `undo` (option A) is deferred — `undo_2` meets all current requirements and its
 historical undo semantics are acceptable for Gauss.[^undo-docs][^undo-versions]
 
 Selection history remains on `gpui_component::History` because it is a separate
 concern with different ownership and lifecycle requirements.
+
+The `undo_2` historical undo model is fashioned after the models used by Cocoa
+(`NSUndoManager`), Emacs, and Vim. This provides a familiarity argument — users
+of these environments already expect the "never lose work" behaviour. This
+strengthens the decision to accept historical undo rather than classical redo
+truncation.
+
+A/B testing of undo semantics is possible without changing the adapter's public
+interface. `unbuild()` provides classical undo that skips branches, and
+`remove_all_undone()` strips all `Undo` markers, giving redo-truncation
+semantics. These can be exposed through the adapter if user testing reveals a
+preference for classical semantics.
 
 `undo_stack` and `gur` remain deprioritized for the reasons documented
 above.[^undo-stack-docs][^gur-docs][^gur-versions]
@@ -130,32 +142,49 @@ above.[^undo-stack-docs][^gur-docs][^gur-versions]
 
 ## Known Risks and Limitations
 
-- Command-based histories require careful inverse capture; memory usage depends
-  on the size of command payloads.
-- `undo_2` keeps a historical sequence of commands after edits, which may need
-  a clear policy for pruning or user-facing behaviour. The spike confirmed this
-  behaviour is acceptable for Gauss, but a pruning policy remains future
-  work.[^undo2-docs]
-- Replay-oriented approaches such as `gur` may incur higher CPU or memory costs
-  for large documents (inference based on its design description).[^gur-docs]
-- The adapter surfaces only the first error from a batched undo/redo action
-  sequence. If future commands produce multiple distinct errors, a richer
-  error-collection strategy may be needed.
+- Command-based histories require careful inverse capture; memory usage
+  depends on the size of command payloads. `undo_2` provides `keep_last(n)`,
+  `remove_first(i)`, and `remove_until(pred)` for undo-safe pruning. A
+  configurable depth limit is implemented in the adapter via `keep_last()` (see
+  `DocumentUndoHistory::record()`).
+- Serialization: `Commands<T>` and `CommandItem<T>` derive
+  `Serialize`/`Deserialize` by default via the `serde` feature. Persistent undo
+  is available once `Command` and `CommandInverse` also implement the serde
+  traits (Gauss-side work).
+- Replay-oriented approaches such as `gur` may incur higher CPU or
+  memory costs for large documents (inference based on its design
+  description).[^gur-docs]
+- The adapter surfaces only the first error from a batched undo/redo
+  action sequence. If future commands produce multiple distinct errors, a
+  richer error-collection strategy may be needed.
 
 ## Outstanding Decisions
 
 - ~~Decide between `undo` and `undo_2` after a prototype in `EngineState`.~~
   Resolved: `undo_2` accepted after spike implementation and testing.
-- Define history pruning and merge policies (for example, drag edits). Remains
-  future work.
-- Specify how history interacts with transient preview operations. Remains
-  future work.
+- ~~Define history pruning policy.~~ Resolved: depth limit implemented
+  via `keep_last()` in the adapter. Merge policies (for example, drag edits)
+  remain future work.
+- Plan user testing for historical undo UX. A/B testing is available
+  via `unbuild()` (classical undo skipping branches) and `remove_all_undone()`
+  (redo-truncation semantics).
+- Specify how history interacts with transient preview operations.
+  Remains future work.
 
 ## Architectural Rationale
 
 Moving history into `EngineState` preserves the GPUI-independent model layer
 and aligns with the Command and document operation (DocOp) architecture, while
 keeping the view layer focused on rendering and interaction.
+
+## Vendor or Fork Contingency
+
+Forking `undo_2` remains an option but should be avoided unless a core
+requirement cannot be met by the library as-is. The adapter boundary
+(`DocumentUndoHistory`, ~165 lines) isolates crate semantics — only
+`src/model/history/mod.rs` would change if the underlying crate were replaced.
+The crate itself is ~1,600 lines with no transitive dependencies; vendoring is
+trivial if upstream becomes unmaintained.
 
 [^undo-docs]:
   undo crate documentation. <https://docs.rs/undo/latest/undo/>.
