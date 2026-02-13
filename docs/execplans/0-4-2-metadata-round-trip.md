@@ -23,22 +23,18 @@ Status: IN PROGRESS
 ## Decision Log
 
 - Decision: persist `gauss:id`, `gauss:name`, `gauss:locked`,
-  `gauss:hidden` as namespaced attributes on `<path>` elements.
-  Rationale: local to the element, simple to parse, follows SVG
-  namespace conventions.
+  `gauss:hidden` as namespaced attributes on `<path>` elements. Rationale:
+  local to the element, simple to parse, follows SVG namespace conventions.
   Date/Author: 2026-02-12 (assistant, draft)
 - Decision: encode `ShapeId` as 16-character zero-padded lowercase
-  hex of the `KeyData::as_ffi()` u64 value. Rationale: compact,
-  unambiguous, leverages existing `as_ffi()`/`from_ffi()` round-trip
-  proven in AccessKit code.
-  Date/Author: 2026-02-12 (assistant, draft)
+  hex of the `KeyData::as_ffi()` u64 value. Rationale: compact, unambiguous,
+  leverages existing `as_ffi()`/`from_ffi()` round-trip proven in AccessKit
+  code. Date/Author: 2026-02-12 (assistant, draft)
 - Decision: preserve entire `<metadata>` block content verbatim, not
-  just Gauss-namespaced parts. Rationale: respects third-party
-  metadata (Dublin Core, Inkscape), simplest implementation, maximum
-  fidelity.
-  Date/Author: 2026-02-12 (user decision)
+  just Gauss-namespaced parts. Rationale: respects third-party metadata (Dublin
+  Core, Inkscape), simplest implementation, maximum fidelity. Date/Author:
+  2026-02-12 (user decision)
 - Decision: store unknown `gauss:*` attributes as
-  `Vec<(String, String)>` for forward-compatible round-trip.
-  Rationale: future Gauss versions may add new attributes; current
-  version should not drop them.
+  `Vec<(String, String)>` for forward-compatible round-trip. Rationale: future
+  Gauss versions may add new attributes; current version should not drop them.
   Date/Author: 2026-02-12 (assistant, draft)

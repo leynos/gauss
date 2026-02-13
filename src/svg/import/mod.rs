@@ -11,10 +11,11 @@
 
 use std::{error::Error, fmt};
 
-use crate::model::{Document, PaintStyle, Shape, ShapeId};
+use crate::model::{Document, PaintStyle, Shape};
 use crate::svg::metadata;
 use crate::svg::metadata::NamespacePolicyError;
 
+mod gauss_attrs;
 mod path_data;
 mod resource_tag_attributes;
 mod resource_tags;
@@ -110,13 +111,14 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
     let mut resources = crate::model::ResourceStore::new();
     resource_tags::parse_resources(resource_tags::SvgContent::from(svg), &mut resources)?;
 
+    let shape_gauss_meta = gauss_attrs::extract_shape_gauss_metadata(svg);
+    let gauss_metadata_block = gauss_attrs::extract_metadata_block(svg);
+
     let mut doc = Document::new();
 
-    for (index, raw_tag) in
-        resource_tags::extract_shape_path_tags(resource_tags::SvgContent::from(svg))
-            .into_iter()
-            .enumerate()
-    {
+    let raw_tags = resource_tags::extract_shape_path_tags(resource_tags::SvgContent::from(svg));
+
+    for (index, raw_tag) in raw_tags.iter().enumerate() {
         let tag_content = resource_tags::SvgContent::from(raw_tag.as_str());
         let d =
             resource_tags::attribute_value(tag_content, resource_tags::AttributeName::from("d"))
@@ -150,15 +152,24 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
         let path = path_data::parse_path_data(&d)?;
         let style = PaintStyle::new_with_paint(stroke, stroke_width, fill);
 
+        let gauss_meta = shape_gauss_meta.get(index);
+
+        let shape_id = gauss_meta
+            .and_then(|meta| meta.gauss_id.as_deref())
+            .and_then(metadata::shape_id_from_hex)
+            .unwrap_or_default();
+
         let shape = Shape {
-            id: ShapeId::default(),
+            id: shape_id,
             z: index.try_into().map_err(|_| SvgImportError::MalformedSvg)?,
             style,
             path,
-            name: None,
-            locked: false,
-            hidden: false,
-            gauss_metadata: Vec::new(),
+            name: gauss_meta.and_then(|meta| meta.name.clone()),
+            locked: gauss_meta.is_some_and(|meta| meta.locked),
+            hidden: gauss_meta.is_some_and(|meta| meta.hidden),
+            gauss_metadata: gauss_meta
+                .map(|meta| meta.opaque_attrs.clone())
+                .unwrap_or_default(),
         };
         doc.append_shape(shape);
     }
@@ -166,7 +177,7 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
     Ok(ImportedSvg {
         document: doc,
         resources,
-        gauss_metadata_block: None,
+        gauss_metadata_block,
     })
 }
 
