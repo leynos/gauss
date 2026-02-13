@@ -153,6 +153,10 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
             z: index.try_into().map_err(|_| SvgImportError::MalformedSvg)?,
             style,
             path,
+            name: None,
+            locked: false,
+            hidden: false,
+            gauss_metadata: Vec::new(),
         };
         doc.append_shape(shape);
     }

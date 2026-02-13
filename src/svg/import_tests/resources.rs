@@ -172,6 +172,10 @@ fn setup_test_document(gradient_id: GradientId, pattern_id: PatternId) -> Docume
             closed: true,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     };
     let mut doc = Document::new();
     doc.append_shape(shape);

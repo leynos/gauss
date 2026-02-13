@@ -216,6 +216,10 @@ mod tests {
                 closed: false,
                 closing_segment: crate::model::SegmentKind::Line,
             },
+            name: None,
+            locked: false,
+            hidden: false,
+            gauss_metadata: Vec::new(),
         });
 
         let state = EngineState::with_document(doc.clone());

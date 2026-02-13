@@ -61,6 +61,10 @@ fn given_document_with_resource_paints(world: &mut ResourceWorld) {
             closed: true,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     };
 
     world.doc = Document::new();

@@ -151,6 +151,10 @@ fn new_open_shape(id: ShapeId, first_anchor: Vec2, style: PaintStyle) -> Shape {
             closed: false,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     }
 }
 

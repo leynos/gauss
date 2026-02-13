@@ -38,6 +38,10 @@ fn insert_shape(world: &mut DocWorld) {
         z: 0,
         style: PaintStyle::new(None, 1.0, None),
         path: PathGeom::new(),
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     };
     let change = DocChange {
         ops: vec![DocOp::InsertShape { index: 0, shape }],
@@ -73,6 +77,10 @@ fn add_closed_triangle(world: &mut DocWorld) {
             closed: true,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     };
     world.doc.append_shape(shape);
 }

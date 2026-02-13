@@ -47,6 +47,10 @@ fn create_test_triangle() -> impl Fn(u32, PaintStyle) -> Shape {
             closed: true,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     }
 }
 
@@ -120,6 +124,10 @@ fn create_line_shape_for_export(
             closed,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     }
 }
 

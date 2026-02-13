@@ -370,4 +370,15 @@ pub struct Shape {
     pub style: PaintStyle,
     /// Path geometry.
     pub path: PathGeom,
+    /// User-assigned shape name, if any.
+    pub name: Option<String>,
+    /// Whether the shape is locked for editing.
+    pub locked: bool,
+    /// Whether the shape is hidden from view.
+    pub hidden: bool,
+    /// Opaque Gauss metadata attributes preserved for round-trip fidelity.
+    ///
+    /// Each entry is `(local_name, value)` where `local_name` is the
+    /// attribute name without the `gauss:` prefix.
+    pub gauss_metadata: Vec<(String, String)>,
 }

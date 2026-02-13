@@ -78,6 +78,10 @@ pub(super) fn demo_document() -> Document {
             closed: true,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     };
 
     let mut doc = Document::new();

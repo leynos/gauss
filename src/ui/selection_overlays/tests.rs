@@ -30,6 +30,10 @@ fn two_anchor_cubic_shape() -> Shape {
             closed: false,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     }
 }
 
@@ -180,6 +184,10 @@ fn bbox_accounts_for_cubic_curve_extents() {
             closed: false,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     };
 
     let mut doc = Document::new();

@@ -31,6 +31,10 @@ fn append_shapes(world: &mut IdWorld, count: usize, clear_existing: bool) {
             z: 0,
             style: PaintStyle::new(None, 1.0, None),
             path: PathGeom::new(),
+            name: None,
+            locked: false,
+            hidden: false,
+            gauss_metadata: Vec::new(),
         };
         let id = world.doc.append_shape(shape);
         world.original_ids.push(id);
