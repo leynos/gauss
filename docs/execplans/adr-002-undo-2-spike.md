@@ -12,7 +12,7 @@ Status: COMPLETE
 Gauss currently applies document undo/redo in the UI layer via
 `gpui_component::History`, even though command preparation and execution are
 already model-layer concerns. This plan moves undo/redo state and behaviour for
-command execution into a GPUI-independent model module using `undo_2`.
+command execution into a GPUI-independent (GPU UI) model module using `undo_2`.
 
 After this work:
 
@@ -38,7 +38,7 @@ completed history migration scope.
 - Do not remove or regress dual-history user behaviour unless explicitly
   documented and approved through ADR updates.
 - Keep existing keyboard shortcuts and action names stable unless a documented
-  UX decision requires a change.
+  user experience (UX) decision requires a change.
 - Preserve existing command inverse semantics (`Command::apply` returns
   `CommandInverse`, and undo applies inverse).
 - Use `undo_2` as the implementation candidate for this spike. Do not add a
@@ -315,45 +315,55 @@ All commands run from repo root:
 
 Prepare reusable log variables:
 
-    set -o pipefail
-    PROJECT="$(get-project 2>/dev/null || basename "$(git rev-parse --show-toplevel)")"
-    BRANCH_SAFE="$(git branch --show | tr '/' '-')"
+```sh
+set -o pipefail
+PROJECT="$(get-project 2>/dev/null || basename "$(git rev-parse --show-toplevel)")"
+BRANCH_SAFE="$(git branch --show | tr '/' '-')"
+```
 
 Stage validation commands (run as milestones complete):
 
-    cargo test --test command_unit --test command_bdd 2>&1 \
-      | tee "/tmp/test-command-${PROJECT}-${BRANCH_SAFE}.out" |
+```sh
+cargo test --test command_unit --test command_bdd 2>&1 \
+  | tee "/tmp/test-command-${PROJECT}-${BRANCH_SAFE}.out"
 
-    cargo test --test gpui_draw_undo --test gpui_drag_shape_undo \
-      --test gpui_drag_anchor_undo --test gpui_drag_handle_undo \
-      --test gpui_anchor_edit_undo --test gpui_reorder_undo \
-      --test gpui_selection_history 2>&1 \
-      | tee "/tmp/test-gpui-history-${PROJECT}-${BRANCH_SAFE}.out" |
+cargo test --test gpui_draw_undo --test gpui_drag_shape_undo \
+  --test gpui_drag_anchor_undo --test gpui_drag_handle_undo \
+  --test gpui_anchor_edit_undo --test gpui_reorder_undo \
+  --test gpui_selection_history 2>&1 \
+  | tee "/tmp/test-gpui-history-${PROJECT}-${BRANCH_SAFE}.out"
+```
 
 Documentation and markdown checks after doc edits:
 
-    make fmt 2>&1 | tee "/tmp/fmt-${PROJECT}-${BRANCH_SAFE}.out"
-    make markdownlint 2>&1 | tee "/tmp/markdownlint-${PROJECT}-${BRANCH_SAFE}.out"
-    make nixie 2>&1 | tee "/tmp/nixie-${PROJECT}-${BRANCH_SAFE}.out"
+```sh
+make fmt 2>&1 | tee "/tmp/fmt-${PROJECT}-${BRANCH_SAFE}.out"
+make markdownlint 2>&1 | tee "/tmp/markdownlint-${PROJECT}-${BRANCH_SAFE}.out"
+make nixie 2>&1 | tee "/tmp/nixie-${PROJECT}-${BRANCH_SAFE}.out"
+```
 
 Required final gates:
 
-    make check-fmt 2>&1 | tee "/tmp/check-fmt-${PROJECT}-${BRANCH_SAFE}.out"
-    make lint 2>&1 | tee "/tmp/lint-${PROJECT}-${BRANCH_SAFE}.out"
-    make test 2>&1 | tee "/tmp/test-${PROJECT}-${BRANCH_SAFE}.out"
+```sh
+make check-fmt 2>&1 | tee "/tmp/check-fmt-${PROJECT}-${BRANCH_SAFE}.out"
+make lint 2>&1 | tee "/tmp/lint-${PROJECT}-${BRANCH_SAFE}.out"
+make test 2>&1 | tee "/tmp/test-${PROJECT}-${BRANCH_SAFE}.out"
+```
 
 Expected success transcript pattern:
 
-    $ make check-fmt
-    cargo fmt --workspace -- --check
-    …
-    $ make lint
-    cargo clippy --workspace --all-targets --all-features -- -D warnings
-    …
-    $ make test
-    cargo test --workspace
-    …
-    test result: ok.
+```text
+$ make check-fmt
+cargo fmt --workspace -- --check
+…
+$ make lint
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+…
+$ make test
+cargo test --workspace
+…
+test result: ok.
+```
 
 ## Validation and acceptance
 
@@ -379,8 +389,8 @@ Definition of done for `undo_2` suitability:
 
 ## Idempotence and recovery
 
-- Stage commands are safe to rerun; tests and checks are read-only with respect
-  to source files except `make fmt`.
+- Stage commands are safe to rerun; tests and checks are read-only for source
+  files except `make fmt`.
 - If `make fmt` changes unrelated markdown or code, inspect `git status` and
   restore unrelated files before continuing.
 - If a migration step breaks GPUI integration, revert only the in-progress
@@ -403,7 +413,7 @@ Dependency to add:
 
 - `undo_2 = "0.2.1"` in `Cargo.toml` dependencies (caret semantics by default).
 
-Target interfaces to exist at the end of implementation (names may be refined
+Target interfaces to exist at the end of implementation (names may be refined,
 but behaviour must match):
 
 - Model history adapter type (example):

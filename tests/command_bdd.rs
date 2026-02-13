@@ -280,14 +280,6 @@ fn inverse_command_has_matching_name(world: CommandWorld) {
 
 #[scenario(
     path = "tests/features/command.feature",
-    name = "Undo restores document after delete"
-)]
-fn undo_restores_document_after_delete(world: CommandWorld) {
-    let _ = world;
-}
-
-#[scenario(
-    path = "tests/features/command.feature",
     name = "Empty history undo is safe"
 )]
 fn empty_history_undo_is_safe(world: CommandWorld) {

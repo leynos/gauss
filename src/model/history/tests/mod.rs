@@ -85,17 +85,36 @@ fn new_history_is_empty() {
 #[case::undo(true)]
 #[case::redo(false)]
 fn empty_history_operation_is_noop(#[case] is_undo: bool) {
-    let mut history = DocumentUndoHistory::new();
-    let mut doc = Document::default();
+    // Empty document remains empty after undo/redo on an empty history.
+    {
+        let mut history = DocumentUndoHistory::new();
+        let mut doc = Document::default();
 
-    let result = if is_undo {
-        history.undo(&mut doc)
-    } else {
-        history.redo(&mut doc)
-    };
+        let result = if is_undo {
+            history.undo(&mut doc)
+        } else {
+            history.redo(&mut doc)
+        };
 
-    result.expect("empty history operation should succeed");
-    assert!(doc.is_empty());
+        result.expect("empty history operation should succeed");
+        assert!(doc.is_empty());
+    }
+
+    // A pre-populated document is unchanged after undo/redo on an empty history.
+    {
+        let mut history = DocumentUndoHistory::new();
+        let (mut doc, _id) = doc_with_one_shape(sample_shape());
+        let original_doc = doc.clone();
+
+        let result = if is_undo {
+            history.undo(&mut doc)
+        } else {
+            history.redo(&mut doc)
+        };
+
+        result.expect("empty history operation should succeed");
+        assert_eq!(doc, original_doc);
+    }
 }
 
 #[rstest]
