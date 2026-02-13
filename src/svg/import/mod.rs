@@ -119,62 +119,10 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
     let raw_tags = resource_tags::extract_shape_path_tags(resource_tags::SvgContent::from(svg));
 
     for (index, raw_tag) in raw_tags.iter().enumerate() {
-        let tag_content = resource_tags::SvgContent::from(raw_tag.as_str());
-        let d =
-            resource_tags::attribute_value(tag_content, resource_tags::AttributeName::from("d"))
-                .ok_or(SvgImportError::MissingPathData)?;
-
-        let stroke = resource_tags::parse_paint_with_opacity(
-            tag_content,
-            resource_tags::AttributeName::from("stroke"),
-            resource_tags::AttributeName::from("stroke-opacity"),
-            &resources,
-        )?;
-        let fill = resource_tags::parse_paint_with_opacity(
-            tag_content,
-            resource_tags::AttributeName::from("fill"),
-            resource_tags::AttributeName::from("fill-opacity"),
-            &resources,
-        )?;
-
-        let stroke_width = resource_tags::attribute_value(
-            tag_content,
-            resource_tags::AttributeName::from("stroke-width"),
-        )
-        .map(|value| {
-            value
-                .parse::<f32>()
-                .map_err(|_| SvgImportError::InvalidNumber)
-        })
-        .transpose()?
-        .unwrap_or(1.0);
-
-        let path = path_data::parse_path_data(&d)?;
-        let style = PaintStyle::new_with_paint(stroke, stroke_width, fill);
-
-        // Align Gauss metadata with the tag by matching the raw tag text
-        // against the byte range recorded during full-document parsing.
         let gauss_meta = shape_gauss_meta
             .iter()
             .find(|meta| svg.get(meta.byte_range.clone()) == Some(raw_tag.as_str()));
-
-        let shape_id = gauss_meta
-            .and_then(|meta| meta.gauss_id.as_deref())
-            .and_then(metadata::shape_id_from_hex)
-            .unwrap_or_default();
-
-        let shape = Shape {
-            id: shape_id,
-            z: index.try_into().map_err(|_| SvgImportError::MalformedSvg)?,
-            style,
-            path,
-            name: gauss_meta.and_then(|meta| meta.name.clone()),
-            locked: gauss_meta.is_some_and(|meta| meta.locked),
-            hidden: gauss_meta.is_some_and(|meta| meta.hidden),
-            gauss_metadata: gauss_meta
-                .map(|meta| meta.opaque_attrs.clone())
-                .unwrap_or_default(),
-        };
+        let shape = parse_shape_from_tag(raw_tag, index, &resources, gauss_meta)?;
         doc.append_shape(shape);
     }
 
@@ -182,6 +130,63 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
         document: doc,
         resources,
         gauss_metadata_block,
+    })
+}
+
+fn parse_shape_from_tag(
+    raw_tag: &str,
+    index: usize,
+    resources: &crate::model::ResourceStore,
+    gauss_meta: Option<&gauss_attrs::ShapeGaussMetadata>,
+) -> Result<Shape, SvgImportError> {
+    let tag_content = resource_tags::SvgContent::from(raw_tag);
+    let d = resource_tags::attribute_value(tag_content, resource_tags::AttributeName::from("d"))
+        .ok_or(SvgImportError::MissingPathData)?;
+
+    let stroke = resource_tags::parse_paint_with_opacity(
+        tag_content,
+        resource_tags::AttributeName::from("stroke"),
+        resource_tags::AttributeName::from("stroke-opacity"),
+        resources,
+    )?;
+    let fill = resource_tags::parse_paint_with_opacity(
+        tag_content,
+        resource_tags::AttributeName::from("fill"),
+        resource_tags::AttributeName::from("fill-opacity"),
+        resources,
+    )?;
+
+    let stroke_width = resource_tags::attribute_value(
+        tag_content,
+        resource_tags::AttributeName::from("stroke-width"),
+    )
+    .map(|value| {
+        value
+            .parse::<f32>()
+            .map_err(|_| SvgImportError::InvalidNumber)
+    })
+    .transpose()?
+    .unwrap_or(1.0);
+
+    let path = path_data::parse_path_data(&d)?;
+    let style = PaintStyle::new_with_paint(stroke, stroke_width, fill);
+
+    let shape_id = gauss_meta
+        .and_then(|meta| meta.gauss_id.as_deref())
+        .and_then(metadata::shape_id_from_hex)
+        .unwrap_or_default();
+
+    Ok(Shape {
+        id: shape_id,
+        z: index.try_into().map_err(|_| SvgImportError::MalformedSvg)?,
+        style,
+        path,
+        name: gauss_meta.and_then(|meta| meta.name.clone()),
+        locked: gauss_meta.is_some_and(|meta| meta.locked),
+        hidden: gauss_meta.is_some_and(|meta| meta.hidden),
+        gauss_metadata: gauss_meta
+            .map(|meta| meta.opaque_attrs.clone())
+            .unwrap_or_default(),
     })
 }
 
