@@ -162,7 +162,10 @@ fn write_metadata_block(out: &mut String, metadata_block: Option<&str>) {
     };
     out.push_str("<metadata>");
     out.push_str(content);
-    out.push_str("\n</metadata>\n");
+    if !content.ends_with('\n') {
+        out.push('\n');
+    }
+    out.push_str("</metadata>\n");
 }
 
 fn write_shape_path(out: &mut String, resources: &ResourceStore, shape: &Shape) {
