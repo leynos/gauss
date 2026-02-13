@@ -130,7 +130,7 @@ above.[^undo-stack-docs][^gur-docs][^gur-versions]
   and provides `record`/`undo`/`redo`/`clear`/`can_undo`/`can_redo`.
 - **Historical undo behaviour**: `undo_2` retains all commands after branch
   edits (do A, do B, undo, do C — A, B, C all remain navigable). This differs
-  from classical redo truncation where B would be lost. For Gauss, this is
+  from classical redo truncation, where B would be lost. For Gauss, this is
   acceptable and arguably beneficial — users never lose work.
 - **Integration effort**: The adapter required a single stored type
   (`HistoryEntry` containing `Command` + `CommandInverse`). The `undo_2` action
