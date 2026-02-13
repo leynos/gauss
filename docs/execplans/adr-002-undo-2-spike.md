@@ -5,7 +5,7 @@ This ExecPlan (execution plan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: IN PROGRESS
+Status: COMPLETE
 
 ## Purpose / big picture
 
@@ -104,10 +104,11 @@ completed history migration scope.
   engine behaviours.
 - [x] (2026-02-12) Stage C complete: integrated Phase0Shell with model history
   adapter, removing `gpui_component::History` dependency for document undo.
-- [ ] Stage D complete: extend behavioural and GPUI coverage for happy,
-  unhappy, and edge paths.
-- [ ] Stage E complete: update ADR, architecture, user guide, and roadmap;
-  pass full gates.
+- [x] (2026-02-12) Stage D complete: extended behavioural and unit coverage
+  for happy, unhappy, and edge paths including branch-edit sequences,
+  InsertShape round-trips, and clear-after-partial-undo.
+- [x] (2026-02-12) Stage E complete: updated ADR, architecture, user guide,
+  and roadmap; all gates pass.
 
 ## Surprises & discoveries
 
