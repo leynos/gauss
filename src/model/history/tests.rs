@@ -234,6 +234,10 @@ fn branch_edit_preserves_historical_undo(doc_with_one_shape: (Document, ShapeId)
     // C: move left (branch edit after undoing B)
     let (cmd_c, inv_c) = apply_move(&mut doc, id, -3.0, 0.0);
     history.record(cmd_c, inv_c);
+    assert!(
+        !history.can_redo(),
+        "redo should be unavailable after branch edit"
+    );
 
     // Undo C — back to state_a
     history.undo(&mut doc).expect("undo C should succeed");
