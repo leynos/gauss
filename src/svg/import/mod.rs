@@ -27,6 +27,8 @@ pub struct ImportedSvg {
     pub document: Document,
     /// Imported shared resources.
     pub resources: crate::model::ResourceStore,
+    /// Raw content of the `<metadata>` block from the imported SVG, if present.
+    pub gauss_metadata_block: Option<String>,
 }
 
 /// Errors returned by [`import_svg`] and [`import_svg_with_resources`].
@@ -164,6 +166,7 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
     Ok(ImportedSvg {
         document: doc,
         resources,
+        gauss_metadata_block: None,
     })
 }
 
