@@ -93,24 +93,30 @@ fn build_doc_with_shape() -> impl Fn(Shape) -> Document {
     }
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "Test setup helper centralises shared fixture wiring for two cases."
-)]
+struct GradientPatternExportArgs<'a, TG, TP, CT, BD> {
+    seed: u32,
+    stroke_width: f32,
+    stroke_opacity: Option<u8>,
+    fill_opacity: Option<u8>,
+    test_gradient_sunset: &'a TG,
+    test_pattern_dots: &'a TP,
+    create_test_triangle: &'a CT,
+    build_doc_with_shape: &'a BD,
+}
+
 fn setup_gradient_pattern_export<
     TestGradientSunset,
     TestPatternDots,
     CreateTestTriangle,
     BuildDocWithShape,
 >(
-    seed: u32,
-    stroke_width: f32,
-    stroke_opacity: Option<u8>,
-    fill_opacity: Option<u8>,
-    test_gradient_sunset: &TestGradientSunset,
-    test_pattern_dots: &TestPatternDots,
-    create_test_triangle: &CreateTestTriangle,
-    build_doc_with_shape: &BuildDocWithShape,
+    args: &GradientPatternExportArgs<
+        '_,
+        TestGradientSunset,
+        TestPatternDots,
+        CreateTestTriangle,
+        BuildDocWithShape,
+    >,
 ) -> (Document, ResourceStore)
 where
     TestGradientSunset: Fn(&mut ResourceStore) -> GradientId,
@@ -119,20 +125,23 @@ where
     BuildDocWithShape: Fn(Shape) -> Document,
 {
     let mut resources = ResourceStore::new();
-    let gradient_id = test_gradient_sunset(&mut resources);
-    let pattern_id = test_pattern_dots(&mut resources);
+    let gradient_id = (args.test_gradient_sunset)(&mut resources);
+    let pattern_id = (args.test_pattern_dots)(&mut resources);
     let mut stroke = Paint::gradient(gradient_id);
-    if let Some(opacity) = stroke_opacity {
+    if let Some(opacity) = args.stroke_opacity {
         stroke = stroke.with_opacity(opacity);
     }
 
     let mut fill = Paint::pattern(pattern_id);
-    if let Some(opacity) = fill_opacity {
+    if let Some(opacity) = args.fill_opacity {
         fill = fill.with_opacity(opacity);
     }
 
-    let shape = create_test_triangle(seed, PaintStyle::new_with_paint(stroke, stroke_width, fill));
-    let doc = build_doc_with_shape(shape);
+    let shape = (args.create_test_triangle)(
+        args.seed,
+        PaintStyle::new_with_paint(stroke, args.stroke_width, fill),
+    );
+    let doc = (args.build_doc_with_shape)(shape);
 
     (doc, resources)
 }

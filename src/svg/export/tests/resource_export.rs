@@ -15,16 +15,16 @@ fn exports_gradient_and_pattern_defs_and_references(
     create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
     build_doc_with_shape: impl Fn(Shape) -> Document,
 ) {
-    let (doc, resources) = setup_gradient_pattern_export(
-        3,
-        1.5,
-        None,
-        None,
-        &test_gradient_sunset,
-        &test_pattern_dots,
-        &create_test_triangle,
-        &build_doc_with_shape,
-    );
+    let (doc, resources) = setup_gradient_pattern_export(&GradientPatternExportArgs {
+        seed: 3,
+        stroke_width: 1.5,
+        stroke_opacity: None,
+        fill_opacity: None,
+        test_gradient_sunset: &test_gradient_sunset,
+        test_pattern_dots: &test_pattern_dots,
+        create_test_triangle: &create_test_triangle,
+        build_doc_with_shape: &build_doc_with_shape,
+    });
     let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
     assert_gradient_pattern_defs(&svg);
 }
@@ -36,16 +36,16 @@ fn exports_paint_server_opacity_attributes(
     create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
     build_doc_with_shape: impl Fn(Shape) -> Document,
 ) {
-    let (doc, resources) = setup_gradient_pattern_export(
-        30,
-        1.0,
-        Some(128),
-        Some(64),
-        &test_gradient_sunset,
-        &test_pattern_dots,
-        &create_test_triangle,
-        &build_doc_with_shape,
-    );
+    let (doc, resources) = setup_gradient_pattern_export(&GradientPatternExportArgs {
+        seed: 30,
+        stroke_width: 1.0,
+        stroke_opacity: Some(128),
+        fill_opacity: Some(64),
+        test_gradient_sunset: &test_gradient_sunset,
+        test_pattern_dots: &test_pattern_dots,
+        create_test_triangle: &create_test_triangle,
+        build_doc_with_shape: &build_doc_with_shape,
+    });
     let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
     assert_paint_server_opacity(
         &svg,

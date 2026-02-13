@@ -118,6 +118,10 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
 
     let raw_tags = resource_tags::extract_shape_path_tags(resource_tags::SvgContent::from(svg));
 
+    if shape_gauss_meta.len() != raw_tags.len() {
+        return Err(SvgImportError::MalformedSvg);
+    }
+
     for (index, raw_tag) in raw_tags.iter().enumerate() {
         let tag_content = resource_tags::SvgContent::from(raw_tag.as_str());
         let d =

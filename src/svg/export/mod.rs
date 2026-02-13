@@ -205,6 +205,21 @@ fn write_shape_path(out: &mut String, resources: &ResourceStore, shape: &Shape) 
     out.push_str(" />\n");
 }
 
+fn escape_attr_value(value: &str) -> String {
+    let mut escaped = String::with_capacity(value.len());
+    for ch in value.chars() {
+        match ch {
+            '&' => escaped.push_str("&amp;"),
+            '"' => escaped.push_str("&quot;"),
+            '<' => escaped.push_str("&lt;"),
+            '>' => escaped.push_str("&gt;"),
+            '\'' => escaped.push_str("&apos;"),
+            _ => escaped.push(ch),
+        }
+    }
+    escaped
+}
+
 fn write_shape_gauss_metadata(out: &mut String, shape: &Shape) {
     if !shape.id.is_null() {
         let hex = shape_id_to_hex(shape.id);
@@ -212,7 +227,8 @@ fn write_shape_gauss_metadata(out: &mut String, shape: &Shape) {
     }
 
     if let Some(name) = shape.name.as_deref() {
-        write_fmt(out, format_args!(r#" gauss:name="{name}""#));
+        let escaped_name = escape_attr_value(name);
+        write_fmt(out, format_args!(r#" gauss:name="{escaped_name}""#));
     }
 
     if shape.locked {
@@ -228,7 +244,11 @@ fn write_shape_gauss_metadata(out: &mut String, shape: &Shape) {
 
 fn write_opaque_gauss_attrs(out: &mut String, metadata: &[(String, String)]) {
     for (local_name, value) in metadata {
-        write_fmt(out, format_args!(r#" gauss:{local_name}="{value}""#));
+        let escaped_value = escape_attr_value(value);
+        write_fmt(
+            out,
+            format_args!(r#" gauss:{local_name}="{escaped_value}""#),
+        );
     }
 }
 
