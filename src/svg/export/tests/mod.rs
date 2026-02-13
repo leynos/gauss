@@ -11,6 +11,34 @@ use crate::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
 use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::{fixture, rstest};
 
+struct PathData(String);
+struct CssColor(String);
+struct CssLength(String);
+struct ResourceRef(String);
+struct CssOpacity(String);
+
+macro_rules! newtype_str {
+    ($name:ident) => {
+        impl $name {
+            fn new(s: impl Into<String>) -> Self {
+                Self(s.into())
+            }
+        }
+
+        impl AsRef<str> for $name {
+            fn as_ref(&self) -> &str {
+                &self.0
+            }
+        }
+    };
+}
+
+newtype_str!(PathData);
+newtype_str!(CssColor);
+newtype_str!(CssLength);
+newtype_str!(ResourceRef);
+newtype_str!(CssOpacity);
+
 #[fixture]
 fn test_gradient_sunset() -> impl Fn(&mut ResourceStore) -> GradientId {
     |resources| {
@@ -166,15 +194,15 @@ fn assert_valid_svg_root(svg: &str, expected_width: f32, expected_height: f32) {
 }
 
 /// Expected path attributes for SVG path assertions.
-type SvgPathExpectation<'a> = (&'a str, &'a str, &'a str, &'a str);
+type SvgPathExpectation = (PathData, CssColor, CssLength, CssColor);
 
 /// Custom assertion: verify path with stroke and fill attributes.
-fn assert_svg_path(svg: &str, expected: SvgPathExpectation<'_>) {
+fn assert_svg_path(svg: &str, expected: SvgPathExpectation) {
     let (d, stroke, stroke_width, fill) = expected;
-    assert!(svg.contains(&format!(r#"d="{d}""#)));
-    assert!(svg.contains(&format!(r#"stroke="{stroke}""#)));
-    assert!(svg.contains(&format!(r#"stroke-width="{stroke_width}""#)));
-    assert!(svg.contains(&format!(r#"fill="{fill}""#)));
+    assert!(svg.contains(&format!(r#"d="{}""#, d.as_ref())));
+    assert!(svg.contains(&format!(r#"stroke="{}""#, stroke.as_ref())));
+    assert!(svg.contains(&format!(r#"stroke-width="{}""#, stroke_width.as_ref())));
+    assert!(svg.contains(&format!(r#"fill="{}""#, fill.as_ref())));
 }
 
 /// Custom assertion: verify gradient and pattern definitions and references.
@@ -189,15 +217,15 @@ fn assert_gradient_pattern_defs(svg: &str) {
 }
 
 /// Expected paint server opacity attributes for SVG assertions.
-type PaintServerOpacityExpectation<'a> = (&'a str, &'a str, &'a str, &'a str);
+type PaintServerOpacityExpectation = (ResourceRef, ResourceRef, CssOpacity, CssOpacity);
 
 /// Custom assertion: verify paint server opacity attributes.
-fn assert_paint_server_opacity(svg: &str, expected: PaintServerOpacityExpectation<'_>) {
+fn assert_paint_server_opacity(svg: &str, expected: PaintServerOpacityExpectation) {
     let (gradient_id, pattern_id, stroke_opacity, fill_opacity) = expected;
-    assert!(svg.contains(&format!(r#"stroke="url(#{gradient_id})""#)));
-    assert!(svg.contains(&format!(r#"fill="url(#{pattern_id})""#)));
-    assert!(svg.contains(&format!(r#"stroke-opacity="{stroke_opacity}""#)));
-    assert!(svg.contains(&format!(r#"fill-opacity="{fill_opacity}""#)));
+    assert!(svg.contains(&format!(r#"stroke="url(#{})""#, gradient_id.as_ref())));
+    assert!(svg.contains(&format!(r#"fill="url(#{})""#, pattern_id.as_ref())));
+    assert!(svg.contains(&format!(r#"stroke-opacity="{}""#, stroke_opacity.as_ref())));
+    assert!(svg.contains(&format!(r#"fill-opacity="{}""#, fill_opacity.as_ref())));
 }
 
 #[rstest]
@@ -217,7 +245,15 @@ fn exports_simple_line_path(build_doc_with_shape: impl Fn(Shape) -> Document) {
     );
     let doc = build_doc_with_shape(shape);
     let svg = export_svg(&doc, 10.0, 10.0);
-    assert_svg_path(&svg, ("M 1 2 L 3 4", "#000000", "1", "none"));
+    assert_svg_path(
+        &svg,
+        (
+            PathData::new("M 1 2 L 3 4"),
+            CssColor::new("#000000"),
+            CssLength::new("1"),
+            CssColor::new("none"),
+        ),
+    );
 }
 
 #[rstest]

@@ -47,7 +47,15 @@ fn exports_paint_server_opacity_attributes(
         &build_doc_with_shape,
     );
     let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
-    assert_paint_server_opacity(&svg, ("sunset", "dots", "0.5020", "0.2510"));
+    assert_paint_server_opacity(
+        &svg,
+        (
+            ResourceRef::new("sunset"),
+            ResourceRef::new("dots"),
+            CssOpacity::new("0.5020"),
+            CssOpacity::new("0.2510"),
+        ),
+    );
 }
 
 #[rstest]
