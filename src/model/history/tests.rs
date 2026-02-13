@@ -1,6 +1,6 @@
 //! Unit tests for [`DocumentUndoHistory`].
 
-use rstest::rstest;
+use rstest::{fixture, rstest};
 
 use crate::model::command::Command;
 use crate::model::document::Document;
@@ -11,7 +11,8 @@ use crate::model::{Anchor, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, Ve
 // Fixtures
 // ---------------------------------------------------------------------------
 
-/// Build a sample shape with a single Line segment between two anchors.
+/// A sample shape with a single Line segment between two anchors.
+#[fixture]
 fn sample_shape() -> Shape {
     let mut path = PathGeom::new();
     path.anchors.push(Anchor::new(Vec2::new(10.0, 20.0)));
@@ -26,10 +27,11 @@ fn sample_shape() -> Shape {
     }
 }
 
-/// Convenience: create a document containing one shape, returning both.
-fn doc_with_one_shape() -> (Document, ShapeId) {
+/// A document containing one shape, returned alongside the shape's ID.
+#[fixture]
+fn doc_with_one_shape(sample_shape: Shape) -> (Document, ShapeId) {
     let mut doc = Document::new();
-    let id = doc.append_shape(sample_shape());
+    let id = doc.append_shape(sample_shape);
     (doc, id)
 }
 
@@ -50,6 +52,19 @@ fn apply_move(
     (cmd, inverse)
 }
 
+/// Build and apply an `InsertShape` command, returning the command and inverse.
+fn apply_insert(
+    doc: &mut Document,
+    index: usize,
+    shape: Shape,
+) -> (Command, crate::model::command::CommandInverse) {
+    let cmd = Command::InsertShape {
+        insertion: crate::model::ShapeInsertion { index, shape },
+    };
+    let inverse = cmd.apply(doc).expect("apply_insert should succeed");
+    (cmd, inverse)
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -62,27 +77,27 @@ fn new_history_is_empty() {
     assert!(!history.can_redo());
 }
 
+/// Undo and redo on an empty history are both no-ops.
 #[rstest]
-fn undo_on_empty_is_noop() {
+#[case::undo(true)]
+#[case::redo(false)]
+fn empty_history_operation_is_noop(#[case] is_undo: bool) {
     let mut history = DocumentUndoHistory::new();
     let mut doc = Document::default();
 
-    history.undo(&mut doc).expect("empty undo should succeed");
+    let result = if is_undo {
+        history.undo(&mut doc)
+    } else {
+        history.redo(&mut doc)
+    };
+
+    result.expect("empty history operation should succeed");
     assert!(doc.is_empty());
 }
 
 #[rstest]
-fn redo_on_empty_is_noop() {
-    let mut history = DocumentUndoHistory::new();
-    let mut doc = Document::default();
-
-    history.redo(&mut doc).expect("empty redo should succeed");
-    assert!(doc.is_empty());
-}
-
-#[rstest]
-fn record_then_undo_restores_state() {
-    let (mut doc, id) = doc_with_one_shape();
+fn record_then_undo_restores_state(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
     let before = doc.clone();
     let mut history = DocumentUndoHistory::new();
 
@@ -95,8 +110,8 @@ fn record_then_undo_restores_state() {
 }
 
 #[rstest]
-fn record_then_undo_then_redo_reapplies() {
-    let (mut doc, id) = doc_with_one_shape();
+fn record_then_undo_then_redo_reapplies(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
     let (cmd, inverse) = apply_move(&mut doc, id, 5.0, 10.0);
@@ -111,8 +126,8 @@ fn record_then_undo_then_redo_reapplies() {
 }
 
 #[rstest]
-fn multiple_records_sequential_undo() {
-    let (mut doc, id) = doc_with_one_shape();
+fn multiple_records_sequential_undo(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
     let state_0 = doc.clone();
     let mut history = DocumentUndoHistory::new();
 
@@ -133,8 +148,8 @@ fn multiple_records_sequential_undo() {
 }
 
 #[rstest]
-fn clear_empties_history() {
-    let (mut doc, id) = doc_with_one_shape();
+fn clear_empties_history(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
     let (cmd, inverse) = apply_move(&mut doc, id, 3.0, 4.0);
@@ -188,19 +203,6 @@ fn default_impl_matches_new() {
     assert!(!b.can_undo());
 }
 
-/// Build and apply an `InsertShape` command, returning the command and inverse.
-fn apply_insert(
-    doc: &mut Document,
-    index: usize,
-) -> (Command, crate::model::command::CommandInverse) {
-    let shape = sample_shape();
-    let cmd = Command::InsertShape {
-        insertion: crate::model::ShapeInsertion { index, shape },
-    };
-    let inverse = cmd.apply(doc).expect("apply_insert should succeed");
-    (cmd, inverse)
-}
-
 // ---------------------------------------------------------------------------
 // Historical undo (branch-edit) tests
 // ---------------------------------------------------------------------------
@@ -211,8 +213,8 @@ fn apply_insert(
 /// This validates `undo_2`'s key behavioural difference from classical
 /// redo truncation: B is not discarded after the branch edit.
 #[rstest]
-fn branch_edit_preserves_historical_undo() {
-    let (mut doc, id) = doc_with_one_shape();
+fn branch_edit_preserves_historical_undo(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
     let state_0 = doc.clone();
     let mut history = DocumentUndoHistory::new();
 
@@ -253,8 +255,8 @@ fn branch_edit_preserves_historical_undo() {
 /// Do A, B, C then undo C, undo B, redo B, redo C — state matches
 /// the state after all three commands.
 #[rstest]
-fn multiple_undo_then_redo_round_trip() {
-    let (mut doc, id) = doc_with_one_shape();
+fn multiple_undo_then_redo_round_trip(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
     let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
@@ -280,8 +282,8 @@ fn multiple_undo_then_redo_round_trip() {
 
 /// Do A, B then undo B, clear — history is fully reset.
 #[rstest]
-fn clear_after_partial_undo() {
-    let (mut doc, id) = doc_with_one_shape();
+fn clear_after_partial_undo(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
     let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
@@ -300,8 +302,8 @@ fn clear_after_partial_undo() {
 
 /// Do A, clear, undo — document is unchanged (undo is a no-op).
 #[rstest]
-fn undo_after_clear_is_noop() {
-    let (mut doc, id) = doc_with_one_shape();
+fn undo_after_clear_is_noop(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
     let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
@@ -319,13 +321,13 @@ fn undo_after_clear_is_noop() {
 /// `InsertShape` round-trip through history: insert, undo removes it,
 /// redo re-inserts it.
 #[rstest]
-fn insert_shape_round_trip_through_history() {
+fn insert_shape_round_trip_through_history(sample_shape: Shape) {
     let mut doc = Document::new();
     let mut history = DocumentUndoHistory::new();
 
     assert!(doc.is_empty());
 
-    let (cmd, inverse) = apply_insert(&mut doc, 0);
+    let (cmd, inverse) = apply_insert(&mut doc, 0, sample_shape);
     assert_eq!(doc.len(), 1);
     let original_path = doc.shape_at(0).expect("shape exists").path.clone();
     history.record(cmd, inverse);

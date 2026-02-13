@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — `undo_2` selected for document history.
+Accepted (2026-02-12) — `undo_2` selected for document history.
 
 ## Date
 
@@ -98,9 +98,9 @@ _Table 1: Trade-offs between candidate undo crates._
 ## Decision Outcome / Proposed Direction
 
 `undo_2` is accepted for document history. The spike demonstrated that its
-action-iterator API maps cleanly to the existing `Command`/`CommandInverse`
-model, and the adapter is small enough to replace if
-needed.[^undo2-docs][^undo2-versions]
+action-iterator API maps cleanly to the existing
+`Command`/`CommandInverse` model, and the adapter is small enough to
+replace if needed.[^undo2-docs][^undo2-versions]
 
 `undo` (option A) is deferred — `undo_2` meets all current requirements and its
 historical undo semantics are acceptable for Gauss.[^undo-docs][^undo-versions]
@@ -108,7 +108,7 @@ historical undo semantics are acceptable for Gauss.[^undo-docs][^undo-versions]
 Selection history remains on `gpui_component::History` because it is a separate
 concern with different ownership and lifecycle requirements.
 
-`undo_stack` and `gur` remain deprioritised for the reasons documented
+`undo_stack` and `gur` remain deprioritized for the reasons documented
 above.[^undo-stack-docs][^gur-docs][^gur-versions]
 
 ## Spike Findings

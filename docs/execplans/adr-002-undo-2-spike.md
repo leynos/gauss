@@ -158,7 +158,7 @@ completed history migration scope.
 
 - Decision: Treat `undo_2` suitability as an acceptance gate with evidence,
   not an assumption. Rationale: historical undo semantics may be beneficial or
-  surprising; we need test evidence and explicit ADR findings. Date/Author:
+  surprising; test evidence and explicit ADR findings are required. Date/Author:
   2026-02-12 / Codex
 
 - Decision: Keep selection history on `gpui_component::History` rather than
@@ -298,7 +298,7 @@ Update documentation with implementation reality:
 - `docs/adr-002-undo-history-crate-selection.md`: record findings, accept or
   reject `undo_2`, and capture trade-offs from observed behaviour.
 - `docs/gauss-architecture-design.md`: update history ownership description
-  (currently says history stays in view due GPUI dependency).
+  (currently says history stays in view due to GPUI dependency).
 - `docs/users-guide.md`: reflect any user-visible undo/redo semantics changes,
   including branch-history behaviour if applicable.
 - `docs/roadmap.md`: mark the relevant undo/history entry done for this scope.
@@ -322,13 +322,13 @@ Prepare reusable log variables:
 Stage validation commands (run as milestones complete):
 
     cargo test --test command_unit --test command_bdd 2>&1 \
-      | tee "/tmp/test-command-${PROJECT}-${BRANCH_SAFE}.out" |
+      | tee "/tmp/test-command-${PROJECT}-${BRANCH_SAFE}.out"
 
     cargo test --test gpui_draw_undo --test gpui_drag_shape_undo \
       --test gpui_drag_anchor_undo --test gpui_drag_handle_undo \
       --test gpui_anchor_edit_undo --test gpui_reorder_undo \
       --test gpui_selection_history 2>&1 \
-      | tee "/tmp/test-gpui-history-${PROJECT}-${BRANCH_SAFE}.out" |
+      | tee "/tmp/test-gpui-history-${PROJECT}-${BRANCH_SAFE}.out"
 
 Documentation and markdown checks after doc edits:
 

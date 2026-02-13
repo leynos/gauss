@@ -113,16 +113,24 @@ impl DocumentUndoHistory {
     }
 
     /// Apply a collected list of `(Action, &HistoryEntry)` pairs to the
-    /// document, returning the first error encountered.
+    /// document.
+    ///
+    /// All actions in the batch are applied even when one fails, because
+    /// `undo_2` has already advanced its cursor over the entire group.
+    /// Skipping remaining actions would leave the document out of sync
+    /// with the history position.  Only the first error is surfaced.
     fn apply_actions(
         doc: &mut Document,
         actions: &[(Action, &HistoryEntry)],
         label: &str,
     ) -> Result<(), String> {
+        let mut first_error: Option<String> = None;
         for (action, entry) in actions {
-            Self::apply_single(doc, *action, entry, label)?;
+            if let Err(e) = Self::apply_single(doc, *action, entry, label) {
+                first_error.get_or_insert(e);
+            }
         }
-        Ok(())
+        first_error.map_or(Ok(()), Err)
     }
 
     /// Execute one `(Action, HistoryEntry)` step against the document.
