@@ -5,4 +5,4 @@ edition = "2024"
 
 [dependencies]
 gauss = { path = "../..", features = ["test-support"] }
-thiserror = "2.0.17"
+thiserror = "2.0.18"
