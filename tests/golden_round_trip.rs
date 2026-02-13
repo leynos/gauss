@@ -34,6 +34,19 @@ const fn default_style() -> PaintStyle {
     PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None)
 }
 
+fn minimal_test_shape(seed: u128) -> Shape {
+    Shape {
+        id: shape_id_from_seed(seed),
+        z: 0,
+        style: default_style(),
+        path: triangle_path(),
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
+    }
+}
+
 fn golden_dir() -> TestSupportResult<Dir> {
     Dir::open_ambient_dir(GOLDEN_DIR, ambient_authority())
         .map_err(|err| TestSupportError::io("open golden dir", err))
@@ -123,33 +136,17 @@ fn plain_svg_without_gauss_metadata() -> TestSupportResult<()> {
 
 #[rstest]
 fn shape_with_gauss_id() -> TestSupportResult<()> {
-    assert_shape_round_trip(
-        Shape {
-            id: shape_id_from_seed(1),
-            z: 0,
-            style: default_style(),
-            path: triangle_path(),
-            name: None,
-            locked: false,
-            hidden: false,
-            gauss_metadata: Vec::new(),
-        },
-        "with_id",
-    )
+    assert_shape_round_trip(minimal_test_shape(1), "with_id")
 }
 
 #[rstest]
 fn shape_with_full_metadata() -> TestSupportResult<()> {
     assert_shape_round_trip(
         Shape {
-            id: shape_id_from_seed(2),
-            z: 0,
-            style: default_style(),
-            path: triangle_path(),
             name: Some("My Triangle".to_owned()),
             locked: true,
             hidden: true,
-            gauss_metadata: Vec::new(),
+            ..minimal_test_shape(2)
         },
         "with_full_metadata",
     )
@@ -182,17 +179,11 @@ fn shape_with_metadata_block() -> TestSupportResult<()> {
 fn shape_with_unknown_gauss_attrs() -> TestSupportResult<()> {
     assert_shape_round_trip(
         Shape {
-            id: shape_id_from_seed(4),
-            z: 0,
-            style: default_style(),
-            path: triangle_path(),
-            name: None,
-            locked: false,
-            hidden: false,
             gauss_metadata: vec![
                 ("layer".to_owned(), "foreground".to_owned()),
                 ("opacity".to_owned(), "0.5".to_owned()),
             ],
+            ..minimal_test_shape(4)
         },
         "with_unknown_attrs",
     )
