@@ -44,7 +44,9 @@ pub use keybinding::{
 };
 pub use keystroke::{Keystroke, Modifier, Modifiers};
 pub use ops::{DocChange, DocOp};
-pub use path::{Anchor, Paint, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2};
+pub use path::{
+    Anchor, GaussAttribute, Paint, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2,
+};
 pub use resize_anchor::ResizeAnchor;
 pub use resource_store::{
     Gradient, GradientId, GradientKind, GradientStop, LinearGradient, PatternId, PatternResource,

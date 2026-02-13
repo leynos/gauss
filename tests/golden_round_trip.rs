@@ -7,7 +7,7 @@
 use camino::Utf8Path;
 use cap_std::{ambient_authority, fs_utf8::Dir};
 use gauss::model::{
-    Anchor, Document, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind, Shape,
+    Anchor, Document, GaussAttribute, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind, Shape,
 };
 use gauss::svg::export::{ExportOptions, export_svg_with_metadata};
 use gauss::svg::import::import_svg_with_resources;
@@ -72,7 +72,7 @@ fn assert_golden(name: &str, svg: &str) -> TestSupportResult<()> {
 fn assert_idempotent(svg: &str, metadata_block: Option<&str>) -> TestSupportResult<()> {
     let imported = import_svg_with_resources(svg)
         .map_err(|err| TestSupportError::expectation(format!("re-import failed: {err}")))?;
-    let re_exported = export_svg_with_metadata(&ExportOptions {
+    let re_exported = export_svg_with_metadata(ExportOptions {
         doc: &imported.document,
         resources: &imported.resources,
         canvas_width: 100.0,
@@ -88,7 +88,7 @@ fn assert_idempotent(svg: &str, metadata_block: Option<&str>) -> TestSupportResu
 }
 
 fn export_doc(doc: &Document, metadata_block: Option<&str>) -> String {
-    export_svg_with_metadata(&ExportOptions {
+    export_svg_with_metadata(ExportOptions {
         doc,
         resources: &ResourceStore::new(),
         canvas_width: 100.0,
@@ -180,8 +180,8 @@ fn shape_with_unknown_gauss_attrs() -> TestSupportResult<()> {
     assert_shape_round_trip(
         Shape {
             gauss_metadata: vec![
-                ("layer".to_owned(), "foreground".to_owned()),
-                ("opacity".to_owned(), "0.5".to_owned()),
+                GaussAttribute::new("layer", "foreground"),
+                GaussAttribute::new("opacity", "0.5"),
             ],
             ..minimal_test_shape(4)
         },
@@ -207,7 +207,7 @@ fn full_round_trip_combined() -> TestSupportResult<()> {
         name: Some("Red Triangle".to_owned()),
         locked: false,
         hidden: false,
-        gauss_metadata: vec![("custom".to_owned(), "value1".to_owned())],
+        gauss_metadata: vec![GaussAttribute::new("custom", "value1")],
     });
 
     doc.append_shape(Shape {

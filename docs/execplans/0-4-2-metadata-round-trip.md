@@ -12,11 +12,11 @@ Status: COMPLETE
 - [x] Stage D: Wire metadata through save/load pipeline.
 - [x] Stage E: Golden test infrastructure.
 - [x] Stage F: Unit tests.
-- [x] Stage G: BDD tests.
-- [x] Stage H: GPUI integration tests.
+- [x] Stage G: Behaviour-driven development (BDD) tests.
+- [x] Stage H: Graphics processing unit interface (GPUI) integration tests.
 - [x] Stage I: Documentation.
 
-## Surprises & Discoveries
+## Surprises and discoveries
 
 - The fragment-based re-parser in `resource_tags.rs` wraps SVG fragments in a
   `<gauss-import-wrapper>` element without namespace declarations. After Stage
@@ -32,7 +32,7 @@ Status: COMPLETE
   `match`/`panic!` patterns, `TestSupportResult<()>` return types, and
   `cap_std::fs_utf8::Dir` for filesystem access.
 
-## Decision Log
+## Decision log
 
 - Decision: persist `gauss:id`, `gauss:name`, `gauss:locked`,
   `gauss:hidden` as namespaced attributes on `<path>` elements. Rationale:
@@ -47,6 +47,6 @@ Status: COMPLETE
   Core, Inkscape), simplest implementation, maximum fidelity. Date/Author:
   2026-02-12 (user decision)
 - Decision: store unknown `gauss:*` attributes as
-  `Vec<(String, String)>` for forward-compatible round-trip. Rationale: future
+  `Vec<GaussAttribute>` for forward-compatible round-trip. Rationale: future
   Gauss versions may add new attributes; current version should not drop them.
   Date/Author: 2026-02-12 (assistant, draft)

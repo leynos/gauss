@@ -125,7 +125,7 @@ async fn apply_save_path(
 
     let Ok(save_result) = this.update(&mut cx, |view, _view_cx| {
         // TODO: derive canvas size from document bounds or viewport state.
-        export_svg_with_metadata_checked(&ExportOptions {
+        export_svg_with_metadata_checked(ExportOptions {
             doc: &view.state.document,
             resources: &view.state.resources,
             canvas_width: 100.0,

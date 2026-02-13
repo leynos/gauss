@@ -60,7 +60,7 @@ pub fn export_svg_with_resources(
     canvas_width: f32,
     canvas_height: f32,
 ) -> String {
-    export_svg_with_metadata(&build_export_options(
+    export_svg_with_metadata(ExportOptions::new(
         doc,
         resources,
         canvas_width,
@@ -83,7 +83,7 @@ pub fn export_svg_with_resources_checked(
     canvas_width: f32,
     canvas_height: f32,
 ) -> Result<String, SvgExportError> {
-    export_svg_with_metadata_checked(&build_export_options(
+    export_svg_with_metadata_checked(ExportOptions::new(
         doc,
         resources,
         canvas_width,
@@ -92,6 +92,7 @@ pub fn export_svg_with_resources_checked(
 }
 
 /// Export options for metadata-aware SVG export.
+#[derive(Clone, Copy)]
 pub struct ExportOptions<'a> {
     /// Document to export.
     pub doc: &'a Document,
@@ -105,24 +106,35 @@ pub struct ExportOptions<'a> {
     pub metadata_block: Option<&'a str>,
 }
 
-const fn build_export_options<'a>(
-    doc: &'a Document,
-    resources: &'a ResourceStore,
-    canvas_width: f32,
-    canvas_height: f32,
-) -> ExportOptions<'a> {
-    ExportOptions {
-        doc,
-        resources,
-        canvas_width,
-        canvas_height,
-        metadata_block: None,
+impl<'a> ExportOptions<'a> {
+    /// Create export options with no metadata block.
+    #[must_use]
+    pub const fn new(
+        doc: &'a Document,
+        resources: &'a ResourceStore,
+        canvas_width: f32,
+        canvas_height: f32,
+    ) -> Self {
+        Self {
+            doc,
+            resources,
+            canvas_width,
+            canvas_height,
+            metadata_block: None,
+        }
+    }
+
+    /// Set the metadata block content to preserve.
+    #[must_use]
+    pub const fn with_metadata_block(mut self, metadata_block: &'a str) -> Self {
+        self.metadata_block = Some(metadata_block);
+        self
     }
 }
 
 /// Export a document to an SVG string with metadata block preservation.
 #[must_use]
-pub fn export_svg_with_metadata(options: &ExportOptions<'_>) -> String {
+pub fn export_svg_with_metadata(options: ExportOptions<'_>) -> String {
     let mut out = String::new();
     write_svg_header(&mut out, options.canvas_width, options.canvas_height);
     defs::write_defs(&mut out, options.resources);
@@ -144,7 +156,7 @@ pub fn export_svg_with_metadata(options: &ExportOptions<'_>) -> String {
 /// Returns [`SvgExportError`] if any gradient/pattern paint reference cannot
 /// be resolved in `resources`.
 pub fn export_svg_with_metadata_checked(
-    options: &ExportOptions<'_>,
+    options: ExportOptions<'_>,
 ) -> Result<String, SvgExportError> {
     validate_resource_references(options.doc, options.resources)?;
     Ok(export_svg_with_metadata(options))
@@ -242,12 +254,12 @@ fn write_shape_gauss_metadata(out: &mut String, shape: &Shape) {
     write_opaque_gauss_attrs(out, &shape.gauss_metadata);
 }
 
-fn write_opaque_gauss_attrs(out: &mut String, metadata: &[(String, String)]) {
-    for (local_name, value) in metadata {
-        let escaped_value = escape_attr_value(value);
+fn write_opaque_gauss_attrs(out: &mut String, metadata: &[crate::model::GaussAttribute]) {
+    for attr in metadata {
+        let escaped_value = escape_attr_value(&attr.value);
         write_fmt(
             out,
-            format_args!(r#" gauss:{local_name}="{escaped_value}""#),
+            format_args!(r#" gauss:{}="{escaped_value}""#, attr.name),
         );
     }
 }

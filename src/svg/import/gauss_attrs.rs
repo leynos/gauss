@@ -4,14 +4,16 @@
 //! reading. The fragment-based `attribute_value()` in `resource_tags.rs`
 //! loses namespace context, making it unsuitable for `gauss:*` attributes.
 
+use std::ops::Range;
+
+use crate::model::GaussAttribute;
 use crate::svg::metadata::GAUSS_METADATA_NAMESPACE;
 
-/// Known Gauss attribute local names handled explicitly by the importer.
-const KNOWN_GAUSS_ATTRS: &[&str] = &["id", "name", "locked", "hidden"];
-
 /// Gauss-specific metadata extracted from a shape element.
-#[derive(Default)]
 pub(super) struct ShapeGaussMetadata {
+    /// Byte range of the `<path>` node in the original SVG, for alignment with
+    /// the tag-based extraction in `resource_tags`.
+    pub byte_range: Range<usize>,
     /// Value of `gauss:id`, if present.
     pub gauss_id: Option<String>,
     /// Value of `gauss:name`, if present.
@@ -21,7 +23,7 @@ pub(super) struct ShapeGaussMetadata {
     /// Whether `gauss:hidden` is `"true"`.
     pub hidden: bool,
     /// Unknown `gauss:*` attributes preserved for forward compatibility.
-    pub opaque_attrs: Vec<(String, String)>,
+    pub opaque_attrs: Vec<GaussAttribute>,
 }
 
 /// Extract Gauss metadata from all drawable path elements.
@@ -44,6 +46,11 @@ pub(super) fn extract_shape_gauss_metadata(svg: &str) -> Vec<ShapeGaussMetadata>
 }
 
 /// Extract raw inner content of the first `<metadata>` element.
+///
+/// Returns:
+/// - `None` if there is no `<metadata>` element at all.
+/// - `Some(String::new())` if `<metadata>` exists but is empty.
+/// - `Some(contents)` with the raw inner XML if it has children.
 pub(super) fn extract_metadata_block(svg: &str) -> Option<String> {
     let document = roxmltree::Document::parse(svg).ok()?;
     let root = document.root_element();
@@ -52,15 +59,27 @@ pub(super) fn extract_metadata_block(svg: &str) -> Option<String> {
         .children()
         .find(|child| child.is_element() && child.tag_name().name() == "metadata")?;
 
+    // If `<metadata>` is present but has no children, preserve it as an empty
+    // block.
+    let Some(first_child) = metadata_node.first_child() else {
+        return Some(String::new());
+    };
+
     // Collect the raw source of all children within `<metadata>`.
-    let first_child = metadata_node.first_child()?;
     let last_child = metadata_node.last_child().unwrap_or(first_child);
     let range = first_child.range().start..last_child.range().end;
     svg.get(range).map(ToOwned::to_owned)
 }
 
 fn extract_gauss_metadata_from_node(node: roxmltree::Node<'_, '_>) -> ShapeGaussMetadata {
-    let mut meta = ShapeGaussMetadata::default();
+    let mut meta = ShapeGaussMetadata {
+        byte_range: node.range(),
+        gauss_id: None,
+        name: None,
+        locked: false,
+        hidden: false,
+        opaque_attrs: Vec::new(),
+    };
 
     for attr in node.attributes() {
         if attr.namespace() != Some(GAUSS_METADATA_NAMESPACE) {
@@ -76,10 +95,8 @@ fn extract_gauss_metadata_from_node(node: roxmltree::Node<'_, '_>) -> ShapeGauss
             "locked" => meta.locked = value == "true",
             "hidden" => meta.hidden = value == "true",
             _ => {
-                if !KNOWN_GAUSS_ATTRS.contains(&local_name) {
-                    meta.opaque_attrs
-                        .push((local_name.to_owned(), value.to_owned()));
-                }
+                meta.opaque_attrs
+                    .push(GaussAttribute::new(local_name, value));
             }
         }
     }

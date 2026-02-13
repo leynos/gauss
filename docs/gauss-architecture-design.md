@@ -1082,8 +1082,8 @@ zero-padded 16-character lowercase hexadecimal representation of its 64-bit
 emitted and rejected on import.
 
 **Forward-compatible attribute preservation**: any `gauss:*` attribute not
-recognised by the current version is stored as an opaque `(local_name, value)`
-pair in `Shape::gauss_metadata` and re-emitted on export. This allows future
+recognized by the current version is stored as a `GaussAttribute` in
+`Shape::gauss_metadata` and re-emitted on export. This allows future
 Gauss versions to add new attributes without older versions dropping them.
 
 **`<metadata>` block preservation**: the raw inner content of the first

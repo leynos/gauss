@@ -148,6 +148,9 @@ pub fn shape_id_to_hex(id: ShapeId) -> String {
 /// ```
 #[must_use]
 pub fn shape_id_from_hex(hex: &str) -> Option<ShapeId> {
+    if hex.len() != 16 {
+        return None;
+    }
     let raw = u64::from_str_radix(hex, 16).ok()?;
     let key_data = KeyData::from_ffi(raw);
     let id: ShapeId = key_data.into();
@@ -304,5 +307,15 @@ mod tests {
     #[rstest]
     fn shape_id_from_hex_rejects_empty_string() {
         assert_eq!(shape_id_from_hex(""), None);
+    }
+
+    #[rstest]
+    fn shape_id_from_hex_rejects_short_input() {
+        assert_eq!(shape_id_from_hex("00000001"), None);
+    }
+
+    #[rstest]
+    fn shape_id_from_hex_rejects_long_input() {
+        assert_eq!(shape_id_from_hex("000000010000000000"), None);
     }
 }

@@ -118,10 +118,6 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
 
     let raw_tags = resource_tags::extract_shape_path_tags(resource_tags::SvgContent::from(svg));
 
-    if shape_gauss_meta.len() != raw_tags.len() {
-        return Err(SvgImportError::MalformedSvg);
-    }
-
     for (index, raw_tag) in raw_tags.iter().enumerate() {
         let tag_content = resource_tags::SvgContent::from(raw_tag.as_str());
         let d =
@@ -156,7 +152,11 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
         let path = path_data::parse_path_data(&d)?;
         let style = PaintStyle::new_with_paint(stroke, stroke_width, fill);
 
-        let gauss_meta = shape_gauss_meta.get(index);
+        // Align Gauss metadata with the tag by matching the raw tag text
+        // against the byte range recorded during full-document parsing.
+        let gauss_meta = shape_gauss_meta
+            .iter()
+            .find(|meta| svg.get(meta.byte_range.clone()) == Some(raw_tag.as_str()));
 
         let shape_id = gauss_meta
             .and_then(|meta| meta.gauss_id.as_deref())

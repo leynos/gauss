@@ -1,7 +1,8 @@
 //! Behaviour tests for metadata round-trip fidelity.
 
 use gauss::model::{
-    Anchor, Document, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind, Shape, Vec2,
+    Anchor, Document, GaussAttribute, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind,
+    Shape, Vec2,
 };
 use gauss::svg::export::{ExportOptions, export_svg_with_metadata};
 use gauss::svg::import::{ImportedSvg, import_svg_with_resources};
@@ -77,11 +78,11 @@ fn given_svg_with_unknown_attrs(world: &mut MetadataWorld) {
     let mut doc = Document::new();
     let mut shape = line_shape(70);
     shape.gauss_metadata = vec![
-        ("layer".to_owned(), "foreground".to_owned()),
-        ("opacity".to_owned(), "0.5".to_owned()),
+        GaussAttribute::new("layer", "foreground"),
+        GaussAttribute::new("opacity", "0.5"),
     ];
     doc.append_shape(shape);
-    world.export_svg = Some(export_svg_with_metadata(&ExportOptions {
+    world.export_svg = Some(export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
         canvas_width: 100.0,
@@ -96,7 +97,7 @@ fn given_svg_with_metadata_block(world: &mut MetadataWorld) {
     doc.append_shape(line_shape(80));
     let metadata = "\n<gauss:project>test-project</gauss:project>";
     world.metadata_block = Some(metadata.to_owned());
-    world.export_svg = Some(export_svg_with_metadata(&ExportOptions {
+    world.export_svg = Some(export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
         canvas_width: 100.0,
@@ -122,7 +123,7 @@ fn given_plain_svg(world: &mut MetadataWorld) {
 
 #[when("I export and re-import the document")]
 fn when_export_and_reimport(world: &mut MetadataWorld) {
-    let svg = export_svg_with_metadata(&ExportOptions {
+    let svg = export_svg_with_metadata(ExportOptions {
         doc: &world.doc,
         resources: &world.resources,
         canvas_width: 100.0,
@@ -144,7 +145,7 @@ fn when_import_and_reexport(world: &mut MetadataWorld) -> TestSupportResult<()> 
         .ok_or_else(|| TestSupportError::missing("svg", "import step"))?;
     let imported = import_svg_with_resources(&svg)
         .map_err(|err| TestSupportError::expectation(format!("import failed: {err}")))?;
-    let re_exported = export_svg_with_metadata(&ExportOptions {
+    let re_exported = export_svg_with_metadata(ExportOptions {
         doc: &imported.document,
         resources: &imported.resources,
         canvas_width: 100.0,
@@ -224,8 +225,8 @@ fn then_shape_retains_locked_hidden(world: &MetadataWorld) -> TestSupportResult<
 fn then_unknown_attrs_preserved(world: &MetadataWorld) -> TestSupportResult<()> {
     let shape = imported_shape(world)?;
     let expected = vec![
-        ("layer".to_owned(), "foreground".to_owned()),
-        ("opacity".to_owned(), "0.5".to_owned()),
+        GaussAttribute::new("layer", "foreground"),
+        GaussAttribute::new("opacity", "0.5"),
     ];
     if shape.gauss_metadata != expected {
         return Err(TestSupportError::expectation(format!(

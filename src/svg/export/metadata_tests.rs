@@ -3,7 +3,7 @@
 use slotmap::Key;
 
 use super::*;
-use crate::model::{Anchor, PaintStyle, PathGeom, Rgba, Shape, Vec2};
+use crate::model::{Anchor, GaussAttribute, PaintStyle, PathGeom, Rgba, Shape, Vec2};
 use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::rstest;
 
@@ -31,7 +31,7 @@ fn line_shape(seed: u32) -> Shape {
 fn export_single_shape(shape: Shape) -> String {
     let mut doc = Document::new();
     doc.append_shape(shape);
-    export_svg_with_metadata(&ExportOptions {
+    export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
         canvas_width: 100.0,
@@ -98,8 +98,8 @@ fn exports_hidden_attribute() {
 fn exports_opaque_gauss_attrs() {
     let mut shape = line_shape(7);
     shape.gauss_metadata = vec![
-        ("layer".to_owned(), "foreground".to_owned()),
-        ("opacity".to_owned(), "0.5".to_owned()),
+        GaussAttribute::new("layer", "foreground"),
+        GaussAttribute::new("opacity", "0.5"),
     ];
     let svg = export_single_shape(shape);
     assert!(svg.contains(r#"gauss:layer="foreground""#));
@@ -109,7 +109,7 @@ fn exports_opaque_gauss_attrs() {
 #[rstest]
 fn exports_metadata_block_when_present() {
     let doc = Document::new();
-    let svg = export_svg_with_metadata(&ExportOptions {
+    let svg = export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
         canvas_width: 100.0,
@@ -122,9 +122,24 @@ fn exports_metadata_block_when_present() {
 }
 
 #[rstest]
+fn metadata_block_with_trailing_newline_does_not_add_extra_newline() {
+    let doc = Document::new();
+    let svg = export_svg_with_metadata(ExportOptions {
+        doc: &doc,
+        resources: &ResourceStore::new(),
+        canvas_width: 100.0,
+        canvas_height: 100.0,
+        metadata_block: Some("test\n"),
+    });
+    assert!(svg.contains("<metadata>test\n</metadata>"));
+    // Verify exactly one newline before </metadata>, not two.
+    assert!(!svg.contains("test\n\n</metadata>"));
+}
+
+#[rstest]
 fn omits_metadata_block_when_absent() {
     let doc = Document::new();
-    let svg = export_svg_with_metadata(&ExportOptions {
+    let svg = export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
         canvas_width: 100.0,

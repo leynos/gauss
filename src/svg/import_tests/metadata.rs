@@ -3,6 +3,7 @@
 use slotmap::Key;
 
 use super::*;
+use crate::model::GaussAttribute;
 use crate::svg::export::{ExportOptions, export_svg_with_metadata};
 use crate::svg::metadata::shape_id_to_hex;
 use crate::test_helpers::shape_id_from_seed;
@@ -37,7 +38,7 @@ fn export_and_reimport(
     doc: &Document,
     metadata_block: Option<&str>,
 ) -> crate::svg::import::ImportedSvg {
-    let svg = export_svg_with_metadata(&ExportOptions {
+    let svg = export_svg_with_metadata(ExportOptions {
         doc,
         resources: &ResourceStore::new(),
         canvas_width: 100.0,
@@ -110,8 +111,8 @@ fn imports_unknown_gauss_attributes() {
     assert_eq!(
         first_shape(&imported).gauss_metadata,
         vec![
-            ("layer".to_owned(), "foreground".to_owned()),
-            ("opacity".to_owned(), "0.5".to_owned()),
+            GaussAttribute::new("layer", "foreground"),
+            GaussAttribute::new("opacity", "0.5"),
         ]
     );
 }
@@ -180,16 +181,16 @@ fn round_trip_preserves_unknown_attrs() {
     let mut doc = Document::new();
     let mut shape = line_shape(102);
     shape.gauss_metadata = vec![
-        ("layer".to_owned(), "bg".to_owned()),
-        ("custom-key".to_owned(), "custom-val".to_owned()),
+        GaussAttribute::new("layer", "bg"),
+        GaussAttribute::new("custom-key", "custom-val"),
     ];
     doc.append_shape(shape);
     let imported = export_and_reimport(&doc, None);
     assert_eq!(
         first_shape(&imported).gauss_metadata,
         vec![
-            ("layer".to_owned(), "bg".to_owned()),
-            ("custom-key".to_owned(), "custom-val".to_owned()),
+            GaussAttribute::new("layer", "bg"),
+            GaussAttribute::new("custom-key", "custom-val"),
         ]
     );
 }
@@ -199,7 +200,7 @@ fn round_trip_preserves_metadata_block() {
     let mut doc = Document::new();
     doc.append_shape(line_shape(103));
     let metadata = "\n<gauss:doc-version>2</gauss:doc-version>";
-    let svg = export_svg_with_metadata(&ExportOptions {
+    let svg = export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
         canvas_width: 100.0,

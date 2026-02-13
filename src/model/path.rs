@@ -377,8 +377,24 @@ pub struct Shape {
     /// Whether the shape is hidden from view.
     pub hidden: bool,
     /// Opaque Gauss metadata attributes preserved for round-trip fidelity.
-    ///
-    /// Each entry is `(local_name, value)` where `local_name` is the
-    /// attribute name without the `gauss:` prefix.
-    pub gauss_metadata: Vec<(String, String)>,
+    pub gauss_metadata: Vec<GaussAttribute>,
+}
+
+/// An opaque `gauss:*` attribute preserved for forward-compatible round-trip.
+#[derive(Clone, Debug, PartialEq)]
+pub struct GaussAttribute {
+    /// Local name without the `gauss:` prefix.
+    pub name: String,
+    /// Attribute value.
+    pub value: String,
+}
+impl GaussAttribute {
+    /// Create a new Gauss attribute.
+    #[must_use]
+    pub fn new(name: impl Into<String>, value: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            value: value.into(),
+        }
+    }
 }
