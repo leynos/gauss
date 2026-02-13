@@ -38,7 +38,7 @@ completed history migration scope.
 - Do not remove or regress dual-history user behaviour unless explicitly
   documented and approved through ADR updates.
 - Keep existing keyboard shortcuts and action names stable unless a documented
-  user experience (UX) decision requires a change.
+  UX decision requires a change.
 - Preserve existing command inverse semantics (`Command::apply` returns
   `CommandInverse`, and undo applies inverse).
 - Use `undo_2` as the implementation candidate for this spike. Do not add a
@@ -71,8 +71,8 @@ completed history migration scope.
 
 - Risk: `undo_2` historical undo model differs from classical redo truncation.
   Severity: high Likelihood: medium Mitigation: capture behaviour in targeted
-  tests and explicitly document UX impact in ADR and user guide before final
-  acceptance.
+  tests and explicitly document user experience (UX) impact in ADR and user
+  guide before final acceptance.
 
 - Risk: moving history out of `Phase0Shell` may expose hidden coupling between
   UI event flow and history mutation order. Severity: high Likelihood: medium
