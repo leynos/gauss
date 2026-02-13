@@ -161,7 +161,7 @@ async fn apply_open_prompt(
         if let Some(imported) = loaded_state {
             view.state.document = imported.document;
             view.state.resources = imported.resources;
-            view.document_history = History::new();
+            view.document_history.clear();
             view.selection_history = History::new();
             view.state.selection = Selection::empty();
             view.drag_state = None;

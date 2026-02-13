@@ -2177,6 +2177,7 @@ dependencies = [
  "slotmap",
  "test_support",
  "thiserror 2.0.17",
+ "undo_2",
  "uuid",
 ]
 
@@ -6705,6 +6706,15 @@ dependencies = [
  "memoffset",
  "tempfile",
  "winapi",
+]
+
+[[package]]
+name = "undo_2"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e76d34df022a54c3e2799eab2f02af6c90eca56aad8bba8f8eb356ce283907dc"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

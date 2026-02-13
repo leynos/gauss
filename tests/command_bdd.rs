@@ -4,8 +4,8 @@
 //! Actions to undoable document mutations.
 
 use gauss::model::{
-    Action, Command, CommandInverse, Document, EngineState, SelItem, Selection, UserError,
-    prepare_command,
+    Action, Command, CommandInverse, Document, DocumentUndoHistory, EngineState, SelItem,
+    Selection, UserError, prepare_command,
 };
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
@@ -85,6 +85,15 @@ fn when_apply_inverse(world: &mut CommandWorld) -> TestSupportResult<()> {
         .apply(&mut world.state.document)
         .map_err(|e| TestSupportError::expectation(format!("undo failed: {e}")))?;
 
+    Ok(())
+}
+
+#[when("I undo on an empty history")]
+fn when_undo_on_empty_history(world: &mut CommandWorld) -> TestSupportResult<()> {
+    let mut history = DocumentUndoHistory::new();
+    history
+        .undo(&mut world.state.document)
+        .map_err(|e| TestSupportError::expectation(format!("empty undo failed: {e}")))?;
     Ok(())
 }
 
@@ -266,5 +275,13 @@ fn raise_selection_produces_reorder_command(world: CommandWorld) {
     name = "Inverse command has matching name"
 )]
 fn inverse_command_has_matching_name(world: CommandWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/command.feature",
+    name = "Empty history undo is safe"
+)]
+fn empty_history_undo_is_safe(world: CommandWorld) {
     let _ = world;
 }

@@ -6,8 +6,10 @@
 //! > "The document (and editor state such as selection, tool mode, viewport)
 //! > must live in **engine state**, not in the view layer."
 //!
-//! This module is GPUI-independent for testability and scripting. History
-//! stacks remain in the UI layer since they depend on `gpui_component::History`.
+//! This module is GPUI-independent for testability and scripting.
+//! Document history uses `DocumentUndoHistory` (model layer, backed by
+//! `undo_2`); selection history remains in the UI layer using
+//! `gpui_component::History`.
 //!
 //! # Examples
 //!
@@ -53,9 +55,11 @@ use super::{ResourceStore, StyleStore};
 ///
 /// # History
 ///
-/// Undo/redo history is managed separately in the UI layer since it uses
-/// `gpui_component::History`. The engine state represents the current
-/// snapshot, not the full edit history.
+/// Document undo/redo history uses `DocumentUndoHistory` in the model
+/// layer (backed by `undo_2`).  It is currently owned by `Phase0Shell`
+/// but is GPUI-independent; moving ownership here is planned future
+/// work.  Selection history remains in the view layer using
+/// `gpui_component::History`.  See ADR-002 for rationale.
 #[derive(Clone, Debug, PartialEq)]
 pub struct EngineState {
     /// The document containing all shapes and their geometry.

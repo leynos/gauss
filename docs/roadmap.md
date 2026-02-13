@@ -104,14 +104,34 @@ phases depend upon. See architecture document §20.
 
 ### 0.3. History and grouping
 
-- [ ] 0.3.1. Audit existing undo/redo implementation.
-  - [ ] Verify multi-step interactions create single undo entries.
-  - [ ] Test history clear on document open. See architecture §7.2.
-- [ ] 0.3.2. Implement command grouping API.
-  - [ ] Begin/end transaction for compound operations.
-  - [ ] Integrate with GPUI Component `History`.
-- [ ] 0.3.3. Add inverse command generation.
-  - [ ] All commands produce `CommandInverse` for undo. See architecture §7.1.
+- [ ] 0.3.1. Audit existing undo/redo implementation. (Partially
+  complete — the `undo_2` spike migrated document history to a model-layer
+  adapter `DocumentUndoHistory`, validated undo/redo round-trips, and confirmed
+  history-clear-on-open semantics. Remaining: verify multistep interactions
+  produce single undo entries.) In scope: undo/redo round-trip validation,
+  history-clear semantics, adapter integration. Out of scope: command grouping
+  (see 0.3.2).
+  - [ ] Verify multistep interactions create single undo entries.
+        Completion: all drag and compound tool interactions produce
+        exactly one undo entry each.
+  - [x] Test history clear on document open. See architecture §7.2.
+- [ ] 0.3.2. Implement command grouping API. Requires 0.3.1.
+  - [ ] Begin/end transaction for compound operations. Completion:
+        `DocumentUndoHistory` exposes grouping API and groups
+        collapse to a single undo step in tests.
+  - [ ] Integrate with model-layer `DocumentUndoHistory`.
+- [x] 0.3.3. Add inverse command generation.
+  - [x] All commands produce `CommandInverse` for undo.
+        See architecture §7.1.
+- [ ] 0.3.4. Move document history ownership to EngineState.
+  Currently owned by `Phase0Shell`; moving it aligns with the architecture
+  principle that editor state belongs in the engine. Requires updating
+  `Phase0Shell`, `draw/mod.rs` call sites, and the `EngineState` doc comment.
+  Deferred: touches UI layer boundary.
+- [ ] 0.3.5. Evolve history error model from `String` to enum.
+  The adapter returns `Result<(), String>`; converting to a `HistoryError` type
+  provides structured error handling. Deferred: changes public API and all call
+  sites.
 
 ### 0.4. SVG load/save and metadata policy
 
@@ -278,11 +298,20 @@ feature plan while integrating the architectural foundations.
 
 ### 1.6. Undo/redo and history
 
-(Partially complete. The dual history stack is implemented.)
+(Partially complete. The dual history stack is implemented. Document history
+has been migrated to the model-layer `DocumentUndoHistory` adapter backed by
+`undo_2` — see [ADR-002](adr-002-undo-history-crate-selection.md). History
+depth is bounded by `keep_last()` with a configurable limit, and A/B testing
+infrastructure exists via the `undo_2` API — see ADR-002 for details. Selection
+history remains on `gpui_component::History`.) In scope: grouping audit,
+optional History panel. Out of scope: preview operation interaction with
+history.
 
-- [ ] 1.6.1. Audit history grouping.
-  - [ ] Ensure multi-step interactions create single undo entries.
-  - [ ] Verify history clears correctly on document open.
+- [ ] 1.6.1. Audit history grouping. Requires 0.3.2.
+  - [ ] Ensure multistep interactions create single undo entries.
+        Completion: every drag and compound tool interaction produces
+        exactly one undo entry; verified by parameterized tests.
+  - [x] Verify history clears correctly on document open.
         See architecture §7.2.
 - [ ] 1.6.2. Add History panel (optional).
   - [ ] Display list of recent operations.

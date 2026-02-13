@@ -41,3 +41,7 @@ Feature: Command dispatch
     When I prepare RaiseSelection action
     Then the command should be Reorder
     And the command should include one reorder operation
+
+  Scenario: Empty history undo is safe
+    When I undo on an empty history
+    Then the document should have two shapes

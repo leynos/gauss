@@ -1,4 +1,4 @@
-//! Draw-mode behaviour and document history wiring for the Phase 0 shell.
+//! Draw-mode behaviour and document command dispatch for the Phase 0 shell.
 //!
 //! Phase 0 intentionally keeps draw mode simple:
 //!
@@ -14,21 +14,15 @@
 )]
 
 use crate::model::{
-    Anchor, Command, CommandInverse, Document, EdgeMode, PaintStyle, PathGeom, SegmentKind, Shape,
-    ShapeId, ShapeInsertion, UserError, Vec2,
+    Anchor, Command, EdgeMode, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, ShapeInsertion,
+    UserError, Vec2,
 };
 
-use super::{Phase0Shell, document_history::DocumentHistoryItem};
+use super::Phase0Shell;
 
 mod handles;
 
 use self::handles::{clear_line_segment_handles, close_shape, update_catmull_rom_handles};
-
-#[derive(Clone, Copy, Debug)]
-enum HistoryDirection {
-    Undo,
-    Redo,
-}
 
 const SNAP_RADIUS_PX: f32 = 10.0;
 
@@ -120,33 +114,14 @@ impl Phase0Shell {
 
     pub(super) fn apply_command(&mut self, command: Command) -> Result<(), UserError> {
         let inverse = command.apply(&mut self.state.document)?;
-        self.document_history
-            .push(DocumentHistoryItem::new_command(command, inverse));
+        self.document_history.record(command, inverse);
         self.last_history_error = None;
         Ok(())
     }
 
     pub(super) fn undo_document(&mut self) {
-        self.apply_history_operation(HistoryDirection::Undo);
-    }
-
-    pub(super) fn redo_document(&mut self) {
-        self.apply_history_operation(HistoryDirection::Redo);
-    }
-
-    fn apply_history_operation(&mut self, direction: HistoryDirection) {
-        let history_group = match direction {
-            HistoryDirection::Undo => self.document_history.undo(),
-            HistoryDirection::Redo => self.document_history.redo(),
-        };
-        let Some(entries) = history_group else {
-            return;
-        };
-
-        match self.apply_history_group(entries, direction) {
-            Ok(()) => {
-                self.last_history_error = None;
-            }
+        match self.document_history.undo(&mut self.state.document) {
+            Ok(()) => self.last_history_error = None,
             Err(error) => {
                 log::error!("{error}");
                 self.last_history_error = Some(error);
@@ -154,56 +129,14 @@ impl Phase0Shell {
         }
     }
 
-    fn apply_history_group(
-        &mut self,
-        group: Vec<DocumentHistoryItem>,
-        direction: HistoryDirection,
-    ) -> Result<(), String> {
-        let mut first_error = None;
-        for item in group {
-            let entry = item.into_entry();
-            let error = match apply_command_for_direction(
-                &mut self.state.document,
-                &entry.command,
-                &entry.inverse,
-                direction,
-            ) {
-                Ok(()) => continue,
-                Err(error) => error,
-            };
-            let operation = match direction {
-                HistoryDirection::Undo => "Undo",
-                HistoryDirection::Redo => "Redo",
-            };
-            let command_name = match direction {
-                HistoryDirection::Undo => entry.inverse.name(),
-                HistoryDirection::Redo => entry.command.name(),
-            };
-            let message = format!("{operation} failed for '{command_name}': {error}");
-            first_error.get_or_insert(message);
+    pub(super) fn redo_document(&mut self) {
+        match self.document_history.redo(&mut self.state.document) {
+            Ok(()) => self.last_history_error = None,
+            Err(error) => {
+                log::error!("{error}");
+                self.last_history_error = Some(error);
+            }
         }
-
-        first_error.map_or(Ok(()), Err)
-    }
-}
-
-fn apply_command_inverse(doc: &mut Document, inverse: &CommandInverse) -> Result<(), UserError> {
-    inverse.apply(doc)
-}
-
-fn apply_command_again(doc: &mut Document, command: &Command) -> Result<(), UserError> {
-    command.apply(doc).map(|_| ())
-}
-
-fn apply_command_for_direction(
-    doc: &mut Document,
-    command: &Command,
-    inverse: &CommandInverse,
-    direction: HistoryDirection,
-) -> Result<(), UserError> {
-    match direction {
-        HistoryDirection::Undo => apply_command_inverse(doc, inverse),
-        HistoryDirection::Redo => apply_command_again(doc, command),
     }
 }
 
