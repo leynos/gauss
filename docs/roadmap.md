@@ -138,9 +138,9 @@ phases depend upon. See architecture document §20.
 - [x] 0.4.1. Define Gauss metadata namespace.
   - [x] Use `gauss:` prefixed attributes or `<metadata>` block.
   - [x] Document namespace in ADR. See architecture §10.1.
-- [ ] 0.4.2. Implement metadata round-trip.
-  - [ ] Editor-only data survives load/save cycle.
-  - [ ] Add golden tests for round-trip fidelity.
+- [x] 0.4.2. Implement metadata round-trip.
+  - [x] Editor-only data survives load/save cycle.
+  - [x] Add golden tests for round-trip fidelity.
 - [ ] 0.4.3. Implement web-ready export.
   - [ ] Strip all Gauss metadata on export.
   - [ ] Produce valid, minimal SVG.

@@ -1059,6 +1059,48 @@ classDiagram
 coordinates via `next_vec2` and builds the appropriate anchor and segment
 structures.*
 
+#### 10.1.3 Metadata payload round-trip
+
+Gauss persists editor-only data as namespaced attributes on `<path>` elements
+and preserves the `<metadata>` block verbatim through load/save cycles.
+
+**Shape-level attributes** (emitted on each `<path>` element):
+
+| Attribute       | Purpose                           | Format              |
+| --------------- | --------------------------------- | ------------------- |
+| `gauss:id`      | Stable shape identity             | 16-digit lowercase hex of `KeyData::as_ffi()` |
+| `gauss:name`    | User-assigned shape name          | UTF-8 string        |
+| `gauss:locked`  | Shape is locked for editing       | `"true"` when set   |
+| `gauss:hidden`  | Shape is hidden from view         | `"true"` when set   |
+
+Default-valued attributes are omitted: `gauss:name` is absent when no name is
+set; `gauss:locked` and `gauss:hidden` are absent when `false`.
+
+**`ShapeId` encoding**: the `ShapeId` (a slotmap `KeyData`) is encoded as the
+zero-padded 16-character lowercase hexadecimal representation of its 64-bit
+`as_ffi()` value. Decoding uses `KeyData::from_ffi()`. Null keys are never
+emitted and rejected on import.
+
+**Forward-compatible attribute preservation**: any `gauss:*` attribute not
+recognised by the current version is stored as an opaque `(local_name, value)`
+pair in `Shape::gauss_metadata` and re-emitted on export. This allows future
+Gauss versions to add new attributes without older versions dropping them.
+
+**`<metadata>` block preservation**: the raw inner content of the first
+`<metadata>` child of the SVG root is captured on import and stored in
+`EngineState::gauss_metadata_block`. On export, when present, the content is
+written inside a `<metadata>` element between `<defs>` and shape elements.
+This preserves third-party metadata (Dublin Core, Inkscape, RDF) as well as
+future Gauss document-level metadata.
+
+**Implementation modules**:
+
+- `src/svg/metadata.rs` — `shape_id_to_hex()`, `shape_id_from_hex()`.
+- `src/svg/import/gauss_attrs.rs` — namespace-aware extraction via full
+  `roxmltree` parse.
+- `src/svg/export/mod.rs` — `write_shape_gauss_metadata()`,
+  `write_metadata_block()`, `export_svg_with_metadata()`.
+
 ### 10.2 When SVG becomes "not tenable"
 
 If future features require concepts SVG cannot represent cleanly (e.g.,

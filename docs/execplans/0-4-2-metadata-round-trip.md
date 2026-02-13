@@ -1,24 +1,36 @@
 # Implement metadata round-trip (0.4.2)
 
-Status: IN PROGRESS
+Status: COMPLETE
 
 ## Progress
 
 - [x] Reviewed roadmap and architecture requirements for 0.4.2.
 - [x] Drafted this ExecPlan.
-- [ ] Stage A: Model changes — add shape metadata fields.
-- [ ] Stage B: Export changes — emit metadata on save.
-- [ ] Stage C: Import changes — parse metadata on load.
-- [ ] Stage D: Wire metadata through save/load pipeline.
-- [ ] Stage E: Golden test infrastructure.
-- [ ] Stage F: Unit tests.
-- [ ] Stage G: BDD tests.
-- [ ] Stage H: GPUI integration tests.
-- [ ] Stage I: Documentation.
+- [x] Stage A: Model changes — add shape metadata fields.
+- [x] Stage B: Export changes — emit metadata on save.
+- [x] Stage C: Import changes — parse metadata on load.
+- [x] Stage D: Wire metadata through save/load pipeline.
+- [x] Stage E: Golden test infrastructure.
+- [x] Stage F: Unit tests.
+- [x] Stage G: BDD tests.
+- [x] Stage H: GPUI integration tests.
+- [x] Stage I: Documentation.
 
 ## Surprises & Discoveries
 
-(To be updated during implementation.)
+- The fragment-based re-parser in `resource_tags.rs` wraps SVG fragments in a
+  `<gauss-import-wrapper>` element without namespace declarations. After Stage
+  B added `gauss:*` attributes to `<path>` elements, the fragment parser
+  failed because `roxmltree` could not resolve the `gauss:` prefix. Fixed by
+  adding `gauss_namespace_declaration()` to the wrapper element.
+- The `<metadata>` block export needed conditional trailing-newline logic to
+  achieve idempotent round-trip. If the content already ends with `\n`, the
+  exporter must not add another; otherwise the second round-trip would gain an
+  extra newline.
+- Whitaker custom lint rules forbid `expect_used`, `unwrap_or_else` with panic
+  closures, and `std::fs` operations. All test code was written using `match`
+  + `panic!` patterns, `TestSupportResult<()>` return types, and
+  `cap_std::fs_utf8::Dir` for filesystem access.
 
 ## Decision Log
 
