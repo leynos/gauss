@@ -158,8 +158,8 @@ completed history migration scope.
 
 - Decision: Treat `undo_2` suitability as an acceptance gate with evidence,
   not an assumption. Rationale: historical undo semantics may be beneficial or
-  surprising; test evidence and explicit ADR findings are required. Date/Author:
-  2026-02-12 / Codex
+  surprising; test evidence and explicit ADR findings are required.
+  Date/Author: 2026-02-12 / Codex
 
 - Decision: Keep selection history on `gpui_component::History` rather than
   migrating it to `undo_2`. Rationale: selection history has different
@@ -322,13 +322,13 @@ Prepare reusable log variables:
 Stage validation commands (run as milestones complete):
 
     cargo test --test command_unit --test command_bdd 2>&1 \
-      | tee "/tmp/test-command-${PROJECT}-${BRANCH_SAFE}.out"
+      | tee "/tmp/test-command-${PROJECT}-${BRANCH_SAFE}.out" |
 
     cargo test --test gpui_draw_undo --test gpui_drag_shape_undo \
       --test gpui_drag_anchor_undo --test gpui_drag_handle_undo \
       --test gpui_anchor_edit_undo --test gpui_reorder_undo \
       --test gpui_selection_history 2>&1 \
-      | tee "/tmp/test-gpui-history-${PROJECT}-${BRANCH_SAFE}.out"
+      | tee "/tmp/test-gpui-history-${PROJECT}-${BRANCH_SAFE}.out" |
 
 Documentation and markdown checks after doc edits:
 
