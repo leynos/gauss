@@ -7,6 +7,7 @@ use crate::model::GaussAttribute;
 use crate::svg::export::{ExportOptions, export_svg_with_metadata};
 use crate::svg::metadata::shape_id_to_hex;
 use crate::test_helpers::shape_id_from_seed;
+use rstest::{fixture, rstest};
 
 const GAUSS_NS_DECL: &str = r#"xmlns:gauss="https://gauss.dev/ns/metadata/1""#;
 
@@ -51,7 +52,8 @@ fn export_and_reimport(
     }
 }
 
-fn line_shape(seed: u128) -> Shape {
+#[fixture]
+fn line_shape(#[default(1)] seed: u128) -> Shape {
     Shape {
         id: shape_id_from_seed(seed),
         z: 0,
@@ -146,30 +148,28 @@ fn shape_without_gauss_id_gets_default() {
 }
 
 #[rstest]
-fn round_trip_preserves_gauss_id() {
+fn round_trip_preserves_gauss_id(#[with(99)] line_shape: Shape) {
     let mut doc = Document::new();
-    doc.append_shape(line_shape(99));
+    doc.append_shape(line_shape);
     let imported = export_and_reimport(&doc, None);
     assert_eq!(first_shape(&imported).id, shape_id_from_seed(99));
 }
 
 #[rstest]
-fn round_trip_preserves_shape_name() {
+fn round_trip_preserves_shape_name(#[with(100)] mut line_shape: Shape) {
+    line_shape.name = Some("Test Name".to_owned());
     let mut doc = Document::new();
-    let mut shape = line_shape(100);
-    shape.name = Some("Test Name".to_owned());
-    doc.append_shape(shape);
+    doc.append_shape(line_shape);
     let imported = export_and_reimport(&doc, None);
     assert_eq!(first_shape(&imported).name.as_deref(), Some("Test Name"));
 }
 
 #[rstest]
-fn round_trip_preserves_locked_hidden() {
+fn round_trip_preserves_locked_hidden(#[with(101)] mut line_shape: Shape) {
+    line_shape.locked = true;
+    line_shape.hidden = true;
     let mut doc = Document::new();
-    let mut shape = line_shape(101);
-    shape.locked = true;
-    shape.hidden = true;
-    doc.append_shape(shape);
+    doc.append_shape(line_shape);
     let imported = export_and_reimport(&doc, None);
     let s = first_shape(&imported);
     assert!(s.locked);
@@ -177,14 +177,13 @@ fn round_trip_preserves_locked_hidden() {
 }
 
 #[rstest]
-fn round_trip_preserves_unknown_attrs() {
-    let mut doc = Document::new();
-    let mut shape = line_shape(102);
-    shape.gauss_metadata = vec![
+fn round_trip_preserves_unknown_attrs(#[with(102)] mut line_shape: Shape) {
+    line_shape.gauss_metadata = vec![
         GaussAttribute::new("layer", "bg"),
         GaussAttribute::new("custom-key", "custom-val"),
     ];
-    doc.append_shape(shape);
+    let mut doc = Document::new();
+    doc.append_shape(line_shape);
     let imported = export_and_reimport(&doc, None);
     assert_eq!(
         first_shape(&imported).gauss_metadata,
@@ -196,9 +195,9 @@ fn round_trip_preserves_unknown_attrs() {
 }
 
 #[rstest]
-fn round_trip_preserves_metadata_block() {
+fn round_trip_preserves_metadata_block(#[with(103)] line_shape: Shape) {
     let mut doc = Document::new();
-    doc.append_shape(line_shape(103));
+    doc.append_shape(line_shape);
     let metadata = "\n<gauss:doc-version>2</gauss:doc-version>";
     let svg = export_svg_with_metadata(ExportOptions {
         doc: &doc,

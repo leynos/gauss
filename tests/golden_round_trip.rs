@@ -12,11 +12,12 @@ use gauss::model::{
 use gauss::svg::export::{ExportOptions, export_svg_with_metadata};
 use gauss::svg::import::import_svg_with_resources;
 use gauss::test_helpers::shape_id_from_seed;
-use rstest::rstest;
+use rstest::{fixture, rstest};
 use test_support::{TestSupportError, TestSupportResult};
 
 const GOLDEN_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/golden");
 
+#[fixture]
 fn triangle_path() -> PathGeom {
     PathGeom {
         anchors: vec![
@@ -34,7 +35,8 @@ const fn default_style() -> PaintStyle {
     PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None)
 }
 
-fn minimal_test_shape(seed: u128) -> Shape {
+#[fixture]
+fn minimal_test_shape(#[default(1)] seed: u128) -> Shape {
     Shape {
         id: shape_id_from_seed(seed),
         z: 0,
@@ -135,21 +137,31 @@ fn plain_svg_without_gauss_metadata() -> TestSupportResult<()> {
 }
 
 #[rstest]
-fn shape_with_gauss_id() -> TestSupportResult<()> {
-    assert_shape_round_trip(minimal_test_shape(1), "with_id")
-}
-
-#[rstest]
-fn shape_with_full_metadata() -> TestSupportResult<()> {
-    assert_shape_round_trip(
-        Shape {
-            name: Some("My Triangle".to_owned()),
-            locked: true,
-            hidden: true,
-            ..minimal_test_shape(2)
-        },
-        "with_full_metadata",
-    )
+#[case::with_id(minimal_test_shape(1), "with_id")]
+#[case::with_full_metadata(
+    Shape {
+        name: Some("My Triangle".to_owned()),
+        locked: true,
+        hidden: true,
+        ..minimal_test_shape(2)
+    },
+    "with_full_metadata"
+)]
+#[case::with_unknown_attrs(
+    Shape {
+        gauss_metadata: vec![
+            GaussAttribute::new("layer", "foreground"),
+            GaussAttribute::new("opacity", "0.5"),
+        ],
+        ..minimal_test_shape(4)
+    },
+    "with_unknown_attrs"
+)]
+fn shape_round_trip_variants(
+    #[case] shape: Shape,
+    #[case] golden_name: &str,
+) -> TestSupportResult<()> {
+    assert_shape_round_trip(shape, golden_name)
 }
 
 #[rstest]
@@ -167,26 +179,14 @@ fn shape_with_metadata_block() -> TestSupportResult<()> {
         gauss_metadata: Vec::new(),
     });
 
-    let metadata = "\n<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\
-                     \n  <rdf:Description rdf:about=\"\"/>\
-                     \n</rdf:RDF>";
+    let metadata = concat!(
+        "\n<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">",
+        "\n  <rdf:Description rdf:about=\"\"/>",
+        "\n</rdf:RDF>"
+    );
     let svg = export_doc(&doc, Some(metadata));
     assert_golden("with_metadata_block", &svg)?;
     assert_idempotent(&svg, None)
-}
-
-#[rstest]
-fn shape_with_unknown_gauss_attrs() -> TestSupportResult<()> {
-    assert_shape_round_trip(
-        Shape {
-            gauss_metadata: vec![
-                GaussAttribute::new("layer", "foreground"),
-                GaussAttribute::new("opacity", "0.5"),
-            ],
-            ..minimal_test_shape(4)
-        },
-        "with_unknown_attrs",
-    )
 }
 
 #[rstest]
