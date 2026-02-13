@@ -84,6 +84,14 @@ fn export_doc(doc: &Document, metadata_block: Option<&str>) -> String {
     })
 }
 
+fn assert_shape_round_trip(shape: Shape, golden_name: &str) -> TestSupportResult<()> {
+    let mut doc = Document::new();
+    doc.append_shape(shape);
+    let svg = export_doc(&doc, None);
+    assert_golden(golden_name, &svg)?;
+    assert_idempotent(&svg, None)
+}
+
 #[rstest]
 fn plain_svg_without_gauss_metadata() -> TestSupportResult<()> {
     let mut doc = Document::new();
@@ -115,42 +123,36 @@ fn plain_svg_without_gauss_metadata() -> TestSupportResult<()> {
 
 #[rstest]
 fn shape_with_gauss_id() -> TestSupportResult<()> {
-    let id = shape_id_from_seed(1);
-    let mut doc = Document::new();
-    doc.append_shape(Shape {
-        id,
-        z: 0,
-        style: default_style(),
-        path: triangle_path(),
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    });
-
-    let svg = export_doc(&doc, None);
-    assert_golden("with_id", &svg)?;
-    assert_idempotent(&svg, None)
+    assert_shape_round_trip(
+        Shape {
+            id: shape_id_from_seed(1),
+            z: 0,
+            style: default_style(),
+            path: triangle_path(),
+            name: None,
+            locked: false,
+            hidden: false,
+            gauss_metadata: Vec::new(),
+        },
+        "with_id",
+    )
 }
 
 #[rstest]
 fn shape_with_full_metadata() -> TestSupportResult<()> {
-    let id = shape_id_from_seed(2);
-    let mut doc = Document::new();
-    doc.append_shape(Shape {
-        id,
-        z: 0,
-        style: default_style(),
-        path: triangle_path(),
-        name: Some("My Triangle".to_owned()),
-        locked: true,
-        hidden: true,
-        gauss_metadata: Vec::new(),
-    });
-
-    let svg = export_doc(&doc, None);
-    assert_golden("with_full_metadata", &svg)?;
-    assert_idempotent(&svg, None)
+    assert_shape_round_trip(
+        Shape {
+            id: shape_id_from_seed(2),
+            z: 0,
+            style: default_style(),
+            path: triangle_path(),
+            name: Some("My Triangle".to_owned()),
+            locked: true,
+            hidden: true,
+            gauss_metadata: Vec::new(),
+        },
+        "with_full_metadata",
+    )
 }
 
 #[rstest]
@@ -178,25 +180,22 @@ fn shape_with_metadata_block() -> TestSupportResult<()> {
 
 #[rstest]
 fn shape_with_unknown_gauss_attrs() -> TestSupportResult<()> {
-    let id = shape_id_from_seed(4);
-    let mut doc = Document::new();
-    doc.append_shape(Shape {
-        id,
-        z: 0,
-        style: default_style(),
-        path: triangle_path(),
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: vec![
-            ("layer".to_owned(), "foreground".to_owned()),
-            ("opacity".to_owned(), "0.5".to_owned()),
-        ],
-    });
-
-    let svg = export_doc(&doc, None);
-    assert_golden("with_unknown_attrs", &svg)?;
-    assert_idempotent(&svg, None)
+    assert_shape_round_trip(
+        Shape {
+            id: shape_id_from_seed(4),
+            z: 0,
+            style: default_style(),
+            path: triangle_path(),
+            name: None,
+            locked: false,
+            hidden: false,
+            gauss_metadata: vec![
+                ("layer".to_owned(), "foreground".to_owned()),
+                ("opacity".to_owned(), "0.5".to_owned()),
+            ],
+        },
+        "with_unknown_attrs",
+    )
 }
 
 #[rstest]
