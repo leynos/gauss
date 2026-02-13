@@ -342,4 +342,6 @@ pub(super) fn write_fmt(out: &mut String, args: Arguments<'_>) {
 }
 
 #[cfg(test)]
+mod metadata_tests;
+#[cfg(test)]
 mod tests;
