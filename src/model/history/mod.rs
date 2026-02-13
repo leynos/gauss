@@ -17,6 +17,11 @@ use super::document::Document;
 #[cfg(test)]
 mod tests;
 
+/// Default maximum number of commands retained in the undo history.
+///
+/// Generous for an illustration editor; bounds memory in long sessions.
+const DEFAULT_MAX_DEPTH: usize = 500;
+
 /// A paired command and its inverse, stored in the undo history.
 ///
 /// Both sides are retained so that `undo_2` can instruct the adapter to
@@ -49,15 +54,46 @@ struct HistoryEntry {
 /// ```
 pub struct DocumentUndoHistory {
     commands: undo_2::Commands<HistoryEntry>,
+    max_depth: usize,
 }
 
 impl DocumentUndoHistory {
     /// Create an empty history with no recorded commands.
+    ///
+    /// Uses the default depth limit of 500.
     #[must_use]
     pub fn new() -> Self {
         Self {
             commands: undo_2::Commands::new(),
+            max_depth: DEFAULT_MAX_DEPTH,
         }
+    }
+
+    /// Create an empty history with a custom depth limit.
+    ///
+    /// After each `record()` call, entries beyond `max_depth` are
+    /// pruned via `keep_last()`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use gauss::model::history::DocumentUndoHistory;
+    ///
+    /// let history = DocumentUndoHistory::with_max_depth(100);
+    /// assert_eq!(history.max_depth(), 100);
+    /// ```
+    #[must_use]
+    pub fn with_max_depth(max_depth: usize) -> Self {
+        Self {
+            commands: undo_2::Commands::new(),
+            max_depth,
+        }
+    }
+
+    /// Return the configured maximum history depth.
+    #[must_use]
+    pub const fn max_depth(&self) -> usize {
+        self.max_depth
     }
 
     /// Record a command that has already been applied to the document.
@@ -66,6 +102,7 @@ impl DocumentUndoHistory {
     /// *before* calling this method and passing the resulting `inverse`.
     pub fn record(&mut self, command: Command, inverse: CommandInverse) {
         self.commands.push(HistoryEntry { command, inverse });
+        self.commands.keep_last(self.max_depth);
     }
 
     /// Undo the most recent action, mutating the document accordingly.
