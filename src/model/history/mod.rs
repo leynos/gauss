@@ -107,6 +107,12 @@ impl DocumentUndoHistory {
     }
 
     /// Return whether there is at least one action that can be redone.
+    ///
+    /// `undo_2` tracks redo availability by appending an internal
+    /// `Undo(n)` item when undo is called; `Commands::redo` only
+    /// produces actions when such an item is present.
+    /// `Commands::is_undoing()` checks exactly that condition, so it
+    /// is the correct predicate for "can redo".
     #[must_use]
     pub fn can_redo(&self) -> bool {
         self.commands.is_undoing()

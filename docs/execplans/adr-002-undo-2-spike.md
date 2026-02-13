@@ -182,7 +182,7 @@ completed history migration scope.
 ### What was deferred
 
 - Selection history migration (remains on `gpui_component::History`).
-- Command grouping for multi-step interactions (roadmap 0.3.2).
+- Command grouping for multistep interactions (roadmap 0.3.2).
 - History pruning/merge policies.
 - Preview operation interaction with history.
 
