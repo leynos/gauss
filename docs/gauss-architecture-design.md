@@ -310,16 +310,17 @@ pub struct EngineState {
 ```
 
 **Note on history stacks:** Document undo/redo history now uses
-`DocumentUndoHistory` in the model layer, backed by `undo_2`. This
-adapter is GPUI-independent and lives in `src/model/history/`.
-Selection history remains in the view layer using
-`gpui_component::History` because it has different ownership and
-lifecycle requirements. This separation was driven by
-[ADR-002](adr-002-undo-history-crate-selection.md) and the `undo_2`
-spike. EngineState itself does not own the history — it is owned by
-Phase0Shell but implemented in the model layer, preserving
-EngineState's GPUI-independence while keeping history logic testable
-without a UI framework.
+`DocumentUndoHistory` in the model layer, backed by `undo_2`. This adapter is
+GPUI-independent and lives in `src/model/history/`. History depth is bounded by
+`keep_last()` with a configurable limit (default 500). Selection history
+remains in the view layer using `gpui_component::History` because it has
+different ownership and lifecycle requirements. This separation was driven by
+[ADR-002](adr-002-undo-history-crate-selection.md) and the `undo_2` spike.
+EngineState itself does not own the history — it is owned by Phase0Shell but
+implemented in the model layer, preserving EngineState's GPUI-independence
+while keeping history logic testable without a UI framework. The architecture
+goal remains to move history ownership into EngineState (see roadmap item
+0.3.4, deferred).
 
 **Relationship to prepare_command():** The command system's `prepare_command()`
 function takes `&EngineState` rather than individual state pieces, providing a
