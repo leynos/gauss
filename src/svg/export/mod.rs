@@ -60,13 +60,12 @@ pub fn export_svg_with_resources(
     canvas_width: f32,
     canvas_height: f32,
 ) -> String {
-    export_svg_with_metadata(&ExportOptions {
+    export_svg_with_metadata(&build_export_options(
         doc,
         resources,
         canvas_width,
         canvas_height,
-        metadata_block: None,
-    })
+    ))
 }
 
 /// Export a document to an SVG string with explicit shared resources.
@@ -84,13 +83,12 @@ pub fn export_svg_with_resources_checked(
     canvas_width: f32,
     canvas_height: f32,
 ) -> Result<String, SvgExportError> {
-    export_svg_with_metadata_checked(&ExportOptions {
+    export_svg_with_metadata_checked(&build_export_options(
         doc,
         resources,
         canvas_width,
         canvas_height,
-        metadata_block: None,
-    })
+    ))
 }
 
 /// Export options for metadata-aware SVG export.
@@ -105,6 +103,21 @@ pub struct ExportOptions<'a> {
     pub canvas_height: f32,
     /// Raw metadata block content to preserve, if any.
     pub metadata_block: Option<&'a str>,
+}
+
+const fn build_export_options<'a>(
+    doc: &'a Document,
+    resources: &'a ResourceStore,
+    canvas_width: f32,
+    canvas_height: f32,
+) -> ExportOptions<'a> {
+    ExportOptions {
+        doc,
+        resources,
+        canvas_width,
+        canvas_height,
+        metadata_block: None,
+    }
 }
 
 /// Export a document to an SVG string with metadata block preservation.
