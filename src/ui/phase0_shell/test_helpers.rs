@@ -237,6 +237,17 @@ impl Phase0Shell {
         &mut self.state.resources
     }
 
+    /// Return the current Gauss metadata block, if any.
+    #[must_use]
+    pub fn gauss_metadata_block(&self) -> Option<&str> {
+        self.state.gauss_metadata_block.as_deref()
+    }
+
+    /// Set the Gauss metadata block for tests.
+    pub fn set_gauss_metadata_block_for_tests(&mut self, block: Option<String>) {
+        self.state.gauss_metadata_block = block;
+    }
+
     /// Trigger an undo operation through the shell's history system.
     ///
     /// This exercises the full error propagation path through

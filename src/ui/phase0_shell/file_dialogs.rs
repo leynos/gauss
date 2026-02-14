@@ -15,7 +15,7 @@ use gpui::{AsyncWindowContext, Context, PathPromptOptions, WeakEntity, Window};
 use gpui_component::history::History;
 
 use crate::model::Selection;
-use crate::svg::export::export_svg_with_resources_checked;
+use crate::svg::export::{ExportOptions, export_svg_with_metadata_checked};
 
 use super::Phase0Shell;
 
@@ -125,9 +125,15 @@ async fn apply_save_path(
 
     let Ok(save_result) = this.update(&mut cx, |view, _view_cx| {
         // TODO: derive canvas size from document bounds or viewport state.
-        export_svg_with_resources_checked(&view.state.document, &view.state.resources, 100.0, 100.0)
-            .map_err(|err| err.to_string())
-            .and_then(|svg| super::super::phase0_support::write_svg_to_path(&path, &svg))
+        export_svg_with_metadata_checked(ExportOptions {
+            doc: &view.state.document,
+            resources: &view.state.resources,
+            canvas_width: 100.0,
+            canvas_height: 100.0,
+            metadata_block: view.state.gauss_metadata_block.as_deref(),
+        })
+        .map_err(|err| err.to_string())
+        .and_then(|svg| super::super::phase0_support::write_svg_to_path(&path, &svg))
     }) else {
         return;
     };
@@ -161,6 +167,7 @@ async fn apply_open_prompt(
         if let Some(imported) = loaded_state {
             view.state.document = imported.document;
             view.state.resources = imported.resources;
+            view.state.gauss_metadata_block = imported.gauss_metadata_block;
             view.document_history.clear();
             view.selection_history = History::new();
             view.state.selection = Selection::empty();

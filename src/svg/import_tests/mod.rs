@@ -18,5 +18,6 @@ use crate::{
 use rstest::rstest;
 
 mod basic;
+mod metadata;
 mod namespaces;
 mod resources;

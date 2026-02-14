@@ -91,6 +91,9 @@ pub struct EngineState {
 
     /// Named style presets.
     pub styles: StyleStore,
+
+    /// Raw Gauss metadata block content preserved for round-trip fidelity.
+    pub gauss_metadata_block: Option<String>,
 }
 
 impl EngineState {
@@ -120,6 +123,7 @@ impl EngineState {
             resize_anchor: ResizeAnchor::default(),
             resources: ResourceStore::new(),
             styles: StyleStore::new(),
+            gauss_metadata_block: None,
         }
     }
 
@@ -216,6 +220,10 @@ mod tests {
                 closed: false,
                 closing_segment: crate::model::SegmentKind::Line,
             },
+            name: None,
+            locked: false,
+            hidden: false,
+            gauss_metadata: Vec::new(),
         });
 
         let state = EngineState::with_document(doc.clone());

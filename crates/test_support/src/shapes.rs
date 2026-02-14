@@ -30,6 +30,10 @@ pub fn sample_shape(id: ShapeId, z: i32) -> Shape {
         z,
         style: PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), 2.0, None),
         path,
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     }
 }
 
@@ -54,5 +58,9 @@ pub fn shape_with_handles(id: ShapeId) -> Shape {
         z: 0,
         style: PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), 2.0, None),
         path,
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     }
 }

@@ -37,6 +37,10 @@ fn demo_square(id: ShapeId) -> Shape {
             closed: true,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     }
 }
 

@@ -1,13 +1,43 @@
 //! Tests for SVG export output.
 
+mod resource_export;
+
 use super::*;
 use crate::model::{
     Anchor, Gradient, GradientId, GradientKind, GradientStop, LinearGradient, PaintStyle, PathGeom,
-    PatternId, PatternResource, RadialGradient, Rgba, Shape, SymbolResource, Vec2,
+    PatternId, PatternResource, Rgba, Shape, SymbolResource, Vec2,
 };
 use crate::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
 use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::{fixture, rstest};
+
+struct PathData(String);
+struct CssColor(String);
+struct CssLength(String);
+struct ResourceRef(String);
+struct CssOpacity(String);
+
+macro_rules! newtype_str {
+    ($name:ident) => {
+        impl $name {
+            fn new(s: impl Into<String>) -> Self {
+                Self(s.into())
+            }
+        }
+
+        impl AsRef<str> for $name {
+            fn as_ref(&self) -> &str {
+                &self.0
+            }
+        }
+    };
+}
+
+newtype_str!(PathData);
+newtype_str!(CssColor);
+newtype_str!(CssLength);
+newtype_str!(ResourceRef);
+newtype_str!(CssOpacity);
 
 #[fixture]
 fn test_gradient_sunset() -> impl Fn(&mut ResourceStore) -> GradientId {
@@ -47,6 +77,10 @@ fn create_test_triangle() -> impl Fn(u32, PaintStyle) -> Shape {
             closed: true,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     }
 }
 
@@ -59,24 +93,30 @@ fn build_doc_with_shape() -> impl Fn(Shape) -> Document {
     }
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "Test setup helper centralises shared fixture wiring for two cases."
-)]
+struct GradientPatternExportArgs<'a, TG, TP, CT, BD> {
+    seed: u32,
+    stroke_width: f32,
+    stroke_opacity: Option<u8>,
+    fill_opacity: Option<u8>,
+    test_gradient_sunset: &'a TG,
+    test_pattern_dots: &'a TP,
+    create_test_triangle: &'a CT,
+    build_doc_with_shape: &'a BD,
+}
+
 fn setup_gradient_pattern_export<
     TestGradientSunset,
     TestPatternDots,
     CreateTestTriangle,
     BuildDocWithShape,
 >(
-    seed: u32,
-    stroke_width: f32,
-    stroke_opacity: Option<u8>,
-    fill_opacity: Option<u8>,
-    test_gradient_sunset: &TestGradientSunset,
-    test_pattern_dots: &TestPatternDots,
-    create_test_triangle: &CreateTestTriangle,
-    build_doc_with_shape: &BuildDocWithShape,
+    args: &GradientPatternExportArgs<
+        '_,
+        TestGradientSunset,
+        TestPatternDots,
+        CreateTestTriangle,
+        BuildDocWithShape,
+    >,
 ) -> (Document, ResourceStore)
 where
     TestGradientSunset: Fn(&mut ResourceStore) -> GradientId,
@@ -85,20 +125,23 @@ where
     BuildDocWithShape: Fn(Shape) -> Document,
 {
     let mut resources = ResourceStore::new();
-    let gradient_id = test_gradient_sunset(&mut resources);
-    let pattern_id = test_pattern_dots(&mut resources);
+    let gradient_id = (args.test_gradient_sunset)(&mut resources);
+    let pattern_id = (args.test_pattern_dots)(&mut resources);
     let mut stroke = Paint::gradient(gradient_id);
-    if let Some(opacity) = stroke_opacity {
+    if let Some(opacity) = args.stroke_opacity {
         stroke = stroke.with_opacity(opacity);
     }
 
     let mut fill = Paint::pattern(pattern_id);
-    if let Some(opacity) = fill_opacity {
+    if let Some(opacity) = args.fill_opacity {
         fill = fill.with_opacity(opacity);
     }
 
-    let shape = create_test_triangle(seed, PaintStyle::new_with_paint(stroke, stroke_width, fill));
-    let doc = build_doc_with_shape(shape);
+    let shape = (args.create_test_triangle)(
+        args.seed,
+        PaintStyle::new_with_paint(stroke, args.stroke_width, fill),
+    );
+    let doc = (args.build_doc_with_shape)(shape);
 
     (doc, resources)
 }
@@ -120,6 +163,10 @@ fn create_line_shape_for_export(
             closed,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     }
 }
 
@@ -156,15 +203,15 @@ fn assert_valid_svg_root(svg: &str, expected_width: f32, expected_height: f32) {
 }
 
 /// Expected path attributes for SVG path assertions.
-type SvgPathExpectation<'a> = (&'a str, &'a str, &'a str, &'a str);
+type SvgPathExpectation = (PathData, CssColor, CssLength, CssColor);
 
 /// Custom assertion: verify path with stroke and fill attributes.
-fn assert_svg_path(svg: &str, expected: SvgPathExpectation<'_>) {
+fn assert_svg_path(svg: &str, expected: SvgPathExpectation) {
     let (d, stroke, stroke_width, fill) = expected;
-    assert!(svg.contains(&format!(r#"d="{d}""#)));
-    assert!(svg.contains(&format!(r#"stroke="{stroke}""#)));
-    assert!(svg.contains(&format!(r#"stroke-width="{stroke_width}""#)));
-    assert!(svg.contains(&format!(r#"fill="{fill}""#)));
+    assert!(svg.contains(&format!(r#"d="{}""#, d.as_ref())));
+    assert!(svg.contains(&format!(r#"stroke="{}""#, stroke.as_ref())));
+    assert!(svg.contains(&format!(r#"stroke-width="{}""#, stroke_width.as_ref())));
+    assert!(svg.contains(&format!(r#"fill="{}""#, fill.as_ref())));
 }
 
 /// Custom assertion: verify gradient and pattern definitions and references.
@@ -179,15 +226,15 @@ fn assert_gradient_pattern_defs(svg: &str) {
 }
 
 /// Expected paint server opacity attributes for SVG assertions.
-type PaintServerOpacityExpectation<'a> = (&'a str, &'a str, &'a str, &'a str);
+type PaintServerOpacityExpectation = (ResourceRef, ResourceRef, CssOpacity, CssOpacity);
 
 /// Custom assertion: verify paint server opacity attributes.
-fn assert_paint_server_opacity(svg: &str, expected: PaintServerOpacityExpectation<'_>) {
+fn assert_paint_server_opacity(svg: &str, expected: PaintServerOpacityExpectation) {
     let (gradient_id, pattern_id, stroke_opacity, fill_opacity) = expected;
-    assert!(svg.contains(&format!(r#"stroke="url(#{gradient_id})""#)));
-    assert!(svg.contains(&format!(r#"fill="url(#{pattern_id})""#)));
-    assert!(svg.contains(&format!(r#"stroke-opacity="{stroke_opacity}""#)));
-    assert!(svg.contains(&format!(r#"fill-opacity="{fill_opacity}""#)));
+    assert!(svg.contains(&format!(r#"stroke="url(#{})""#, gradient_id.as_ref())));
+    assert!(svg.contains(&format!(r#"fill="url(#{})""#, pattern_id.as_ref())));
+    assert!(svg.contains(&format!(r#"stroke-opacity="{}""#, stroke_opacity.as_ref())));
+    assert!(svg.contains(&format!(r#"fill-opacity="{}""#, fill_opacity.as_ref())));
 }
 
 #[rstest]
@@ -207,7 +254,15 @@ fn exports_simple_line_path(build_doc_with_shape: impl Fn(Shape) -> Document) {
     );
     let doc = build_doc_with_shape(shape);
     let svg = export_svg(&doc, 10.0, 10.0);
-    assert_svg_path(&svg, ("M 1 2 L 3 4", "#000000", "1", "none"));
+    assert_svg_path(
+        &svg,
+        (
+            PathData::new("M 1 2 L 3 4"),
+            CssColor::new("#000000"),
+            CssLength::new("1"),
+            CssColor::new("none"),
+        ),
+    );
 }
 
 #[rstest]
@@ -226,48 +281,6 @@ fn exports_opacity_when_alpha_is_not_opaque(build_doc_with_shape: impl Fn(Shape)
     let svg = export_svg(&doc, 10.0, 10.0);
     assert!(svg.contains(r#"stroke-opacity="0.5020""#));
     assert!(svg.contains(r#"fill-opacity="0.2510""#));
-}
-
-#[rstest]
-fn exports_gradient_and_pattern_defs_and_references(
-    test_gradient_sunset: impl Fn(&mut ResourceStore) -> GradientId,
-    test_pattern_dots: impl Fn(&mut ResourceStore) -> PatternId,
-    create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
-    build_doc_with_shape: impl Fn(Shape) -> Document,
-) {
-    let (doc, resources) = setup_gradient_pattern_export(
-        3,
-        1.5,
-        None,
-        None,
-        &test_gradient_sunset,
-        &test_pattern_dots,
-        &create_test_triangle,
-        &build_doc_with_shape,
-    );
-    let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
-    assert_gradient_pattern_defs(&svg);
-}
-
-#[rstest]
-fn exports_paint_server_opacity_attributes(
-    test_gradient_sunset: impl Fn(&mut ResourceStore) -> GradientId,
-    test_pattern_dots: impl Fn(&mut ResourceStore) -> PatternId,
-    create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
-    build_doc_with_shape: impl Fn(Shape) -> Document,
-) {
-    let (doc, resources) = setup_gradient_pattern_export(
-        30,
-        1.0,
-        Some(128),
-        Some(64),
-        &test_gradient_sunset,
-        &test_pattern_dots,
-        &create_test_triangle,
-        &build_doc_with_shape,
-    );
-    let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
-    assert_paint_server_opacity(&svg, ("sunset", "dots", "0.5020", "0.2510"));
 }
 
 #[rstest]
@@ -295,106 +308,5 @@ fn exports_pattern_and_symbol_extra_attributes() {
         svg.contains(
             "<symbol id=\"badge\" viewBox=\"0 0 10 10\" preserveAspectRatio=\"xMidYMid\">"
         )
-    );
-}
-
-#[rstest]
-fn exports_radial_gradient_defs_with_and_without_focal_point() {
-    let mut resources = ResourceStore::new();
-    let _first = resources.insert_gradient(Gradient::new(
-        "radial-default",
-        GradientKind::Radial(RadialGradient::new(
-            Vec2::new(0.5, 0.5),
-            0.4,
-            None,
-            vec![
-                GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
-                GradientStop::new(1.0, Rgba::new(0, 0, 255, 255)),
-            ],
-        )),
-    ));
-    let _second = resources.insert_gradient(Gradient::new(
-        "radial-focal",
-        GradientKind::Radial(RadialGradient::new(
-            Vec2::new(0.5, 0.5),
-            0.4,
-            Some(Vec2::new(0.3, 0.2)),
-            vec![
-                GradientStop::new(0.0, Rgba::new(255, 255, 255, 255)),
-                GradientStop::new(1.0, Rgba::new(0, 0, 0, 255)),
-            ],
-        )),
-    ));
-    let svg = export_svg_with_resources(&Document::new(), &resources, 10.0, 10.0);
-    assert!(svg.contains(r#"<radialGradient id="radial-default" cx="0.5" cy="0.5" r="0.4">"#));
-    assert!(svg.contains(
-        r#"<radialGradient id="radial-focal" cx="0.5" cy="0.5" r="0.4" fx="0.3" fy="0.2">"#
-    ));
-}
-
-#[expect(
-    clippy::too_many_arguments,
-    reason = "Helper keeps fixture and resource constructors explicit for the paired error tests"
-)]
-fn assert_missing_resource_error<ResourceId, F, PaintFn, ErrorFn, CreateTriangleFn, BuildDocFn>(
-    create_and_remove: F,
-    seed: u32,
-    make_paint: PaintFn,
-    expected_error: ErrorFn,
-    create_test_triangle: CreateTriangleFn,
-    build_doc_with_shape: BuildDocFn,
-) where
-    F: FnOnce(&mut ResourceStore) -> ResourceId,
-    PaintFn: Fn(ResourceId) -> PaintStyle,
-    ErrorFn: Fn(ResourceId) -> SvgExportError,
-    CreateTriangleFn: Fn(u32, PaintStyle) -> Shape,
-    BuildDocFn: Fn(Shape) -> Document,
-    ResourceId: Copy,
-{
-    let mut resources = ResourceStore::new();
-    let dangling_id = create_and_remove(&mut resources);
-    let shape = create_test_triangle(seed, make_paint(dangling_id));
-    let doc = build_doc_with_shape(shape);
-    let exported = export_svg_with_resources_checked(&doc, &resources, 10.0, 10.0);
-    assert_eq!(exported, Err(expected_error(dangling_id)));
-}
-
-#[rstest]
-fn checked_export_reports_missing_resource_references(
-    test_gradient_sunset: impl Fn(&mut ResourceStore) -> GradientId,
-    create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
-    build_doc_with_shape: impl Fn(Shape) -> Document,
-) {
-    assert_missing_resource_error(
-        |resources| {
-            let dangling_gradient = test_gradient_sunset(resources);
-            let _removed = resources.remove_gradient(dangling_gradient);
-            dangling_gradient
-        },
-        31,
-        |id| PaintStyle::new_with_paint(Paint::gradient(id), 1.0, Paint::None),
-        SvgExportError::MissingGradientReference,
-        create_test_triangle,
-        build_doc_with_shape,
-    );
-}
-
-#[rstest]
-fn checked_export_reports_missing_pattern_references(
-    test_pattern_dots: impl Fn(&mut ResourceStore) -> PatternId,
-    create_test_triangle: impl Fn(u32, PaintStyle) -> Shape,
-    build_doc_with_shape: impl Fn(Shape) -> Document,
-) {
-    assert_missing_resource_error(
-        |resources| {
-            let dangling_pattern = test_pattern_dots(resources);
-            let _removed = resources.remove_pattern(dangling_pattern);
-            dangling_pattern
-        },
-        32,
-        |id| PaintStyle::new_with_paint(Paint::None, 1.0, Paint::pattern(id)),
-        SvgExportError::MissingPatternReference,
-        create_test_triangle,
-        build_doc_with_shape,
     );
 }

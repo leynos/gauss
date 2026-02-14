@@ -5,6 +5,10 @@
 
 use std::{error::Error, fmt, sync::LazyLock};
 
+use slotmap::{Key, KeyData};
+
+use crate::model::ShapeId;
+
 /// Canonical namespace prefix for Gauss metadata.
 pub const GAUSS_METADATA_PREFIX: &str = "gauss";
 /// Canonical namespace URI for Gauss metadata.
@@ -107,14 +111,66 @@ fn first_non_canonical_gauss_binding(document: &roxmltree::Document<'_>) -> Opti
         })
 }
 
+/// Encode a [`ShapeId`] as a 16-digit zero-padded lowercase hexadecimal string.
+///
+/// The encoding uses [`KeyData::as_ffi()`] for a stable, round-trippable
+/// representation that is proven by AccessKit integration.
+///
+/// # Examples
+///
+/// ```rust
+/// use gauss::svg::metadata::shape_id_to_hex;
+/// use gauss::model::ShapeId;
+///
+/// let hex = shape_id_to_hex(ShapeId::default());
+/// assert_eq!(hex.len(), 16);
+/// ```
+#[must_use]
+pub fn shape_id_to_hex(id: ShapeId) -> String {
+    format!("{:016x}", id.data().as_ffi())
+}
+
+/// Decode a [`ShapeId`] from a hexadecimal string.
+///
+/// Returns `None` for invalid hex, null keys, or strings that do not
+/// represent a valid `KeyData` round-trip.
+///
+/// # Examples
+///
+/// ```rust
+/// use gauss::svg::metadata::{shape_id_from_hex, shape_id_to_hex};
+/// use gauss::model::ShapeId;
+/// use slotmap::KeyData;
+///
+/// let id = KeyData::from_ffi(0x0000_0001_0000_0000).into();
+/// let hex = shape_id_to_hex(id);
+/// assert_eq!(shape_id_from_hex(&hex), Some(id));
+/// ```
+#[must_use]
+pub fn shape_id_from_hex(hex: &str) -> Option<ShapeId> {
+    if hex.len() != 16 {
+        return None;
+    }
+    let raw = u64::from_str_radix(hex, 16).ok()?;
+    let key_data = KeyData::from_ffi(raw);
+    let id: ShapeId = key_data.into();
+    if id.is_null() {
+        return None;
+    }
+    Some(id)
+}
+
 #[cfg(test)]
 mod tests {
-    //! Unit tests for metadata namespace policy helpers.
+    //! Unit tests for metadata namespace policy and hex encoding helpers.
+
+    use slotmap::{Key, KeyData};
 
     use super::{
         GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX, NamespacePolicyError,
-        gauss_namespace_declaration, validate_namespace_policy,
+        gauss_namespace_declaration, shape_id_from_hex, shape_id_to_hex, validate_namespace_policy,
     };
+    use crate::model::ShapeId;
     use rstest::rstest;
 
     #[rstest]
@@ -216,5 +272,50 @@ mod tests {
                 "https://example.com/not-gauss".to_owned()
             ))
         );
+    }
+
+    // -- ShapeId hex encoding tests --
+
+    #[rstest]
+    fn shape_id_hex_round_trip() {
+        let id: ShapeId = KeyData::from_ffi(0x0000_0001_0000_0000).into();
+        let hex = shape_id_to_hex(id);
+        assert_eq!(hex.len(), 16);
+        let decoded = shape_id_from_hex(&hex);
+        assert_eq!(decoded, Some(id));
+    }
+
+    #[rstest]
+    fn shape_id_hex_is_zero_padded_lowercase() {
+        let id: ShapeId = KeyData::from_ffi(0x0000_0001_0000_0000).into();
+        let hex = shape_id_to_hex(id);
+        assert_eq!(hex, "0000000100000000");
+    }
+
+    #[rstest]
+    fn shape_id_from_hex_rejects_null_key() {
+        let null_id = ShapeId::null();
+        let null_hex = shape_id_to_hex(null_id);
+        assert_eq!(shape_id_from_hex(&null_hex), None);
+    }
+
+    #[rstest]
+    fn shape_id_from_hex_rejects_invalid_hex() {
+        assert_eq!(shape_id_from_hex("zzzzzzzzzzzzzzzz"), None);
+    }
+
+    #[rstest]
+    fn shape_id_from_hex_rejects_empty_string() {
+        assert_eq!(shape_id_from_hex(""), None);
+    }
+
+    #[rstest]
+    fn shape_id_from_hex_rejects_short_input() {
+        assert_eq!(shape_id_from_hex("00000001"), None);
+    }
+
+    #[rstest]
+    fn shape_id_from_hex_rejects_long_input() {
+        assert_eq!(shape_id_from_hex("000000010000000000"), None);
     }
 }

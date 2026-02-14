@@ -370,4 +370,31 @@ pub struct Shape {
     pub style: PaintStyle,
     /// Path geometry.
     pub path: PathGeom,
+    /// User-assigned shape name, if any.
+    pub name: Option<String>,
+    /// Whether the shape is locked for editing.
+    pub locked: bool,
+    /// Whether the shape is hidden from view.
+    pub hidden: bool,
+    /// Opaque Gauss metadata attributes preserved for round-trip fidelity.
+    pub gauss_metadata: Vec<GaussAttribute>,
+}
+
+/// An opaque `gauss:*` attribute preserved for forward-compatible round-trip.
+#[derive(Clone, Debug, PartialEq)]
+pub struct GaussAttribute {
+    /// Local name without the `gauss:` prefix.
+    pub name: String,
+    /// Attribute value.
+    pub value: String,
+}
+impl GaussAttribute {
+    /// Create a new Gauss attribute.
+    #[must_use]
+    pub fn new(name: impl Into<String>, value: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            value: value.into(),
+        }
+    }
 }

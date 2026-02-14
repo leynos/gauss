@@ -138,9 +138,12 @@ phases depend upon. See architecture document §20.
 - [x] 0.4.1. Define Gauss metadata namespace.
   - [x] Use `gauss:` prefixed attributes or `<metadata>` block.
   - [x] Document namespace in ADR. See architecture §10.1.
-- [ ] 0.4.2. Implement metadata round-trip.
-  - [ ] Editor-only data survives load/save cycle.
-  - [ ] Add golden tests for round-trip fidelity.
+- [x] 0.4.2. Implement metadata round-trip.
+  - [x] Editor-only data (`gauss:id`, `gauss:name`, `gauss:locked`,
+        `gauss:hidden`, opaque `gauss:*` attrs, `<metadata>` block) survives
+        load/save cycle.
+  - [x] 6 golden reference SVGs with idempotent round-trip assertions.
+  - [x] 30 unit tests, 6 BDD scenarios, 3 GPUI integration tests.
 - [ ] 0.4.3. Implement web-ready export.
   - [ ] Strip all Gauss metadata on export.
   - [ ] Produce valid, minimal SVG.

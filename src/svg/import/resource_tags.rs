@@ -5,6 +5,8 @@ use crate::model::{
     ResourceStore, SymbolResource, Vec2, parse_hex_rgb,
 };
 
+use crate::svg::metadata::gauss_namespace_declaration;
+
 use super::SvgImportError;
 use super::resource_tag_attributes::collect_extra_attributes;
 pub(super) use super::types::{AttributeName, SvgContent, TagName};
@@ -375,7 +377,8 @@ fn with_parsed_document<T>(
         return Some(map(fragment, &document));
     }
 
-    let wrapped = format!("<gauss-import-wrapper>{fragment}</gauss-import-wrapper>");
+    let ns = gauss_namespace_declaration();
+    let wrapped = format!("<gauss-import-wrapper {ns}>{fragment}</gauss-import-wrapper>");
     let document = roxmltree::Document::parse(wrapped.as_str()).ok()?;
     Some(map(wrapped.as_str(), &document))
 }

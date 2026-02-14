@@ -9,13 +9,16 @@
     reason = "SVG export needs floating-point conversions for geometry"
 )]
 
+mod defs;
+
 use std::fmt::{Arguments, Write as _};
 
+use slotmap::Key;
+
 use crate::model::{
-    Document, GradientId, GradientKind, Paint, PatternId, PatternResource, ResourceStore,
-    SegmentKind, SymbolResource, format_hex_rgb,
+    Document, GradientId, Paint, PatternId, ResourceStore, SegmentKind, Shape, format_hex_rgb,
 };
-use crate::svg::metadata::gauss_namespace_declaration;
+use crate::svg::metadata::{gauss_namespace_declaration, shape_id_to_hex};
 
 /// Errors returned by [`export_svg_with_resources_checked`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -57,16 +60,12 @@ pub fn export_svg_with_resources(
     canvas_width: f32,
     canvas_height: f32,
 ) -> String {
-    // Compatibility path keeps lossy behaviour for callers that do not yet
-    // handle export validation errors.
-    let mut out = String::new();
-    write_svg_header(&mut out, canvas_width, canvas_height);
-    write_defs(&mut out, resources);
-    for shape in doc.iter_in_draw_order() {
-        write_shape_path(&mut out, resources, shape);
-    }
-    out.push_str("</svg>\n");
-    out
+    export_svg_with_metadata(ExportOptions::new(
+        doc,
+        resources,
+        canvas_width,
+        canvas_height,
+    ))
 }
 
 /// Export a document to an SVG string with explicit shared resources.
@@ -84,8 +83,7 @@ pub fn export_svg_with_resources_checked(
     canvas_width: f32,
     canvas_height: f32,
 ) -> Result<String, SvgExportError> {
-    validate_resource_references(doc, resources)?;
-    Ok(export_svg_with_resources(
+    export_svg_with_metadata_checked(ExportOptions::new(
         doc,
         resources,
         canvas_width,
@@ -93,8 +91,79 @@ pub fn export_svg_with_resources_checked(
     ))
 }
 
+/// Export options for metadata-aware SVG export.
+#[derive(Clone, Copy)]
+pub struct ExportOptions<'a> {
+    /// Document to export.
+    pub doc: &'a Document,
+    /// Shared resources (gradients, patterns, symbols).
+    pub resources: &'a ResourceStore,
+    /// Canvas width in document units.
+    pub canvas_width: f32,
+    /// Canvas height in document units.
+    pub canvas_height: f32,
+    /// Raw metadata block content to preserve, if any.
+    pub metadata_block: Option<&'a str>,
+}
+
+impl<'a> ExportOptions<'a> {
+    /// Create export options with no metadata block.
+    #[must_use]
+    pub const fn new(
+        doc: &'a Document,
+        resources: &'a ResourceStore,
+        canvas_width: f32,
+        canvas_height: f32,
+    ) -> Self {
+        Self {
+            doc,
+            resources,
+            canvas_width,
+            canvas_height,
+            metadata_block: None,
+        }
+    }
+
+    /// Set the metadata block content to preserve.
+    #[must_use]
+    pub const fn with_metadata_block(mut self, metadata_block: &'a str) -> Self {
+        self.metadata_block = Some(metadata_block);
+        self
+    }
+}
+
+/// Export a document to an SVG string with metadata block preservation.
 #[must_use]
-const fn opacity_from_alpha(alpha: u8) -> f32 {
+pub fn export_svg_with_metadata(options: ExportOptions<'_>) -> String {
+    let mut out = String::new();
+    write_svg_header(&mut out, options.canvas_width, options.canvas_height);
+    defs::write_defs(&mut out, options.resources);
+    write_metadata_block(&mut out, options.metadata_block);
+    for shape in options.doc.iter_in_draw_order() {
+        write_shape_path(&mut out, options.resources, shape);
+    }
+    out.push_str("</svg>\n");
+    out
+}
+
+/// Export a document to an SVG string with metadata block preservation.
+///
+/// This variant validates paint references first and returns an error when
+/// a shape refers to a missing resource.
+///
+/// # Errors
+///
+/// Returns [`SvgExportError`] if any gradient/pattern paint reference cannot
+/// be resolved in `resources`.
+pub fn export_svg_with_metadata_checked(
+    options: ExportOptions<'_>,
+) -> Result<String, SvgExportError> {
+    validate_resource_references(options.doc, options.resources)?;
+    Ok(export_svg_with_metadata(options))
+}
+
+#[must_use]
+pub(super) const fn opacity_from_alpha(alpha: u8) -> f32 {
     (alpha as f32) / 255.0
 }
 
@@ -112,118 +181,19 @@ fn write_svg_header(out: &mut String, canvas_width: f32, canvas_height: f32) {
     out.push('\n');
 }
 
-fn write_defs(out: &mut String, resources: &ResourceStore) {
-    if resources.is_empty() {
+fn write_metadata_block(out: &mut String, metadata_block: Option<&str>) {
+    let Some(content) = metadata_block else {
         return;
+    };
+    out.push_str("<metadata>");
+    out.push_str(content);
+    if !content.ends_with('\n') {
+        out.push('\n');
     }
-
-    out.push_str("<defs>\n");
-
-    for (_id, gradient) in resources.gradients() {
-        write_gradient(out, gradient);
-    }
-
-    for (_id, pattern) in resources.patterns() {
-        write_pattern(out, pattern);
-    }
-
-    for (_id, symbol) in resources.symbols() {
-        write_symbol(out, symbol);
-    }
-
-    out.push_str("</defs>\n");
+    out.push_str("</metadata>\n");
 }
 
-fn write_gradient(out: &mut String, gradient: &crate::model::Gradient) {
-    match &gradient.kind {
-        GradientKind::Linear(data) => write_linear_gradient(out, gradient.svg_id.as_str(), data),
-        GradientKind::Radial(data) => write_radial_gradient(out, gradient.svg_id.as_str(), data),
-    }
-}
-
-fn write_linear_gradient(out: &mut String, svg_id: &str, data: &crate::model::LinearGradient) {
-    write_fmt(
-        out,
-        format_args!(
-            r#"<linearGradient id="{}" x1="{}" y1="{}" x2="{}" y2="{}">"#,
-            svg_id, data.start.x, data.start.y, data.end.x, data.end.y
-        ),
-    );
-    out.push('\n');
-
-    for stop in &data.stops {
-        write_gradient_stop(out, *stop);
-    }
-
-    out.push_str("</linearGradient>\n");
-}
-
-fn write_radial_gradient(out: &mut String, svg_id: &str, data: &crate::model::RadialGradient) {
-    write_fmt(
-        out,
-        format_args!(
-            r#"<radialGradient id="{}" cx="{}" cy="{}" r="{}""#,
-            svg_id, data.centre.x, data.centre.y, data.radius
-        ),
-    );
-
-    if let Some(focal) = data.focal {
-        write_fmt(out, format_args!(r#" fx="{}" fy="{}""#, focal.x, focal.y));
-    }
-
-    out.push_str(">\n");
-
-    for stop in &data.stops {
-        write_gradient_stop(out, *stop);
-    }
-
-    out.push_str("</radialGradient>\n");
-}
-
-fn write_gradient_stop(out: &mut String, stop: crate::model::GradientStop) {
-    let stop_colour = format_hex_rgb(stop.colour);
-    write_fmt(
-        out,
-        format_args!(
-            r#"<stop offset="{}" stop-color="{}" stop-opacity="{:.4}" />"#,
-            stop.offset,
-            stop_colour,
-            opacity_from_alpha(stop.colour.a)
-        ),
-    );
-    out.push('\n');
-}
-
-fn write_pattern(out: &mut String, pattern: &PatternResource) {
-    write_fmt(out, format_args!(r#"<pattern id="{}""#, pattern.svg_id));
-    write_extra_attributes(out, &pattern.extra_attributes);
-    out.push('>');
-    if !pattern.body.is_empty() {
-        out.push_str(pattern.body.as_str());
-    }
-    out.push_str("</pattern>\n");
-}
-
-fn write_symbol(out: &mut String, symbol: &SymbolResource) {
-    write_fmt(out, format_args!(r#"<symbol id="{}""#, symbol.svg_id));
-    if let Some(view_box) = symbol.view_box.as_deref() {
-        write_fmt(out, format_args!(r#" viewBox="{view_box}""#));
-    }
-    write_extra_attributes(out, &symbol.extra_attributes);
-    out.push('>');
-    if !symbol.body.is_empty() {
-        out.push_str(symbol.body.as_str());
-    }
-    out.push_str("</symbol>\n");
-}
-
-fn write_extra_attributes(out: &mut String, attributes: &[(String, String)]) {
-    for (name, value) in attributes {
-        write_fmt(out, format_args!(r#" {name}="{value}""#));
-    }
-}
-
-fn write_shape_path(out: &mut String, resources: &ResourceStore, shape: &crate::model::Shape) {
+fn write_shape_path(out: &mut String, resources: &ResourceStore, shape: &Shape) {
     let Some(path_data) = build_path_data(shape) else {
         return;
     };
@@ -242,10 +212,59 @@ fn write_shape_path(out: &mut String, resources: &ResourceStore, shape: &crate::
     write_optional_opacity(out, "stroke-opacity", &stroke_attr, stroke_opacity);
     write_optional_opacity(out, "fill-opacity", &fill_attr, fill_opacity);
 
+    write_shape_gauss_metadata(out, shape);
+
     out.push_str(" />\n");
 }
 
-fn build_path_data(shape: &crate::model::Shape) -> Option<String> {
+fn escape_attr_value(value: &str) -> String {
+    let mut escaped = String::with_capacity(value.len());
+    for ch in value.chars() {
+        match ch {
+            '&' => escaped.push_str("&amp;"),
+            '"' => escaped.push_str("&quot;"),
+            '<' => escaped.push_str("&lt;"),
+            '>' => escaped.push_str("&gt;"),
+            '\'' => escaped.push_str("&apos;"),
+            _ => escaped.push(ch),
+        }
+    }
+    escaped
+}
+
+fn write_shape_gauss_metadata(out: &mut String, shape: &Shape) {
+    if !shape.id.is_null() {
+        let hex = shape_id_to_hex(shape.id);
+        write_fmt(out, format_args!(r#" gauss:id="{hex}""#));
+    }
+
+    if let Some(name) = shape.name.as_deref() {
+        let escaped_name = escape_attr_value(name);
+        write_fmt(out, format_args!(r#" gauss:name="{escaped_name}""#));
+    }
+
+    if shape.locked {
+        out.push_str(r#" gauss:locked="true""#);
+    }
+
+    if shape.hidden {
+        out.push_str(r#" gauss:hidden="true""#);
+    }
+
+    write_opaque_gauss_attrs(out, &shape.gauss_metadata);
+}
+
+fn write_opaque_gauss_attrs(out: &mut String, metadata: &[crate::model::GaussAttribute]) {
+    for attr in metadata {
+        let escaped_value = escape_attr_value(&attr.value);
+        write_fmt(
+            out,
+            format_args!(r#" gauss:{}="{escaped_value}""#, attr.name),
+        );
+    }
+}
+
+fn build_path_data(shape: &Shape) -> Option<String> {
     let mut d = String::new();
     let first = shape.path.anchors.first()?;
     write_fmt(&mut d, format_args!("M {} {}", first.pos.x, first.pos.y));
@@ -360,12 +379,14 @@ fn validate_paint_reference(paint: Paint, resources: &ResourceStore) -> Result<(
     }
 }
 
-fn write_fmt(out: &mut String, args: Arguments<'_>) {
+pub(super) fn write_fmt(out: &mut String, args: Arguments<'_>) {
     if out.write_fmt(args).is_err() {
         // `String` implements `fmt::Write` without failing, so this is
         // unreachable in practice.
     }
 }
 
+#[cfg(test)]
+mod metadata_tests;
 #[cfg(test)]
 mod tests;

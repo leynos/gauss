@@ -232,6 +232,10 @@ mod tests {
             z: 0,
             style: PaintStyle::new(None, 1.0, None),
             path: PathGeom::new(),
+            name: None,
+            locked: false,
+            hidden: false,
+            gauss_metadata: Vec::new(),
         }
     }
 

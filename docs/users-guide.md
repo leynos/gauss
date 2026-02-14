@@ -162,6 +162,25 @@ standard SVG.
 - If Gauss metadata namespace content is present without canonical
   `xmlns:gauss` declaration, open fails with an explicit error.
 
+## Metadata Round-Trip
+
+Gauss preserves editor-only metadata through save and open cycles:
+
+- **Shape identity**: each shape is assigned a stable `gauss:id` that survives
+  round-tripping. This ensures that external tools referencing shapes by ID
+  continue to work after editing in Gauss.
+- **Shape names**: user-assigned names (`gauss:name`) are preserved.
+- **Locked and hidden states**: `gauss:locked` and `gauss:hidden` flags are
+  persisted on the SVG element and restored on open.
+- **Forward compatibility**: unknown `gauss:*` attributes written by future
+  versions of Gauss are preserved by the current version during round-trip.
+- **`<metadata>` block preservation**: any content inside the SVG `<metadata>`
+  element (including third-party metadata such as Dublin Core or RDF) is
+  preserved verbatim through save/open cycles.
+
+This metadata does not affect how the SVG renders in other viewers — it is
+stored in XML-namespaced attributes that conforming SVG renderers ignore.
+
 ## Platform Differences
 
 Gauss adapts to platform conventions:

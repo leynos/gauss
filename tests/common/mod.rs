@@ -96,6 +96,10 @@ pub fn add_square(doc: &mut Document, min: Vec2, max: Vec2) -> TestSupportResult
             closed: true,
             closing_segment: SegmentKind::Line,
         },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
     };
     Ok(doc.append_shape(shape))
 }
