@@ -264,6 +264,15 @@ impl Phase0Shell {
         self.redo_document();
     }
 
+    /// Return the number of realised entries in the document undo history.
+    ///
+    /// This exposes `DocumentUndoHistory::len()` for headless GPUI tests
+    /// that verify the single-entry-per-gesture invariant.
+    #[must_use]
+    pub fn document_history_len_for_tests(&self) -> usize {
+        self.document_history.len()
+    }
+
     /// Return the last history error, if any.
     ///
     /// This allows tests to verify that history operation failures are
