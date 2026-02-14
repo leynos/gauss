@@ -152,33 +152,50 @@ fn verify_click_selects_topmost(
     Ok(())
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "test helper bundles full reorder + undo verification sequence"
-)]
+/// Encapsulates the shape state and history baseline for reorder verification.
+struct ReorderVerificationContext {
+    lower: ShapeId,
+    higher: ShapeId,
+    expected_ids: Vec<ShapeId>,
+    len_before: usize,
+}
+
+impl ReorderVerificationContext {
+    const fn new(
+        lower: ShapeId,
+        higher: ShapeId,
+        expected_ids: Vec<ShapeId>,
+        len_before: usize,
+    ) -> Self {
+        Self {
+            lower,
+            higher,
+            expected_ids,
+            len_before,
+        }
+    }
+}
+
 fn verify_reorder_and_undo_sequence(
     visual_cx: &mut VisualTestContext,
     view: &gpui::Entity<Phase0Shell>,
-    lower: ShapeId,
-    higher: ShapeId,
-    expected_ids: &[ShapeId],
-    len_before: usize,
+    context: &ReorderVerificationContext,
 ) -> TestSupportResult<()> {
     simulate_key(visual_cx, "[", Modifiers::secondary_key());
     let doc_after_lower = read_document(visual_cx, view);
     let ids_after_lower = require_sorted_drawn_shape_ids(&doc_after_lower)?;
-    if ids_after_lower != expected_ids {
+    if ids_after_lower != context.expected_ids {
         return Err(TestSupportError::expectation(
             "expected shape ids to remain stable after lowering",
         ));
     }
     assert_relative_order(
         &doc_after_lower,
-        higher,
-        lower,
+        context.higher,
+        context.lower,
         "after lowering top-most shape",
     )?;
-    if read_history_len(visual_cx, view) != len_before + 1 {
+    if read_history_len(visual_cx, view) != context.len_before + 1 {
         return Err(TestSupportError::expectation(
             "expected one undo entry for lower",
         ));
@@ -187,13 +204,18 @@ fn verify_reorder_and_undo_sequence(
     simulate_key(visual_cx, "]", Modifiers::secondary_key());
     let doc_after_raise = read_document(visual_cx, view);
     let ids_after_raise = require_sorted_drawn_shape_ids(&doc_after_raise)?;
-    if ids_after_raise != expected_ids {
+    if ids_after_raise != context.expected_ids {
         return Err(TestSupportError::expectation(
             "expected shape ids to remain stable after raising",
         ));
     }
-    assert_relative_order(&doc_after_raise, lower, higher, "after raising back to top")?;
-    if read_history_len(visual_cx, view) != len_before + 2 {
+    assert_relative_order(
+        &doc_after_raise,
+        context.lower,
+        context.higher,
+        "after raising back to top",
+    )?;
+    if read_history_len(visual_cx, view) != context.len_before + 2 {
         return Err(TestSupportError::expectation(
             "expected two undo entries for lower + raise",
         ));
@@ -201,11 +223,21 @@ fn verify_reorder_and_undo_sequence(
 
     common::simulate_document_undo(visual_cx);
     let doc_after_undo_raise = read_document(visual_cx, view);
-    assert_relative_order(&doc_after_undo_raise, higher, lower, "after undoing raise")?;
+    assert_relative_order(
+        &doc_after_undo_raise,
+        context.higher,
+        context.lower,
+        "after undoing raise",
+    )?;
 
     common::simulate_document_undo(visual_cx);
     let doc_after_undo_lower = read_document(visual_cx, view);
-    assert_relative_order(&doc_after_undo_lower, lower, higher, "after undoing lower")
+    assert_relative_order(
+        &doc_after_undo_lower,
+        context.lower,
+        context.higher,
+        "after undoing lower",
+    )
 }
 
 #[gpui::test]
@@ -232,10 +264,7 @@ fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
     verify_reorder_and_undo_sequence(
         visual_cx,
         &view,
-        lower,
-        higher,
-        &expected_ids,
-        len_before_reorder,
+        &ReorderVerificationContext::new(lower, higher, expected_ids, len_before_reorder),
     )
     .expect("expected reorder and undo sequence to be correct");
 }
