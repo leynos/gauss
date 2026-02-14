@@ -12,18 +12,20 @@ use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, Pixels, Point, TestAppContext, point, px};
 use test_support::{TestSupportError, TestSupportResult, math};
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "test helper bundles drag simulation + selection verification"
-)]
+/// Coordinates for a drag gesture from start to end point.
+#[derive(Clone, Copy)]
+struct DragCoordinates {
+    start: Point<Pixels>,
+    end: Point<Pixels>,
+}
+
 fn execute_shape_drag_and_verify_selection(
     visual_cx: &mut gpui::VisualTestContext,
     view: &gpui::Entity<Phase0Shell>,
     shape_id: ShapeId,
-    drag_start: Point<Pixels>,
-    drag_end: Point<Pixels>,
+    drag: DragCoordinates,
 ) -> TestSupportResult<()> {
-    visual_cx.simulate_mouse_down(drag_start, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_down(drag.start, MouseButton::Left, Modifiers::none());
     let selection_after_down = visual_cx.read(|app| view.read(app).selection().clone());
     let did_select = selection_after_down.items.iter().any(|item| match item {
         SelItem::Shape(id) => *id == shape_id,
@@ -43,8 +45,8 @@ fn execute_shape_drag_and_verify_selection(
         ));
     }
 
-    visual_cx.simulate_mouse_move(drag_end, MouseButton::Left, Modifiers::none());
-    visual_cx.simulate_mouse_up(drag_end, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_move(drag.end, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_up(drag.end, MouseButton::Left, Modifiers::none());
 
     let stopped_dragging = visual_cx.read(|app| !view.read(app).is_dragging());
     if !stopped_dragging {
@@ -93,8 +95,10 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
         visual_cx,
         &view,
         original_shape.id,
-        drag_start,
-        drag_end,
+        DragCoordinates {
+            start: drag_start,
+            end: drag_end,
+        },
     )
     .expect("expected shape drag to select, drag, and release");
 
