@@ -4,7 +4,8 @@ mod common;
 
 use common::{
     assert_shape_translated_by_delta, canvas_drag_scenario, draw_point, ensure_initial_draw,
-    init_test_app, read_document, require_draw_shape, simulate_document_undo, simulate_escape,
+    init_test_app, read_document, read_history_len, require_draw_shape, simulate_document_undo,
+    simulate_escape,
 };
 use gauss::model::{SelItem, Vec2};
 use gauss::ui::Phase0Shell;
@@ -44,6 +45,8 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
         "escape should switch to manipulate mode, where clicks do not add points"
     );
 
+    let len_before = read_history_len(visual_cx, &view);
+
     let drag_start = {
         let start_x = math::midpoint(f32::from(scenario.first.x), f32::from(scenario.second.x));
         let start_y = math::midpoint(f32::from(scenario.first.y), f32::from(scenario.second.y));
@@ -76,6 +79,13 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     assert!(
         stopped_dragging,
         "expected mouse up to end the active drag gesture"
+    );
+
+    let len_after = read_history_len(visual_cx, &view);
+    assert_eq!(
+        len_after,
+        len_before + 1,
+        "expected exactly one undo entry for shape drag"
     );
 
     let doc_after_drag = read_document(visual_cx, &view);

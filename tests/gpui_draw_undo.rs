@@ -3,8 +3,9 @@
 mod common;
 
 use common::{
-    canvas_points, ensure_initial_draw, init_test_app, read_document, require_canvas_click_changed,
-    require_draw_shape, require_last_canvas_click, simulate_document_redo, simulate_document_undo,
+    canvas_points, ensure_initial_draw, init_test_app, read_document, read_history_len,
+    require_canvas_click_changed, require_draw_shape, require_last_canvas_click,
+    simulate_document_redo, simulate_document_undo,
 };
 use gauss::ui::Phase0Shell;
 use gpui::TestAppContext;
@@ -86,6 +87,8 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
 
     let (pos1, pos2) = canvas_points(visual_cx).expect("canvas points should be available");
 
+    let len_baseline = read_history_len(visual_cx, &view);
+
     common::click_canvas_and_wait(visual_cx, pos1);
     let last_click_after_first = require_last_canvas_click(visual_cx, &view, "after first click")
         .expect("expected Phase0Shell to record the first click");
@@ -97,6 +100,11 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
         "after first click",
     )
     .expect("draw shape should contain one anchor after first click");
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        len_baseline + 1,
+        "expected one undo entry after first draw click"
+    );
 
     common::click_canvas_and_wait(visual_cx, pos2);
     let _last_click_after_second = require_canvas_click_changed(
@@ -114,6 +122,11 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
         "after second click",
     )
     .expect("draw shape should contain two anchors after second click");
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        len_baseline + 2,
+        "expected two undo entries after second draw click"
+    );
 
     simulate_document_undo(visual_cx);
     let doc_after_undo = read_document(visual_cx, &view);

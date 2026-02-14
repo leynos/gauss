@@ -4,7 +4,8 @@ mod common;
 
 use common::{
     CanvasDragScenario, assert_vec2_close, canvas_drag_scenario, draw_point, ensure_initial_draw,
-    init_test_app, read_document, require_draw_shape, simulate_document_undo, simulate_escape,
+    init_test_app, read_document, read_history_len, require_draw_shape, simulate_document_undo,
+    simulate_escape,
 };
 use gauss::model::{Anchor, SelItem, Shape, ShapeId};
 use gauss::ui::Phase0Shell;
@@ -82,6 +83,9 @@ fn dragging_anchor_moves_it_and_undo_restores(cx: &mut TestAppContext) {
         first_two_anchors(&original_shape).expect("expected two anchors in drawn shape");
 
     simulate_escape(visual_cx);
+
+    let len_before = read_history_len(visual_cx, &view);
+
     drag_first_anchor(visual_cx, &view, original_shape.id, scenario)
         .expect("expected drag on first anchor");
 
@@ -103,6 +107,13 @@ fn dragging_anchor_moves_it_and_undo_restores(cx: &mut TestAppContext) {
         "second anchor stable",
     )
     .expect("expected second anchor to remain stable");
+
+    let len_after = read_history_len(visual_cx, &view);
+    assert_eq!(
+        len_after,
+        len_before + 1,
+        "expected exactly one undo entry for anchor drag"
+    );
 
     if let Some(handle_out) = original_first_anchor.handle_out {
         let moved_handle_out = moved_first_anchor

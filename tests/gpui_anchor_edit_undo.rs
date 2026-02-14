@@ -4,8 +4,8 @@ mod common;
 
 use common::{
     anchor_to_canvas_point, assert_vec2_close, canvas_bounds, click_canvas_and_wait,
-    ensure_initial_draw, init_test_app, read_document, require_draw_shape, simulate_escape,
-    simulate_key,
+    ensure_initial_draw, init_test_app, read_document, read_history_len, require_draw_shape,
+    simulate_escape, simulate_key,
 };
 use gauss::model::{SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
@@ -312,10 +312,23 @@ fn insert_and_delete_anchor_are_doc_undoable(cx: &mut TestAppContext) {
         math::midpoint(setup.start_pos.x, setup.end_pos.x),
         math::midpoint(setup.start_pos.y, setup.end_pos.y),
     );
+    let len_before_insert = read_history_len(visual_cx, &view);
+
     insert_anchor_at_midpoint(visual_cx, &view, &setup, midpoint)
         .expect("expected anchor insertion to succeed");
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        len_before_insert + 1,
+        "expected one undo entry for anchor insertion"
+    );
+
     delete_selected_anchor(visual_cx, &view)
         .expect("expected delete to remove the inserted anchor");
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        len_before_insert + 2,
+        "expected two undo entries after insert + delete"
+    );
     assert_undo_redo_round_trip(visual_cx, &view)
         .expect("expected undo/redo to round-trip anchor edits");
 }

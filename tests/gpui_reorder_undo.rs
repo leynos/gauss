@@ -8,7 +8,7 @@ mod common;
 
 use common::{
     canvas_bounds, click_canvas_and_wait, demo_shape_id, ensure_initial_draw, init_test_app,
-    read_document, read_selection, simulate_escape, simulate_key,
+    read_document, read_history_len, read_selection, simulate_escape, simulate_key,
 };
 use gauss::model::{Document, SelItem, Selection, ShapeId};
 use gauss::ui::Phase0Shell;
@@ -154,6 +154,8 @@ fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
         "expected overlapping click to select the top-most shape"
     );
 
+    let len_before_reorder = read_history_len(visual_cx, &view);
+
     simulate_key(visual_cx, "[", Modifiers::secondary_key());
     let doc_after_lower = read_document(visual_cx, &view);
     let ids_after_lower = require_sorted_drawn_shape_ids(&doc_after_lower)
@@ -169,6 +171,11 @@ fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
         "after lowering top-most shape",
     )
     .expect("expected lower/upper order after lowering");
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        len_before_reorder + 1,
+        "expected one undo entry for lower"
+    );
 
     simulate_key(visual_cx, "]", Modifiers::secondary_key());
     let doc_after_raise = read_document(visual_cx, &view);
@@ -180,6 +187,11 @@ fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
     );
     assert_relative_order(&doc_after_raise, lower, higher, "after raising back to top")
         .expect("expected order after raising back to top");
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        len_before_reorder + 2,
+        "expected two undo entries for lower + raise"
+    );
 
     common::simulate_document_undo(visual_cx);
     let doc_after_undo_raise = read_document(visual_cx, &view);
