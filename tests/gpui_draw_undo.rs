@@ -110,15 +110,31 @@ fn click_and_verify_state(
     assert_draw_shape_state(&doc, verification.expected, verification.context)
 }
 
+/// Apply a document action (undo/redo), read the document, and verify the result.
+fn apply_action_and_verify<F, V>(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    action: F,
+    verify: V,
+) -> TestSupportResult<()>
+where
+    F: FnOnce(&mut gpui::VisualTestContext),
+    V: FnOnce(&gauss::model::Document) -> TestSupportResult<()>,
+{
+    action(visual_cx);
+    let doc = read_document(visual_cx, view);
+    verify(&doc)
+}
+
 fn undo_and_verify_state(
     visual_cx: &mut gpui::VisualTestContext,
     view: &gpui::Entity<Phase0Shell>,
     expected: ExpectedDrawShapeState,
     context: &str,
 ) -> TestSupportResult<()> {
-    simulate_document_undo(visual_cx);
-    let doc = read_document(visual_cx, view);
-    assert_draw_shape_state(&doc, expected, context)
+    apply_action_and_verify(visual_cx, view, simulate_document_undo, |doc| {
+        assert_draw_shape_state(doc, expected, context)
+    })
 }
 
 fn undo_and_verify_absent(
@@ -127,9 +143,9 @@ fn undo_and_verify_absent(
     expected_total_shapes: usize,
     context: &str,
 ) -> TestSupportResult<()> {
-    simulate_document_undo(visual_cx);
-    let doc = read_document(visual_cx, view);
-    assert_draw_shape_absent(&doc, expected_total_shapes, context)
+    apply_action_and_verify(visual_cx, view, simulate_document_undo, |doc| {
+        assert_draw_shape_absent(doc, expected_total_shapes, context)
+    })
 }
 
 fn redo_and_verify_state(
@@ -138,9 +154,9 @@ fn redo_and_verify_state(
     expected: ExpectedDrawShapeState,
     context: &str,
 ) -> TestSupportResult<()> {
-    simulate_document_redo(visual_cx);
-    let doc = read_document(visual_cx, view);
-    assert_draw_shape_state(&doc, expected, context)
+    apply_action_and_verify(visual_cx, view, simulate_document_redo, |doc| {
+        assert_draw_shape_state(doc, expected, context)
+    })
 }
 
 #[gpui::test]
