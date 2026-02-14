@@ -122,6 +122,92 @@ fn draw_overlapping_lines(visual_cx: &mut VisualTestContext, points: LinePoints)
     simulate_escape(visual_cx);
 }
 
+fn verify_initial_shapes_and_order(
+    doc: &Document,
+) -> TestSupportResult<(ShapeId, ShapeId, Vec<ShapeId>)> {
+    let (a, b) = require_drawn_shape_ids(doc)?;
+    let expected_ids = require_sorted_drawn_shape_ids(doc)?;
+    let (lower, higher) = ordered_pair(doc, a, b, "after drawing")?;
+    assert_relative_order(doc, lower, higher, "after drawing")?;
+    Ok((lower, higher, expected_ids))
+}
+
+fn verify_click_selects_topmost(
+    visual_cx: &mut VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    click_point: gpui::Point<gpui::Pixels>,
+    expected_shape: ShapeId,
+) -> TestSupportResult<()> {
+    visual_cx.simulate_mouse_down(click_point, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_up(click_point, MouseButton::Left, Modifiers::none());
+    visual_cx.run_until_parked();
+    let selection = read_selection(visual_cx, view);
+    let selected = selected_shape_id(&selection)
+        .ok_or_else(|| TestSupportError::missing("selection", "after clicking"))?;
+    if selected != expected_shape {
+        return Err(TestSupportError::expectation(format!(
+            "expected overlapping click to select the top-most shape; got {selected:?}"
+        )));
+    }
+    Ok(())
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "test helper bundles full reorder + undo verification sequence"
+)]
+fn verify_reorder_and_undo_sequence(
+    visual_cx: &mut VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    lower: ShapeId,
+    higher: ShapeId,
+    expected_ids: &[ShapeId],
+    len_before: usize,
+) -> TestSupportResult<()> {
+    simulate_key(visual_cx, "[", Modifiers::secondary_key());
+    let doc_after_lower = read_document(visual_cx, view);
+    let ids_after_lower = require_sorted_drawn_shape_ids(&doc_after_lower)?;
+    if ids_after_lower != expected_ids {
+        return Err(TestSupportError::expectation(
+            "expected shape ids to remain stable after lowering",
+        ));
+    }
+    assert_relative_order(
+        &doc_after_lower,
+        higher,
+        lower,
+        "after lowering top-most shape",
+    )?;
+    if read_history_len(visual_cx, view) != len_before + 1 {
+        return Err(TestSupportError::expectation(
+            "expected one undo entry for lower",
+        ));
+    }
+
+    simulate_key(visual_cx, "]", Modifiers::secondary_key());
+    let doc_after_raise = read_document(visual_cx, view);
+    let ids_after_raise = require_sorted_drawn_shape_ids(&doc_after_raise)?;
+    if ids_after_raise != expected_ids {
+        return Err(TestSupportError::expectation(
+            "expected shape ids to remain stable after raising",
+        ));
+    }
+    assert_relative_order(&doc_after_raise, lower, higher, "after raising back to top")?;
+    if read_history_len(visual_cx, view) != len_before + 2 {
+        return Err(TestSupportError::expectation(
+            "expected two undo entries for lower + raise",
+        ));
+    }
+
+    common::simulate_document_undo(visual_cx);
+    let doc_after_undo_raise = read_document(visual_cx, view);
+    assert_relative_order(&doc_after_undo_raise, higher, lower, "after undoing raise")?;
+
+    common::simulate_document_undo(visual_cx);
+    let doc_after_undo_lower = read_document(visual_cx, view);
+    assert_relative_order(&doc_after_undo_lower, lower, higher, "after undoing lower")
+}
+
 #[gpui::test]
 fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -135,71 +221,21 @@ fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
     draw_overlapping_lines(visual_cx, points);
 
     let doc = read_document(visual_cx, &view);
-    let (a, b) = require_drawn_shape_ids(&doc).expect("expected two drawn shapes");
-    let expected_ids =
-        require_sorted_drawn_shape_ids(&doc).expect("expected stable drawn shape ids");
-    let (lower, higher) =
-        ordered_pair(&doc, a, b, "after drawing").expect("expected to order shapes by index");
-    assert_relative_order(&doc, lower, higher, "after drawing")
-        .expect("expected lower shape to be below higher shape");
+    let (lower, higher, expected_ids) =
+        verify_initial_shapes_and_order(&doc).expect("expected valid initial shape order");
 
-    visual_cx.simulate_mouse_down(points.start, MouseButton::Left, Modifiers::none());
-    visual_cx.simulate_mouse_up(points.start, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
-    let selection = read_selection(visual_cx, &view);
-    let selected =
-        selected_shape_id(&selection).expect("expected selection to be non-empty after selecting");
-    assert_eq!(
-        selected, higher,
-        "expected overlapping click to select the top-most shape"
-    );
+    verify_click_selects_topmost(visual_cx, &view, points.start, higher)
+        .expect("expected overlapping click to select the top-most shape");
 
     let len_before_reorder = read_history_len(visual_cx, &view);
 
-    simulate_key(visual_cx, "[", Modifiers::secondary_key());
-    let doc_after_lower = read_document(visual_cx, &view);
-    let ids_after_lower = require_sorted_drawn_shape_ids(&doc_after_lower)
-        .expect("expected shape ids after lowering to remain stable");
-    assert_eq!(
-        ids_after_lower, expected_ids,
-        "expected shape ids to remain stable after lowering"
-    );
-    assert_relative_order(
-        &doc_after_lower,
-        higher,
+    verify_reorder_and_undo_sequence(
+        visual_cx,
+        &view,
         lower,
-        "after lowering top-most shape",
+        higher,
+        &expected_ids,
+        len_before_reorder,
     )
-    .expect("expected lower/upper order after lowering");
-    assert_eq!(
-        read_history_len(visual_cx, &view),
-        len_before_reorder + 1,
-        "expected one undo entry for lower"
-    );
-
-    simulate_key(visual_cx, "]", Modifiers::secondary_key());
-    let doc_after_raise = read_document(visual_cx, &view);
-    let ids_after_raise = require_sorted_drawn_shape_ids(&doc_after_raise)
-        .expect("expected shape ids after raising to remain stable");
-    assert_eq!(
-        ids_after_raise, expected_ids,
-        "expected shape ids to remain stable after raising"
-    );
-    assert_relative_order(&doc_after_raise, lower, higher, "after raising back to top")
-        .expect("expected order after raising back to top");
-    assert_eq!(
-        read_history_len(visual_cx, &view),
-        len_before_reorder + 2,
-        "expected two undo entries for lower + raise"
-    );
-
-    common::simulate_document_undo(visual_cx);
-    let doc_after_undo_raise = read_document(visual_cx, &view);
-    assert_relative_order(&doc_after_undo_raise, higher, lower, "after undoing raise")
-        .expect("expected order after undoing raise");
-
-    common::simulate_document_undo(visual_cx);
-    let doc_after_undo_lower = read_document(visual_cx, &view);
-    assert_relative_order(&doc_after_undo_lower, lower, higher, "after undoing lower")
-        .expect("expected order after undoing lower");
+    .expect("expected reorder and undo sequence to be correct");
 }
