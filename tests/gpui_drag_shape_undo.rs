@@ -7,10 +7,53 @@ use common::{
     init_test_app, read_document, read_history_len, require_draw_shape, simulate_document_undo,
     switch_to_manipulate_mode_and_verify,
 };
-use gauss::model::{SelItem, Vec2};
+use gauss::model::{SelItem, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
-use test_support::math;
+use gpui::{Modifiers, MouseButton, Pixels, Point, TestAppContext, point, px};
+use test_support::{TestSupportError, TestSupportResult, math};
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "test helper bundles drag simulation + selection verification"
+)]
+fn execute_shape_drag_and_verify_selection(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    shape_id: ShapeId,
+    drag_start: Point<Pixels>,
+    drag_end: Point<Pixels>,
+) -> TestSupportResult<()> {
+    visual_cx.simulate_mouse_down(drag_start, MouseButton::Left, Modifiers::none());
+    let selection_after_down = visual_cx.read(|app| view.read(app).selection().clone());
+    let did_select = selection_after_down.items.iter().any(|item| match item {
+        SelItem::Shape(id) => *id == shape_id,
+        SelItem::Segment { shape, .. } => *shape == shape_id,
+        _ => false,
+    });
+    if !did_select {
+        return Err(TestSupportError::expectation(format!(
+            "expected mouse down to select the draw shape; selection={selection_after_down:?}"
+        )));
+    }
+
+    let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
+    if !is_dragging {
+        return Err(TestSupportError::expectation(
+            "expected mouse down to start a drag gesture".to_owned(),
+        ));
+    }
+
+    visual_cx.simulate_mouse_move(drag_end, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_up(drag_end, MouseButton::Left, Modifiers::none());
+
+    let stopped_dragging = visual_cx.read(|app| !view.read(app).is_dragging());
+    if !stopped_dragging {
+        return Err(TestSupportError::expectation(
+            "expected mouse up to end the active drag gesture".to_owned(),
+        ));
+    }
+    Ok(())
+}
 
 #[gpui::test]
 fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
@@ -46,29 +89,14 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
         drag_start.y + px(scenario.delta.y),
     );
 
-    visual_cx.simulate_mouse_down(drag_start, MouseButton::Left, Modifiers::none());
-    let selection_after_down = visual_cx.read(|app| view.read(app).selection().clone());
-    let did_select = selection_after_down.items.iter().any(|item| match item {
-        SelItem::Shape(id) => *id == original_shape.id,
-        SelItem::Segment { shape, .. } => *shape == original_shape.id,
-        _ => false,
-    });
-    assert!(
-        did_select,
-        "expected mouse down to select the draw shape; selection={selection_after_down:?}"
-    );
-
-    let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
-    assert!(is_dragging, "expected mouse down to start a drag gesture");
-
-    visual_cx.simulate_mouse_move(drag_end, MouseButton::Left, Modifiers::none());
-    visual_cx.simulate_mouse_up(drag_end, MouseButton::Left, Modifiers::none());
-
-    let stopped_dragging = visual_cx.read(|app| !view.read(app).is_dragging());
-    assert!(
-        stopped_dragging,
-        "expected mouse up to end the active drag gesture"
-    );
+    execute_shape_drag_and_verify_selection(
+        visual_cx,
+        &view,
+        original_shape.id,
+        drag_start,
+        drag_end,
+    )
+    .expect("expected shape drag to select, drag, and release");
 
     let len_after = read_history_len(visual_cx, &view);
     assert_eq!(

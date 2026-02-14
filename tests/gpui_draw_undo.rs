@@ -78,6 +78,22 @@ fn assert_draw_shape_absent(
     Ok(())
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "test helper bundles click + verify for readability"
+)]
+fn click_and_verify_state(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    position: gpui::Point<gpui::Pixels>,
+    expected: ExpectedDrawShapeState,
+    context: &str,
+) -> TestSupportResult<()> {
+    common::click_canvas_and_wait(visual_cx, position);
+    let doc = read_document(visual_cx, view);
+    assert_draw_shape_state(&doc, expected, context)
+}
+
 #[gpui::test]
 fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -89,24 +105,30 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
 
     let len_baseline = read_history_len(visual_cx, &view);
 
-    common::click_canvas_and_wait(visual_cx, pos1);
-    let last_click_after_first = require_last_canvas_click(visual_cx, &view, "after first click")
-        .expect("expected Phase0Shell to record the first click");
-
-    let doc_after_first = read_document(visual_cx, &view);
-    assert_draw_shape_state(
-        &doc_after_first,
+    click_and_verify_state(
+        visual_cx,
+        &view,
+        pos1,
         ExpectedDrawShapeState::new(2, 1, 0, false),
         "after first click",
     )
     .expect("draw shape should contain one anchor after first click");
+    let last_click_after_first = require_last_canvas_click(visual_cx, &view, "after first click")
+        .expect("expected Phase0Shell to record the first click");
     assert_eq!(
         read_history_len(visual_cx, &view),
         len_baseline + 1,
         "expected one undo entry after first draw click"
     );
 
-    common::click_canvas_and_wait(visual_cx, pos2);
+    click_and_verify_state(
+        visual_cx,
+        &view,
+        pos2,
+        ExpectedDrawShapeState::new(2, 2, 1, false),
+        "after second click",
+    )
+    .expect("draw shape should contain two anchors after second click");
     let _last_click_after_second = require_canvas_click_changed(
         visual_cx,
         &view,
@@ -114,14 +136,6 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
         "after second click",
     )
     .expect("expected Phase0Shell to record a second click");
-
-    let doc_after_second = read_document(visual_cx, &view);
-    assert_draw_shape_state(
-        &doc_after_second,
-        ExpectedDrawShapeState::new(2, 2, 1, false),
-        "after second click",
-    )
-    .expect("draw shape should contain two anchors after second click");
     assert_eq!(
         read_history_len(visual_cx, &view),
         len_baseline + 2,
