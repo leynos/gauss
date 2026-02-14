@@ -5,7 +5,7 @@ mod common;
 use common::{
     assert_shape_translated_by_delta, canvas_drag_scenario, draw_point, ensure_initial_draw,
     init_test_app, read_document, read_history_len, require_draw_shape, simulate_document_undo,
-    simulate_escape,
+    switch_to_manipulate_mode_and_verify,
 };
 use gauss::model::{SelItem, Vec2};
 use gauss::ui::Phase0Shell;
@@ -32,18 +32,7 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
         .clone();
 
     // Switch to manipulate mode (Phase0Shell defaults to draw mode).
-    simulate_escape(visual_cx);
-    visual_cx.run_until_parked();
-
-    let shapes_after_escape = read_document(visual_cx, &view).len();
-    visual_cx.simulate_mouse_move(scenario.first, None, Modifiers::none());
-    visual_cx.simulate_click(scenario.first, Modifiers::none());
-    visual_cx.run_until_parked();
-    let shapes_after_escape_click = read_document(visual_cx, &view).len();
-    assert_eq!(
-        shapes_after_escape_click, shapes_after_escape,
-        "escape should switch to manipulate mode, where clicks do not add points"
-    );
+    switch_to_manipulate_mode_and_verify(visual_cx, &view, scenario.first);
 
     let len_before = read_history_len(visual_cx, &view);
 

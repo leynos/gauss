@@ -345,6 +345,25 @@ pub fn anchor_to_canvas_point(
     }
 }
 
+pub fn switch_to_manipulate_mode_and_verify(
+    visual_cx: &mut VisualTestContext,
+    view: &Entity<Phase0Shell>,
+    click_point: Point<Pixels>,
+) {
+    simulate_escape(visual_cx);
+    visual_cx.run_until_parked();
+
+    let shapes_after_escape = read_document(visual_cx, view).len();
+    visual_cx.simulate_mouse_move(click_point, None, Modifiers::none());
+    visual_cx.simulate_click(click_point, Modifiers::none());
+    visual_cx.run_until_parked();
+    let shapes_after_click = read_document(visual_cx, view).len();
+    assert_eq!(
+        shapes_after_click, shapes_after_escape,
+        "escape should switch to manipulate mode, where clicks do not add points"
+    );
+}
+
 pub fn read_history_len(visual_cx: &VisualTestContext, view: &Entity<Phase0Shell>) -> usize {
     visual_cx.read(|app| view.read(app).document_history_len_for_tests())
 }
