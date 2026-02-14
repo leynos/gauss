@@ -122,9 +122,7 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
     let raw_tags = resource_tags::extract_shape_path_tags(resource_tags::SvgContent::from(svg));
 
     for (index, raw_tag) in raw_tags.iter().enumerate() {
-        let gauss_meta = shape_gauss_meta
-            .iter()
-            .find(|meta| svg.get(meta.byte_range.clone()) == Some(raw_tag.as_str()));
+        let gauss_meta = shape_gauss_meta.get(index);
         let shape = parse_shape_from_tag(raw_tag, index, &resources, gauss_meta)?;
         doc.append_shape(shape);
     }

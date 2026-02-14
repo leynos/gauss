@@ -4,16 +4,11 @@
 //! reading. The fragment-based `attribute_value()` in `resource_tags.rs`
 //! loses namespace context, making it unsuitable for `gauss:*` attributes.
 
-use std::ops::Range;
-
 use crate::model::GaussAttribute;
 use crate::svg::metadata::GAUSS_METADATA_NAMESPACE;
 
 /// Gauss-specific metadata extracted from a shape element.
 pub(super) struct ShapeGaussMetadata {
-    /// Byte range of the `<path>` node in the original SVG, for alignment with
-    /// the tag-based extraction in `resource_tags`.
-    pub byte_range: Range<usize>,
     /// Value of `gauss:id`, if present.
     pub gauss_id: Option<String>,
     /// Value of `gauss:name`, if present.
@@ -73,7 +68,6 @@ pub(super) fn extract_metadata_block(svg: &str) -> Option<String> {
 
 fn extract_gauss_metadata_from_node(node: roxmltree::Node<'_, '_>) -> ShapeGaussMetadata {
     let mut meta = ShapeGaussMetadata {
-        byte_range: node.range(),
         gauss_id: None,
         name: None,
         locked: false,
