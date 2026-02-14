@@ -64,11 +64,12 @@ fn drag_first_anchor(
     Ok(())
 }
 
-fn verify_anchor_drag_result(
-    moved: &(Anchor, Anchor),
+fn verify_anchor_moved(
+    shape: &Shape,
     originals: &(Anchor, Anchor),
     delta: gauss::model::Vec2,
 ) -> TestSupportResult<()> {
+    let moved = first_two_anchors(shape)?;
     assert_vec2_close(
         moved.0.pos,
         originals.0.pos.add(delta),
@@ -89,10 +90,8 @@ fn verify_anchor_drag_result(
     Ok(())
 }
 
-fn verify_anchor_undo_restoration(
-    restored: &(Anchor, Anchor),
-    originals: &(Anchor, Anchor),
-) -> TestSupportResult<()> {
+fn verify_anchor_restored(shape: &Shape, originals: &(Anchor, Anchor)) -> TestSupportResult<()> {
+    let restored = first_two_anchors(shape)?;
     assert_vec2_close(restored.0.pos, originals.0.pos, "first anchor restored")?;
     assert_vec2_close(
         restored.1.pos,
@@ -129,10 +128,7 @@ fn dragging_anchor_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     let doc_after_drag = read_document(visual_cx, &view);
     let moved_shape = require_draw_shape(&doc_after_drag, "after dragging anchor")
         .expect("expected draw shape after dragging anchor");
-    let moved_anchors =
-        first_two_anchors(moved_shape).expect("expected two anchors after dragging");
-
-    verify_anchor_drag_result(&moved_anchors, &original_anchors, scenario.delta)
+    verify_anchor_moved(moved_shape, &original_anchors, scenario.delta)
         .expect("expected anchor drag result to be correct");
 
     let len_after = read_history_len(visual_cx, &view);
@@ -147,9 +143,6 @@ fn dragging_anchor_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     let doc_after_undo = read_document(visual_cx, &view);
     let restored_shape =
         require_draw_shape(&doc_after_undo, "after undo").expect("expected draw shape after undo");
-    let restored_anchors =
-        first_two_anchors(restored_shape).expect("expected two anchors after undo");
-
-    verify_anchor_undo_restoration(&restored_anchors, &original_anchors)
+    verify_anchor_restored(restored_shape, &original_anchors)
         .expect("expected anchors to restore after undo");
 }
