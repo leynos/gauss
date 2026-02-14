@@ -94,6 +94,39 @@ fn click_and_verify_state(
     assert_draw_shape_state(&doc, expected, context)
 }
 
+fn undo_and_verify_state(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    expected: ExpectedDrawShapeState,
+    context: &str,
+) -> TestSupportResult<()> {
+    simulate_document_undo(visual_cx);
+    let doc = read_document(visual_cx, view);
+    assert_draw_shape_state(&doc, expected, context)
+}
+
+fn undo_and_verify_absent(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    expected_total_shapes: usize,
+    context: &str,
+) -> TestSupportResult<()> {
+    simulate_document_undo(visual_cx);
+    let doc = read_document(visual_cx, view);
+    assert_draw_shape_absent(&doc, expected_total_shapes, context)
+}
+
+fn redo_and_verify_state(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    expected: ExpectedDrawShapeState,
+    context: &str,
+) -> TestSupportResult<()> {
+    simulate_document_redo(visual_cx);
+    let doc = read_document(visual_cx, view);
+    assert_draw_shape_state(&doc, expected, context)
+}
+
 #[gpui::test]
 fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -142,35 +175,30 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
         "expected two undo entries after second draw click"
     );
 
-    simulate_document_undo(visual_cx);
-    let doc_after_undo = read_document(visual_cx, &view);
-    assert_draw_shape_state(
-        &doc_after_undo,
+    undo_and_verify_state(
+        visual_cx,
+        &view,
         ExpectedDrawShapeState::new(2, 1, 0, false),
         "after undoing second click",
     )
     .expect("draw shape should have one anchor after undo");
 
-    simulate_document_undo(visual_cx);
-    let doc_after_second_undo = read_document(visual_cx, &view);
-    assert_draw_shape_absent(&doc_after_second_undo, 1, "after undoing the first click")
+    undo_and_verify_absent(visual_cx, &view, 1, "after undoing the first click")
         .expect("draw shape should be removed after undo");
 
     // Redo should re-insert the shape with one anchor.
-    simulate_document_redo(visual_cx);
-    let doc_after_first_redo = read_document(visual_cx, &view);
-    assert_draw_shape_state(
-        &doc_after_first_redo,
+    redo_and_verify_state(
+        visual_cx,
+        &view,
         ExpectedDrawShapeState::new(2, 1, 0, false),
         "after first redo",
     )
     .expect("draw shape should be re-inserted with one anchor after redo");
 
     // Second redo should restore the second anchor.
-    simulate_document_redo(visual_cx);
-    let doc_after_second_redo = read_document(visual_cx, &view);
-    assert_draw_shape_state(
-        &doc_after_second_redo,
+    redo_and_verify_state(
+        visual_cx,
+        &view,
         ExpectedDrawShapeState::new(2, 2, 1, false),
         "after second redo",
     )
