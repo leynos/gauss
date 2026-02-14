@@ -31,17 +31,22 @@ fn triangle_path() -> PathGeom {
     }
 }
 
-const fn default_style() -> PaintStyle {
+#[fixture]
+fn default_style() -> PaintStyle {
     PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None)
 }
 
 #[fixture]
-fn minimal_test_shape(#[default(1)] seed: u128) -> Shape {
+fn minimal_test_shape(
+    #[default(1)] seed: u128,
+    triangle_path: PathGeom,
+    default_style: PaintStyle,
+) -> Shape {
     Shape {
         id: shape_id_from_seed(seed),
         z: 0,
-        style: default_style(),
-        path: triangle_path(),
+        style: default_style,
+        path: triangle_path,
         name: None,
         locked: false,
         hidden: false,
@@ -108,13 +113,16 @@ fn assert_shape_round_trip(shape: Shape, golden_name: &str) -> TestSupportResult
 }
 
 #[rstest]
-fn plain_svg_without_gauss_metadata() -> TestSupportResult<()> {
+fn plain_svg_without_gauss_metadata(
+    triangle_path: PathGeom,
+    default_style: PaintStyle,
+) -> TestSupportResult<()> {
     let mut doc = Document::new();
     let shape = Shape {
         id: gauss::model::ShapeId::default(),
         z: 0,
-        style: default_style(),
-        path: triangle_path(),
+        style: default_style,
+        path: triangle_path,
         name: None,
         locked: false,
         hidden: false,
@@ -137,15 +145,15 @@ fn plain_svg_without_gauss_metadata() -> TestSupportResult<()> {
 }
 
 #[rstest]
-#[case::with_id(minimal_test_shape(1), "with_id")]
+#[case::with_id(minimal_test_shape(1, triangle_path(), default_style()), "with_id")]
 #[case::with_full_metadata(
     Shape {
         name: Some("My Triangle".to_owned()),
         locked: true,
         hidden: true,
-        ..minimal_test_shape(2)
+        ..minimal_test_shape(2, triangle_path(), default_style())
     },
-    "with_full_metadata"
+    "with_full_metadata",
 )]
 #[case::with_unknown_attrs(
     Shape {
@@ -153,9 +161,9 @@ fn plain_svg_without_gauss_metadata() -> TestSupportResult<()> {
             GaussAttribute::new("layer", "foreground"),
             GaussAttribute::new("opacity", "0.5"),
         ],
-        ..minimal_test_shape(4)
+        ..minimal_test_shape(4, triangle_path(), default_style())
     },
-    "with_unknown_attrs"
+    "with_unknown_attrs",
 )]
 fn shape_round_trip_variants(
     #[case] shape: Shape,
@@ -165,14 +173,17 @@ fn shape_round_trip_variants(
 }
 
 #[rstest]
-fn shape_with_metadata_block() -> TestSupportResult<()> {
+fn shape_with_metadata_block(
+    triangle_path: PathGeom,
+    default_style: PaintStyle,
+) -> TestSupportResult<()> {
     let id = shape_id_from_seed(3);
     let mut doc = Document::new();
     doc.append_shape(Shape {
         id,
         z: 0,
-        style: default_style(),
-        path: triangle_path(),
+        style: default_style,
+        path: triangle_path,
         name: None,
         locked: false,
         hidden: false,
@@ -190,7 +201,10 @@ fn shape_with_metadata_block() -> TestSupportResult<()> {
 }
 
 #[rstest]
-fn full_round_trip_combined() -> TestSupportResult<()> {
+fn full_round_trip_combined(
+    triangle_path: PathGeom,
+    default_style: PaintStyle,
+) -> TestSupportResult<()> {
     let mut doc = Document::new();
     let id1 = shape_id_from_seed(10);
     let id2 = shape_id_from_seed(11);
@@ -203,7 +217,7 @@ fn full_round_trip_combined() -> TestSupportResult<()> {
             2.0,
             Some(Rgba::new(0, 0, 255, 128)),
         ),
-        path: triangle_path(),
+        path: triangle_path,
         name: Some("Red Triangle".to_owned()),
         locked: false,
         hidden: false,
@@ -213,7 +227,7 @@ fn full_round_trip_combined() -> TestSupportResult<()> {
     doc.append_shape(Shape {
         id: id2,
         z: 1,
-        style: default_style(),
+        style: default_style,
         path: PathGeom {
             anchors: vec![
                 Anchor::new(gauss::model::Vec2::new(20.0, 20.0)),

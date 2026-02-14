@@ -49,6 +49,8 @@ pub enum SvgImportError {
     InvalidNumber,
     /// An opacity attribute was present but not understood.
     InvalidOpacity,
+    /// The shape index exceeds the maximum representable z-index.
+    ShapeIndexOverflow,
     /// A paint reference points to a missing resource.
     MissingReferencedResource(String),
     /// `gauss` prefix points to the wrong namespace URI.
@@ -67,6 +69,7 @@ impl fmt::Display for SvgImportError {
             Self::InvalidColour => write!(f, "invalid colour"),
             Self::InvalidNumber => write!(f, "invalid number"),
             Self::InvalidOpacity => write!(f, "invalid opacity"),
+            Self::ShapeIndexOverflow => write!(f, "shape index exceeds maximum z-index"),
             Self::MissingReferencedResource(id) => {
                 write!(f, "paint references missing resource id '{id}'")
             }
@@ -178,7 +181,9 @@ fn parse_shape_from_tag(
 
     Ok(Shape {
         id: shape_id,
-        z: index.try_into().map_err(|_| SvgImportError::MalformedSvg)?,
+        z: index
+            .try_into()
+            .map_err(|_| SvgImportError::ShapeIndexOverflow)?,
         style,
         path,
         name: gauss_meta.and_then(|meta| meta.name.clone()),

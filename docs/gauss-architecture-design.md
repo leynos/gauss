@@ -542,6 +542,7 @@ classDiagram
         +InvalidColour
         +InvalidNumber
         +InvalidOpacity
+        +ShapeIndexOverflow
         +MissingReferencedResource(String)
     }
 

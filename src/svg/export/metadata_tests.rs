@@ -1,7 +1,5 @@
 //! Tests for Gauss metadata export on `<path>` elements.
 
-use slotmap::Key;
-
 use super::*;
 use crate::model::{Anchor, GaussAttribute, PaintStyle, PathGeom, Rgba, Shape, Vec2};
 use crate::test_helpers::shape_id_from_seed as shape_id;
