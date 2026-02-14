@@ -94,17 +94,24 @@ fn assert_idempotent(svg: &str, metadata_block: Option<&str>) -> TestSupportResu
     Ok(())
 }
 
-fn export_doc(doc: &Document, metadata_block: Option<&str>) -> String {
-    export_svg_with_metadata(ExportOptions {
-        doc,
-        resources: &ResourceStore::new(),
-        canvas_width: 100.0,
-        canvas_height: 100.0,
-        metadata_block,
-    })
+#[fixture]
+fn export_doc() -> impl Fn(&Document, Option<&str>) -> String {
+    |doc: &Document, metadata_block: Option<&str>| {
+        export_svg_with_metadata(ExportOptions {
+            doc,
+            resources: &ResourceStore::new(),
+            canvas_width: 100.0,
+            canvas_height: 100.0,
+            metadata_block,
+        })
+    }
 }
 
-fn assert_shape_round_trip(shape: Shape, golden_name: &str) -> TestSupportResult<()> {
+fn assert_shape_round_trip(
+    shape: Shape,
+    golden_name: &str,
+    export_doc: &impl Fn(&Document, Option<&str>) -> String,
+) -> TestSupportResult<()> {
     let mut doc = Document::new();
     doc.append_shape(shape);
     let svg = export_doc(&doc, None);
@@ -116,6 +123,7 @@ fn assert_shape_round_trip(shape: Shape, golden_name: &str) -> TestSupportResult
 fn plain_svg_without_gauss_metadata(
     triangle_path: PathGeom,
     default_style: PaintStyle,
+    export_doc: impl Fn(&Document, Option<&str>) -> String,
 ) -> TestSupportResult<()> {
     let mut doc = Document::new();
     let shape = Shape {
@@ -168,14 +176,16 @@ fn plain_svg_without_gauss_metadata(
 fn shape_round_trip_variants(
     #[case] shape: Shape,
     #[case] golden_name: &str,
+    export_doc: impl Fn(&Document, Option<&str>) -> String,
 ) -> TestSupportResult<()> {
-    assert_shape_round_trip(shape, golden_name)
+    assert_shape_round_trip(shape, golden_name, &export_doc)
 }
 
 #[rstest]
 fn shape_with_metadata_block(
     triangle_path: PathGeom,
     default_style: PaintStyle,
+    export_doc: impl Fn(&Document, Option<&str>) -> String,
 ) -> TestSupportResult<()> {
     let id = shape_id_from_seed(3);
     let mut doc = Document::new();
@@ -204,6 +214,7 @@ fn shape_with_metadata_block(
 fn full_round_trip_combined(
     triangle_path: PathGeom,
     default_style: PaintStyle,
+    export_doc: impl Fn(&Document, Option<&str>) -> String,
 ) -> TestSupportResult<()> {
     let mut doc = Document::new();
     let id1 = shape_id_from_seed(10);
