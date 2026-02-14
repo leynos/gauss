@@ -32,6 +32,39 @@ fn world() -> EntryCountWorld {
     }
 }
 
+// === Helper functions ===
+
+fn assert_history_length(world: &EntryCountWorld, expected: usize) -> TestSupportResult<()> {
+    if world.history.len() == expected {
+        Ok(())
+    } else {
+        Err(TestSupportError::expectation(format!(
+            "expected history length {expected}, got {}",
+            world.history.len()
+        )))
+    }
+}
+
+fn get_first_shape<'a>(
+    world: &'a EntryCountWorld,
+    context: &str,
+) -> TestSupportResult<&'a gauss::model::Shape> {
+    world
+        .document
+        .shape_at(0)
+        .ok_or_else(|| TestSupportError::missing("shape", context))
+}
+
+fn get_first_shape_id(
+    world: &EntryCountWorld,
+    context: &str,
+) -> TestSupportResult<gauss::model::ShapeId> {
+    world
+        .document
+        .shape_id_at(0)
+        .ok_or_else(|| TestSupportError::missing("shape", context))
+}
+
 // === Given steps ===
 
 #[given("an empty history and a document with one shape")]
@@ -99,10 +132,7 @@ fn apply_and_record(world: &mut EntryCountWorld, cmd: Command) -> TestSupportRes
 
 #[when("I apply a MoveShapes command")]
 fn when_move_shapes(world: &mut EntryCountWorld) -> TestSupportResult<()> {
-    let shape_id = world
-        .document
-        .shape_id_at(0)
-        .ok_or_else(|| TestSupportError::missing("shape", "MoveShapes"))?;
+    let shape_id = get_first_shape_id(world, "MoveShapes")?;
     let cmd = Command::MoveShapes {
         movements: vec![ShapeMovement {
             shape_id,
@@ -114,10 +144,7 @@ fn when_move_shapes(world: &mut EntryCountWorld) -> TestSupportResult<()> {
 
 #[when("I apply a MoveAnchor command")]
 fn when_move_anchor(world: &mut EntryCountWorld) -> TestSupportResult<()> {
-    let shape = world
-        .document
-        .shape_at(0)
-        .ok_or_else(|| TestSupportError::missing("shape", "MoveAnchor"))?;
+    let shape = get_first_shape(world, "MoveAnchor")?;
     let original = shape
         .path
         .anchors
@@ -137,10 +164,7 @@ fn when_move_anchor(world: &mut EntryCountWorld) -> TestSupportResult<()> {
 
 #[when("I apply a MoveHandle command")]
 fn when_move_handle(world: &mut EntryCountWorld) -> TestSupportResult<()> {
-    let shape = world
-        .document
-        .shape_at(0)
-        .ok_or_else(|| TestSupportError::missing("shape", "MoveHandle"))?;
+    let shape = get_first_shape(world, "MoveHandle")?;
     let anchor = shape
         .path
         .anchors
@@ -173,11 +197,7 @@ fn when_insert_shape(world: &mut EntryCountWorld) -> TestSupportResult<()> {
 
 #[when("I apply a DeleteShapes command")]
 fn when_delete_shapes(world: &mut EntryCountWorld) -> TestSupportResult<()> {
-    let shape = world
-        .document
-        .shape_at(0)
-        .ok_or_else(|| TestSupportError::missing("shape", "DeleteShapes"))?
-        .clone();
+    let shape = get_first_shape(world, "DeleteShapes")?.clone();
     let index = world
         .document
         .find_index(shape.id)
@@ -190,11 +210,7 @@ fn when_delete_shapes(world: &mut EntryCountWorld) -> TestSupportResult<()> {
 
 #[when("I apply a ClosePath command")]
 fn when_close_path(world: &mut EntryCountWorld) -> TestSupportResult<()> {
-    let old_shape = world
-        .document
-        .shape_at(0)
-        .ok_or_else(|| TestSupportError::missing("shape", "ClosePath"))?
-        .clone();
+    let old_shape = get_first_shape(world, "ClosePath")?.clone();
     let mut new_shape = old_shape.clone();
     // Close the path using the closing_segment field (no extra segment pushed).
     new_shape.path.closed = true;
@@ -211,11 +227,7 @@ fn when_close_path(world: &mut EntryCountWorld) -> TestSupportResult<()> {
 
 #[when("I apply an InsertAnchor command")]
 fn when_insert_anchor(world: &mut EntryCountWorld) -> TestSupportResult<()> {
-    let old_shape = world
-        .document
-        .shape_at(0)
-        .ok_or_else(|| TestSupportError::missing("shape", "InsertAnchor"))?
-        .clone();
+    let old_shape = get_first_shape(world, "InsertAnchor")?.clone();
     let mut new_shape = old_shape.clone();
     // Add a third anchor with a connecting segment.
     new_shape
@@ -235,10 +247,7 @@ fn when_insert_anchor(world: &mut EntryCountWorld) -> TestSupportResult<()> {
 
 #[when("I apply a SetSegmentKind command")]
 fn when_set_segment_kind(world: &mut EntryCountWorld) -> TestSupportResult<()> {
-    let shape = world
-        .document
-        .shape_at(0)
-        .ok_or_else(|| TestSupportError::missing("shape", "SetSegmentKind"))?;
+    let shape = get_first_shape(world, "SetSegmentKind")?;
     let start_anchor = shape
         .path
         .anchors
@@ -271,10 +280,7 @@ fn when_set_segment_kind(world: &mut EntryCountWorld) -> TestSupportResult<()> {
 
 #[when("I apply a Reorder command")]
 fn when_reorder(world: &mut EntryCountWorld) -> TestSupportResult<()> {
-    let id = world
-        .document
-        .shape_id_at(0)
-        .ok_or_else(|| TestSupportError::missing("shape 0", "Reorder"))?;
+    let id = get_first_shape_id(world, "Reorder")?;
     let cmd = Command::Reorder {
         operations: vec![ReorderOp {
             shape_id: id,
@@ -287,10 +293,7 @@ fn when_reorder(world: &mut EntryCountWorld) -> TestSupportResult<()> {
 
 #[when("I apply a SetStyle command")]
 fn when_set_style(world: &mut EntryCountWorld) -> TestSupportResult<()> {
-    let shape = world
-        .document
-        .shape_at(0)
-        .ok_or_else(|| TestSupportError::missing("shape", "SetStyle"))?;
+    let shape = get_first_shape(world, "SetStyle")?;
     let cmd = Command::SetStyle {
         changes: vec![StyleChange {
             shape_id: shape.id,
@@ -303,10 +306,7 @@ fn when_set_style(world: &mut EntryCountWorld) -> TestSupportResult<()> {
 
 #[when("I apply another MoveShapes command")]
 fn when_another_move_shapes(world: &mut EntryCountWorld) -> TestSupportResult<()> {
-    let shape_id = world
-        .document
-        .shape_id_at(0)
-        .ok_or_else(|| TestSupportError::missing("shape", "another MoveShapes"))?;
+    let shape_id = get_first_shape_id(world, "another MoveShapes")?;
     let cmd = Command::MoveShapes {
         movements: vec![ShapeMovement {
             shape_id,
@@ -320,26 +320,12 @@ fn when_another_move_shapes(world: &mut EntryCountWorld) -> TestSupportResult<()
 
 #[then("the history length should be 1")]
 fn then_history_length_is_one(world: &EntryCountWorld) -> TestSupportResult<()> {
-    if world.history.len() == 1 {
-        Ok(())
-    } else {
-        Err(TestSupportError::expectation(format!(
-            "expected history length 1, got {}",
-            world.history.len()
-        )))
-    }
+    assert_history_length(world, 1)
 }
 
 #[then("the history length should be 3")]
 fn then_history_length_is_three(world: &EntryCountWorld) -> TestSupportResult<()> {
-    if world.history.len() == 3 {
-        Ok(())
-    } else {
-        Err(TestSupportError::expectation(format!(
-            "expected history length 3, got {}",
-            world.history.len()
-        )))
-    }
+    assert_history_length(world, 3)
 }
 
 // === Scenario bindings ===
