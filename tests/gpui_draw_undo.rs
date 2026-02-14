@@ -78,20 +78,36 @@ fn assert_draw_shape_absent(
     Ok(())
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "test helper bundles click + verify for readability"
-)]
+/// Encapsulates a click-and-verify scenario for draw state testing.
+#[derive(Clone, Copy)]
+struct ClickVerification {
+    position: gpui::Point<gpui::Pixels>,
+    expected: ExpectedDrawShapeState,
+    context: &'static str,
+}
+
+impl ClickVerification {
+    const fn new(
+        position: gpui::Point<gpui::Pixels>,
+        expected: ExpectedDrawShapeState,
+        context: &'static str,
+    ) -> Self {
+        Self {
+            position,
+            expected,
+            context,
+        }
+    }
+}
+
 fn click_and_verify_state(
     visual_cx: &mut gpui::VisualTestContext,
     view: &gpui::Entity<Phase0Shell>,
-    position: gpui::Point<gpui::Pixels>,
-    expected: ExpectedDrawShapeState,
-    context: &str,
+    verification: ClickVerification,
 ) -> TestSupportResult<()> {
-    common::click_canvas_and_wait(visual_cx, position);
+    common::click_canvas_and_wait(visual_cx, verification.position);
     let doc = read_document(visual_cx, view);
-    assert_draw_shape_state(&doc, expected, context)
+    assert_draw_shape_state(&doc, verification.expected, verification.context)
 }
 
 fn undo_and_verify_state(
@@ -141,9 +157,11 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
     click_and_verify_state(
         visual_cx,
         &view,
-        pos1,
-        ExpectedDrawShapeState::new(2, 1, 0, false),
-        "after first click",
+        ClickVerification::new(
+            pos1,
+            ExpectedDrawShapeState::new(2, 1, 0, false),
+            "after first click",
+        ),
     )
     .expect("draw shape should contain one anchor after first click");
     let last_click_after_first = require_last_canvas_click(visual_cx, &view, "after first click")
@@ -157,9 +175,11 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
     click_and_verify_state(
         visual_cx,
         &view,
-        pos2,
-        ExpectedDrawShapeState::new(2, 2, 1, false),
-        "after second click",
+        ClickVerification::new(
+            pos2,
+            ExpectedDrawShapeState::new(2, 2, 1, false),
+            "after second click",
+        ),
     )
     .expect("draw shape should contain two anchors after second click");
     let _last_click_after_second = require_canvas_click_changed(
