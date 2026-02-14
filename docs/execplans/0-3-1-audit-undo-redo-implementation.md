@@ -5,7 +5,7 @@ This ExecPlan (execution plan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: IN PROGRESS
+Status: COMPLETE
 
 ## Purpose / big picture
 
@@ -62,23 +62,52 @@ guide, and roadmap documentation.
 ## Progress
 
 - [x] (2026-02-14) Stage A: added `len()` and `is_empty()` to
-  `DocumentUndoHistory`; unit tests for entry count per command.
-- [ ] Stage B: BDD scenarios for undo entry count.
-- [ ] Stage C: GPUI integration tests for single undo entry per gesture.
-- [ ] Stage D: documentation updates (architecture, user guide, roadmap,
-  execplan).
+  `DocumentUndoHistory`; five unit tests for entry count behaviour.
+- [x] (2026-02-14) Stage B: 11 BDD scenarios covering all command
+  variants plus multi-command accumulation.
+- [x] (2026-02-14) Stage C: entry count assertions in 8 existing GPUI
+  tests; 2 new test files (`gpui_multi_shape_drag_undo`,
+  `gpui_close_path_undo`).
+- [x] (2026-02-14) Stage D: architecture doc §7.3.1, user guide, roadmap
+  updated; execplan created.
 
 ## Surprises & discoveries
 
-(To be updated as work proceeds.)
+- No surprises. All Phase 0 interactions already produce single undo
+  entries by design. The preview + commit pattern (drag preview updates
+  applied directly; `finish_drag()` creates one `Command` on mouse up)
+  inherently prevents multi-entry pollution.
+- `rustfmt` enforces multi-line function signatures even for short
+  parameter lists; single-line style from AGENTS.md applies only to
+  function bodies without doc comments.
 
 ## Decision log
 
-(To be updated as work proceeds.)
+- `len()` counts realised entries only (via
+  `undo_2::Commands::iter_realized().count()`) so that undone entries are
+  not included. This matches the user-visible "undo stack depth."
+- Extended existing GPUI tests rather than creating parallel duplicates.
+  New test files only where existing files did not cover the interaction
+  (multi-shape drag undo, close path undo).
+- BDD scenarios test `DocumentUndoHistory` directly at the model layer.
+  GPUI-level tests use `#[gpui::test]` as the framework does not support
+  BDD step definitions.
 
 ## Outcomes & retrospective
 
-(To be completed when all stages finish.)
+All acceptance criteria met:
+
+- `DocumentUndoHistory::len()` and `is_empty()` implemented and tested
+  (5 unit tests).
+- 11 BDD scenarios verify single-entry invariant for all command
+  variants.
+- 10 GPUI integration tests (8 modified, 2 new) verify entry count for
+  drag, draw, anchor edit, segment toggle, reorder, style, multi-shape
+  drag, and close path gestures.
+- Architecture doc §7.3.1 records audit findings.
+- User guide documents the single-undo-step-per-gesture guarantee.
+- Roadmap 0.3.1 marked complete.
+- `make check-fmt`, `make lint`, `make test` all pass.
 
 ## Plan of work
 
