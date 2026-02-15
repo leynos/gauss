@@ -318,14 +318,9 @@ fn when_another_move_shapes(world: &mut EntryCountWorld) -> TestSupportResult<()
 
 // === Then steps ===
 
-#[then("the history length should be 1")]
-fn then_history_length_is_one(world: &EntryCountWorld) -> TestSupportResult<()> {
-    assert_history_length(world, 1)
-}
-
-#[then("the history length should be 3")]
-fn then_history_length_is_three(world: &EntryCountWorld) -> TestSupportResult<()> {
-    assert_history_length(world, 3)
+#[then("the history length should be {expected:usize}")]
+fn then_history_length_is(world: &EntryCountWorld, expected: usize) -> TestSupportResult<()> {
+    assert_history_length(world, expected)
 }
 
 // === Scenario bindings ===

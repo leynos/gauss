@@ -161,6 +161,13 @@ impl DocumentUndoHistory {
     /// "undo stack depth" — the number of times `undo()` can be called
     /// before the history is exhausted.
     ///
+    /// # Performance
+    ///
+    /// This method walks the internal `iter_realized()` iterator on each
+    /// call, so it runs in *O(n)* where *n* is the number of history
+    /// entries.  It is intended for assertions in tests and infrequent UI
+    /// queries (e.g. menu-item enable state), not for hot paths.
+    ///
     /// # Examples
     ///
     /// ```rust
