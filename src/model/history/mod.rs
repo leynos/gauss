@@ -155,7 +155,7 @@ impl DocumentUndoHistory {
         self.commands.is_undoing()
     }
 
-    /// Return the number of realised (non-undone) history entries.
+    /// Return the number of realized (non-undone) history entries.
     ///
     /// Undone entries are not counted, so this reflects the user-visible
     /// "undo stack depth" — the number of times `undo()` can be called
@@ -181,7 +181,7 @@ impl DocumentUndoHistory {
         self.commands.iter_realized().count()
     }
 
-    /// Return whether the history contains no realised entries.
+    /// Return whether the history contains no realized entries.
     ///
     /// # Examples
     ///

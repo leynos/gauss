@@ -26,6 +26,7 @@ fn execute_shape_drag_and_verify_selection(
     drag: DragCoordinates,
 ) -> TestSupportResult<()> {
     visual_cx.simulate_mouse_down(drag.start, MouseButton::Left, Modifiers::none());
+    visual_cx.run_until_parked();
     let selection_after_down = visual_cx.read(|app| view.read(app).selection().clone());
     let did_select = selection_after_down.items.iter().any(|item| match item {
         SelItem::Shape(id) => *id == shape_id,
@@ -47,6 +48,7 @@ fn execute_shape_drag_and_verify_selection(
 
     visual_cx.simulate_mouse_move(drag.end, MouseButton::Left, Modifiers::none());
     visual_cx.simulate_mouse_up(drag.end, MouseButton::Left, Modifiers::none());
+    visual_cx.run_until_parked();
 
     let stopped_dragging = visual_cx.read(|app| !view.read(app).is_dragging());
     if !stopped_dragging {

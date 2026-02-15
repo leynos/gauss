@@ -19,9 +19,9 @@ After this work:
   entry on mouse up.
 - Every compound tool interaction (draw-mode click, style change, keyboard
   command) produces exactly one undo entry.
-- The single-entry invariant is verified by parameterised unit tests, BDD
+- The single-entry invariant is verified by parameterized unit tests, BDD
   scenarios, and GPUI integration tests.
-- `DocumentUndoHistory::len()` exposes the realised entry count for test
+- `DocumentUndoHistory::len()` exposes the realized entry count for test
   assertions.
 
 Success is observable by running the full gates `make check-fmt`, `make lint`,
@@ -50,7 +50,7 @@ guide, and roadmap documentation.
 ## Risks
 
 - Risk: a Phase 0 gesture may unexpectedly produce multiple undo entries.
-  Severity: medium. Likelihood: low. Mitigation: parameterised tests will
+  Severity: medium. Likelihood: low. Mitigation: parameterized tests will
   surface any violation immediately; document findings and escalate if
   discovered.
 
@@ -83,7 +83,7 @@ guide, and roadmap documentation.
 
 ## Decision log
 
-- `len()` counts realised entries only (via
+- `len()` counts realized entries only (via
   `undo_2::Commands::iter_realized().count()`) so that undone entries are
   not included. This matches the user-visible "undo stack depth."
 - Extended existing GPUI tests rather than creating parallel duplicates.
@@ -114,7 +114,7 @@ All acceptance criteria met:
 ### Stage A: `len()` method and unit tests
 
 Add `len()` and `is_empty()` methods to `DocumentUndoHistory`. Write
-parameterised unit tests that apply each command variant and assert the history
+parameterized unit tests that apply each command variant and assert the history
 length is exactly 1.
 
 Go/no-go: proceed only when unit tests pass for all command variants.

@@ -870,9 +870,9 @@ audit confirmed the following:
   directly to the document without recording; the final `finish_drag()` creates
   one `Command` on mouse up.
 - Each `apply_command()` call produces exactly one `history.record()` call.
-- Entry count is now verified by parameterised unit tests, BDD scenarios,
+- Entry count is now verified by parameterized unit tests, BDD scenarios,
   and GPUI integration tests.
-- `DocumentUndoHistory::len()` exposes the realised entry count for test
+- `DocumentUndoHistory::len()` exposes the realized entry count for test
   assertions.
 
 ______________________________________________________________________

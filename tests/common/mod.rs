@@ -351,7 +351,6 @@ pub fn switch_to_manipulate_mode_and_verify(
     click_point: Point<Pixels>,
 ) {
     simulate_escape(visual_cx);
-    visual_cx.run_until_parked();
 
     let shapes_after_escape = read_document(visual_cx, view).len();
     visual_cx.simulate_mouse_move(click_point, None, Modifiers::none());
