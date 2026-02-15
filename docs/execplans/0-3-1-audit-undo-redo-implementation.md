@@ -147,7 +147,7 @@ required gates pass.
 Acceptance criteria:
 
 - `DocumentUndoHistory::len()` and `is_empty()` are implemented and tested.
-- Parameterised unit tests verify single-entry invariant for all command
+- Parameterized unit tests verify single-entry invariant for all command
   variants.
 - BDD scenarios cover the single-entry invariant.
 - GPUI integration tests cover drag and compound tool interactions.
