@@ -13,6 +13,19 @@ use super::{
     EntryCountWorld, apply_and_record, assert_history_length, get_first_shape, get_first_shape_id,
 };
 
+/// Helper to construct and apply a `MoveShapes` command with the given delta.
+fn apply_move_shapes_command(
+    world: &mut EntryCountWorld,
+    delta: Vec2,
+    context: &str,
+) -> TestSupportResult<()> {
+    let shape_id = get_first_shape_id(world, context)?;
+    let cmd = Command::MoveShapes {
+        movements: vec![ShapeMovement { shape_id, delta }],
+    };
+    apply_and_record(world, cmd)
+}
+
 // === Given steps ===
 
 #[given("an empty history and a document with one shape")]
@@ -71,14 +84,7 @@ pub(crate) fn given_two_shapes(world: &mut EntryCountWorld) {
 
 #[when("I apply a MoveShapes command")]
 pub(crate) fn when_move_shapes(world: &mut EntryCountWorld) -> TestSupportResult<()> {
-    let shape_id = get_first_shape_id(world, "MoveShapes")?;
-    let cmd = Command::MoveShapes {
-        movements: vec![ShapeMovement {
-            shape_id,
-            delta: Vec2::new(1.0, 0.0),
-        }],
-    };
-    apply_and_record(world, cmd)
+    apply_move_shapes_command(world, Vec2::new(1.0, 0.0), "MoveShapes")
 }
 
 #[when("I apply a MoveAnchor command")]
@@ -251,14 +257,7 @@ pub(crate) fn when_set_style(world: &mut EntryCountWorld) -> TestSupportResult<(
 
 #[when("I apply another MoveShapes command")]
 pub(crate) fn when_another_move_shapes(world: &mut EntryCountWorld) -> TestSupportResult<()> {
-    let shape_id = get_first_shape_id(world, "another MoveShapes")?;
-    let cmd = Command::MoveShapes {
-        movements: vec![ShapeMovement {
-            shape_id,
-            delta: Vec2::new(0.0, 1.0),
-        }],
-    };
-    apply_and_record(world, cmd)
+    apply_move_shapes_command(world, Vec2::new(0.0, 1.0), "another MoveShapes")
 }
 
 // === Then steps ===
