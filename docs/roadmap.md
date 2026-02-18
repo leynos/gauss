@@ -104,14 +104,15 @@ phases depend upon. See architecture document §20.
 
 ### 0.3. History and grouping
 
-- [ ] 0.3.1. Audit existing undo/redo implementation. (Partially
-  complete — the `undo_2` spike migrated document history to a model-layer
-  adapter `DocumentUndoHistory`, validated undo/redo round-trips, and confirmed
-  history-clear-on-open semantics. Remaining: verify multistep interactions
-  produce single undo entries.) In scope: undo/redo round-trip validation,
-  history-clear semantics, adapter integration. Out of scope: command grouping
+- [x] 0.3.1. Audit existing undo/redo implementation. (Complete — the
+  `undo_2` spike migrated document history to a model-layer adapter
+  `DocumentUndoHistory`, validated undo/redo round-trips, and confirmed
+  history-clear-on-open semantics. Single-entry-per-gesture invariant verified
+  by unit tests, BDD scenarios, and GPUI integration tests.) In scope:
+  undo/redo round-trip validation, history-clear semantics, adapter
+  integration, single-entry-per-gesture audit. Out of scope: command grouping
   (see 0.3.2).
-  - [ ] Verify multistep interactions create single undo entries.
+  - [x] Verify multistep interactions create single undo entries.
         Completion: all drag and compound tool interactions produce
         exactly one undo entry each.
   - [x] Test history clear on document open. See architecture §7.2.

@@ -118,6 +118,12 @@ This allows selection changes to be undone without affecting the document, and
 vice versa. For example, after selecting several shapes and then undoing the
 selection, the shapes themselves remain unchanged.
 
+**Single undo step per gesture:** Each user gesture — whether a drag, a click
+in draw mode, a style change, or a keyboard command — produces exactly one undo
+step. For example, dragging a shape (even if multiple shapes are selected)
+creates a single entry; pressing Undo once restores all shapes to their
+pre-drag positions.
+
 **Historical undo behaviour:** Document undo uses historical undo — all
 commands remain navigable even after branching. For example, if actions A, B
 are performed, then B is undone, and C is performed, undoing C will redo B in

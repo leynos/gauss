@@ -16,7 +16,8 @@ mod common;
 
 use common::{
     anchor_to_canvas_point, assert_vec2_close, canvas_bounds, click_canvas_and_wait,
-    ensure_initial_draw, init_test_app, read_document, require_draw_shape, simulate_escape,
+    ensure_initial_draw, init_test_app, read_document, read_history_len, require_draw_shape,
+    simulate_escape,
 };
 use gauss::model::{SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
@@ -186,6 +187,8 @@ fn tab_toggles_selected_segment_kind_and_undo_restores(cx: &mut TestAppContext) 
     select_segment0(visual_cx, &view, select_point, shape_before.id)
         .expect("expected segment selection to succeed");
 
+    let len_before_toggle = read_history_len(visual_cx, &view);
+
     visual_cx.simulate_keystrokes("tab");
     visual_cx.run_until_parked();
 
@@ -198,6 +201,11 @@ fn tab_toggles_selected_segment_kind_and_undo_restores(cx: &mut TestAppContext) 
         end_anchor.pos,
     )
     .expect("expected cubic handles after toggle");
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        len_before_toggle + 1,
+        "expected one undo entry for segment toggle"
+    );
 
     common::simulate_document_undo(visual_cx);
 

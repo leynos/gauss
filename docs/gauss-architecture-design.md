@@ -861,6 +861,20 @@ To avoid user-hostile undo behavior:
 - clear history appropriately when opening a new document (PoC pitfall)
   【111†using-gpui-and-gpui-component.md】
 
+#### 7.3.1 Single-entry-per-gesture audit (0.3.1)
+
+All Phase 0 interactions already produce single undo entries by design. The
+audit confirmed the following:
+
+- Drag gestures use a preview + commit pattern: preview updates are applied
+  directly to the document without recording; the final `finish_drag()` creates
+  one `Command` on mouse up.
+- Each `apply_command()` call produces exactly one `history.record()` call.
+- Entry count is now verified by parameterized unit tests, BDD scenarios,
+  and GPUI integration tests.
+- `DocumentUndoHistory::len()` exposes the realized entry count for test
+  assertions.
+
 ______________________________________________________________________
 
 ## 8. Geometry & Numerics
@@ -1067,12 +1081,12 @@ and preserves the `<metadata>` block verbatim through load/save cycles.
 
 **Shape-level attributes** (emitted on each `<path>` element):
 
-| Attribute       | Purpose                           | Format              |
-| --------------- | --------------------------------- | ------------------- |
-| `gauss:id`      | Stable shape identity             | 16-digit lowercase hex of `KeyData::as_ffi()` |
-| `gauss:name`    | User-assigned shape name          | UTF-8 string        |
-| `gauss:locked`  | Shape is locked for editing       | `"true"` when set   |
-| `gauss:hidden`  | Shape is hidden from view         | `"true"` when set   |
+| Attribute      | Purpose                     | Format                                        |
+| -------------- | --------------------------- | --------------------------------------------- |
+| `gauss:id`     | Stable shape identity       | 16-digit lowercase hex of `KeyData::as_ffi()` |
+| `gauss:name`   | User-assigned shape name    | UTF-8 string                                  |
+| `gauss:locked` | Shape is locked for editing | `"true"` when set                             |
+| `gauss:hidden` | Shape is hidden from view   | `"true"` when set                             |
 
 Default-valued attributes are omitted: `gauss:name` is absent when no name is
 set; `gauss:locked` and `gauss:hidden` are absent when `false`.
@@ -1084,15 +1098,15 @@ emitted and rejected on import.
 
 **Forward-compatible attribute preservation**: any `gauss:*` attribute not
 recognized by the current version is stored as a `GaussAttribute` in
-`Shape::gauss_metadata` and re-emitted on export. This allows future
-Gauss versions to add new attributes without older versions dropping them.
+`Shape::gauss_metadata` and re-emitted on export. This allows future Gauss
+versions to add new attributes without older versions dropping them.
 
 **`<metadata>` block preservation**: the raw inner content of the first
 `<metadata>` child of the SVG root is captured on import and stored in
 `EngineState::gauss_metadata_block`. On export, when present, the content is
-written inside a `<metadata>` element between `<defs>` and shape elements.
-This preserves third-party metadata (Dublin Core, Inkscape, RDF) as well as
-future Gauss document-level metadata.
+written inside a `<metadata>` element between `<defs>` and shape elements. This
+preserves third-party metadata (Dublin Core, Inkscape, RDF) as well as future
+Gauss document-level metadata.
 
 **Implementation modules**:
 

@@ -155,6 +155,47 @@ impl DocumentUndoHistory {
         self.commands.is_undoing()
     }
 
+    /// Return the number of realized (non-undone) history entries.
+    ///
+    /// Undone entries are not counted, so this reflects the user-visible
+    /// "undo stack depth" — the number of times `undo()` can be called
+    /// before the history is exhausted.
+    ///
+    /// # Performance
+    ///
+    /// This method walks the internal `iter_realized()` iterator on each
+    /// call, so it runs in *O(n)* where *n* is the number of history
+    /// entries.  It is intended for assertions in tests and infrequent UI
+    /// queries (e.g. menu-item enable state), not for hot paths.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use gauss::model::history::DocumentUndoHistory;
+    ///
+    /// let history = DocumentUndoHistory::new();
+    /// assert_eq!(history.len(), 0);
+    /// ```
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.commands.iter_realized().count()
+    }
+
+    /// Return whether the history contains no realized entries.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use gauss::model::history::DocumentUndoHistory;
+    ///
+    /// let history = DocumentUndoHistory::new();
+    /// assert!(history.is_empty());
+    /// ```
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Apply a collected list of `(Action, &HistoryEntry)` pairs to the
     /// document.
     ///

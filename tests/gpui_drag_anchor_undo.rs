@@ -4,7 +4,8 @@ mod common;
 
 use common::{
     CanvasDragScenario, assert_vec2_close, canvas_drag_scenario, draw_point, ensure_initial_draw,
-    init_test_app, read_document, require_draw_shape, simulate_document_undo, simulate_escape,
+    init_test_app, read_document, read_history_len, require_draw_shape, simulate_document_undo,
+    simulate_escape,
 };
 use gauss::model::{Anchor, SelItem, Shape, ShapeId};
 use gauss::ui::Phase0Shell;
@@ -63,6 +64,42 @@ fn drag_first_anchor(
     Ok(())
 }
 
+fn verify_anchor_moved(
+    shape: &Shape,
+    originals: &(Anchor, Anchor),
+    delta: gauss::model::Vec2,
+) -> TestSupportResult<()> {
+    let moved = first_two_anchors(shape)?;
+    assert_vec2_close(
+        moved.0.pos,
+        originals.0.pos.add(delta),
+        "first anchor moved",
+    )?;
+    assert_vec2_close(moved.1.pos, originals.1.pos, "second anchor stable")?;
+    if let Some(handle_out) = originals.0.handle_out {
+        let moved_handle_out = moved
+            .0
+            .handle_out
+            .ok_or_else(|| TestSupportError::missing("handle_out", "after drag"))?;
+        assert_vec2_close(
+            moved_handle_out,
+            handle_out.add(delta),
+            "first anchor handle_out moved",
+        )?;
+    }
+    Ok(())
+}
+
+fn verify_anchor_restored(shape: &Shape, originals: &(Anchor, Anchor)) -> TestSupportResult<()> {
+    let restored = first_two_anchors(shape)?;
+    assert_vec2_close(restored.0.pos, originals.0.pos, "first anchor restored")?;
+    assert_vec2_close(
+        restored.1.pos,
+        originals.1.pos,
+        "second anchor still stable after undo",
+    )
+}
+
 #[gpui::test]
 fn dragging_anchor_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -78,62 +115,34 @@ fn dragging_anchor_moves_it_and_undo_restores(cx: &mut TestAppContext) {
     let original_shape = require_draw_shape(&doc_before, "after drawing two points")
         .expect("expected draw shape after drawing")
         .clone();
-    let (original_first_anchor, original_second_anchor) =
+    let original_anchors =
         first_two_anchors(&original_shape).expect("expected two anchors in drawn shape");
 
     simulate_escape(visual_cx);
+
+    let len_before = read_history_len(visual_cx, &view);
+
     drag_first_anchor(visual_cx, &view, original_shape.id, scenario)
         .expect("expected drag on first anchor");
 
     let doc_after_drag = read_document(visual_cx, &view);
     let moved_shape = require_draw_shape(&doc_after_drag, "after dragging anchor")
         .expect("expected draw shape after dragging anchor");
-    let (moved_first_anchor, moved_second_anchor) =
-        first_two_anchors(moved_shape).expect("expected two anchors after dragging");
+    verify_anchor_moved(moved_shape, &original_anchors, scenario.delta)
+        .expect("expected anchor drag result to be correct");
 
-    assert_vec2_close(
-        moved_first_anchor.pos,
-        original_first_anchor.pos.add(scenario.delta),
-        "first anchor moved",
-    )
-    .expect("expected first anchor to move by drag delta");
-    assert_vec2_close(
-        moved_second_anchor.pos,
-        original_second_anchor.pos,
-        "second anchor stable",
-    )
-    .expect("expected second anchor to remain stable");
-
-    if let Some(handle_out) = original_first_anchor.handle_out {
-        let moved_handle_out = moved_first_anchor
-            .handle_out
-            .expect("expected moved handle_out to remain present");
-        assert_vec2_close(
-            moved_handle_out,
-            handle_out.add(scenario.delta),
-            "first anchor handle_out moved",
-        )
-        .expect("expected handle_out to move with anchor");
-    }
+    let len_after = read_history_len(visual_cx, &view);
+    assert_eq!(
+        len_after,
+        len_before + 1,
+        "expected exactly one undo entry for anchor drag"
+    );
 
     simulate_document_undo(visual_cx);
 
     let doc_after_undo = read_document(visual_cx, &view);
     let restored_shape =
         require_draw_shape(&doc_after_undo, "after undo").expect("expected draw shape after undo");
-    let (restored_first_anchor, restored_second_anchor) =
-        first_two_anchors(restored_shape).expect("expected two anchors after undo");
-
-    assert_vec2_close(
-        restored_first_anchor.pos,
-        original_first_anchor.pos,
-        "first anchor restored",
-    )
-    .expect("expected first anchor to restore");
-    assert_vec2_close(
-        restored_second_anchor.pos,
-        original_second_anchor.pos,
-        "second anchor still stable after undo",
-    )
-    .expect("expected second anchor to remain stable after undo");
+    verify_anchor_restored(restored_shape, &original_anchors)
+        .expect("expected anchors to restore after undo");
 }

@@ -3,8 +3,9 @@
 mod common;
 
 use common::{
-    canvas_points, ensure_initial_draw, init_test_app, read_document, require_canvas_click_changed,
-    require_draw_shape, require_last_canvas_click, simulate_document_redo, simulate_document_undo,
+    canvas_points, ensure_initial_draw, init_test_app, read_document, read_history_len,
+    require_canvas_click_changed, require_draw_shape, require_last_canvas_click,
+    simulate_document_redo, simulate_document_undo,
 };
 use gauss::ui::Phase0Shell;
 use gpui::TestAppContext;
@@ -77,6 +78,87 @@ fn assert_draw_shape_absent(
     Ok(())
 }
 
+/// Encapsulates a click-and-verify scenario for draw state testing.
+#[derive(Clone, Copy)]
+struct ClickVerification {
+    position: gpui::Point<gpui::Pixels>,
+    expected: ExpectedDrawShapeState,
+    context: &'static str,
+}
+
+impl ClickVerification {
+    const fn new(
+        position: gpui::Point<gpui::Pixels>,
+        expected: ExpectedDrawShapeState,
+        context: &'static str,
+    ) -> Self {
+        Self {
+            position,
+            expected,
+            context,
+        }
+    }
+}
+
+fn click_and_verify_state(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    verification: ClickVerification,
+) -> TestSupportResult<()> {
+    common::click_canvas_and_wait(visual_cx, verification.position);
+    let doc = read_document(visual_cx, view);
+    assert_draw_shape_state(&doc, verification.expected, verification.context)
+}
+
+/// Apply a document action (undo/redo), read the document, and verify the result.
+fn apply_action_and_verify<F, V>(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    action: F,
+    verify: V,
+) -> TestSupportResult<()>
+where
+    F: FnOnce(&mut gpui::VisualTestContext),
+    V: FnOnce(&gauss::model::Document) -> TestSupportResult<()>,
+{
+    action(visual_cx);
+    let doc = read_document(visual_cx, view);
+    verify(&doc)
+}
+
+fn undo_and_verify_state(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    expected: ExpectedDrawShapeState,
+    context: &str,
+) -> TestSupportResult<()> {
+    apply_action_and_verify(visual_cx, view, simulate_document_undo, |doc| {
+        assert_draw_shape_state(doc, expected, context)
+    })
+}
+
+fn undo_and_verify_absent(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    expected_total_shapes: usize,
+    context: &str,
+) -> TestSupportResult<()> {
+    apply_action_and_verify(visual_cx, view, simulate_document_undo, |doc| {
+        assert_draw_shape_absent(doc, expected_total_shapes, context)
+    })
+}
+
+fn redo_and_verify_state(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    expected: ExpectedDrawShapeState,
+    context: &str,
+) -> TestSupportResult<()> {
+    apply_action_and_verify(visual_cx, view, simulate_document_redo, |doc| {
+        assert_draw_shape_state(doc, expected, context)
+    })
+}
+
 #[gpui::test]
 fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -86,19 +168,36 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
 
     let (pos1, pos2) = canvas_points(visual_cx).expect("canvas points should be available");
 
-    common::click_canvas_and_wait(visual_cx, pos1);
-    let last_click_after_first = require_last_canvas_click(visual_cx, &view, "after first click")
-        .expect("expected Phase0Shell to record the first click");
+    let len_baseline = read_history_len(visual_cx, &view);
 
-    let doc_after_first = read_document(visual_cx, &view);
-    assert_draw_shape_state(
-        &doc_after_first,
-        ExpectedDrawShapeState::new(2, 1, 0, false),
-        "after first click",
+    click_and_verify_state(
+        visual_cx,
+        &view,
+        ClickVerification::new(
+            pos1,
+            ExpectedDrawShapeState::new(2, 1, 0, false),
+            "after first click",
+        ),
     )
     .expect("draw shape should contain one anchor after first click");
+    let last_click_after_first = require_last_canvas_click(visual_cx, &view, "after first click")
+        .expect("expected Phase0Shell to record the first click");
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        len_baseline + 1,
+        "expected one undo entry after first draw click"
+    );
 
-    common::click_canvas_and_wait(visual_cx, pos2);
+    click_and_verify_state(
+        visual_cx,
+        &view,
+        ClickVerification::new(
+            pos2,
+            ExpectedDrawShapeState::new(2, 2, 1, false),
+            "after second click",
+        ),
+    )
+    .expect("draw shape should contain two anchors after second click");
     let _last_click_after_second = require_canvas_click_changed(
         visual_cx,
         &view,
@@ -106,44 +205,36 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
         "after second click",
     )
     .expect("expected Phase0Shell to record a second click");
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        len_baseline + 2,
+        "expected two undo entries after second draw click"
+    );
 
-    let doc_after_second = read_document(visual_cx, &view);
-    assert_draw_shape_state(
-        &doc_after_second,
-        ExpectedDrawShapeState::new(2, 2, 1, false),
-        "after second click",
-    )
-    .expect("draw shape should contain two anchors after second click");
-
-    simulate_document_undo(visual_cx);
-    let doc_after_undo = read_document(visual_cx, &view);
-    assert_draw_shape_state(
-        &doc_after_undo,
+    undo_and_verify_state(
+        visual_cx,
+        &view,
         ExpectedDrawShapeState::new(2, 1, 0, false),
         "after undoing second click",
     )
     .expect("draw shape should have one anchor after undo");
 
-    simulate_document_undo(visual_cx);
-    let doc_after_second_undo = read_document(visual_cx, &view);
-    assert_draw_shape_absent(&doc_after_second_undo, 1, "after undoing the first click")
+    undo_and_verify_absent(visual_cx, &view, 1, "after undoing the first click")
         .expect("draw shape should be removed after undo");
 
     // Redo should re-insert the shape with one anchor.
-    simulate_document_redo(visual_cx);
-    let doc_after_first_redo = read_document(visual_cx, &view);
-    assert_draw_shape_state(
-        &doc_after_first_redo,
+    redo_and_verify_state(
+        visual_cx,
+        &view,
         ExpectedDrawShapeState::new(2, 1, 0, false),
         "after first redo",
     )
     .expect("draw shape should be re-inserted with one anchor after redo");
 
     // Second redo should restore the second anchor.
-    simulate_document_redo(visual_cx);
-    let doc_after_second_redo = read_document(visual_cx, &view);
-    assert_draw_shape_state(
-        &doc_after_second_redo,
+    redo_and_verify_state(
+        visual_cx,
+        &view,
         ExpectedDrawShapeState::new(2, 2, 1, false),
         "after second redo",
     )

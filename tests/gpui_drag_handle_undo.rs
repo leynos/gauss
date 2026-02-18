@@ -4,8 +4,8 @@ mod common;
 
 use common::{
     CanvasDragScenario, anchor_to_canvas_point, assert_vec2_close, canvas_drag_scenario,
-    ensure_initial_draw, init_test_app, read_document, require_draw_shape, simulate_document_undo,
-    simulate_escape,
+    ensure_initial_draw, init_test_app, read_document, read_history_len, require_draw_shape,
+    simulate_document_undo, simulate_escape,
 };
 use gauss::model::{SelItem, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
@@ -105,6 +105,8 @@ fn dragging_handle_moves_it_and_undo_restores(cx: &mut TestAppContext) {
 
     let setup = setup_handle_drag(visual_cx, &view).expect("expected handle drag setup");
 
+    let len_before = read_history_len(visual_cx, &view);
+
     visual_cx.simulate_mouse_down(setup.handle_start, MouseButton::Left, Modifiers::none());
     visual_cx.run_until_parked();
 
@@ -139,6 +141,13 @@ fn dragging_handle_moves_it_and_undo_restores(cx: &mut TestAppContext) {
         "handle_out moved by delta",
     )
     .expect("expected handle_out to move by drag delta");
+
+    let len_after = read_history_len(visual_cx, &view);
+    assert_eq!(
+        len_after,
+        len_before + 1,
+        "expected exactly one undo entry for handle drag"
+    );
 
     simulate_document_undo(visual_cx);
 

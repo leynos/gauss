@@ -4,7 +4,7 @@ mod common;
 
 use common::{
     anchor_to_canvas_point, click_canvas_and_wait, ensure_initial_draw, init_test_app,
-    read_document, require_draw_shape, simulate_escape,
+    read_document, read_history_len, require_draw_shape, simulate_escape,
 };
 use gauss::model::{Paint, Rgba, SelItem, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
@@ -69,6 +69,8 @@ fn style_changes_apply_to_selected_shapes_and_are_undoable(cx: &mut TestAppConte
     select_anchor0(visual_cx, &view, select_point, shape_before.id)
         .expect("expected anchor selection");
 
+    let len_before_style = read_history_len(visual_cx, &view);
+
     visual_cx.update(|_window, app| {
         view.update(app, |shell, _cx| {
             shell.apply_stroke_colour(Some(Hsla::red()));
@@ -76,6 +78,11 @@ fn style_changes_apply_to_selected_shapes_and_are_undoable(cx: &mut TestAppConte
         });
     });
     visual_cx.run_until_parked();
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        len_before_style + 2,
+        "expected two undo entries for stroke + fill changes"
+    );
 
     let doc_after = read_document(visual_cx, &view);
     let shape_after = require_draw_shape(&doc_after, "after applying style")

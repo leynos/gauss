@@ -255,3 +255,70 @@ fn insert_shape_round_trip_through_history(sample_shape: Shape) {
         original_path
     );
 }
+
+#[rstest]
+fn new_history_has_zero_len() {
+    let history = DocumentUndoHistory::new();
+
+    assert_eq!(history.len(), 0);
+    assert!(history.is_empty());
+}
+
+#[rstest]
+fn record_increments_len(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
+    let mut history = DocumentUndoHistory::new();
+
+    let (cmd1, inv1) = apply_move(&mut doc, id, 1.0, 0.0);
+    history.record(cmd1, inv1);
+    assert_eq!(history.len(), 1);
+
+    let (cmd2, inv2) = apply_move(&mut doc, id, 0.0, 2.0);
+    history.record(cmd2, inv2);
+    assert_eq!(history.len(), 2);
+}
+
+#[rstest]
+fn undo_decrements_len(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
+    let mut history = DocumentUndoHistory::new();
+
+    let (cmd1, inv1) = apply_move(&mut doc, id, 1.0, 0.0);
+    history.record(cmd1, inv1);
+    let (cmd2, inv2) = apply_move(&mut doc, id, 0.0, 2.0);
+    history.record(cmd2, inv2);
+    assert_eq!(history.len(), 2);
+
+    history.undo(&mut doc).expect("undo should succeed");
+    assert_eq!(history.len(), 1);
+}
+
+#[rstest]
+fn redo_restores_len(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
+    let mut history = DocumentUndoHistory::new();
+
+    let (cmd, inv) = apply_move(&mut doc, id, 1.0, 0.0);
+    history.record(cmd, inv);
+    assert_eq!(history.len(), 1);
+
+    history.undo(&mut doc).expect("undo should succeed");
+    assert_eq!(history.len(), 0);
+
+    history.redo(&mut doc).expect("redo should succeed");
+    assert_eq!(history.len(), 1);
+}
+
+#[rstest]
+fn clear_resets_len_to_zero(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
+    let mut history = DocumentUndoHistory::new();
+
+    let (cmd, inv) = apply_move(&mut doc, id, 3.0, 4.0);
+    history.record(cmd, inv);
+    assert_eq!(history.len(), 1);
+
+    history.clear();
+    assert_eq!(history.len(), 0);
+    assert!(history.is_empty());
+}
