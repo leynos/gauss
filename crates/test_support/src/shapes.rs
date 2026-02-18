@@ -37,6 +37,30 @@ pub fn sample_shape(id: ShapeId, z: i32) -> Shape {
     }
 }
 
+/// Create an open triangle shape with three anchors and two line segments.
+///
+/// Useful for testing path-closing and segment-kind workflows.
+#[must_use]
+pub fn open_triangle(id: ShapeId, z: i32) -> Shape {
+    let mut path = PathGeom::new();
+    path.anchors.push(Anchor::new(Vec2::new(0.0, 0.0)));
+    path.anchors.push(Anchor::new(Vec2::new(10.0, 0.0)));
+    path.anchors.push(Anchor::new(Vec2::new(5.0, 10.0)));
+    path.segments.push(SegmentKind::Line);
+    path.segments.push(SegmentKind::Line);
+
+    Shape {
+        id,
+        z,
+        style: PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), 2.0, None),
+        path,
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
+    }
+}
+
 /// Create a sample shape with two anchors and cubic handles.
 #[must_use]
 pub fn shape_with_handles(id: ShapeId) -> Shape {

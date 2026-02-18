@@ -2,12 +2,12 @@
 
 use gauss::model::{
     Anchor, Command, DeletedShape, DocumentUndoHistory, HandleKind, HandleMovement, PaintStyle,
-    PathGeom, ReorderOp, Rgba, SegmentChange, SegmentKind, ShapeInsertion, ShapeMovement,
-    ShapeReplacement, StyleChange, Vec2,
+    ReorderOp, Rgba, SegmentChange, SegmentKind, ShapeInsertion, ShapeMovement, ShapeReplacement,
+    StyleChange, Vec2,
 };
 use rstest_bdd_macros::{given, then, when};
 use test_support::TestSupportResult;
-use test_support::shapes::{sample_shape, shape_id, shape_with_handles};
+use test_support::shapes::{open_triangle, sample_shape, shape_id, shape_with_handles};
 
 use super::{
     EntryCountWorld, apply_and_record, assert_history_length, get_first_shape, get_first_shape_id,
@@ -51,24 +51,7 @@ pub(crate) fn given_one_cubic_shape(world: &mut EntryCountWorld) {
 #[given("an empty history and a document with an open triangle")]
 pub(crate) fn given_open_triangle(world: &mut EntryCountWorld) {
     world.document = gauss::model::Document::new();
-    let mut path = PathGeom::new();
-    path.anchors.push(Anchor::new(Vec2::new(0.0, 0.0)));
-    path.anchors.push(Anchor::new(Vec2::new(10.0, 0.0)));
-    path.anchors.push(Anchor::new(Vec2::new(5.0, 10.0)));
-    path.segments.push(SegmentKind::Line);
-    path.segments.push(SegmentKind::Line);
-
-    let shape = gauss::model::Shape {
-        id: shape_id(1),
-        z: 0,
-        style: PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), 2.0, None),
-        path,
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    };
-    world.document.append_shape(shape);
+    world.document.append_shape(open_triangle(shape_id(1), 0));
     world.history = DocumentUndoHistory::new();
 }
 
@@ -119,15 +102,17 @@ pub(crate) fn when_move_handle(world: &mut EntryCountWorld) -> TestSupportResult
         .anchors
         .first()
         .ok_or_else(|| test_support::TestSupportError::missing("anchor", "MoveHandle"))?;
-    let handle_out = anchor.handle_out;
-    let new_pos = handle_out.map(|h| Vec2::new(h.x + 1.0, h.y));
+    let handle_out = anchor
+        .handle_out
+        .ok_or_else(|| test_support::TestSupportError::missing("handle_out", "MoveHandle"))?;
+    let new_pos = Vec2::new(handle_out.x + 1.0, handle_out.y);
     let cmd = Command::MoveHandle {
         movement: HandleMovement {
             shape_id: shape.id,
             anchor_index: 0,
             kind: HandleKind::Out,
-            from: handle_out,
-            to: new_pos,
+            from: Some(handle_out),
+            to: Some(new_pos),
         },
     };
     apply_and_record(world, cmd)
@@ -268,4 +253,41 @@ pub(crate) fn then_history_length_is(
     expected: usize,
 ) -> TestSupportResult<()> {
     assert_history_length(world, expected)
+}
+
+#[cfg(test)]
+mod tests {
+    //! Regression coverage for `MoveHandle` step behaviour.
+
+    use gauss::model::{Document, DocumentUndoHistory};
+
+    use super::*;
+
+    fn new_world() -> EntryCountWorld {
+        EntryCountWorld {
+            document: Document::new(),
+            history: DocumentUndoHistory::new(),
+        }
+    }
+
+    #[test]
+    fn move_handle_requires_present_out_handle() {
+        let mut world = new_world();
+        given_one_shape(&mut world);
+
+        let error = when_move_handle(&mut world)
+            .expect_err("MoveHandle should fail when the selected anchor has no out handle");
+
+        assert_eq!(error.to_string(), "missing handle_out: MoveHandle");
+        assert_eq!(world.history.len(), 0);
+    }
+
+    #[test]
+    fn move_handle_records_single_entry_when_handle_exists() -> TestSupportResult<()> {
+        let mut world = new_world();
+        given_one_cubic_shape(&mut world);
+
+        when_move_handle(&mut world)?;
+        assert_history_length(&world, 1)
+    }
 }
