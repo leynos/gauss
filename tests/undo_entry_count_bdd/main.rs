@@ -15,6 +15,7 @@ use test_support::{TestSupportError, TestSupportResult};
 pub(crate) struct EntryCountWorld {
     pub(crate) document: Document,
     pub(crate) history: DocumentUndoHistory,
+    pub(crate) last_grouping_error: Option<String>,
 }
 
 #[fixture]
@@ -22,6 +23,7 @@ fn world() -> EntryCountWorld {
     EntryCountWorld {
         document: Document::new(),
         history: DocumentUndoHistory::new(),
+        last_grouping_error: None,
     }
 }
 
@@ -59,6 +61,22 @@ pub(crate) fn get_first_shape_id(
         .document
         .shape_id_at(0)
         .ok_or_else(|| TestSupportError::missing("shape", context))
+}
+
+pub(crate) fn assert_last_grouping_error(
+    world: &EntryCountWorld,
+    expected: &str,
+) -> TestSupportResult<()> {
+    let actual = world.last_grouping_error.as_deref().ok_or_else(|| {
+        TestSupportError::expectation("expected a grouping error, but none was captured")
+    })?;
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(TestSupportError::expectation(format!(
+            "expected grouping error '{expected}', got '{actual}'"
+        )))
+    }
 }
 
 /// Apply a command to the document and record it in the undo history.
@@ -157,5 +175,29 @@ fn set_style_command_produces_single_undo_entry(world: EntryCountWorld) {
     name = "Multiple sequential commands produce matching undo count"
 )]
 fn multiple_sequential_commands_produce_matching_undo_count(world: EntryCountWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/undo_entry_count.feature",
+    name = "Grouped commands collapse to one undo entry"
+)]
+fn grouped_commands_collapse_to_one_undo_entry(world: EntryCountWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/undo_entry_count.feature",
+    name = "Ending a group without begin reports an error and keeps history unchanged"
+)]
+fn ending_group_without_begin_reports_an_error_and_keeps_history_unchanged(world: EntryCountWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/undo_entry_count.feature",
+    name = "Nested group begin reports an error and keeps history unchanged"
+)]
+fn nested_group_begin_reports_an_error_and_keeps_history_unchanged(world: EntryCountWorld) {
     let _ = world;
 }

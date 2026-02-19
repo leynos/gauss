@@ -124,6 +124,11 @@ step. For example, dragging a shape (even if multiple shapes are selected)
 creates a single entry; pressing Undo once restores all shapes to their
 pre-drag positions.
 
+**Grouped compound operations:** Some operations execute multiple internal
+commands. Gauss groups these commands into one document-history entry, so one
+Undo reverts the whole operation rather than partially reverting it. Grouped
+entries are only committed when the operation closes successfully.
+
 **Historical undo behaviour:** Document undo uses historical undo — all
 commands remain navigable even after branching. For example, if actions A, B
 are performed, then B is undone, and C is performed, undoing C will redo B in

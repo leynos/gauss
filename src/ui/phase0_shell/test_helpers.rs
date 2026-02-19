@@ -6,6 +6,7 @@
 
 use std::path::Path;
 
+use crate::model::history::HistoryError;
 use crate::model::{
     Command, Document, ResourceStore, Selection, ShapeId, UserError, Vec2, Viewport,
 };
@@ -219,6 +220,31 @@ impl Phase0Shell {
     /// (e.g., the target shape does not exist).
     pub fn apply_command_for_tests(&mut self, command: Command) -> Result<(), UserError> {
         self.apply_command(command)
+    }
+
+    /// Begin a grouped document command transaction for headless tests.
+    ///
+    /// Commands applied after this call are accumulated into a single
+    /// undoable history entry until
+    /// [`Self::end_document_command_group_for_tests`] is called.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when a group is already active.
+    pub fn begin_document_command_group_for_tests(&mut self) -> Result<(), HistoryError> {
+        self.document_history.begin_group()
+    }
+
+    /// End the active grouped document command transaction for headless tests.
+    ///
+    /// Closing an empty group is a no-op. Closing a non-empty group commits one
+    /// undoable history entry.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when no group is active.
+    pub fn end_document_command_group_for_tests(&mut self) -> Result<(), HistoryError> {
+        self.document_history.end_group()
     }
 
     /// Return a mutable reference to the document for direct mutation.

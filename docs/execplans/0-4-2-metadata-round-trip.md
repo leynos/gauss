@@ -20,9 +20,9 @@ Status: COMPLETE
 
 - The fragment-based re-parser in `resource_tags.rs` wraps SVG fragments in a
   `<gauss-import-wrapper>` element without namespace declarations. After Stage
-  B added `gauss:*` attributes to `<path>` elements, the fragment parser
-  failed because `roxmltree` could not resolve the `gauss:` prefix. Fixed by
-  adding `gauss_namespace_declaration()` to the wrapper element.
+  B added `gauss:*` attributes to `<path>` elements, the fragment parser failed
+  because `roxmltree` could not resolve the `gauss:` prefix. Fixed by adding
+  `gauss_namespace_declaration()` to the wrapper element.
 - The `<metadata>` block export needed conditional trailing-newline logic to
   achieve idempotent round-trip. If the content already ends with `\n`, the
   exporter must not add another; otherwise the second round-trip would gain an

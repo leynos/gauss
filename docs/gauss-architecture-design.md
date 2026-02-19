@@ -875,6 +875,36 @@ audit confirmed the following:
 - `DocumentUndoHistory::len()` exposes the realized entry count for test
   assertions.
 
+#### 7.3.2 Command grouping API (0.3.2)
+
+Roadmap item 0.3.2 adds an explicit transaction surface to
+`DocumentUndoHistory`:
+
+- `begin_group()` starts a grouping transaction.
+- `record()` appends commands to the active group while it is open.
+- `end_group()` commits the group as one realized undo entry.
+- Empty groups are a no-op and do not create history entries.
+
+Design decisions:
+
+- Grouping boundaries are model-layer APIs, not GPUI-only helpers. This keeps
+  grouping behaviour testable in unit and behavioural suites without UI
+  dependencies.
+- Boundary misuse returns deterministic `String` errors for now:
+  `Cannot begin command group: group already active` and
+  `Cannot end command group: no active group`. This preserves the current
+  adapter error model from roadmap item 0.3.5.
+- Grouped commands are not realized until `end_group()` succeeds; therefore
+  `len()` remains unchanged while a group is active and increments by one on
+  commit.
+
+Validation coverage now includes:
+
+- model tests for grouped undo/redo batch semantics and boundary errors,
+- BDD scenarios for grouped happy and unhappy paths,
+- GPUI tests that exercise grouped command application through `Phase0Shell`
+  test helpers and verify one-step undo behaviour.
+
 ______________________________________________________________________
 
 ## 8. Geometry & Numerics

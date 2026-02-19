@@ -124,7 +124,7 @@ impl Phase0Shell {
             Ok(()) => self.last_history_error = None,
             Err(error) => {
                 log::error!("{error}");
-                self.last_history_error = Some(error);
+                self.last_history_error = Some(error.to_string());
             }
         }
     }
@@ -134,7 +134,7 @@ impl Phase0Shell {
             Ok(()) => self.last_history_error = None,
             Err(error) => {
                 log::error!("{error}");
-                self.last_history_error = Some(error);
+                self.last_history_error = Some(error.to_string());
             }
         }
     }
