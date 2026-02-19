@@ -116,11 +116,15 @@ phases depend upon. See architecture document §20.
         Completion: all drag and compound tool interactions produce
         exactly one undo entry each.
   - [x] Test history clear on document open. See architecture §7.2.
-- [ ] 0.3.2. Implement command grouping API. Requires 0.3.1.
-  - [ ] Begin/end transaction for compound operations. Completion:
+- [x] 0.3.2. Implement command grouping API. Requires 0.3.1. (Complete —
+  `DocumentUndoHistory` now exposes `begin_group()` / `end_group()` with
+  deterministic boundary errors. Grouped command sequences collapse to one undo
+  step, validated by model unit tests, behavioural BDD scenarios, and GPUI
+  integration tests.)
+  - [x] Begin/end transaction for compound operations. Completion:
         `DocumentUndoHistory` exposes grouping API and groups
         collapse to a single undo step in tests.
-  - [ ] Integrate with model-layer `DocumentUndoHistory`.
+  - [x] Integrate with model-layer `DocumentUndoHistory`.
 - [x] 0.3.3. Add inverse command generation.
   - [x] All commands produce `CommandInverse` for undo.
         See architecture §7.1.

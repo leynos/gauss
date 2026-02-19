@@ -54,6 +54,27 @@ Feature: Undo entry count
     When I apply a SetStyle command
     Then the history length should be 1
 
+  Scenario: Grouped commands collapse to one undo entry
+    Given an empty history and a document with one shape
+    When I begin a command group
+    And I apply a MoveShapes command
+    And I apply another MoveShapes command
+    And I end the active command group
+    Then the history length should be 1
+
+  Scenario: Ending a group without begin reports an error and keeps history unchanged
+    Given an empty history and a document with one shape
+    When I end a command group without beginning one
+    Then the grouping error should be Cannot end command group: no active group
+    And the history length should be 0
+
+  Scenario: Nested group begin reports an error and keeps history unchanged
+    Given an empty history and a document with one shape
+    When I begin a command group
+    And I begin another command group
+    Then the grouping error should be Cannot begin command group: group already active
+    And the history length should be 0
+
   Scenario: Multiple sequential commands produce matching undo count
     Given an empty history and a document with one shape
     When I apply a MoveShapes command

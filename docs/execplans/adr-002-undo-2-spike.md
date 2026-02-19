@@ -183,6 +183,8 @@ completed history migration scope.
 
 - Selection history migration (remains on `gpui_component::History`).
 - Command grouping for multistep interactions (roadmap 0.3.2).
+  Follow-up completed on 2026-02-19: `DocumentUndoHistory` now exposes
+  begin/end grouping boundaries with BDD and GPUI coverage.
 - History pruning/merge policies.
 - Preview operation interaction with history.
 
@@ -194,7 +196,6 @@ enough to replace if requirements change.
 
 ### Follow-up work required
 
-- Implement command grouping API (roadmap 0.3.2).
 - Define history pruning policy for long sessions.
 - Evaluate whether selection history should also migrate in a future spike.
 
