@@ -22,6 +22,13 @@ mod tests;
 /// Generous for an illustration editor; bounds memory in long sessions.
 const DEFAULT_MAX_DEPTH: usize = 500;
 
+/// Error returned when `begin_group()` is called while a group is active.
+pub const GROUPING_ERROR_GROUP_ALREADY_ACTIVE: &str =
+    "Cannot begin command group: group already active";
+
+/// Error returned when `end_group()` is called without an active group.
+pub const GROUPING_ERROR_NO_ACTIVE_GROUP: &str = "Cannot end command group: no active group";
+
 /// A paired command and its inverse, stored in the undo history.
 ///
 /// Both sides are retained so that `undo_2` can instruct the adapter to
@@ -127,7 +134,7 @@ impl DocumentUndoHistory {
     /// Returns an error when a group is already active.
     pub fn begin_group(&mut self) -> Result<(), String> {
         if self.active_group.is_some() {
-            return Err("Cannot begin command group: group already active".to_owned());
+            return Err(GROUPING_ERROR_GROUP_ALREADY_ACTIVE.to_owned());
         }
         self.active_group = Some(Vec::new());
         Ok(())
@@ -143,7 +150,7 @@ impl DocumentUndoHistory {
     /// Returns an error when no group is active.
     pub fn end_group(&mut self) -> Result<(), String> {
         let Some(group) = self.active_group.take() else {
-            return Err("Cannot end command group: no active group".to_owned());
+            return Err(GROUPING_ERROR_NO_ACTIVE_GROUP.to_owned());
         };
 
         if group.is_empty() {

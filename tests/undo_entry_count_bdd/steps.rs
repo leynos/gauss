@@ -1,5 +1,6 @@
 //! Given / When / Then step definitions for undo entry count scenarios.
 
+use gauss::model::history::{GROUPING_ERROR_GROUP_ALREADY_ACTIVE, GROUPING_ERROR_NO_ACTIVE_GROUP};
 use gauss::model::{
     Anchor, Command, DeletedShape, DocumentUndoHistory, HandleKind, HandleMovement, PaintStyle,
     ReorderOp, Rgba, SegmentChange, SegmentKind, ShapeInsertion, ShapeMovement, ShapeReplacement,
@@ -25,6 +26,14 @@ fn apply_move_shapes_command(
         movements: vec![ShapeMovement { shape_id, delta }],
     };
     apply_and_record(world, cmd)
+}
+
+fn resolve_grouping_error(expected: &str) -> Option<&'static str> {
+    match expected {
+        "group-already-active" => Some(GROUPING_ERROR_GROUP_ALREADY_ACTIVE),
+        "no-active-group" => Some(GROUPING_ERROR_NO_ACTIVE_GROUP),
+        _ => None,
+    }
 }
 
 // === Given steps ===
@@ -292,7 +301,8 @@ pub(crate) fn then_grouping_error_is(
     world: &EntryCountWorld,
     expected: String,
 ) -> TestSupportResult<()> {
-    assert_last_grouping_error(world, &expected)
+    let expected_resolved = resolve_grouping_error(&expected).unwrap_or(expected.as_str());
+    assert_last_grouping_error(world, expected_resolved)
 }
 
 #[cfg(test)]
@@ -339,7 +349,7 @@ mod tests {
 
         when_end_group_without_begin(&mut world);
 
-        assert_last_grouping_error(&world, "Cannot end command group: no active group")
+        assert_last_grouping_error(&world, GROUPING_ERROR_NO_ACTIVE_GROUP)
             .expect("expected deterministic grouping error");
         assert_eq!(world.history.len(), 0);
     }
@@ -352,7 +362,7 @@ mod tests {
 
         when_begin_another_command_group(&mut world);
 
-        assert_last_grouping_error(&world, "Cannot begin command group: group already active")?;
+        assert_last_grouping_error(&world, GROUPING_ERROR_GROUP_ALREADY_ACTIVE)?;
         if !world.history.is_empty() {
             return Err(test_support::TestSupportError::expectation(
                 "history should remain unchanged on nested begin",

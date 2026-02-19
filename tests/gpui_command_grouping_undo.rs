@@ -6,6 +6,7 @@ use common::{
     assert_vec2_close, ensure_initial_draw, init_test_app, read_document, read_history_len,
     simulate_document_undo,
 };
+use gauss::model::history::GROUPING_ERROR_NO_ACTIVE_GROUP;
 use gauss::model::{Command, Document, ShapeId, ShapeMovement, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Entity, TestAppContext, VisualTestContext};
@@ -191,7 +192,7 @@ fn end_group_without_begin_returns_error_and_preserves_history(cx: &mut TestAppC
 
     assert_eq!(
         error.expect_err("expected closing without begin to fail"),
-        "Cannot end command group: no active group",
+        GROUPING_ERROR_NO_ACTIVE_GROUP,
     );
     assert_eq!(
         read_history_len(visual_cx, &view),
