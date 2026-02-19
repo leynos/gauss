@@ -74,24 +74,24 @@ guide, and roadmap documentation.
 ## Surprises & discoveries
 
 - No surprises. All Phase 0 interactions already produce single undo
-  entries by design. The preview + commit pattern (drag preview updates
-  applied directly; `finish_drag()` creates one `Command` on mouse up)
-  inherently prevents multi-entry pollution.
+  entries by design. The preview + commit pattern (drag preview updates applied
+  directly; `finish_drag()` creates one `Command` on mouse up) inherently
+  prevents multi-entry pollution.
 - `rustfmt` enforces multi-line function signatures even for short
-  parameter lists; single-line style from AGENTS.md applies only to
-  function bodies without doc comments.
+  parameter lists; single-line style from AGENTS.md applies only to function
+  bodies without doc comments.
 
 ## Decision log
 
 - `len()` counts realized entries only (via
-  `undo_2::Commands::iter_realized().count()`) so that undone entries are
-  not included. This matches the user-visible "undo stack depth."
+  `undo_2::Commands::iter_realized().count()`) so that undone entries are not
+  included. This matches the user-visible "undo stack depth."
 - Extended existing GPUI tests rather than creating parallel duplicates.
   New test files only where existing files did not cover the interaction
   (multi-shape drag undo, close path undo).
 - BDD scenarios test `DocumentUndoHistory` directly at the model layer.
-  GPUI-level tests use `#[gpui::test]` as the framework does not support
-  BDD step definitions.
+  GPUI-level tests use `#[gpui::test]` as the framework does not support BDD
+  step definitions.
 
 ## Outcomes & retrospective
 
@@ -102,8 +102,8 @@ All acceptance criteria met:
 - 11 BDD scenarios verify single-entry invariant for all command
   variants.
 - 10 GPUI integration tests (8 modified, 2 new) verify entry count for
-  drag, draw, anchor edit, segment toggle, reorder, style, multi-shape
-  drag, and close path gestures.
+  drag, draw, anchor edit, segment toggle, reorder, style, multi-shape drag,
+  and close path gestures.
 - Architecture doc §7.3.1 records audit findings.
 - User guide documents the single-undo-step-per-gesture guarantee.
 - Roadmap 0.3.1 marked complete.
