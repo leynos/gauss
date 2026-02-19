@@ -37,26 +37,26 @@ pub const GROUPING_ERROR_UNDO_WHILE_GROUP_ACTIVE: &str =
 pub const GROUPING_ERROR_REDO_WHILE_GROUP_ACTIVE: &str =
     "Cannot redo while command group is active";
 
-/// A paired command and its inverse, stored in the undo history.
-///
-/// Both sides are retained so that `undo_2` can instruct the adapter to
-/// apply either the forward or reverse operation without recomputing.
+/// One realized undo entry, either a single command pair or a grouped batch.
 #[derive(Clone, Debug, PartialEq)]
-struct HistoryStep {
-    command: Command,
-    inverse: CommandInverse,
-}
-
-/// One realized undo entry, containing one or more command steps.
-#[derive(Clone, Debug, PartialEq)]
-struct HistoryEntry {
-    steps: Vec<HistoryStep>,
+enum HistoryEntry {
+    /// A paired command and its inverse, stored in the undo history.
+    ///
+    /// Both sides are retained so that `undo_2` can instruct the adapter to
+    /// apply either the forward or reverse operation without recomputing.
+    Single {
+        command: Box<Command>,
+        inverse: Box<CommandInverse>,
+    },
+    /// A grouped batch of entries recorded inside one begin/end transaction.
+    Group(Vec<Self>),
 }
 
 impl HistoryEntry {
     fn single(command: Command, inverse: CommandInverse) -> Self {
-        Self {
-            steps: vec![HistoryStep { command, inverse }],
+        Self::Single {
+            command: Box::new(command),
+            inverse: Box::new(inverse),
         }
     }
 }
@@ -84,7 +84,7 @@ impl HistoryEntry {
 pub struct DocumentUndoHistory {
     commands: undo_2::Commands<HistoryEntry>,
     max_depth: usize,
-    active_group: Option<Vec<HistoryStep>>,
+    active_group: Option<Vec<HistoryEntry>>,
 }
 
 impl DocumentUndoHistory {
@@ -161,7 +161,7 @@ impl DocumentUndoHistory {
             return Ok(());
         }
 
-        self.commands.push(HistoryEntry { steps: group });
+        self.commands.push(HistoryEntry::Group(group));
         self.commands.keep_last(self.max_depth);
         Ok(())
     }
@@ -172,7 +172,7 @@ impl DocumentUndoHistory {
     /// *before* calling this method and passing the resulting `inverse`.
     pub fn record(&mut self, command: Command, inverse: CommandInverse) {
         if let Some(group) = self.active_group.as_mut() {
-            group.push(HistoryStep { command, inverse });
+            group.push(HistoryEntry::single(command, inverse));
             return;
         }
 
@@ -306,43 +306,62 @@ impl DocumentUndoHistory {
         entry: &HistoryEntry,
         label: &str,
     ) -> Result<(), String> {
-        let mut first_error: Option<String> = None;
+        match entry {
+            HistoryEntry::Single { command, inverse } => {
+                Self::apply_single(doc, action, (command.as_ref(), inverse.as_ref()), label)
+            }
+            HistoryEntry::Group(entries) => Self::apply_group(doc, action, entries, label),
+        }
+    }
 
+    fn apply_single(
+        doc: &mut Document,
+        action: Action,
+        pair: (&Command, &CommandInverse),
+        label: &str,
+    ) -> Result<(), String> {
+        let (command, inverse) = pair;
+        match action {
+            Action::Undo => inverse
+                .apply(doc)
+                .map_err(|err| format!("{label} failed for '{}': {err}", inverse.name())),
+            Action::Do => {
+                // The new inverse is intentionally discarded — the stored
+                // inverse remains correct for future undo cycles.
+                command
+                    .apply(doc)
+                    .map(|_inverse| ())
+                    .map_err(|err| format!("{label} failed for '{}': {err}", command.name()))
+            }
+        }
+    }
+
+    fn apply_group(
+        doc: &mut Document,
+        action: Action,
+        entries: &[HistoryEntry],
+        label: &str,
+    ) -> Result<(), String> {
+        let mut first_error: Option<String> = None;
         match action {
             Action::Undo => {
-                for step in entry.steps.iter().rev() {
+                for entry in entries.iter().rev() {
                     Self::capture_first_error(
                         &mut first_error,
-                        Self::apply_undo_step(doc, step, label),
+                        Self::apply_entry(doc, action, entry, label),
                     );
                 }
             }
             Action::Do => {
-                for step in &entry.steps {
+                for entry in entries {
                     Self::capture_first_error(
                         &mut first_error,
-                        Self::apply_do_step(doc, step, label),
+                        Self::apply_entry(doc, action, entry, label),
                     );
                 }
             }
         }
-
         first_error.map_or(Ok(()), Err)
-    }
-
-    fn apply_undo_step(doc: &mut Document, step: &HistoryStep, label: &str) -> Result<(), String> {
-        step.inverse
-            .apply(doc)
-            .map_err(|err| format!("{label} failed for '{}': {err}", step.inverse.name()))
-    }
-
-    fn apply_do_step(doc: &mut Document, step: &HistoryStep, label: &str) -> Result<(), String> {
-        // The new inverse is intentionally discarded — the stored
-        // inverse remains correct for future undo cycles.
-        step.command
-            .apply(doc)
-            .map(|_inverse| ())
-            .map_err(|err| format!("{label} failed for '{}': {err}", step.command.name()))
     }
 
     fn capture_first_error(first_error: &mut Option<String>, result: Result<(), String>) {
