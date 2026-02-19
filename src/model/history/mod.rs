@@ -29,6 +29,14 @@ pub const GROUPING_ERROR_GROUP_ALREADY_ACTIVE: &str =
 /// Error returned when `end_group()` is called without an active group.
 pub const GROUPING_ERROR_NO_ACTIVE_GROUP: &str = "Cannot end command group: no active group";
 
+/// Error returned when `undo()` is called while a group is still open.
+pub const GROUPING_ERROR_UNDO_WHILE_GROUP_ACTIVE: &str =
+    "Cannot undo while command group is active";
+
+/// Error returned when `redo()` is called while a group is still open.
+pub const GROUPING_ERROR_REDO_WHILE_GROUP_ACTIVE: &str =
+    "Cannot redo while command group is active";
+
 /// A paired command and its inverse, stored in the undo history.
 ///
 /// Both sides are retained so that `undo_2` can instruct the adapter to
@@ -50,10 +58,6 @@ impl HistoryEntry {
         Self {
             steps: vec![HistoryStep { command, inverse }],
         }
-    }
-
-    const fn from_steps(steps: Vec<HistoryStep>) -> Self {
-        Self { steps }
     }
 }
 
@@ -157,7 +161,7 @@ impl DocumentUndoHistory {
             return Ok(());
         }
 
-        self.commands.push(HistoryEntry::from_steps(group));
+        self.commands.push(HistoryEntry { steps: group });
         self.commands.keep_last(self.max_depth);
         Ok(())
     }
@@ -186,6 +190,9 @@ impl DocumentUndoHistory {
     /// Returns a description if any individual command or inverse
     /// application fails.
     pub fn undo(&mut self, doc: &mut Document) -> Result<(), String> {
+        if self.active_group.is_some() {
+            return Err(GROUPING_ERROR_UNDO_WHILE_GROUP_ACTIVE.to_owned());
+        }
         let actions: Vec<_> = self.commands.undo().collect();
         Self::apply_actions(doc, &actions, "Undo")
     }
@@ -199,6 +206,9 @@ impl DocumentUndoHistory {
     /// Returns a description if any individual command or inverse
     /// application fails.
     pub fn redo(&mut self, doc: &mut Document) -> Result<(), String> {
+        if self.active_group.is_some() {
+            return Err(GROUPING_ERROR_REDO_WHILE_GROUP_ACTIVE.to_owned());
+        }
         let actions: Vec<_> = self.commands.redo().collect();
         Self::apply_actions(doc, &actions, "Redo")
     }

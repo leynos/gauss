@@ -19,7 +19,8 @@ After this work:
 - `DocumentUndoHistory` exposes explicit grouping boundaries.
 - Commands recorded inside one open group collapse to one undoable step.
 - Grouping behaviour is validated at three levels: unit (`rstest`),
-  behavioural (`rstest-bdd` v0.5.0), and GPUI integration tests.
+  behavioural (`rstest-bdd` v0.5.0), and GPU-accelerated UI (GPUI)
+  integration tests.
 - Architecture and user docs describe grouping semantics and error handling.
 - Roadmap 0.3.2 is marked done only after all gates pass.
 
@@ -31,7 +32,8 @@ Success is observable by passing `make check-fmt`, `make lint`, and
 
 Implementation will run as a small agent team with explicit ownership:
 
-- Explorer A (docs): roadmap + architecture + ADR constraints and doc updates.
+- Explorer A (docs): roadmap + architecture + architecture decision record
+  (ADR) constraints and doc updates.
 - Explorer B (history code): `DocumentUndoHistory` design, call sites, and
   integration seams.
 - Explorer C (tests): unit, `rstest-bdd`, and GPUI coverage patterns.
@@ -149,7 +151,7 @@ Implementation notes:
 
 - Keep grouped and non-grouped code paths explicit rather than implicit flags.
 - Ensure depth limiting (`keep_last(max_depth)`) still applies at commit time.
-- Ensure group commit produces one realised entry that undoes/redoes as an
+- Ensure group commit produces one realized entry that undoes/redoes as an
   atomic batch.
 
 Go/no-go: proceed only when new unit tests for grouping core mechanics pass.

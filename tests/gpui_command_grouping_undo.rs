@@ -117,7 +117,8 @@ fn apply_grouped_moves_for_test(
 fn grouped_document_commands_collapse_to_one_undo_step(cx: &mut TestAppContext) {
     init_test_app(cx);
 
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    let (view, visual_cx) =
+        cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
     ensure_initial_draw(visual_cx);
 
     let shape = shape_id(42);
@@ -180,7 +181,8 @@ fn grouped_document_commands_collapse_to_one_undo_step(cx: &mut TestAppContext) 
 fn end_group_without_begin_returns_error_and_preserves_history(cx: &mut TestAppContext) {
     init_test_app(cx);
 
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    let (view, visual_cx) =
+        cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
     ensure_initial_draw(visual_cx);
 
     let history_before = read_history_len(visual_cx, &view);
