@@ -2,6 +2,7 @@
 
 mod branch_edit;
 mod depth_limit;
+mod grouping;
 
 use rstest::{fixture, rstest};
 
