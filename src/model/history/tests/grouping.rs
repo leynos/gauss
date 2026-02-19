@@ -143,6 +143,11 @@ fn grouped_redo_reports_first_error_and_leaves_partial_state(
     doc_with_one_shape: (Document, ShapeId),
 ) {
     let (mut doc, id) = doc_with_one_shape;
+    let invalid_id = ShapeId::from_accesskit_node_id(id.to_accesskit_node_id().wrapping_add(1));
+    assert_ne!(
+        invalid_id, id,
+        "sentinel invalid id must differ from fixture shape id"
+    );
     let baseline = doc.clone();
     let mut history = DocumentUndoHistory::new();
 
@@ -151,7 +156,7 @@ fn grouped_redo_reports_first_error_and_leaves_partial_state(
     // Step 1: will fail on redo ("Do") because the shape id does not exist.
     let first_fail = Command::MoveShapes {
         movements: vec![ShapeMovement {
-            shape_id: ShapeId::default(),
+            shape_id: invalid_id,
             delta: Vec2::new(1.0, 0.0),
         }],
     };
@@ -171,7 +176,7 @@ fn grouped_redo_reports_first_error_and_leaves_partial_state(
     // Step 3: also fails on redo with a distinct command name.
     let second_fail = Command::Reorder {
         operations: vec![ReorderOp {
-            shape_id: ShapeId::default(),
+            shape_id: invalid_id,
             from_index: 0,
             to_index: 1,
         }],
