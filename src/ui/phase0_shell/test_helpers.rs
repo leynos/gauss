@@ -6,6 +6,7 @@
 
 use std::path::Path;
 
+use crate::model::history::HistoryError;
 use crate::model::{
     Command, Document, ResourceStore, Selection, ShapeId, UserError, Vec2, Viewport,
 };
@@ -230,7 +231,7 @@ impl Phase0Shell {
     /// # Errors
     ///
     /// Returns an error when a group is already active.
-    pub fn begin_document_command_group_for_tests(&mut self) -> Result<(), String> {
+    pub fn begin_document_command_group_for_tests(&mut self) -> Result<(), HistoryError> {
         self.document_history.begin_group()
     }
 
@@ -242,7 +243,7 @@ impl Phase0Shell {
     /// # Errors
     ///
     /// Returns an error when no group is active.
-    pub fn end_document_command_group_for_tests(&mut self) -> Result<(), String> {
+    pub fn end_document_command_group_for_tests(&mut self) -> Result<(), HistoryError> {
         self.document_history.end_group()
     }
 

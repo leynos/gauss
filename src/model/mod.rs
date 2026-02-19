@@ -37,7 +37,7 @@ pub use command::{
 pub use document::Document;
 pub use engine_state::EngineState;
 pub(crate) use geometry::{CubicSegment, cubic_point, shape_world_bounds};
-pub use history::DocumentUndoHistory;
+pub use history::{DocumentUndoHistory, HistoryError};
 pub use key_context::KeyContext;
 pub use keybinding::{
     ActionBinding, bindings_for_action, bindings_for_context, default_bindings, primary_keystroke,

@@ -95,7 +95,11 @@ pub(crate) fn when_begin_command_group(world: &mut EntryCountWorld) -> TestSuppo
 
 #[when("I begin another command group")]
 pub(crate) fn when_begin_another_command_group(world: &mut EntryCountWorld) {
-    world.last_grouping_error = world.history.begin_group().err();
+    world.last_grouping_error = world
+        .history
+        .begin_group()
+        .err()
+        .map(|error| error.to_string());
 }
 
 #[when("I end the active command group")]
@@ -108,7 +112,11 @@ pub(crate) fn when_end_active_command_group(world: &mut EntryCountWorld) -> Test
 
 #[when("I end a command group without beginning one")]
 pub(crate) fn when_end_group_without_begin(world: &mut EntryCountWorld) {
-    world.last_grouping_error = world.history.end_group().err();
+    world.last_grouping_error = world
+        .history
+        .end_group()
+        .err()
+        .map(|error| error.to_string());
 }
 
 #[when("I apply a MoveAnchor command")]

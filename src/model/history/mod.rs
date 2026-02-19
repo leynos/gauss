@@ -8,6 +8,7 @@
 //! `undo_2` implements *historical* undo — commands are never discarded
 //! after a branch edit, making the full edit history navigable.
 
+use thiserror::Error;
 use undo_2::Action;
 
 use super::command::Command;
@@ -36,6 +37,62 @@ pub const GROUPING_ERROR_UNDO_WHILE_GROUP_ACTIVE: &str =
 /// Error returned when `redo()` is called while a group is still open.
 pub const GROUPING_ERROR_REDO_WHILE_GROUP_ACTIVE: &str =
     "Cannot redo while command group is active";
+
+/// Semantic errors produced by document undo/redo history operations.
+#[derive(Clone, Debug, Error, PartialEq, Eq)]
+pub enum HistoryError {
+    /// `begin_group()` was called while another group is already active.
+    #[error("{GROUPING_ERROR_GROUP_ALREADY_ACTIVE}")]
+    GroupAlreadyActive,
+    /// `end_group()` was called when no group was active.
+    #[error("{GROUPING_ERROR_NO_ACTIVE_GROUP}")]
+    NoActiveGroup,
+    /// `undo()` was called while a group is active.
+    #[error("{GROUPING_ERROR_UNDO_WHILE_GROUP_ACTIVE}")]
+    UndoWhileGroupActive,
+    /// `redo()` was called while a group is active.
+    #[error("{GROUPING_ERROR_REDO_WHILE_GROUP_ACTIVE}")]
+    RedoWhileGroupActive,
+    /// Replaying a command during undo failed.
+    #[error("Undo failed for '{command_name}': {reason}")]
+    UndoReplayFailed {
+        /// Human-readable command name that failed.
+        command_name: String,
+        /// Underlying command failure reason.
+        reason: String,
+    },
+    /// Replaying a command during redo failed.
+    #[error("Redo failed for '{command_name}': {reason}")]
+    RedoReplayFailed {
+        /// Human-readable command name that failed.
+        command_name: String,
+        /// Underlying command failure reason.
+        reason: String,
+    },
+}
+
+#[derive(Clone, Copy)]
+enum ReplayDirection {
+    Undo,
+    Redo,
+}
+
+impl ReplayDirection {
+    fn replay_failed(self, command_name: &str, reason: &str) -> HistoryError {
+        let owned_command_name = command_name.to_owned();
+        let owned_reason = reason.to_owned();
+        match self {
+            Self::Undo => HistoryError::UndoReplayFailed {
+                command_name: owned_command_name,
+                reason: owned_reason,
+            },
+            Self::Redo => HistoryError::RedoReplayFailed {
+                command_name: owned_command_name,
+                reason: owned_reason,
+            },
+        }
+    }
+}
 
 /// One realized undo entry, either a single command pair or a grouped batch.
 #[derive(Clone, Debug, PartialEq)]
@@ -136,9 +193,9 @@ impl DocumentUndoHistory {
     /// # Errors
     ///
     /// Returns an error when a group is already active.
-    pub fn begin_group(&mut self) -> Result<(), String> {
+    pub fn begin_group(&mut self) -> Result<(), HistoryError> {
         if self.active_group.is_some() {
-            return Err(GROUPING_ERROR_GROUP_ALREADY_ACTIVE.to_owned());
+            return Err(HistoryError::GroupAlreadyActive);
         }
         self.active_group = Some(Vec::new());
         Ok(())
@@ -152,9 +209,9 @@ impl DocumentUndoHistory {
     /// # Errors
     ///
     /// Returns an error when no group is active.
-    pub fn end_group(&mut self) -> Result<(), String> {
+    pub fn end_group(&mut self) -> Result<(), HistoryError> {
         let Some(group) = self.active_group.take() else {
-            return Err(GROUPING_ERROR_NO_ACTIVE_GROUP.to_owned());
+            return Err(HistoryError::NoActiveGroup);
         };
 
         if group.is_empty() {
@@ -189,12 +246,12 @@ impl DocumentUndoHistory {
     ///
     /// Returns a description if any individual command or inverse
     /// application fails.
-    pub fn undo(&mut self, doc: &mut Document) -> Result<(), String> {
+    pub fn undo(&mut self, doc: &mut Document) -> Result<(), HistoryError> {
         if self.active_group.is_some() {
-            return Err(GROUPING_ERROR_UNDO_WHILE_GROUP_ACTIVE.to_owned());
+            return Err(HistoryError::UndoWhileGroupActive);
         }
         let actions: Vec<_> = self.commands.undo().collect();
-        Self::apply_actions(doc, &actions, "Undo")
+        Self::apply_actions(doc, &actions, ReplayDirection::Undo)
     }
 
     /// Redo the most recently undone action, mutating the document.
@@ -205,12 +262,12 @@ impl DocumentUndoHistory {
     ///
     /// Returns a description if any individual command or inverse
     /// application fails.
-    pub fn redo(&mut self, doc: &mut Document) -> Result<(), String> {
+    pub fn redo(&mut self, doc: &mut Document) -> Result<(), HistoryError> {
         if self.active_group.is_some() {
-            return Err(GROUPING_ERROR_REDO_WHILE_GROUP_ACTIVE.to_owned());
+            return Err(HistoryError::RedoWhileGroupActive);
         }
         let actions: Vec<_> = self.commands.redo().collect();
-        Self::apply_actions(doc, &actions, "Redo")
+        Self::apply_actions(doc, &actions, ReplayDirection::Redo)
     }
 
     /// Discard all recorded commands, resetting the history to empty.
@@ -288,11 +345,11 @@ impl DocumentUndoHistory {
     fn apply_actions(
         doc: &mut Document,
         actions: &[(Action, &HistoryEntry)],
-        label: &str,
-    ) -> Result<(), String> {
-        let mut first_error: Option<String> = None;
+        direction: ReplayDirection,
+    ) -> Result<(), HistoryError> {
+        let mut first_error: Option<HistoryError> = None;
         for (action, entry) in actions {
-            if let Err(e) = Self::apply_entry(doc, *action, entry, label) {
+            if let Err(e) = Self::apply_entry(doc, *action, entry, direction) {
                 first_error.get_or_insert(e);
             }
         }
@@ -304,13 +361,13 @@ impl DocumentUndoHistory {
         doc: &mut Document,
         action: Action,
         entry: &HistoryEntry,
-        label: &str,
-    ) -> Result<(), String> {
+        direction: ReplayDirection,
+    ) -> Result<(), HistoryError> {
         match entry {
             HistoryEntry::Single { command, inverse } => {
-                Self::apply_single(doc, action, (command.as_ref(), inverse.as_ref()), label)
+                Self::apply_single(doc, action, (command.as_ref(), inverse.as_ref()), direction)
             }
-            HistoryEntry::Group(entries) => Self::apply_group(doc, action, entries, label),
+            HistoryEntry::Group(entries) => Self::apply_group(doc, action, entries, direction),
         }
     }
 
@@ -318,20 +375,21 @@ impl DocumentUndoHistory {
         doc: &mut Document,
         action: Action,
         pair: (&Command, &CommandInverse),
-        label: &str,
-    ) -> Result<(), String> {
+        direction: ReplayDirection,
+    ) -> Result<(), HistoryError> {
         let (command, inverse) = pair;
         match action {
-            Action::Undo => inverse
-                .apply(doc)
-                .map_err(|err| format!("{label} failed for '{}': {err}", inverse.name())),
+            Action::Undo => inverse.apply(doc).map_err(|err| {
+                let reason = err.to_string();
+                direction.replay_failed(inverse.name(), &reason)
+            }),
             Action::Do => {
                 // The new inverse is intentionally discarded — the stored
                 // inverse remains correct for future undo cycles.
-                command
-                    .apply(doc)
-                    .map(|_inverse| ())
-                    .map_err(|err| format!("{label} failed for '{}': {err}", command.name()))
+                command.apply(doc).map(|_inverse| ()).map_err(|err| {
+                    let reason = err.to_string();
+                    direction.replay_failed(command.name(), &reason)
+                })
             }
         }
     }
@@ -340,15 +398,15 @@ impl DocumentUndoHistory {
         doc: &mut Document,
         action: Action,
         entries: &[HistoryEntry],
-        label: &str,
-    ) -> Result<(), String> {
-        let mut first_error: Option<String> = None;
+        direction: ReplayDirection,
+    ) -> Result<(), HistoryError> {
+        let mut first_error: Option<HistoryError> = None;
         match action {
             Action::Undo => {
                 for entry in entries.iter().rev() {
                     Self::capture_first_error(
                         &mut first_error,
-                        Self::apply_entry(doc, action, entry, label),
+                        Self::apply_entry(doc, action, entry, direction),
                     );
                 }
             }
@@ -356,7 +414,7 @@ impl DocumentUndoHistory {
                 for entry in entries {
                     Self::capture_first_error(
                         &mut first_error,
-                        Self::apply_entry(doc, action, entry, label),
+                        Self::apply_entry(doc, action, entry, direction),
                     );
                 }
             }
@@ -364,7 +422,10 @@ impl DocumentUndoHistory {
         first_error.map_or(Ok(()), Err)
     }
 
-    fn capture_first_error(first_error: &mut Option<String>, result: Result<(), String>) {
+    fn capture_first_error(
+        first_error: &mut Option<HistoryError>,
+        result: Result<(), HistoryError>,
+    ) {
         if let Err(error) = result {
             first_error.get_or_insert(error);
         }

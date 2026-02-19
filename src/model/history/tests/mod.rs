@@ -213,7 +213,9 @@ fn undo_propagates_error_on_bad_shape() {
     history.record(cmd, inverse);
 
     let result = history.undo(&mut doc);
-    let msg = result.expect_err("undo should fail for bogus shape");
+    let msg = result
+        .expect_err("undo should fail for bogus shape")
+        .to_string();
     assert!(msg.contains("Undo"), "error should mention Undo: {msg}");
     assert!(
         msg.contains("Move"),

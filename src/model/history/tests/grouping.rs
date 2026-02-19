@@ -3,10 +3,7 @@
 use rstest::rstest;
 
 use crate::model::document::Document;
-use crate::model::history::{
-    DocumentUndoHistory, GROUPING_ERROR_GROUP_ALREADY_ACTIVE, GROUPING_ERROR_NO_ACTIVE_GROUP,
-    GROUPING_ERROR_REDO_WHILE_GROUP_ACTIVE, GROUPING_ERROR_UNDO_WHILE_GROUP_ACTIVE,
-};
+use crate::model::history::{DocumentUndoHistory, HistoryError};
 use crate::model::{Command, CommandInverse, ReorderOp, ShapeId, ShapeMovement, Vec2};
 
 use super::{apply_move, doc_with_one_shape};
@@ -63,7 +60,7 @@ fn nested_begin_group_returns_deterministic_error() {
     let err = history
         .begin_group()
         .expect_err("nested begin should return an error");
-    assert_eq!(err, GROUPING_ERROR_GROUP_ALREADY_ACTIVE);
+    assert_eq!(err, HistoryError::GroupAlreadyActive);
 
     history
         .end_group()
@@ -77,7 +74,7 @@ fn end_group_without_begin_returns_deterministic_error() {
     let err = history
         .end_group()
         .expect_err("end without begin should return an error");
-    assert_eq!(err, GROUPING_ERROR_NO_ACTIVE_GROUP);
+    assert_eq!(err, HistoryError::NoActiveGroup);
 }
 
 #[rstest]
@@ -100,7 +97,7 @@ fn clear_discards_active_group_and_realized_history(doc_with_one_shape: (Documen
     let err = history
         .end_group()
         .expect_err("clear should discard active group");
-    assert_eq!(err, GROUPING_ERROR_NO_ACTIVE_GROUP);
+    assert_eq!(err, HistoryError::NoActiveGroup);
 }
 
 #[rstest]
@@ -115,7 +112,7 @@ fn undo_while_group_is_open_returns_error(doc_with_one_shape: (Document, ShapeId
     let err = history
         .undo(&mut doc)
         .expect_err("undo should fail while a group is active");
-    assert_eq!(err, GROUPING_ERROR_UNDO_WHILE_GROUP_ACTIVE);
+    assert_eq!(err, HistoryError::UndoWhileGroupActive);
     assert_eq!(doc, state_before_undo);
     assert!(history.can_undo());
 }
@@ -133,7 +130,7 @@ fn redo_while_group_is_open_returns_error(doc_with_one_shape: (Document, ShapeId
     let err = history
         .redo(&mut doc)
         .expect_err("redo should fail while a group is active");
-    assert_eq!(err, GROUPING_ERROR_REDO_WHILE_GROUP_ACTIVE);
+    assert_eq!(err, HistoryError::RedoWhileGroupActive);
     assert_eq!(doc, state_before_redo);
     assert!(history.can_redo());
 }
@@ -198,13 +195,14 @@ fn grouped_redo_reports_first_error_and_leaves_partial_state(
     let err = history
         .redo(&mut doc)
         .expect_err("redo should fail because grouped steps contain failures");
+    let error = err.to_string();
     assert!(
-        err.contains("Redo failed for 'Move'"),
-        "expected first failure message, got: {err}"
+        error.contains("Redo failed for 'Move'"),
+        "expected first failure message, got: {error}"
     );
     assert!(
-        !err.contains("Redo failed for 'Reorder'"),
-        "later failure should not overwrite first message: {err}"
+        !error.contains("Redo failed for 'Reorder'"),
+        "later failure should not overwrite first message: {error}"
     );
     assert_eq!(doc, expected_partial);
 }
