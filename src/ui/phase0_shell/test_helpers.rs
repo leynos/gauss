@@ -232,7 +232,7 @@ impl Phase0Shell {
     ///
     /// Returns an error when a group is already active.
     pub fn begin_document_command_group_for_tests(&mut self) -> Result<(), HistoryError> {
-        self.document_history.begin_group()
+        self.state.begin_document_history_group()
     }
 
     /// End the active grouped document command transaction for headless tests.
@@ -244,7 +244,7 @@ impl Phase0Shell {
     ///
     /// Returns an error when no group is active.
     pub fn end_document_command_group_for_tests(&mut self) -> Result<(), HistoryError> {
-        self.document_history.end_group()
+        self.state.end_document_history_group()
     }
 
     /// Return a mutable reference to the document for direct mutation.
@@ -296,7 +296,7 @@ impl Phase0Shell {
     /// that verify the single-entry-per-gesture invariant.
     #[must_use]
     pub fn document_history_len_for_tests(&self) -> usize {
-        self.document_history.len()
+        self.state.document_history_len()
     }
 
     /// Return the last history error, if any.

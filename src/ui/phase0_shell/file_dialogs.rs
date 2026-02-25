@@ -168,7 +168,7 @@ async fn apply_open_prompt(
             view.state.document = imported.document;
             view.state.resources = imported.resources;
             view.state.gauss_metadata_block = imported.gauss_metadata_block;
-            view.document_history.clear();
+            view.state.clear_document_history();
             view.selection_history = History::new();
             view.state.selection = Selection::empty();
             view.drag_state = None;

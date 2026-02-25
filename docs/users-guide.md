@@ -118,6 +118,9 @@ This allows selection changes to be undone without affecting the document, and
 vice versa. For example, after selecting several shapes and then undoing the
 selection, the shapes themselves remain unchanged.
 
+Document history is now owned internally by the engine state. Shortcuts and
+visible undo/redo behaviour are unchanged.
+
 **Single undo step per gesture:** Each user gesture — whether a drag, a click
 in draw mode, a style change, or a keyboard command — produces exactly one undo
 step. For example, dragging a shape (even if multiple shapes are selected)

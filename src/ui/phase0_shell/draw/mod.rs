@@ -113,14 +113,13 @@ impl Phase0Shell {
     }
 
     pub(super) fn apply_command(&mut self, command: Command) -> Result<(), UserError> {
-        let inverse = command.apply(&mut self.state.document)?;
-        self.document_history.record(command, inverse);
+        self.state.apply_document_command(command)?;
         self.last_history_error = None;
         Ok(())
     }
 
     pub(super) fn undo_document(&mut self) {
-        match self.document_history.undo(&mut self.state.document) {
+        match self.state.undo_document() {
             Ok(()) => self.last_history_error = None,
             Err(error) => {
                 log::error!("{error}");
@@ -130,7 +129,7 @@ impl Phase0Shell {
     }
 
     pub(super) fn redo_document(&mut self) {
-        match self.document_history.redo(&mut self.state.document) {
+        match self.state.redo_document() {
             Ok(()) => self.last_history_error = None,
             Err(error) => {
                 log::error!("{error}");

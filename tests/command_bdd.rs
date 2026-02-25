@@ -4,8 +4,8 @@
 //! Actions to undoable document mutations.
 
 use gauss::model::{
-    Action, Command, CommandInverse, Document, DocumentUndoHistory, EngineState, SelItem,
-    Selection, UserError, prepare_command,
+    Action, Command, CommandInverse, Document, EngineState, HistoryError, SelItem, Selection,
+    UserError, prepare_command,
 };
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
@@ -18,6 +18,7 @@ struct CommandWorld {
     state: EngineState,
     command: Option<Result<Command, UserError>>,
     inverse: Option<CommandInverse>,
+    history_error: Option<HistoryError>,
 }
 
 #[fixture]
@@ -90,11 +91,47 @@ fn when_apply_inverse(world: &mut CommandWorld) -> TestSupportResult<()> {
 
 #[when("I undo on an empty history")]
 fn when_undo_on_empty_history(world: &mut CommandWorld) -> TestSupportResult<()> {
-    let mut history = DocumentUndoHistory::new();
-    history
-        .undo(&mut world.state.document)
+    world
+        .state
+        .undo_document()
         .map_err(|e| TestSupportError::expectation(format!("empty undo failed: {e}")))?;
     Ok(())
+}
+
+#[when("I apply DeleteSelection through EngineState history")]
+fn when_apply_delete_selection_through_engine_state_history(
+    world: &mut CommandWorld,
+) -> TestSupportResult<()> {
+    let command = prepare_command(Action::DeleteSelection, &world.state)
+        .map_err(|e| TestSupportError::expectation(format!("prepare failed: {e}")))?;
+    world
+        .state
+        .apply_document_command(command)
+        .map_err(|e| TestSupportError::expectation(format!("apply through engine failed: {e}")))?;
+    Ok(())
+}
+
+#[when("I undo through EngineState history")]
+fn when_undo_through_engine_state_history(world: &mut CommandWorld) -> TestSupportResult<()> {
+    world
+        .state
+        .undo_document()
+        .map_err(|e| TestSupportError::expectation(format!("engine undo failed: {e}")))?;
+    Ok(())
+}
+
+#[when("I redo through EngineState history")]
+fn when_redo_through_engine_state_history(world: &mut CommandWorld) -> TestSupportResult<()> {
+    world
+        .state
+        .redo_document()
+        .map_err(|e| TestSupportError::expectation(format!("engine redo failed: {e}")))?;
+    Ok(())
+}
+
+#[when("I end an EngineState history group without begin")]
+fn when_end_engine_state_history_group_without_begin(world: &mut CommandWorld) {
+    world.history_error = world.state.end_document_history_group().err();
 }
 
 // === Then steps ===
@@ -176,6 +213,19 @@ fn then_command_fails_empty_selection(world: &CommandWorld) -> TestSupportResult
         ))),
         Some(Ok(_)) => Err(TestSupportError::expectation("expected error, got success")),
         None => Err(TestSupportError::missing("command", "check")),
+    }
+}
+
+#[then("ending group should fail with NoActiveGroup")]
+fn then_ending_group_fails_with_no_active_group(world: &CommandWorld) -> TestSupportResult<()> {
+    match world.history_error {
+        Some(HistoryError::NoActiveGroup) => Ok(()),
+        Some(ref error) => Err(TestSupportError::expectation(format!(
+            "expected NoActiveGroup, got {error}"
+        ))),
+        None => Err(TestSupportError::expectation(
+            "expected group boundary operation to fail",
+        )),
     }
 }
 
@@ -283,5 +333,21 @@ fn inverse_command_has_matching_name(world: CommandWorld) {
     name = "Empty history undo is safe"
 )]
 fn empty_history_undo_is_safe(world: CommandWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/command.feature",
+    name = "EngineState history delete-selection round trip"
+)]
+fn engine_state_history_delete_selection_round_trip(world: CommandWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/command.feature",
+    name = "EngineState history group boundary reports no active group"
+)]
+fn engine_state_history_group_boundary_reports_no_active_group(world: CommandWorld) {
     let _ = world;
 }
