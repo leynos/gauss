@@ -1,4 +1,4 @@
-# Move Document History Ownership to EngineState (0.3.4)
+# Move document history ownership to EngineState (0.3.4)
 
 This Execution Plan (ExecPlan) is a living document. The sections
 `Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
@@ -9,7 +9,7 @@ Status: COMPLETE (implementation, documentation, and gates complete).
 
 No `PLANS.md` exists in this repository.
 
-## Purpose / Big Picture
+## Purpose / big picture
 
 Roadmap item 0.3.4 requires document undo/redo history ownership to move from
 `Phase0Shell` to `EngineState` so editor state remains engine-owned, as
@@ -46,7 +46,7 @@ Success is observable when:
   `make check-fmt`, `make lint`, `make test`.
 - Mark roadmap item `0.3.4` as done only after code, docs, and tests pass.
 
-## Tolerances (Exception Triggers)
+## Tolerances (exception triggers)
 
 - Scope: if this work exceeds 15 files or 700 changed lines, stop and
   re-evaluate against roadmap scope.
@@ -75,7 +75,7 @@ Success is observable when:
   Mitigation: update design document sections that currently state Phase0Shell
   owns history.
 
-## Spark Team Strategy
+## Spark team strategy
 
 Implementation will use a Spark-style parallel agent team with three streams:
 
@@ -89,7 +89,7 @@ Implementation will use a Spark-style parallel agent team with three streams:
 Each stream lands small, reviewable commits, rebases as needed, and reruns
 relevant gates before merge.
 
-## Context and Orientation
+## Context and orientation
 
 Primary code anchors:
 
@@ -113,12 +113,12 @@ Documentation anchors:
   1382-1394 (architecture intent and immediate work item).
 - `docs/users-guide.md` lines 108-136 (user-visible undo/redo behaviour).
 
-## Implementation Plan
+## Implementation plan
 
-### Milestone 1: Move Ownership into EngineState
+### Milestone 1: Move ownership into EngineState
 
 Add a `document_history: DocumentUndoHistory` field to `EngineState` and
-initialise it in `new()` / `with_document()`.
+initialize it in `new()` / `with_document()`.
 
 Introduce model-level methods that encapsulate document-history interactions to
 avoid split mutable borrows in UI code:
@@ -134,9 +134,9 @@ ownership rather than deferred ownership.
 
 Resolve derive compatibility explicitly and keep the public model API coherent.
 
-### Milestone 2: Convert Phase0Shell to Delegation
+### Milestone 2: Convert Phase0Shell to delegation
 
-Remove `Phase0Shell::document_history` field and constructor initialisation.
+Remove `Phase0Shell::document_history` field and constructor initialization.
 
 Update call sites to delegate through `self.state`:
 
@@ -148,7 +148,7 @@ Update call sites to delegate through `self.state`:
 Keep `last_history_error` behaviour unchanged: failures set status text,
 success clears it.
 
-### Milestone 3: Unit Tests (`rstest`) for Engine Ownership
+### Milestone 3: Unit tests (`rstest`) for engine ownership
 
 Extend model-level tests to verify `EngineState`-owned history behaviour:
 
@@ -157,10 +157,10 @@ Extend model-level tests to verify `EngineState`-owned history behaviour:
 - Edge path: empty history undo/redo are safe no-ops, clear resets stack.
 
 Use fixture/parameterized patterns from
-`docs/rust-testing-with-rstest- fixtures.md` (cases and values) to avoid
+`docs/rust-testing-with-rstest-fixtures.md` (cases and values) to avoid
 duplicated setup.
 
-### Milestone 4: Behavioural Tests (`rstest-bdd` v0.5.0)
+### Milestone 4: Behavioural tests (`rstest-bdd` v0.5.0)
 
 Add or extend BDD scenarios to exercise engine-owned document history via
 observable outcomes, not private internals:
@@ -172,7 +172,7 @@ observable outcomes, not private internals:
 Keep scenario registration with `#[scenario]` and `.feature` files, following
 the documented Given/When/Then workflow.
 
-### Milestone 5: GPUI Tests and Integration
+### Milestone 5: GPUI tests and integration
 
 Update existing GPUI tests that depend on history helpers to compile against
 delegated EngineState ownership.
@@ -187,7 +187,7 @@ Ensure happy/unhappy/edge GPUI coverage remains explicit:
 Add targeted GPUI coverage if existing tests do not explicitly exercise
 clear-on-open behaviour after delegation.
 
-### Milestone 6: Documentation and Roadmap Completion
+### Milestone 6: Documentation and roadmap completion
 
 Update design docs to match shipped architecture:
 
@@ -198,14 +198,14 @@ visible behaviour or wording changed due to this migration.
 
 Mark roadmap item `0.3.4` done in `docs/roadmap.md` after all gates pass.
 
-## Validation and Acceptance
+## Validation and acceptance
 
 Run from repository root with `pipefail` and branch-safe logs:
 
 ```bash
 set -o pipefail
 project="$(basename "$PWD")"
-branch="$(git branch --show | tr '/' '-')"
+branch="$(git branch --show-current | tr '/' '-')"
 
 make check-fmt | tee "/tmp/check-fmt-${project}-${branch}.out"
 make lint | tee "/tmp/lint-${project}-${branch}.out"
@@ -220,7 +220,7 @@ Acceptance criteria:
 - GPUI history integration tests pass.
 - Design doc, user guide, and roadmap are in sync with implementation.
 
-## Commit Plan
+## Commit plan
 
 - Commit 1: Engine ownership move and `Phase0Shell` delegation refactor.
 - Commit 2: Unit, BDD, and GPUI test updates for happy/unhappy/edge coverage.
@@ -229,7 +229,7 @@ Acceptance criteria:
 
 Each commit must pass relevant gates before the next commit is created.
 
-## Idempotence and Recovery
+## Idempotence and recovery
 
 - If a gate fails, inspect the matching `/tmp/*.out` log file, apply the
   smallest fix, rerun the failed gate, then rerun the full gate stack.
@@ -256,7 +256,7 @@ Each commit must pass relevant gates before the next commit is created.
 - [x] (2026-02-25 00:00Z) Milestone 6 complete.
 - [x] (2026-02-25 00:00Z) Final gates complete and roadmap item marked done.
 
-## Surprises & Discoveries
+## Surprises & discoveries
 
 - Discovery: `EngineState` derives `Clone`, `Debug`, and `PartialEq`
   (`src/model/engine_state.rs`), while `DocumentUndoHistory`
@@ -271,7 +271,7 @@ Each commit must pass relevant gates before the next commit is created.
   from an earlier session still held Cargo resources. Recovery: terminate only
   the stale process tree, then continue the active gate run.
 
-## Decision Log
+## Decision log
 
 - Decision: keep scope limited to roadmap 0.3.4 ownership move and defer
   history error model enum work to roadmap 0.3.5. Rationale: avoids conflating
@@ -298,7 +298,7 @@ Each commit must pass relevant gates before the next commit is created.
   `EngineState::clear_document_history()` path. Date/Author: 2026-02-25
   (assistant)
 
-## Outcomes & Retrospective
+## Outcomes & retrospective
 
 Roadmap item 0.3.4 is implemented and validated.
 
