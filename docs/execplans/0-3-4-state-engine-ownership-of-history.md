@@ -19,7 +19,7 @@ Success is observable when:
 - `EngineState` owns and operates `DocumentUndoHistory`.
 - `Phase0Shell` delegates document history behaviour to `EngineState`.
 - `draw/mod.rs`, `chrome.rs`, `file_dialogs.rs`, and helper call sites compile
-  and preserve current undo/redo UX.
+  and preserve current undo/redo user experience (UX).
 - Unit tests (`rstest`), behavioural tests (`rstest-bdd` v0.5.0), and GPUI
   tests cover happy, unhappy, and edge flows for document history.
 - `docs/gauss-architecture-design.md`, `docs/users-guide.md`, and
@@ -162,8 +162,8 @@ duplicated setup.
 
 ### Milestone 4: Behavioural tests (`rstest-bdd` v0.5.0)
 
-Add or extend BDD scenarios to exercise engine-owned document history via
-observable outcomes, not private internals:
+Add or extend behaviour-driven development (BDD) scenarios to exercise
+engine-owned document history via observable outcomes, not private internals:
 
 - command application is undoable through engine-owned history.
 - empty-history undo remains safe.

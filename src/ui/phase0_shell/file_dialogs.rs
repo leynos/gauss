@@ -173,6 +173,7 @@ async fn apply_open_prompt(
             view.state.selection = Selection::empty();
             view.drag_state = None;
             view.state.active_path = None;
+            view.last_history_error = None;
             view.last_opened_path = Some(first_path);
             view.last_open_error = None;
         } else {

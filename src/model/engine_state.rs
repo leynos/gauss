@@ -61,7 +61,11 @@ use super::{DocumentUndoHistory, HistoryError, ResourceStore, StyleStore};
 /// Document undo/redo history is owned here via `DocumentUndoHistory` in
 /// the model layer (backed by `undo_2`). Selection history remains in
 /// the view layer using `gpui_component::History`. See ADR-002 for
-/// rationale.
+/// rationale. History operations are intentionally explicit on `EngineState`
+/// to avoid exposing mutable history internals.
+///
+/// `EngineState` intentionally does not implement `Clone`, `Debug`, or
+/// `PartialEq` because `DocumentUndoHistory` is stateful undo/redo data.
 pub struct EngineState {
     /// The document containing all shapes and their geometry.
     pub document: Document,
@@ -246,7 +250,7 @@ mod tests {
     //! Tests for engine state defaults and helpers.
 
     use super::*;
-    use rstest::rstest;
+    use rstest::{fixture, rstest};
 
     #[rstest]
     fn new_state_has_empty_document() {
@@ -285,10 +289,10 @@ mod tests {
     }
 
     #[rstest]
-    fn with_document_preserves_document() {
+    fn with_document_preserves_document(sample_shape: crate::model::Shape) {
         let mut doc = Document::new();
         // Insert a shape manually to verify preservation
-        doc.append_shape(sample_shape());
+        doc.append_shape(sample_shape);
 
         let state = EngineState::with_document(doc.clone());
         assert_eq!(state.document.len(), 1);
@@ -304,13 +308,13 @@ mod tests {
     }
 
     #[rstest]
-    fn document_history_round_trip_via_engine_state() {
+    fn document_history_round_trip_via_engine_state(sample_shape: crate::model::Shape) {
         let mut state = EngineState::new();
         state
             .apply_document_command(Command::InsertShape {
                 insertion: crate::model::ShapeInsertion {
                     index: 0,
-                    shape: sample_shape(),
+                    shape: sample_shape,
                 },
             })
             .expect("insert shape should succeed");
@@ -355,13 +359,13 @@ mod tests {
     }
 
     #[rstest]
-    fn clear_document_history_resets_realized_entries() {
+    fn clear_document_history_resets_realized_entries(sample_shape: crate::model::Shape) {
         let mut state = EngineState::new();
         state
             .apply_document_command(Command::InsertShape {
                 insertion: crate::model::ShapeInsertion {
                     index: 0,
-                    shape: sample_shape(),
+                    shape: sample_shape,
                 },
             })
             .expect("insert shape should succeed");
@@ -373,6 +377,7 @@ mod tests {
         assert!(!state.can_redo_document());
     }
 
+    #[fixture]
     fn sample_shape() -> crate::model::Shape {
         crate::model::Shape {
             id: ShapeId::default(),

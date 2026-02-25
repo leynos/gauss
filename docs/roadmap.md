@@ -108,10 +108,10 @@ phases depend upon. See architecture document §20.
   `undo_2` spike migrated document history to a model-layer adapter
   `DocumentUndoHistory`, validated undo/redo round-trips, and confirmed
   history-clear-on-open semantics. Single-entry-per-gesture invariant verified
-  by unit tests, BDD scenarios, and GPUI integration tests.) In scope:
-  undo/redo round-trip validation, history-clear semantics, adapter
-  integration, single-entry-per-gesture audit. Out of scope: command grouping
-  (see 0.3.2).
+  by unit tests, behaviour-driven development (BDD) scenarios, and GPUI
+  integration tests.) In scope: undo/redo round-trip validation, history-clear
+  semantics, adapter integration, single-entry-per-gesture audit. Out of scope:
+  command grouping (see 0.3.2).
   - [x] Verify multistep interactions create single undo entries.
         Completion: all drag and compound tool interactions produce
         exactly one undo entry each.
