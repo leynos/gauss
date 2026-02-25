@@ -20,8 +20,9 @@ Success is observable when:
 - `Phase0Shell` delegates document history behaviour to `EngineState`.
 - `draw/mod.rs`, `chrome.rs`, `file_dialogs.rs`, and helper call sites compile
   and preserve current undo/redo user experience (UX).
-- Unit tests (`rstest`), behavioural tests (`rstest-bdd` v0.5.0), and GPUI
-  tests cover happy, unhappy, and edge flows for document history.
+- Unit tests (`rstest`), behavioural tests (`rstest-bdd` v0.5.0), and
+  GPU-accelerated UI (GPUI) tests cover happy, unhappy, and edge flows for
+  document history.
 - `docs/gauss-architecture-design.md`, `docs/users-guide.md`, and
   `docs/roadmap.md` are updated and aligned with shipped behaviour.
 
@@ -162,7 +163,7 @@ duplicated setup.
 
 ### Milestone 4: Behavioural tests (`rstest-bdd` v0.5.0)
 
-Add or extend behaviour-driven development (BDD) scenarios to exercise
+Add or extend Behavior-Driven Development (BDD) scenarios to exercise
 engine-owned document history via observable outcomes, not private internals:
 
 - command application is undoable through engine-owned history.
@@ -314,7 +315,7 @@ Delivered changes:
   round-trip and boundary failure paths.
 - GPUI tests include grouped command flows and a new open-file regression test
   proving document history and selection reset on successful open.
-- Docs are aligned: architecture, users guide, roadmap, and this ExecPlan.
+- Docs are aligned: architecture, user guide, roadmap, and this ExecPlan.
 
 Gate evidence:
 
