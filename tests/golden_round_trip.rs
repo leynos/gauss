@@ -9,7 +9,9 @@ use cap_std::{ambient_authority, fs_utf8::Dir};
 use gauss::model::{
     Anchor, Document, GaussAttribute, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind, Shape,
 };
-use gauss::svg::export::{ExportOptions, export_svg_with_metadata};
+use gauss::svg::export::{
+    ExportOptions, export_svg_with_metadata, export_svg_with_resources_web_ready,
+};
 use gauss::svg::import::import_svg_with_resources;
 use gauss::test_helpers::shape_id_from_seed;
 use rstest::{fixture, rstest};
@@ -258,4 +260,46 @@ fn full_round_trip_combined(
     let svg = export_doc(&doc, Some(metadata));
     assert_golden("full_round_trip", &svg)?;
     assert_idempotent(&svg, None)
+}
+
+#[rstest]
+fn web_ready_export_strips_gauss_metadata(
+    triangle_path: PathGeom,
+    default_style: PaintStyle,
+) -> TestSupportResult<()> {
+    let mut doc = Document::new();
+    doc.append_shape(Shape {
+        id: shape_id_from_seed(40),
+        z: 0,
+        style: default_style,
+        path: triangle_path,
+        name: Some("Triangle".to_owned()),
+        locked: true,
+        hidden: true,
+        gauss_metadata: vec![GaussAttribute::new("layer", "foreground")],
+    });
+    let svg = export_svg_with_resources_web_ready(&doc, &ResourceStore::new(), 100.0, 100.0);
+    assert_golden("web_ready_strips_metadata", &svg)?;
+    if svg.contains("gauss:") || svg.contains("xmlns:gauss=") || svg.contains("<metadata>") {
+        return Err(TestSupportError::expectation(
+            "web-ready export should omit all gauss metadata",
+        ));
+    }
+    let imported = import_svg_with_resources(&svg)
+        .map_err(|err| TestSupportError::expectation(format!("re-import failed: {err}")))?;
+    let imported_shape = imported
+        .document
+        .shape_at(0)
+        .ok_or_else(|| TestSupportError::missing("shape", "web-ready assertion"))?;
+    if imported_shape.name.is_some() || imported_shape.locked || imported_shape.hidden {
+        return Err(TestSupportError::expectation(
+            "web-ready export should import with default shape metadata flags",
+        ));
+    }
+    if !imported_shape.gauss_metadata.is_empty() || imported.gauss_metadata_block.is_some() {
+        return Err(TestSupportError::expectation(
+            "web-ready export should not contain any gauss metadata payload",
+        ));
+    }
+    Ok(())
 }

@@ -1,7 +1,10 @@
 //! Tests for Gauss metadata export on `<path>` elements.
 
 use super::*;
-use crate::model::{Anchor, GaussAttribute, PaintStyle, PathGeom, Rgba, Shape, Vec2};
+use crate::model::{
+    Anchor, GaussAttribute, Gradient, GradientKind, GradientStop, LinearGradient, Paint, PaintStyle,
+    PathGeom, PatternResource, Rgba, Shape, Vec2,
+};
 use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::{fixture, rstest};
 
@@ -136,4 +139,76 @@ fn omits_metadata_block_when_absent() {
         metadata_block: None,
     });
     assert!(!svg.contains("<metadata>"));
+}
+
+#[rstest]
+fn web_ready_export_strips_gauss_shape_metadata(#[with(20)] mut line_shape: Shape) {
+    line_shape.name = Some("Web Ready".to_owned());
+    line_shape.locked = true;
+    line_shape.hidden = true;
+    line_shape.gauss_metadata = vec![GaussAttribute::new("role", "overlay")];
+    let mut doc = Document::new();
+    doc.append_shape(line_shape);
+    let svg = export_svg_with_resources_web_ready(&doc, &ResourceStore::new(), 100.0, 100.0);
+    assert!(svg.contains(r#"<svg xmlns="http://www.w3.org/2000/svg""#));
+    assert!(svg.contains("<path "));
+    assert!(!svg.contains("xmlns:gauss="));
+    assert!(!svg.contains(" gauss:"));
+    assert!(!svg.contains("<metadata>"));
+}
+
+#[rstest]
+fn web_ready_export_keeps_valid_svg_shell_for_empty_document() {
+    let svg = export_svg_with_resources_web_ready(
+        &Document::new(),
+        &ResourceStore::new(),
+        120.0,
+        80.0,
+    );
+    assert!(svg.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"));
+    assert!(svg.contains(r#"<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80""#));
+    assert!(svg.ends_with("</svg>\n"));
+}
+
+#[rstest]
+fn web_ready_checked_export_reports_missing_gradient_reference(#[with(30)] line_shape: Shape) {
+    let mut resources = ResourceStore::new();
+    let dangling_gradient = resources.insert_gradient(Gradient::new(
+        "sunset",
+        GradientKind::Linear(LinearGradient::new(
+            Vec2::new(0.0, 0.0),
+            Vec2::new(1.0, 1.0),
+            vec![
+                GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
+                GradientStop::new(1.0, Rgba::new(0, 0, 255, 255)),
+            ],
+        )),
+    ));
+    let _removed = resources.remove_gradient(dangling_gradient);
+    let mut shape = line_shape;
+    shape.style = PaintStyle::new_with_paint(Paint::gradient(dangling_gradient), 1.0, Paint::None);
+    let mut doc = Document::new();
+    doc.append_shape(shape);
+    let exported = export_svg_with_resources_web_ready_checked(&doc, &resources, 100.0, 100.0);
+    assert_eq!(
+        exported,
+        Err(SvgExportError::MissingGradientReference(dangling_gradient))
+    );
+}
+
+#[rstest]
+fn web_ready_checked_export_reports_missing_pattern_reference(#[with(31)] line_shape: Shape) {
+    let mut resources = ResourceStore::new();
+    let dangling_pattern =
+        resources.insert_pattern(PatternResource::new("dots", r#"<circle cx="1" cy="1" r="1" />"#));
+    let _removed = resources.remove_pattern(dangling_pattern);
+    let mut shape = line_shape;
+    shape.style = PaintStyle::new_with_paint(Paint::None, 1.0, Paint::pattern(dangling_pattern));
+    let mut doc = Document::new();
+    doc.append_shape(shape);
+    let exported = export_svg_with_resources_web_ready_checked(&doc, &resources, 100.0, 100.0);
+    assert_eq!(
+        exported,
+        Err(SvgExportError::MissingPatternReference(dangling_pattern))
+    );
 }
