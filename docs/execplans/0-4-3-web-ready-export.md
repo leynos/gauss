@@ -125,6 +125,9 @@ Success is observable when:
   `ExportMode` now drives metadata policy, GPUI/BDD pattern-reference failure
   coverage matches gradient coverage, and wording consistency updates landed in
   this ExecPlan.
+- [x] (2026-02-26) Closed a web-ready defs leak: `gauss:*` attributes on
+  pattern/symbol resources are now filtered during web-ready export while
+  metadata-preserving export continues to emit them.
 
 ## Surprises & Discoveries
 

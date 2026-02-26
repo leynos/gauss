@@ -7,7 +7,11 @@ use crate::model::{GradientKind, PatternResource, ResourceStore, SymbolResource,
 use super::{opacity_from_alpha, write_fmt};
 
 /// Write the `<defs>` block for shared resources.
-pub(super) fn write_defs(out: &mut String, resources: &ResourceStore) {
+pub(super) fn write_defs(
+    out: &mut String,
+    resources: &ResourceStore,
+    preserve_gauss_metadata: bool,
+) {
     if resources.is_empty() {
         return;
     }
@@ -19,11 +23,11 @@ pub(super) fn write_defs(out: &mut String, resources: &ResourceStore) {
     }
 
     for (_id, pattern) in resources.patterns() {
-        write_pattern(out, pattern);
+        write_pattern(out, pattern, preserve_gauss_metadata);
     }
 
     for (_id, symbol) in resources.symbols() {
-        write_symbol(out, symbol);
+        write_symbol(out, symbol, preserve_gauss_metadata);
     }
 
     out.push_str("</defs>\n");
@@ -89,9 +93,9 @@ fn write_gradient_stop(out: &mut String, stop: crate::model::GradientStop) {
     out.push('\n');
 }
 
-fn write_pattern(out: &mut String, pattern: &PatternResource) {
+fn write_pattern(out: &mut String, pattern: &PatternResource, preserve_gauss_metadata: bool) {
     write_fmt(out, format_args!(r#"<pattern id="{}""#, pattern.svg_id));
-    write_extra_attributes(out, &pattern.extra_attributes);
+    write_extra_attributes_filtered(out, &pattern.extra_attributes, preserve_gauss_metadata);
     out.push('>');
     if !pattern.body.is_empty() {
         out.push_str(pattern.body.as_str());
@@ -99,12 +103,12 @@ fn write_pattern(out: &mut String, pattern: &PatternResource) {
     out.push_str("</pattern>\n");
 }
 
-fn write_symbol(out: &mut String, symbol: &SymbolResource) {
+fn write_symbol(out: &mut String, symbol: &SymbolResource, preserve_gauss_metadata: bool) {
     write_fmt(out, format_args!(r#"<symbol id="{}""#, symbol.svg_id));
     if let Some(view_box) = symbol.view_box.as_deref() {
         write_fmt(out, format_args!(r#" viewBox="{view_box}""#));
     }
-    write_extra_attributes(out, &symbol.extra_attributes);
+    write_extra_attributes_filtered(out, &symbol.extra_attributes, preserve_gauss_metadata);
     out.push('>');
     if !symbol.body.is_empty() {
         out.push_str(symbol.body.as_str());
@@ -115,5 +119,22 @@ fn write_symbol(out: &mut String, symbol: &SymbolResource) {
 fn write_extra_attributes(out: &mut String, attributes: &[(String, String)]) {
     for (name, value) in attributes {
         write_fmt(out, format_args!(r#" {name}="{value}""#));
+    }
+}
+
+fn write_extra_attributes_filtered(
+    out: &mut String,
+    attributes: &[(String, String)],
+    preserve_gauss_metadata: bool,
+) {
+    if preserve_gauss_metadata {
+        write_extra_attributes(out, attributes);
+        return;
+    }
+
+    for (name, value) in attributes {
+        if !name.starts_with("gauss:") {
+            write_fmt(out, format_args!(r#" {name}="{value}""#));
+        }
     }
 }

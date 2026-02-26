@@ -310,3 +310,46 @@ fn exports_pattern_and_symbol_extra_attributes() {
         )
     );
 }
+
+fn resources_with_gauss_prefixed_defs_attributes() -> ResourceStore {
+    let mut resources = ResourceStore::new();
+    let _pattern_id = resources.insert_pattern(PatternResource::new_with_attributes(
+        "dots",
+        "<circle />",
+        vec![
+            ("gauss:semantic".to_owned(), "guide".to_owned()),
+            ("patternUnits".to_owned(), "userSpaceOnUse".to_owned()),
+        ],
+    ));
+    let _symbol_id = resources.insert_symbol(SymbolResource::new_with_attributes(
+        "badge",
+        Some("0 0 10 10".to_owned()),
+        "<rect width=\"10\" height=\"10\" />",
+        vec![
+            ("gauss:role".to_owned(), "template".to_owned()),
+            ("preserveAspectRatio".to_owned(), "xMidYMid".to_owned()),
+        ],
+    ));
+    resources
+}
+
+#[rstest]
+fn regular_export_preserves_gauss_prefixed_defs_attributes() {
+    let resources = resources_with_gauss_prefixed_defs_attributes();
+    let svg = export_svg_with_resources(&Document::new(), &resources, CanvasSize::new(10.0, 10.0));
+    assert!(svg.contains(r#"gauss:semantic="guide""#));
+    assert!(svg.contains(r#"gauss:role="template""#));
+}
+
+#[rstest]
+fn web_ready_export_strips_gauss_prefixed_defs_attributes() {
+    let resources = resources_with_gauss_prefixed_defs_attributes();
+    let svg = export_svg_with_resources_web_ready(
+        &Document::new(),
+        &resources,
+        CanvasSize::new(10.0, 10.0),
+    );
+    assert!(!svg.contains("gauss:"));
+    assert!(svg.contains(r#"patternUnits="userSpaceOnUse""#));
+    assert!(svg.contains(r#"preserveAspectRatio="xMidYMid""#));
+}

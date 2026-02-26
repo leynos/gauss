@@ -174,15 +174,15 @@ pub fn export_svg_with_metadata(options: ExportOptions<'_>) -> String {
     })
 }
 fn export_svg_inner(options: ExportOptions<'_>) -> String {
-    let include_gauss_metadata = options.mode.includes_gauss_metadata();
+    let preserve_gauss_metadata = options.mode.includes_gauss_metadata();
     let mut out = String::new();
-    write_svg_header(&mut out, options.canvas_size, include_gauss_metadata);
-    defs::write_defs(&mut out, options.resources);
-    if include_gauss_metadata {
+    write_svg_header(&mut out, options.canvas_size, preserve_gauss_metadata);
+    defs::write_defs(&mut out, options.resources, preserve_gauss_metadata);
+    if preserve_gauss_metadata {
         write_metadata_block(&mut out, options.metadata_block);
     }
     for shape in options.doc.iter_in_draw_order() {
-        write_shape_path(&mut out, options.resources, shape, include_gauss_metadata);
+        write_shape_path(&mut out, options.resources, shape, preserve_gauss_metadata);
     }
     out.push_str("</svg>\n");
     out
