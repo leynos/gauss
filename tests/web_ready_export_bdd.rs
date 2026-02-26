@@ -90,32 +90,36 @@ fn given_document_with_dangling_gradient(world: &mut WebReadyWorld) {
     world.expected_missing_gradient = Some(gradient_id);
 }
 
+/// Helper to export web-ready SVG with optional validation.
+fn export_web_ready_with_validation(world: &mut WebReadyWorld, checked: bool) {
+    let canvas_size = CanvasSize::new(100.0, 100.0);
+
+    if checked {
+        let result =
+            export_svg_with_resources_web_ready_checked(&world.doc, &world.resources, canvas_size);
+        if let Ok(svg) = &result {
+            world.export_svg = Some(svg.clone());
+        }
+        world.checked_export_result = Some(result);
+    } else {
+        let svg = export_svg_with_resources_web_ready(&world.doc, &world.resources, canvas_size);
+        world.export_svg = Some(svg);
+        world.checked_export_result = None;
+    }
+}
+
 // ---------------------------------------------------------------------------
 // When
 // ---------------------------------------------------------------------------
 
 #[when("I export the document as web-ready SVG")]
 fn when_export_web_ready(world: &mut WebReadyWorld) {
-    let svg = export_svg_with_resources_web_ready(
-        &world.doc,
-        &world.resources,
-        CanvasSize::new(100.0, 100.0),
-    );
-    world.export_svg = Some(svg);
-    world.checked_export_result = None;
+    export_web_ready_with_validation(world, false);
 }
 
 #[when("I export the document as web-ready SVG with reference validation")]
 fn when_export_web_ready_checked(world: &mut WebReadyWorld) {
-    let result = export_svg_with_resources_web_ready_checked(
-        &world.doc,
-        &world.resources,
-        CanvasSize::new(100.0, 100.0),
-    );
-    if let Ok(svg) = &result {
-        world.export_svg = Some(svg.clone());
-    }
-    world.checked_export_result = Some(result);
+    export_web_ready_with_validation(world, true);
 }
 
 #[when("I export and re-import the document as web-ready SVG")]
