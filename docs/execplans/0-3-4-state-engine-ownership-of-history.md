@@ -241,6 +241,9 @@ Each commit must pass relevant gates before the next commit is created.
 
 ## Progress
 
+Timestamps are day-granular for this retrospective; all milestones use `00:00Z`
+for the completion date.
+
 - [x] (2026-02-25 00:00Z) Loaded `execplans`, `grepai`, and `leta` guidance and
   confirmed repository constraints.
 - [x] (2026-02-25 00:00Z) Ran Spark planning team discovery for architecture,
@@ -319,12 +322,6 @@ Delivered changes:
 
 Gate evidence:
 
-- `make fmt` log:
-  `/tmp/fmt-gauss-0-3-4-state-engine-ownership-of-history.out`
-- `make markdownlint` log:
-  `/tmp/markdownlint-gauss-0-3-4-state-engine-ownership-of-history.out`
-- `make nixie` log:
-  `/tmp/nixie-gauss-0-3-4-state-engine-ownership-of-history.out`
 - `make check-fmt` log:
   `/tmp/check-fmt-gauss-0-3-4-state-engine-ownership-of-history.out`
 - `make lint` log:

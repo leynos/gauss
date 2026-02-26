@@ -138,7 +138,7 @@ impl EngineState {
 
     /// Construct engine state with a specific document.
     ///
-    /// All other fields are initialised to defaults. This is useful for
+    /// All other fields are initialized to defaults. This is useful for
     /// loading saved documents or creating test fixtures.
     ///
     /// # Examples
