@@ -165,7 +165,7 @@ impl Phase0Shell {
     /// allows tests to set the tool mode explicitly without relying on
     /// `Escape` dispatch.
     pub fn enter_manipulate_mode_for_tests(&mut self) {
-        self.set_tool_mode(draw::ToolMode::Manipulate);
+        let _ = self.activate_select_tool();
     }
 
     /// Return the last canvas click position in screen coordinates.

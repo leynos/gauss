@@ -7,9 +7,9 @@ use gpui::{
     Context, KeyDownEvent, Keystroke, Modifiers, MouseButton, MouseDownEvent, NavigationDirection,
 };
 
-use crate::model::{SelItem, Selection};
+use crate::model::{SelItem, Selection, ToolInputEvent};
 
-use super::{Phase0Shell, draw::ToolMode};
+use super::Phase0Shell;
 
 /// Key actions handled directly by the Phase 0 shell.
 ///
@@ -61,12 +61,9 @@ impl Phase0Shell {
     }
 
     pub(super) fn handle_tab_action(&mut self, cx: &mut Context<Self>) {
-        if self.state.tool_mode != ToolMode::Draw {
-            return;
+        if self.handle_tool_input_event(ToolInputEvent::ToggleEdgeMode) {
+            cx.notify();
         }
-
-        self.set_edge_mode(self.state.edge_mode.toggle());
-        cx.notify();
     }
 
     pub(super) fn handle_navigation_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
@@ -120,17 +117,9 @@ impl Phase0Shell {
     }
 
     fn handle_escape(&mut self, cx: &mut Context<Self>) {
-        match self.state.tool_mode {
-            ToolMode::Draw => {
-                self.state.tool_mode = ToolMode::Manipulate;
-                self.state.active_path = None;
-            }
-            ToolMode::Manipulate => {
-                self.state.tool_mode = ToolMode::Draw;
-            }
+        if self.handle_tool_input_event(ToolInputEvent::EscapePressed) {
+            cx.notify();
         }
-
-        cx.notify();
     }
 
     /// Select all shapes in the document.

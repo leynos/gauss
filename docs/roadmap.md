@@ -154,9 +154,9 @@ phases depend upon. See architecture document §20.
 
 ### 0.5. Tool framework
 
-- [ ] 0.5.1. Define Tool trait.
-  - [ ] Tools are FSMs driven by input events. See architecture §6.1.
-  - [ ] Tools emit Commands, not direct state mutations.
+- [x] 0.5.1. Define Tool trait.
+  - [x] Tools are FSMs driven by input events. See architecture §6.1.
+  - [x] Tools emit Commands, not direct state mutations.
 - [ ] 0.5.2. Refactor existing draw mode to Tool trait.
   - [ ] Extract `PenTool` FSM from current implementation.
   - [ ] Maintain existing functionality.

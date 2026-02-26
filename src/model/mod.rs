@@ -54,10 +54,14 @@ pub use resource_store::{
 };
 pub use selection::{SelItem, Selection};
 pub use style_store::{NamedStyle, StyleId, StyleStore};
-pub use tool::{EdgeMode, ToolMode};
+pub use tool::{
+    EdgeMode, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolModeFsm, ToolTransition,
+};
 pub use viewport::Viewport;
 
 #[cfg(test)]
 mod ops_roundtrip_tests;
 #[cfg(test)]
 mod resource_store_tests;
+#[cfg(test)]
+mod tool_tests;
