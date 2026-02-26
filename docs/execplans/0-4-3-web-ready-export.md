@@ -9,7 +9,7 @@ Status: COMPLETE
 
 No `PLANS.md` exists in this repository.
 
-## Purpose / Big Picture
+## Purpose / big picture
 
 Roadmap item 0.4.3 requires a dedicated web-ready export path that removes
 editor-specific Gauss metadata while still producing valid SVG output. After
@@ -47,7 +47,7 @@ Success is observable when:
 - Mark roadmap item 0.4.3 done only after implementation, docs updates, and all
   required gates pass.
 
-## Tolerances (Exception Triggers)
+## Tolerances (exception triggers)
 
 - Scope: if implementation exceeds 18 files or 900 net changed lines, stop and
   re-evaluate before proceeding.
@@ -134,7 +134,7 @@ Success is observable when:
   behaviour is explicitly documented, and duplicated BDD `line_shape` fixtures
   were centralized into `crates/test_support`.
 
-## Surprises & Discoveries
+## Surprises & discoveries
 
 - Export now includes explicit web-ready helper APIs:
   `export_svg_with_resources_web_ready()` and
@@ -149,7 +149,7 @@ Success is observable when:
   - `tests/golden_round_trip.rs`
   - `tests/gpui_save_dialog.rs`
 
-## Decision Log
+## Decision log
 
 - Decision: implement web-ready behaviour as an explicit export policy mode,
   not a separate exporter implementation. Rationale: keeps one code path for
@@ -184,7 +184,7 @@ Success is observable when:
   to the same now-implemented capability; leaving one unchecked creates false
   residual scope. Date/Author: 2026-02-26 (assistant, final closure)
 
-## Context and Orientation
+## Context and orientation
 
 Primary implementation points discovered with `grepai` and `leta`:
 
@@ -212,7 +212,7 @@ Primary implementation points discovered with `grepai` and `leta`:
   - `docs/users-guide.md`
   - `docs/roadmap.md`
 
-## Spark Team Workstreams
+## Spark team workstreams
 
 Use a three-lane Spark team during implementation:
 
@@ -225,7 +225,7 @@ Use a three-lane Spark team during implementation:
 
 All lanes must converge before final gate replay.
 
-## Plan of Work
+## Plan of work
 
 Stage A: Add export metadata policy mode
 
@@ -312,7 +312,7 @@ Validation checkpoint:
 
 - All required gates pass and evidence logs are retained in `/tmp`.
 
-## Concrete Steps and Commands
+## Concrete steps and commands
 
 Run from repository root:
 
@@ -362,7 +362,7 @@ make markdownlint | tee "/tmp/markdownlint-${project}-${branch}.out"
 make nixie | tee "/tmp/nixie-${project}-${branch}.out"
 ```
 
-## Validation and Acceptance
+## Validation and acceptance
 
 Implementation is accepted when all are true:
 
@@ -381,7 +381,7 @@ Implementation is accepted when all are true:
 - `docs/users-guide.md` and `docs/gauss-architecture-design.md` are updated.
 - `docs/roadmap.md` marks 0.4.3 as done.
 
-## Idempotence and Recovery
+## Idempotence and recovery
 
 - Export-policy changes are deterministic and re-runnable.
 - If a gate fails, inspect the corresponding `/tmp/*.out` log, apply minimal
@@ -389,7 +389,7 @@ Implementation is accepted when all are true:
 - If implementation scope breaches tolerances, stop and record options in the
   `Decision Log` before continuing.
 
-## Outcomes & Retrospective
+## Outcomes & retrospective
 
 Lane C completion update (2026-02-25):
 

@@ -195,7 +195,7 @@ Gauss preserves editor-only metadata through save and open cycles:
 This metadata does not affect how the SVG renders in other viewers — it is
 stored in XML-namespaced attributes that conforming SVG renderers ignore.
 
-## Web-Ready SVG Export
+## Web-ready SVG export
 
 Gauss now supports a web-ready export mode that strips editor metadata for
 publishing workflows.
@@ -208,7 +208,7 @@ publishing workflows.
   with default metadata (`name = None`, `locked = false`, `hidden = false`, and
   no opaque `gauss:*` attributes).
 
-### Command Surface
+### Command surface
 
 - **Save SVG** remains metadata-preserving for edit round-trips.
 - **Export web-ready SVG** is the dedicated metadata-stripping command surface.

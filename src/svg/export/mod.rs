@@ -10,7 +10,10 @@ use crate::model::{
 };
 use crate::svg::metadata::gauss_namespace_declaration;
 use std::fmt::{Arguments, Write as _};
-/// Errors returned by [`export_svg_with_resources_checked`].
+/// Errors returned by checked SVG export entry points such as
+/// [`export_svg_with_resources_checked`],
+/// [`export_svg_with_resources_web_ready_checked`], and
+/// [`export_svg_with_metadata_checked`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SvgExportError {
     /// A shape references a gradient ID that does not exist in `ResourceStore`.

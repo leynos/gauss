@@ -189,7 +189,7 @@ fn then_web_ready_strips_gauss_metadata(world: &WebReadyWorld) -> TestSupportRes
             "expected web-ready output to omit gauss:* path attributes",
         ));
     }
-    if svg.contains("<metadata>") {
+    if svg.contains("<metadata") {
         return Err(TestSupportError::expectation(
             "expected web-ready output to omit metadata blocks",
         ));
