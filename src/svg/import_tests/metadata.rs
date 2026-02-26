@@ -44,6 +44,7 @@ fn export_and_reimport(
         resources: &ResourceStore::new(),
         canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block,
+        web_ready: false,
     });
     match import_svg_with_resources(&svg) {
         Ok(imported) => imported,
@@ -203,6 +204,7 @@ fn round_trip_preserves_metadata_block(#[with(103)] line_shape: Shape) {
         resources: &ResourceStore::new(),
         canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: Some(metadata),
+        web_ready: false,
     });
     let imported = import_ok(&svg);
     // Export normalises content to end with newline before </metadata>,

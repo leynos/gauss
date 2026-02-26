@@ -86,6 +86,7 @@ fn assert_idempotent(svg: &str, metadata_block: Option<&str>) -> TestSupportResu
         resources: &imported.resources,
         canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: imported.gauss_metadata_block.as_deref().or(metadata_block),
+        web_ready: false,
     });
     if svg != re_exported {
         return Err(TestSupportError::expectation(
@@ -103,6 +104,7 @@ fn export_doc() -> impl Fn(&Document, Option<&str>) -> String {
             resources: &ResourceStore::new(),
             canvas_size: CanvasSize::new(100.0, 100.0),
             metadata_block,
+            web_ready: false,
         })
     }
 }

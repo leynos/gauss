@@ -158,6 +158,7 @@ async fn apply_save_path(
                 resources: &view.state.resources,
                 canvas_size: CanvasSize::new(100.0, 100.0),
                 metadata_block: view.state.gauss_metadata_block.as_deref(),
+                web_ready: false,
             }),
             SaveIntent::WebReady => export_svg_with_resources_web_ready_checked(
                 &view.state.document,

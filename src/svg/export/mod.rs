@@ -43,7 +43,7 @@ pub fn export_svg_with_resources(
     resources: &ResourceStore,
     canvas_size: CanvasSize,
 ) -> String {
-    export_svg_with_metadata(ExportOptions::new(doc, resources, canvas_size))
+    export_svg_with_options(ExportOptions::new(doc, resources, canvas_size))
 }
 /// Export a document to SVG with shared resources.
 /// # Errors
@@ -53,7 +53,7 @@ pub fn export_svg_with_resources_checked(
     resources: &ResourceStore,
     canvas_size: CanvasSize,
 ) -> Result<String, SvgExportError> {
-    export_svg_with_metadata_checked(ExportOptions::new(doc, resources, canvas_size))
+    export_svg_with_options_checked(ExportOptions::new(doc, resources, canvas_size))
 }
 /// Export a document for web usage, stripping all Gauss metadata.
 #[must_use]
@@ -62,7 +62,7 @@ pub fn export_svg_with_resources_web_ready(
     resources: &ResourceStore,
     canvas_size: CanvasSize,
 ) -> String {
-    export_svg_with_metadata_policy(ExportOptions::new(doc, resources, canvas_size), false)
+    export_svg_with_options(ExportOptions::new(doc, resources, canvas_size).web_ready())
 }
 /// Export a web-ready SVG and validate resource references.
 /// # Errors
@@ -72,7 +72,7 @@ pub fn export_svg_with_resources_web_ready_checked(
     resources: &ResourceStore,
     canvas_size: CanvasSize,
 ) -> Result<String, SvgExportError> {
-    export_svg_with_metadata_policy_checked(ExportOptions::new(doc, resources, canvas_size), false)
+    export_svg_with_options_checked(ExportOptions::new(doc, resources, canvas_size).web_ready())
 }
 
 /// Canvas dimensions used by SVG export operations.
@@ -101,6 +101,8 @@ pub struct ExportOptions<'a> {
     pub canvas_size: CanvasSize,
     /// Optional raw metadata block content.
     pub metadata_block: Option<&'a str>,
+    /// When true, strip Gauss metadata artifacts from output.
+    pub web_ready: bool,
 }
 impl<'a> ExportOptions<'a> {
     /// Create export options with no metadata block.
@@ -115,6 +117,7 @@ impl<'a> ExportOptions<'a> {
             resources,
             canvas_size,
             metadata_block: None,
+            web_ready: false,
         }
     }
     /// Attach metadata block content that should be preserved verbatim.
@@ -123,11 +126,35 @@ impl<'a> ExportOptions<'a> {
         self.metadata_block = Some(metadata_block);
         self
     }
+    /// Mark this export as web-ready (strip Gauss metadata).
+    #[must_use]
+    pub const fn web_ready(mut self) -> Self {
+        self.web_ready = true;
+        self
+    }
+}
+/// Export a document according to [`ExportOptions`].
+#[must_use]
+pub fn export_svg_with_options(options: ExportOptions<'_>) -> String {
+    export_svg_with_metadata_policy(options, !options.web_ready)
+}
+
+/// Export a document according to [`ExportOptions`] with resource validation.
+///
+/// # Errors
+/// Returns [`SvgExportError`] if a shape references a missing gradient/pattern.
+pub fn export_svg_with_options_checked(
+    options: ExportOptions<'_>,
+) -> Result<String, SvgExportError> {
+    export_svg_with_metadata_policy_checked(options, !options.web_ready)
 }
 /// Export a document to an SVG string with metadata block preservation.
 #[must_use]
 pub fn export_svg_with_metadata(options: ExportOptions<'_>) -> String {
-    export_svg_with_metadata_policy(options, true)
+    export_svg_with_options(ExportOptions {
+        web_ready: false,
+        ..options
+    })
 }
 fn export_svg_with_metadata_policy(
     options: ExportOptions<'_>,
@@ -151,7 +178,10 @@ fn export_svg_with_metadata_policy(
 pub fn export_svg_with_metadata_checked(
     options: ExportOptions<'_>,
 ) -> Result<String, SvgExportError> {
-    export_svg_with_metadata_policy_checked(options, true)
+    export_svg_with_options_checked(ExportOptions {
+        web_ready: false,
+        ..options
+    })
 }
 fn export_svg_with_metadata_policy_checked(
     options: ExportOptions<'_>,
