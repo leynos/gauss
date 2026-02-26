@@ -7,7 +7,7 @@ use gauss::model::{
     Anchor, DocChange, DocOp, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId,
     Vec2,
 };
-use gauss::svg::export::export_svg;
+use gauss::svg::export::{CanvasSize, export_svg};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};
@@ -87,7 +87,7 @@ fn add_closed_triangle(world: &mut DocWorld) {
 
 #[when("I export the document as an SVG")]
 fn export_document_as_svg(world: &mut DocWorld) {
-    let svg = export_svg(&world.doc, 100.0, 100.0);
+    let svg = export_svg(&world.doc, CanvasSize::new(100.0, 100.0));
     world.last_svg = Some(svg);
 }
 

@@ -33,23 +33,17 @@ impl std::fmt::Display for SvgExportError {
 impl std::error::Error for SvgExportError {}
 /// Export a document to SVG without shared resources.
 #[must_use]
-pub fn export_svg(doc: &Document, canvas_width: f32, canvas_height: f32) -> String {
-    export_svg_with_resources(doc, &ResourceStore::new(), canvas_width, canvas_height)
+pub fn export_svg(doc: &Document, canvas_size: CanvasSize) -> String {
+    export_svg_with_resources(doc, &ResourceStore::new(), canvas_size)
 }
 /// Export a document to an SVG string with explicit shared resources.
 #[must_use]
 pub fn export_svg_with_resources(
     doc: &Document,
     resources: &ResourceStore,
-    canvas_width: f32,
-    canvas_height: f32,
+    canvas_size: CanvasSize,
 ) -> String {
-    export_svg_with_metadata(ExportOptions::new(
-        doc,
-        resources,
-        canvas_width,
-        canvas_height,
-    ))
+    export_svg_with_metadata(ExportOptions::new(doc, resources, canvas_size))
 }
 /// Export a document to SVG with shared resources.
 /// # Errors
@@ -57,28 +51,18 @@ pub fn export_svg_with_resources(
 pub fn export_svg_with_resources_checked(
     doc: &Document,
     resources: &ResourceStore,
-    canvas_width: f32,
-    canvas_height: f32,
+    canvas_size: CanvasSize,
 ) -> Result<String, SvgExportError> {
-    export_svg_with_metadata_checked(ExportOptions::new(
-        doc,
-        resources,
-        canvas_width,
-        canvas_height,
-    ))
+    export_svg_with_metadata_checked(ExportOptions::new(doc, resources, canvas_size))
 }
 /// Export a document for web usage, stripping all Gauss metadata.
 #[must_use]
 pub fn export_svg_with_resources_web_ready(
     doc: &Document,
     resources: &ResourceStore,
-    canvas_width: f32,
-    canvas_height: f32,
+    canvas_size: CanvasSize,
 ) -> String {
-    export_svg_with_metadata_policy(
-        ExportOptions::new(doc, resources, canvas_width, canvas_height),
-        false,
-    )
+    export_svg_with_metadata_policy(ExportOptions::new(doc, resources, canvas_size), false)
 }
 /// Export a web-ready SVG and validate resource references.
 /// # Errors
@@ -86,13 +70,25 @@ pub fn export_svg_with_resources_web_ready(
 pub fn export_svg_with_resources_web_ready_checked(
     doc: &Document,
     resources: &ResourceStore,
-    canvas_width: f32,
-    canvas_height: f32,
+    canvas_size: CanvasSize,
 ) -> Result<String, SvgExportError> {
-    export_svg_with_metadata_policy_checked(
-        ExportOptions::new(doc, resources, canvas_width, canvas_height),
-        false,
-    )
+    export_svg_with_metadata_policy_checked(ExportOptions::new(doc, resources, canvas_size), false)
+}
+
+/// Canvas dimensions used by SVG export operations.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CanvasSize {
+    /// Canvas width in document units.
+    pub width: f32,
+    /// Canvas height in document units.
+    pub height: f32,
+}
+impl CanvasSize {
+    /// Create a new canvas size.
+    #[must_use]
+    pub const fn new(width: f32, height: f32) -> Self {
+        Self { width, height }
+    }
 }
 /// Export options for metadata-aware SVG export.
 #[derive(Clone, Copy)]
@@ -101,10 +97,8 @@ pub struct ExportOptions<'a> {
     pub doc: &'a Document,
     /// Shared resources used by paint and defs export.
     pub resources: &'a ResourceStore,
-    /// Canvas width in document units.
-    pub canvas_width: f32,
-    /// Canvas height in document units.
-    pub canvas_height: f32,
+    /// Canvas dimensions in document units.
+    pub canvas_size: CanvasSize,
     /// Optional raw metadata block content.
     pub metadata_block: Option<&'a str>,
 }
@@ -114,14 +108,12 @@ impl<'a> ExportOptions<'a> {
     pub const fn new(
         doc: &'a Document,
         resources: &'a ResourceStore,
-        canvas_width: f32,
-        canvas_height: f32,
+        canvas_size: CanvasSize,
     ) -> Self {
         Self {
             doc,
             resources,
-            canvas_width,
-            canvas_height,
+            canvas_size,
             metadata_block: None,
         }
     }
@@ -142,12 +134,7 @@ fn export_svg_with_metadata_policy(
     preserve_gauss_metadata: bool,
 ) -> String {
     let mut out = String::new();
-    write_svg_header(
-        &mut out,
-        options.canvas_width,
-        options.canvas_height,
-        preserve_gauss_metadata,
-    );
+    write_svg_header(&mut out, options.canvas_size, preserve_gauss_metadata);
     defs::write_defs(&mut out, options.resources);
     if preserve_gauss_metadata {
         write_metadata_block(&mut out, options.metadata_block);
@@ -180,12 +167,7 @@ fn export_svg_with_metadata_policy_checked(
 pub(super) const fn opacity_from_alpha(alpha: u8) -> f32 {
     (alpha as f32) / 255.0
 }
-fn write_svg_header(
-    out: &mut String,
-    canvas_width: f32,
-    canvas_height: f32,
-    include_gauss_namespace: bool,
-) {
+fn write_svg_header(out: &mut String, canvas_size: CanvasSize, include_gauss_namespace: bool) {
     out.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
     out.push('\n');
     if include_gauss_namespace {
@@ -193,14 +175,18 @@ fn write_svg_header(
         write_fmt(
             out,
             format_args!(
-                r#"<svg xmlns="http://www.w3.org/2000/svg" {gauss_namespace} width="{canvas_width}" height="{canvas_height}" viewBox="0 0 {canvas_width} {canvas_height}">"#
+                r#"<svg xmlns="http://www.w3.org/2000/svg" {gauss_namespace} width="{width}" height="{height}" viewBox="0 0 {width} {height}">"#,
+                width = canvas_size.width,
+                height = canvas_size.height,
             ),
         );
     } else {
         write_fmt(
             out,
             format_args!(
-                r#"<svg xmlns="http://www.w3.org/2000/svg" width="{canvas_width}" height="{canvas_height}" viewBox="0 0 {canvas_width} {canvas_height}">"#
+                r#"<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">"#,
+                width = canvas_size.width,
+                height = canvas_size.height,
             ),
         );
     }

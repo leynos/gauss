@@ -114,7 +114,7 @@ fn imports_pattern_and_symbol_extra_attributes() {
 fn resource_round_trip_preserves_defs_and_references() {
     let (resources, gradient_id, pattern_id) = setup_test_resources();
     let doc = setup_test_document(gradient_id, pattern_id);
-    let exported = export_svg_with_resources(&doc, &resources, 100.0, 100.0);
+    let exported = export_svg_with_resources(&doc, &resources, CanvasSize::new(100.0, 100.0));
     let imported = match import_svg_with_resources(&exported) {
         Ok(imported) => imported,
         Err(err) => panic!("Expected resource round-trip import to succeed: {err}"),

@@ -5,7 +5,7 @@ use gauss::model::{
     LinearGradient, Paint, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind, Shape, Vec2,
 };
 use gauss::svg::export::{
-    SvgExportError, export_svg_with_resources_web_ready,
+    CanvasSize, SvgExportError, export_svg_with_resources_web_ready,
     export_svg_with_resources_web_ready_checked,
 };
 use gauss::svg::import::{ImportedSvg, SvgImportError, import_svg_with_resources};
@@ -96,15 +96,22 @@ fn given_document_with_dangling_gradient(world: &mut WebReadyWorld) {
 
 #[when("I export the document as web-ready SVG")]
 fn when_export_web_ready(world: &mut WebReadyWorld) {
-    let svg = export_svg_with_resources_web_ready(&world.doc, &world.resources, 100.0, 100.0);
+    let svg = export_svg_with_resources_web_ready(
+        &world.doc,
+        &world.resources,
+        CanvasSize::new(100.0, 100.0),
+    );
     world.export_svg = Some(svg);
     world.checked_export_result = None;
 }
 
 #[when("I export the document as web-ready SVG with reference validation")]
 fn when_export_web_ready_checked(world: &mut WebReadyWorld) {
-    let result =
-        export_svg_with_resources_web_ready_checked(&world.doc, &world.resources, 100.0, 100.0);
+    let result = export_svg_with_resources_web_ready_checked(
+        &world.doc,
+        &world.resources,
+        CanvasSize::new(100.0, 100.0),
+    );
     if let Ok(svg) = &result {
         world.export_svg = Some(svg.clone());
     }
@@ -113,7 +120,11 @@ fn when_export_web_ready_checked(world: &mut WebReadyWorld) {
 
 #[when("I export and re-import the document as web-ready SVG")]
 fn when_export_and_reimport_web_ready(world: &mut WebReadyWorld) {
-    let svg = export_svg_with_resources_web_ready(&world.doc, &world.resources, 100.0, 100.0);
+    let svg = export_svg_with_resources_web_ready(
+        &world.doc,
+        &world.resources,
+        CanvasSize::new(100.0, 100.0),
+    );
     world.export_svg = Some(svg.clone());
     world.import_result = Some(import_svg_with_resources(&svg));
 }

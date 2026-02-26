@@ -10,7 +10,7 @@ use gauss::model::{
     Anchor, Document, GaussAttribute, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind, Shape,
 };
 use gauss::svg::export::{
-    ExportOptions, export_svg_with_metadata, export_svg_with_resources_web_ready,
+    CanvasSize, ExportOptions, export_svg_with_metadata, export_svg_with_resources_web_ready,
 };
 use gauss::svg::import::import_svg_with_resources;
 use gauss::test_helpers::shape_id_from_seed;
@@ -84,8 +84,7 @@ fn assert_idempotent(svg: &str, metadata_block: Option<&str>) -> TestSupportResu
     let re_exported = export_svg_with_metadata(ExportOptions {
         doc: &imported.document,
         resources: &imported.resources,
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: imported.gauss_metadata_block.as_deref().or(metadata_block),
     });
     if svg != re_exported {
@@ -102,8 +101,7 @@ fn export_doc() -> impl Fn(&Document, Option<&str>) -> String {
         export_svg_with_metadata(ExportOptions {
             doc,
             resources: &ResourceStore::new(),
-            canvas_width: 100.0,
-            canvas_height: 100.0,
+            canvas_size: CanvasSize::new(100.0, 100.0),
             metadata_block,
         })
     }
@@ -324,7 +322,11 @@ fn web_ready_export_strips_gauss_metadata(
         hidden: true,
         gauss_metadata: vec![GaussAttribute::new("layer", "foreground")],
     });
-    let svg = export_svg_with_resources_web_ready(&doc, &ResourceStore::new(), 100.0, 100.0);
+    let svg = export_svg_with_resources_web_ready(
+        &doc,
+        &ResourceStore::new(),
+        CanvasSize::new(100.0, 100.0),
+    );
     assert_golden("web_ready_strips_metadata", &svg)?;
     assert_no_gauss_markers(&svg)?;
     let imported = import_svg_with_resources(&svg)

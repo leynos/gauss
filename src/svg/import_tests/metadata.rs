@@ -4,7 +4,7 @@ use slotmap::Key;
 
 use super::*;
 use crate::model::GaussAttribute;
-use crate::svg::export::{ExportOptions, export_svg_with_metadata};
+use crate::svg::export::{CanvasSize, ExportOptions, export_svg_with_metadata};
 use crate::svg::metadata::shape_id_to_hex;
 use crate::test_helpers::shape_id_from_seed;
 use rstest::{fixture, rstest};
@@ -42,8 +42,7 @@ fn export_and_reimport(
     let svg = export_svg_with_metadata(ExportOptions {
         doc,
         resources: &ResourceStore::new(),
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block,
     });
     match import_svg_with_resources(&svg) {
@@ -202,8 +201,7 @@ fn round_trip_preserves_metadata_block(#[with(103)] line_shape: Shape) {
     let svg = export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: Some(metadata),
     });
     let imported = import_ok(&svg);

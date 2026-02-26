@@ -37,8 +37,7 @@ fn export_single_shape(line_shape: Shape) -> String {
     export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: None,
     })
 }
@@ -104,8 +103,7 @@ fn exports_metadata_block_when_present() {
     let svg = export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: Some("\n<gauss:doc>test</gauss:doc>"),
     });
     assert!(svg.contains("<metadata>"));
@@ -119,8 +117,7 @@ fn metadata_block_with_trailing_newline_does_not_add_extra_newline() {
     let svg = export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: Some("test\n"),
     });
     assert!(svg.contains("<metadata>test\n</metadata>"));
@@ -134,8 +131,7 @@ fn omits_metadata_block_when_absent() {
     let svg = export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: None,
     });
     assert!(!svg.contains("<metadata>"));
@@ -149,7 +145,11 @@ fn web_ready_export_strips_gauss_shape_metadata(#[with(20)] mut line_shape: Shap
     line_shape.gauss_metadata = vec![GaussAttribute::new("role", "overlay")];
     let mut doc = Document::new();
     doc.append_shape(line_shape);
-    let svg = export_svg_with_resources_web_ready(&doc, &ResourceStore::new(), 100.0, 100.0);
+    let svg = export_svg_with_resources_web_ready(
+        &doc,
+        &ResourceStore::new(),
+        CanvasSize::new(100.0, 100.0),
+    );
     assert!(svg.contains(r#"<svg xmlns="http://www.w3.org/2000/svg""#));
     assert!(svg.contains("<path "));
     assert!(!svg.contains("xmlns:gauss="));
@@ -159,8 +159,11 @@ fn web_ready_export_strips_gauss_shape_metadata(#[with(20)] mut line_shape: Shap
 
 #[rstest]
 fn web_ready_export_keeps_valid_svg_shell_for_empty_document() {
-    let svg =
-        export_svg_with_resources_web_ready(&Document::new(), &ResourceStore::new(), 120.0, 80.0);
+    let svg = export_svg_with_resources_web_ready(
+        &Document::new(),
+        &ResourceStore::new(),
+        CanvasSize::new(120.0, 80.0),
+    );
     assert!(svg.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"));
     assert!(svg.contains(r#"<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80""#));
     assert!(svg.ends_with("</svg>\n"));
@@ -185,7 +188,11 @@ fn web_ready_checked_export_reports_missing_gradient_reference(#[with(30)] line_
     shape.style = PaintStyle::new_with_paint(Paint::gradient(dangling_gradient), 1.0, Paint::None);
     let mut doc = Document::new();
     doc.append_shape(shape);
-    let exported = export_svg_with_resources_web_ready_checked(&doc, &resources, 100.0, 100.0);
+    let exported = export_svg_with_resources_web_ready_checked(
+        &doc,
+        &resources,
+        CanvasSize::new(100.0, 100.0),
+    );
     assert_eq!(
         exported,
         Err(SvgExportError::MissingGradientReference(dangling_gradient))
@@ -204,7 +211,11 @@ fn web_ready_checked_export_reports_missing_pattern_reference(#[with(31)] line_s
     shape.style = PaintStyle::new_with_paint(Paint::None, 1.0, Paint::pattern(dangling_pattern));
     let mut doc = Document::new();
     doc.append_shape(shape);
-    let exported = export_svg_with_resources_web_ready_checked(&doc, &resources, 100.0, 100.0);
+    let exported = export_svg_with_resources_web_ready_checked(
+        &doc,
+        &resources,
+        CanvasSize::new(100.0, 100.0),
+    );
     assert_eq!(
         exported,
         Err(SvgExportError::MissingPatternReference(dangling_pattern))

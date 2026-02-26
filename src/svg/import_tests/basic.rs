@@ -59,7 +59,8 @@ fn round_trips_exported_svg() {
     let mut doc = Document::new();
     doc.append_shape(shape);
 
-    let exported = export_svg_with_resources(&doc, &ResourceStore::new(), 100.0, 100.0);
+    let exported =
+        export_svg_with_resources(&doc, &ResourceStore::new(), CanvasSize::new(100.0, 100.0));
     let imported = match import_svg(&exported) {
         Ok(imported_doc) => imported_doc,
         Err(err) => panic!("Expected re-import to succeed: {err}"),

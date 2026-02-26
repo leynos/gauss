@@ -10,7 +10,7 @@ use crate::{
         ShapeId, SymbolResource, Vec2,
     },
     svg::{
-        export::export_svg_with_resources,
+        export::{CanvasSize, export_svg_with_resources},
         import::{SvgImportError, import_svg, import_svg_with_resources},
         metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX},
     },

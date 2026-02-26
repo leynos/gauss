@@ -16,7 +16,8 @@ use gpui_component::history::History;
 
 use crate::model::Selection;
 use crate::svg::export::{
-    ExportOptions, export_svg_with_metadata_checked, export_svg_with_resources_web_ready_checked,
+    CanvasSize, ExportOptions, export_svg_with_metadata_checked,
+    export_svg_with_resources_web_ready_checked,
 };
 
 use super::Phase0Shell;
@@ -155,15 +156,13 @@ async fn apply_save_path(
             SaveIntent::PreserveMetadata => export_svg_with_metadata_checked(ExportOptions {
                 doc: &view.state.document,
                 resources: &view.state.resources,
-                canvas_width: 100.0,
-                canvas_height: 100.0,
+                canvas_size: CanvasSize::new(100.0, 100.0),
                 metadata_block: view.state.gauss_metadata_block.as_deref(),
             }),
             SaveIntent::WebReady => export_svg_with_resources_web_ready_checked(
                 &view.state.document,
                 &view.state.resources,
-                100.0,
-                100.0,
+                CanvasSize::new(100.0, 100.0),
             ),
         }
         .map_err(|err| err.to_string())

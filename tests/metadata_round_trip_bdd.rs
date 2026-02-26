@@ -4,7 +4,7 @@ use gauss::model::{
     Anchor, Document, GaussAttribute, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind,
     Shape, Vec2,
 };
-use gauss::svg::export::{ExportOptions, export_svg_with_metadata};
+use gauss::svg::export::{CanvasSize, ExportOptions, export_svg_with_metadata};
 use gauss::svg::import::{ImportedSvg, import_svg_with_resources};
 use gauss::test_helpers::shape_id_from_seed;
 use rstest::fixture;
@@ -85,8 +85,7 @@ fn given_svg_with_unknown_attrs(world: &mut MetadataWorld) {
     world.export_svg = Some(export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: None,
     }));
 }
@@ -100,8 +99,7 @@ fn given_svg_with_metadata_block(world: &mut MetadataWorld) {
     world.export_svg = Some(export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: Some(metadata),
     }));
 }
@@ -126,8 +124,7 @@ fn when_export_and_reimport(world: &mut MetadataWorld) {
     let svg = export_svg_with_metadata(ExportOptions {
         doc: &world.doc,
         resources: &world.resources,
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: world.metadata_block.as_deref(),
     });
     world.export_svg = Some(svg.clone());
@@ -148,8 +145,7 @@ fn when_import_and_reexport(world: &mut MetadataWorld) -> TestSupportResult<()> 
     let re_exported = export_svg_with_metadata(ExportOptions {
         doc: &imported.document,
         resources: &imported.resources,
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: imported.gauss_metadata_block.as_deref(),
     });
     world.export_svg = Some(re_exported);
