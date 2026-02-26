@@ -108,10 +108,10 @@ phases depend upon. See architecture document §20.
   `undo_2` spike migrated document history to a model-layer adapter
   `DocumentUndoHistory`, validated undo/redo round-trips, and confirmed
   history-clear-on-open semantics. Single-entry-per-gesture invariant verified
-  by unit tests, BDD scenarios, and GPUI integration tests.) In scope:
-  undo/redo round-trip validation, history-clear semantics, adapter
-  integration, single-entry-per-gesture audit. Out of scope: command grouping
-  (see 0.3.2).
+  by unit tests, behaviour-driven development (BDD) scenarios, and GPUI
+  integration tests.) In scope: undo/redo round-trip validation, history-clear
+  semantics, adapter integration, single-entry-per-gesture audit. Out of scope:
+  command grouping (see 0.3.2).
   - [x] Verify multistep interactions create single undo entries.
         Completion: all drag and compound tool interactions produce
         exactly one undo entry each.
@@ -128,11 +128,10 @@ phases depend upon. See architecture document §20.
 - [x] 0.3.3. Add inverse command generation.
   - [x] All commands produce `CommandInverse` for undo.
         See architecture §7.1.
-- [ ] 0.3.4. Move document history ownership to EngineState.
-  Currently owned by `Phase0Shell`; moving it aligns with the architecture
-  principle that editor state belongs in the engine. Requires updating
-  `Phase0Shell`, `draw/mod.rs` call sites, and the `EngineState` doc comment.
-  Deferred: touches UI layer boundary.
+- [x] 0.3.4. Move document history ownership to EngineState. (Complete —
+  `EngineState` now owns `DocumentUndoHistory`; `Phase0Shell` delegates
+  document history operations in draw/chrome/open call paths; validated by unit
+  tests, behavioural BDD scenarios, and GPUI integration tests.)
 - [ ] 0.3.5. Evolve history error model from `String` to enum.
   The adapter returns `Result<(), String>`; converting to a `HistoryError` type
   provides structured error handling. Deferred: changes public API and all call

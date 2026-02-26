@@ -7,31 +7,34 @@
 //! > must live in **engine state**, not in the view layer."
 //!
 //! This module is GPUI-independent for testability and scripting.
-//! Document history uses `DocumentUndoHistory` (model layer, backed by
-//! `undo_2`); selection history remains in the UI layer using
+//! Document history is owned here using `DocumentUndoHistory` (model layer,
+//! backed by `undo_2`); selection history remains in the UI layer using
 //! `gpui_component::History`.
 //!
 //! # Examples
 //!
 //! ```rust
-//! use gauss::model::{Document, EngineState, ToolMode, EdgeMode};
+//! use gauss::model::{Document, EdgeMode, EngineState, ToolMode};
 //!
 //! // Create empty state
 //! let state = EngineState::new();
 //! assert!(state.document.is_empty());
 //! assert!(state.selection.is_empty());
 //! assert_eq!(state.tool_mode, ToolMode::Draw);
+//! assert_eq!(state.document_history_len(), 0);
 //!
 //! // Create state with a document
 //! let doc = Document::default();
 //! let state = EngineState::with_document(doc);
+//! assert_eq!(state.document_history_len(), 0);
 //! ```
 
 use crate::model::{
-    Document, EdgeMode, PaintStyle, ResizeAnchor, Rgba, Selection, ShapeId, ToolMode, Viewport,
+    Command, Document, EdgeMode, PaintStyle, ResizeAnchor, Rgba, Selection, ShapeId, ToolMode,
+    UserError, Viewport,
 };
 
-use super::{ResourceStore, StyleStore};
+use super::{DocumentUndoHistory, HistoryError, ResourceStore, StyleStore};
 
 /// Unified state for the Gauss editor.
 ///
@@ -55,12 +58,14 @@ use super::{ResourceStore, StyleStore};
 ///
 /// # History
 ///
-/// Document undo/redo history uses `DocumentUndoHistory` in the model
-/// layer (backed by `undo_2`).  It is currently owned by `Phase0Shell`
-/// but is GPUI-independent; moving ownership here is planned future
-/// work.  Selection history remains in the view layer using
-/// `gpui_component::History`.  See ADR-002 for rationale.
-#[derive(Clone, Debug, PartialEq)]
+/// Document undo/redo history is owned here via `DocumentUndoHistory` in
+/// the model layer (backed by `undo_2`). Selection history remains in
+/// the view layer using `gpui_component::History`. See ADR-002 for
+/// rationale. History operations are intentionally explicit on `EngineState`
+/// to avoid exposing mutable history internals.
+///
+/// `EngineState` intentionally does not implement `Clone`, `Debug`, or
+/// `PartialEq` because `DocumentUndoHistory` is stateful undo/redo data.
 pub struct EngineState {
     /// The document containing all shapes and their geometry.
     pub document: Document,
@@ -91,6 +96,9 @@ pub struct EngineState {
 
     /// Named style presets.
     pub styles: StyleStore,
+
+    /// Document edit history (undo/redo + grouping).
+    document_history: DocumentUndoHistory,
 
     /// Raw Gauss metadata block content preserved for round-trip fidelity.
     pub gauss_metadata_block: Option<String>,
@@ -123,13 +131,14 @@ impl EngineState {
             resize_anchor: ResizeAnchor::default(),
             resources: ResourceStore::new(),
             styles: StyleStore::new(),
+            document_history: DocumentUndoHistory::new(),
             gauss_metadata_block: None,
         }
     }
 
     /// Construct engine state with a specific document.
     ///
-    /// All other fields are initialised to defaults. This is useful for
+    /// All other fields are initialized to defaults. This is useful for
     /// loading saved documents or creating test fixtures.
     ///
     /// # Examples
@@ -147,6 +156,79 @@ impl EngineState {
             document,
             ..Self::new()
         }
+    }
+
+    /// Apply a command to the document and record the resulting inverse.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`UserError`] if the command cannot be applied to the
+    /// current document state.
+    pub fn apply_document_command(&mut self, command: Command) -> Result<(), UserError> {
+        let inverse = command.apply(&mut self.document)?;
+        self.document_history.record(command, inverse);
+        Ok(())
+    }
+
+    /// Undo the most recent document history entry.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`HistoryError`] when replay fails or an invalid boundary
+    /// operation is attempted.
+    pub fn undo_document(&mut self) -> Result<(), HistoryError> {
+        self.document_history.undo(&mut self.document)
+    }
+
+    /// Redo the most recently undone document history entry.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`HistoryError`] when replay fails or an invalid boundary
+    /// operation is attempted.
+    pub fn redo_document(&mut self) -> Result<(), HistoryError> {
+        self.document_history.redo(&mut self.document)
+    }
+
+    /// Begin a grouped document-history transaction.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when a history group is already active.
+    pub fn begin_document_history_group(&mut self) -> Result<(), HistoryError> {
+        self.document_history.begin_group()
+    }
+
+    /// End the active grouped document-history transaction.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when no history group is active.
+    pub fn end_document_history_group(&mut self) -> Result<(), HistoryError> {
+        self.document_history.end_group()
+    }
+
+    /// Clear all document-history entries and any active group.
+    pub fn clear_document_history(&mut self) {
+        self.document_history.clear();
+    }
+
+    /// Return whether document undo is currently available.
+    #[must_use]
+    pub fn can_undo_document(&self) -> bool {
+        self.document_history.can_undo()
+    }
+
+    /// Return whether document redo is currently available.
+    #[must_use]
+    pub fn can_redo_document(&self) -> bool {
+        self.document_history.can_redo()
+    }
+
+    /// Return realized document-history depth.
+    #[must_use]
+    pub fn document_history_len(&self) -> usize {
+        self.document_history.len()
     }
 }
 
@@ -168,7 +250,26 @@ mod tests {
     //! Tests for engine state defaults and helpers.
 
     use super::*;
-    use rstest::rstest;
+    use rstest::{fixture, rstest};
+
+    #[fixture]
+    fn sample_shape() -> crate::model::Shape {
+        crate::model::Shape {
+            id: ShapeId::default(),
+            z: 0,
+            style: default_style(),
+            path: crate::model::PathGeom {
+                anchors: vec![],
+                segments: vec![],
+                closed: false,
+                closing_segment: crate::model::SegmentKind::Line,
+            },
+            name: None,
+            locked: false,
+            hidden: false,
+            gauss_metadata: Vec::new(),
+        }
+    }
 
     #[rstest]
     fn new_state_has_empty_document() {
@@ -207,38 +308,91 @@ mod tests {
     }
 
     #[rstest]
-    fn with_document_preserves_document() {
+    fn with_document_preserves_document(sample_shape: crate::model::Shape) {
         let mut doc = Document::new();
         // Insert a shape manually to verify preservation
-        doc.append_shape(crate::model::Shape {
-            id: ShapeId::default(),
-            z: 0,
-            style: default_style(),
-            path: crate::model::PathGeom {
-                anchors: vec![],
-                segments: vec![],
-                closed: false,
-                closing_segment: crate::model::SegmentKind::Line,
-            },
-            name: None,
-            locked: false,
-            hidden: false,
-            gauss_metadata: Vec::new(),
-        });
+        doc.append_shape(sample_shape);
 
         let state = EngineState::with_document(doc.clone());
         assert_eq!(state.document.len(), 1);
+        assert_eq!(state.document_history_len(), 0);
     }
 
     #[rstest]
-    fn state_is_clone() {
+    fn new_state_document_history_starts_empty() {
         let state = EngineState::new();
-        let cloned = state.clone();
-        assert_eq!(state, cloned);
+        assert_eq!(state.document_history_len(), 0);
+        assert!(!state.can_undo_document());
+        assert!(!state.can_redo_document());
     }
 
     #[rstest]
-    fn state_default_equals_new() {
-        assert_eq!(EngineState::default(), EngineState::new());
+    fn document_history_round_trip_via_engine_state(sample_shape: crate::model::Shape) {
+        let mut state = EngineState::new();
+        state
+            .apply_document_command(Command::InsertShape {
+                insertion: crate::model::ShapeInsertion {
+                    index: 0,
+                    shape: sample_shape,
+                },
+            })
+            .expect("insert shape should succeed");
+        assert_eq!(state.document.len(), 1);
+        assert_eq!(state.document_history_len(), 1);
+        assert!(state.can_undo_document());
+
+        state.undo_document().expect("undo should succeed");
+        assert!(state.document.is_empty());
+        assert_eq!(state.document_history_len(), 0);
+        assert!(state.can_redo_document());
+
+        state.redo_document().expect("redo should succeed");
+        assert_eq!(state.document.len(), 1);
+        assert_eq!(state.document_history_len(), 1);
+    }
+
+    #[rstest]
+    fn empty_document_history_undo_redo_is_noop() {
+        let mut state = EngineState::new();
+
+        state
+            .undo_document()
+            .expect("undo on empty history should succeed");
+        state
+            .redo_document()
+            .expect("redo on empty history should succeed");
+
+        assert!(state.document.is_empty());
+        assert_eq!(state.document_history_len(), 0);
+    }
+
+    #[rstest]
+    fn ending_group_without_begin_returns_error() {
+        let mut state = EngineState::new();
+        assert_eq!(
+            state
+                .end_document_history_group()
+                .expect_err("ending group without begin should fail"),
+            HistoryError::NoActiveGroup,
+        );
+    }
+
+    #[rstest]
+    fn clear_document_history_resets_realized_entries(sample_shape: crate::model::Shape) {
+        let mut state = EngineState::new();
+        state
+            .apply_document_command(Command::InsertShape {
+                insertion: crate::model::ShapeInsertion {
+                    index: 0,
+                    shape: sample_shape,
+                },
+            })
+            .expect("insert shape should succeed");
+        assert_eq!(state.document_history_len(), 1);
+
+        state.clear_document_history();
+        assert_eq!(state.document_history_len(), 0);
+        assert!(!state.can_undo_document());
+        assert!(!state.can_redo_document());
     }
 }

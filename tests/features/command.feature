@@ -45,3 +45,16 @@ Feature: Command dispatch
   Scenario: Empty history undo is safe
     When I undo on an empty history
     Then the document should have two shapes
+
+  Scenario: EngineState history delete-selection round trip
+    When I apply DeleteSelection through EngineState history
+    Then the document should have one shape
+    When I undo through EngineState history
+    Then the document should have two shapes
+    When I redo through EngineState history
+    Then the document should have one shape
+
+  Scenario: EngineState history group boundary reports no active group
+    When I end an EngineState history group without begin
+    Then ending group should fail with NoActiveGroup
+    And the document should have two shapes
