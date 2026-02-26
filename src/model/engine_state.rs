@@ -252,6 +252,25 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
+    #[fixture]
+    fn sample_shape() -> crate::model::Shape {
+        crate::model::Shape {
+            id: ShapeId::default(),
+            z: 0,
+            style: default_style(),
+            path: crate::model::PathGeom {
+                anchors: vec![],
+                segments: vec![],
+                closed: false,
+                closing_segment: crate::model::SegmentKind::Line,
+            },
+            name: None,
+            locked: false,
+            hidden: false,
+            gauss_metadata: Vec::new(),
+        }
+    }
+
     #[rstest]
     fn new_state_has_empty_document() {
         let state = EngineState::new();
@@ -375,24 +394,5 @@ mod tests {
         assert_eq!(state.document_history_len(), 0);
         assert!(!state.can_undo_document());
         assert!(!state.can_redo_document());
-    }
-
-    #[fixture]
-    fn sample_shape() -> crate::model::Shape {
-        crate::model::Shape {
-            id: ShapeId::default(),
-            z: 0,
-            style: default_style(),
-            path: crate::model::PathGeom {
-                anchors: vec![],
-                segments: vec![],
-                closed: false,
-                closing_segment: crate::model::SegmentKind::Line,
-            },
-            name: None,
-            locked: false,
-            hidden: false,
-            gauss_metadata: Vec::new(),
-        }
     }
 }

@@ -163,7 +163,7 @@ duplicated setup.
 
 ### Milestone 4: Behavioural tests (`rstest-bdd` v0.5.0)
 
-Add or extend Behavior-Driven Development (BDD) scenarios to exercise
+Add or extend Behaviour-Driven Development (BDD) scenarios to exercise
 engine-owned document history via observable outcomes, not private internals:
 
 - command application is undoable through engine-owned history.
