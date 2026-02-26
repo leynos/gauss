@@ -7,6 +7,7 @@ use crate::model::{
 };
 use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::{fixture, rstest};
+use slotmap::Key;
 
 #[fixture]
 fn line_shape(#[default(1)] seed: u32) -> Shape {
@@ -52,7 +53,7 @@ fn exports_gauss_id_for_non_null_shape(export_single_shape: String) {
 fn omits_gauss_id_for_null_shape(mut line_shape: Shape) {
     line_shape.id = crate::model::ShapeId::null();
     let mut out = String::new();
-    write_shape_gauss_metadata(&mut out, &line_shape);
+    shape_metadata::write_shape_gauss_metadata(&mut out, &line_shape);
     assert!(!out.contains("gauss:id"));
 }
 

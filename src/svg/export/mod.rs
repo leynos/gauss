@@ -4,11 +4,11 @@
     reason = "SVG export needs floating-point conversions for geometry"
 )]
 mod defs;
+mod shape_metadata;
 use crate::model::{
     Document, GradientId, Paint, PatternId, ResourceStore, SegmentKind, Shape, format_hex_rgb,
 };
-use crate::svg::metadata::{gauss_namespace_declaration, shape_id_to_hex};
-use slotmap::Key;
+use crate::svg::metadata::gauss_namespace_declaration;
 use std::fmt::{Arguments, Write as _};
 /// Errors returned by [`export_svg_with_resources_checked`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -254,49 +254,9 @@ fn write_shape_path(
     write_optional_opacity(out, "stroke-opacity", &stroke_attr, stroke_opacity);
     write_optional_opacity(out, "fill-opacity", &fill_attr, fill_opacity);
     if include_gauss_metadata {
-        write_shape_gauss_metadata(out, shape);
+        shape_metadata::write_shape_gauss_metadata(out, shape);
     }
     out.push_str(" />\n");
-}
-fn escape_attr_value(value: &str) -> String {
-    let mut escaped = String::with_capacity(value.len());
-    for ch in value.chars() {
-        match ch {
-            '&' => escaped.push_str("&amp;"),
-            '"' => escaped.push_str("&quot;"),
-            '<' => escaped.push_str("&lt;"),
-            '>' => escaped.push_str("&gt;"),
-            '\'' => escaped.push_str("&apos;"),
-            _ => escaped.push(ch),
-        }
-    }
-    escaped
-}
-fn write_shape_gauss_metadata(out: &mut String, shape: &Shape) {
-    if !shape.id.is_null() {
-        let hex = shape_id_to_hex(shape.id);
-        write_fmt(out, format_args!(r#" gauss:id="{hex}""#));
-    }
-    if let Some(name) = shape.name.as_deref() {
-        let escaped_name = escape_attr_value(name);
-        write_fmt(out, format_args!(r#" gauss:name="{escaped_name}""#));
-    }
-    if shape.locked {
-        out.push_str(r#" gauss:locked="true""#);
-    }
-    if shape.hidden {
-        out.push_str(r#" gauss:hidden="true""#);
-    }
-    write_opaque_gauss_attrs(out, &shape.gauss_metadata);
-}
-fn write_opaque_gauss_attrs(out: &mut String, metadata: &[crate::model::GaussAttribute]) {
-    for attr in metadata {
-        let escaped_value = escape_attr_value(&attr.value);
-        write_fmt(
-            out,
-            format_args!(r#" gauss:{}="{escaped_value}""#, attr.name),
-        );
-    }
 }
 fn build_path_data(shape: &Shape) -> Option<String> {
     let mut d = String::new();
