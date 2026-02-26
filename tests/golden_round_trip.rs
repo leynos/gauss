@@ -262,6 +262,52 @@ fn full_round_trip_combined(
     assert_idempotent(&svg, None)
 }
 
+fn assert_no_gauss_markers(svg: &str) -> TestSupportResult<()> {
+    if svg.contains("gauss:") {
+        return Err(TestSupportError::expectation(
+            "web-ready export should omit all gauss metadata",
+        ));
+    }
+    if svg.contains("xmlns:gauss=") {
+        return Err(TestSupportError::expectation(
+            "web-ready export should omit all gauss metadata",
+        ));
+    }
+    if svg.contains("<metadata>") {
+        return Err(TestSupportError::expectation(
+            "web-ready export should omit all gauss metadata",
+        ));
+    }
+    Ok(())
+}
+
+fn assert_default_shape_metadata(
+    shape: &Shape,
+    gauss_metadata_block: Option<&String>,
+) -> TestSupportResult<()> {
+    if shape.name.is_some() {
+        return Err(TestSupportError::expectation(
+            "web-ready export should import with default shape metadata flags",
+        ));
+    }
+    if shape.locked {
+        return Err(TestSupportError::expectation(
+            "web-ready export should import with default shape metadata flags",
+        ));
+    }
+    if shape.hidden {
+        return Err(TestSupportError::expectation(
+            "web-ready export should import with default shape metadata flags",
+        ));
+    }
+    if !shape.gauss_metadata.is_empty() || gauss_metadata_block.is_some() {
+        return Err(TestSupportError::expectation(
+            "web-ready export should not contain any gauss metadata payload",
+        ));
+    }
+    Ok(())
+}
+
 #[rstest]
 fn web_ready_export_strips_gauss_metadata(
     triangle_path: PathGeom,
@@ -280,46 +326,13 @@ fn web_ready_export_strips_gauss_metadata(
     });
     let svg = export_svg_with_resources_web_ready(&doc, &ResourceStore::new(), 100.0, 100.0);
     assert_golden("web_ready_strips_metadata", &svg)?;
-    if svg.contains("gauss:") {
-        return Err(TestSupportError::expectation(
-            "web-ready export should omit all gauss metadata",
-        ));
-    }
-    if svg.contains("xmlns:gauss=") {
-        return Err(TestSupportError::expectation(
-            "web-ready export should omit all gauss metadata",
-        ));
-    }
-    if svg.contains("<metadata>") {
-        return Err(TestSupportError::expectation(
-            "web-ready export should omit all gauss metadata",
-        ));
-    }
+    assert_no_gauss_markers(&svg)?;
     let imported = import_svg_with_resources(&svg)
         .map_err(|err| TestSupportError::expectation(format!("re-import failed: {err}")))?;
     let imported_shape = imported
         .document
         .shape_at(0)
         .ok_or_else(|| TestSupportError::missing("shape", "web-ready assertion"))?;
-    if imported_shape.name.is_some() {
-        return Err(TestSupportError::expectation(
-            "web-ready export should import with default shape metadata flags",
-        ));
-    }
-    if imported_shape.locked {
-        return Err(TestSupportError::expectation(
-            "web-ready export should import with default shape metadata flags",
-        ));
-    }
-    if imported_shape.hidden {
-        return Err(TestSupportError::expectation(
-            "web-ready export should import with default shape metadata flags",
-        ));
-    }
-    if !imported_shape.gauss_metadata.is_empty() || imported.gauss_metadata_block.is_some() {
-        return Err(TestSupportError::expectation(
-            "web-ready export should not contain any gauss metadata payload",
-        ));
-    }
+    assert_default_shape_metadata(imported_shape, imported.gauss_metadata_block.as_ref())?;
     Ok(())
 }
