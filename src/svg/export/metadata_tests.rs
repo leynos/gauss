@@ -2,8 +2,8 @@
 
 use super::*;
 use crate::model::{
-    Anchor, GaussAttribute, Gradient, GradientKind, GradientStop, LinearGradient, Paint, PaintStyle,
-    PathGeom, PatternResource, Rgba, Shape, Vec2,
+    Anchor, GaussAttribute, Gradient, GradientKind, GradientStop, LinearGradient, Paint,
+    PaintStyle, PathGeom, PatternResource, Rgba, Shape, Vec2,
 };
 use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::{fixture, rstest};
@@ -159,12 +159,8 @@ fn web_ready_export_strips_gauss_shape_metadata(#[with(20)] mut line_shape: Shap
 
 #[rstest]
 fn web_ready_export_keeps_valid_svg_shell_for_empty_document() {
-    let svg = export_svg_with_resources_web_ready(
-        &Document::new(),
-        &ResourceStore::new(),
-        120.0,
-        80.0,
-    );
+    let svg =
+        export_svg_with_resources_web_ready(&Document::new(), &ResourceStore::new(), 120.0, 80.0);
     assert!(svg.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"));
     assert!(svg.contains(r#"<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80""#));
     assert!(svg.ends_with("</svg>\n"));
@@ -199,8 +195,10 @@ fn web_ready_checked_export_reports_missing_gradient_reference(#[with(30)] line_
 #[rstest]
 fn web_ready_checked_export_reports_missing_pattern_reference(#[with(31)] line_shape: Shape) {
     let mut resources = ResourceStore::new();
-    let dangling_pattern =
-        resources.insert_pattern(PatternResource::new("dots", r#"<circle cx="1" cy="1" r="1" />"#));
+    let dangling_pattern = resources.insert_pattern(PatternResource::new(
+        "dots",
+        r#"<circle cx="1" cy="1" r="1" />"#,
+    ));
     let _removed = resources.remove_pattern(dangling_pattern);
     let mut shape = line_shape;
     shape.style = PaintStyle::new_with_paint(Paint::None, 1.0, Paint::pattern(dangling_pattern));

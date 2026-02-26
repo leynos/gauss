@@ -20,7 +20,7 @@ pub use action_bridge::{
 };
 pub use gauss_window_border::GaussRoot;
 pub(crate) use icon_assets::{UiIcon, icon_element};
-pub use phase0_shell::{OpenSvg, Phase0Shell, SaveSvg};
+pub use phase0_shell::{ExportSvgWebReady, OpenSvg, Phase0Shell, SaveSvg};
 
 /// Initialise GPUI integrations used by Gauss.
 ///

@@ -52,6 +52,14 @@ pub struct OpenSvg;
 #[action(no_json)]
 pub struct SaveSvg;
 
+/// Trigger a web-ready export workflow for the current document.
+///
+/// This command writes SVG without Gauss metadata so the output is suitable
+/// for publishing on the web.
+#[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
+#[action(no_json)]
+pub struct ExportSvgWebReady;
+
 /// Toggle the draw edge mode (Line vs Bézier auto) or, in manipulate mode,
 /// toggle the kind of any selected segments.
 #[derive(Clone, Debug, Default, PartialEq, gpui::Action)]

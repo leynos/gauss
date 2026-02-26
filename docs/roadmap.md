@@ -148,9 +148,9 @@ phases depend upon. See architecture document §20.
         load/save cycle.
   - [x] 6 golden reference SVGs with idempotent round-trip assertions.
   - [x] 30 unit tests, 6 BDD scenarios, 3 GPUI integration tests.
-- [ ] 0.4.3. Implement web-ready export.
-  - [ ] Strip all Gauss metadata on export.
-  - [ ] Produce valid, minimal SVG.
+- [x] 0.4.3. Implement web-ready export.
+  - [x] Strip all Gauss metadata on export.
+  - [x] Produce valid, minimal SVG.
 
 ### 0.5. Tool framework
 
@@ -335,10 +335,10 @@ history.
 - [ ] 1.7.2. Extend SVG export for new shape elements.
   - [ ] Emit native SVG elements where applicable.
   - [ ] Maintain deterministic output. See architecture §2.3.
-- [ ] 1.7.3. Define Gauss metadata namespace.
-  - [ ] Store editor-only data in `gauss:` namespaced attributes or
+- [x] 1.7.3. Define Gauss metadata namespace.
+  - [x] Store editor-only data in `gauss:` namespaced attributes or
         `<metadata>` block. See architecture §10.1.
-  - [ ] Implement "Export web-ready SVG" command that strips metadata.
+  - [x] Implement "Export web-ready SVG" command that strips metadata.
 - [ ] 1.7.4. Fix canvas size derivation.
   - [ ] Derive viewBox from document bounds. (TODO in `file_dialogs.rs`.)
   - [ ] Support explicit artboard sizing.

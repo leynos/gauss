@@ -14,13 +14,20 @@ use gauss::model::{
     Gradient, GradientKind, GradientStop, LinearGradient, Paint, PatternResource, Rgba, Vec2,
 };
 use gauss::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
-use gauss::ui::{Phase0Shell, SaveSvg};
+use gauss::ui::{ExportSvgWebReady, Phase0Shell, SaveSvg};
 use gpui::TestAppContext;
 use uuid::Uuid;
 
-fn setup_save_test_view(
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ExportAction {
+    Save,
+    WebReady,
+}
+
+fn setup_export_test_view(
     cx: &mut TestAppContext,
     mut configure_shell: impl FnMut(&mut Phase0Shell),
+    action: ExportAction,
 ) -> gpui::Entity<Phase0Shell> {
     let view = {
         let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
@@ -28,7 +35,10 @@ fn setup_save_test_view(
         view.update(visual_cx, |shell, _cx| {
             configure_shell(shell);
         });
-        visual_cx.dispatch_action(SaveSvg);
+        match action {
+            ExportAction::Save => visual_cx.dispatch_action(SaveSvg),
+            ExportAction::WebReady => visual_cx.dispatch_action(ExportSvgWebReady),
+        }
         visual_cx.run_until_parked();
         view
     };
@@ -49,6 +59,13 @@ fn create_temp_save_target(
     Ok((expected, file_name, cleanup))
 }
 
+fn create_temp_save_target_or_panic(prefix: &str) -> (Utf8PathBuf, Utf8PathBuf, TempFileGuard) {
+    match create_temp_save_target(prefix) {
+        Ok(target) => target,
+        Err(err) => panic!("{err}"),
+    }
+}
+
 fn choose_save_path(cx: &mut TestAppContext, expected: &Utf8PathBuf) {
     cx.simulate_new_path_selection(|_directory: &Path| Some(expected.as_std_path().to_path_buf()));
     cx.run_until_parked();
@@ -67,6 +84,25 @@ fn read_save_outcome(
     })
 }
 
+fn assert_web_ready_contents(contents: &str) {
+    assert!(
+        contents.contains(r#"<path d="M 10 10 L 90 10 L 90 90 L 10 90 Z""#),
+        "Web-ready SVG should include the demo shape path"
+    );
+    assert!(
+        !contents.contains(GAUSS_METADATA_NAMESPACE),
+        "Web-ready SVG must not include the Gauss namespace declaration"
+    );
+    assert!(
+        !contents.contains(&format!("{GAUSS_METADATA_PREFIX}:")),
+        "Web-ready SVG must not include namespaced Gauss metadata attributes"
+    );
+    assert!(
+        !contents.contains("<metadata>"),
+        "Web-ready SVG must not include metadata blocks"
+    );
+}
+
 #[gpui::test]
 fn save_action_prompts_for_path(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -76,17 +112,14 @@ fn save_action_prompts_for_path(cx: &mut TestAppContext) {
         "No save prompt should be visible before triggering Save"
     );
 
-    let view = setup_save_test_view(cx, |_shell| {});
+    let view = setup_export_test_view(cx, |_shell| {}, ExportAction::Save);
 
     assert!(
         cx.did_prompt_for_new_path(),
         "Save action should prompt for a new path"
     );
 
-    let (expected, file_name, cleanup) = match create_temp_save_target("gauss-test-save") {
-        Ok(target) => target,
-        Err(err) => panic!("{err}"),
-    };
+    let (expected, file_name, cleanup) = create_temp_save_target_or_panic("gauss-test-save");
     choose_save_path(cx, &expected);
 
     let saved = cx.read(|app| view.read(app).last_saved_path().map(Path::to_path_buf));
@@ -112,32 +145,33 @@ fn save_action_prompts_for_path(cx: &mut TestAppContext) {
 fn save_action_reports_dangling_resource_references(cx: &mut TestAppContext) {
     init_test_app(cx);
 
-    let view = setup_save_test_view(cx, |shell| {
-        let dangling_gradient = shell
-            .resources_mut_for_tests()
-            .insert_gradient(Gradient::new(
-                "dangling",
-                GradientKind::Linear(LinearGradient::new(
-                    Vec2::new(0.0, 0.0),
-                    Vec2::new(1.0, 0.0),
-                    vec![
-                        GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
-                        GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
-                    ],
-                )),
-            ));
-        let _removed = shell
-            .resources_mut_for_tests()
-            .remove_gradient(dangling_gradient);
-        if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
-            shape.style.fill = Paint::gradient(dangling_gradient);
-        }
-    });
+    let view = setup_export_test_view(
+        cx,
+        |shell| {
+            let dangling_gradient = shell
+                .resources_mut_for_tests()
+                .insert_gradient(Gradient::new(
+                    "dangling",
+                    GradientKind::Linear(LinearGradient::new(
+                        Vec2::new(0.0, 0.0),
+                        Vec2::new(1.0, 0.0),
+                        vec![
+                            GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
+                            GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
+                        ],
+                    )),
+                ));
+            let _removed = shell
+                .resources_mut_for_tests()
+                .remove_gradient(dangling_gradient);
+            if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
+                shape.style.fill = Paint::gradient(dangling_gradient);
+            }
+        },
+        ExportAction::Save,
+    );
     let (expected, file_name, cleanup) =
-        match create_temp_save_target("gauss-test-save-dangling-resource") {
-            Ok(target) => target,
-            Err(err) => panic!("{err}"),
-        };
+        create_temp_save_target_or_panic("gauss-test-save-dangling-resource");
     choose_save_path(cx, &expected);
 
     let (saved, save_error) = read_save_outcome(cx, &view);
@@ -163,22 +197,23 @@ fn save_action_reports_dangling_resource_references(cx: &mut TestAppContext) {
 fn save_action_reports_dangling_pattern_references(cx: &mut TestAppContext) {
     init_test_app(cx);
 
-    let view = setup_save_test_view(cx, |shell| {
-        let dangling_pattern = shell
-            .resources_mut_for_tests()
-            .insert_pattern(PatternResource::new("dangling-pattern", "<circle />"));
-        let _removed = shell
-            .resources_mut_for_tests()
-            .remove_pattern(dangling_pattern);
-        if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
-            shape.style.fill = Paint::pattern(dangling_pattern);
-        }
-    });
+    let view = setup_export_test_view(
+        cx,
+        |shell| {
+            let dangling_pattern = shell
+                .resources_mut_for_tests()
+                .insert_pattern(PatternResource::new("dangling-pattern", "<circle />"));
+            let _removed = shell
+                .resources_mut_for_tests()
+                .remove_pattern(dangling_pattern);
+            if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
+                shape.style.fill = Paint::pattern(dangling_pattern);
+            }
+        },
+        ExportAction::Save,
+    );
     let (expected, file_name, cleanup) =
-        match create_temp_save_target("gauss-test-save-dangling-pattern") {
-            Ok(target) => target,
-            Err(err) => panic!("{err}"),
-        };
+        create_temp_save_target_or_panic("gauss-test-save-dangling-pattern");
     choose_save_path(cx, &expected);
 
     let (saved, save_error) = read_save_outcome(cx, &view);
@@ -197,5 +232,99 @@ fn save_action_reports_dangling_pattern_references(cx: &mut TestAppContext) {
     assert!(
         read_result.is_err(),
         "save should not create file contents when validation fails"
+    );
+}
+
+#[gpui::test]
+fn web_ready_export_action_strips_gauss_metadata(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    assert!(
+        !cx.did_prompt_for_new_path(),
+        "No export prompt should be visible before triggering web-ready export"
+    );
+
+    let view = setup_export_test_view(
+        cx,
+        |shell| {
+            shell.set_gauss_metadata_block_for_tests(Some(
+                "<gauss:test gauss:purpose=\"round-trip\" />".to_owned(),
+            ));
+        },
+        ExportAction::WebReady,
+    );
+
+    assert!(
+        cx.did_prompt_for_new_path(),
+        "Web-ready export action should prompt for a new path"
+    );
+
+    let (expected, file_name, cleanup) =
+        create_temp_save_target_or_panic("gauss-test-web-ready-export");
+    choose_save_path(cx, &expected);
+
+    let (saved, save_error) = read_save_outcome(cx, &view);
+    assert_eq!(saved.as_deref(), Some(expected.as_std_path()));
+    assert!(
+        save_error.is_none(),
+        "web-ready export should not set save errors on success"
+    );
+
+    let contents = cleanup
+        .dir()
+        .read_to_string(file_name.as_path())
+        .expect("Web-ready SVG file should be readable");
+    assert_web_ready_contents(&contents);
+}
+
+#[gpui::test]
+fn web_ready_export_reports_dangling_resource_references(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let view = setup_export_test_view(
+        cx,
+        |shell| {
+            let dangling_gradient = shell
+                .resources_mut_for_tests()
+                .insert_gradient(Gradient::new(
+                    "dangling",
+                    GradientKind::Linear(LinearGradient::new(
+                        Vec2::new(0.0, 0.0),
+                        Vec2::new(1.0, 0.0),
+                        vec![
+                            GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
+                            GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
+                        ],
+                    )),
+                ));
+            let _removed = shell
+                .resources_mut_for_tests()
+                .remove_gradient(dangling_gradient);
+            if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
+                shape.style.fill = Paint::gradient(dangling_gradient);
+            }
+        },
+        ExportAction::WebReady,
+    );
+    let (expected, file_name, cleanup) =
+        create_temp_save_target_or_panic("gauss-test-web-ready-dangling-resource");
+    choose_save_path(cx, &expected);
+
+    let (saved, save_error) = read_save_outcome(cx, &view);
+    assert!(
+        saved.is_none(),
+        "export path should not be recorded when export validation fails"
+    );
+    let Some(error) = save_error else {
+        panic!("save error should be populated");
+    };
+    assert!(
+        error.contains("missing gradient resource"),
+        "web-ready export should report missing gradient references, got: {error}"
+    );
+    let read_result = cleanup.dir().read_to_string(file_name.as_path());
+    assert!(
+        read_result.is_err(),
+        "web-ready export should not create file contents when validation fails"
     );
 }

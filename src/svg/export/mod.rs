@@ -4,12 +4,12 @@
     reason = "SVG export needs floating-point conversions for geometry"
 )]
 mod defs;
-use std::fmt::{Arguments, Write as _};
-use slotmap::Key;
 use crate::model::{
     Document, GradientId, Paint, PatternId, ResourceStore, SegmentKind, Shape, format_hex_rgb,
 };
 use crate::svg::metadata::{gauss_namespace_declaration, shape_id_to_hex};
+use slotmap::Key;
+use std::fmt::{Arguments, Write as _};
 /// Errors returned by [`export_svg_with_resources_checked`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SvgExportError {
@@ -52,6 +52,7 @@ pub fn export_svg_with_resources(
     ))
 }
 /// Export a document to SVG with shared resources.
+/// # Errors
 /// Returns [`SvgExportError`] if a shape references a missing gradient/pattern.
 pub fn export_svg_with_resources_checked(
     doc: &Document,
@@ -80,6 +81,7 @@ pub fn export_svg_with_resources_web_ready(
     )
 }
 /// Export a web-ready SVG and validate resource references.
+/// # Errors
 /// Returns [`SvgExportError`] if a shape references a missing gradient/pattern.
 pub fn export_svg_with_resources_web_ready_checked(
     doc: &Document,
@@ -157,6 +159,7 @@ fn export_svg_with_metadata_policy(
     out
 }
 /// Export a document to SVG with metadata block preservation.
+/// # Errors
 /// Returns [`SvgExportError`] if a shape references a missing gradient/pattern.
 pub fn export_svg_with_metadata_checked(
     options: ExportOptions<'_>,

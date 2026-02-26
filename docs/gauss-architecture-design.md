@@ -1145,6 +1145,21 @@ Gauss document-level metadata.
 - `src/svg/export/mod.rs` — `write_shape_gauss_metadata()`,
   `write_metadata_block()`, `export_svg_with_metadata()`.
 
+#### 10.1.4 Web-ready export policy
+
+Gauss now implements an explicit metadata-stripping export policy for
+web-publishing workflows:
+
+- `export_svg_with_resources_web_ready()` emits SVG without
+  `xmlns:gauss`, without `gauss:*` shape attributes, and without persisted
+  `<metadata>` payload blocks.
+- `export_svg_with_resources_web_ready_checked()` applies the same metadata
+  stripping while preserving existing missing-resource validation
+  (`MissingGradientReference` and `MissingPatternReference`).
+- Re-importing web-ready output treats the document as plain SVG and restores
+  shape metadata to defaults (`name = None`, `locked = false`,
+  `hidden = false`, opaque metadata empty).
+
 ### 10.2 When SVG becomes "not tenable"
 
 If future features require concepts SVG cannot represent cleanly (e.g.,
