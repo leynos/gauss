@@ -24,6 +24,35 @@ enum ExportAction {
     WebReady,
 }
 
+#[derive(Clone, Copy, Debug)]
+enum ResourceType {
+    Gradient,
+    Pattern,
+}
+
+impl ResourceType {
+    fn setup_dangling_reference(self, shell: &mut Phase0Shell) {
+        match self {
+            Self::Gradient => setup_dangling_gradient(shell),
+            Self::Pattern => setup_dangling_pattern(shell),
+        }
+    }
+
+    const fn expected_error_substring(self) -> &'static str {
+        match self {
+            Self::Gradient => "missing gradient resource",
+            Self::Pattern => "missing pattern resource",
+        }
+    }
+
+    const fn resource_name(self) -> &'static str {
+        match self {
+            Self::Gradient => "gradient",
+            Self::Pattern => "pattern",
+        }
+    }
+}
+
 fn setup_export_test_view(
     cx: &mut TestAppContext,
     mut configure_shell: impl FnMut(&mut Phase0Shell),
@@ -142,34 +171,7 @@ fn assert_dangling_resource_validation(
     action: ExportAction,
     test_prefix: &str,
 ) {
-    let (saved_path_message, gradient_error_message, read_error_message) = match action {
-        ExportAction::Save => (
-            "save path should not be recorded when export validation fails",
-            "save error should report missing gradient references, got: {error}",
-            "save should not create file contents when validation fails",
-        ),
-        ExportAction::WebReady => (
-            "export path should not be recorded when export validation fails",
-            "web-ready export should report missing gradient references, got: {error}",
-            "web-ready export should not create file contents when validation fails",
-        ),
-    };
-
-    let view = setup_export_test_view(cx, setup_dangling_gradient, action);
-    let (expected, file_name, cleanup) = create_temp_save_target_or_panic(test_prefix);
-    choose_save_path(cx, &expected);
-
-    let (saved, save_error) = read_save_outcome(cx, &view);
-    assert!(saved.is_none(), "{saved_path_message}");
-    let Some(error) = save_error else {
-        panic!("save error should be populated");
-    };
-    assert!(
-        error.contains("missing gradient resource"),
-        "{gradient_error_message}"
-    );
-    let read_result = cleanup.dir().read_to_string(file_name.as_path());
-    assert!(read_result.is_err(), "{read_error_message}");
+    assert_dangling_resource_validation_impl(cx, action, test_prefix, ResourceType::Gradient);
 }
 
 fn assert_dangling_pattern_validation(
@@ -177,20 +179,36 @@ fn assert_dangling_pattern_validation(
     action: ExportAction,
     test_prefix: &str,
 ) {
-    let (saved_path_message, pattern_error_message, read_error_message) = match action {
+    assert_dangling_resource_validation_impl(cx, action, test_prefix, ResourceType::Pattern);
+}
+
+fn assert_dangling_resource_validation_impl(
+    cx: &mut TestAppContext,
+    action: ExportAction,
+    test_prefix: &str,
+    resource_type: ResourceType,
+) {
+    let resource_name = resource_type.resource_name();
+    let (saved_path_message, error_context, read_error_message) = match action {
         ExportAction::Save => (
             "save path should not be recorded when export validation fails",
-            "save error should report missing pattern references, got: {error}",
+            "save",
             "save should not create file contents when validation fails",
         ),
         ExportAction::WebReady => (
             "export path should not be recorded when export validation fails",
-            "web-ready export should report missing pattern references, got: {error}",
+            "web-ready export",
             "web-ready export should not create file contents when validation fails",
         ),
     };
 
-    let view = setup_export_test_view(cx, setup_dangling_pattern, action);
+    let view = setup_export_test_view(
+        cx,
+        |shell| {
+            resource_type.setup_dangling_reference(shell);
+        },
+        action,
+    );
     let (expected, file_name, cleanup) = create_temp_save_target_or_panic(test_prefix);
     choose_save_path(cx, &expected);
 
@@ -200,8 +218,8 @@ fn assert_dangling_pattern_validation(
         panic!("save error should be populated");
     };
     assert!(
-        error.contains("missing pattern resource"),
-        "{pattern_error_message}"
+        error.contains(resource_type.expected_error_substring()),
+        "{error_context} error should report missing {resource_name} references, got: {error}"
     );
     let read_result = cleanup.dir().read_to_string(file_name.as_path());
     assert!(read_result.is_err(), "{read_error_message}");
