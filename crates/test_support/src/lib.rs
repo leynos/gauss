@@ -8,6 +8,7 @@ use thiserror::Error;
 pub mod fixtures;
 pub mod math;
 pub mod shapes;
+pub use shapes::{line_shape, open_triangle, sample_shape, shape_id, shape_with_handles};
 
 /// A convenient result type for test helper operations.
 pub type TestSupportResult<T> = result::Result<T, TestSupportError>;

@@ -187,6 +187,19 @@ impl Phase0Shell {
                     },
                 )),
             )
+            .child(
+                icon_button(
+                    "web-ready-export-button",
+                    UiIcon::FileOpen,
+                    IconButtonState::Enabled,
+                    Some("Export Web"),
+                )
+                .on_click(cx.listener(
+                    |_shell: &mut Self, _event: &gpui::ClickEvent, click_window, click_cx| {
+                        file_dialogs::request_web_ready_export(click_window, click_cx);
+                    },
+                )),
+            )
     }
 
     fn top_bar_edit_actions(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {

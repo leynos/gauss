@@ -15,7 +15,10 @@ use gpui::{AsyncWindowContext, Context, PathPromptOptions, WeakEntity, Window};
 use gpui_component::history::History;
 
 use crate::model::Selection;
-use crate::svg::export::{ExportOptions, export_svg_with_metadata_checked};
+use crate::svg::export::{
+    CanvasSize, ExportOptions, export_svg_with_metadata_checked,
+    export_svg_with_resources_web_ready_checked,
+};
 
 use super::Phase0Shell;
 
@@ -28,6 +31,21 @@ enum OpenPromptReceiver {
     Paths(OpenPathsPromptReceiver),
     #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     NewPath(OpenPathPromptReceiver),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SaveIntent {
+    PreserveMetadata,
+    WebReady,
+}
+
+impl SaveIntent {
+    const fn suggested_name(self) -> &'static str {
+        match self {
+            Self::PreserveMetadata => "gauss.svg",
+            Self::WebReady => "gauss.web.svg",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -80,15 +98,23 @@ pub(super) fn request_open(
 }
 
 pub(super) fn request_save(window: &mut Window, cx: &mut Context<Phase0Shell>) {
+    request_save_for_intent(window, cx, SaveIntent::PreserveMetadata);
+}
+
+pub(super) fn request_web_ready_export(window: &mut Window, cx: &mut Context<Phase0Shell>) {
+    request_save_for_intent(window, cx, SaveIntent::WebReady);
+}
+
+fn request_save_for_intent(window: &mut Window, cx: &mut Context<Phase0Shell>, intent: SaveIntent) {
     // Use a trivial initial directory for Phase 0. Once we have document state,
     // this can be "current document directory" or similar.
-    let rx = cx.prompt_for_new_path(Path::new("."), Some("gauss.svg"));
+    let rx = cx.prompt_for_new_path(Path::new("."), Some(intent.suggested_name()));
 
     cx.spawn_in(
         window,
         move |this: WeakEntity<Phase0Shell>, async_window_cx: &mut AsyncWindowContext| {
             let async_cx = async_window_cx.clone();
-            apply_save_path(this, async_cx, rx)
+            apply_save_path(this, async_cx, rx, intent)
         },
     )
     .detach();
@@ -118,20 +144,30 @@ async fn apply_save_path(
     this: WeakEntity<Phase0Shell>,
     mut cx: AsyncWindowContext,
     rx: SavePathPromptReceiver,
+    intent: SaveIntent,
 ) {
     let Some(path) = receive_save_path(rx).await else {
         return;
     };
 
     let Ok(save_result) = this.update(&mut cx, |view, _view_cx| {
-        // TODO: derive canvas size from document bounds or viewport state.
-        export_svg_with_metadata_checked(ExportOptions {
-            doc: &view.state.document,
-            resources: &view.state.resources,
-            canvas_width: 100.0,
-            canvas_height: 100.0,
-            metadata_block: view.state.gauss_metadata_block.as_deref(),
-        })
+        // FIXME: derive canvas size from document bounds or viewport state - TRACKER-WEB-CANVAS-SIZE.
+        let canvas_size = CanvasSize::new(100.0, 100.0);
+        match intent {
+            SaveIntent::PreserveMetadata => {
+                let mut options =
+                    ExportOptions::new(&view.state.document, &view.state.resources, canvas_size);
+                if let Some(metadata_block) = view.state.gauss_metadata_block.as_deref() {
+                    options = options.with_metadata_block(metadata_block);
+                }
+                export_svg_with_metadata_checked(options)
+            }
+            SaveIntent::WebReady => export_svg_with_resources_web_ready_checked(
+                &view.state.document,
+                &view.state.resources,
+                canvas_size,
+            ),
+        }
         .map_err(|err| err.to_string())
         .and_then(|svg| super::super::phase0_support::write_svg_to_path(&path, &svg))
     }) else {

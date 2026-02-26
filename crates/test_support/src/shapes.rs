@@ -88,3 +88,26 @@ pub fn shape_with_handles(id: ShapeId) -> Shape {
         gauss_metadata: Vec::new(),
     }
 }
+
+/// Create a deterministic two-point line shape for BDD fixtures.
+#[must_use]
+pub fn line_shape(seed: u128) -> Shape {
+    Shape {
+        id: shape_id_from_seed(seed),
+        z: 0,
+        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None),
+        path: PathGeom {
+            anchors: vec![
+                Anchor::new(Vec2::new(0.0, 0.0)),
+                Anchor::new(Vec2::new(10.0, 10.0)),
+            ],
+            segments: vec![SegmentKind::Line],
+            closed: false,
+            closing_segment: SegmentKind::Line,
+        },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
+    }
+}

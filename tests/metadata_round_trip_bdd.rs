@@ -1,36 +1,12 @@
 //! Behaviour tests for metadata round-trip fidelity.
 
-use gauss::model::{
-    Anchor, Document, GaussAttribute, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind,
-    Shape, Vec2,
-};
-use gauss::svg::export::{ExportOptions, export_svg_with_metadata};
+use gauss::model::{Document, GaussAttribute, ResourceStore, Shape};
+use gauss::svg::export::{CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata};
 use gauss::svg::import::{ImportedSvg, import_svg_with_resources};
 use gauss::test_helpers::shape_id_from_seed;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
-use test_support::{TestSupportError, TestSupportResult};
-
-fn line_shape(seed: u128) -> Shape {
-    Shape {
-        id: shape_id_from_seed(seed),
-        z: 0,
-        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None),
-        path: PathGeom {
-            anchors: vec![
-                Anchor::new(Vec2::new(0.0, 0.0)),
-                Anchor::new(Vec2::new(10.0, 10.0)),
-            ],
-            segments: vec![SegmentKind::Line],
-            closed: false,
-            closing_segment: SegmentKind::Line,
-        },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
-}
+use test_support::{TestSupportError, TestSupportResult, line_shape};
 
 #[derive(Default)]
 struct MetadataWorld {
@@ -85,9 +61,9 @@ fn given_svg_with_unknown_attrs(world: &mut MetadataWorld) {
     world.export_svg = Some(export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: None,
+        mode: ExportMode::GaussWithMetadata,
     }));
 }
 
@@ -100,9 +76,9 @@ fn given_svg_with_metadata_block(world: &mut MetadataWorld) {
     world.export_svg = Some(export_svg_with_metadata(ExportOptions {
         doc: &doc,
         resources: &ResourceStore::new(),
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: Some(metadata),
+        mode: ExportMode::GaussWithMetadata,
     }));
 }
 
@@ -126,9 +102,9 @@ fn when_export_and_reimport(world: &mut MetadataWorld) {
     let svg = export_svg_with_metadata(ExportOptions {
         doc: &world.doc,
         resources: &world.resources,
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: world.metadata_block.as_deref(),
+        mode: ExportMode::GaussWithMetadata,
     });
     world.export_svg = Some(svg.clone());
     match import_svg_with_resources(&svg) {
@@ -148,9 +124,9 @@ fn when_import_and_reexport(world: &mut MetadataWorld) -> TestSupportResult<()> 
     let re_exported = export_svg_with_metadata(ExportOptions {
         doc: &imported.document,
         resources: &imported.resources,
-        canvas_width: 100.0,
-        canvas_height: 100.0,
+        canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: imported.gauss_metadata_block.as_deref(),
+        mode: ExportMode::GaussWithMetadata,
     });
     world.export_svg = Some(re_exported);
     world.import_result = Some(imported);

@@ -66,7 +66,11 @@ fn reports_gauss_namespace_usage_without_canonical_prefix_declaration() {
 
 #[rstest]
 fn exported_svg_declares_canonical_gauss_namespace() {
-    let exported = export_svg_with_resources(&Document::new(), &ResourceStore::new(), 10.0, 10.0);
+    let exported = export_svg_with_resources(
+        &Document::new(),
+        &ResourceStore::new(),
+        CanvasSize::new(10.0, 10.0),
+    );
     let namespace = format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#);
     assert!(exported.contains(namespace.as_str()));
 }

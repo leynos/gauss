@@ -4,7 +4,7 @@ use gauss::model::{
     Anchor, Document, Gradient, GradientKind, GradientStop, LinearGradient, Paint, PaintStyle,
     PathGeom, PatternResource, ResourceStore, SegmentKind, Shape, Vec2,
 };
-use gauss::svg::export::export_svg_with_resources;
+use gauss::svg::export::{CanvasSize, export_svg_with_resources};
 use gauss::svg::import::{ImportedSvg, SvgImportError, import_svg_with_resources};
 use gauss::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
 use rstest::fixture;
@@ -97,7 +97,8 @@ fn given_svg_with_gauss_uri_without_gauss_prefix(world: &mut ResourceWorld) {
 
 #[when("I export and re-import the document with resources")]
 fn when_export_and_reimport(world: &mut ResourceWorld) {
-    let svg = export_svg_with_resources(&world.doc, &world.resources, 100.0, 100.0);
+    let svg =
+        export_svg_with_resources(&world.doc, &world.resources, CanvasSize::new(100.0, 100.0));
     world.export_svg = Some(svg.clone());
     world.import_result = Some(import_svg_with_resources(&svg));
 }

@@ -25,7 +25,7 @@ fn exports_gradient_and_pattern_defs_and_references(
         create_test_triangle: &create_test_triangle,
         build_doc_with_shape: &build_doc_with_shape,
     });
-    let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
+    let svg = export_svg_with_resources(&doc, &resources, CanvasSize::new(10.0, 10.0));
     assert_gradient_pattern_defs(&svg);
 }
 
@@ -46,7 +46,7 @@ fn exports_paint_server_opacity_attributes(
         create_test_triangle: &create_test_triangle,
         build_doc_with_shape: &build_doc_with_shape,
     });
-    let svg = export_svg_with_resources(&doc, &resources, 10.0, 10.0);
+    let svg = export_svg_with_resources(&doc, &resources, CanvasSize::new(10.0, 10.0));
     assert_paint_server_opacity(
         &svg,
         (
@@ -85,7 +85,7 @@ fn exports_radial_gradient_defs_with_and_without_focal_point() {
             ],
         )),
     ));
-    let svg = export_svg_with_resources(&Document::new(), &resources, 10.0, 10.0);
+    let svg = export_svg_with_resources(&Document::new(), &resources, CanvasSize::new(10.0, 10.0));
     assert!(svg.contains(r#"<radialGradient id="radial-default" cx="0.5" cy="0.5" r="0.4">"#));
     assert!(svg.contains(
         r#"<radialGradient id="radial-focal" cx="0.5" cy="0.5" r="0.4" fx="0.3" fy="0.2">"#
@@ -115,7 +115,7 @@ fn assert_missing_resource_error<ResourceId, F, PaintFn, ErrorFn, CreateTriangle
     let dangling_id = create_and_remove(&mut resources);
     let shape = create_test_triangle(seed, make_paint(dangling_id));
     let doc = build_doc_with_shape(shape);
-    let exported = export_svg_with_resources_checked(&doc, &resources, 10.0, 10.0);
+    let exported = export_svg_with_resources_checked(&doc, &resources, CanvasSize::new(10.0, 10.0));
     assert_eq!(exported, Err(expected_error(dangling_id)));
 }
 

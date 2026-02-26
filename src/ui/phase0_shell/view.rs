@@ -10,8 +10,8 @@ use crate::ui::action_bridge::{
 };
 
 use super::{
-    CloseWindow, MinimizeWindow, OpenSvg, Phase0Shell, SaveSvg, ShowWindowMenu, StartWindowMove,
-    StartWindowResize, ToggleEdgeMode, ToggleFullscreen, ToggleMaximize,
+    CloseWindow, ExportSvgWebReady, MinimizeWindow, OpenSvg, Phase0Shell, SaveSvg, ShowWindowMenu,
+    StartWindowMove, StartWindowResize, ToggleEdgeMode, ToggleFullscreen, ToggleMaximize,
     chrome_palette::chrome_border, draw, file_dialogs, window_controls,
 };
 
@@ -359,6 +359,11 @@ impl Render for Phase0Shell {
             .on_action(cx.listener(|_: &mut Self, _: &SaveSvg, w, action_cx| {
                 file_dialogs::request_save(w, action_cx);
             }))
+            .on_action(
+                cx.listener(|_: &mut Self, _: &ExportSvgWebReady, w, action_cx| {
+                    file_dialogs::request_web_ready_export(w, action_cx);
+                }),
+            )
             .on_action(
                 cx.listener(|shell: &mut Self, _: &ToggleEdgeMode, _, action_cx| {
                     shell.handle_tab_action(action_cx);
