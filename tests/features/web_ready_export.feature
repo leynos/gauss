@@ -10,6 +10,11 @@ Feature: Web-ready SVG export
     When I export the document as web-ready SVG with reference validation
     Then the web-ready export fails with a missing gradient reference error
 
+  Scenario: Checked web-ready export reports missing pattern references
+    Given a document with a dangling pattern paint reference
+    When I export the document as web-ready SVG with reference validation
+    Then the web-ready export fails with a missing pattern reference error
+
   Scenario: Web-ready output imports as plain SVG metadata defaults
     Given a document with Gauss metadata on a shape
     When I export and re-import the document as web-ready SVG

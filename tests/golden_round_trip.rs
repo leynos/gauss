@@ -10,7 +10,8 @@ use gauss::model::{
     Anchor, Document, GaussAttribute, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind, Shape,
 };
 use gauss::svg::export::{
-    CanvasSize, ExportOptions, export_svg_with_metadata, export_svg_with_resources_web_ready,
+    CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata,
+    export_svg_with_resources_web_ready,
 };
 use gauss::svg::import::import_svg_with_resources;
 use gauss::test_helpers::shape_id_from_seed;
@@ -86,7 +87,7 @@ fn assert_idempotent(svg: &str, metadata_block: Option<&str>) -> TestSupportResu
         resources: &imported.resources,
         canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: imported.gauss_metadata_block.as_deref().or(metadata_block),
-        web_ready: false,
+        mode: ExportMode::GaussWithMetadata,
     });
     if svg != re_exported {
         return Err(TestSupportError::expectation(
@@ -104,7 +105,7 @@ fn export_doc() -> impl Fn(&Document, Option<&str>) -> String {
             resources: &ResourceStore::new(),
             canvas_size: CanvasSize::new(100.0, 100.0),
             metadata_block,
-            web_ready: false,
+            mode: ExportMode::GaussWithMetadata,
         })
     }
 }

@@ -4,7 +4,7 @@ use gauss::model::{
     Anchor, Document, GaussAttribute, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind,
     Shape, Vec2,
 };
-use gauss::svg::export::{CanvasSize, ExportOptions, export_svg_with_metadata};
+use gauss::svg::export::{CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata};
 use gauss::svg::import::{ImportedSvg, import_svg_with_resources};
 use gauss::test_helpers::shape_id_from_seed;
 use rstest::fixture;
@@ -87,7 +87,7 @@ fn given_svg_with_unknown_attrs(world: &mut MetadataWorld) {
         resources: &ResourceStore::new(),
         canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: None,
-        web_ready: false,
+        mode: ExportMode::GaussWithMetadata,
     }));
 }
 
@@ -102,7 +102,7 @@ fn given_svg_with_metadata_block(world: &mut MetadataWorld) {
         resources: &ResourceStore::new(),
         canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: Some(metadata),
-        web_ready: false,
+        mode: ExportMode::GaussWithMetadata,
     }));
 }
 
@@ -128,7 +128,7 @@ fn when_export_and_reimport(world: &mut MetadataWorld) {
         resources: &world.resources,
         canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: world.metadata_block.as_deref(),
-        web_ready: false,
+        mode: ExportMode::GaussWithMetadata,
     });
     world.export_svg = Some(svg.clone());
     match import_svg_with_resources(&svg) {
@@ -150,7 +150,7 @@ fn when_import_and_reexport(world: &mut MetadataWorld) -> TestSupportResult<()> 
         resources: &imported.resources,
         canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: imported.gauss_metadata_block.as_deref(),
-        web_ready: false,
+        mode: ExportMode::GaussWithMetadata,
     });
     world.export_svg = Some(re_exported);
     world.import_result = Some(imported);

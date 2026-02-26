@@ -40,7 +40,7 @@ fn export_single_shape(line_shape: Shape) -> String {
         resources: &ResourceStore::new(),
         canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: None,
-        web_ready: false,
+        mode: ExportMode::GaussWithMetadata,
     })
 }
 
@@ -107,7 +107,7 @@ fn exports_metadata_block_when_present() {
         resources: &ResourceStore::new(),
         canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: Some("\n<gauss:doc>test</gauss:doc>"),
-        web_ready: false,
+        mode: ExportMode::GaussWithMetadata,
     });
     assert!(svg.contains("<metadata>"));
     assert!(svg.contains("<gauss:doc>test</gauss:doc>"));
@@ -122,7 +122,7 @@ fn metadata_block_with_trailing_newline_does_not_add_extra_newline() {
         resources: &ResourceStore::new(),
         canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: Some("test\n"),
-        web_ready: false,
+        mode: ExportMode::GaussWithMetadata,
     });
     assert!(svg.contains("<metadata>test\n</metadata>"));
     // Verify exactly one newline before </metadata>, not two.
@@ -137,7 +137,7 @@ fn omits_metadata_block_when_absent() {
         resources: &ResourceStore::new(),
         canvas_size: CanvasSize::new(100.0, 100.0),
         metadata_block: None,
-        web_ready: false,
+        mode: ExportMode::GaussWithMetadata,
     });
     assert!(!svg.contains("<metadata>"));
 }

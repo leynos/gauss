@@ -2,7 +2,8 @@
 
 use gauss::model::{
     Anchor, Document, GaussAttribute, Gradient, GradientId, GradientKind, GradientStop,
-    LinearGradient, Paint, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind, Shape, Vec2,
+    LinearGradient, Paint, PaintStyle, PathGeom, PatternId, PatternResource, ResourceStore, Rgba,
+    SegmentKind, Shape, Vec2,
 };
 use gauss::svg::export::{
     CanvasSize, SvgExportError, export_svg_with_resources_web_ready,
@@ -43,6 +44,7 @@ struct WebReadyWorld {
     checked_export_result: Option<Result<String, SvgExportError>>,
     import_result: Option<Result<ImportedSvg, SvgImportError>>,
     expected_missing_gradient: Option<GradientId>,
+    expected_missing_pattern: Option<PatternId>,
 }
 
 #[fixture]
@@ -64,6 +66,7 @@ fn given_document_with_gauss_metadata(world: &mut WebReadyWorld) {
     shape.gauss_metadata = vec![GaussAttribute::new("role", "overlay")];
     world.doc.append_shape(shape);
     world.expected_missing_gradient = None;
+    world.expected_missing_pattern = None;
 }
 
 #[given("a document with a dangling gradient paint reference")]
@@ -88,6 +91,25 @@ fn given_document_with_dangling_gradient(world: &mut WebReadyWorld) {
     shape.style = PaintStyle::new_with_paint(Paint::gradient(gradient_id), 1.0, Paint::None);
     world.doc.append_shape(shape);
     world.expected_missing_gradient = Some(gradient_id);
+    world.expected_missing_pattern = None;
+}
+
+#[given("a document with a dangling pattern paint reference")]
+fn given_document_with_dangling_pattern(world: &mut WebReadyWorld) {
+    world.doc = Document::new();
+    world.resources = ResourceStore::new();
+
+    let pattern_id = world.resources.insert_pattern(PatternResource::new(
+        "dangling-pattern",
+        r#"<circle cx="1" cy="1" r="1" />"#,
+    ));
+    let _removed = world.resources.remove_pattern(pattern_id);
+
+    let mut shape = line_shape(422);
+    shape.style = PaintStyle::new_with_paint(Paint::None, 1.0, Paint::pattern(pattern_id));
+    world.doc.append_shape(shape);
+    world.expected_missing_gradient = None;
+    world.expected_missing_pattern = Some(pattern_id);
 }
 
 /// Helper to export web-ready SVG with optional validation.
@@ -222,6 +244,29 @@ fn then_web_ready_reports_missing_gradient(world: &WebReadyWorld) -> TestSupport
     }
 }
 
+#[then("the web-ready export fails with a missing pattern reference error")]
+fn then_web_ready_reports_missing_pattern(world: &WebReadyWorld) -> TestSupportResult<()> {
+    let expected_pattern = world.expected_missing_pattern.ok_or_else(|| {
+        TestSupportError::missing("expected missing pattern id", "error assertion")
+    })?;
+    let result = world
+        .checked_export_result
+        .as_ref()
+        .ok_or_else(|| TestSupportError::missing("checked export result", "error assertion"))?;
+
+    match result {
+        Err(SvgExportError::MissingPatternReference(actual)) if *actual == expected_pattern => {
+            Ok(())
+        }
+        Err(other) => Err(TestSupportError::expectation(format!(
+            "expected MissingPatternReference({expected_pattern:?}), got {other:?}"
+        ))),
+        Ok(_) => Err(TestSupportError::expectation(
+            "expected checked web-ready export to fail for missing pattern reference",
+        )),
+    }
+}
+
 #[then("the imported web-ready shape has default metadata values")]
 fn then_imported_shape_has_default_metadata(world: &WebReadyWorld) -> TestSupportResult<()> {
     let imported = imported_result(world)?;
@@ -295,6 +340,14 @@ fn web_ready_export_strips_gauss_metadata_artefacts(world: WebReadyWorld) {
     name = "Checked web-ready export reports missing gradient references"
 )]
 fn checked_web_ready_export_reports_missing_gradient_references(world: WebReadyWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/web_ready_export.feature",
+    name = "Checked web-ready export reports missing pattern references"
+)]
+fn checked_web_ready_export_reports_missing_pattern_references(world: WebReadyWorld) {
     let _ = world;
 }
 

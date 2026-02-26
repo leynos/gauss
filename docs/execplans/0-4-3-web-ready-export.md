@@ -20,9 +20,10 @@ Gauss metadata payloads.
 Success is observable when:
 
 - The normal Save flow still preserves metadata round-trip behaviour.
-- The web-ready export flow strips Gauss metadata artifacts deterministically.
+- The web-ready export flow strips Gauss metadata artefacts deterministically.
 - The exported web-ready SVG remains valid and importable as plain SVG.
-- Unit (`rstest`), behavioural (`rstest-bdd` v0.5.0), and GPUI integration
+- Unit (`rstest`), behaviour-driven development (BDD) tests via
+  `rstest-bdd` v0.5.0, and GPUI (GPU-accelerated user interface) integration
   tests cover happy paths, unhappy paths, and edge cases.
 - `make check-fmt`, `make lint`, and `make test` pass.
 - `docs/users-guide.md` and `docs/gauss-architecture-design.md` reflect the new
@@ -71,7 +72,7 @@ Success is observable when:
 - Risk: UI command drift (Save and web-ready export sharing incorrect path).
   Mitigation: split save mode explicitly in file-dialog workflow and test both
   command routes end-to-end.
-- Risk: test brittleness due path prompts in GPUI headless tests.
+- Risk: test brittleness due to path prompts in GPUI headless tests.
   Mitigation: reuse existing save-dialog helper patterns and temp-file guards.
 
 ## Progress
@@ -120,6 +121,10 @@ Success is observable when:
   - `make nixie` (`/tmp/nixie-gauss-0-4-3-web-ready-export.out`)
 - [x] (2026-02-26) Marked the duplicate roadmap tracking entry `1.7.3` as done
   so it now matches completed phase-0 metadata and web-ready export work.
+- [x] (2026-02-26) Applied post-review refactors and coverage follow-ups:
+  `ExportMode` now drives metadata policy, GPUI/BDD pattern-reference failure
+  coverage matches gradient coverage, and wording consistency updates landed in
+  this ExecPlan.
 
 ## Surprises & Discoveries
 
@@ -208,7 +213,7 @@ Use a three-lane Spark team during implementation:
 - Lane B: Command wiring and GPUI integration.
   Ownership: Phase0 shell actions, file dialogs, and GPUI tests.
 - Lane C: Behavioural/golden/docs closure.
-  Ownership: BDD scenarios, golden artifacts, architecture/user docs, roadmap.
+  Ownership: BDD scenarios, golden artefacts, architecture/user docs, roadmap.
 
 All lanes must converge before final gate replay.
 

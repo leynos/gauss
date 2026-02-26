@@ -16,7 +16,7 @@ use gpui_component::history::History;
 
 use crate::model::Selection;
 use crate::svg::export::{
-    CanvasSize, ExportOptions, export_svg_with_metadata_checked,
+    CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata_checked,
     export_svg_with_resources_web_ready_checked,
 };
 
@@ -158,7 +158,7 @@ async fn apply_save_path(
                 resources: &view.state.resources,
                 canvas_size: CanvasSize::new(100.0, 100.0),
                 metadata_block: view.state.gauss_metadata_block.as_deref(),
-                web_ready: false,
+                mode: ExportMode::GaussWithMetadata,
             }),
             SaveIntent::WebReady => export_svg_with_resources_web_ready_checked(
                 &view.state.document,

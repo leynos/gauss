@@ -125,6 +125,18 @@ fn setup_dangling_gradient(shell: &mut Phase0Shell) {
     }
 }
 
+fn setup_dangling_pattern(shell: &mut Phase0Shell) {
+    let dangling_pattern = shell
+        .resources_mut_for_tests()
+        .insert_pattern(PatternResource::new("dangling-pattern", "<circle />"));
+    let _removed = shell
+        .resources_mut_for_tests()
+        .remove_pattern(dangling_pattern);
+    if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
+        shape.style.fill = Paint::pattern(dangling_pattern);
+    }
+}
+
 fn assert_dangling_resource_validation(
     cx: &mut TestAppContext,
     action: ExportAction,
@@ -155,6 +167,41 @@ fn assert_dangling_resource_validation(
     assert!(
         error.contains("missing gradient resource"),
         "{gradient_error_message}"
+    );
+    let read_result = cleanup.dir().read_to_string(file_name.as_path());
+    assert!(read_result.is_err(), "{read_error_message}");
+}
+
+fn assert_dangling_pattern_validation(
+    cx: &mut TestAppContext,
+    action: ExportAction,
+    test_prefix: &str,
+) {
+    let (saved_path_message, pattern_error_message, read_error_message) = match action {
+        ExportAction::Save => (
+            "save path should not be recorded when export validation fails",
+            "save error should report missing pattern references, got: {error}",
+            "save should not create file contents when validation fails",
+        ),
+        ExportAction::WebReady => (
+            "export path should not be recorded when export validation fails",
+            "web-ready export should report missing pattern references, got: {error}",
+            "web-ready export should not create file contents when validation fails",
+        ),
+    };
+
+    let view = setup_export_test_view(cx, setup_dangling_pattern, action);
+    let (expected, file_name, cleanup) = create_temp_save_target_or_panic(test_prefix);
+    choose_save_path(cx, &expected);
+
+    let (saved, save_error) = read_save_outcome(cx, &view);
+    assert!(saved.is_none(), "{saved_path_message}");
+    let Some(error) = save_error else {
+        panic!("save error should be populated");
+    };
+    assert!(
+        error.contains("missing pattern resource"),
+        "{pattern_error_message}"
     );
     let read_result = cleanup.dir().read_to_string(file_name.as_path());
     assert!(read_result.is_err(), "{read_error_message}");
@@ -211,43 +258,7 @@ fn save_action_reports_dangling_resource_references(cx: &mut TestAppContext) {
 #[gpui::test]
 fn save_action_reports_dangling_pattern_references(cx: &mut TestAppContext) {
     init_test_app(cx);
-
-    let view = setup_export_test_view(
-        cx,
-        |shell| {
-            let dangling_pattern = shell
-                .resources_mut_for_tests()
-                .insert_pattern(PatternResource::new("dangling-pattern", "<circle />"));
-            let _removed = shell
-                .resources_mut_for_tests()
-                .remove_pattern(dangling_pattern);
-            if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
-                shape.style.fill = Paint::pattern(dangling_pattern);
-            }
-        },
-        ExportAction::Save,
-    );
-    let (expected, file_name, cleanup) =
-        create_temp_save_target_or_panic("gauss-test-save-dangling-pattern");
-    choose_save_path(cx, &expected);
-
-    let (saved, save_error) = read_save_outcome(cx, &view);
-    assert!(
-        saved.is_none(),
-        "save path should not be recorded when export validation fails"
-    );
-    let Some(error) = save_error else {
-        panic!("save error should be populated");
-    };
-    assert!(
-        error.contains("missing pattern resource"),
-        "save error should report missing pattern references, got: {error}"
-    );
-    let read_result = cleanup.dir().read_to_string(file_name.as_path());
-    assert!(
-        read_result.is_err(),
-        "save should not create file contents when validation fails"
-    );
+    assert_dangling_pattern_validation(cx, ExportAction::Save, "gauss-test-save-dangling-pattern");
 }
 
 #[gpui::test]
@@ -299,5 +310,15 @@ fn web_ready_export_reports_dangling_resource_references(cx: &mut TestAppContext
         cx,
         ExportAction::WebReady,
         "gauss-test-web-ready-dangling-resource",
+    );
+}
+
+#[gpui::test]
+fn web_ready_export_reports_dangling_pattern_references(cx: &mut TestAppContext) {
+    init_test_app(cx);
+    assert_dangling_pattern_validation(
+        cx,
+        ExportAction::WebReady,
+        "gauss-test-web-ready-dangling-pattern",
     );
 }
