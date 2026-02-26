@@ -88,11 +88,12 @@ fn create_temp_save_target(
     Ok((expected, file_name, cleanup))
 }
 
+#[expect(
+    clippy::expect_used,
+    reason = "Test helper intentionally panics on temp target setup failure for clearer test flow"
+)]
 fn create_temp_save_target_or_panic(prefix: &str) -> (Utf8PathBuf, Utf8PathBuf, TempFileGuard) {
-    match create_temp_save_target(prefix) {
-        Ok(target) => target,
-        Err(err) => panic!("{err}"),
-    }
+    create_temp_save_target(prefix).expect("temp save target creation should succeed")
 }
 
 fn choose_save_path(cx: &mut TestAppContext, expected: &Utf8PathBuf) {
