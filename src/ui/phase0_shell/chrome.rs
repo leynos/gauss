@@ -190,7 +190,7 @@ impl Phase0Shell {
             .child(
                 icon_button(
                     "web-ready-export-button",
-                    UiIcon::FileSave,
+                    UiIcon::FileOpen,
                     IconButtonState::Enabled,
                     Some("Export Web"),
                 )

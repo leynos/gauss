@@ -166,6 +166,10 @@ pub(crate) fn export_svg_with_options_checked(
     Ok(export_svg_inner(options))
 }
 /// Export a document to an SVG string with metadata block preservation.
+///
+/// This helper always forces [`ExportOptions::mode`] to
+/// [`ExportMode::GaussWithMetadata`] while preserving all other fields from
+/// `options`.
 #[must_use]
 pub fn export_svg_with_metadata(options: ExportOptions<'_>) -> String {
     export_svg_with_options(ExportOptions {
@@ -188,6 +192,11 @@ fn export_svg_inner(options: ExportOptions<'_>) -> String {
     out
 }
 /// Export a document to SVG with metadata block preservation.
+///
+/// This helper always forces [`ExportOptions::mode`] to
+/// [`ExportMode::GaussWithMetadata`] while preserving all other fields from
+/// `options`.
+///
 /// # Errors
 /// Returns [`SvgExportError`] if a shape references a missing gradient/pattern.
 pub fn export_svg_with_metadata_checked(
@@ -205,26 +214,21 @@ pub(super) const fn opacity_from_alpha(alpha: u8) -> f32 {
 fn write_svg_header(out: &mut String, canvas_size: CanvasSize, include_gauss_namespace: bool) {
     out.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
     out.push('\n');
-    if include_gauss_namespace {
+    let gauss_attr = if include_gauss_namespace {
         let gauss_namespace = gauss_namespace_declaration();
-        write_fmt(
-            out,
-            format_args!(
-                r#"<svg xmlns="http://www.w3.org/2000/svg" {gauss_namespace} width="{width}" height="{height}" viewBox="0 0 {width} {height}">"#,
-                width = canvas_size.width,
-                height = canvas_size.height,
-            ),
-        );
+        format!(" {gauss_namespace}")
     } else {
-        write_fmt(
-            out,
-            format_args!(
-                r#"<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">"#,
-                width = canvas_size.width,
-                height = canvas_size.height,
-            ),
-        );
-    }
+        String::new()
+    };
+    write_fmt(
+        out,
+        format_args!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg"{gauss_attr} width="{width}" height="{height}" viewBox="0 0 {width} {height}">"#,
+            gauss_attr = gauss_attr,
+            width = canvas_size.width,
+            height = canvas_size.height,
+        ),
+    );
     out.push('\n');
 }
 fn write_metadata_block(out: &mut String, metadata_block: Option<&str>) {

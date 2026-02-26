@@ -1,40 +1,17 @@
 //! Behaviour tests for web-ready SVG export.
 
 use gauss::model::{
-    Anchor, Document, GaussAttribute, Gradient, GradientId, GradientKind, GradientStop,
-    LinearGradient, Paint, PaintStyle, PathGeom, PatternId, PatternResource, ResourceStore, Rgba,
-    SegmentKind, Shape, Vec2,
+    Document, GaussAttribute, Gradient, GradientId, GradientKind, GradientStop, LinearGradient,
+    Paint, PaintStyle, PatternId, PatternResource, ResourceStore, Rgba, Shape, Vec2,
 };
 use gauss::svg::export::{
     CanvasSize, SvgExportError, export_svg_with_resources_web_ready,
     export_svg_with_resources_web_ready_checked,
 };
 use gauss::svg::import::{ImportedSvg, SvgImportError, import_svg_with_resources};
-use gauss::test_helpers::shape_id_from_seed;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
-use test_support::{TestSupportError, TestSupportResult};
-
-fn line_shape(seed: u128) -> Shape {
-    Shape {
-        id: shape_id_from_seed(seed),
-        z: 0,
-        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None),
-        path: PathGeom {
-            anchors: vec![
-                Anchor::new(Vec2::new(0.0, 0.0)),
-                Anchor::new(Vec2::new(10.0, 10.0)),
-            ],
-            segments: vec![SegmentKind::Line],
-            closed: false,
-            closing_segment: SegmentKind::Line,
-        },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
-}
+use test_support::{TestSupportError, TestSupportResult, line_shape};
 
 #[derive(Default)]
 struct WebReadyWorld {
@@ -305,7 +282,7 @@ fn then_imported_shape_has_default_metadata(world: &WebReadyWorld) -> TestSuppor
 #[then("the imported web-ready shape keeps renderable geometry and paint style")]
 fn then_imported_shape_keeps_renderable_data(world: &WebReadyWorld) -> TestSupportResult<()> {
     let shape = imported_shape(world)?;
-    let expected = line_shape(999);
+    let expected = line_shape(420);
 
     if shape.path != expected.path {
         return Err(TestSupportError::expectation(format!(

@@ -128,6 +128,11 @@ Success is observable when:
 - [x] (2026-02-26) Closed a web-ready defs leak: `gauss:*` attributes on
   pattern/symbol resources are now filtered during web-ready export while
   metadata-preserving export continues to emit them.
+- [x] (2026-02-26) Reconciled post-review follow-ups against current code:
+  Figure 5.1 now uses `CanvasSize` signatures, file-dialog save/export paths
+  share one canvas-size binding with a tracked FIXME, metadata-mode override
+  behaviour is explicitly documented, and duplicated BDD `line_shape` fixtures
+  were centralized into `crates/test_support`.
 
 ## Surprises & Discoveries
 

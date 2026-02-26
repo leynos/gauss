@@ -265,18 +265,16 @@ fn full_round_trip_combined(
 
 fn assert_no_gauss_markers(svg: &str) -> TestSupportResult<()> {
     if svg.contains("gauss:") {
-        return Err(TestSupportError::expectation(
-            "web-ready export should omit all gauss metadata",
-        ));
+        return Err(TestSupportError::expectation("svg contains gauss: marker"));
     }
     if svg.contains("xmlns:gauss=") {
         return Err(TestSupportError::expectation(
-            "web-ready export should omit all gauss metadata",
+            "svg contains xmlns:gauss attribute",
         ));
     }
     if svg.contains("<metadata>") {
         return Err(TestSupportError::expectation(
-            "web-ready export should omit all gauss metadata",
+            "svg contains <metadata> element",
         ));
     }
     Ok(())

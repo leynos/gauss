@@ -546,9 +546,11 @@ classDiagram
     }
 
     class svg_export_mod {
-        +export_svg(doc &Document, canvas_width f32, canvas_height f32) String
-        +export_svg_with_resources(doc &Document, resources &ResourceStore, canvas_width f32, canvas_height f32) String
-        +export_svg_with_resources_checked(&Document, &ResourceStore, f32, f32) Result~String, SvgExportError~
+        +export_svg(doc &Document, canvas_size CanvasSize) String
+        +export_svg_with_resources(doc &Document, resources &ResourceStore, canvas_size CanvasSize) String
+        +export_svg_with_resources_checked(&Document, &ResourceStore, CanvasSize) Result~String, SvgExportError~
+        +export_svg_with_resources_web_ready(doc &Document, resources &ResourceStore, canvas_size CanvasSize) String
+        +export_svg_with_resources_web_ready_checked(&Document, &ResourceStore, CanvasSize) Result~String, SvgExportError~
     }
 
     class svg_import_mod {
@@ -1152,10 +1154,12 @@ web-publishing workflows:
 
 - `export_svg_with_resources_web_ready()` emits SVG without
   `xmlns:gauss`, without `gauss:*` shape attributes, and without persisted
-  `<metadata>` payload blocks.
+  `<metadata>` payload blocks. The signature accepts a `CanvasSize` value that
+  controls the exported root `width`, `height`, and `viewBox` sizing.
 - `export_svg_with_resources_web_ready_checked()` applies the same metadata
   stripping while preserving existing missing-resource validation
-  (`MissingGradientReference` and `MissingPatternReference`).
+  (`MissingGradientReference` and `MissingPatternReference`) and uses the same
+  `CanvasSize` sizing semantics as unchecked web-ready export.
 - Re-importing web-ready output treats the document as plain SVG and restores
   shape metadata to defaults (`name = None`, `locked = false`,
   `hidden = false`, opaque metadata empty).

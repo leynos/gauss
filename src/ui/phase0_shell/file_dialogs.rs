@@ -16,7 +16,7 @@ use gpui_component::history::History;
 
 use crate::model::Selection;
 use crate::svg::export::{
-    CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata_checked,
+    CanvasSize, ExportOptions, export_svg_with_metadata_checked,
     export_svg_with_resources_web_ready_checked,
 };
 
@@ -151,19 +151,21 @@ async fn apply_save_path(
     };
 
     let Ok(save_result) = this.update(&mut cx, |view, _view_cx| {
-        // TODO: derive canvas size from document bounds or viewport state.
+        // FIXME: derive canvas size from document bounds or viewport state - TRACKER-WEB-CANVAS-SIZE.
+        let canvas_size = CanvasSize::new(100.0, 100.0);
         match intent {
-            SaveIntent::PreserveMetadata => export_svg_with_metadata_checked(ExportOptions {
-                doc: &view.state.document,
-                resources: &view.state.resources,
-                canvas_size: CanvasSize::new(100.0, 100.0),
-                metadata_block: view.state.gauss_metadata_block.as_deref(),
-                mode: ExportMode::GaussWithMetadata,
-            }),
+            SaveIntent::PreserveMetadata => {
+                let mut options =
+                    ExportOptions::new(&view.state.document, &view.state.resources, canvas_size);
+                if let Some(metadata_block) = view.state.gauss_metadata_block.as_deref() {
+                    options = options.with_metadata_block(metadata_block);
+                }
+                export_svg_with_metadata_checked(options)
+            }
             SaveIntent::WebReady => export_svg_with_resources_web_ready_checked(
                 &view.state.document,
                 &view.state.resources,
-                CanvasSize::new(100.0, 100.0),
+                canvas_size,
             ),
         }
         .map_err(|err| err.to_string())

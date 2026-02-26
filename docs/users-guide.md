@@ -203,7 +203,7 @@ publishing workflows.
 - **Metadata stripping**: web-ready export removes `xmlns:gauss`, all
   `gauss:*` attributes, and preserved `<metadata>` payload content.
 - **Rendering fidelity**: geometry (`d`), paint, opacity, and SVG resource
-  references remain intact so rendered output matches the authored artwork.
+  references remain intact so that rendered output matches the authored artwork.
 - **Plain-SVG import behaviour**: importing web-ready output restores shapes
   with default metadata (`name = None`, `locked = false`, `hidden = false`, and
   no opaque `gauss:*` attributes).
