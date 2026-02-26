@@ -103,6 +103,63 @@ fn assert_web_ready_contents(contents: &str) {
     );
 }
 
+fn setup_dangling_gradient(shell: &mut Phase0Shell) {
+    let dangling_gradient = shell
+        .resources_mut_for_tests()
+        .insert_gradient(Gradient::new(
+            "dangling",
+            GradientKind::Linear(LinearGradient::new(
+                Vec2::new(0.0, 0.0),
+                Vec2::new(1.0, 0.0),
+                vec![
+                    GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
+                    GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
+                ],
+            )),
+        ));
+    let _removed = shell
+        .resources_mut_for_tests()
+        .remove_gradient(dangling_gradient);
+    if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
+        shape.style.fill = Paint::gradient(dangling_gradient);
+    }
+}
+
+fn assert_dangling_resource_validation(
+    cx: &mut TestAppContext,
+    action: ExportAction,
+    test_prefix: &str,
+) {
+    let (saved_path_message, gradient_error_message, read_error_message) = match action {
+        ExportAction::Save => (
+            "save path should not be recorded when export validation fails",
+            "save error should report missing gradient references, got: {error}",
+            "save should not create file contents when validation fails",
+        ),
+        ExportAction::WebReady => (
+            "export path should not be recorded when export validation fails",
+            "web-ready export should report missing gradient references, got: {error}",
+            "web-ready export should not create file contents when validation fails",
+        ),
+    };
+
+    let view = setup_export_test_view(cx, setup_dangling_gradient, action);
+    let (expected, file_name, cleanup) = create_temp_save_target_or_panic(test_prefix);
+    choose_save_path(cx, &expected);
+
+    let (saved, save_error) = read_save_outcome(cx, &view);
+    assert!(saved.is_none(), "{saved_path_message}");
+    let Some(error) = save_error else {
+        panic!("save error should be populated");
+    };
+    assert!(
+        error.contains("missing gradient resource"),
+        "{gradient_error_message}"
+    );
+    let read_result = cleanup.dir().read_to_string(file_name.as_path());
+    assert!(read_result.is_err(), "{read_error_message}");
+}
+
 #[gpui::test]
 fn save_action_prompts_for_path(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -144,52 +201,10 @@ fn save_action_prompts_for_path(cx: &mut TestAppContext) {
 #[gpui::test]
 fn save_action_reports_dangling_resource_references(cx: &mut TestAppContext) {
     init_test_app(cx);
-
-    let view = setup_export_test_view(
+    assert_dangling_resource_validation(
         cx,
-        |shell| {
-            let dangling_gradient = shell
-                .resources_mut_for_tests()
-                .insert_gradient(Gradient::new(
-                    "dangling",
-                    GradientKind::Linear(LinearGradient::new(
-                        Vec2::new(0.0, 0.0),
-                        Vec2::new(1.0, 0.0),
-                        vec![
-                            GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
-                            GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
-                        ],
-                    )),
-                ));
-            let _removed = shell
-                .resources_mut_for_tests()
-                .remove_gradient(dangling_gradient);
-            if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
-                shape.style.fill = Paint::gradient(dangling_gradient);
-            }
-        },
         ExportAction::Save,
-    );
-    let (expected, file_name, cleanup) =
-        create_temp_save_target_or_panic("gauss-test-save-dangling-resource");
-    choose_save_path(cx, &expected);
-
-    let (saved, save_error) = read_save_outcome(cx, &view);
-    assert!(
-        saved.is_none(),
-        "save path should not be recorded when export validation fails"
-    );
-    let Some(error) = save_error else {
-        panic!("save error should be populated");
-    };
-    assert!(
-        error.contains("missing gradient resource"),
-        "save error should report missing gradient references, got: {error}"
-    );
-    let read_result = cleanup.dir().read_to_string(file_name.as_path());
-    assert!(
-        read_result.is_err(),
-        "save should not create file contents when validation fails"
+        "gauss-test-save-dangling-resource",
     );
 }
 
@@ -280,51 +295,9 @@ fn web_ready_export_action_strips_gauss_metadata(cx: &mut TestAppContext) {
 #[gpui::test]
 fn web_ready_export_reports_dangling_resource_references(cx: &mut TestAppContext) {
     init_test_app(cx);
-
-    let view = setup_export_test_view(
+    assert_dangling_resource_validation(
         cx,
-        |shell| {
-            let dangling_gradient = shell
-                .resources_mut_for_tests()
-                .insert_gradient(Gradient::new(
-                    "dangling",
-                    GradientKind::Linear(LinearGradient::new(
-                        Vec2::new(0.0, 0.0),
-                        Vec2::new(1.0, 0.0),
-                        vec![
-                            GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
-                            GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
-                        ],
-                    )),
-                ));
-            let _removed = shell
-                .resources_mut_for_tests()
-                .remove_gradient(dangling_gradient);
-            if let Some(shape) = shell.document_mut_for_tests().shape_at_mut(0) {
-                shape.style.fill = Paint::gradient(dangling_gradient);
-            }
-        },
         ExportAction::WebReady,
-    );
-    let (expected, file_name, cleanup) =
-        create_temp_save_target_or_panic("gauss-test-web-ready-dangling-resource");
-    choose_save_path(cx, &expected);
-
-    let (saved, save_error) = read_save_outcome(cx, &view);
-    assert!(
-        saved.is_none(),
-        "export path should not be recorded when export validation fails"
-    );
-    let Some(error) = save_error else {
-        panic!("save error should be populated");
-    };
-    assert!(
-        error.contains("missing gradient resource"),
-        "web-ready export should report missing gradient references, got: {error}"
-    );
-    let read_result = cleanup.dir().read_to_string(file_name.as_path());
-    assert!(
-        read_result.is_err(),
-        "web-ready export should not create file contents when validation fails"
+        "gauss-test-web-ready-dangling-resource",
     );
 }
