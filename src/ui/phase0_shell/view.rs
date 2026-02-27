@@ -287,14 +287,16 @@ impl Phase0Shell {
     fn bind_tool_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
         el.on_action(
             cx.listener(|shell: &mut Self, _: &GpuiActivatePenTool, _, action_cx| {
-                if shell.activate_draw_tool(None) {
+                let error_before = shell.last_history_error.clone();
+                if shell.activate_draw_tool(None) || shell.last_history_error != error_before {
                     action_cx.notify();
                 }
             }),
         )
         .on_action(cx.listener(
             |shell: &mut Self, _: &GpuiActivateSelectTool, _, action_cx| {
-                if shell.activate_select_tool() {
+                let error_before = shell.last_history_error.clone();
+                if shell.activate_select_tool() || shell.last_history_error != error_before {
                     action_cx.notify();
                 }
             },

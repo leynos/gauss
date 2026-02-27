@@ -1,6 +1,8 @@
 //! Unit tests for the tool FSM model surface.
 
-use super::{Command, EdgeMode, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolModeFsm};
+use super::{
+    Command, EdgeMode, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolModeFsm, ToolTransition,
+};
 use rstest::rstest;
 
 #[rstest]
@@ -43,6 +45,25 @@ fn edge_mode_is_copy() {
     let mode = EdgeMode::Line;
     let copied = mode;
     assert_eq!(mode, copied);
+}
+
+#[rstest]
+fn tool_transition_default_has_no_commands() {
+    let transition = ToolTransition::default();
+
+    assert!(transition.commands.is_empty());
+}
+
+#[rstest]
+fn tool_transition_with_commands_preserves_order_and_contents() {
+    let commands = vec![
+        ToolCommand::SetToolMode(ToolMode::Draw),
+        ToolCommand::SetEdgeMode(EdgeMode::BezierAuto),
+    ];
+
+    let transition = ToolTransition::with_commands(commands.clone());
+
+    assert_eq!(transition.commands, commands);
 }
 
 #[rstest]

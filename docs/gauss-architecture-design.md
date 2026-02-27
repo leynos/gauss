@@ -634,7 +634,7 @@ Implement as a reusable service:
 
 ### 6.3 Tool ↔ Command boundary
 
-Tools do not directly mutate state. Instead they emit `ToolCommand` outputs:
+Tools do not directly mutate state. Instead, they emit `ToolCommand` outputs:
 
 - “begin drag” may be tool-local and not a command
 - “commit move/transform” emits a document command via

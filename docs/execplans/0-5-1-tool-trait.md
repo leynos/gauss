@@ -27,7 +27,8 @@ Success is observable when:
 - tool handling emits command intents (or command emission plans), not direct
   document mutations;
 - current Draw/Manipulate mode flows still pass existing integration tests;
-- new unit, behavioural (`rstest-bdd`), and GPUI tests prove happy and unhappy
+- new unit, behavioural (`rstest-bdd`), and GPU-accelerated UI (GPUI) tests
+  prove happy and unhappy
   paths for the trait boundary;
 - architecture and user documentation describe the updated boundary; and
 - roadmap entry `0.5.1` (and its two child bullets) is marked done only after
