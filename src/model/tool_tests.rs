@@ -46,219 +46,107 @@ fn edge_mode_is_copy() {
 }
 
 #[rstest]
-fn activate_draw_from_manipulate_sets_draw_and_requested_edge_mode() {
+#[case::activate_draw_from_manipulate_sets_draw_and_requested_edge_mode(
+    ToolMode::Manipulate,
+    EdgeMode::Line,
+    ToolInputEvent::ActivateDraw { edge_mode: Some(EdgeMode::BezierAuto) },
+    vec![
+        ToolCommand::SetToolMode(ToolMode::Draw),
+        ToolCommand::SetEdgeMode(EdgeMode::BezierAuto),
+    ],
+)]
+#[case::activate_draw_from_manipulate_without_edge_request_only_sets_draw_mode(
+    ToolMode::Manipulate,
+    EdgeMode::Line,
+    ToolInputEvent::ActivateDraw { edge_mode: None },
+    vec![ToolCommand::SetToolMode(ToolMode::Draw)],
+)]
+#[case::activate_draw_from_manipulate_with_same_edge_request_only_sets_draw_mode(
+    ToolMode::Manipulate,
+    EdgeMode::Line,
+    ToolInputEvent::ActivateDraw { edge_mode: Some(EdgeMode::Line) },
+    vec![ToolCommand::SetToolMode(ToolMode::Draw)],
+)]
+#[case::activate_draw_in_draw_without_edge_request_is_noop(
+    ToolMode::Draw,
+    EdgeMode::Line,
+    ToolInputEvent::ActivateDraw { edge_mode: None },
+    vec![],
+)]
+#[case::activate_draw_in_draw_with_same_edge_request_is_noop(
+    ToolMode::Draw,
+    EdgeMode::Line,
+    ToolInputEvent::ActivateDraw { edge_mode: Some(EdgeMode::Line) },
+    vec![],
+)]
+#[case::activate_draw_in_draw_with_edge_request_only_sets_edge_mode(
+    ToolMode::Draw,
+    EdgeMode::Line,
+    ToolInputEvent::ActivateDraw { edge_mode: Some(EdgeMode::BezierAuto) },
+    vec![ToolCommand::SetEdgeMode(EdgeMode::BezierAuto)],
+)]
+#[case::activate_manipulate_emits_mode_and_active_path_commands(
+    ToolMode::Draw,
+    EdgeMode::Line,
+    ToolInputEvent::ActivateManipulate,
+    vec![
+        ToolCommand::SetToolMode(ToolMode::Manipulate),
+        ToolCommand::SetActivePath(None),
+    ],
+)]
+#[case::escape_from_draw_switches_to_manipulate_and_clears_active_path(
+    ToolMode::Draw,
+    EdgeMode::Line,
+    ToolInputEvent::EscapePressed,
+    vec![
+        ToolCommand::SetToolMode(ToolMode::Manipulate),
+        ToolCommand::SetActivePath(None),
+    ],
+)]
+#[case::escape_from_manipulate_switches_to_draw(
+    ToolMode::Manipulate,
+    EdgeMode::Line,
+    ToolInputEvent::EscapePressed,
+    vec![ToolCommand::SetToolMode(ToolMode::Draw)],
+)]
+#[case::toggle_edge_mode_in_draw_emits_set_edge_mode_command(
+    ToolMode::Draw,
+    EdgeMode::Line,
+    ToolInputEvent::ToggleEdgeMode,
+    vec![ToolCommand::SetEdgeMode(EdgeMode::BezierAuto)],
+)]
+#[case::toggle_edge_mode_outside_draw_is_noop(
+    ToolMode::Manipulate,
+    EdgeMode::Line,
+    ToolInputEvent::ToggleEdgeMode,
+    vec![],
+)]
+#[case::close_path_committed_switches_to_manipulate_and_clears_active_path(
+    ToolMode::Draw,
+    EdgeMode::BezierAuto,
+    ToolInputEvent::ClosePathCommitted,
+    vec![
+        ToolCommand::SetToolMode(ToolMode::Manipulate),
+        ToolCommand::SetActivePath(None),
+    ],
+)]
+#[case::close_path_committed_outside_draw_is_noop(
+    ToolMode::Manipulate,
+    EdgeMode::BezierAuto,
+    ToolInputEvent::ClosePathCommitted,
+    vec![],
+)]
+fn tool_fsm_transitions(
+    #[case] initial_tool_mode: ToolMode,
+    #[case] initial_edge_mode: EdgeMode,
+    #[case] input_event: ToolInputEvent,
+    #[case] expected_commands: Vec<ToolCommand>,
+) {
     let fsm = ToolModeFsm;
 
-    let transition = fsm.transition(
-        ToolMode::Manipulate,
-        EdgeMode::Line,
-        ToolInputEvent::ActivateDraw {
-            edge_mode: Some(EdgeMode::BezierAuto),
-        },
-    );
+    let transition = fsm.transition(initial_tool_mode, initial_edge_mode, input_event);
 
-    assert_eq!(
-        transition.commands,
-        vec![
-            ToolCommand::SetToolMode(ToolMode::Draw),
-            ToolCommand::SetEdgeMode(EdgeMode::BezierAuto),
-        ]
-    );
-}
-
-#[rstest]
-fn activate_draw_from_manipulate_without_edge_request_only_sets_draw_mode() {
-    let fsm = ToolModeFsm;
-
-    let transition = fsm.transition(
-        ToolMode::Manipulate,
-        EdgeMode::Line,
-        ToolInputEvent::ActivateDraw { edge_mode: None },
-    );
-
-    assert_eq!(
-        transition.commands,
-        vec![ToolCommand::SetToolMode(ToolMode::Draw)]
-    );
-}
-
-#[rstest]
-fn activate_draw_from_manipulate_with_same_edge_request_only_sets_draw_mode() {
-    let fsm = ToolModeFsm;
-
-    let transition = fsm.transition(
-        ToolMode::Manipulate,
-        EdgeMode::Line,
-        ToolInputEvent::ActivateDraw {
-            edge_mode: Some(EdgeMode::Line),
-        },
-    );
-
-    assert_eq!(
-        transition.commands,
-        vec![ToolCommand::SetToolMode(ToolMode::Draw)]
-    );
-}
-
-#[rstest]
-fn activate_draw_in_draw_without_edge_request_is_noop() {
-    let fsm = ToolModeFsm;
-
-    let transition = fsm.transition(
-        ToolMode::Draw,
-        EdgeMode::Line,
-        ToolInputEvent::ActivateDraw { edge_mode: None },
-    );
-
-    assert!(transition.commands.is_empty());
-}
-
-#[rstest]
-fn activate_draw_in_draw_with_same_edge_request_is_noop() {
-    let fsm = ToolModeFsm;
-
-    let transition = fsm.transition(
-        ToolMode::Draw,
-        EdgeMode::Line,
-        ToolInputEvent::ActivateDraw {
-            edge_mode: Some(EdgeMode::Line),
-        },
-    );
-
-    assert!(transition.commands.is_empty());
-}
-
-#[rstest]
-fn activate_draw_in_draw_with_edge_request_only_sets_edge_mode() {
-    let fsm = ToolModeFsm;
-
-    let transition = fsm.transition(
-        ToolMode::Draw,
-        EdgeMode::Line,
-        ToolInputEvent::ActivateDraw {
-            edge_mode: Some(EdgeMode::BezierAuto),
-        },
-    );
-
-    assert_eq!(
-        transition.commands,
-        vec![ToolCommand::SetEdgeMode(EdgeMode::BezierAuto)]
-    );
-}
-
-#[rstest]
-fn activate_manipulate_emits_mode_and_active_path_commands() {
-    let fsm = ToolModeFsm;
-
-    let transition = fsm.transition(
-        ToolMode::Draw,
-        EdgeMode::Line,
-        ToolInputEvent::ActivateManipulate,
-    );
-
-    assert_eq!(
-        transition.commands,
-        vec![
-            ToolCommand::SetToolMode(ToolMode::Manipulate),
-            ToolCommand::SetActivePath(None),
-        ]
-    );
-}
-
-#[rstest]
-fn escape_from_draw_switches_to_manipulate_and_clears_active_path() {
-    let fsm = ToolModeFsm;
-
-    let transition = fsm.transition(
-        ToolMode::Draw,
-        EdgeMode::Line,
-        ToolInputEvent::EscapePressed,
-    );
-
-    assert_eq!(
-        transition.commands,
-        vec![
-            ToolCommand::SetToolMode(ToolMode::Manipulate),
-            ToolCommand::SetActivePath(None),
-        ]
-    );
-}
-
-#[rstest]
-fn escape_from_manipulate_switches_to_draw() {
-    let fsm = ToolModeFsm;
-
-    let transition = fsm.transition(
-        ToolMode::Manipulate,
-        EdgeMode::Line,
-        ToolInputEvent::EscapePressed,
-    );
-
-    assert_eq!(
-        transition.commands,
-        vec![ToolCommand::SetToolMode(ToolMode::Draw)]
-    );
-}
-
-#[rstest]
-fn toggle_edge_mode_in_draw_emits_set_edge_mode_command() {
-    let fsm = ToolModeFsm;
-
-    let transition = fsm.transition(
-        ToolMode::Draw,
-        EdgeMode::Line,
-        ToolInputEvent::ToggleEdgeMode,
-    );
-
-    assert_eq!(
-        transition.commands,
-        vec![ToolCommand::SetEdgeMode(EdgeMode::BezierAuto)]
-    );
-}
-
-#[rstest]
-fn toggle_edge_mode_outside_draw_is_noop() {
-    let fsm = ToolModeFsm;
-
-    let transition = fsm.transition(
-        ToolMode::Manipulate,
-        EdgeMode::Line,
-        ToolInputEvent::ToggleEdgeMode,
-    );
-
-    assert!(transition.commands.is_empty());
-}
-
-#[rstest]
-fn close_path_committed_switches_to_manipulate_and_clears_active_path() {
-    let fsm = ToolModeFsm;
-
-    let transition = fsm.transition(
-        ToolMode::Draw,
-        EdgeMode::BezierAuto,
-        ToolInputEvent::ClosePathCommitted,
-    );
-
-    assert_eq!(
-        transition.commands,
-        vec![
-            ToolCommand::SetToolMode(ToolMode::Manipulate),
-            ToolCommand::SetActivePath(None),
-        ]
-    );
-}
-
-#[rstest]
-fn close_path_committed_outside_draw_is_noop() {
-    let fsm = ToolModeFsm;
-
-    let transition = fsm.transition(
-        ToolMode::Manipulate,
-        EdgeMode::BezierAuto,
-        ToolInputEvent::ClosePathCommitted,
-    );
-
-    assert!(transition.commands.is_empty());
+    assert_eq!(transition.commands, expected_commands);
 }
 
 #[rstest]
