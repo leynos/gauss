@@ -1,18 +1,104 @@
-//! Catmull–Rom handle synthesis for draw mode paths.
+//! Geometry helpers used by the model-layer `PenTool` FSM.
 //!
-//! These helpers keep the Catmull–Rom conversion logic isolated from the
-//! event handling so draw mode remains easier to follow.
+//! These helpers are intentionally UI-independent so draw-click transitions can
+//! be tested without GPUI. They preserve the existing Phase 0 semantics for
+//! path creation, Catmull-Rom handle synthesis, and close-path behaviour.
 
 #![expect(
     clippy::float_arithmetic,
-    reason = "Catmull–Rom handle synthesis is inherently floating-point"
+    reason = "Catmull-Rom handle synthesis is inherently floating-point"
 )]
 
-use crate::model::{Anchor, Paint, PathGeom, Rgba, SegmentKind, Shape, Vec2};
+use crate::model::{
+    Anchor, EdgeMode, Paint, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2,
+};
 
 const CATMULL_ROM_TENSION: f32 = 1.0;
 
-pub(super) fn clear_line_segment_handles(path: &mut PathGeom, new_anchor_index: usize) {
+/// Build a new open shape from the first clicked anchor.
+#[must_use]
+pub fn new_open_shape(id: ShapeId, first_anchor: Vec2, style: PaintStyle) -> Shape {
+    Shape {
+        id,
+        z: 0,
+        style,
+        path: PathGeom {
+            anchors: vec![Anchor::new(first_anchor)],
+            segments: Vec::new(),
+            closed: false,
+            closing_segment: SegmentKind::Line,
+        },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
+    }
+}
+
+/// Append an anchor and update segment handles for the current edge mode.
+#[must_use]
+pub fn append_anchor(mut shape: Shape, pos: Vec2, edge_mode: EdgeMode) -> Shape {
+    let new_anchor_index = shape.path.anchors.len();
+    shape.path.anchors.push(Anchor::new(pos));
+    shape
+        .path
+        .segments
+        .push(segment_kind_for_edge_mode(edge_mode));
+
+    match edge_mode {
+        EdgeMode::Line => clear_line_segment_handles(&mut shape.path, new_anchor_index),
+        EdgeMode::BezierAuto => update_catmull_rom_handles(&mut shape.path, new_anchor_index),
+    }
+
+    shape
+}
+
+/// Close the shape and apply closing-segment handle synthesis.
+#[must_use]
+pub fn close_shape(mut shape: Shape, closing_segment: SegmentKind) -> Shape {
+    shape.path.closed = true;
+    shape.path.closing_segment = closing_segment;
+    if shape.style.fill.is_none() {
+        shape.style.fill = Paint::Solid(Rgba::new(0, 0, 0, 32));
+    }
+
+    match shape.path.closing_segment {
+        SegmentKind::Line => clear_closing_line_handles(&mut shape.path),
+        SegmentKind::Cubic => update_closed_catmull_rom_handles(&mut shape.path),
+    }
+
+    shape
+}
+
+/// Return whether the cursor is close enough to close an open path.
+#[must_use]
+pub fn should_close_path(
+    path: &PathGeom,
+    cursor_world: Vec2,
+    zoom: f32,
+    snap_radius_px: f32,
+) -> bool {
+    let Some(first) = path.anchors.first() else {
+        return false;
+    };
+
+    if path.anchors.len() < 3 {
+        return false;
+    }
+
+    first.pos.distance(cursor_world) <= (snap_radius_px / zoom)
+}
+
+/// Map draw edge mode to segment kind.
+#[must_use]
+pub const fn segment_kind_for_edge_mode(edge_mode: EdgeMode) -> SegmentKind {
+    match edge_mode {
+        EdgeMode::Line => SegmentKind::Line,
+        EdgeMode::BezierAuto => SegmentKind::Cubic,
+    }
+}
+
+fn clear_line_segment_handles(path: &mut PathGeom, new_anchor_index: usize) {
     let Some(start_index) = new_anchor_index.checked_sub(1) else {
         return;
     };
@@ -25,7 +111,7 @@ pub(super) fn clear_line_segment_handles(path: &mut PathGeom, new_anchor_index: 
     end.handle_in = None;
 }
 
-pub(super) fn update_catmull_rom_handles(path: &mut PathGeom, new_anchor_index: usize) {
+fn update_catmull_rom_handles(path: &mut PathGeom, new_anchor_index: usize) {
     let Some(last_seg_index) = new_anchor_index.checked_sub(1) else {
         return;
     };
@@ -41,21 +127,6 @@ pub(super) fn update_catmull_rom_handles(path: &mut PathGeom, new_anchor_index: 
     if matches!(path.segments.get(prev_seg_index), Some(SegmentKind::Cubic)) {
         update_segment_catmull_rom_handles(path, prev_seg_index);
     }
-}
-
-pub(super) fn close_shape(mut shape: Shape, closing_segment: SegmentKind) -> Shape {
-    shape.path.closed = true;
-    shape.path.closing_segment = closing_segment;
-    if shape.style.fill.is_none() {
-        shape.style.fill = Paint::Solid(Rgba::new(0, 0, 0, 32));
-    }
-
-    match shape.path.closing_segment {
-        SegmentKind::Line => clear_closing_line_handles(&mut shape.path),
-        SegmentKind::Cubic => update_closed_catmull_rom_handles(&mut shape.path),
-    }
-
-    shape
 }
 
 fn update_segment_catmull_rom_handles(path: &mut PathGeom, seg_index: usize) {
@@ -123,8 +194,6 @@ fn update_closed_catmull_rom_handles(path: &mut PathGeom) {
         return;
     }
 
-    // Update the first and last "internal" segments using wrap-around points
-    // so the curve is continuous at the join.
     if matches!(path.segments.first(), Some(SegmentKind::Cubic)) {
         update_closed_segment_catmull_rom_handles(path, 0);
     }
@@ -135,7 +204,6 @@ fn update_closed_catmull_rom_handles(path: &mut PathGeom) {
         update_closed_segment_catmull_rom_handles(path, last_seg_index);
     }
 
-    // Closing segment from last -> first.
     let Some(first_anchor) = path.anchors.first() else {
         return;
     };
@@ -145,8 +213,6 @@ fn update_closed_catmull_rom_handles(path: &mut PathGeom) {
 
     let p1 = last_anchor.pos;
     let p2 = first_anchor.pos;
-    // If the path ever degenerates to two anchors, fall back to endpoints so
-    // the closing control points stay stable.
     let p0 = path.anchors.iter().rev().nth(1).map_or(p1, |a| a.pos);
     let p3 = path.anchors.get(1).map_or(p2, |a| a.pos);
 

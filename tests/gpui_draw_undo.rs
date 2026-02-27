@@ -3,12 +3,13 @@
 mod common;
 
 use common::{
-    canvas_points, ensure_initial_draw, init_test_app, read_document, read_history_len,
-    require_canvas_click_changed, require_draw_shape, require_last_canvas_click,
+    canvas_bounds, canvas_points, ensure_initial_draw, init_test_app, read_document,
+    read_history_len, require_canvas_click_changed, require_draw_shape, require_last_canvas_click,
     simulate_document_redo, simulate_document_undo,
 };
-use gauss::ui::Phase0Shell;
-use gpui::TestAppContext;
+use gauss::model::ShapeId;
+use gauss::ui::{GpuiActivatePenTool, Phase0Shell};
+use gpui::{Modifiers, TestAppContext, point, px};
 use test_support::{TestSupportError, TestSupportResult};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -159,6 +160,13 @@ fn redo_and_verify_state(
     })
 }
 
+fn read_shape_count(
+    visual_cx: &gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+) -> usize {
+    visual_cx.read(|app| view.read(app).document().len())
+}
+
 #[gpui::test]
 fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -239,4 +247,115 @@ fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
         "after second redo",
     )
     .expect("draw shape should have two anchors after second redo");
+}
+
+#[gpui::test]
+fn activate_pen_tool_from_manipulate_allows_drawing(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
+    let click_in_manipulate = point(bounds.origin.x + px(8.0), bounds.origin.y + px(8.0));
+    let click_in_draw = point(bounds.origin.x + px(24.0), bounds.origin.y + px(24.0));
+
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, view_cx| {
+            shell.enter_manipulate_mode_for_tests();
+            view_cx.notify();
+        });
+    });
+    visual_cx.run_until_parked();
+
+    let shape_count_before = read_shape_count(visual_cx, &view);
+
+    visual_cx.simulate_mouse_move(click_in_manipulate, None, Modifiers::none());
+    visual_cx.simulate_click(click_in_manipulate, Modifiers::none());
+    visual_cx.run_until_parked();
+
+    let shape_count_after_manipulate_click = read_shape_count(visual_cx, &view);
+    assert_eq!(
+        shape_count_after_manipulate_click, shape_count_before,
+        "expected manipulate-mode click to keep shape count unchanged"
+    );
+
+    visual_cx.dispatch_action(GpuiActivatePenTool);
+    visual_cx.run_until_parked();
+
+    visual_cx.simulate_mouse_move(click_in_draw, None, Modifiers::none());
+    visual_cx.simulate_click(click_in_draw, Modifiers::none());
+    visual_cx.run_until_parked();
+
+    let shape_count_after_draw_click = read_shape_count(visual_cx, &view);
+    assert_eq!(
+        shape_count_after_draw_click,
+        shape_count_before.saturating_add(1),
+        "expected pen tool activation to restore draw-click shape insertion"
+    );
+}
+
+#[gpui::test]
+fn stale_active_path_is_recovered_when_pen_draws_new_shape(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
+    let click_point = point(bounds.origin.x + px(12.0), bounds.origin.y + px(12.0));
+    let stale_path = ShapeId::from_accesskit_node_id(9_999);
+
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, view_cx| {
+            shell.set_draw_active_shape_for_tests(Some(stale_path));
+            view_cx.notify();
+        });
+    });
+    visual_cx.run_until_parked();
+
+    let active_before_click = visual_cx.read(|app| view.read(app).draw_active_shape_for_tests());
+    assert_eq!(
+        active_before_click,
+        Some(stale_path),
+        "expected test setup to install a stale active path"
+    );
+
+    common::click_canvas_and_wait(visual_cx, click_point);
+
+    let doc_after_click = read_document(visual_cx, &view);
+    let shape = require_draw_shape(&doc_after_click, "after stale active path click")
+        .expect("expected draw shape after recovering from stale active path");
+    assert_eq!(
+        shape.path.anchors.len(),
+        1,
+        "expected stale active path recovery to start a new single-anchor shape"
+    );
+    assert_eq!(
+        shape.path.segments.len(),
+        0,
+        "expected no segments after first anchor in recovered draw flow"
+    );
+
+    let active_after_click = visual_cx.read(|app| view.read(app).draw_active_shape_for_tests());
+    assert_eq!(
+        active_after_click,
+        Some(shape.id),
+        "expected active path to track the newly created shape after recovery"
+    );
+    assert_ne!(
+        active_after_click,
+        Some(stale_path),
+        "expected stale active path id to be replaced during recovery"
+    );
+
+    let history_error = visual_cx.read(|app| {
+        view.read(app)
+            .last_history_error_for_tests()
+            .map(str::to_owned)
+    });
+    assert!(
+        history_error.is_none(),
+        "expected stale active path recovery to avoid surfacing history errors"
+    );
 }

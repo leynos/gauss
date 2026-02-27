@@ -157,9 +157,9 @@ phases depend upon. See architecture document §20.
 - [x] 0.5.1. Define Tool trait.
   - [x] Tools are FSMs driven by input events. See architecture §6.1.
   - [x] Tools emit Commands, not direct state mutations.
-- [ ] 0.5.2. Refactor existing draw mode to Tool trait.
-  - [ ] Extract `PenTool` FSM from current implementation.
-  - [ ] Maintain existing functionality.
+- [x] 0.5.2. Refactor existing draw mode to Tool trait.
+  - [x] Extract `PenTool` FSM from current implementation.
+  - [x] Maintain existing functionality.
 - [ ] 0.5.3. Refactor existing manipulate mode to Tool trait.
   - [ ] Extract `SelectTool` FSM.
   - [ ] Handle selection, drag, and transform states.

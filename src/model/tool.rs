@@ -8,8 +8,11 @@
 //!
 //! These types are GPUI-independent for testability and scripting.
 
-use crate::model::command::Command;
-use crate::model::path::ShapeId;
+use crate::model::command::{Command, ShapeInsertion, ShapeReplacement};
+use crate::model::path::{PaintStyle, Shape, ShapeId, Vec2};
+use crate::model::pen_geometry::{
+    append_anchor, close_shape, new_open_shape, segment_kind_for_edge_mode, should_close_path,
+};
 
 /// The active tool in the editor.
 ///
@@ -96,7 +99,7 @@ impl EdgeMode {
 }
 
 /// Input events consumed by a tool state machine.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ToolInputEvent {
     /// Activate draw mode, optionally selecting a specific edge mode.
     ActivateDraw {
@@ -111,6 +114,11 @@ pub enum ToolInputEvent {
     ToggleEdgeMode,
     /// A close-path commit completed successfully.
     ClosePathCommitted,
+    /// Draw-mode canvas click routed to the `PenTool` FSM.
+    PenCanvasClicked {
+        /// Input context snapshot for one canvas-click transition.
+        input: Box<PenToolClickInput>,
+    },
 }
 
 /// Command outputs emitted by tool FSMs.
@@ -143,6 +151,138 @@ impl ToolTransition {
             commands: commands.into_iter().collect(),
         }
     }
+}
+
+/// Snapshot of the currently active draw path.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PenToolActiveShape {
+    /// Draw-order index of the active shape.
+    pub index: usize,
+    /// Shape snapshot used to build replacement commands.
+    pub shape: Shape,
+}
+
+/// Input context for one `PenTool` canvas click transition.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PenToolClickInput {
+    /// Cursor position in world coordinates.
+    pub cursor_world: Vec2,
+    /// Current viewport zoom used for close-path snapping.
+    pub zoom: f32,
+    /// Current style used when starting a new shape.
+    pub current_style: PaintStyle,
+    /// Current active path ID (if any).
+    pub active_path: Option<ShapeId>,
+    /// Active-path shape snapshot when the path exists in the document.
+    pub active_shape: Option<PenToolActiveShape>,
+    /// Preallocated shape id for a new shape transition.
+    pub next_shape_id: ShapeId,
+    /// Current document length used as insert index for new shapes.
+    pub document_len: usize,
+    /// Snap radius in screen pixels for close-path detection.
+    pub snap_radius_px: f32,
+}
+
+impl PenToolClickInput {
+    /// Default close-path snap radius in pixels.
+    pub const DEFAULT_SNAP_RADIUS_PX: f32 = 10.0;
+}
+
+/// Pen-tool finite-state machine for draw-click transitions.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct PenTool;
+
+impl PenTool {
+    fn on_canvas_click(input: &PenToolClickInput, current_edge_mode: EdgeMode) -> ToolTransition {
+        let Some(active_path) = input.active_path else {
+            return start_new_shape_transition(input);
+        };
+        let Some(active_shape) = input.active_shape.as_ref() else {
+            return recover_stale_active_path_transition(input);
+        };
+        if active_shape.shape.id != active_path {
+            return recover_stale_active_path_transition(input);
+        }
+
+        if should_close_path(
+            &active_shape.shape.path,
+            input.cursor_world,
+            input.zoom,
+            input.snap_radius_px,
+        ) {
+            let old_shape = active_shape.shape.clone();
+            let new_shape = close_shape(
+                old_shape.clone(),
+                segment_kind_for_edge_mode(current_edge_mode),
+            );
+            let command = Command::ClosePath {
+                replacement: ShapeReplacement {
+                    shape_index: active_shape.index,
+                    old_shape,
+                    new_shape,
+                },
+            };
+            return ToolTransition::with_commands([
+                ToolCommand::ApplyDocumentCommand(Box::new(command)),
+                ToolCommand::SetToolMode(ToolMode::Manipulate),
+                ToolCommand::SetActivePath(None),
+            ]);
+        }
+
+        let old_shape = active_shape.shape.clone();
+        let new_shape = append_anchor(old_shape.clone(), input.cursor_world, current_edge_mode);
+        let command = Command::InsertAnchor {
+            replacement: ShapeReplacement {
+                shape_index: active_shape.index,
+                old_shape,
+                new_shape,
+            },
+        };
+        ToolTransition::with_commands([ToolCommand::ApplyDocumentCommand(Box::new(command))])
+    }
+}
+
+impl Tool for PenTool {
+    fn transition(
+        &self,
+        current_mode: ToolMode,
+        current_edge_mode: EdgeMode,
+        event: ToolInputEvent,
+    ) -> ToolTransition {
+        if current_mode != ToolMode::Draw {
+            return ToolTransition::default();
+        }
+
+        let ToolInputEvent::PenCanvasClicked { input } = event else {
+            return ToolTransition::default();
+        };
+
+        Self::on_canvas_click(input.as_ref(), current_edge_mode)
+    }
+}
+
+fn recover_stale_active_path_transition(input: &PenToolClickInput) -> ToolTransition {
+    let mut commands = vec![ToolCommand::SetActivePath(None)];
+    commands.extend(start_new_shape_transition(input).commands);
+    ToolTransition::with_commands(commands)
+}
+
+fn start_new_shape_transition(input: &PenToolClickInput) -> ToolTransition {
+    let shape = new_open_shape(
+        input.next_shape_id,
+        input.cursor_world,
+        input.current_style.clone(),
+    );
+    let command = Command::InsertShape {
+        insertion: ShapeInsertion {
+            index: input.document_len,
+            shape,
+        },
+    };
+    ToolTransition::with_commands([
+        ToolCommand::ApplyDocumentCommand(Box::new(command)),
+        ToolCommand::SetActivePath(Some(input.next_shape_id)),
+    ])
 }
 
 /// Tool finite-state-machine contract.
@@ -213,6 +353,7 @@ impl Tool for ToolModeFsm {
                     ToolCommand::SetActivePath(None),
                 ])
             }
+            ToolInputEvent::PenCanvasClicked { .. } => ToolTransition::default(),
         }
     }
 }

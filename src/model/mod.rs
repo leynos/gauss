@@ -19,6 +19,7 @@ pub mod keybinding;
 pub mod keystroke;
 pub mod ops;
 pub mod path;
+pub(crate) mod pen_geometry;
 pub mod resize_anchor;
 pub mod resource_store;
 pub mod selection;
@@ -55,12 +56,15 @@ pub use resource_store::{
 pub use selection::{SelItem, Selection};
 pub use style_store::{NamedStyle, StyleId, StyleStore};
 pub use tool::{
-    EdgeMode, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolModeFsm, ToolTransition,
+    EdgeMode, PenTool, PenToolActiveShape, PenToolClickInput, Tool, ToolCommand, ToolInputEvent,
+    ToolMode, ToolModeFsm, ToolTransition,
 };
 pub use viewport::Viewport;
 
 #[cfg(test)]
 mod ops_roundtrip_tests;
+#[cfg(test)]
+mod pen_tool_tests;
 #[cfg(test)]
 mod resource_store_tests;
 #[cfg(test)]

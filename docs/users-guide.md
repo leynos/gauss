@@ -70,7 +70,8 @@ In draw mode, new shapes are created by clicking to place anchor points:
 1. Click to place the first anchor
 2. Continue clicking to add more anchors
 3. Press Tab to toggle between Line and Bezier edge modes
-4. Click near the first anchor to close the path
+4. Click near the first anchor to close the path (after at least three anchors
+   have been placed)
 5. Press Escape to finish an open path and switch to Manipulate mode
 
 ### Manipulate Mode (Select Tool)

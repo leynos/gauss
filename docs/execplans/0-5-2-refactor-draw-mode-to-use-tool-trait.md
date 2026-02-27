@@ -113,12 +113,13 @@ Success is observable when:
   consolidated findings through context pack `pk_gvavom4z`.
 - [x] (2026-02-27 13:45Z) Drafted this ExecPlan at
   `docs/execplans/0-5-2-refactor-draw-mode-to-use-tool-trait.md`.
-- [ ] Implement `PenTool` extraction and adapter wiring.
-- [ ] Add/update unit, BDD, and GPUI coverage for happy/unhappy/edge cases.
-- [ ] Update architecture and user docs as needed; mark roadmap `0.5.2` done
-  only after gates pass.
-- [ ] Run `make check-fmt`, `make lint`, and `make test` with durable logs and
-  record evidence in this plan.
+- [x] (2026-02-27) Implemented `PenTool` extraction and adapter wiring.
+- [x] (2026-02-27) Added/updated unit, BDD, and GPUI coverage for
+  happy/unhappy/edge cases.
+- [x] (2026-02-27) Updated architecture and user docs, and marked roadmap
+  `0.5.2` done after gates passed.
+- [x] (2026-02-27) Ran `make check-fmt`, `make lint`, and `make test` with
+  durable logs and recorded evidence.
 
 ## Surprises & Discoveries
 
@@ -131,6 +132,8 @@ Success is observable when:
   careful context modelling is required to avoid trait churn.
 - Context-pack references were broadly accurate, with minor line-range drift in
   two files due branch-local edits.
+- `rstest-bdd` step text is strict; a singular/plural mismatch (`command` vs
+  `commands`) caused scenario lookup failures until both forms were bound.
 
 ## Decision Log
 
@@ -149,17 +152,41 @@ Success is observable when:
   validates mode transitions but not full click-path command sequencing.
   Date/Author: 2026-02-27 (assistant)
 
+- Decision: keep close-path eligibility unchanged (minimum three anchors before
+  closure) and document it explicitly in the user guide. Rationale: preserves
+  behavioural parity while making the rule explicit for users and tests.
+  Date/Author: 2026-02-27 (assistant)
+
 ## Outcomes & Retrospective
 
-Current outcome: planning complete; implementation not started in this document
-revision.
+Current outcome: implementation complete for roadmap item `0.5.2`.
 
-Expected retrospective focus at completion:
+What shipped:
 
-- whether Pen extraction reduced UI-layer behavioural logic as intended;
-- whether command ordering parity was preserved across close/append/start flows;
-- whether test layering (unit + BDD + GPUI) was sufficient to prevent drift;
-- whether gate evidence and roadmap/doc synchronisation stayed accurate.
+- Extracted Pen draw-click FSM to model layer:
+  `PenTool`, `PenToolClickInput`, and `PenToolActiveShape` in
+  `src/model/tool.rs`.
+- Moved draw geometry helpers from UI layer to model layer:
+  `src/model/pen_geometry.rs`.
+- Updated draw UI adapter (`src/ui/phase0_shell/draw/mod.rs`) to snapshot click
+  context and route transitions via `Tool::transition(&PenTool, ...)`.
+- Removed obsolete UI-only helper module:
+  `src/ui/phase0_shell/draw/handles.rs`.
+- Added/updated tests:
+  - unit (`src/model/pen_tool_tests.rs`)
+  - BDD (`tests/features/pen_tool.feature`, `tests/pen_tool_bdd.rs`)
+  - GPUI parity/edge cases (`tests/gpui_close_path.rs`,
+    `tests/gpui_draw_undo.rs`)
+  - compatibility update for non-`Copy` `ToolInputEvent`
+    (`tests/tool_fsm_bdd.rs`).
+
+Gate evidence:
+
+- `/tmp/check-fmt-gauss-0-5-2-refactor-draw-mode-to-use-tool-trait.out`
+- `/tmp/lint-gauss-0-5-2-refactor-draw-mode-to-use-tool-trait.out`
+- `/tmp/test-gauss-0-5-2-refactor-draw-mode-to-use-tool-trait.out`
+- `/tmp/fmt-gauss-0-5-2-refactor-draw-mode-to-use-tool-trait.out`
+- `/tmp/markdownlint-gauss-0-5-2-refactor-draw-mode-to-use-tool-trait.out`
 
 ## Context and Orientation
 
@@ -179,7 +206,7 @@ Primary code surfaces for extraction:
 
 - `src/model/tool.rs` (Tool trait, mode FSM contracts)
 - `src/ui/phase0_shell/draw/mod.rs` (current draw click/close/start flow)
-- `src/ui/phase0_shell/draw/handles.rs` (close/handle geometry helpers)
+- `src/model/pen_geometry.rs` (draw geometry helpers)
 - `src/ui/phase0_shell/chrome.rs` (`handle_tool_input_event`,
   `apply_tool_commands`)
 - `src/ui/phase0_shell/input.rs` and `src/ui/phase0_shell/view.rs`
@@ -318,8 +345,7 @@ Behavioural acceptance:
 Test acceptance:
 
 - Unit tests (`rstest`) cover Pen transition happy/unhappy paths and
-  deterministic
-  command ordering.
+  deterministic command ordering.
 - BDD tests (`rstest-bdd` v0.5.0) cover Pen workflow scenarios using
   Given/When/Then feature files and step definitions.
 - GPUI tests verify wiring and end-to-end parity for key interactions.
@@ -389,3 +415,12 @@ Dependency policy:
   - Incorporated discovery from `grepai`/`leta` and Spark team coordination via
     context pack `pk_gvavom4z`.
   - Set status to DRAFT pending implementation approval/execution.
+- 2026-02-27: Completed roadmap `0.5.2` implementation and validation.
+  - Extracted Pen draw-click transitions to `PenTool` (`Tool` implementation)
+    with GPUI-independent geometry helpers in `src/model/pen_geometry.rs`.
+  - Updated draw UI adapter to route click decisions through
+    `ToolInputEvent::PenCanvasClicked`.
+  - Added unit + BDD + GPUI coverage for happy, unhappy, and edge paths.
+  - Updated architecture/user docs and marked roadmap `0.5.2` done.
+  - Ran and passed `make check-fmt`, `make lint`, and `make test` with durable
+    tee logs.
