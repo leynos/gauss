@@ -13,6 +13,8 @@ into contexts based on the current editor mode.
 
 These shortcuts work in any editor mode:
 
+Table: Keyboard shortcuts (macOS vs Linux/Windows)
+
 | Action         | macOS       | Linux/Windows |
 | -------------- | ----------- | ------------- |
 | Undo           | Cmd+Z       | Ctrl+Z        |
