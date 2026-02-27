@@ -315,7 +315,7 @@ Run from repository root.
 
     `project="$(basename "$PWD")"`
 
-    `branch="$(git branch --show)"`
+    `branch="$(git branch --show-current)"`
 
     `branch_safe="$(printf '%s' "$branch" | tr '/' '-')"`
 
