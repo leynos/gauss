@@ -136,8 +136,7 @@ fn tool_draw_button(
                 draw_button_state(shell.state.tool_mode, shell.state.edge_mode, edge_mode)
             },
             on_click: move |shell: &mut Phase0Shell| {
-                shell.set_tool_mode(ToolMode::Draw);
-                shell.set_edge_mode(edge_mode);
+                let _ = shell.activate_draw_tool(Some(edge_mode));
             },
         },
     )
@@ -155,7 +154,9 @@ fn tool_select_button(
             icon: UiIcon::Select,
             tooltip: "Select",
             state_fn: |shell: &Phase0Shell| select_button_state(shell.state.tool_mode),
-            on_click: |shell: &mut Phase0Shell| shell.set_tool_mode(ToolMode::Manipulate),
+            on_click: |shell: &mut Phase0Shell| {
+                let _ = shell.activate_select_tool();
+            },
         },
     )
 }

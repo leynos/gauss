@@ -13,17 +13,18 @@ into contexts based on the current editor mode.
 
 These shortcuts work in any editor mode:
 
-| Action           | macOS       | Linux/Windows |
-| ---------------- | ----------- | ------------- |
-| Undo             | Cmd+Z       | Ctrl+Z        |
-| Redo             | Cmd+Y       | Ctrl+Y        |
-| Selection Undo   | Cmd+Shift+Z | Ctrl+Shift+Z  |
-| Selection Redo   | Cmd+Shift+Y | Ctrl+Shift+Y  |
-| Select All       | Cmd+A       | Ctrl+A        |
-| Deselect All     | Cmd+Shift+A | Ctrl+Shift+A  |
-| Pen Tool         | P           | P             |
-| Select Tool      | V           | V             |
-| Toggle Edge Mode | Tab         | Tab           |
+Table: Keyboard shortcuts (macOS vs Linux/Windows)
+
+| Action         | macOS       | Linux/Windows |
+| -------------- | ----------- | ------------- |
+| Undo           | Cmd+Z       | Ctrl+Z        |
+| Redo           | Cmd+Y       | Ctrl+Y        |
+| Selection Undo | Cmd+Shift+Z | Ctrl+Shift+Z  |
+| Selection Redo | Cmd+Shift+Y | Ctrl+Shift+Y  |
+| Select All     | Cmd+A       | Ctrl+A        |
+| Deselect All   | Cmd+Shift+A | Ctrl+Shift+A  |
+| Pen Tool       | P           | P             |
+| Select Tool    | V           | V             |
 
 **Note:** Gauss uses Cmd+Shift+Z / Ctrl+Shift+Z for Selection Undo rather than
 the standard macOS Redo shortcut. This supports the dual history stack design
@@ -83,6 +84,14 @@ In manipulate mode, existing shapes can be selected and edited:
 5. Press Delete or Backspace to delete selected anchors
 6. Press Escape to switch to Draw mode
 
+Tool transitions (toolbar clicks, `P`, `V`, and `Escape`) are routed through
+one deterministic mode-state machine. This keeps mode switching behaviour
+consistent across keyboard and UI controls.
+
+Tab routing is context-dependent: in Draw mode it toggles edge mode through the
+tool state machine, while in Manipulate mode it routes to segment-kind toggling
+for the current selection.
+
 ## Selection
 
 - **Click**: Select a single item (deselects others)
@@ -113,6 +122,10 @@ Gauss maintains separate history stacks for:
   movement, deletion, style changes
 - **Selection changes** (Cmd+Shift+Z / Ctrl+Shift+Z, Cmd+Shift+Y /
   Ctrl+Shift+Y): What is currently selected
+
+Tool mode switches and edge-mode toggles are editor-state changes and do not
+create document undo entries. Manipulate-mode segment-kind toggles are document
+edits and therefore produce document undo entries.
 
 This allows selection changes to be undone without affecting the document, and
 vice versa. For example, after selecting several shapes and then undoing the

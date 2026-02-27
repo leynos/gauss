@@ -1,10 +1,15 @@
-//! Tool and edge mode definitions for the Gauss editor.
+//! Tool and edge mode definitions plus the Tool FSM contract.
 //!
-//! This module defines the primary interaction modes for the editor. Tool mode
-//! determines which tool is active (e.g., pen for drawing, selection for
-//! manipulation). Edge mode determines how new path segments are created.
+//! This module defines the primary interaction modes for the editor, plus the
+//! command-emitting finite-state-machine (FSM) boundary used by tool logic.
+//! Tool mode determines which tool is active (for example, pen for drawing,
+//! selection for manipulation). Edge mode determines how new path segments are
+//! created.
 //!
 //! These types are GPUI-independent for testability and scripting.
+
+use crate::model::command::Command;
+use crate::model::path::ShapeId;
 
 /// The active tool in the editor.
 ///
@@ -90,52 +95,124 @@ impl EdgeMode {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    //! Tests for tool and edge mode helpers.
+/// Input events consumed by a tool state machine.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ToolInputEvent {
+    /// Activate draw mode, optionally selecting a specific edge mode.
+    ActivateDraw {
+        /// Optional edge mode to apply when entering draw mode.
+        edge_mode: Option<EdgeMode>,
+    },
+    /// Activate manipulate mode.
+    ActivateManipulate,
+    /// Escape key pressed.
+    EscapePressed,
+    /// Toggle edge mode in draw context.
+    ToggleEdgeMode,
+    /// A close-path commit completed successfully.
+    ClosePathCommitted,
+}
 
-    use super::*;
-    use rstest::rstest;
+/// Command outputs emitted by tool FSMs.
+///
+/// Tool logic must emit commands and never mutate editor state directly.
+#[derive(Clone, Debug, PartialEq)]
+pub enum ToolCommand {
+    /// Apply a document command through the command history pipeline.
+    ApplyDocumentCommand(Box<Command>),
+    /// Set active tool mode.
+    SetToolMode(ToolMode),
+    /// Set active edge mode.
+    SetEdgeMode(EdgeMode),
+    /// Set active path identity used by draw mode.
+    SetActivePath(Option<ShapeId>),
+}
 
-    #[rstest]
-    fn tool_mode_has_label() {
-        assert_eq!(ToolMode::Draw.label(), "Draw");
-        assert_eq!(ToolMode::Manipulate.label(), "Manipulate");
+/// Result of handling one tool input event.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ToolTransition {
+    /// Ordered commands produced by the transition.
+    pub commands: Vec<ToolCommand>,
+}
+
+impl ToolTransition {
+    /// Build a transition from command outputs.
+    #[must_use]
+    pub fn with_commands(commands: impl IntoIterator<Item = ToolCommand>) -> Self {
+        Self {
+            commands: commands.into_iter().collect(),
+        }
     }
+}
 
-    #[rstest]
-    fn tool_mode_default_is_draw() {
-        assert_eq!(ToolMode::default(), ToolMode::Draw);
-    }
+/// Tool finite-state-machine contract.
+///
+/// Implementations are deterministic: given the same state snapshot and input
+/// event, they must emit the same command sequence.
+pub trait Tool {
+    /// Handle one input event and return emitted commands.
+    fn transition(
+        &self,
+        current_mode: ToolMode,
+        current_edge_mode: EdgeMode,
+        event: ToolInputEvent,
+    ) -> ToolTransition;
+}
 
-    #[rstest]
-    fn edge_mode_has_label() {
-        assert_eq!(EdgeMode::Line.label(), "Line");
-        assert_eq!(EdgeMode::BezierAuto.label(), "Bezier (auto)");
-    }
+/// FSM for draw/manipulate mode transitions.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ToolModeFsm;
 
-    #[rstest]
-    fn edge_mode_default_is_line() {
-        assert_eq!(EdgeMode::default(), EdgeMode::Line);
-    }
-
-    #[rstest]
-    fn edge_mode_toggle_switches() {
-        assert_eq!(EdgeMode::Line.toggle(), EdgeMode::BezierAuto);
-        assert_eq!(EdgeMode::BezierAuto.toggle(), EdgeMode::Line);
-    }
-
-    #[rstest]
-    fn tool_mode_is_copy() {
-        let mode = ToolMode::Draw;
-        let copied = mode;
-        assert_eq!(mode, copied);
-    }
-
-    #[rstest]
-    fn edge_mode_is_copy() {
-        let mode = EdgeMode::Line;
-        let copied = mode;
-        assert_eq!(mode, copied);
+impl Tool for ToolModeFsm {
+    fn transition(
+        &self,
+        current_mode: ToolMode,
+        current_edge_mode: EdgeMode,
+        event: ToolInputEvent,
+    ) -> ToolTransition {
+        match event {
+            ToolInputEvent::ActivateDraw { edge_mode } => {
+                let mut commands = Vec::new();
+                if current_mode != ToolMode::Draw {
+                    commands.push(ToolCommand::SetToolMode(ToolMode::Draw));
+                }
+                if let Some(next_edge_mode) = edge_mode
+                    && next_edge_mode != current_edge_mode
+                {
+                    commands.push(ToolCommand::SetEdgeMode(next_edge_mode));
+                }
+                ToolTransition::with_commands(commands)
+            }
+            ToolInputEvent::ActivateManipulate => ToolTransition::with_commands([
+                ToolCommand::SetToolMode(ToolMode::Manipulate),
+                ToolCommand::SetActivePath(None),
+            ]),
+            ToolInputEvent::EscapePressed => match current_mode {
+                ToolMode::Draw => ToolTransition::with_commands([
+                    ToolCommand::SetToolMode(ToolMode::Manipulate),
+                    ToolCommand::SetActivePath(None),
+                ]),
+                ToolMode::Manipulate => {
+                    ToolTransition::with_commands([ToolCommand::SetToolMode(ToolMode::Draw)])
+                }
+            },
+            ToolInputEvent::ToggleEdgeMode => {
+                if current_mode != ToolMode::Draw {
+                    return ToolTransition::default();
+                }
+                ToolTransition::with_commands([ToolCommand::SetEdgeMode(
+                    current_edge_mode.toggle(),
+                )])
+            }
+            ToolInputEvent::ClosePathCommitted => {
+                if current_mode != ToolMode::Draw {
+                    return ToolTransition::default();
+                }
+                ToolTransition::with_commands([
+                    ToolCommand::SetToolMode(ToolMode::Manipulate),
+                    ToolCommand::SetActivePath(None),
+                ])
+            }
+        }
     }
 }

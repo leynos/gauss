@@ -634,11 +634,26 @@ Implement as a reusable service:
 
 ### 6.3 Tool ↔ Command boundary
 
-Tools do not directly mutate state. Instead they **emit Commands**:
+Tools do not directly mutate state. Instead, they emit `ToolCommand` outputs:
 
 - “begin drag” may be tool-local and not a command
-- “commit move/transform” becomes a command
+- “commit move/transform” emits a document command via
+  `ToolCommand::ApplyDocumentCommand`
 - multi-step tools can emit “preview” overlays (not persisted) and commit at end
+- editor-state transitions (for example, mode changes) emit explicit
+  `ToolCommand::Set*` variants
+
+Implementation status (roadmap 0.5.1):
+
+- `src/model/tool.rs` now defines the Tool FSM contract via `Tool`,
+  `ToolInputEvent`, `ToolCommand`, and `ToolTransition`.
+- `ToolModeFsm` provides deterministic Draw/Manipulate transition behaviour and
+  emits command outputs.
+- `Phase0Shell` applies emitted `ToolCommand` values in one place via
+  `handle_tool_input_event` and `apply_tool_commands`, keeping UI handlers free
+  of direct tool-state mutation.
+- This milestone defines the boundary only. Full `PenTool` and `SelectTool` FSM
+  extraction remains roadmap items `0.5.2` and `0.5.3`.
 
 ______________________________________________________________________
 
@@ -1410,6 +1425,11 @@ broad feature work accelerates:
 6. **A11yService skeleton** (stable IDs, UI chrome accessibility)
 7. **i18n scaffolding** (string catalog, localized command names)
 8. **Widget capability audit** (GPUI Component vs custom controls plan)
+
+Status update: roadmap item `0.5.1` implemented the Tool trait and command
+emission boundary. Remaining tool-framework milestones are `0.5.2` (PenTool
+extraction), `0.5.3` (SelectTool extraction), and `0.5.4` (shared hit-test
+service).
 
 ______________________________________________________________________
 

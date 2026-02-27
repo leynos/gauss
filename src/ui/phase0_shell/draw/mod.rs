@@ -15,7 +15,7 @@
 
 use crate::model::{
     Anchor, Command, EdgeMode, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, ShapeInsertion,
-    UserError, Vec2,
+    ToolCommand, ToolInputEvent, UserError, Vec2,
 };
 
 use super::Phase0Shell;
@@ -55,12 +55,12 @@ impl Phase0Shell {
         };
 
         let Some(index) = self.state.document.find_index(active) else {
-            self.state.active_path = None;
+            let _ = self.apply_tool_commands([ToolCommand::SetActivePath(None)]);
             return self.start_new_open_shape(cursor_world);
         };
 
         let Some(existing) = self.state.document.shape_at(index).cloned() else {
-            self.state.active_path = None;
+            let _ = self.apply_tool_commands([ToolCommand::SetActivePath(None)]);
             return false;
         };
 
@@ -76,11 +76,10 @@ impl Phase0Shell {
                     new_shape: closed,
                 },
             };
-            if self.apply_command(command).is_err() {
+            if !self.apply_tool_commands([ToolCommand::ApplyDocumentCommand(Box::new(command))]) {
                 return false;
             }
-            self.state.tool_mode = ToolMode::Manipulate;
-            self.state.active_path = None;
+            let _ = self.handle_tool_input_event(ToolInputEvent::ClosePathCommitted);
             return true;
         }
 
@@ -92,7 +91,7 @@ impl Phase0Shell {
                 new_shape: appended,
             },
         };
-        self.apply_command(command).is_ok()
+        self.apply_tool_commands([ToolCommand::ApplyDocumentCommand(Box::new(command))])
     }
 
     fn start_new_open_shape(&mut self, cursor_world: Vec2) -> bool {
@@ -104,11 +103,12 @@ impl Phase0Shell {
             insertion: ShapeInsertion { index, shape },
         };
 
-        if self.apply_command(command).is_err() {
+        if !self.apply_tool_commands([
+            ToolCommand::ApplyDocumentCommand(Box::new(command)),
+            ToolCommand::SetActivePath(Some(shape_id)),
+        ]) {
             return false;
         }
-
-        self.state.active_path = Some(shape_id);
         true
     }
 

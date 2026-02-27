@@ -19,7 +19,7 @@ use std::path::PathBuf;
 
 use gpui::{Entity, TestAppContext, VisualTestContext};
 
-use crate::model::{Command, ShapeMovement, Vec2};
+use crate::model::{Command, ShapeId, ShapeMovement, ToolCommand, Vec2};
 
 use super::Phase0Shell;
 
@@ -356,5 +356,34 @@ fn apply_command_clears_last_history_error_on_success(cx: &mut TestAppContext) {
     assert!(
         error_after.is_none(),
         "expected last_history_error to be cleared after successful command"
+    );
+}
+
+/// Verify that failing `ApplyDocumentCommand` tool commands surface history
+/// errors via `last_history_error`.
+#[gpui::test]
+fn apply_tool_command_failure_sets_last_history_error(cx: &mut TestAppContext) {
+    let (view, visual_cx) = setup_phase0_shell(cx);
+
+    update_shell(visual_cx, &view, |shell| {
+        let did_change = shell.apply_tool_commands([ToolCommand::ApplyDocumentCommand(Box::new(
+            Command::MoveShapes {
+                movements: vec![ShapeMovement {
+                    shape_id: ShapeId::from_accesskit_node_id(9_999),
+                    delta: Vec2::new(1.0, 1.0),
+                }],
+            },
+        ))]);
+        assert!(
+            !did_change,
+            "expected apply_tool_commands to report no change on failing command"
+        );
+    });
+
+    let error = read_last_history_error(visual_cx, &view)
+        .expect("expected last_history_error to be populated after failing tool command");
+    assert!(
+        error.contains("Shape not found"),
+        "expected shape lookup failure in error message: {error}"
     );
 }
