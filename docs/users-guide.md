@@ -122,9 +122,8 @@ Gauss maintains separate history stacks for:
   Ctrl+Shift+Y): What is currently selected
 
 Tool mode switches and edge-mode toggles are editor-state changes and do not
-create document undo entries.
-Manipulate-mode segment-kind toggles are document edits and therefore produce
-document undo entries.
+create document undo entries. Manipulate-mode segment-kind toggles are document
+edits and therefore produce document undo entries.
 
 This allows selection changes to be undone without affecting the document, and
 vice versa. For example, after selecting several shapes and then undoing the

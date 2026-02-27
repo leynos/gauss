@@ -4,11 +4,66 @@
 //! paths using `rstest-bdd` scenarios.
 
 use gauss::model::{
-    EdgeMode, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolModeFsm, ToolTransition,
+    Command, Document, EdgeMode, EngineState, ShapeId, ShapeMovement, Tool, ToolCommand,
+    ToolInputEvent, ToolMode, ToolModeFsm, ToolTransition, Vec2,
 };
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};
+
+mod tool_test_support {
+    //! Helpers for exercising tool command error propagation paths in BDD tests.
+
+    use super::{Command, Document, EngineState, ShapeId, ShapeMovement, ToolCommand, Vec2};
+
+    /// Minimal test harness for applying tool commands and tracking surfaced
+    /// history errors.
+    pub struct ToolCommandHarness {
+        state: EngineState,
+        last_history_error: Option<String>,
+    }
+
+    impl ToolCommandHarness {
+        pub fn apply_command(&mut self, command: ToolCommand) -> Result<(), String> {
+            let ToolCommand::ApplyDocumentCommand(document_command) = command else {
+                return Ok(());
+            };
+
+            match self.state.apply_document_command(*document_command) {
+                Ok(()) => {
+                    self.last_history_error = None;
+                    Ok(())
+                }
+                Err(error) => {
+                    self.last_history_error = Some(error.to_string());
+                    Err(error.to_string())
+                }
+            }
+        }
+
+        pub fn last_history_error(&self) -> Option<&str> {
+            self.last_history_error.as_deref()
+        }
+    }
+
+    /// Construct a harness backed by an empty document so move commands fail.
+    pub fn make_tool_with_failing_document_backend() -> ToolCommandHarness {
+        ToolCommandHarness {
+            state: EngineState::with_document(Document::new()),
+            last_history_error: None,
+        }
+    }
+
+    /// Build a deterministic failing `ApplyDocumentCommand`.
+    pub fn make_failing_apply_document_command() -> ToolCommand {
+        ToolCommand::ApplyDocumentCommand(Box::new(Command::MoveShapes {
+            movements: vec![ShapeMovement {
+                shape_id: ShapeId::from_accesskit_node_id(9_999),
+                delta: Vec2::new(1.0, 1.0),
+            }],
+        }))
+    }
+}
 
 /// World state for tool FSM BDD tests.
 #[derive(Default)]
@@ -27,6 +82,19 @@ fn world() -> ToolFsmWorld {
         input_event: None,
         transition: None,
     }
+}
+
+/// World state for tool-command error propagation BDD tests.
+#[derive(Default)]
+struct ToolCommandWorld {
+    tool: Option<tool_test_support::ToolCommandHarness>,
+    command: Option<ToolCommand>,
+    apply_error: Option<String>,
+}
+
+#[fixture]
+fn tool_command_world() -> ToolCommandWorld {
+    ToolCommandWorld::default()
 }
 
 // === Given steps ===
@@ -78,6 +146,12 @@ fn given_input_close_path_committed(world: &mut ToolFsmWorld) {
     world.input_event = Some(ToolInputEvent::ClosePathCommitted);
 }
 
+#[given("a tool with a failing document command")]
+fn given_tool_with_failing_document_command(tool_command_world: &mut ToolCommandWorld) {
+    tool_command_world.tool = Some(tool_test_support::make_tool_with_failing_document_backend());
+    tool_command_world.command = Some(tool_test_support::make_failing_apply_document_command());
+}
+
 // === When steps ===
 
 #[when("the tool transition is evaluated")]
@@ -89,6 +163,30 @@ fn when_transition_is_evaluated(world: &mut ToolFsmWorld) -> TestSupportResult<(
     let fsm = ToolModeFsm;
     world.transition = Some(fsm.transition(world.mode, world.edge_mode, input_event));
     Ok(())
+}
+
+#[when("the apply document command is executed")]
+fn when_apply_document_command_is_executed(
+    tool_command_world: &mut ToolCommandWorld,
+) -> TestSupportResult<()> {
+    let tool = tool_command_world
+        .tool
+        .as_mut()
+        .ok_or_else(|| TestSupportError::missing("tool", "apply document command execution"))?;
+    let command = tool_command_world
+        .command
+        .clone()
+        .ok_or_else(|| TestSupportError::missing("command", "apply document command execution"))?;
+
+    match tool.apply_command(command) {
+        Ok(()) => Err(TestSupportError::expectation(
+            "expected ApplyDocumentCommand to fail, but it succeeded",
+        )),
+        Err(error) => {
+            tool_command_world.apply_error = Some(error);
+            Ok(())
+        }
+    }
 }
 
 // === Helper functions ===
@@ -163,6 +261,31 @@ fn then_emit_exactly_one_command_alias(
     assert_command_count(world, count)
 }
 
+#[then("the tool exposes the failure via last_history_error")]
+fn then_error_is_exposed_via_last_history_error(
+    tool_command_world: &ToolCommandWorld,
+) -> TestSupportResult<()> {
+    let tool = tool_command_world
+        .tool
+        .as_ref()
+        .ok_or_else(|| TestSupportError::missing("tool", "last_history_error assertion"))?;
+    let apply_error = tool_command_world
+        .apply_error
+        .as_ref()
+        .ok_or_else(|| TestSupportError::missing("apply_error", "last_history_error assertion"))?;
+    let history_error = tool
+        .last_history_error()
+        .ok_or_else(|| TestSupportError::expectation("expected last_history_error to be set"))?;
+
+    if history_error.contains(apply_error) {
+        return Ok(());
+    }
+
+    Err(TestSupportError::expectation(format!(
+        "expected last_history_error to contain apply error; apply error: {apply_error}; last_history_error: {history_error}"
+    )))
+}
+
 // === Scenario bindings ===
 
 #[scenario(
@@ -235,4 +358,14 @@ fn close_path_committed_from_draw_emits_mode_and_path_commands(world: ToolFsmWor
 )]
 fn close_path_committed_outside_draw_emits_no_commands(world: ToolFsmWorld) {
     let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/tool_fsm.feature",
+    name = "Apply document command failure surfaces last history error"
+)]
+fn apply_document_command_failure_surfaces_last_history_error(
+    tool_command_world: ToolCommandWorld,
+) {
+    let _ = tool_command_world;
 }

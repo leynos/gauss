@@ -75,3 +75,8 @@ Feature: Tool mode FSM command emission
     And the input event is ClosePathCommitted
     When the tool transition is evaluated
     Then it should emit no commands
+
+  Scenario: Apply document command failure surfaces last history error
+    Given a tool with a failing document command
+    When the apply document command is executed
+    Then the tool exposes the failure via last_history_error

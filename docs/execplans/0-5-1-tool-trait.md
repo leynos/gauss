@@ -28,8 +28,7 @@ Success is observable when:
   document mutations;
 - current Draw/Manipulate mode flows still pass existing integration tests;
 - new unit, behavioural (`rstest-bdd`), and GPU-accelerated UI (GPUI) tests
-  prove happy and unhappy
-  paths for the trait boundary;
+  prove happy and unhappy paths for the trait boundary;
 - architecture and user documentation describe the updated boundary; and
 - roadmap entry `0.5.1` (and its two child bullets) is marked done only after
   full quality gates pass.
@@ -100,8 +99,8 @@ Success is observable when:
   `handle_tool_input_event` and `apply_tool_commands` so tool transitions emit
   commands instead of mutating state ad hoc.
 - [x] (2026-02-25) Added/extended unit tests (`rstest`) for happy, unhappy, and
-  edge transitions, including `ActivateDraw` without edge override, `ActivateDraw`
-  while already in draw, and `ClosePathCommitted` outside draw.
+  edge transitions, including `ActivateDraw` without edge override,
+  `ActivateDraw` while already in draw, and `ClosePathCommitted` outside draw.
 - [x] (2026-02-25) Added/extended behavioural tests (`rstest-bdd` v0.5.0) in
   `tests/tool_fsm_bdd.rs` and `tests/features/tool_fsm.feature` for the same
   happy/unhappy/edge transition coverage.
@@ -161,8 +160,7 @@ Success is observable when:
   through the tool FSM (`ToggleEdgeMode`) and does not add document history;
   Manipulate-mode Tab routes to segment-kind toggling and is undoable document
   state. Rationale: aligns users guide wording with implemented keybinding
-  contexts and avoids shortcut ambiguity.
-  Date/Author: 2026-02-26 (assistant)
+  contexts and avoids shortcut ambiguity. Date/Author: 2026-02-26 (assistant)
 
 ## Outcomes & Retrospective
 
