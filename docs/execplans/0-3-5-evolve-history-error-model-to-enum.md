@@ -120,8 +120,8 @@ Primary test anchors:
 
 Primary documentation anchors:
 
-- `docs/roadmap.md` section `0.3.5` (currently unchecked and still references
-  `Result<(), String>`).
+- `docs/roadmap.md` section `0.3.5` (checked complete and aligned to shipped
+  `HistoryError`-based behaviour).
 - `docs/gauss-architecture-design.md` section `7.3.2` (currently describes
   boundary misuse as deterministic `String` errors).
 - `docs/users-guide.md` undo/redo section (ensure user-visible behaviour text
@@ -266,7 +266,7 @@ Each commit is gated before the next commit is created.
 
 ## Idempotence and recovery
 
-- If a gate fails, inspect matching `/tmp/*-$(get-project)-${branch}.out`, fix
+- If a gate fails, inspect matching `/tmp/*-${project}-${branch}.out`, fix
   minimally, rerun the failed gate, then rerun full gates.
 - If cross-branch drift appears while implementing, refresh touchpoints with
   `grepai`/`leta` before continuing.
@@ -308,9 +308,9 @@ Each commit is gated before the next commit is created.
 
 ## Decision Log
 
-- Decision: treat this request as a plan-only phase and keep status in `DRAFT`
-  until explicit approval. Rationale: follows execplans approval gate and
-  avoids unapproved implementation drift. Date/Author: 2026-02-27 (assistant)
+- Decision: record rationale and treat this as a plan-only phase; status:
+  `COMPLETE`. Rationale: follows execplans approval gate and avoids unapproved
+  implementation drift. Date/Author: 2026-02-27 (assistant)
 
 - Decision: include a dedicated milestone for typed error propagation beyond the
   core adapter because structured handling value is lost if immediate
