@@ -139,9 +139,8 @@ Success is observable when:
 
 - Decision: treat this milestone as a behavioural parity refactor, not a
   feature enhancement pass. Rationale: roadmap `0.5.2` explicitly scopes to
-  extraction
-  - maintained functionality; later milestones handle broader behaviour.
-  Date/Author: 2026-02-27 (assistant)
+  extraction and maintained functionality; later milestones handle broader
+  behaviour. Date/Author: 2026-02-27 (assistant)
 
 - Decision: keep `Phase0Shell` as the only command-application adapter and
   error-surfacing boundary during extraction. Rationale: reduces blast radius
