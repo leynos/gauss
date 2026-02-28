@@ -119,11 +119,8 @@ impl Phase0Shell {
         Ok(())
     }
 
-    fn execute_history_operation(
-        &mut self,
-        operation: impl FnOnce(&mut crate::model::EngineState) -> Result<(), crate::model::HistoryError>,
-    ) {
-        match operation(&mut self.state) {
+    fn handle_history_result(&mut self, result: Result<(), crate::model::HistoryError>) {
+        match result {
             Ok(()) => {
                 self.last_history_error = None;
                 self.last_history_error_typed = None;
@@ -137,17 +134,13 @@ impl Phase0Shell {
     }
 
     pub(super) fn undo_document(&mut self) {
-        self.execute_history_operation(|state| {
-            state.undo_document()?;
-            Ok(())
-        });
+        let result = self.state.undo_document();
+        self.handle_history_result(result);
     }
 
     pub(super) fn redo_document(&mut self) {
-        self.execute_history_operation(|state| {
-            state.redo_document()?;
-            Ok(())
-        });
+        let result = self.state.redo_document();
+        self.handle_history_result(result);
     }
 }
 

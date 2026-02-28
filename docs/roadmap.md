@@ -134,7 +134,7 @@ phases depend upon. See architecture document §20.
   tests, behavioural BDD scenarios, and GPUI integration tests.)
 - [x] 0.3.5. Evolve history error model from `String` to enum. (Complete —
   `DocumentUndoHistory` and `EngineState` return `HistoryError` variants for
-  grouping and replay failures; history test and GPUI coverage now assert typed
+  grouping and replay failures; history tests and GPUI coverage now assert typed
   variants across happy, unhappy, and edge paths; architecture and user-facing
   docs were synchronized with shipped behaviour.)
 

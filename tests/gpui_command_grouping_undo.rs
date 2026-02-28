@@ -405,4 +405,14 @@ fn verify_history_operation_while_group_active_fails(
     );
 
     close_group_after_failed_history_operation(visual_cx, &view, operation);
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        history_before,
+        "expected closing group after failed {operation_name} to preserve history state",
+    );
+    assert_eq!(
+        read_document(visual_cx, &view),
+        doc_before_attempt,
+        "expected closing group after failed {operation_name} to leave document unchanged",
+    );
 }
