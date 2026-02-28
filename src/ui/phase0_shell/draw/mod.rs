@@ -39,21 +39,11 @@ impl Phase0Shell {
     }
 
     fn draw_click_world(&mut self, cursor_world: Vec2) -> bool {
-        let Ok(active_shape) = self.snapshot_active_pen_shape() else {
-            return false;
-        };
-
-        let needs_new_shape_id = self.state.active_path.is_none()
-            || active_shape
-                .as_ref()
-                .is_none_or(|snapshot| Some(snapshot.shape.id) != self.state.active_path);
-        let next_shape_id = if needs_new_shape_id {
-            self.state.document.allocate_shape_id()
-        } else {
-            self.state
-                .active_path
-                .unwrap_or_else(|| self.state.document.allocate_shape_id())
-        };
+        let active_shape = self.snapshot_active_pen_shape();
+        let next_shape_id = active_shape.as_ref().map_or_else(
+            || self.state.document.allocate_shape_id(),
+            |snapshot| snapshot.shape.id,
+        );
 
         let transition = Tool::transition(
             &PenTool,
@@ -76,21 +66,20 @@ impl Phase0Shell {
         self.apply_tool_commands(transition.commands)
     }
 
-    fn snapshot_active_pen_shape(&mut self) -> Result<Option<PenToolActiveShape>, ()> {
-        let Some(active_path) = self.state.active_path else {
-            return Ok(None);
-        };
+    fn snapshot_active_pen_shape(&mut self) -> Option<PenToolActiveShape> {
+        let active_path = self.state.active_path?;
         let Some(index) = self.state.document.find_index(active_path) else {
-            return Ok(None);
+            let _ = self.apply_tool_commands([ToolCommand::SetActivePath(None)]);
+            return None;
         };
         let Some(existing) = self.state.document.shape_at(index).cloned() else {
             let _ = self.apply_tool_commands([ToolCommand::SetActivePath(None)]);
-            return Err(());
+            return None;
         };
-        Ok(Some(PenToolActiveShape {
+        Some(PenToolActiveShape {
             index,
             shape: existing,
-        }))
+        })
     }
 
     pub(super) fn apply_command(&mut self, command: Command) -> Result<(), UserError> {

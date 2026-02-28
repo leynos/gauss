@@ -131,7 +131,7 @@ Success is observable when:
 - The current mode FSM and draw click workflow have different input-shape needs;
   careful context modelling is required to avoid trait churn.
 - Context-pack references were broadly accurate, with minor line-range drift in
-  two files due branch-local edits.
+  two files due to branch-local edits.
 - `rstest-bdd` step text is strict; a singular/plural mismatch (`command` vs
   `commands`) caused scenario lookup failures until both forms were bound.
 
@@ -368,7 +368,7 @@ Documentation acceptance:
 - All plan steps are intended to be re-runnable.
 - If a refactor step partially lands, rerun targeted tests first, then proceed
   to full gates.
-- If a gate fails due environment contention, record process evidence, clear
+- If a gate fails due to environment contention, record process evidence, clear
   contention, and rerun the same command to regenerate authoritative logs.
 - If behaviour parity is uncertain, do not mark roadmap done; keep ExecPlan
   status truthful and partial.

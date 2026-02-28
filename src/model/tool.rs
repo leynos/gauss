@@ -195,14 +195,15 @@ pub struct PenTool;
 impl PenTool {
     fn on_canvas_click(input: &PenToolClickInput, current_edge_mode: EdgeMode) -> ToolTransition {
         let Some(active_path) = input.active_path else {
-            return start_new_shape_transition(input);
+            return ToolTransition::with_commands(start_new_shape_commands(input));
         };
-        let Some(active_shape) = input.active_shape.as_ref() else {
-            return recover_stale_active_path_transition(input);
+        let Some(active_shape) = input
+            .active_shape
+            .as_ref()
+            .filter(|snapshot| snapshot.shape.id == active_path)
+        else {
+            return ToolTransition::with_commands(recover_stale_active_path_commands(input));
         };
-        if active_shape.shape.id != active_path {
-            return recover_stale_active_path_transition(input);
-        }
 
         if should_close_path(
             &active_shape.shape.path,
@@ -261,13 +262,13 @@ impl Tool for PenTool {
     }
 }
 
-fn recover_stale_active_path_transition(input: &PenToolClickInput) -> ToolTransition {
+fn recover_stale_active_path_commands(input: &PenToolClickInput) -> Vec<ToolCommand> {
     let mut commands = vec![ToolCommand::SetActivePath(None)];
-    commands.extend(start_new_shape_transition(input).commands);
-    ToolTransition::with_commands(commands)
+    commands.extend(start_new_shape_commands(input));
+    commands
 }
 
-fn start_new_shape_transition(input: &PenToolClickInput) -> ToolTransition {
+fn start_new_shape_commands(input: &PenToolClickInput) -> Vec<ToolCommand> {
     let shape = new_open_shape(
         input.next_shape_id,
         input.cursor_world,
@@ -279,10 +280,10 @@ fn start_new_shape_transition(input: &PenToolClickInput) -> ToolTransition {
             shape,
         },
     };
-    ToolTransition::with_commands([
+    vec![
         ToolCommand::ApplyDocumentCommand(Box::new(command)),
         ToolCommand::SetActivePath(Some(input.next_shape_id)),
-    ])
+    ]
 }
 
 /// Tool finite-state-machine contract.
