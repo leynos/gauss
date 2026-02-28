@@ -289,8 +289,8 @@ Each commit is gated before the next commit is created.
 - [x] (2026-02-28 00:31Z) Milestone 6 complete: architecture, users guide, and
   roadmap text synchronized; roadmap item `0.3.5` marked done.
 - [x] (2026-02-28 00:35Z) Milestone 7 complete: `make markdownlint`,
-  `make nixie`, `make check-fmt`, `make lint`, and `make test` passed with
-  logs under `/tmp/*-gauss-0-3-5-evolve-history-error-model-to-enum.out`.
+  `make nixie`, `make check-fmt`, `make lint`, and `make test` passed with logs
+  under `/tmp/*-gauss-0-3-5-evolve-history-error-model-to-enum.out`.
 
 ## Surprises & Discoveries
 
@@ -345,8 +345,7 @@ Delivered outcome:
 - GPUI tests now cover grouped unhappy paths for nested begin and active-group
   undo/redo behaviour.
 - Documentation was synchronized:
-  `docs/gauss-architecture-design.md`, `docs/users-guide.md`,
-  `docs/roadmap.md`.
+  `docs/gauss-architecture-design.md`, `docs/users-guide.md`, `docs/roadmap.md`.
 - Required gates passed:
   `make check-fmt`, `make lint`, `make test`, plus markdown validations
   `make markdownlint` and `make nixie`.

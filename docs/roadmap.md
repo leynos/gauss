@@ -134,9 +134,9 @@ phases depend upon. See architecture document §20.
   tests, behavioural BDD scenarios, and GPUI integration tests.)
 - [x] 0.3.5. Evolve history error model from `String` to enum. (Complete —
   `DocumentUndoHistory` and `EngineState` return `HistoryError` variants for
-  grouping and replay failures; history tests and GPUI coverage now assert typed
-  variants across happy, unhappy, and edge paths; architecture and user-facing
-  docs were synchronized with shipped behaviour.)
+  grouping and replay failures; history tests and GPUI coverage now assert
+  typed variants across happy, unhappy, and edge paths; architecture and
+  user-facing docs were synchronized with shipped behaviour.)
 
 ### 0.4. SVG load/save and metadata policy
 

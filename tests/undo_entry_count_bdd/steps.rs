@@ -116,9 +116,10 @@ pub(crate) fn when_end_group_without_begin(world: &mut EntryCountWorld) {
 #[when("I undo once")]
 pub(crate) fn when_undo_once(world: &mut EntryCountWorld) -> TestSupportResult<()> {
     world.last_grouping_error = None;
-    world.history.undo(&mut world.document).map_err(|error| {
-        TestSupportError::expectation(format!("undo failed: {error}"))
-    })
+    world
+        .history
+        .undo(&mut world.document)
+        .map_err(|error| TestSupportError::expectation(format!("undo failed: {error}")))
 }
 
 #[when("I attempt to undo while a command group is active")]
