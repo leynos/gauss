@@ -117,7 +117,7 @@ pub(crate) fn when_end_group_without_begin(world: &mut EntryCountWorld) {
 pub(crate) fn when_undo_once(world: &mut EntryCountWorld) -> TestSupportResult<()> {
     world.last_grouping_error = None;
     world.history.undo(&mut world.document).map_err(|error| {
-        TestSupportError::expectation(format!("undo failed before grouped redo check: {error}"))
+        TestSupportError::expectation(format!("undo failed: {error}"))
     })
 }
 
