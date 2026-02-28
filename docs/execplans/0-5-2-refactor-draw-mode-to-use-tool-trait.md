@@ -1,4 +1,4 @@
-# Refactor Draw Mode to PenTool FSM via Tool Trait (0.5.2)
+# Refactor draw mode to PenTool FSM via Tool trait (0.5.2)
 
 This Execution Plan (ExecPlan) is a living document. The sections
 `Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
@@ -9,7 +9,7 @@ Status: DRAFT (2026-02-27)
 
 No `PLANS.md` exists in this repository.
 
-## Purpose / Big Picture
+## Purpose / big picture
 
 Roadmap item `0.5.2` in `docs/roadmap.md` requires extracting the existing
 Draw-mode behaviour into a dedicated `PenTool` finite-state machine (FSM)
@@ -57,7 +57,7 @@ Success is observable when:
 - Do not suppress lints except as a last resort and with a tightly-scoped
   rationale.
 
-## Tolerances (Exception Triggers)
+## Tolerances (exception triggers)
 
 - Scope: if implementation requires more than 20 files or 1,100 net lines,
   stop and re-evaluate decomposition.
@@ -121,7 +121,7 @@ Success is observable when:
 - [x] (2026-02-27) Ran `make check-fmt`, `make lint`, and `make test` with
   durable logs and recorded evidence.
 
-## Surprises & Discoveries
+## Surprises & discoveries
 
 - Existing `0.5.1` boundaries already centralize tool command application in
   `Phase0Shell`; `0.5.2` is primarily extraction and parity hardening.
@@ -135,7 +135,7 @@ Success is observable when:
 - `rstest-bdd` step text is strict; a singular/plural mismatch (`command` vs
   `commands`) caused scenario lookup failures until both forms were bound.
 
-## Decision Log
+## Decision log
 
 - Decision: treat this milestone as a behavioural parity refactor, not a
   feature enhancement pass. Rationale: roadmap `0.5.2` explicitly scopes to
@@ -158,7 +158,7 @@ Success is observable when:
   behavioural parity while making the rule explicit for users and tests.
   Date/Author: 2026-02-27 (assistant)
 
-## Outcomes & Retrospective
+## Outcomes & retrospective
 
 Current outcome: implementation complete for roadmap item `0.5.2`.
 
@@ -189,7 +189,7 @@ Gate evidence:
 - `/tmp/fmt-gauss-0-5-2-refactor-draw-mode-to-use-tool-trait.out`
 - `/tmp/markdownlint-gauss-0-5-2-refactor-draw-mode-to-use-tool-trait.out`
 
-## Context and Orientation
+## Context and orientation
 
 Primary roadmap and architecture references:
 
@@ -232,7 +232,7 @@ Documentation targets:
 - `docs/execplans/0-5-2-refactor-draw-mode-to-use-tool-trait.md`
   (this living plan)
 
-## Plan of Work
+## Plan of work
 
 Stage A: PenTool design and boundary definition (no behaviour change)
 
@@ -298,7 +298,7 @@ Validation gate:
 - Documentation describes true implemented behaviour.
 - Roadmap state matches gate reality.
 
-## Concrete Steps
+## Concrete steps
 
 Working directory:
 
@@ -334,7 +334,7 @@ make test | tee /tmp/test-$(get-project)-$(git branch --show).out
 If lock contention occurs, record evidence and rerun once contention is cleared
 before closure decisions.
 
-## Validation and Acceptance
+## Validation and acceptance
 
 Behavioural acceptance:
 
@@ -365,7 +365,7 @@ Documentation acceptance:
 - User's guide updated if and only if user-visible behaviour wording changed.
 - Roadmap `0.5.2` and child bullets marked done after green gates.
 
-## Idempotence and Recovery
+## Idempotence and recovery
 
 - All plan steps are intended to be re-runnable.
 - If a refactor step partially lands, rerun targeted tests first, then proceed
@@ -375,7 +375,7 @@ Documentation acceptance:
 - If behaviour parity is uncertain, do not mark roadmap done; keep ExecPlan
   status truthful and partial.
 
-## Artifacts and Notes
+## Artifacts and notes
 
 Current planning artifacts:
 
@@ -391,7 +391,7 @@ Implementation closure artifacts to append later:
 - Key diffs and rationale snippets for architecture/doc updates
 - Final acceptance checklist with timestamps
 
-## Interfaces and Dependencies
+## Interfaces and dependencies
 
 Planned interface additions/changes (tentative until implementation confirms):
 
@@ -409,7 +409,7 @@ Dependency policy:
 - Continue using existing test dependencies (`rstest`, `rstest-bdd`, GPUI test
   framework).
 
-## Revision Note
+## Revision note
 
 - 2026-02-27: Created initial ExecPlan draft for roadmap `0.5.2`.
   - Added scope, tolerances, risks, staged implementation plan, and validation
