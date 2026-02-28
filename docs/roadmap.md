@@ -132,11 +132,12 @@ phases depend upon. See architecture document §20.
   `EngineState` now owns `DocumentUndoHistory`; `Phase0Shell` delegates
   document history operations in draw/chrome/open call paths; validated by unit
   tests, behavioural BDD scenarios, and GPUI integration tests.)
-- [x] 0.3.5. Evolve history error model from `String` to enum. (Complete —
-  `DocumentUndoHistory` and `EngineState` return `HistoryError` variants for
-  grouping and replay failures; history tests and GPUI coverage now assert
-  typed variants across happy, unhappy, and edge paths; architecture and
-  user-facing docs were synchronized with shipped behaviour.)
+- [x] 0.3.5. Evolve history error model from `String` to enum. Requires 0.3.4.
+  (Complete — `DocumentUndoHistory` and `EngineState` return `HistoryError`
+  variants for grouping and replay failures. Completion: all shipped
+  grouped-history and replay `HistoryError` variants are asserted in unit
+  tests, behavioural/BDD tests, and GPUI tests; architecture and user-facing
+  docs are synchronized with shipped behaviour.)
 
 ### 0.4. SVG load/save and metadata policy
 

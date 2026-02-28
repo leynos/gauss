@@ -233,11 +233,14 @@ Run from repository root with `pipefail` and branch-safe filenames:
 
 ```bash
 set -o pipefail
-branch="$(git branch --show | tr '/' '-')"
+branch="$(git branch --show-current 2>/dev/null | tr '/' '-')"
+branch="${branch:-detached-head}"
+project="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")"
+project="${project:-unknown-project}"
 
-make check-fmt | tee "/tmp/check-fmt-$(get-project)-${branch}.out"
-make lint | tee "/tmp/lint-$(get-project)-${branch}.out"
-make test | tee "/tmp/test-$(get-project)-${branch}.out"
+make check-fmt | tee "/tmp/check-fmt-${project}-${branch}.out"
+make lint | tee "/tmp/lint-${project}-${branch}.out"
+make test | tee "/tmp/test-${project}-${branch}.out"
 ```
 
 Acceptance criteria:
