@@ -69,6 +69,26 @@ fn open_shape(id: ShapeId, anchors: Vec<Vec2>, edge_mode: EdgeMode) -> Shape {
     }
 }
 
+fn set_active_open_path(world: &mut PenToolWorld, id: ShapeId, index: usize, anchors: Vec<Vec2>) {
+    world.active_path = Some(id);
+    world.active_shape = Some(PenToolActiveShape {
+        index,
+        shape: open_shape(id, anchors, world.edge_mode),
+    });
+}
+
+fn assert_command_emitted(
+    world: &PenToolWorld,
+    predicate: impl FnMut(&ToolCommand) -> bool,
+    error_message: &str,
+) -> TestSupportResult<()> {
+    if transition(world)?.commands.iter().any(predicate) {
+        return Ok(());
+    }
+
+    Err(TestSupportError::expectation(error_message))
+}
+
 #[given("the pen tool mode is Draw")]
 fn given_tool_mode_draw(world: &mut PenToolWorld) {
     world.mode = ToolMode::Draw;
@@ -103,34 +123,26 @@ fn given_stale_active_path(world: &mut PenToolWorld) {
 
 #[given("a pen active open path with 2 anchors exists")]
 fn given_active_open_path_two_anchors(world: &mut PenToolWorld) {
-    let id = shape_id(701);
-    world.active_path = Some(id);
-    world.active_shape = Some(PenToolActiveShape {
-        index: 5,
-        shape: open_shape(
-            id,
-            vec![Vec2::new(0.0, 0.0), Vec2::new(20.0, 0.0)],
-            world.edge_mode,
-        ),
-    });
+    set_active_open_path(
+        world,
+        shape_id(701),
+        5,
+        vec![Vec2::new(0.0, 0.0), Vec2::new(20.0, 0.0)],
+    );
 }
 
 #[given("a pen active open path with 3 anchors exists")]
 fn given_active_open_path_three_anchors(world: &mut PenToolWorld) {
-    let id = shape_id(702);
-    world.active_path = Some(id);
-    world.active_shape = Some(PenToolActiveShape {
-        index: 6,
-        shape: open_shape(
-            id,
-            vec![
-                Vec2::new(0.0, 0.0),
-                Vec2::new(30.0, 0.0),
-                Vec2::new(20.0, 25.0),
-            ],
-            world.edge_mode,
-        ),
-    });
+    set_active_open_path(
+        world,
+        shape_id(702),
+        6,
+        vec![
+            Vec2::new(0.0, 0.0),
+            Vec2::new(30.0, 0.0),
+            Vec2::new(20.0, 25.0),
+        ],
+    );
 }
 
 #[given("the pen click is at ({x:f32}, {y:f32})")]
@@ -188,84 +200,71 @@ fn assert_command_count(world: &PenToolWorld, expected_count: usize) -> TestSupp
 
 #[then("the pen transition should emit InsertShape")]
 fn then_emit_insert_shape(world: &PenToolWorld) -> TestSupportResult<()> {
-    if transition(world)?.commands.iter().any(
-        |command| matches!(command, ToolCommand::ApplyDocumentCommand(document_command) if matches!(document_command.as_ref(), gauss::model::Command::InsertShape { .. })),
-    ) {
-        return Ok(());
-    }
-
-    Err(TestSupportError::expectation(
+    assert_command_emitted(
+        world,
+        |command| {
+            matches!(command, ToolCommand::ApplyDocumentCommand(document_command) if matches!(
+                document_command.as_ref(),
+                gauss::model::Command::InsertShape { .. }
+            ))
+        },
         "expected InsertShape command to be emitted",
-    ))
+    )
 }
 
 #[then("the pen transition should emit InsertAnchor")]
 fn then_emit_insert_anchor(world: &PenToolWorld) -> TestSupportResult<()> {
-    if transition(world)?.commands.iter().any(
-        |command| matches!(command, ToolCommand::ApplyDocumentCommand(document_command) if matches!(document_command.as_ref(), gauss::model::Command::InsertAnchor { .. })),
-    ) {
-        return Ok(());
-    }
-
-    Err(TestSupportError::expectation(
+    assert_command_emitted(
+        world,
+        |command| {
+            matches!(command, ToolCommand::ApplyDocumentCommand(document_command) if matches!(
+                document_command.as_ref(),
+                gauss::model::Command::InsertAnchor { .. }
+            ))
+        },
         "expected InsertAnchor command to be emitted",
-    ))
+    )
 }
 
 #[then("the pen transition should emit ClosePath")]
 fn then_emit_close_path(world: &PenToolWorld) -> TestSupportResult<()> {
-    if transition(world)?.commands.iter().any(
-        |command| matches!(command, ToolCommand::ApplyDocumentCommand(document_command) if matches!(document_command.as_ref(), gauss::model::Command::ClosePath { .. })),
-    ) {
-        return Ok(());
-    }
-
-    Err(TestSupportError::expectation(
+    assert_command_emitted(
+        world,
+        |command| {
+            matches!(command, ToolCommand::ApplyDocumentCommand(document_command) if matches!(
+                document_command.as_ref(),
+                gauss::model::Command::ClosePath { .. }
+            ))
+        },
         "expected ClosePath command to be emitted",
-    ))
+    )
 }
 
 #[then("the pen transition should emit SetToolMode Manipulate")]
 fn then_emit_set_tool_mode_manipulate(world: &PenToolWorld) -> TestSupportResult<()> {
-    if transition(world)?
-        .commands
-        .contains(&ToolCommand::SetToolMode(ToolMode::Manipulate))
-    {
-        return Ok(());
-    }
-
-    Err(TestSupportError::expectation(
+    assert_command_emitted(
+        world,
+        |command| matches!(command, ToolCommand::SetToolMode(ToolMode::Manipulate)),
         "expected SetToolMode(Manipulate) to be emitted",
-    ))
+    )
 }
 
 #[then("the pen transition should emit SetActivePath None")]
 fn then_emit_set_active_path_none(world: &PenToolWorld) -> TestSupportResult<()> {
-    if transition(world)?
-        .commands
-        .contains(&ToolCommand::SetActivePath(None))
-    {
-        return Ok(());
-    }
-
-    Err(TestSupportError::expectation(
+    assert_command_emitted(
+        world,
+        |command| matches!(command, ToolCommand::SetActivePath(None)),
         "expected SetActivePath(None) to be emitted",
-    ))
+    )
 }
 
 #[then("the pen transition should emit SetActivePath Some")]
 fn then_emit_set_active_path_some(world: &PenToolWorld) -> TestSupportResult<()> {
-    if transition(world)?
-        .commands
-        .iter()
-        .any(|command| matches!(command, ToolCommand::SetActivePath(Some(_))))
-    {
-        return Ok(());
-    }
-
-    Err(TestSupportError::expectation(
+    assert_command_emitted(
+        world,
+        |command| matches!(command, ToolCommand::SetActivePath(Some(_))),
         "expected SetActivePath(Some(_)) to be emitted",
-    ))
+    )
 }
 
 #[then("the pen transition should emit no commands")]
