@@ -643,7 +643,7 @@ Tools do not directly mutate state. Instead, they emit `ToolCommand` outputs:
 - editor-state transitions (for example, mode changes) emit explicit
   `ToolCommand::Set*` variants
 
-Implementation status (roadmap 0.5.1):
+Implementation status (roadmap 0.5.1 and 0.5.2):
 
 - `src/model/tool.rs` now defines the Tool FSM contract via `Tool`,
   `ToolInputEvent`, `ToolCommand`, and `ToolTransition`.
@@ -652,8 +652,24 @@ Implementation status (roadmap 0.5.1):
 - `Phase0Shell` applies emitted `ToolCommand` values in one place via
   `handle_tool_input_event` and `apply_tool_commands`, keeping UI handlers free
   of direct tool-state mutation.
-- This milestone defines the boundary only. Full `PenTool` and `SelectTool` FSM
-  extraction remains roadmap items `0.5.2` and `0.5.3`.
+- `PenTool` draw-click transitions now live in `src/model/tool.rs` as a
+  dedicated FSM that implements `Tool`.
+- Pen geometry operations used by draw-click transitions are extracted to
+  `src/model/pen_geometry.rs` so the behaviour is GPUI-independent and directly
+  unit-testable.
+- `Phase0Shell` remains an adapter: it snapshots click context into
+  `PenToolClickInput`, executes `PenTool::transition`, and applies emitted
+  `ToolCommand` outputs through `apply_tool_commands`.
+- The remaining tool-framework milestone after this extraction is `0.5.3`
+  (`SelectTool` extraction), with shared hit testing still tracked by `0.5.4`.
+
+Design decision (2026-02-27):
+
+- **Decision**: model Pen draw-click input as an immutable snapshot
+  (`PenToolClickInput`) passed through `ToolInputEvent::PenCanvasClicked`.
+- **Rationale**: this preserves deterministic command emission, keeps tool
+  logic free of UI/runtime dependencies, and avoids direct state mutation by
+  delegating all effects to explicit `ToolCommand` outputs.
 
 ______________________________________________________________________
 
@@ -1426,10 +1442,9 @@ broad feature work accelerates:
 7. **i18n scaffolding** (string catalog, localized command names)
 8. **Widget capability audit** (GPUI Component vs custom controls plan)
 
-Status update: roadmap item `0.5.1` implemented the Tool trait and command
-emission boundary. Remaining tool-framework milestones are `0.5.2` (PenTool
-extraction), `0.5.3` (SelectTool extraction), and `0.5.4` (shared hit-test
-service).
+Status update: roadmap items `0.5.1` and `0.5.2` implemented the Tool trait
+boundary and PenTool extraction. Remaining tool-framework milestones are
+`0.5.3` (SelectTool extraction) and `0.5.4` (shared hit-test service).
 
 ______________________________________________________________________
 

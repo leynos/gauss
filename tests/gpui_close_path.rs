@@ -220,3 +220,45 @@ fn closing_in_bezier_mode_uses_cubic_closing_segment(cx: &mut TestAppContext) {
         "expected closing cubic segment to set handle_out on the last anchor"
     );
 }
+
+#[gpui::test]
+fn clicking_first_anchor_before_third_point_does_not_close_path(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
+    let (p1, p2, _p3) = triangle_points(&bounds);
+
+    draw_point(visual_cx, p1);
+    draw_point(visual_cx, p2);
+
+    draw_point(visual_cx, p1);
+
+    let doc_after_click = visual_cx.read(|app| view.read(app).document().clone());
+    let shape = require_draw_shape(
+        &doc_after_click,
+        "after clicking first anchor with two points",
+    )
+    .expect("expected draw shape after third click on first anchor");
+
+    assert!(
+        !shape.path.closed,
+        "expected path to remain open until at least three anchors existed before the close check"
+    );
+    assert_eq!(
+        shape.path.anchors.len(),
+        3,
+        "expected click to append a third anchor instead of closing"
+    );
+    assert_eq!(
+        shape.path.segments.len(),
+        2,
+        "expected two segments after three anchor placements"
+    );
+    assert!(
+        shape.style.fill.is_none(),
+        "expected no fill while the path remains open"
+    );
+}

@@ -158,6 +158,7 @@ fn given_tool_with_failing_document_command(tool_command_world: &mut ToolCommand
 fn when_transition_is_evaluated(world: &mut ToolFsmWorld) -> TestSupportResult<()> {
     let input_event = world
         .input_event
+        .clone()
         .ok_or_else(|| TestSupportError::missing("input_event", "transition evaluation"))?;
 
     let fsm = ToolModeFsm;

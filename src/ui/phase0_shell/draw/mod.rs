@@ -8,23 +8,12 @@
 //! - When in "Bezier (auto)" mode, we synthesise cubic handles using a
 //!   Catmull–Rom-to-cubic conversion.
 
-#![expect(
-    clippy::float_arithmetic,
-    reason = "draw mode operates on floating-point geometry and handles"
-)]
-
 use crate::model::{
-    Anchor, Command, EdgeMode, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, ShapeInsertion,
-    ToolCommand, ToolInputEvent, UserError, Vec2,
+    Command, EdgeMode, PenTool, PenToolActiveShape, PenToolClickInput, Tool, ToolCommand,
+    ToolInputEvent, UserError, Vec2,
 };
 
 use super::Phase0Shell;
-
-mod handles;
-
-use self::handles::{clear_line_segment_handles, close_shape, update_catmull_rom_handles};
-
-const SNAP_RADIUS_PX: f32 = 10.0;
 
 // Re-export tool types for backward compatibility within the UI layer.
 // These are now defined in src/model/tool.rs for GPUI-independence.
@@ -50,66 +39,47 @@ impl Phase0Shell {
     }
 
     fn draw_click_world(&mut self, cursor_world: Vec2) -> bool {
-        let Some(active) = self.state.active_path else {
-            return self.start_new_open_shape(cursor_world);
-        };
+        let active_shape = self.snapshot_active_pen_shape();
+        let next_shape_id = active_shape.as_ref().map_or_else(
+            || self.state.document.allocate_shape_id(),
+            |snapshot| snapshot.shape.id,
+        );
 
-        let Some(index) = self.state.document.find_index(active) else {
-            let _ = self.apply_tool_commands([ToolCommand::SetActivePath(None)]);
-            return self.start_new_open_shape(cursor_world);
-        };
-
-        let Some(existing) = self.state.document.shape_at(index).cloned() else {
-            let _ = self.apply_tool_commands([ToolCommand::SetActivePath(None)]);
-            return false;
-        };
-
-        if should_close_path(&existing.path, cursor_world, self.state.viewport.zoom()) {
-            let closed = close_shape(
-                existing.clone(),
-                segment_kind_for_edge_mode(self.state.edge_mode),
-            );
-            let command = Command::ClosePath {
-                replacement: crate::model::ShapeReplacement {
-                    shape_index: index,
-                    old_shape: existing,
-                    new_shape: closed,
-                },
-            };
-            if !self.apply_tool_commands([ToolCommand::ApplyDocumentCommand(Box::new(command))]) {
-                return false;
-            }
-            let _ = self.handle_tool_input_event(ToolInputEvent::ClosePathCommitted);
-            return true;
-        }
-
-        let appended = append_anchor(existing.clone(), cursor_world, self.state.edge_mode);
-        let command = Command::InsertAnchor {
-            replacement: crate::model::ShapeReplacement {
-                shape_index: index,
-                old_shape: existing,
-                new_shape: appended,
+        let transition = Tool::transition(
+            &PenTool,
+            self.state.tool_mode,
+            self.state.edge_mode,
+            ToolInputEvent::PenCanvasClicked {
+                input: Box::new(PenToolClickInput {
+                    cursor_world,
+                    zoom: self.state.viewport.zoom(),
+                    current_style: self.state.current_style.clone(),
+                    active_path: self.state.active_path,
+                    active_shape,
+                    next_shape_id,
+                    document_len: self.state.document.len(),
+                    snap_radius_px: PenToolClickInput::DEFAULT_SNAP_RADIUS_PX,
+                }),
             },
-        };
-        self.apply_tool_commands([ToolCommand::ApplyDocumentCommand(Box::new(command))])
+        );
+
+        self.apply_tool_commands(transition.commands)
     }
 
-    fn start_new_open_shape(&mut self, cursor_world: Vec2) -> bool {
-        let shape_id = self.state.document.allocate_shape_id();
-        let shape = new_open_shape(shape_id, cursor_world, self.state.current_style.clone());
-        let index = self.state.document.len();
-
-        let command = Command::InsertShape {
-            insertion: ShapeInsertion { index, shape },
+    fn snapshot_active_pen_shape(&mut self) -> Option<PenToolActiveShape> {
+        let active_path = self.state.active_path?;
+        let Some(index) = self.state.document.find_index(active_path) else {
+            let _ = self.apply_tool_commands([ToolCommand::SetActivePath(None)]);
+            return None;
         };
-
-        if !self.apply_tool_commands([
-            ToolCommand::ApplyDocumentCommand(Box::new(command)),
-            ToolCommand::SetActivePath(Some(shape_id)),
-        ]) {
-            return false;
-        }
-        true
+        let Some(existing) = self.state.document.shape_at(index).cloned() else {
+            let _ = self.apply_tool_commands([ToolCommand::SetActivePath(None)]);
+            return None;
+        };
+        Some(PenToolActiveShape {
+            index,
+            shape: existing,
+        })
     }
 
     pub(super) fn apply_command(&mut self, command: Command) -> Result<(), UserError> {
@@ -137,62 +107,4 @@ impl Phase0Shell {
             }
         }
     }
-}
-
-fn new_open_shape(id: ShapeId, first_anchor: Vec2, style: PaintStyle) -> Shape {
-    Shape {
-        id,
-        z: 0,
-        style,
-        path: PathGeom {
-            anchors: vec![Anchor::new(first_anchor)],
-            segments: Vec::new(),
-            closed: false,
-            closing_segment: SegmentKind::Line,
-        },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
-}
-
-const fn segment_kind_for_edge_mode(edge_mode: DrawEdgeMode) -> SegmentKind {
-    match edge_mode {
-        DrawEdgeMode::Line => SegmentKind::Line,
-        DrawEdgeMode::BezierAuto => SegmentKind::Cubic,
-    }
-}
-
-fn append_anchor(mut shape: Shape, pos: Vec2, edge_mode: DrawEdgeMode) -> Shape {
-    let new_anchor_index = shape.path.anchors.len();
-    shape.path.anchors.push(Anchor::new(pos));
-    shape
-        .path
-        .segments
-        .push(segment_kind_for_edge_mode(edge_mode));
-
-    match edge_mode {
-        DrawEdgeMode::Line => {
-            clear_line_segment_handles(&mut shape.path, new_anchor_index);
-        }
-        DrawEdgeMode::BezierAuto => {
-            update_catmull_rom_handles(&mut shape.path, new_anchor_index);
-        }
-    }
-
-    shape
-}
-
-fn should_close_path(path: &PathGeom, cursor_world: Vec2, zoom: f32) -> bool {
-    let Some(first) = path.anchors.first() else {
-        return false;
-    };
-
-    if path.anchors.len() < 3 {
-        return false;
-    }
-
-    let snap_world = SNAP_RADIUS_PX / zoom;
-    first.pos.distance(cursor_world) <= snap_world
 }
