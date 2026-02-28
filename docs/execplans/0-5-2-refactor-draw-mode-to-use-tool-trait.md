@@ -150,7 +150,7 @@ Success is observable when:
 
 - Decision: require a dedicated Pen-focused behavioural test surface in addition
   to existing mode-FSM scenarios. Rationale: current `tool_fsm` coverage
-  validates mode transitions but not full click-path command sequencing.
+  validates mode transitions, but not full click-path command sequencing.
   Date/Author: 2026-02-27 (assistant)
 
 - Decision: keep close-path eligibility unchanged (minimum three anchors before
@@ -240,7 +240,8 @@ Stage A: PenTool design and boundary definition (no behaviour change)
   needed for click-path transitions.
 - Keep deterministic output as ordered `ToolCommand` emission.
 - Preserve existing mode FSM (`ToolModeFsm`) responsibilities for global
-  mode-switch events while introducing Pen-specific transitions for draw clicks.
+  mode-switch events, while introducing Pen-specific transitions for draw
+  clicks.
 - Capture the trait/input design decision in
   `docs/gauss-architecture-design.md`.
 
