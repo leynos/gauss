@@ -113,6 +113,13 @@ fn apply_grouped_moves_for_test(
     Ok(())
 }
 
+fn read_last_history_error(
+    visual_cx: &VisualTestContext,
+    view: &Entity<Phase0Shell>,
+) -> Option<HistoryError> {
+    visual_cx.read(|app| view.read(app).last_history_error_typed_for_tests().cloned())
+}
+
 #[gpui::test]
 fn grouped_document_commands_collapse_to_one_undo_step(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -201,4 +208,166 @@ fn end_group_without_begin_returns_error_and_preserves_history(cx: &mut TestAppC
         history_before,
         "expected failed grouping boundary call to leave history unchanged",
     );
+}
+
+#[gpui::test]
+fn nested_begin_group_returns_error_and_preserves_history(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) =
+        cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    let history_before = read_history_len(visual_cx, &view);
+    let first_begin = visual_cx.update(|_window, app| {
+        view.update(app, |shell, _view_cx| {
+            shell.begin_document_command_group_for_tests()
+        })
+    });
+    first_begin.expect("expected first begin group call to succeed");
+    visual_cx.run_until_parked();
+
+    let second_begin = visual_cx.update(|_window, app| {
+        view.update(app, |shell, _view_cx| {
+            shell.begin_document_command_group_for_tests()
+        })
+    });
+    assert_eq!(
+        second_begin.expect_err("expected nested begin group call to fail"),
+        HistoryError::GroupAlreadyActive,
+    );
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        history_before,
+        "expected nested begin failure to preserve history state",
+    );
+
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _view_cx| {
+            shell
+                .end_document_command_group_for_tests()
+                .expect("expected active group to remain closable");
+        });
+    });
+    visual_cx.run_until_parked();
+}
+
+#[gpui::test]
+fn undo_while_group_active_sets_error_and_preserves_document(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) =
+        cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    let shape = shape_id(42);
+    replace_document_for_grouping_test(visual_cx, &view, document_with_one_shape(shape));
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _view_cx| {
+            shell
+                .apply_command_for_tests(move_shape_command(shape, Vec2::new(3.0, 0.0)))
+                .expect("expected setup move to succeed");
+            shell
+                .begin_document_command_group_for_tests()
+                .expect("expected begin group before undo attempt to succeed");
+        });
+    });
+    visual_cx.run_until_parked();
+
+    let history_before = read_history_len(visual_cx, &view);
+    let doc_before_undo_attempt = read_document(visual_cx, &view);
+
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _view_cx| {
+            shell.undo_document_for_tests();
+        });
+    });
+    visual_cx.run_until_parked();
+
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        history_before,
+        "expected undo while grouped to preserve history state",
+    );
+    assert_eq!(
+        read_document(visual_cx, &view),
+        doc_before_undo_attempt,
+        "expected undo while grouped to leave document unchanged",
+    );
+    assert_eq!(
+        read_last_history_error(visual_cx, &view),
+        Some(HistoryError::UndoWhileGroupActive),
+    );
+
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _view_cx| {
+            shell
+                .end_document_command_group_for_tests()
+                .expect("expected group to remain closable after failed undo");
+        });
+    });
+    visual_cx.run_until_parked();
+}
+
+#[gpui::test]
+fn redo_while_group_active_sets_error_and_preserves_document(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) =
+        cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    let shape = shape_id(42);
+    replace_document_for_grouping_test(visual_cx, &view, document_with_one_shape(shape));
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _view_cx| {
+            shell
+                .apply_command_for_tests(move_shape_command(shape, Vec2::new(2.0, 1.0)))
+                .expect("expected setup move to succeed");
+        });
+    });
+    visual_cx.run_until_parked();
+    simulate_document_undo(visual_cx);
+
+    let history_before = read_history_len(visual_cx, &view);
+    let doc_before_redo_attempt = read_document(visual_cx, &view);
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _view_cx| {
+            shell
+                .begin_document_command_group_for_tests()
+                .expect("expected begin group before redo attempt to succeed");
+        });
+    });
+    visual_cx.run_until_parked();
+
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _view_cx| {
+            shell.redo_document_for_tests();
+        });
+    });
+    visual_cx.run_until_parked();
+
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        history_before,
+        "expected redo while grouped to preserve history state",
+    );
+    assert_eq!(
+        read_document(visual_cx, &view),
+        doc_before_redo_attempt,
+        "expected redo while grouped to leave document unchanged",
+    );
+    assert_eq!(
+        read_last_history_error(visual_cx, &view),
+        Some(HistoryError::RedoWhileGroupActive),
+    );
+
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _view_cx| {
+            shell
+                .end_document_command_group_for_tests()
+                .expect("expected group to remain closable after failed redo");
+        });
+    });
+    visual_cx.run_until_parked();
 }

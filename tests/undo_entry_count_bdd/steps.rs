@@ -1,14 +1,14 @@
 //! Given / When / Then step definitions for undo entry count scenarios.
 
-use gauss::model::history::{GROUPING_ERROR_GROUP_ALREADY_ACTIVE, GROUPING_ERROR_NO_ACTIVE_GROUP};
+use gauss::model::history::HistoryError;
 use gauss::model::{
     Anchor, Command, DeletedShape, DocumentUndoHistory, HandleKind, HandleMovement, PaintStyle,
     ReorderOp, Rgba, SegmentChange, SegmentKind, ShapeInsertion, ShapeMovement, ShapeReplacement,
     StyleChange, Vec2,
 };
 use rstest_bdd_macros::{given, then, when};
-use test_support::TestSupportResult;
 use test_support::shapes::{open_triangle, sample_shape, shape_id, shape_with_handles};
+use test_support::{TestSupportError, TestSupportResult};
 
 use super::{
     EntryCountWorld, apply_and_record, assert_history_length, assert_last_grouping_error,
@@ -28,10 +28,12 @@ fn apply_move_shapes_command(
     apply_and_record(world, cmd)
 }
 
-fn resolve_grouping_error(expected: &str) -> Option<&'static str> {
+fn resolve_grouping_error(expected: &str) -> Option<HistoryError> {
     match expected {
-        "group-already-active" => Some(GROUPING_ERROR_GROUP_ALREADY_ACTIVE),
-        "no-active-group" => Some(GROUPING_ERROR_NO_ACTIVE_GROUP),
+        "group-already-active" => Some(HistoryError::GroupAlreadyActive),
+        "no-active-group" => Some(HistoryError::NoActiveGroup),
+        "undo-while-group-active" => Some(HistoryError::UndoWhileGroupActive),
+        "redo-while-group-active" => Some(HistoryError::RedoWhileGroupActive),
         _ => None,
     }
 }
@@ -95,11 +97,7 @@ pub(crate) fn when_begin_command_group(world: &mut EntryCountWorld) -> TestSuppo
 
 #[when("I begin another command group")]
 pub(crate) fn when_begin_another_command_group(world: &mut EntryCountWorld) {
-    world.last_grouping_error = world
-        .history
-        .begin_group()
-        .err()
-        .map(|error| error.to_string());
+    world.last_grouping_error = world.history.begin_group().err();
 }
 
 #[when("I end the active command group")]
@@ -112,11 +110,25 @@ pub(crate) fn when_end_active_command_group(world: &mut EntryCountWorld) -> Test
 
 #[when("I end a command group without beginning one")]
 pub(crate) fn when_end_group_without_begin(world: &mut EntryCountWorld) {
-    world.last_grouping_error = world
-        .history
-        .end_group()
-        .err()
-        .map(|error| error.to_string());
+    world.last_grouping_error = world.history.end_group().err();
+}
+
+#[when("I undo once")]
+pub(crate) fn when_undo_once(world: &mut EntryCountWorld) -> TestSupportResult<()> {
+    world.last_grouping_error = None;
+    world.history.undo(&mut world.document).map_err(|error| {
+        TestSupportError::expectation(format!("undo failed before grouped redo check: {error}"))
+    })
+}
+
+#[when("I attempt to undo while a command group is active")]
+pub(crate) fn when_undo_while_group_active(world: &mut EntryCountWorld) {
+    world.last_grouping_error = world.history.undo(&mut world.document).err();
+}
+
+#[when("I attempt to redo while a command group is active")]
+pub(crate) fn when_redo_while_group_active(world: &mut EntryCountWorld) {
+    world.last_grouping_error = world.history.redo(&mut world.document).err();
 }
 
 #[when("I apply a MoveAnchor command")]
@@ -309,8 +321,10 @@ pub(crate) fn then_grouping_error_is(
     world: &EntryCountWorld,
     expected: String,
 ) -> TestSupportResult<()> {
-    let expected_resolved = resolve_grouping_error(&expected).unwrap_or(expected.as_str());
-    assert_last_grouping_error(world, expected_resolved)
+    let expected_error = resolve_grouping_error(&expected).ok_or_else(|| {
+        TestSupportError::expectation(format!("unknown grouping error token '{expected}'"))
+    })?;
+    assert_last_grouping_error(world, &expected_error)
 }
 
 #[cfg(test)]
@@ -357,7 +371,7 @@ mod tests {
 
         when_end_group_without_begin(&mut world);
 
-        assert_last_grouping_error(&world, GROUPING_ERROR_NO_ACTIVE_GROUP)
+        assert_last_grouping_error(&world, &HistoryError::NoActiveGroup)
             .expect("expected deterministic grouping error");
         assert_eq!(world.history.len(), 0);
     }
@@ -370,7 +384,7 @@ mod tests {
 
         when_begin_another_command_group(&mut world);
 
-        assert_last_grouping_error(&world, GROUPING_ERROR_GROUP_ALREADY_ACTIVE)?;
+        assert_last_grouping_error(&world, &HistoryError::GroupAlreadyActive)?;
         if !world.history.is_empty() {
             return Err(test_support::TestSupportError::expectation(
                 "history should remain unchanged on nested begin",

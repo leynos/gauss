@@ -6,6 +6,7 @@
 
 mod steps;
 
+use gauss::model::history::HistoryError;
 use gauss::model::{Command, Document, DocumentUndoHistory};
 use rstest::fixture;
 use rstest_bdd_macros::scenario;
@@ -15,7 +16,7 @@ use test_support::{TestSupportError, TestSupportResult};
 pub(crate) struct EntryCountWorld {
     pub(crate) document: Document,
     pub(crate) history: DocumentUndoHistory,
-    pub(crate) last_grouping_error: Option<String>,
+    pub(crate) last_grouping_error: Option<HistoryError>,
 }
 
 #[fixture]
@@ -65,16 +66,16 @@ pub(crate) fn get_first_shape_id(
 
 pub(crate) fn assert_last_grouping_error(
     world: &EntryCountWorld,
-    expected: &str,
+    expected: &HistoryError,
 ) -> TestSupportResult<()> {
-    let actual = world.last_grouping_error.as_deref().ok_or_else(|| {
+    let actual = world.last_grouping_error.as_ref().ok_or_else(|| {
         TestSupportError::expectation("expected a grouping error, but none was captured")
     })?;
     if actual == expected {
         Ok(())
     } else {
         Err(TestSupportError::expectation(format!(
-            "expected grouping error '{expected}', got '{actual}'"
+            "expected grouping error '{expected:?}', got '{actual:?}'"
         )))
     }
 }
@@ -199,5 +200,21 @@ fn ending_group_without_begin_reports_an_error_and_keeps_history_unchanged(world
     name = "Nested group begin reports an error and keeps history unchanged"
 )]
 fn nested_group_begin_reports_an_error_and_keeps_history_unchanged(world: EntryCountWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/undo_entry_count.feature",
+    name = "Undo while group is active reports an error and keeps history unchanged"
+)]
+fn undo_while_group_is_active_reports_an_error_and_keeps_history_unchanged(world: EntryCountWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/undo_entry_count.feature",
+    name = "Redo while group is active reports an error and keeps history unchanged"
+)]
+fn redo_while_group_is_active_reports_an_error_and_keeps_history_unchanged(world: EntryCountWorld) {
     let _ = world;
 }
