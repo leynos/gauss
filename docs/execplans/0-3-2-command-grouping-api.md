@@ -19,8 +19,8 @@ After this work:
 - `DocumentUndoHistory` exposes explicit grouping boundaries.
 - Commands recorded inside one open group collapse to one undoable step.
 - Grouping behaviour is validated at three levels: unit (`rstest`),
-  behavioural (`rstest-bdd` v0.5.0), and GPU-accelerated UI (GPUI)
-  integration tests.
+  behavioural (`rstest-bdd` v0.5.0), and GPU-accelerated UI (GPUI) integration
+  tests.
 - Architecture and user docs describe grouping semantics and error handling.
 - Roadmap 0.3.2 is marked done only after all gates pass.
 

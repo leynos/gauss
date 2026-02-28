@@ -144,6 +144,9 @@ pre-drag positions.
 commands. Gauss groups these commands into one document-history entry, so one
 Undo reverts the whole operation rather than partially reverting it. Grouped
 entries are only committed when the operation closes successfully.
+Invalid grouped-history boundaries are rejected atomically, so failed grouped
+undo/redo interactions do not partially commit document changes or history
+entries.
 
 **Historical undo behaviour:** Document undo uses historical undo — all
 commands remain navigable even after branching. For example, if actions A, B
