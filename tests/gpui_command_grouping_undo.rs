@@ -120,6 +120,12 @@ fn read_last_history_error(
     visual_cx.read(|app| view.read(app).last_history_error_typed_for_tests().cloned())
 }
 
+#[derive(Clone, Copy)]
+enum HistoryOperation {
+    Undo,
+    Redo,
+}
+
 #[gpui::test]
 fn grouped_document_commands_collapse_to_one_undo_step(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -254,63 +260,113 @@ fn nested_begin_group_returns_error_and_preserves_history(cx: &mut TestAppContex
 
 #[gpui::test]
 fn undo_while_group_active_sets_error_and_preserves_document(cx: &mut TestAppContext) {
-    init_test_app(cx);
+    verify_history_operation_while_group_active_fails(cx, HistoryOperation::Undo);
+}
 
-    let (view, visual_cx) =
-        cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
-    ensure_initial_draw(visual_cx);
+#[gpui::test]
+fn redo_while_group_active_sets_error_and_preserves_document(cx: &mut TestAppContext) {
+    verify_history_operation_while_group_active_fails(cx, HistoryOperation::Redo);
+}
 
-    let shape = shape_id(42);
-    replace_document_for_grouping_test(visual_cx, &view, document_with_one_shape(shape));
+fn assert_history_action_succeeds<E>(action: Result<(), E>, context: &str)
+where
+    E: std::fmt::Display,
+{
+    if let Err(error) = action {
+        panic!("{context}: {error}");
+    }
+}
+
+fn setup_history_operation_while_group_active_fixture(
+    visual_cx: &mut VisualTestContext,
+    view: &Entity<Phase0Shell>,
+    shape: ShapeId,
+    operation: HistoryOperation,
+) {
+    match operation {
+        HistoryOperation::Undo => {
+            visual_cx.update(|_window, app| {
+                view.update(app, |shell, _view_cx| {
+                    assert_history_action_succeeds(
+                        shell.apply_command_for_tests(move_shape_command(
+                            shape,
+                            Vec2::new(3.0, 0.0),
+                        )),
+                        "expected setup move to succeed",
+                    );
+                    assert_history_action_succeeds(
+                        shell.begin_document_command_group_for_tests(),
+                        "expected begin group before undo attempt to succeed",
+                    );
+                });
+            });
+            visual_cx.run_until_parked();
+        }
+        HistoryOperation::Redo => {
+            visual_cx.update(|_window, app| {
+                view.update(app, |shell, _view_cx| {
+                    assert_history_action_succeeds(
+                        shell.apply_command_for_tests(move_shape_command(
+                            shape,
+                            Vec2::new(2.0, 1.0),
+                        )),
+                        "expected setup move to succeed",
+                    );
+                });
+            });
+            visual_cx.run_until_parked();
+            simulate_document_undo(visual_cx);
+            visual_cx.update(|_window, app| {
+                view.update(app, |shell, _view_cx| {
+                    assert_history_action_succeeds(
+                        shell.begin_document_command_group_for_tests(),
+                        "expected begin group before redo attempt to succeed",
+                    );
+                });
+            });
+            visual_cx.run_until_parked();
+        }
+    }
+}
+
+fn execute_history_operation_under_active_group(
+    visual_cx: &mut VisualTestContext,
+    view: &Entity<Phase0Shell>,
+    operation: HistoryOperation,
+) {
     visual_cx.update(|_window, app| {
-        view.update(app, |shell, _view_cx| {
-            shell
-                .apply_command_for_tests(move_shape_command(shape, Vec2::new(3.0, 0.0)))
-                .expect("expected setup move to succeed");
-            shell
-                .begin_document_command_group_for_tests()
-                .expect("expected begin group before undo attempt to succeed");
-        });
-    });
-    visual_cx.run_until_parked();
-
-    let history_before = read_history_len(visual_cx, &view);
-    let doc_before_undo_attempt = read_document(visual_cx, &view);
-
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _view_cx| {
-            shell.undo_document_for_tests();
-        });
-    });
-    visual_cx.run_until_parked();
-
-    assert_eq!(
-        read_history_len(visual_cx, &view),
-        history_before,
-        "expected undo while grouped to preserve history state",
-    );
-    assert_eq!(
-        read_document(visual_cx, &view),
-        doc_before_undo_attempt,
-        "expected undo while grouped to leave document unchanged",
-    );
-    assert_eq!(
-        read_last_history_error(visual_cx, &view),
-        Some(HistoryError::UndoWhileGroupActive),
-    );
-
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _view_cx| {
-            shell
-                .end_document_command_group_for_tests()
-                .expect("expected group to remain closable after failed undo");
+        view.update(app, |shell, _view_cx| match operation {
+            HistoryOperation::Undo => shell.undo_document_for_tests(),
+            HistoryOperation::Redo => shell.redo_document_for_tests(),
         });
     });
     visual_cx.run_until_parked();
 }
 
-#[gpui::test]
-fn redo_while_group_active_sets_error_and_preserves_document(cx: &mut TestAppContext) {
+fn close_group_after_failed_history_operation(
+    visual_cx: &mut VisualTestContext,
+    view: &Entity<Phase0Shell>,
+    operation: HistoryOperation,
+) {
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _view_cx| {
+            let close_context = match operation {
+                HistoryOperation::Undo => "expected group to remain closable after failed undo",
+                HistoryOperation::Redo => "expected group to remain closable after failed redo",
+            };
+            assert_history_action_succeeds(
+                shell.end_document_command_group_for_tests(),
+                close_context,
+            );
+        });
+    });
+    visual_cx.run_until_parked();
+}
+
+fn verify_history_operation_while_group_active_fails(
+    cx: &mut TestAppContext,
+    operation: HistoryOperation,
+) {
     init_test_app(cx);
 
     let (view, visual_cx) =
@@ -319,55 +375,34 @@ fn redo_while_group_active_sets_error_and_preserves_document(cx: &mut TestAppCon
 
     let shape = shape_id(42);
     replace_document_for_grouping_test(visual_cx, &view, document_with_one_shape(shape));
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _view_cx| {
-            shell
-                .apply_command_for_tests(move_shape_command(shape, Vec2::new(2.0, 1.0)))
-                .expect("expected setup move to succeed");
-        });
-    });
-    visual_cx.run_until_parked();
-    simulate_document_undo(visual_cx);
+    setup_history_operation_while_group_active_fixture(visual_cx, &view, shape, operation);
 
     let history_before = read_history_len(visual_cx, &view);
-    let doc_before_redo_attempt = read_document(visual_cx, &view);
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _view_cx| {
-            shell
-                .begin_document_command_group_for_tests()
-                .expect("expected begin group before redo attempt to succeed");
-        });
-    });
-    visual_cx.run_until_parked();
+    let doc_before_attempt = read_document(visual_cx, &view);
+    execute_history_operation_under_active_group(visual_cx, &view, operation);
 
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _view_cx| {
-            shell.redo_document_for_tests();
-        });
-    });
-    visual_cx.run_until_parked();
-
+    let operation_name = match operation {
+        HistoryOperation::Undo => "undo",
+        HistoryOperation::Redo => "redo",
+    };
     assert_eq!(
         read_history_len(visual_cx, &view),
         history_before,
-        "expected redo while grouped to preserve history state",
+        "expected {operation_name} while grouped to preserve history state",
     );
     assert_eq!(
         read_document(visual_cx, &view),
-        doc_before_redo_attempt,
-        "expected redo while grouped to leave document unchanged",
+        doc_before_attempt,
+        "expected {operation_name} while grouped to leave document unchanged",
     );
+    let expected_error = match operation {
+        HistoryOperation::Undo => HistoryError::UndoWhileGroupActive,
+        HistoryOperation::Redo => HistoryError::RedoWhileGroupActive,
+    };
     assert_eq!(
         read_last_history_error(visual_cx, &view),
-        Some(HistoryError::RedoWhileGroupActive),
+        Some(expected_error),
     );
 
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _view_cx| {
-            shell
-                .end_document_command_group_for_tests()
-                .expect("expected group to remain closable after failed redo");
-        });
-    });
-    visual_cx.run_until_parked();
+    close_group_after_failed_history_operation(visual_cx, &view, operation);
 }
