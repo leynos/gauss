@@ -5,7 +5,7 @@ This Execution Plan (ExecPlan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: DRAFT (2026-02-27)
+Status: COMPLETED (2026-02-27)
 
 No `PLANS.md` exists in this repository.
 
@@ -54,7 +54,7 @@ Success is observable when:
 - Mark roadmap `0.5.2` complete only after implementation and full gate
   success.
 - Keep modules under 400 lines; split files where required.
-- Do not suppress lints except as a last resort and with a tightly-scoped
+- Do not suppress lints except as a last resort and with a tightly scoped
   rationale.
 
 ## Tolerances (exception triggers)
