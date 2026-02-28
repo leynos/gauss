@@ -234,8 +234,6 @@ fn clicking_first_anchor_before_third_point_does_not_close_path(cx: &mut TestApp
     draw_point(visual_cx, p1);
     draw_point(visual_cx, p2);
 
-    // With only two anchors present, clicking the first anchor should append a
-    // third point rather than closing the shape.
     draw_point(visual_cx, p1);
 
     let doc_after_click = visual_cx.read(|app| view.read(app).document().clone());

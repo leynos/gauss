@@ -160,13 +160,6 @@ fn redo_and_verify_state(
     })
 }
 
-fn read_shape_count(
-    visual_cx: &gpui::VisualTestContext,
-    view: &gpui::Entity<Phase0Shell>,
-) -> usize {
-    visual_cx.read(|app| view.read(app).document().len())
-}
-
 #[gpui::test]
 fn draw_click_adds_points_and_undo_removes(cx: &mut TestAppContext) {
     init_test_app(cx);
@@ -268,13 +261,13 @@ fn activate_pen_tool_from_manipulate_allows_drawing(cx: &mut TestAppContext) {
     });
     visual_cx.run_until_parked();
 
-    let shape_count_before = read_shape_count(visual_cx, &view);
+    let shape_count_before = read_document(visual_cx, &view).len();
 
     visual_cx.simulate_mouse_move(click_in_manipulate, None, Modifiers::none());
     visual_cx.simulate_click(click_in_manipulate, Modifiers::none());
     visual_cx.run_until_parked();
 
-    let shape_count_after_manipulate_click = read_shape_count(visual_cx, &view);
+    let shape_count_after_manipulate_click = read_document(visual_cx, &view).len();
     assert_eq!(
         shape_count_after_manipulate_click, shape_count_before,
         "expected manipulate-mode click to keep shape count unchanged"
@@ -287,7 +280,7 @@ fn activate_pen_tool_from_manipulate_allows_drawing(cx: &mut TestAppContext) {
     visual_cx.simulate_click(click_in_draw, Modifiers::none());
     visual_cx.run_until_parked();
 
-    let shape_count_after_draw_click = read_shape_count(visual_cx, &view);
+    let shape_count_after_draw_click = read_document(visual_cx, &view).len();
     assert_eq!(
         shape_count_after_draw_click,
         shape_count_before.saturating_add(1),

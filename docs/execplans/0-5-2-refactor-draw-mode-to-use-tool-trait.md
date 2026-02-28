@@ -93,7 +93,7 @@ Success is observable when:
 
 - Risk: command-application failures may stop surfacing via
   `last_history_error`. Severity: medium Likelihood: low Mitigation: keep
-  command application centralised in `apply_tool_commands` and retain
+  command application centralized in `apply_tool_commands` and retain
   unhappy-path assertions in view/tool tests.
 
 - Risk: gate instability from concurrent cargo jobs in sibling worktrees causes
@@ -123,7 +123,7 @@ Success is observable when:
 
 ## Surprises & Discoveries
 
-- Existing `0.5.1` boundaries already centralise tool command application in
+- Existing `0.5.1` boundaries already centralize tool command application in
   `Phase0Shell`; `0.5.2` is primarily extraction and parity hardening.
 - Draw-mode behaviour is concentrated in `src/ui/phase0_shell/draw/mod.rs`
   (`draw_click_world`, `start_new_open_shape`, close/append helpers), making a
@@ -137,8 +137,9 @@ Success is observable when:
 
 ## Decision Log
 
-- Decision: treat this milestone as behavioural parity refactor, not a feature
-  enhancement pass. Rationale: roadmap `0.5.2` explicitly scopes to extraction
+- Decision: treat this milestone as a behavioural parity refactor, not a
+  feature enhancement pass. Rationale: roadmap `0.5.2` explicitly scopes to
+  extraction
   - maintained functionality; later milestones handle broader behaviour.
   Date/Author: 2026-02-27 (assistant)
 
@@ -287,7 +288,7 @@ Stage D: Documentation sync, roadmap closure, and gates
 
 - Update architecture design text with PenTool extraction decision and boundary
   notes.
-- Update users guide only if user-visible wording needs correction.
+- Update user's guide only if user-visible wording needs correction.
 - Mark roadmap `0.5.2` and child bullets done after full gate success.
 - Update this ExecPlan with final status, outcomes, and gate evidence.
 
@@ -360,7 +361,7 @@ Gate acceptance:
 Documentation acceptance:
 
 - Architecture design updated with extraction decisions.
-- Users guide updated if and only if user-visible behaviour wording changed.
+- User's guide updated if and only if user-visible behaviour wording changed.
 - Roadmap `0.5.2` and child bullets marked done after green gates.
 
 ## Idempotence and Recovery

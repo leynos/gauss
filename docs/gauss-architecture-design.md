@@ -660,7 +660,7 @@ Implementation status (roadmap 0.5.1 and 0.5.2):
 - `Phase0Shell` remains an adapter: it snapshots click context into
   `PenToolClickInput`, executes `PenTool::transition`, and applies emitted
   `ToolCommand` outputs through `apply_tool_commands`.
-- Remaining tool-framework milestone after this extraction is `0.5.3`
+- The remaining tool-framework milestone after this extraction is `0.5.3`
   (`SelectTool` extraction), with shared hit testing still tracked by `0.5.4`.
 
 Design decision (2026-02-27):
