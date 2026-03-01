@@ -59,6 +59,26 @@ conventions:
 | Move Window       | -          | Alt+F7        |
 | Resize Window     | -          | Alt+F8        |
 
+## Accessibility Status
+
+Gauss now publishes an accessibility tree that covers:
+
+- window chrome controls (window menu, minimize, maximize/restore, fullscreen,
+  close)
+- drawing canvas
+- mode/status summary
+- document shape list
+
+Accessibility updates are incremental. Unchanged renders do not emit new
+updates; document or UI state changes emit targeted node updates.
+
+When a selected shape is still present in the document, that shape becomes the
+accessibility focus target. If the selection is stale or missing, focus falls
+back to the canvas node.
+
+Assistive-technology action invocation is not yet mapped into the command
+pipeline. That behavior is planned in roadmap item `0.6.3`.
+
 ## Tool Modes
 
 Gauss has two primary tool modes:

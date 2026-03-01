@@ -14,13 +14,10 @@
 //! The node IDs defined here are deterministic and stable across sessions,
 //! which is a requirement for AccessKit's immediate-mode bridge.
 //!
-//! Note: Constants in this module are intentionally defined for future use
-//! and may appear unused until AccessKit integration is complete.
+//! The constants in this module are consumed by `a11y_service` for 0.6.1 and
+//! are intended to remain stable as later accessibility milestones are
+//! implemented.
 
-#[expect(
-    dead_code,
-    reason = "Constants prepared for future AccessKit integration"
-)]
 pub mod node_ids {
     //! Stable node IDs for window control accessibility nodes.
     //!
@@ -41,10 +38,6 @@ pub mod node_ids {
     pub const TITLEBAR: u64 = 0x1006;
 }
 
-#[expect(
-    dead_code,
-    reason = "Constants prepared for future AccessKit integration"
-)]
 pub mod accessible_names {
     //! Human-readable names announced by screen readers.
     //!
@@ -65,10 +58,6 @@ pub mod accessible_names {
     pub const WINDOW_MENU: &str = "Window menu";
 }
 
-#[expect(
-    dead_code,
-    reason = "Constants prepared for future AccessKit integration"
-)]
 pub mod shortcut_hints {
     //! Keyboard shortcut hints for accessibility announcements.
     //!

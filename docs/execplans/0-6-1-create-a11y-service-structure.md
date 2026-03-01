@@ -5,7 +5,8 @@ This Execution Plan (ExecPlan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: DRAFT (2026-03-01)
+Status: COMPLETE (2026-03-01) - Implementation, docs, and required gate replay
+are complete.
 
 No `PLANS.md` exists in this repository.
 
@@ -48,8 +49,8 @@ Success is observable when:
   - `src/ui/phase0_shell/accessibility.rs` constants for chrome nodes.
   - `src/model/path.rs` `ShapeId <-> AccessKit node id` mapping.
 - Use `grepai` and `leta` for codebase understanding.
-- Use agent-team synthesis through `context_pack` (`pk_htrwgi43`) for planning
-  and implementation coordination.
+- Use agent-team synthesis through `context_pack` for planning and
+  implementation coordination.
 - Keep `A11yService` platform-agnostic in core logic; isolate OS integration
   concerns behind adapter seams.
 - Validate via:
@@ -118,38 +119,47 @@ Success is observable when:
   - Marisa Kirisame (test strategy matrix),
   - Axel Stone (docs + roadmap closure policy).
 - [x] (2026-03-01) Drafted this ExecPlan document.
-- [ ] Implement `A11yService` skeleton code and wiring.
-- [ ] Add/extend unit, BDD, and GPUI tests for 0.6.1 behaviour.
-- [ ] Update architecture and user documentation.
-- [ ] Run full gates and capture tee logs.
-- [ ] Mark roadmap `0.6.1` (and child bullets) done only after full closure.
+- [x] (2026-03-01) Implemented `A11yService` skeleton and Phase 0 shell wiring.
+- [x] (2026-03-01) Added unit (`rstest`), behaviour (`rstest-bdd`), and GPUI
+  tests for initial, incremental, no-op, and unhappy-path behaviours.
+- [x] (2026-03-01) Updated architecture and user documentation for 0.6.1 scope.
+- [x] (2026-03-01) Ran full required gates and captured tee logs:
+  `/tmp/check-fmt-gauss-0-6-1-create-a11y-service-structure.out`,
+  `/tmp/lint-gauss-0-6-1-create-a11y-service-structure.out`,
+  `/tmp/test-gauss-0-6-1-create-a11y-service-structure.out`.
+- [x] (2026-03-01) Marked roadmap `0.6.1` and child bullets done after
+  implementation, docs updates, and green gate replay.
 
 ## Surprises & discoveries
 
 - This worktree already contains foundational accessibility constants in
-  `src/ui/phase0_shell/accessibility.rs`, but they are intentionally unused and
-  marked as prepared for future integration.
+  `src/ui/phase0_shell/accessibility.rs`; 0.6.1 could wire these directly into
+  the new service without introducing a second ID registry.
 - Stable node identity foundations already exist for document shapes via
   `ShapeId::to_accesskit_node_id` and `ShapeId::from_accesskit_node_id`.
 - `leta` has a broken-pipe failure mode when piped output is truncated; retry
   or avoid piped listing commands for stable discovery.
-- Current accessibility references are concentrated in design/docs and ID
-  helpers; there is no existing runtime AccessKit adapter wiring yet.
+- Runtime service wiring now exists: `Phase0Shell::render()` triggers
+  `sync_a11y_tree()`, which snapshots shell/document state and queues updates.
+- `ShapeId::from_accesskit_node_id(raw).to_accesskit_node_id()` is not an
+  identity transform for arbitrary raw values, so tests should assert against
+  normalized IDs produced by `ShapeId`.
 
 ## Decision log
 
-- Decision: this deliverable is plan-only for now; implementation is deferred
-  to a subsequent execution pass. Rationale: user request is to formulate an
-  execplan artifact for roadmap `0.6.1`. Date/Author: 2026-03-01 (assistant)
+- Decision: moved from plan-only to implementation in this branch after explicit
+  user approval. Rationale: keep roadmap execution and artifact status aligned
+  with the approved delivery scope. Date/Author: 2026-03-01 (assistant)
 
-- Decision: keep roadmap `0.6.1` unchecked during plan-only delivery.
-  Rationale: roadmap completion requires implemented behaviour, updated docs,
-  and full green gates. Date/Author: 2026-03-01 (assistant)
+- Decision: keep roadmap completion tied to documented behaviour and green gate
+  evidence. Rationale: prevent closure drift and preserve truthful status.
+  Date/Author: 2026-03-01 (assistant)
 
-- Decision: propose a dedicated `src/ui/a11y/` module boundary for service,
-  tree building, diffing, and mapping concerns. Rationale: maintains separation
-  of concerns and avoids crowding existing `phase0_shell` modules. Date/Author:
-  2026-03-01 (assistant)
+- Decision: land the initial implementation in
+  `src/ui/phase0_shell/a11y_service/` rather than introducing `src/ui/a11y/`
+  during 0.6.1. Rationale: preserve Phase 0 cohesion while establishing the
+  service seam; extraction can follow in a later refactor if needed.
+  Date/Author: 2026-03-01 (assistant)
 
 - Decision: baseline-first incremental policy (`full tree first`, then diffs).
   Rationale: deterministic bootstrapping and simpler correctness proofs for
@@ -161,16 +171,19 @@ Success is observable when:
 
 ## Outcomes & retrospective
 
-Current outcome: planning complete, implementation pending.
+Current outcome: roadmap item `0.6.1` is fully delivered with green required
+gates.
 
 What this plan now provides:
 
-- clear architecture-aligned milestones for implementing `A11yService` 0.6.1;
-- explicit unit/BDD/GPUI validation expectations including unhappy paths;
-- documentation update requirements for architecture and user guide;
-- deterministic gate and roadmap closure criteria.
+- implemented `A11yService` skeleton with deterministic tree projection and
+  incremental updates in Phase 0 shell runtime;
+- concrete unit/BDD/GPUI coverage for happy, unhappy, and edge paths;
+- architecture and user-guide updates documenting delivered scope and deferred
+  0.6.3 action mapping;
+- deterministic closure criteria with final gate logs recorded for audit.
 
-Lessons for follow-on execution:
+Lessons for follow-on milestones:
 
 - start with ID policy and service contract before touching adapters;
 - keep diff logic testable without platform dependencies;
@@ -190,23 +203,22 @@ Primary requirement references:
 - `docs/rust-doctest-dry-guide.md`
 - `docs/reliable-testing-in-rust-via-dependency-injection.md`
 
-Key current code surfaces:
+Implemented code surfaces:
 
 - `src/ui/phase0_shell/mod.rs` (`Phase0Shell` state/lifecycle seams)
 - `src/ui/phase0_shell/view.rs` (render/update seam)
-- `src/ui/phase0_shell/chrome.rs` and `window_controls.rs` (chrome controls)
+- `src/ui/phase0_shell/a11y_service/mod.rs` (service + snapshot projection)
+- `src/ui/phase0_shell/a11y_service/diff.rs` (incremental diff helpers)
+- `src/ui/phase0_shell/chrome.rs` and `window_controls.rs` (chrome semantics)
 - `src/ui/phase0_shell/accessibility.rs` (predefined node IDs and labels)
 - `src/model/path.rs` (`ShapeId` AccessKit node id mapping)
-- `src/model/action.rs` (action routing target surface)
+- `tests/a11y_service_bdd.rs` and `tests/features/a11y_service.feature`
+- `tests/gpui_a11y_service.rs`
 
-Proposed new module surfaces:
+Deferred module-split follow-up (optional future refactor):
 
-- `src/ui/a11y/mod.rs`
-- `src/ui/a11y/service.rs`
-- `src/ui/a11y/tree_builder.rs`
-- `src/ui/a11y/diff.rs`
-- `src/ui/a11y/action_map.rs`
-- `src/ui/a11y/node_ids.rs`
+- extract `src/ui/phase0_shell/a11y_service/` into `src/ui/a11y/` only when
+  Phase 0 shell ownership boundaries become a maintenance burden.
 
 ## Plan of work
 
