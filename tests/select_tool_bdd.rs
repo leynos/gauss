@@ -104,6 +104,24 @@ fn assert_contains_command(
     )))
 }
 
+fn assert_emits_command_matching<M>(
+    world: &SelectToolWorld,
+    matcher: M,
+    expected_description: &str,
+) -> TestSupportResult<()>
+where
+    M: Fn(&ToolCommand) -> bool,
+{
+    let commands = &transition(world)?.commands;
+    if commands.iter().any(matcher) {
+        return Ok(());
+    }
+
+    Err(TestSupportError::expectation(format!(
+        "expected {expected_description}; got {commands:?}"
+    )))
+}
+
 fn set_drag_state_from_hit(
     world: &mut SelectToolWorld,
     hit: SelectPointerHit,
@@ -268,37 +286,31 @@ fn then_emits_selection_change_record(world: &SelectToolWorld) -> TestSupportRes
 
 #[then("it emits SetSelection for the hit shape")]
 fn then_emits_set_selection(world: &SelectToolWorld) -> TestSupportResult<()> {
-    let commands = &transition(world)?.commands;
-    if commands.iter().any(|command| {
-        matches!(
+    assert_emits_command_matching(
+        world,
+        |command| {
+            matches!(
             command,
             ToolCommand::SetSelection(selection)
                 if selection.contains(&gauss::model::SelItem::Shape(world.shape_id))
-        )
-    }) {
-        return Ok(());
-    }
-
-    Err(TestSupportError::expectation(format!(
-        "expected SetSelection containing hit shape; got {commands:?}"
-    )))
+            )
+        },
+        "SetSelection containing hit shape",
+    )
 }
 
 #[then("it emits SetSelectToolState Dragging")]
 fn then_emits_dragging_state(world: &SelectToolWorld) -> TestSupportResult<()> {
-    let commands = &transition(world)?.commands;
-    if commands.iter().any(|command| {
-        matches!(
-            command,
-            ToolCommand::SetSelectToolState(SelectToolState::Dragging(_))
-        )
-    }) {
-        return Ok(());
-    }
-
-    Err(TestSupportError::expectation(format!(
-        "expected SetSelectToolState(Dragging); got {commands:?}"
-    )))
+    assert_emits_command_matching(
+        world,
+        |command| {
+            matches!(
+                command,
+                ToolCommand::SetSelectToolState(SelectToolState::Dragging(_))
+            )
+        },
+        "SetSelectToolState(Dragging)",
+    )
 }
 
 #[then("it emits SetSelectToolState Idle")]
