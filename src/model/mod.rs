@@ -22,6 +22,7 @@ pub mod path;
 pub(crate) mod pen_geometry;
 pub mod resize_anchor;
 pub mod resource_store;
+pub mod select_tool;
 pub mod selection;
 pub mod style_store;
 pub mod tool;
@@ -53,6 +54,12 @@ pub use resource_store::{
     Gradient, GradientId, GradientKind, GradientStop, LinearGradient, PatternId, PatternResource,
     RadialGradient, ResourceStore, SymbolId, SymbolResource,
 };
+pub use select_tool::{
+    SelectAnchorHit, SelectHandleHit, SelectHandleHitKind, SelectPointerDownInput,
+    SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput, SelectSegmentHit,
+    SelectShapeHit, SelectTool, SelectToolState, apply_select_drag_preview,
+    restore_select_drag_preview,
+};
 pub use selection::{SelItem, Selection};
 pub use style_store::{NamedStyle, StyleId, StyleStore};
 pub use tool::{
@@ -67,5 +74,9 @@ mod ops_roundtrip_tests;
 mod pen_tool_tests;
 #[cfg(test)]
 mod resource_store_tests;
+#[cfg(test)]
+mod select_tool_tests;
+#[cfg(test)]
+mod select_tool_drag_tests;
 #[cfg(test)]
 mod tool_tests;
