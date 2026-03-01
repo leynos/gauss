@@ -171,9 +171,9 @@ phases depend upon. See architecture document §20.
 
 ### 0.6. A11yService skeleton
 
-- [ ] 0.6.1. Create `A11yService` structure.
-  - [ ] Build AccessKit tree from UI and document state.
-  - [ ] Push incremental updates. See architecture §11.1.
+- [x] 0.6.1. Create `A11yService` structure.
+  - [x] Build AccessKit tree from UI and document state.
+  - [x] Push incremental updates. See architecture §11.1.
 - [ ] 0.6.2. Wire existing stable node IDs.
   - [ ] Connect pre-defined IDs in `accessibility.rs` to AccessKit.
   - [ ] Expose roles and labels for window chrome.

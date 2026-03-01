@@ -11,7 +11,7 @@ use crate::model::{
     Command, Document, ResourceStore, Selection, ShapeId, UserError, Vec2, Viewport,
 };
 
-use super::{Phase0Shell, draw, file_dialogs::OpenPromptMode};
+use super::{A11yUpdateRecord, Phase0Shell, draw, file_dialogs::OpenPromptMode};
 
 impl Phase0Shell {
     /// Construct a new shell configured for headless `#[gpui::test]` tests.
@@ -272,6 +272,30 @@ impl Phase0Shell {
     /// Set the Gauss metadata block for tests.
     pub fn set_gauss_metadata_block_for_tests(&mut self, block: Option<String>) {
         self.state.gauss_metadata_block = block;
+    }
+
+    /// Return the number of queued AccessKit updates.
+    #[must_use]
+    pub const fn a11y_pending_update_count_for_tests(&self) -> usize {
+        self.a11y_service.pending_update_count()
+    }
+
+    /// Return AccessKit update diagnostics collected so far.
+    #[must_use]
+    pub fn a11y_update_records_for_tests(&self) -> &[A11yUpdateRecord] {
+        self.a11y_service.update_records()
+    }
+
+    /// Clear queued AccessKit updates and stored diagnostics.
+    pub fn clear_a11y_updates_for_tests(&mut self) {
+        self.a11y_service.clear_pending_updates();
+        self.a11y_service.clear_update_records();
+    }
+
+    /// Drain queued AccessKit `TreeUpdate` values for adapter-facing tests.
+    #[must_use]
+    pub fn drain_a11y_tree_updates_for_tests(&mut self) -> usize {
+        self.a11y_service.drain_pending_updates().len()
     }
 
     /// Trigger an undo operation through the shell's history system.

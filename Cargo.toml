@@ -7,6 +7,7 @@ edition = "2024"
 members = ["crates/test_support"]
 
 [dependencies]
+accesskit = "0.24.0"
 camino = "1.2.2"
 cap-std = { version = "4.0.0", features = ["fs_utf8"] }
 futures = "0.3.31"

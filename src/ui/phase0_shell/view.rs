@@ -341,6 +341,7 @@ impl Render for Phase0Shell {
 
         // Track viewport size changes and adjust pan to maintain anchor point
         self.handle_window_resize(window);
+        self.sync_a11y_tree();
 
         // Mode-specific key contexts are applied based on the active tool mode.
         // Global shortcuts are registered for all contexts via the action bridge.

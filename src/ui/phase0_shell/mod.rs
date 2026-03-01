@@ -4,7 +4,8 @@
 //! wired up correctly and to allow incremental integration tests using GPUI's
 //! `TestAppContext`.
 
-mod accessibility;
+mod a11y_service;
+pub mod accessibility;
 mod anchor_edit;
 mod chrome;
 mod chrome_palette;
@@ -36,6 +37,10 @@ use crate::model::{EngineState, KeyContext, Vec2};
 
 use super::phase0_support::demo_document;
 
+pub use self::a11y_service::{
+    A11yService, A11yServiceError, A11yShapeSnapshot, A11ySnapshot, A11yUpdateKind,
+    A11yUpdateRecord,
+};
 use self::file_dialogs::OpenPromptMode;
 
 /// Trigger an “Open…” workflow for loading a document from disk.
@@ -188,6 +193,8 @@ pub struct Phase0Shell {
     last_viewport_size: Option<gpui::Size<gpui::Pixels>>,
     /// Cached maximized state to trigger re-render on window state change.
     last_maximized_state: Option<bool>,
+    /// AccessKit tree projection and incremental update service.
+    a11y_service: a11y_service::A11yService,
     /// Test override for maximized state (used to test resize border visibility).
     #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     test_maximized_override: Option<bool>,
@@ -218,6 +225,7 @@ impl Phase0Shell {
             did_init_style_pickers: false,
             last_viewport_size: None,
             last_maximized_state: None,
+            a11y_service: a11y_service::A11yService::new(),
             #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
             test_maximized_override: None,
         }
