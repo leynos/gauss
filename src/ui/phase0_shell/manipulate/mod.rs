@@ -57,52 +57,58 @@ impl Phase0Shell {
     }
 
     pub(super) fn handle_canvas_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
-        if self.state.tool_mode != ToolMode::Manipulate {
-            return false;
-        }
-
-        if event.pressed_button != Some(MouseButton::Left) {
-            return false;
-        }
-
-        let cursor_world = cursor_world(&self.state.viewport, event.position);
-        let transition = Tool::transition(
-            &SelectTool,
-            self.state.tool_mode,
-            self.state.edge_mode,
-            ToolInputEvent::SelectPointerMove {
+        let select_tool_state = self.select_tool_state.clone();
+        self.handle_pointer_event(
+            event.position,
+            event.pressed_button == Some(MouseButton::Left),
+            move |cursor_world| ToolInputEvent::SelectPointerMove {
                 input: Box::new(SelectPointerMoveInput {
-                    state: self.select_tool_state.clone(),
+                    state: select_tool_state,
                     cursor_world,
                     has_primary_button: true,
                 }),
             },
-        );
-
-        self.apply_tool_commands(transition.commands)
+        )
     }
 
     pub(super) fn handle_canvas_mouse_up(&mut self, event: &MouseUpEvent) -> bool {
-        if self.state.tool_mode != ToolMode::Manipulate {
-            return false;
-        }
-
-        if event.button != MouseButton::Left {
-            return false;
-        }
-
-        let cursor_world = cursor_world(&self.state.viewport, event.position);
-        let transition = Tool::transition(
-            &SelectTool,
-            self.state.tool_mode,
-            self.state.edge_mode,
-            ToolInputEvent::SelectPointerUp {
+        let select_tool_state = self.select_tool_state.clone();
+        self.handle_pointer_event(
+            event.position,
+            event.button == MouseButton::Left,
+            move |cursor_world| ToolInputEvent::SelectPointerUp {
                 input: Box::new(SelectPointerUpInput {
-                    state: self.select_tool_state.clone(),
+                    state: select_tool_state,
                     cursor_world,
                     is_primary_button: true,
                 }),
             },
+        )
+    }
+
+    fn handle_pointer_event<F>(
+        &mut self,
+        position: gpui::Point<Pixels>,
+        button_valid: bool,
+        create_event: F,
+    ) -> bool
+    where
+        F: FnOnce(Vec2) -> ToolInputEvent,
+    {
+        if self.state.tool_mode != ToolMode::Manipulate {
+            return false;
+        }
+
+        if !button_valid {
+            return false;
+        }
+
+        let cursor_world = cursor_world(&self.state.viewport, position);
+        let transition = Tool::transition(
+            &SelectTool,
+            self.state.tool_mode,
+            self.state.edge_mode,
+            create_event(cursor_world),
         );
 
         self.apply_tool_commands(transition.commands)
