@@ -643,7 +643,7 @@ Tools do not directly mutate state. Instead, they emit `ToolCommand` outputs:
 - editor-state transitions (for example, mode changes) emit explicit
   `ToolCommand::Set*` variants
 
-Implementation status (roadmap 0.5.1 and 0.5.2):
+Implementation status (roadmap 0.5.1 to 0.5.3):
 
 - `src/model/tool.rs` now defines the Tool FSM contract via `Tool`,
   `ToolInputEvent`, `ToolCommand`, and `ToolTransition`.
@@ -660,16 +660,30 @@ Implementation status (roadmap 0.5.1 and 0.5.2):
 - `Phase0Shell` remains an adapter: it snapshots click context into
   `PenToolClickInput`, executes `PenTool::transition`, and applies emitted
   `ToolCommand` outputs through `apply_tool_commands`.
-- The remaining tool-framework milestone after this extraction is `0.5.3`
-  (`SelectTool` extraction), with shared hit testing still tracked by `0.5.4`.
+- `SelectTool` now owns manipulate pointer transitions in
+  `src/model/select_tool/mod.rs` and emits `ToolCommand` values for selection
+  updates, drag preview/restore, and drag commit.
+- `Phase0Shell` manipulate pointer handlers now build `SelectTool` input
+  snapshots and apply emitted commands centrally via `apply_tool_commands`.
+- `SelectToolState` currently ships `Idle` and `Dragging` runtime paths, with
+  `Marquee` and `Transforming` reserved as explicit no-op placeholders until
+  later milestones activate those interactions.
+- The remaining tool-framework milestone is `0.5.4` (shared hit-test service).
 
-Design decision (2026-02-27):
+Design decisions:
 
 - **Decision**: model Pen draw-click input as an immutable snapshot
   (`PenToolClickInput`) passed through `ToolInputEvent::PenCanvasClicked`.
 - **Rationale**: this preserves deterministic command emission, keeps tool
   logic free of UI/runtime dependencies, and avoids direct state mutation by
   delegating all effects to explicit `ToolCommand` outputs.
+
+- **Decision (2026-03-01)**: keep manipulate preview mutation reversible and
+  command-free until pointer-up by emitting `PreviewSelectDrag` and
+  `RestoreSelectDragPreview` around one optional
+  `ToolCommand::ApplyDocumentCommand`.
+- **Rationale**: this keeps one-entry-per-gesture undo semantics while
+  preserving immediate drag feedback and deterministic replay behaviour.
 
 ______________________________________________________________________
 
@@ -898,9 +912,10 @@ To avoid user-hostile undo behavior:
 All Phase 0 interactions already produce single undo entries by design. The
 audit confirmed the following:
 
-- Drag gestures use a preview + commit pattern: preview updates are applied
-  directly to the document without recording; the final `finish_drag()` creates
-  one `Command` on mouse up.
+- Drag gestures use a preview + commit pattern through the tool-command
+  boundary: preview updates are applied via `PreviewSelectDrag` and
+  `RestoreSelectDragPreview` without recording, and pointer-up optionally emits
+  one `ApplyDocumentCommand`.
 - Each `apply_command()` call produces exactly one `history.record()` call.
 - Entry count is now verified by parameterized unit tests, BDD scenarios,
   and GPUI integration tests.
@@ -1535,10 +1550,10 @@ broad feature work accelerates:
 7. **i18n scaffolding** (string catalog, localized command names)
 8. **Widget capability audit** (GPUI Component vs custom controls plan)
 
-Status update: roadmap items `0.5.1` and `0.5.2` implemented the Tool trait
-boundary and PenTool extraction. Remaining tool-framework milestones are
-`0.5.3` (SelectTool extraction) and `0.5.4` (shared hit-test service). Roadmap
-item `0.6.1` is now implemented in the Phase 0 shell. Remaining accessibility
+Status update: roadmap items `0.5.1`, `0.5.2`, and `0.5.3` implemented the Tool
+trait boundary, PenTool extraction, and SelectTool extraction. The remaining
+tool-framework milestone is `0.5.4` (shared hit-test service). Roadmap item
+`0.6.1` is now implemented in the Phase 0 shell. Remaining accessibility
 milestones are `0.6.2` (stable node ID wiring polish) and `0.6.3` (AccessKit
 action request mapping).
 

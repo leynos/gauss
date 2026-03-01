@@ -100,7 +100,7 @@ In manipulate mode, existing shapes can be selected and edited:
 
 1. Click on a shape to select it
 2. Shift+click to add or remove from selection
-3. Drag selected shapes to move them
+3. Drag a selected shape (or selected shapes) to move them
 4. Click on anchors or handles to select them for editing
 5. Press Delete or Backspace to delete selected anchors
 6. Press Escape to switch to Draw mode
@@ -108,6 +108,10 @@ In manipulate mode, existing shapes can be selected and edited:
 Tool transitions (toolbar clicks, `P`, `V`, and `Escape`) are routed through
 one deterministic mode-state machine. This keeps mode switching behaviour
 consistent across keyboard and UI controls.
+
+Manipulate pointer interactions are also routed through the SelectTool state
+machine. In this phase, marquee and transform gestures are reserved and behave
+as no-op placeholders until later roadmap milestones activate them.
 
 Tab routing is context-dependent: in Draw mode it toggles edge mode through the
 tool state machine, while in Manipulate mode it routes to segment-kind toggling
@@ -159,7 +163,8 @@ visible undo/redo behaviour are unchanged.
 in draw mode, a style change, or a keyboard command — produces exactly one undo
 step. For example, dragging a shape (even if multiple shapes are selected)
 creates a single entry; pressing Undo once restores all shapes to their
-pre-drag positions.
+pre-drag positions. During drag, preview movement does not create history
+entries; history is updated only when the gesture commits.
 
 **Grouped compound operations:** Some operations execute multiple internal
 commands. Gauss groups these commands into one document-history entry, so one

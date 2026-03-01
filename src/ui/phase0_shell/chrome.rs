@@ -3,7 +3,8 @@
 use gpui::{Pixels, div, prelude::*, px};
 
 use crate::model::{
-    Command, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolModeFsm, UserError,
+    Command, SelectToolState, Selection, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode,
+    ToolModeFsm, UserError, Vec2, apply_select_drag_preview, restore_select_drag_preview,
 };
 use crate::ui::UiIcon;
 
@@ -344,6 +345,17 @@ impl Phase0Shell {
             ToolCommand::SetToolMode(mode) => Ok(self.set_tool_mode_if_changed(mode)),
             ToolCommand::SetEdgeMode(mode) => Ok(self.set_edge_mode_if_changed(mode)),
             ToolCommand::SetActivePath(path) => Ok(self.set_active_path_if_changed(path)),
+            ToolCommand::SetSelection(selection) => Ok(self.set_selection_if_changed(selection)),
+            ToolCommand::RecordSelectionChange { from, to } => {
+                Ok(self.record_selection_change_if_changed(from, to))
+            }
+            ToolCommand::SetSelectToolState(state) => {
+                Ok(self.set_select_tool_state_if_changed(state))
+            }
+            ToolCommand::PreviewSelectDrag { cursor_world } => {
+                Ok(self.preview_select_drag_if_possible(cursor_world))
+            }
+            ToolCommand::RestoreSelectDragPreview => Ok(self.restore_select_drag_if_possible()),
         }
     }
 
@@ -353,11 +365,19 @@ impl Phase0Shell {
     }
 
     fn set_tool_mode_if_changed(&mut self, mode: ToolMode) -> bool {
-        if self.state.tool_mode == mode {
-            return false;
+        let mut did_change = false;
+
+        if self.state.tool_mode != mode {
+            self.state.tool_mode = mode;
+            did_change = true;
         }
-        self.state.tool_mode = mode;
-        true
+
+        if mode != ToolMode::Manipulate && self.select_tool_state != SelectToolState::Idle {
+            self.select_tool_state = SelectToolState::Idle;
+            did_change = true;
+        }
+
+        did_change
     }
 
     fn set_edge_mode_if_changed(&mut self, mode: DrawEdgeMode) -> bool {
@@ -374,5 +394,41 @@ impl Phase0Shell {
         }
         self.state.active_path = path;
         true
+    }
+
+    fn set_selection_if_changed(&mut self, selection: Selection) -> bool {
+        if self.state.selection == selection {
+            return false;
+        }
+        self.state.selection = selection;
+        true
+    }
+
+    fn record_selection_change_if_changed(&mut self, from: Selection, to: Selection) -> bool {
+        if from == to {
+            return false;
+        }
+        self.record_selection_change(from, to);
+        true
+    }
+
+    fn set_select_tool_state_if_changed(&mut self, state: SelectToolState) -> bool {
+        if self.select_tool_state == state {
+            return false;
+        }
+        self.select_tool_state = state;
+        true
+    }
+
+    fn preview_select_drag_if_possible(&mut self, cursor_world: Vec2) -> bool {
+        apply_select_drag_preview(
+            &mut self.state.document,
+            &self.select_tool_state,
+            cursor_world,
+        )
+    }
+
+    fn restore_select_drag_if_possible(&mut self) -> bool {
+        restore_select_drag_preview(&mut self.state.document, &self.select_tool_state)
     }
 }

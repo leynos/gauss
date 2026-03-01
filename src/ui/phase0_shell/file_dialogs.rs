@@ -14,7 +14,7 @@ use futures::channel::oneshot;
 use gpui::{AsyncWindowContext, Context, PathPromptOptions, WeakEntity, Window};
 use gpui_component::history::History;
 
-use crate::model::Selection;
+use crate::model::{SelectToolState, Selection};
 use crate::svg::export::{
     CanvasSize, ExportOptions, export_svg_with_metadata_checked,
     export_svg_with_resources_web_ready_checked,
@@ -207,7 +207,7 @@ async fn apply_open_prompt(
             view.state.clear_document_history();
             view.selection_history = History::new();
             view.state.selection = Selection::empty();
-            view.drag_state = None;
+            view.select_tool_state = SelectToolState::Idle;
             view.state.active_path = None;
             view.last_history_error = None;
             view.last_history_error_typed = None;

@@ -1,11 +1,10 @@
 //! Additional unit tests for `SelectTool` drag-state transitions.
 
 use super::{
-    Anchor, Command, Document, EdgeMode, Paint, PaintStyle, PathGeom, SelectAnchorHit,
+    Anchor, Command, Document, EdgeMode, Paint, PaintStyle, PathGeom, SegmentKind, SelectAnchorHit,
     SelectHandleHit, SelectHandleHitKind, SelectPointerDownInput, SelectPointerHit,
     SelectPointerMoveInput, SelectPointerUpInput, SelectSegmentHit, SelectShapeHit, SelectTool,
-    SelectToolState, SegmentKind, Shape, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode,
-    Vec2,
+    SelectToolState, Shape, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, Vec2,
 };
 use rstest::rstest;
 

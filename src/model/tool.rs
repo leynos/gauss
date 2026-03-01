@@ -8,10 +8,14 @@
 //!
 //! These types are GPUI-independent for testability and scripting.
 
+use crate::model::Selection;
 use crate::model::command::{Command, ShapeInsertion, ShapeReplacement};
 use crate::model::path::{PaintStyle, Shape, ShapeId, Vec2};
 use crate::model::pen_geometry::{
     append_anchor, close_shape, new_open_shape, segment_kind_for_edge_mode, should_close_path,
+};
+use crate::model::select_tool::{
+    SelectPointerDownInput, SelectPointerMoveInput, SelectPointerUpInput, SelectToolState,
 };
 
 /// The active tool in the editor.
@@ -119,6 +123,21 @@ pub enum ToolInputEvent {
         /// Input context snapshot for one canvas-click transition.
         input: Box<PenToolClickInput>,
     },
+    /// Manipulate-mode pointer-down input for `SelectTool`.
+    SelectPointerDown {
+        /// Input context snapshot for one pointer-down transition.
+        input: Box<SelectPointerDownInput>,
+    },
+    /// Manipulate-mode pointer-move input for `SelectTool`.
+    SelectPointerMove {
+        /// Input context snapshot for one pointer-move transition.
+        input: Box<SelectPointerMoveInput>,
+    },
+    /// Manipulate-mode pointer-up input for `SelectTool`.
+    SelectPointerUp {
+        /// Input context snapshot for one pointer-up transition.
+        input: Box<SelectPointerUpInput>,
+    },
 }
 
 /// Command outputs emitted by tool FSMs.
@@ -134,6 +153,24 @@ pub enum ToolCommand {
     SetEdgeMode(EdgeMode),
     /// Set active path identity used by draw mode.
     SetActivePath(Option<ShapeId>),
+    /// Set active selection.
+    SetSelection(Selection),
+    /// Record one selection history transition.
+    RecordSelectionChange {
+        /// Selection before the change.
+        from: Selection,
+        /// Selection after the change.
+        to: Selection,
+    },
+    /// Set the current manipulate-tool FSM state.
+    SetSelectToolState(SelectToolState),
+    /// Apply preview updates for the active select drag state.
+    PreviewSelectDrag {
+        /// Cursor position in world coordinates.
+        cursor_world: Vec2,
+    },
+    /// Restore the preview-mutated document back to drag start coordinates.
+    RestoreSelectDragPreview,
 }
 
 /// Result of handling one tool input event.
@@ -354,7 +391,10 @@ impl Tool for ToolModeFsm {
                     ToolCommand::SetActivePath(None),
                 ])
             }
-            ToolInputEvent::PenCanvasClicked { .. } => ToolTransition::default(),
+            ToolInputEvent::PenCanvasClicked { .. }
+            | ToolInputEvent::SelectPointerDown { .. }
+            | ToolInputEvent::SelectPointerMove { .. }
+            | ToolInputEvent::SelectPointerUp { .. } => ToolTransition::default(),
         }
     }
 }

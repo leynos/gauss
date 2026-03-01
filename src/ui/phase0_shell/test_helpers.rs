@@ -8,7 +8,8 @@ use std::path::Path;
 
 use crate::model::history::HistoryError;
 use crate::model::{
-    Command, Document, ResourceStore, Selection, ShapeId, UserError, Vec2, Viewport,
+    Command, Document, ResourceStore, SelectToolState, Selection, ShapeId, UserError, Vec2,
+    Viewport,
 };
 
 use super::{A11yUpdateRecord, Phase0Shell, draw, file_dialogs::OpenPromptMode};
@@ -117,7 +118,7 @@ impl Phase0Shell {
     /// editor operations instead.
     pub fn replace_document_for_tests(&mut self, document: Document) {
         self.state.document = document;
-        self.drag_state = None;
+        self.select_tool_state = SelectToolState::Idle;
         self.state.active_path = None;
     }
 
@@ -128,7 +129,7 @@ impl Phase0Shell {
     /// helper.
     pub fn replace_selection_for_tests(&mut self, selection: Selection) {
         self.state.selection = selection;
-        self.drag_state = None;
+        self.select_tool_state = SelectToolState::Idle;
     }
 
     /// Return whether a drag gesture is currently active.
@@ -137,7 +138,7 @@ impl Phase0Shell {
     /// assembling the real editor UI.
     #[must_use]
     pub const fn is_dragging(&self) -> bool {
-        self.drag_state.is_some()
+        matches!(self.select_tool_state, SelectToolState::Dragging(_))
     }
 
     /// Return whether a quit request has been triggered from the UI.

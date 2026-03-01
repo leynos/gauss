@@ -1,10 +1,10 @@
 //! Unit tests for `SelectTool` manipulate transitions.
 
 use super::{
-    Anchor, Command, Document, EdgeMode, Paint, PaintStyle, PathGeom, SelectPointerDownInput,
-    SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput, SelectShapeHit, SelectTool,
-    SelectToolState, SegmentKind, Shape, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode,
-    Vec2,
+    Anchor, Command, Document, EdgeMode, Paint, PaintStyle, PathGeom, SegmentKind,
+    SelectPointerDownInput, SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput,
+    SelectShapeHit, SelectTool, SelectToolState, Shape, ShapeId, Tool, ToolCommand, ToolInputEvent,
+    ToolMode, Vec2,
 };
 use rstest::rstest;
 
@@ -131,7 +131,9 @@ fn select_tool_pointer_down_selects_shape_and_enters_dragging_state() {
 
     assert!(matches!(
         drag_transition.commands.last(),
-        Some(ToolCommand::SetSelectToolState(SelectToolState::Dragging(_)))
+        Some(ToolCommand::SetSelectToolState(SelectToolState::Dragging(
+            _
+        )))
     ));
 }
 

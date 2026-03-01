@@ -6,6 +6,7 @@
 
 use gpui_component::history::HistoryItem;
 
+use crate::model::SelectToolState;
 use crate::model::Selection;
 
 use super::Phase0Shell;
@@ -57,7 +58,7 @@ impl Phase0Shell {
             self.state.selection = last.change.from.clone();
         }
 
-        self.drag_state = None;
+        self.select_tool_state = SelectToolState::Idle;
     }
 
     pub(super) fn redo_selection(&mut self) {
@@ -69,6 +70,6 @@ impl Phase0Shell {
             self.state.selection = last.change.to.clone();
         }
 
-        self.drag_state = None;
+        self.select_tool_state = SelectToolState::Idle;
     }
 }

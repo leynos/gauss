@@ -75,8 +75,10 @@ mod pen_tool_tests;
 #[cfg(test)]
 mod resource_store_tests;
 #[cfg(test)]
-mod select_tool_tests;
-#[cfg(test)]
 mod select_tool_drag_tests;
+#[cfg(test)]
+mod select_tool_preview_tests;
+#[cfg(test)]
+mod select_tool_tests;
 #[cfg(test)]
 mod tool_tests;

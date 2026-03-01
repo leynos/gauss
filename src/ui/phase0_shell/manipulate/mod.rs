@@ -1,11 +1,7 @@
-//! Manipulate-mode behaviour for the Phase 0 shell.
+//! Manipulate-mode event adapter for `SelectTool`.
 //!
-//! Phase 0 starts with just enough manipulation support to validate the
-//! end-to-end wiring:
-//!
-//! - click to select a shape,
-//! - drag to move the selected shape, and
-//! - undo restores the prior position.
+//! Pointer input is translated to model-layer `ToolInputEvent` values. The
+//! `SelectTool` FSM emits commands, and `Phase0Shell` applies those commands.
 
 #![expect(
     clippy::float_arithmetic,
@@ -14,20 +10,19 @@
 
 use gpui::{MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels};
 
-use crate::model::Vec2;
+use crate::model::{
+    SelectAnchorHit, SelectHandleHit, SelectHandleHitKind, SelectPointerDownInput,
+    SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput, SelectSegmentHit,
+    SelectShapeHit, SelectTool, Tool, ToolInputEvent, Vec2,
+};
 
 use super::{Phase0Shell, draw::ToolMode};
 
-mod drag;
-mod handle_drag;
 mod hit_test;
-mod selection;
 
-pub(super) use drag::DragState;
-
-use drag::{DragStartInput, apply_drag_preview, finish_drag, start_drag};
-use hit_test::hit_under_cursor;
-use selection::{can_drag_shape_bbox, selection_for_hit};
+use hit_test::{
+    AnchorHit, HandleHit, HandleHitKind, MouseDownHit, SegmentHit, ShapeHit, hit_under_cursor,
+};
 
 impl Phase0Shell {
     pub(super) fn handle_canvas_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
@@ -43,30 +38,22 @@ impl Phase0Shell {
         let tolerance_world = 4.0 / self.state.viewport.zoom();
         let hit = hit_under_cursor(&self.state.document, cursor_world, tolerance_world);
 
-        let previous_selection = self.state.selection.clone();
-        let can_drag_shape_bbox = can_drag_shape_bbox(&previous_selection, hit);
-        let new_selection = selection_for_hit(&previous_selection, hit, event.modifiers.shift);
-        let did_change_selection = new_selection != previous_selection;
-        if did_change_selection {
-            self.record_selection_change(previous_selection, new_selection.clone());
-        }
-        self.state.selection = new_selection;
-
-        self.drag_state = if event.modifiers.shift {
-            None
-        } else {
-            start_drag(
-                &DragStartInput::new(
-                    &self.state.document,
-                    &self.state.selection,
+        let transition = Tool::transition(
+            &SelectTool,
+            self.state.tool_mode,
+            self.state.edge_mode,
+            ToolInputEvent::SelectPointerDown {
+                input: Box::new(SelectPointerDownInput {
+                    document: self.state.document.clone(),
+                    previous_selection: self.state.selection.clone(),
+                    hit: map_hit(hit),
                     cursor_world,
-                    can_drag_shape_bbox,
-                ),
-                hit,
-            )
-        };
+                    is_shift_held: event.modifiers.shift,
+                }),
+            },
+        );
 
-        did_change_selection || self.drag_state.is_some()
+        self.apply_tool_commands(transition.commands)
     }
 
     pub(super) fn handle_canvas_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
@@ -78,12 +65,21 @@ impl Phase0Shell {
             return false;
         }
 
-        let Some(drag_state) = &self.drag_state else {
-            return false;
-        };
-
         let cursor_world = cursor_world(&self.state.viewport, event.position);
-        apply_drag_preview(&mut self.state.document, drag_state, cursor_world)
+        let transition = Tool::transition(
+            &SelectTool,
+            self.state.tool_mode,
+            self.state.edge_mode,
+            ToolInputEvent::SelectPointerMove {
+                input: Box::new(SelectPointerMoveInput {
+                    state: self.select_tool_state.clone(),
+                    cursor_world,
+                    has_primary_button: true,
+                }),
+            },
+        );
+
+        self.apply_tool_commands(transition.commands)
     }
 
     pub(super) fn handle_canvas_mouse_up(&mut self, event: &MouseUpEvent) -> bool {
@@ -95,14 +91,72 @@ impl Phase0Shell {
             return false;
         }
 
-        let Some(drag_state) = self.drag_state.take() else {
-            return false;
-        };
-
         let cursor_world = cursor_world(&self.state.viewport, event.position);
-        finish_drag(&mut self.state.document, drag_state, cursor_world)
-            .and_then(|command| self.apply_command(command).ok())
-            .is_some()
+        let transition = Tool::transition(
+            &SelectTool,
+            self.state.tool_mode,
+            self.state.edge_mode,
+            ToolInputEvent::SelectPointerUp {
+                input: Box::new(SelectPointerUpInput {
+                    state: self.select_tool_state.clone(),
+                    cursor_world,
+                    is_primary_button: true,
+                }),
+            },
+        );
+
+        self.apply_tool_commands(transition.commands)
+    }
+}
+
+const fn map_hit(hit: MouseDownHit) -> SelectPointerHit {
+    match hit {
+        MouseDownHit::Handle(handle_hit) => SelectPointerHit::Handle(map_handle_hit(handle_hit)),
+        MouseDownHit::Anchor(anchor_hit) => SelectPointerHit::Anchor(map_anchor_hit(anchor_hit)),
+        MouseDownHit::Segment(segment_hit) => {
+            SelectPointerHit::Segment(map_segment_hit(segment_hit))
+        }
+        MouseDownHit::Shape(shape_hit) => SelectPointerHit::Shape(map_shape_hit(shape_hit)),
+        MouseDownHit::None => SelectPointerHit::None,
+    }
+}
+
+const fn map_shape_hit(hit: ShapeHit) -> SelectShapeHit {
+    SelectShapeHit {
+        shape_index: hit.shape_index,
+        shape_id: hit.shape_id,
+    }
+}
+
+const fn map_anchor_hit(hit: AnchorHit) -> SelectAnchorHit {
+    SelectAnchorHit {
+        shape_index: hit.shape_index,
+        shape_id: hit.shape_id,
+        anchor_index: hit.anchor_index,
+    }
+}
+
+const fn map_segment_hit(hit: SegmentHit) -> SelectSegmentHit {
+    SelectSegmentHit {
+        shape_index: hit.shape_index,
+        shape_id: hit.shape_id,
+        seg_index: hit.seg_index,
+    }
+}
+
+const fn map_handle_hit(hit: HandleHit) -> SelectHandleHit {
+    SelectHandleHit {
+        shape_index: hit.shape_index,
+        shape_id: hit.shape_id,
+        anchor_index: hit.anchor_index,
+        kind: map_handle_kind(hit.kind),
+    }
+}
+
+const fn map_handle_kind(kind: HandleHitKind) -> SelectHandleHitKind {
+    match kind {
+        HandleHitKind::In => SelectHandleHitKind::In,
+        HandleHitKind::Out => SelectHandleHitKind::Out,
     }
 }
 

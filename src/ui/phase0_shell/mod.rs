@@ -33,7 +33,7 @@ use gpui::prelude::*;
 use gpui_component::history::History;
 
 use crate::model::history::HistoryError;
-use crate::model::{EngineState, KeyContext, Vec2};
+use crate::model::{EngineState, KeyContext, SelectToolState, Vec2};
 
 use super::phase0_support::demo_document;
 
@@ -172,7 +172,7 @@ pub struct Phase0Shell {
     selection_history: History<selection_history::SelectionHistoryItem>,
 
     // Interaction state
-    drag_state: Option<manipulate::DragState>,
+    select_tool_state: SelectToolState,
     last_canvas_click_screen: Option<Vec2>,
 
     // File I/O state
@@ -211,7 +211,7 @@ impl Phase0Shell {
             did_request_quit: false,
             open_prompt_mode: OpenPromptMode::Native,
             selection_history: History::new(),
-            drag_state: None,
+            select_tool_state: SelectToolState::Idle,
             last_canvas_click_screen: None,
             last_saved_path: None,
             last_save_error: None,

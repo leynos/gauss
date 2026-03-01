@@ -6,9 +6,13 @@
 
 mod common;
 
-use common::{canvas_bounds, ensure_initial_draw, init_test_app, simulate_escape};
+use common::{
+    canvas_bounds, canvas_drag_scenario, draw_point, ensure_initial_draw, init_test_app,
+    read_history_len, simulate_escape, switch_to_manipulate_mode_and_verify,
+};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, TestAppContext, VisualTestContext, point, px};
+use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
+use test_support::math;
 
 fn read_shape_count(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> usize {
     visual_cx.read(|app| view.read(app).document().len())
@@ -57,5 +61,67 @@ fn escape_in_manipulate_returns_to_draw(cx: &mut TestAppContext) {
         shapes_after_click_in_draw,
         shapes_before.saturating_add(1),
         "expected draw mode click to create a new shape"
+    );
+}
+
+#[gpui::test]
+fn escape_during_manipulate_drag_preview_cancels_without_history_commit(cx: &mut TestAppContext) {
+    init_test_app(cx);
+
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    ensure_initial_draw(visual_cx);
+
+    let scenario =
+        canvas_drag_scenario(visual_cx, 20.0, 10.0).expect("expected canvas drag scenario");
+    draw_point(visual_cx, scenario.first);
+    draw_point(visual_cx, scenario.second);
+
+    switch_to_manipulate_mode_and_verify(visual_cx, &view, scenario.first);
+
+    let history_before_drag = read_history_len(visual_cx, &view);
+
+    let drag_start = point(
+        px(math::midpoint(
+            f32::from(scenario.first.x),
+            f32::from(scenario.second.x),
+        )),
+        px(math::midpoint(
+            f32::from(scenario.first.y),
+            f32::from(scenario.second.y),
+        )),
+    );
+    let drag_preview = point(
+        drag_start.x + px(scenario.delta.x),
+        drag_start.y + px(scenario.delta.y),
+    );
+
+    visual_cx.simulate_mouse_down(drag_start, MouseButton::Left, Modifiers::none());
+    visual_cx.run_until_parked();
+    let is_dragging_after_down = visual_cx.read(|app| view.read(app).is_dragging());
+    assert!(
+        is_dragging_after_down,
+        "expected mouse down to enter drag preview state"
+    );
+
+    visual_cx.simulate_mouse_move(drag_preview, MouseButton::Left, Modifiers::none());
+    visual_cx.run_until_parked();
+    assert_eq!(
+        read_history_len(visual_cx, &view),
+        history_before_drag,
+        "preview move should not commit document history"
+    );
+
+    simulate_escape(visual_cx);
+
+    let is_dragging_after_escape = visual_cx.read(|app| view.read(app).is_dragging());
+    assert!(
+        !is_dragging_after_escape,
+        "escape should clear active drag preview state"
+    );
+
+    let history_after_escape = read_history_len(visual_cx, &view);
+    assert_eq!(
+        history_after_escape, history_before_drag,
+        "escape during preview should not create history entries"
     );
 }

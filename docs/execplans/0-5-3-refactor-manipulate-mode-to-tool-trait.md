@@ -5,7 +5,7 @@ This Execution Plan (ExecPlan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: DRAFT (2026-03-01)
+Status: COMPLETE (2026-03-01)
 
 No `PLANS.md` exists in this repository.
 
@@ -50,8 +50,8 @@ Success is observable when:
   tool transition logic.
 - Use `grepai` for intent discovery and `leta` for symbol-level navigation
   during implementation updates.
-- Coordinate with an agent team and shared context pack (`pk_3qexgs7k`) for
-  planning and implementation updates.
+- Coordinate with an agent team and shared context packs (`pk_3qexgs7k`
+  during planning and `pk_zodocaas` during implementation).
 - Validate with `rstest` unit tests, `rstest-bdd` behavioural tests, and GPUI
   integration tests, including happy/unhappy/edge cases.
 - Record architecture decisions in `docs/gauss-architecture-design.md`.
@@ -118,11 +118,15 @@ Success is observable when:
   through context pack `pk_3qexgs7k`.
 - [x] (2026-03-01 02:25Z) Drafted this ExecPlan at
   `docs/execplans/0-5-3-refactor-manipulate-mode-to-tool-trait.md`.
-- [ ] Implement `SelectTool` extraction and adapter wiring.
-- [ ] Add/adjust unit, BDD, and GPUI test coverage for parity and edge cases.
-- [ ] Update architecture and user docs; mark roadmap `0.5.3` done at closure.
-- [ ] Run and record gate evidence (`make check-fmt`, `make lint`, `make
-  test`, plus docs gates when docs are changed).
+- [x] (2026-03-01 12:15Z) Implemented `SelectTool` extraction and adapter
+  wiring across model and `Phase0Shell` manipulate adapters.
+- [x] (2026-03-01 12:40Z) Added/adjusted unit, BDD, and GPUI test coverage for
+  parity and edge cases, including reserved-state no-op paths and drag
+  interruption.
+- [x] (2026-03-01 12:50Z) Updated architecture and users-guide documentation
+  and marked roadmap item `0.5.3` done.
+- [x] (2026-03-01 13:06Z) Ran and recorded gate evidence (`make check-fmt`,
+  `make lint`, `make test`, plus docs gates because docs changed).
 
 ## Surprises & Discoveries
 
@@ -137,6 +141,12 @@ Success is observable when:
   `drag.rs`, `selection.rs`, and `hit_test.rs`, reducing extraction risk.
 - Existing BDD and GPUI tests provide a usable baseline, but dedicated
   `SelectTool` behavioural scenarios are currently absent.
+- The original worker-proposed drag module layout exceeded the 400-line file
+  constraint by a narrow margin; reducing comments and adding a focused preview
+  test module kept file lengths compliant without changing behaviour.
+- Clippy/docstring gates were stricter than expected for test modules
+  (`item in documentation is missing backticks`, `no_expect_outside_tests`),
+  requiring small hygiene fixes before final green lint.
 
 ## Decision Log
 
@@ -158,20 +168,59 @@ Success is observable when:
   keeps adapter responsibilities consistent, and preserves known error
   propagation pathways. Date/Author: 2026-03-01 (assistant)
 
+- Decision: keep `SelectToolState::Marquee` and
+  `SelectToolState::Transforming` as explicit, tested no-op placeholders in
+  this milestone rather than implementing new transform UX behaviour.
+  Rationale: satisfies roadmap state-contract intent while preserving
+  behavioural parity and avoiding scope creep beyond `0.5.3`. Date/Author:
+  2026-03-01 (assistant)
+
+- Decision: add a dedicated preview helper test module
+  (`src/model/select_tool_preview_tests.rs`) to cover stale drag-state guards
+  separately from FSM transition tests. Rationale: keeps per-file line budgets
+  below 400 while expanding edge-case coverage for preview/restore safety.
+  Date/Author: 2026-03-01 (assistant)
+
 ## Outcomes & Retrospective
 
-Current outcome: planning complete; implementation not started.
+Delivered outcome: roadmap item `0.5.3` shipped and validated.
 
-Expected shipped changes once this plan is executed:
+What shipped:
 
-- `SelectTool` FSM integrated through `Tool::transition`.
-- Manipulate pointer flows routed through explicit tool input events.
-- Selection/drag/transform interaction state represented through tool state and
-  `ToolCommand` outputs.
-- Expanded unit + BDD + GPUI coverage for manipulate parity.
-- Synchronized updates across roadmap, architecture, execplan, and user docs.
+- `SelectTool` FSM extraction under `src/model/select_tool/` with explicit
+  pointer input contracts and command emission.
+- `ToolInputEvent` / `ToolCommand` extensions for manipulate pointer flows,
+  selection updates, and drag preview/restore transitions.
+- `Phase0Shell` manipulate adapter refactor to route through tool transitions
+  and centralized command application.
+- Expanded test coverage across:
+  - `rstest` unit tests (`select_tool_tests`, `select_tool_drag_tests`,
+    `select_tool_preview_tests`);
+  - `rstest-bdd` feature + bindings (`tests/features/select_tool.feature`,
+    `tests/select_tool_bdd.rs`);
+  - GPUI edge tests (`tests/gpui_escape_returns_to_draw.rs`,
+    `tests/gpui_select_tool_noop_paths.rs`).
+- Documentation and roadmap synchronization:
+  `docs/gauss-architecture-design.md`, `docs/users-guide.md`,
+  `docs/roadmap.md`, and this execplan.
 
-Retrospective notes will be filled in after implementation and gate completion.
+Gate evidence:
+
+- `/tmp/fmt-gauss-0-5-3-refactor-manipulate-mode-to-tool-trait.out`
+- `/tmp/markdownlint-gauss-0-5-3-refactor-manipulate-mode-to-tool-trait.out`
+- `/tmp/nixie-gauss-0-5-3-refactor-manipulate-mode-to-tool-trait.out`
+- `/tmp/check-fmt-gauss-0-5-3-refactor-manipulate-mode-to-tool-trait.out`
+- `/tmp/lint-gauss-0-5-3-refactor-manipulate-mode-to-tool-trait.out`
+- `/tmp/test-gauss-0-5-3-refactor-manipulate-mode-to-tool-trait.out`
+
+Retrospective:
+
+- Keeping shell code as a strict adapter substantially reduced risk during
+  extraction and made test layering clearer.
+- Splitting tests by concern (FSM transitions vs preview stale guards) improved
+  readability and helped satisfy the repository line-budget convention.
+- Early targeted test runs from worker lanes shortened the final full-gate
+  cycle, with only minor lint hygiene fixes needed during final convergence.
 
 ## Context and orientation
 
@@ -334,3 +383,5 @@ Acceptance checklist for closure:
 
 Initial draft authored on 2026-03-01 using `grepai` + `leta` discovery and
 agent-team synthesis coordinated through context pack `pk_3qexgs7k`.
+Implementation completion updates recorded on 2026-03-01 using agent-team
+execution synchronized via context pack `pk_zodocaas`.
