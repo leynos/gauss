@@ -193,10 +193,8 @@ impl A11yService {
         let inserted_ids = inserted_node_ids(&self.previous_nodes, &nodes);
         let updated_ids = updated_node_ids(&self.previous_nodes, &nodes);
 
-        if removed_node_ids.is_empty()
-            && nodes_serialized == 0
-            && self.previous_focus == Some(focus)
-        {
+        let has_no_node_deltas = removed_node_ids.is_empty() && nodes_serialized == 0;
+        if has_no_node_deltas && self.previous_focus == Some(focus) {
             self.previous_snapshot = Some(snapshot);
             self.previous_nodes = nodes;
             return Ok(false);
