@@ -1239,6 +1239,83 @@ portions of this contract in the Phase 0 shell:
 - Accessibility action routing remains deferred to roadmap item `0.6.3`; `0.6.1`
   intentionally establishes the service boundary and update pipeline first.
 
+#### 11.1.1 Initial accessibility tree publication sequence
+
+Accessibility caption: this sequence shows the first render cycle wiring where
+`Phase0Shell` invokes `A11yService`, `TreeBuilder` projects shell and document
+state into a snapshot with stable node IDs, and the AccessKit adapter publishes
+the initial full tree before render completion.
+
+```mermaid
+sequenceDiagram
+  participant GPUIWindow
+  participant Phase0Shell
+  participant A11yService
+  participant TreeBuilder
+  participant NodeIds
+  participant DocumentState
+  participant AccessKitAdapter
+
+  GPUIWindow->>Phase0Shell: request_render_cycle()
+  Phase0Shell->>A11yService: on_window_ready(shell_state, document_state)
+
+  A11yService->>TreeBuilder: build_full_tree(shell_state, document_state)
+  TreeBuilder->>Phase0Shell: get_shell_state()
+  TreeBuilder->>DocumentState: list_shapes()
+  loop for each ShapeId
+    TreeBuilder->>NodeIds: shape_id_to_node_id(shape_id)
+    NodeIds-->>TreeBuilder: node_id
+  end
+  TreeBuilder-->>A11yService: snapshot
+
+  A11yService->>AccessKitAdapter: publish_initial_tree(snapshot)
+  AccessKitAdapter-->>A11yService: ack
+  A11yService-->>Phase0Shell: on_a11y_ready()
+  Phase0Shell-->>GPUIWindow: render_complete()
+```
+
+#### 11.1.2 Incremental accessibility update sequence
+
+Accessibility caption: this sequence shows update-time behavior after user
+interaction, including snapshot rebuild, diff computation, and conditional
+publish where no-op diffs are skipped while non-no-op diffs are sent as
+incremental updates.
+
+```mermaid
+sequenceDiagram
+  participant GPUIWindow
+  participant Phase0Shell
+  participant A11yService
+  participant TreeBuilder
+  participant DiffEngine
+  participant DocumentState
+  participant AccessKitAdapter
+
+  GPUIWindow->>Phase0Shell: user_interaction(event)
+  Phase0Shell->>Phase0Shell: update_shell_and_document_state()
+  Phase0Shell->>A11yService: on_state_changed(shell_state, document_state)
+
+  A11yService->>TreeBuilder: build_full_tree(shell_state, document_state)
+  TreeBuilder->>DocumentState: list_shapes()
+  TreeBuilder-->>A11yService: new_snapshot
+
+  A11yService->>DiffEngine: diff(old_snapshot, new_snapshot)
+  DiffEngine-->>A11yService: diff
+  A11yService->>DiffEngine: is_noop(diff)
+  DiffEngine-->>A11yService: false_or_true
+
+  alt diff is not noop
+    A11yService->>AccessKitAdapter: publish_incremental_update(diff)
+    AccessKitAdapter-->>A11yService: ack
+    A11yService->>A11yService: old_snapshot = new_snapshot
+  else diff is noop
+    A11yService->>A11yService: keep_old_snapshot()
+  end
+
+  A11yService-->>Phase0Shell: on_a11y_update_complete()
+  Phase0Shell-->>GPUIWindow: continue_render_cycle()
+```
+
 ### 11.2 Accessibility coverage expectations
 
 Minimum “day one”:
