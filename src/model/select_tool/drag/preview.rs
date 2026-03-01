@@ -11,40 +11,41 @@ pub(super) fn apply_drag_preview(
     drag_state: &SelectDragState,
     cursor_world: Vec2,
 ) -> bool {
-    match drag_state {
-        SelectDragState::Shapes(shape_drag) => {
-            apply_shapes_drag_preview(doc, shape_drag, cursor_world)
-        }
-        SelectDragState::Anchor(anchor_drag) => {
-            apply_anchor_drag_preview(doc, anchor_drag, cursor_world)
-        }
-        SelectDragState::Handle(handle_drag) => {
-            apply_handle_drag_preview(doc, handle_drag, cursor_world)
-        }
-    }
+    apply_drag_internal(doc, drag_state, Some(cursor_world))
 }
 
 pub(super) fn restore_drag_preview(doc: &mut Document, drag_state: &SelectDragState) -> bool {
-    match drag_state {
-        SelectDragState::Shapes(shape_drag) => {
-            apply_shapes_drag_to_doc(doc, shape_drag, Vec2::ZERO)
-        }
-        SelectDragState::Anchor(anchor_drag) => {
-            apply_anchor_drag_to_doc(doc, anchor_drag, Vec2::ZERO)
-        }
-        SelectDragState::Handle(handle_drag) => {
-            apply_handle_drag_to_doc(doc, handle_drag, Vec2::ZERO)
-        }
-    }
+    apply_drag_internal(doc, drag_state, None)
 }
 
-fn apply_shapes_drag_preview(
+fn apply_drag_internal(
     doc: &mut Document,
-    drag: &ShapesDragState,
-    cursor_world: Vec2,
+    drag_state: &SelectDragState,
+    cursor_world: Option<Vec2>,
 ) -> bool {
-    let delta = cursor_world.sub(drag.start_cursor_world);
-    apply_shapes_drag_to_doc(doc, drag, delta)
+    match drag_state {
+        SelectDragState::Shapes(shape_drag) => apply_shapes_drag_to_doc(
+            doc,
+            shape_drag,
+            cursor_world.map_or(Vec2::ZERO, |cursor| {
+                cursor.sub(shape_drag.start_cursor_world)
+            }),
+        ),
+        SelectDragState::Anchor(anchor_drag) => apply_anchor_drag_to_doc(
+            doc,
+            anchor_drag,
+            cursor_world.map_or(Vec2::ZERO, |cursor| {
+                cursor.sub(anchor_drag.start_cursor_world)
+            }),
+        ),
+        SelectDragState::Handle(handle_drag) => apply_handle_drag_to_doc(
+            doc,
+            handle_drag,
+            cursor_world.map_or(Vec2::ZERO, |cursor| {
+                cursor.sub(handle_drag.start_cursor_world)
+            }),
+        ),
+    }
 }
 
 fn apply_shapes_drag_to_doc(doc: &mut Document, drag: &ShapesDragState, delta: Vec2) -> bool {
@@ -63,16 +64,6 @@ fn apply_shapes_drag_to_doc(doc: &mut Document, drag: &ShapesDragState, delta: V
 
     did_update_any
 }
-
-fn apply_anchor_drag_preview(
-    doc: &mut Document,
-    drag: &AnchorDragState,
-    cursor_world: Vec2,
-) -> bool {
-    let delta = cursor_world.sub(drag.start_cursor_world);
-    apply_anchor_drag_to_doc(doc, drag, delta)
-}
-
 fn apply_anchor_drag_to_doc(doc: &mut Document, drag: &AnchorDragState, delta: Vec2) -> bool {
     let Some(shape) = doc.shape_at_mut(drag.shape_index) else {
         return false;
@@ -89,16 +80,6 @@ fn apply_anchor_drag_to_doc(doc: &mut Document, drag: &AnchorDragState, delta: V
     anchor.handle_out = drag.original_anchor.handle_out.map(|p| p.add(delta));
     true
 }
-
-fn apply_handle_drag_preview(
-    doc: &mut Document,
-    drag: &HandleDragState,
-    cursor_world: Vec2,
-) -> bool {
-    let delta = cursor_world.sub(drag.start_cursor_world);
-    apply_handle_drag_to_doc(doc, drag, delta)
-}
-
 fn apply_handle_drag_to_doc(doc: &mut Document, drag: &HandleDragState, delta: Vec2) -> bool {
     let Some(shape) = doc.shape_at_mut(drag.shape_index) else {
         return false;
