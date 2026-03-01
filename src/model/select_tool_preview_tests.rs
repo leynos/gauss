@@ -63,11 +63,24 @@ fn extract_drag_state(commands: &[ToolCommand]) -> SelectToolState {
         .unwrap_or(SelectToolState::Idle)
 }
 
-#[rstest]
-fn apply_and_restore_select_drag_preview_return_false_when_drag_shape_is_stale() {
+#[expect(
+    clippy::too_many_arguments,
+    reason = "test helper intentionally accepts explicit case parameters"
+)]
+fn test_stale_preview_returns_false<F>(
+    shape_id: ShapeId,
+    hit: SelectPointerHit,
+    cursor_world: Vec2,
+    previous_selection: super::Selection,
+    make_stale: F,
+    preview_offset: Vec2,
+    apply_error_msg: &str,
+    restore_error_msg: &str,
+) where
+    F: FnOnce(&mut Document),
+{
     let mut doc = Document::new();
-    let dragged_shape = shape_id(501);
-    let _new_shape = doc.append_shape(shape_with_handles(dragged_shape));
+    let _new_shape = doc.append_shape(shape_with_handles(shape_id));
 
     let down = Tool::transition(
         &SelectTool,
@@ -76,12 +89,9 @@ fn apply_and_restore_select_drag_preview_return_false_when_drag_shape_is_stale()
         ToolInputEvent::SelectPointerDown {
             input: Box::new(SelectPointerDownInput {
                 document: doc.clone(),
-                previous_selection: selection_for_shape(dragged_shape),
-                hit: SelectPointerHit::Shape(SelectShapeHit {
-                    shape_index: 0,
-                    shape_id: dragged_shape,
-                }),
-                cursor_world: Vec2::new(3.0, 3.0),
+                previous_selection,
+                hit,
+                cursor_world,
                 is_shift_held: false,
             }),
         },
@@ -90,99 +100,81 @@ fn apply_and_restore_select_drag_preview_return_false_when_drag_shape_is_stale()
     let state = extract_drag_state(&down.commands);
     assert!(matches!(state, SelectToolState::Dragging(_)));
 
-    let _removed = doc.remove_shape(0);
-    let _replacement = doc.append_shape(shape_with_handles(shape_id(999)));
+    make_stale(&mut doc);
 
     assert!(
-        !apply_select_drag_preview(&mut doc, &state, Vec2::new(5.0, 6.0)),
-        "stale drag target should not preview into a mismatched document"
+        !apply_select_drag_preview(&mut doc, &state, cursor_world.add(preview_offset)),
+        "{apply_error_msg}"
     );
     assert!(
         !restore_select_drag_preview(&mut doc, &state),
-        "stale drag target should not restore into a mismatched document"
+        "{restore_error_msg}"
+    );
+}
+
+#[rstest]
+fn apply_and_restore_select_drag_preview_return_false_when_drag_shape_is_stale() {
+    let dragged_shape = shape_id(501);
+    test_stale_preview_returns_false(
+        dragged_shape,
+        SelectPointerHit::Shape(SelectShapeHit {
+            shape_index: 0,
+            shape_id: dragged_shape,
+        }),
+        Vec2::new(3.0, 3.0),
+        selection_for_shape(dragged_shape),
+        |doc| {
+            let _removed = doc.remove_shape(0);
+            let _replacement = doc.append_shape(shape_with_handles(shape_id(999)));
+        },
+        Vec2::new(2.0, 3.0),
+        "stale drag target should not preview into a mismatched document",
+        "stale drag target should not restore into a mismatched document",
     );
 }
 
 #[rstest]
 fn apply_and_restore_select_drag_preview_return_false_when_anchor_snapshot_is_stale() {
-    let mut doc = Document::new();
     let dragged_shape = shape_id(502);
-    let _new_shape = doc.append_shape(shape_with_handles(dragged_shape));
-
-    let down = Tool::transition(
-        &SelectTool,
-        ToolMode::Manipulate,
-        EdgeMode::Line,
-        ToolInputEvent::SelectPointerDown {
-            input: Box::new(SelectPointerDownInput {
-                document: doc.clone(),
-                previous_selection: super::Selection::empty(),
-                hit: SelectPointerHit::Anchor(SelectAnchorHit {
-                    shape_index: 0,
-                    shape_id: dragged_shape,
-                    anchor_index: 3,
-                }),
-                cursor_world: Vec2::new(0.0, 12.0),
-                is_shift_held: false,
-            }),
+    test_stale_preview_returns_false(
+        dragged_shape,
+        SelectPointerHit::Anchor(SelectAnchorHit {
+            shape_index: 0,
+            shape_id: dragged_shape,
+            anchor_index: 3,
+        }),
+        Vec2::new(0.0, 12.0),
+        super::Selection::empty(),
+        |doc| {
+            let Some(shape) = doc.shape_at_mut(0) else {
+                panic!("shape 0 should exist")
+            };
+            let _removed = shape.path.anchors.pop();
         },
-    );
-
-    let state = extract_drag_state(&down.commands);
-    assert!(matches!(state, SelectToolState::Dragging(_)));
-
-    let Some(shape) = doc.shape_at_mut(0) else {
-        panic!("shape 0 should exist")
-    };
-    let _removed = shape.path.anchors.pop();
-
-    assert!(
-        !apply_select_drag_preview(&mut doc, &state, Vec2::new(2.0, 13.0)),
-        "stale anchor index should not update preview"
-    );
-    assert!(
-        !restore_select_drag_preview(&mut doc, &state),
-        "stale anchor index should not restore preview"
+        Vec2::new(2.0, 1.0),
+        "stale anchor index should not update preview",
+        "stale anchor index should not restore preview",
     );
 }
 
 #[rstest]
 fn apply_and_restore_select_drag_preview_return_false_when_handle_snapshot_is_stale() {
-    let mut doc = Document::new();
     let dragged_shape = shape_id(503);
-    let _new_shape = doc.append_shape(shape_with_handles(dragged_shape));
-
-    let down = Tool::transition(
-        &SelectTool,
-        ToolMode::Manipulate,
-        EdgeMode::Line,
-        ToolInputEvent::SelectPointerDown {
-            input: Box::new(SelectPointerDownInput {
-                document: doc.clone(),
-                previous_selection: super::Selection::empty(),
-                hit: SelectPointerHit::Handle(SelectHandleHit {
-                    shape_index: 0,
-                    shape_id: dragged_shape,
-                    anchor_index: 0,
-                    kind: SelectHandleHitKind::Out,
-                }),
-                cursor_world: Vec2::new(2.0, 1.0),
-                is_shift_held: false,
-            }),
+    test_stale_preview_returns_false(
+        dragged_shape,
+        SelectPointerHit::Handle(SelectHandleHit {
+            shape_index: 0,
+            shape_id: dragged_shape,
+            anchor_index: 0,
+            kind: SelectHandleHitKind::Out,
+        }),
+        Vec2::new(2.0, 1.0),
+        super::Selection::empty(),
+        |doc| {
+            let _removed = doc.remove_shape(0);
         },
-    );
-
-    let state = extract_drag_state(&down.commands);
-    assert!(matches!(state, SelectToolState::Dragging(_)));
-
-    let _removed = doc.remove_shape(0);
-
-    assert!(
-        !apply_select_drag_preview(&mut doc, &state, Vec2::new(7.0, 4.0)),
-        "removed shape should prevent handle preview updates"
-    );
-    assert!(
-        !restore_select_drag_preview(&mut doc, &state),
-        "removed shape should prevent handle preview restore"
+        Vec2::new(5.0, 3.0),
+        "removed shape should prevent handle preview updates",
+        "removed shape should prevent handle preview restore",
     );
 }
