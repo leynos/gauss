@@ -67,27 +67,33 @@ fn pointer_down_input(
     }
 }
 
-fn pointer_move_input(
-    state: SelectToolState,
-    cursor: Vec2,
-    has_primary: bool,
-) -> SelectPointerMoveInput {
-    SelectPointerMoveInput {
-        state,
-        cursor_world: cursor,
-        has_primary_button: has_primary,
-    }
+#[derive(Clone, Copy)]
+enum PointerInputKind {
+    Move,
+    Up,
 }
 
-fn pointer_up_input(
+fn pointer_input(
     state: SelectToolState,
     cursor: Vec2,
     is_primary: bool,
-) -> SelectPointerUpInput {
-    SelectPointerUpInput {
-        state,
-        cursor_world: cursor,
-        is_primary_button: is_primary,
+    kind: PointerInputKind,
+) -> ToolInputEvent {
+    match kind {
+        PointerInputKind::Move => ToolInputEvent::SelectPointerMove {
+            input: Box::new(SelectPointerMoveInput {
+                state,
+                cursor_world: cursor,
+                has_primary_button: is_primary,
+            }),
+        },
+        PointerInputKind::Up => ToolInputEvent::SelectPointerUp {
+            input: Box::new(SelectPointerUpInput {
+                state,
+                cursor_world: cursor,
+                is_primary_button: is_primary,
+            }),
+        },
     }
 }
 
@@ -257,9 +263,12 @@ fn select_tool_pointer_move_with_drag_state_emits_preview_command() {
 
     let move_transition = fixture.transition_with_mode(
         ToolMode::Manipulate,
-        ToolInputEvent::SelectPointerMove {
-            input: Box::new(pointer_move_input(drag_state, Vec2::new(8.0, 9.0), true)),
-        },
+        pointer_input(
+            drag_state,
+            Vec2::new(8.0, 9.0),
+            true,
+            PointerInputKind::Move,
+        ),
     );
 
     assert_eq!(
@@ -275,13 +284,12 @@ fn select_tool_pointer_move_without_drag_state_is_noop() {
     let fixture = SelectToolTestFixture::new(1, 1.0);
     let transition = fixture.transition_with_mode(
         ToolMode::Manipulate,
-        ToolInputEvent::SelectPointerMove {
-            input: Box::new(pointer_move_input(
-                SelectToolState::Idle,
-                Vec2::new(8.0, 9.0),
-                true,
-            )),
-        },
+        pointer_input(
+            SelectToolState::Idle,
+            Vec2::new(8.0, 9.0),
+            true,
+            PointerInputKind::Move,
+        ),
     );
 
     assert!(transition.commands.is_empty());
@@ -294,9 +302,7 @@ fn select_tool_pointer_up_without_delta_restores_preview_and_returns_idle() {
         fixture.setup_drag_state(Vec2::new(5.0, 5.0), selection_for_shape(shape_id(88)));
     let up = fixture.transition_with_mode(
         ToolMode::Manipulate,
-        ToolInputEvent::SelectPointerUp {
-            input: Box::new(pointer_up_input(drag_state, Vec2::new(5.0, 5.0), true)),
-        },
+        pointer_input(drag_state, Vec2::new(5.0, 5.0), true, PointerInputKind::Up),
     );
 
     assert_eq!(
@@ -315,9 +321,7 @@ fn select_tool_pointer_up_with_delta_emits_document_command_and_returns_idle() {
         fixture.setup_drag_state(Vec2::new(5.0, 5.0), selection_for_shape(shape_id(99)));
     let up = fixture.transition_with_mode(
         ToolMode::Manipulate,
-        ToolInputEvent::SelectPointerUp {
-            input: Box::new(pointer_up_input(drag_state, Vec2::new(11.0, 7.0), true)),
-        },
+        pointer_input(drag_state, Vec2::new(11.0, 7.0), true, PointerInputKind::Up),
     );
 
     assert!(matches!(
@@ -340,13 +344,12 @@ fn select_tool_ignores_pointer_events_outside_manipulate_mode() {
     let fixture = SelectToolTestFixture::new(2, 1.0);
     let transition = fixture.transition_with_mode(
         ToolMode::Draw,
-        ToolInputEvent::SelectPointerMove {
-            input: Box::new(pointer_move_input(
-                SelectToolState::Idle,
-                Vec2::new(0.0, 0.0),
-                true,
-            )),
-        },
+        pointer_input(
+            SelectToolState::Idle,
+            Vec2::new(0.0, 0.0),
+            true,
+            PointerInputKind::Move,
+        ),
     );
 
     assert!(transition.commands.is_empty());
