@@ -379,9 +379,9 @@ macro_rules! select_tool_scenario {
         }
     };
 }
-
 #[rustfmt::skip]
 mod scenario_bindings {
+    //! Scenario entrypoints bound to `tests/features/select_tool.feature`.
     use super::*;
     select_tool_scenario!(pointer_down_selects_and_starts_drag, "Pointer down on shape selects it and starts drag state");
     select_tool_scenario!(shift_pointer_down_toggles_and_stays_idle, "Shift pointer down toggles selection and stays idle");
