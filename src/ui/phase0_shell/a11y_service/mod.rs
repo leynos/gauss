@@ -21,6 +21,9 @@ mod diff;
 mod tests;
 mod tree_builder;
 
+const MAX_PENDING_UPDATES: usize = 128;
+const MAX_UPDATE_RECORDS: usize = 512;
+
 /// A compact description of an emitted tree update for tests and diagnostics.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct A11yUpdateRecord {
@@ -118,6 +121,17 @@ impl A11yService {
         std::mem::take(&mut self.pending_updates)
     }
 
+    /// Return the number of queued updates awaiting adapter delivery.
+    #[must_use]
+    pub const fn pending_update_count(&self) -> usize {
+        self.pending_updates.len()
+    }
+
+    /// Clear queued updates that have not yet been delivered to adapters.
+    pub fn clear_pending_updates(&mut self) {
+        self.pending_updates.clear();
+    }
+
     /// Return diagnostic records for already-queued updates.
     #[must_use]
     pub fn update_records(&self) -> &[A11yUpdateRecord] {
@@ -162,15 +176,17 @@ impl A11yService {
                 tree_id: TreeId::ROOT,
                 focus,
             };
-            self.pending_updates.push(initial_update);
-            self.update_records.push(A11yUpdateRecord {
-                kind: A11yUpdateKind::InitialTree,
-                inserted_node_ids: nodes.keys().map(|id| id.0).collect(),
-                updated_node_ids: Vec::new(),
-                removed_node_ids: Vec::new(),
-                focus_node_id: focus.0,
-                nodes_serialized: nodes.len(),
-            });
+            self.store_emitted_update(
+                initial_update,
+                A11yUpdateRecord {
+                    kind: A11yUpdateKind::InitialTree,
+                    inserted_node_ids: nodes.keys().map(|id| id.0).collect(),
+                    updated_node_ids: Vec::new(),
+                    removed_node_ids: Vec::new(),
+                    focus_node_id: focus.0,
+                    nodes_serialized: nodes.len(),
+                },
+            );
             self.previous_snapshot = Some(snapshot);
             self.previous_nodes = nodes;
             self.previous_focus = Some(focus);
@@ -200,19 +216,28 @@ impl A11yService {
             return Ok(false);
         }
 
-        self.pending_updates.push(update);
-        self.update_records.push(A11yUpdateRecord {
-            kind: A11yUpdateKind::Incremental,
-            inserted_node_ids: inserted_ids,
-            updated_node_ids: updated_ids,
-            removed_node_ids,
-            focus_node_id: focus.0,
-            nodes_serialized,
-        });
+        self.store_emitted_update(
+            update,
+            A11yUpdateRecord {
+                kind: A11yUpdateKind::Incremental,
+                inserted_node_ids: inserted_ids,
+                updated_node_ids: updated_ids,
+                removed_node_ids,
+                focus_node_id: focus.0,
+                nodes_serialized,
+            },
+        );
         self.previous_snapshot = Some(snapshot);
         self.previous_nodes = nodes;
         self.previous_focus = Some(focus);
         Ok(true)
+    }
+
+    fn store_emitted_update(&mut self, update: TreeUpdate, record: A11yUpdateRecord) {
+        self.pending_updates.push(update);
+        truncate_oldest(&mut self.pending_updates, MAX_PENDING_UPDATES);
+        self.update_records.push(record);
+        truncate_oldest(&mut self.update_records, MAX_UPDATE_RECORDS);
     }
 
     #[cfg(test)]
@@ -249,6 +274,13 @@ fn snapshot_from_shell(shell: &Phase0Shell) -> A11ySnapshot {
         is_maximized: shell.last_maximized_state == Some(true),
         selected_shape_ids,
         shapes,
+    }
+}
+
+fn truncate_oldest<T>(items: &mut Vec<T>, max_len: usize) {
+    let overflow = items.len().saturating_sub(max_len);
+    if overflow > 0 {
+        items.drain(..overflow);
     }
 }
 

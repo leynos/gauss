@@ -132,3 +132,22 @@ fn node_map_focuses_canvas_when_selected_shape_is_missing() {
     let (_, focus) = build_node_map(&snapshot).expect("node map build should succeed");
     assert_eq!(focus, NodeId(0x1007));
 }
+
+#[rstest]
+fn emitted_updates_are_bounded_to_prevent_unbounded_growth() {
+    let mut service = A11yService::new();
+    let mut baseline = snapshot(&[0x2_0000_0001], &[]);
+    service
+        .sync_from_shell_like(baseline.clone())
+        .expect("initial sync should succeed");
+
+    for iteration in 0_u32..700 {
+        baseline.is_maximized = iteration.is_multiple_of(2);
+        service
+            .sync_from_shell_like(baseline.clone())
+            .expect("toggle sync should succeed");
+    }
+
+    assert_eq!(service.pending_update_count(), 128);
+    assert_eq!(service.update_records().len(), 512);
+}

@@ -5,7 +5,7 @@
 //! `TestAppContext`.
 
 mod a11y_service;
-mod accessibility;
+pub mod accessibility;
 mod anchor_edit;
 mod chrome;
 mod chrome_palette;

@@ -314,19 +314,19 @@ set -o pipefail
 
 # Targeted test loops during implementation
 cargo test --lib a11y_service \
-  | tee "/tmp/test-unit-$(get-project)-$(git branch --show).out"
+  | tee "/tmp/test-unit-$(get-project)-$(git branch --show-current).out"
 cargo test --test a11y_service_bdd \
-  | tee "/tmp/test-bdd-$(get-project)-$(git branch --show).out"
+  | tee "/tmp/test-bdd-$(get-project)-$(git branch --show-current).out"
 cargo test --test gpui_a11y_service \
-  | tee "/tmp/test-gpui-$(get-project)-$(git branch --show).out"
+  | tee "/tmp/test-gpui-$(get-project)-$(git branch --show-current).out"
 
 # Required closure gates
 make check-fmt \
-  | tee "/tmp/check-fmt-$(get-project)-$(git branch --show).out"
+  | tee "/tmp/check-fmt-$(get-project)-$(git branch --show-current).out"
 make lint \
-  | tee "/tmp/lint-$(get-project)-$(git branch --show).out"
+  | tee "/tmp/lint-$(get-project)-$(git branch --show-current).out"
 make test \
-  | tee "/tmp/test-$(get-project)-$(git branch --show).out"
+  | tee "/tmp/test-$(get-project)-$(git branch --show-current).out"
 ```
 
 If documentation changes are part of closure, also run:
@@ -334,11 +334,11 @@ If documentation changes are part of closure, also run:
 ```sh
 set -o pipefail
 make fmt \
-  | tee "/tmp/fmt-$(get-project)-$(git branch --show).out"
+  | tee "/tmp/fmt-$(get-project)-$(git branch --show-current).out"
 make markdownlint \
-  | tee "/tmp/markdownlint-$(get-project)-$(git branch --show).out"
+  | tee "/tmp/markdownlint-$(get-project)-$(git branch --show-current).out"
 make nixie \
-  | tee "/tmp/nixie-$(get-project)-$(git branch --show).out"
+  | tee "/tmp/nixie-$(get-project)-$(git branch --show-current).out"
 ```
 
 ## Closure checklist for roadmap 0.6.1

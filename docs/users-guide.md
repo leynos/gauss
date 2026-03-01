@@ -77,7 +77,7 @@ accessibility focus target. If the selection is stale or missing, focus falls
 back to the canvas node.
 
 Assistive-technology action invocation is not yet mapped into the command
-pipeline. That behavior is planned in roadmap item `0.6.3`.
+pipeline. That behaviour is planned in roadmap item `0.6.3`.
 
 ## Tool Modes
 

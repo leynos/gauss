@@ -276,8 +276,8 @@ impl Phase0Shell {
 
     /// Return the number of queued AccessKit updates.
     #[must_use]
-    pub fn a11y_pending_update_count_for_tests(&self) -> usize {
-        self.a11y_service.update_records().len()
+    pub const fn a11y_pending_update_count_for_tests(&self) -> usize {
+        self.a11y_service.pending_update_count()
     }
 
     /// Return AccessKit update diagnostics collected so far.
@@ -286,8 +286,9 @@ impl Phase0Shell {
         self.a11y_service.update_records()
     }
 
-    /// Clear stored AccessKit update diagnostics.
+    /// Clear queued AccessKit updates and stored diagnostics.
     pub fn clear_a11y_updates_for_tests(&mut self) {
+        self.a11y_service.clear_pending_updates();
         self.a11y_service.clear_update_records();
     }
 

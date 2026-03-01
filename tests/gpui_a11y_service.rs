@@ -5,7 +5,7 @@ mod common;
 use common::{ensure_initial_draw, init_test_app};
 use gauss::model::{Selection, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
-use gauss::ui::phase0_shell::A11yUpdateKind;
+use gauss::ui::phase0_shell::{A11yUpdateKind, accessibility};
 use gpui::TestAppContext;
 
 fn setup_window(
@@ -32,7 +32,9 @@ fn a11y_initial_tree_update_is_emitted_on_first_draw(cx: &mut TestAppContext) {
         .expect("expected one initial accessibility update");
     assert_eq!(first.kind, A11yUpdateKind::InitialTree);
     assert!(
-        first.inserted_node_ids.contains(&0x1006),
+        first
+            .inserted_node_ids
+            .contains(&accessibility::node_ids::TITLEBAR),
         "expected titlebar node to be included in inserted IDs"
     );
 }
