@@ -59,7 +59,7 @@ conventions:
 | Move Window       | -          | Alt+F7        |
 | Resize Window     | -          | Alt+F8        |
 
-## Accessibility Status
+## Accessibility status
 
 Gauss now publishes an accessibility tree that covers:
 

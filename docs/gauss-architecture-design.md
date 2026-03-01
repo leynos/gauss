@@ -1230,8 +1230,8 @@ portions of this contract in the Phase 0 shell:
 
 - `A11yService` snapshots `Phase0Shell` state into a deterministic AccessKit
   tree with root window, title bar chrome, status, canvas, and shape list nodes.
-- The first synchronisation emits a full `TreeUpdate` with tree metadata; later
-  synchronisations emit incremental node deltas (insert/update/remove) and
+- The first synchronization emits a full `TreeUpdate` with tree metadata; later
+  synchronizations emit incremental node deltas (insert/update/remove) and
   focus updates only when semantic accessibility state changes.
 - Shape nodes derive IDs from `ShapeId::to_accesskit_node_id()`, while title
   bar and chrome nodes use reserved constants. ID collisions return typed

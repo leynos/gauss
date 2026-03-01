@@ -169,34 +169,58 @@ impl A11yService {
     pub fn sync_snapshot(&mut self, snapshot: A11ySnapshot) -> Result<bool, A11yServiceError> {
         let (nodes, focus) = build_node_map(&snapshot)?;
 
-        let Some(previous_snapshot) = self.previous_snapshot.as_ref() else {
-            let initial_update = TreeUpdate {
-                nodes: clone_nodes_in_order(&nodes),
-                tree: Some(Tree::new(ROOT_NODE_ID)),
-                tree_id: TreeId::ROOT,
-                focus,
-            };
-            self.store_emitted_update(
-                initial_update,
-                A11yUpdateRecord {
-                    kind: A11yUpdateKind::InitialTree,
-                    inserted_node_ids: nodes.keys().map(|id| id.0).collect(),
-                    updated_node_ids: Vec::new(),
-                    removed_node_ids: Vec::new(),
-                    focus_node_id: focus.0,
-                    nodes_serialized: nodes.len(),
-                },
-            );
-            self.previous_snapshot = Some(snapshot);
-            self.previous_nodes = nodes;
-            self.previous_focus = Some(focus);
+        if self.previous_snapshot.is_none() {
+            self.emit_initial_snapshot(snapshot, nodes, focus);
             return Ok(true);
-        };
+        }
 
-        if *previous_snapshot == snapshot && self.previous_focus == Some(focus) {
+        if self.previous_snapshot.as_ref() == Some(&snapshot) && self.previous_focus == Some(focus)
+        {
             return Ok(false);
         }
 
+        Ok(self.emit_incremental_snapshot(snapshot, nodes, focus))
+    }
+
+    fn emit_initial_snapshot(
+        &mut self,
+        snapshot: A11ySnapshot,
+        nodes: BTreeMap<NodeId, Node>,
+        focus: NodeId,
+    ) {
+        let initial_update = TreeUpdate {
+            nodes: clone_nodes_in_order(&nodes),
+            tree: Some(Tree::new(ROOT_NODE_ID)),
+            tree_id: TreeId::ROOT,
+            focus,
+        };
+        let rebase_update = TreeUpdate {
+            nodes: clone_nodes_in_order(&nodes),
+            tree: Some(Tree::new(ROOT_NODE_ID)),
+            tree_id: TreeId::ROOT,
+            focus,
+        };
+        self.store_emitted_update(
+            initial_update,
+            A11yUpdateRecord {
+                kind: A11yUpdateKind::InitialTree,
+                inserted_node_ids: nodes.keys().map(|id| id.0).collect(),
+                updated_node_ids: Vec::new(),
+                removed_node_ids: Vec::new(),
+                focus_node_id: focus.0,
+                nodes_serialized: nodes.len(),
+            },
+            rebase_update,
+        );
+        self.set_previous_state(snapshot, nodes, focus);
+    }
+
+    fn emit_incremental_snapshot(
+        &mut self,
+        snapshot: A11ySnapshot,
+        nodes: BTreeMap<NodeId, Node>,
+        focus: NodeId,
+    ) -> bool {
         let removed_node_ids = removed_node_ids(&self.previous_nodes, &nodes);
         let changed_nodes = changed_nodes(&self.previous_nodes, &nodes);
         let update = TreeUpdate {
@@ -208,12 +232,17 @@ impl A11yService {
         let nodes_serialized = update.nodes.len();
         let inserted_ids = inserted_node_ids(&self.previous_nodes, &nodes);
         let updated_ids = updated_node_ids(&self.previous_nodes, &nodes);
+        let rebase_update = TreeUpdate {
+            nodes: clone_nodes_in_order(&nodes),
+            tree: Some(Tree::new(ROOT_NODE_ID)),
+            tree_id: TreeId::ROOT,
+            focus,
+        };
 
         let has_no_node_deltas = removed_node_ids.is_empty() && nodes_serialized == 0;
         if has_no_node_deltas && self.previous_focus == Some(focus) {
-            self.previous_snapshot = Some(snapshot);
-            self.previous_nodes = nodes;
-            return Ok(false);
+            self.set_previous_state(snapshot, nodes, focus);
+            return false;
         }
 
         self.store_emitted_update(
@@ -226,18 +255,38 @@ impl A11yService {
                 focus_node_id: focus.0,
                 nodes_serialized,
             },
+            rebase_update,
         );
+        self.set_previous_state(snapshot, nodes, focus);
+        true
+    }
+
+    fn store_emitted_update(
+        &mut self,
+        update: TreeUpdate,
+        record: A11yUpdateRecord,
+        rebase_update: TreeUpdate,
+    ) {
+        self.pending_updates.push(update);
+        if self.pending_updates.len() > MAX_PENDING_UPDATES {
+            // Rebase queued deltas to a single full snapshot instead of silently
+            // dropping delivery-critical updates.
+            self.pending_updates.clear();
+            self.pending_updates.push(rebase_update);
+        }
+        self.update_records.push(record);
+        truncate_oldest(&mut self.update_records, MAX_UPDATE_RECORDS);
+    }
+
+    fn set_previous_state(
+        &mut self,
+        snapshot: A11ySnapshot,
+        nodes: BTreeMap<NodeId, Node>,
+        focus: NodeId,
+    ) {
         self.previous_snapshot = Some(snapshot);
         self.previous_nodes = nodes;
         self.previous_focus = Some(focus);
-        Ok(true)
-    }
-
-    fn store_emitted_update(&mut self, update: TreeUpdate, record: A11yUpdateRecord) {
-        self.pending_updates.push(update);
-        truncate_oldest(&mut self.pending_updates, MAX_PENDING_UPDATES);
-        self.update_records.push(record);
-        truncate_oldest(&mut self.update_records, MAX_UPDATE_RECORDS);
     }
 
     #[cfg(test)]

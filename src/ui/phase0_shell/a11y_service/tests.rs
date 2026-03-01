@@ -1,14 +1,11 @@
 //! Unit tests for AccessKit tree projection and incremental updates.
 
-use accesskit::NodeId;
 use rstest::rstest;
 
 use crate::model::{EdgeMode, ShapeId, ToolMode};
 
-use super::tree_builder::build_node_map;
+use super::tree_builder::{CANVAS_NODE_ID, SHAPE_LIST_NODE_ID, build_node_map};
 use super::{A11yService, A11yServiceError, A11yShapeSnapshot, A11ySnapshot, A11yUpdateKind};
-
-const SHAPE_LIST_NODE_ID_RAW: u64 = 0x1008;
 
 fn shape_id(raw: u64) -> ShapeId {
     ShapeId::from_accesskit_node_id(raw)
@@ -55,7 +52,7 @@ fn first_sync_builds_initial_tree_and_record() {
     assert!(
         first_record
             .inserted_node_ids
-            .contains(&SHAPE_LIST_NODE_ID_RAW)
+            .contains(&SHAPE_LIST_NODE_ID.0)
     );
 }
 
@@ -92,7 +89,7 @@ fn adding_shape_emits_incremental_insert_and_parent_update() {
     let inserted_shape_node_id = shape_id(0x2_0000_0002).to_accesskit_node_id();
     assert_eq!(record.kind, A11yUpdateKind::Incremental);
     assert!(record.inserted_node_ids.contains(&inserted_shape_node_id));
-    assert!(record.updated_node_ids.contains(&SHAPE_LIST_NODE_ID_RAW));
+    assert!(record.updated_node_ids.contains(&SHAPE_LIST_NODE_ID.0));
 }
 
 #[rstest]
@@ -130,7 +127,7 @@ fn duplicate_shape_ids_return_error() {
 fn node_map_focuses_canvas_when_selected_shape_is_missing() {
     let snapshot = snapshot(&[0x2_0000_0001], &[0x2_0000_0002]);
     let (_, focus) = build_node_map(&snapshot).expect("node map build should succeed");
-    assert_eq!(focus, NodeId(0x1007));
+    assert_eq!(focus, CANVAS_NODE_ID);
 }
 
 #[rstest]
@@ -148,6 +145,13 @@ fn emitted_updates_are_bounded_to_prevent_unbounded_growth() {
             .expect("toggle sync should succeed");
     }
 
-    assert_eq!(service.pending_update_count(), 128);
+    assert!(service.pending_update_count() <= super::MAX_PENDING_UPDATES);
     assert_eq!(service.update_records().len(), 512);
+    assert!(
+        service
+            .pending_updates
+            .iter()
+            .any(|update| update.tree.is_some()),
+        "expected overflow handling to retain a full-tree rebase update"
+    );
 }

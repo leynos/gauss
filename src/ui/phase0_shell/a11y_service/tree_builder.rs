@@ -9,8 +9,8 @@ use crate::ui::phase0_shell::accessibility;
 use super::{A11yServiceError, A11ySnapshot};
 
 pub(super) const ROOT_NODE_ID: NodeId = NodeId(0x1000);
-const CANVAS_NODE_ID: NodeId = NodeId(0x1007);
-const SHAPE_LIST_NODE_ID: NodeId = NodeId(0x1008);
+pub(super) const CANVAS_NODE_ID: NodeId = NodeId(0x1007);
+pub(super) const SHAPE_LIST_NODE_ID: NodeId = NodeId(0x1008);
 const STATUS_NODE_ID: NodeId = NodeId(0x1009);
 
 const RESERVED_NODE_IDS: [u64; 10] = [
