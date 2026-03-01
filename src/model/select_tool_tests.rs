@@ -4,7 +4,7 @@ use super::{
     Anchor, Command, Document, EdgeMode, Paint, PaintStyle, PathGeom, SegmentKind,
     SelectPointerDownInput, SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput,
     SelectShapeHit, SelectTool, SelectToolState, Shape, ShapeId, Tool, ToolCommand, ToolInputEvent,
-    ToolMode, ToolTransition, Vec2,
+    ToolMode, Vec2,
 };
 use rstest::rstest;
 
@@ -67,52 +67,6 @@ fn pointer_down_input(
     }
 }
 
-struct SelectToolTestFixture {
-    document: Document,
-    shape_id: ShapeId,
-    edge_mode: EdgeMode,
-}
-
-impl SelectToolTestFixture {
-    fn new(id: u64, size: f32) -> Self {
-        let mut document = Document::new();
-        let selected_shape = shape_id(id);
-        let _new_shape = document.append_shape(square_shape(
-            selected_shape,
-            Vec2::new(0.0, 0.0),
-            Vec2::new(size, size),
-        ));
-
-        Self {
-            document,
-            shape_id: selected_shape,
-            edge_mode: EdgeMode::Line,
-        }
-    }
-
-    fn transition_pointer_down(
-        &self,
-        cursor: Vec2,
-        previous_selection: super::Selection,
-    ) -> ToolTransition {
-        self.transition_with_mode(
-            ToolMode::Manipulate,
-            ToolInputEvent::SelectPointerDown {
-                input: Box::new(pointer_down_input(
-                    &self.document,
-                    self.shape_id,
-                    cursor,
-                    previous_selection,
-                )),
-            },
-        )
-    }
-
-    fn transition_with_mode(&self, mode: ToolMode, event: ToolInputEvent) -> ToolTransition {
-        Tool::transition(&SelectTool, mode, self.edge_mode, event)
-    }
-}
-
 fn pointer_move_input(
     state: SelectToolState,
     cursor: Vec2,
@@ -145,6 +99,32 @@ fn extract_drag_state(commands: &[ToolCommand]) -> SelectToolState {
             _ => None,
         })
         .unwrap_or(SelectToolState::Idle)
+}
+
+fn setup_doc_with_shape(id: u64, min: Vec2, max: Vec2) -> (Document, ShapeId) {
+    let mut doc = Document::new();
+    let selected_shape = shape_id(id);
+    let _new_shape = doc.append_shape(square_shape(selected_shape, min, max));
+    (doc, selected_shape)
+}
+
+fn initiate_drag(doc: &Document, shape_id: ShapeId, cursor_pos: Vec2) -> SelectToolState {
+    let down_commands = perform_transition(
+        ToolMode::Manipulate,
+        ToolInputEvent::SelectPointerDown {
+            input: Box::new(pointer_down_input(
+                doc,
+                shape_id,
+                cursor_pos,
+                selection_for_shape(shape_id),
+            )),
+        },
+    );
+    extract_drag_state(&down_commands)
+}
+
+fn perform_transition(mode: ToolMode, event: ToolInputEvent) -> Vec<ToolCommand> {
+    Tool::transition(&SelectTool, mode, EdgeMode::Line, event).commands
 }
 
 #[rstest]
@@ -243,15 +223,12 @@ fn select_tool_shift_click_toggles_selection_and_stays_idle() {
 
 #[rstest]
 fn select_tool_pointer_move_with_drag_state_emits_preview_command() {
-    let fixture = SelectToolTestFixture::new(77, 20.0);
-    let selected_shape = shape_id(77);
-    let down =
-        fixture.transition_pointer_down(Vec2::new(5.0, 5.0), selection_for_shape(selected_shape));
-
-    let drag_state = extract_drag_state(&down.commands);
+    let (doc, selected_shape) =
+        setup_doc_with_shape(77, Vec2::new(0.0, 0.0), Vec2::new(20.0, 20.0));
+    let drag_state = initiate_drag(&doc, selected_shape, Vec2::new(5.0, 5.0));
     assert!(matches!(drag_state, SelectToolState::Dragging(_)));
 
-    let move_transition = fixture.transition_with_mode(
+    let move_commands = perform_transition(
         ToolMode::Manipulate,
         ToolInputEvent::SelectPointerMove {
             input: Box::new(pointer_move_input(drag_state, Vec2::new(8.0, 9.0), true)),
@@ -259,7 +236,7 @@ fn select_tool_pointer_move_with_drag_state_emits_preview_command() {
     );
 
     assert_eq!(
-        move_transition.commands,
+        move_commands,
         vec![ToolCommand::PreviewSelectDrag {
             cursor_world: Vec2::new(8.0, 9.0),
         }]
@@ -268,8 +245,7 @@ fn select_tool_pointer_move_with_drag_state_emits_preview_command() {
 
 #[rstest]
 fn select_tool_pointer_move_without_drag_state_is_noop() {
-    let fixture = SelectToolTestFixture::new(1, 1.0);
-    let transition = fixture.transition_with_mode(
+    let transition = perform_transition(
         ToolMode::Manipulate,
         ToolInputEvent::SelectPointerMove {
             input: Box::new(pointer_move_input(
@@ -280,19 +256,16 @@ fn select_tool_pointer_move_without_drag_state_is_noop() {
         },
     );
 
-    assert!(transition.commands.is_empty());
+    assert!(transition.is_empty());
 }
 
 #[rstest]
 fn select_tool_pointer_up_without_delta_restores_preview_and_returns_idle() {
-    let fixture = SelectToolTestFixture::new(88, 20.0);
-    let selected_shape = shape_id(88);
-    let down =
-        fixture.transition_pointer_down(Vec2::new(5.0, 5.0), selection_for_shape(selected_shape));
-
-    let drag_state = extract_drag_state(&down.commands);
+    let (doc, selected_shape) =
+        setup_doc_with_shape(88, Vec2::new(0.0, 0.0), Vec2::new(20.0, 20.0));
+    let drag_state = initiate_drag(&doc, selected_shape, Vec2::new(5.0, 5.0));
     assert!(matches!(drag_state, SelectToolState::Dragging(_)));
-    let up = fixture.transition_with_mode(
+    let up_commands = perform_transition(
         ToolMode::Manipulate,
         ToolInputEvent::SelectPointerUp {
             input: Box::new(pointer_up_input(drag_state, Vec2::new(5.0, 5.0), true)),
@@ -300,7 +273,7 @@ fn select_tool_pointer_up_without_delta_restores_preview_and_returns_idle() {
     );
 
     assert_eq!(
-        up.commands,
+        up_commands,
         vec![
             ToolCommand::RestoreSelectDragPreview,
             ToolCommand::SetSelectToolState(SelectToolState::Idle),
@@ -310,14 +283,11 @@ fn select_tool_pointer_up_without_delta_restores_preview_and_returns_idle() {
 
 #[rstest]
 fn select_tool_pointer_up_with_delta_emits_document_command_and_returns_idle() {
-    let fixture = SelectToolTestFixture::new(99, 20.0);
-    let selected_shape = shape_id(99);
-    let down =
-        fixture.transition_pointer_down(Vec2::new(5.0, 5.0), selection_for_shape(selected_shape));
-
-    let drag_state = extract_drag_state(&down.commands);
+    let (doc, selected_shape) =
+        setup_doc_with_shape(99, Vec2::new(0.0, 0.0), Vec2::new(20.0, 20.0));
+    let drag_state = initiate_drag(&doc, selected_shape, Vec2::new(5.0, 5.0));
     assert!(matches!(drag_state, SelectToolState::Dragging(_)));
-    let up = fixture.transition_with_mode(
+    let up_commands = perform_transition(
         ToolMode::Manipulate,
         ToolInputEvent::SelectPointerUp {
             input: Box::new(pointer_up_input(drag_state, Vec2::new(11.0, 7.0), true)),
@@ -325,24 +295,23 @@ fn select_tool_pointer_up_with_delta_emits_document_command_and_returns_idle() {
     );
 
     assert!(matches!(
-        up.commands.first(),
+        up_commands.first(),
         Some(ToolCommand::RestoreSelectDragPreview)
     ));
     assert!(matches!(
-        up.commands.get(1),
+        up_commands.get(1),
         Some(ToolCommand::ApplyDocumentCommand(command))
             if matches!(command.as_ref(), Command::MoveShapes { .. })
     ));
     assert!(matches!(
-        up.commands.last(),
+        up_commands.last(),
         Some(ToolCommand::SetSelectToolState(SelectToolState::Idle))
     ));
 }
 
 #[rstest]
 fn select_tool_ignores_pointer_events_outside_manipulate_mode() {
-    let fixture = SelectToolTestFixture::new(2, 1.0);
-    let transition = fixture.transition_with_mode(
+    let transition = perform_transition(
         ToolMode::Draw,
         ToolInputEvent::SelectPointerMove {
             input: Box::new(pointer_move_input(
@@ -353,5 +322,5 @@ fn select_tool_ignores_pointer_events_outside_manipulate_mode() {
         },
     );
 
-    assert!(transition.commands.is_empty());
+    assert!(transition.is_empty());
 }
