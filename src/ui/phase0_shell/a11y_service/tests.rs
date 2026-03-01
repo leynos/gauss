@@ -146,7 +146,7 @@ fn emitted_updates_are_bounded_to_prevent_unbounded_growth() {
     }
 
     assert!(service.pending_update_count() <= super::MAX_PENDING_UPDATES);
-    assert_eq!(service.update_records().len(), 512);
+    assert_eq!(service.update_records().len(), super::MAX_UPDATE_RECORDS);
     assert!(
         service
             .pending_updates

@@ -109,6 +109,11 @@ pub struct A11yService {
     update_records: Vec<A11yUpdateRecord>,
 }
 
+struct RebaseContext<'a> {
+    nodes: &'a BTreeMap<NodeId, Node>,
+    focus: NodeId,
+}
+
 impl A11yService {
     /// Create a new service with no baseline tree.
     #[must_use]
@@ -194,12 +199,6 @@ impl A11yService {
             tree_id: TreeId::ROOT,
             focus,
         };
-        let rebase_update = TreeUpdate {
-            nodes: clone_nodes_in_order(&nodes),
-            tree: Some(Tree::new(ROOT_NODE_ID)),
-            tree_id: TreeId::ROOT,
-            focus,
-        };
         self.store_emitted_update(
             initial_update,
             A11yUpdateRecord {
@@ -210,7 +209,10 @@ impl A11yService {
                 focus_node_id: focus.0,
                 nodes_serialized: nodes.len(),
             },
-            rebase_update,
+            &RebaseContext {
+                nodes: &nodes,
+                focus,
+            },
         );
         self.set_previous_state(snapshot, nodes, focus);
     }
@@ -232,12 +234,6 @@ impl A11yService {
         let nodes_serialized = update.nodes.len();
         let inserted_ids = inserted_node_ids(&self.previous_nodes, &nodes);
         let updated_ids = updated_node_ids(&self.previous_nodes, &nodes);
-        let rebase_update = TreeUpdate {
-            nodes: clone_nodes_in_order(&nodes),
-            tree: Some(Tree::new(ROOT_NODE_ID)),
-            tree_id: TreeId::ROOT,
-            focus,
-        };
 
         let has_no_node_deltas = removed_node_ids.is_empty() && nodes_serialized == 0;
         if has_no_node_deltas && self.previous_focus == Some(focus) {
@@ -255,7 +251,10 @@ impl A11yService {
                 focus_node_id: focus.0,
                 nodes_serialized,
             },
-            rebase_update,
+            &RebaseContext {
+                nodes: &nodes,
+                focus,
+            },
         );
         self.set_previous_state(snapshot, nodes, focus);
         true
@@ -265,12 +264,18 @@ impl A11yService {
         &mut self,
         update: TreeUpdate,
         record: A11yUpdateRecord,
-        rebase_update: TreeUpdate,
+        rebase_context: &RebaseContext<'_>,
     ) {
         self.pending_updates.push(update);
         if self.pending_updates.len() > MAX_PENDING_UPDATES {
             // Rebase queued deltas to a single full snapshot instead of silently
             // dropping delivery-critical updates.
+            let rebase_update = TreeUpdate {
+                nodes: clone_nodes_in_order(rebase_context.nodes),
+                tree: Some(Tree::new(ROOT_NODE_ID)),
+                tree_id: TreeId::ROOT,
+                focus: rebase_context.focus,
+            };
             self.pending_updates.clear();
             self.pending_updates.push(rebase_update);
         }

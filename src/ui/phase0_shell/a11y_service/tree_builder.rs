@@ -1,6 +1,6 @@
 //! AccessKit tree construction for the Phase 0 shell accessibility snapshot.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use accesskit::{Action, Node, NodeId, Role};
 
@@ -167,11 +167,16 @@ fn insert_root_node(nodes: &mut BTreeMap<NodeId, Node>) {
 }
 
 fn resolve_focus_node(snapshot: &A11ySnapshot, nodes: &BTreeMap<NodeId, Node>) -> NodeId {
+    let shape_node_ids = snapshot
+        .shapes
+        .iter()
+        .map(|shape| NodeId(shape.id.to_accesskit_node_id()))
+        .collect::<BTreeSet<_>>();
     snapshot
         .selected_shape_ids
         .iter()
         .map(|id| NodeId(id.to_accesskit_node_id()))
-        .find(|candidate| nodes.contains_key(candidate))
+        .find(|candidate| shape_node_ids.contains(candidate) && nodes.contains_key(candidate))
         .unwrap_or(CANVAS_NODE_ID)
 }
 
