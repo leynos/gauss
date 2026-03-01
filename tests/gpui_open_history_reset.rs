@@ -10,39 +10,45 @@ use common::{TempFileGuard, ensure_initial_draw, init_test_app, read_history_len
 use gauss::model::{Command, SelItem, Selection, ShapeMovement, Vec2};
 use gauss::ui::{OpenSvg, Phase0Shell};
 use gpui::{Entity, TestAppContext, VisualTestContext};
+use test_support::{TestSupportError, TestSupportResult};
 use uuid::Uuid;
 
-fn create_open_fixture() -> Result<TempFileGuard, String> {
+fn create_open_fixture() -> TestSupportResult<TempFileGuard> {
     let temp_dir = Utf8PathBuf::from_path_buf(std::env::temp_dir())
-        .map_err(|_| "temp dir should be valid UTF-8".to_owned())?;
+        .map_err(|_| TestSupportError::expectation("temp dir should be valid UTF-8"))?;
     let file_name = Utf8PathBuf::from(format!(
         "gauss-test-open-history-clear-{}.svg",
         Uuid::new_v4()
     ));
     let svg_path = temp_dir.join(&file_name);
-    let dir = Dir::open_ambient_dir(&temp_dir, ambient_authority())
-        .map_err(|error| format!("temp dir should be readable: {error}"))?;
+    let dir = Dir::open_ambient_dir(&temp_dir, ambient_authority()).map_err(|error| {
+        TestSupportError::expectation(format!("temp dir should be readable: {error}"))
+    })?;
     let svg = r##"
         <svg xmlns="http://www.w3.org/2000/svg">
           <path d="M 8 8 L 24 24" stroke="#000000" stroke-width="1" fill="none" />
         </svg>
     "##;
     dir.write(file_name.as_path(), svg.as_bytes())
-        .map_err(|error| format!("test SVG file should be writable: {error}"))?;
+        .map_err(|error| {
+            TestSupportError::expectation(format!("test SVG file should be writable: {error}"))
+        })?;
     Ok(TempFileGuard::new_with_path(dir, file_name, svg_path))
 }
 
 fn seed_history_and_selection(
     visual_cx: &mut VisualTestContext,
     view: &Entity<Phase0Shell>,
-) -> Result<(), String> {
+) -> TestSupportResult<()> {
     let view_for_seed = view.clone();
-    let seed_result = visual_cx.update(move |_window, app| {
+    let seed_result = visual_cx.update(move |_window, app| -> TestSupportResult<()> {
         view_for_seed.update(app, |shell, _view_cx| {
             let shape_id = shell
                 .document()
                 .shape_at(0)
-                .ok_or_else(|| "demo document should contain one shape".to_owned())?
+                .ok_or_else(|| {
+                    TestSupportError::expectation("demo document should contain one shape")
+                })?
                 .id;
             let mut selection = Selection::default();
             selection.toggle(SelItem::Shape(shape_id));
@@ -54,8 +60,12 @@ fn seed_history_and_selection(
                         delta: Vec2::new(5.0, 0.0),
                     }],
                 })
-                .map_err(|error| format!("seeding history command should apply: {error}"))?;
-            Ok::<(), String>(())
+                .map_err(|error| {
+                    TestSupportError::expectation(format!(
+                        "seeding history command should apply: {error}"
+                    ))
+                })?;
+            Ok(())
         })
     });
     seed_result?;

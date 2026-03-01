@@ -75,6 +75,23 @@ Feature: Undo entry count
     Then the grouping error should be group-already-active
     And the history length should be 0
 
+  Scenario: Undo while group is active reports an error and keeps history unchanged
+    Given an empty history and a document with one shape
+    When I apply a MoveShapes command
+    And I begin a command group
+    And I attempt to undo while a command group is active
+    Then the grouping error should be undo-while-group-active
+    And the history length should be 1
+
+  Scenario: Redo while group is active reports an error and keeps history unchanged
+    Given an empty history and a document with one shape
+    When I apply a MoveShapes command
+    And I undo once
+    And I begin a command group
+    And I attempt to redo while a command group is active
+    Then the grouping error should be redo-while-group-active
+    And the history length should be 0
+
   Scenario: Multiple sequential commands produce matching undo count
     Given an empty history and a document with one shape
     When I apply a MoveShapes command

@@ -180,8 +180,8 @@ impl DocumentUndoHistory {
     ///
     /// # Errors
     ///
-    /// Returns a description if any individual command or inverse
-    /// application fails.
+    /// Returns a structured [`HistoryError`] if any individual command or
+    /// inverse application fails.
     pub fn undo(&mut self, doc: &mut Document) -> Result<(), HistoryError> {
         if self.active_group.is_some() {
             return Err(HistoryError::UndoWhileGroupActive);
@@ -196,8 +196,8 @@ impl DocumentUndoHistory {
     ///
     /// # Errors
     ///
-    /// Returns a description if any individual command or inverse
-    /// application fails.
+    /// Returns a structured [`HistoryError`] if any individual command or
+    /// inverse application fails.
     pub fn redo(&mut self, doc: &mut Document) -> Result<(), HistoryError> {
         if self.active_group.is_some() {
             return Err(HistoryError::RedoWhileGroupActive);

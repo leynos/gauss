@@ -85,26 +85,31 @@ impl Phase0Shell {
     pub(super) fn apply_command(&mut self, command: Command) -> Result<(), UserError> {
         self.state.apply_document_command(command)?;
         self.last_history_error = None;
+        self.last_history_error_typed = None;
         Ok(())
     }
 
-    pub(super) fn undo_document(&mut self) {
-        match self.state.undo_document() {
-            Ok(()) => self.last_history_error = None,
+    fn handle_history_result(&mut self, result: Result<(), crate::model::HistoryError>) {
+        match result {
+            Ok(()) => {
+                self.last_history_error = None;
+                self.last_history_error_typed = None;
+            }
             Err(error) => {
                 log::error!("{error}");
                 self.last_history_error = Some(error.to_string());
+                self.last_history_error_typed = Some(error);
             }
         }
     }
 
+    pub(super) fn undo_document(&mut self) {
+        let result = self.state.undo_document();
+        self.handle_history_result(result);
+    }
+
     pub(super) fn redo_document(&mut self) {
-        match self.state.redo_document() {
-            Ok(()) => self.last_history_error = None,
-            Err(error) => {
-                log::error!("{error}");
-                self.last_history_error = Some(error.to_string());
-            }
-        }
+        let result = self.state.redo_document();
+        self.handle_history_result(result);
     }
 }

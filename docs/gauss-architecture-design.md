@@ -922,10 +922,12 @@ Design decisions:
 - Grouping boundaries are model-layer APIs, not GPUI-only helpers. This keeps
   grouping behaviour testable in unit and behavioural suites without UI
   dependencies.
-- Boundary misuse returns deterministic `String` errors for now:
-  `Cannot begin command group: group already active` and
-  `Cannot end command group: no active group`. This preserves the current
-  adapter error model from roadmap item 0.3.5.
+- Boundary misuse returns deterministic `HistoryError` variants:
+  `GroupAlreadyActive`, `NoActiveGroup`, `UndoWhileGroupActive`, and
+  `RedoWhileGroupActive`.
+- Replay failures return structured `HistoryError` variants
+  (`UndoReplayFailed` / `RedoReplayFailed`) carrying both failing command name
+  and reason, while retaining stable user-visible error messages.
 - Grouped commands are not realized until `end_group()` succeeds; therefore
   `len()` remains unchanged while a group is active and increments by one on
   commit.

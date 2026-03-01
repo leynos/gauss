@@ -299,12 +299,21 @@ impl Phase0Shell {
         self.state.document_history_len()
     }
 
-    /// Return the last history error, if any.
+    /// Return the last history error display string, if any.
     ///
     /// This allows tests to verify that history operation failures are
-    /// properly surfaced through the error propagation path.
+    /// surfaced through the same user-visible text shown in the shell.
     #[must_use]
     pub fn last_history_error_for_tests(&self) -> Option<&str> {
         self.last_history_error.as_deref()
+    }
+
+    /// Return the last structured history error, if any.
+    ///
+    /// This keeps variant information available for assertions after undo/redo
+    /// failures.
+    #[must_use]
+    pub const fn last_history_error_typed_for_tests(&self) -> Option<&HistoryError> {
+        self.last_history_error_typed.as_ref()
     }
 }

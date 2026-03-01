@@ -195,14 +195,21 @@ fn grouped_redo_reports_first_error_and_leaves_partial_state(
     let err = history
         .redo(&mut doc)
         .expect_err("redo should fail because grouped steps contain failures");
-    let error = err.to_string();
-    assert!(
-        error.contains("Redo failed for 'Move'"),
-        "expected first failure message, got: {error}"
-    );
-    assert!(
-        !error.contains("Redo failed for 'Reorder'"),
-        "later failure should not overwrite first message: {error}"
-    );
+    match err {
+        HistoryError::RedoReplayFailed {
+            command_name,
+            reason,
+        } => {
+            assert_eq!(
+                command_name, "Move",
+                "expected first grouped failure to be surfaced",
+            );
+            assert!(
+                !reason.is_empty(),
+                "redo failure should include the command failure reason",
+            );
+        }
+        other => panic!("expected RedoReplayFailed, got {other:?}"),
+    }
     assert_eq!(doc, expected_partial);
 }

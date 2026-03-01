@@ -8,7 +8,7 @@ use rstest::{fixture, rstest};
 
 use crate::model::command::Command;
 use crate::model::document::Document;
-use crate::model::history::DocumentUndoHistory;
+use crate::model::history::{DocumentUndoHistory, HistoryError};
 use crate::model::{Anchor, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, Vec2};
 
 // ---------------------------------------------------------------------------
@@ -213,14 +213,20 @@ fn undo_propagates_error_on_bad_shape() {
     history.record(cmd, inverse);
 
     let result = history.undo(&mut doc);
-    let msg = result
-        .expect_err("undo should fail for bogus shape")
-        .to_string();
-    assert!(msg.contains("Undo"), "error should mention Undo: {msg}");
-    assert!(
-        msg.contains("Move"),
-        "error should mention command name: {msg}"
-    );
+    let error = result.expect_err("undo should fail for bogus shape");
+    match error {
+        HistoryError::UndoReplayFailed {
+            command_name,
+            reason,
+        } => {
+            assert_eq!(command_name, "Move");
+            assert!(
+                !reason.is_empty(),
+                "undo failure should include the command failure reason",
+            );
+        }
+        other => panic!("expected UndoReplayFailed, got {other:?}"),
+    }
 }
 
 #[rstest]
