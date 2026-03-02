@@ -280,16 +280,18 @@ fn select_tool_pointer_move_with_drag_state_emits_preview_command() {
 }
 
 #[rstest]
-fn select_tool_pointer_move_without_drag_state_is_noop() {
-    let fixture = SelectToolTestFixture::new(1, 1.0);
+#[case::without_drag_state(1, ToolMode::Manipulate, SelectToolState::Idle, Vec2::new(8.0, 9.0))]
+#[case::outside_manipulate_mode(2, ToolMode::Draw, SelectToolState::Idle, Vec2::new(0.0, 0.0))]
+fn select_tool_pointer_move_noop_scenarios(
+    #[case] fixture_id: u64,
+    #[case] mode: ToolMode,
+    #[case] state: SelectToolState,
+    #[case] cursor: Vec2,
+) {
+    let fixture = SelectToolTestFixture::new(fixture_id, 1.0);
     let transition = fixture.transition_with_mode(
-        ToolMode::Manipulate,
-        pointer_input(
-            SelectToolState::Idle,
-            Vec2::new(8.0, 9.0),
-            true,
-            PointerInputKind::Move,
-        ),
+        mode,
+        pointer_input(state, cursor, true, PointerInputKind::Move),
     );
 
     assert!(transition.commands.is_empty());
@@ -337,20 +339,4 @@ fn select_tool_pointer_up_with_delta_emits_document_command_and_returns_idle() {
         up.commands.last(),
         Some(ToolCommand::SetSelectToolState(SelectToolState::Idle))
     ));
-}
-
-#[rstest]
-fn select_tool_ignores_pointer_events_outside_manipulate_mode() {
-    let fixture = SelectToolTestFixture::new(2, 1.0);
-    let transition = fixture.transition_with_mode(
-        ToolMode::Draw,
-        pointer_input(
-            SelectToolState::Idle,
-            Vec2::new(0.0, 0.0),
-            true,
-            PointerInputKind::Move,
-        ),
-    );
-
-    assert!(transition.commands.is_empty());
 }
