@@ -1,8 +1,10 @@
 //! Unit tests for AccessKit tree projection and incremental updates.
 
+use accesskit::{Action, Node, NodeId, Role};
 use rstest::rstest;
 
 use crate::model::{EdgeMode, ShapeId, ToolMode};
+use crate::ui::phase0_shell::accessibility;
 
 use super::tree_builder::{CANVAS_NODE_ID, SHAPE_LIST_NODE_ID, build_node_map};
 use super::{A11yService, A11yServiceError, A11yShapeSnapshot, A11ySnapshot, A11yUpdateKind};
@@ -12,6 +14,14 @@ fn shape_id(raw: u64) -> ShapeId {
 }
 
 fn snapshot(shape_ids: &[u64], selected_ids: &[u64]) -> A11ySnapshot {
+    snapshot_with_state(shape_ids, selected_ids, false)
+}
+
+fn snapshot_with_state(
+    shape_ids: &[u64],
+    selected_ids: &[u64],
+    is_maximized: bool,
+) -> A11ySnapshot {
     let shapes = shape_ids
         .iter()
         .enumerate()
@@ -28,10 +38,89 @@ fn snapshot(shape_ids: &[u64], selected_ids: &[u64]) -> A11ySnapshot {
         edge_mode: EdgeMode::Line,
         can_undo: false,
         can_redo: false,
-        is_maximized: false,
+        is_maximized,
         selected_shape_ids,
         shapes,
     }
+}
+
+fn chrome_node(nodes: &std::collections::BTreeMap<NodeId, Node>, node_id: u64) -> &Node {
+    nodes
+        .get(&NodeId(node_id))
+        .unwrap_or_else(|| panic!("expected node map to contain chrome node id {node_id:#x}"))
+}
+
+#[rstest]
+fn titlebar_node_uses_stable_role_label_and_children_order() {
+    let (nodes, _) = build_node_map(&snapshot(&[], &[])).expect("node map build should succeed");
+    let titlebar = chrome_node(&nodes, accessibility::node_ids::TITLEBAR);
+    let expected_children = accessibility::chrome_button_semantics(false)
+        .into_iter()
+        .map(|button| NodeId(button.node_id))
+        .collect::<Vec<_>>();
+    assert_eq!(titlebar.role(), Role::TitleBar);
+    assert_eq!(
+        titlebar.label(),
+        Some(accessibility::accessible_names::TITLEBAR)
+    );
+    assert_eq!(titlebar.children().to_vec(), expected_children);
+}
+
+#[rstest]
+#[case(
+    accessibility::node_ids::WINDOW_MENU,
+    accessibility::accessible_names::WINDOW_MENU,
+    accessibility::shortcut_hints::WINDOW_MENU
+)]
+#[case(
+    accessibility::node_ids::MINIMIZE_BUTTON,
+    accessibility::accessible_names::MINIMIZE,
+    accessibility::shortcut_hints::MINIMIZE
+)]
+#[case(
+    accessibility::node_ids::MAXIMIZE_BUTTON,
+    accessibility::accessible_names::MAXIMIZE,
+    accessibility::shortcut_hints::MAXIMIZE
+)]
+#[case(
+    accessibility::node_ids::FULLSCREEN_BUTTON,
+    accessibility::accessible_names::FULLSCREEN,
+    accessibility::shortcut_hints::FULLSCREEN
+)]
+#[case(
+    accessibility::node_ids::CLOSE_BUTTON,
+    accessibility::accessible_names::CLOSE,
+    accessibility::shortcut_hints::CLOSE
+)]
+fn chrome_button_nodes_expose_role_label_hint_and_click_action(
+    #[case] node_id: u64,
+    #[case] expected_label: &'static str,
+    #[case] expected_shortcut_hint: &'static str,
+) {
+    let (nodes, _) = build_node_map(&snapshot(&[], &[])).expect("node map build should succeed");
+    let node = chrome_node(&nodes, node_id);
+    assert_eq!(node.role(), Role::Button);
+    assert_eq!(node.label(), Some(expected_label));
+    assert_eq!(node.description(), Some(expected_shortcut_hint));
+    assert_eq!(node.keyboard_shortcut(), Some(expected_shortcut_hint));
+    assert!(node.supports_action(Action::Click));
+}
+
+#[rstest]
+#[case(false, accessibility::accessible_names::MAXIMIZE)]
+#[case(true, accessibility::accessible_names::RESTORE)]
+fn maximize_button_label_matches_window_state(
+    #[case] is_maximized: bool,
+    #[case] expected_label: &'static str,
+) {
+    let (nodes, _) = build_node_map(&snapshot_with_state(&[], &[], is_maximized))
+        .expect("node map build should succeed");
+    let maximize_button = chrome_node(&nodes, accessibility::node_ids::MAXIMIZE_BUTTON);
+    assert_eq!(maximize_button.label(), Some(expected_label));
+    assert_eq!(
+        maximize_button.keyboard_shortcut(),
+        Some(accessibility::shortcut_hints::MAXIMIZE)
+    );
 }
 
 #[rstest]
@@ -120,6 +209,25 @@ fn duplicate_shape_ids_return_error() {
         Err(A11yServiceError::DuplicateShapeNodeId {
             node_id: duplicate_shape_node_id
         })
+    );
+}
+
+#[rstest]
+#[case(0x1001)]
+#[case(0x2_0000_0001)]
+fn shape_snapshot_ids_stay_outside_reserved_chrome_id_space(#[case] raw_shape_id: u64) {
+    let projected_shape_node_id = shape_id(raw_shape_id).to_accesskit_node_id();
+    let reserved_chrome_node_ids = [
+        accessibility::node_ids::WINDOW_MENU,
+        accessibility::node_ids::MINIMIZE_BUTTON,
+        accessibility::node_ids::MAXIMIZE_BUTTON,
+        accessibility::node_ids::FULLSCREEN_BUTTON,
+        accessibility::node_ids::CLOSE_BUTTON,
+        accessibility::node_ids::TITLEBAR,
+    ];
+    assert!(
+        !reserved_chrome_node_ids.contains(&projected_shape_node_id),
+        "shape node id {projected_shape_node_id:#x} must not overlap reserved chrome ids"
     );
 }
 

@@ -18,6 +18,17 @@
 //! are intended to remain stable as later accessibility milestones are
 //! implemented.
 
+/// Canonical semantics for a chrome button in the accessibility tree.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ChromeButtonSemantics {
+    /// Stable node ID used in AccessKit updates.
+    pub node_id: u64,
+    /// Accessible label announced by assistive technologies.
+    pub label: &'static str,
+    /// Keyboard hint announced alongside the label.
+    pub shortcut_hint: &'static str,
+}
+
 pub mod node_ids {
     //! Stable node IDs for window control accessibility nodes.
     //!
@@ -56,6 +67,8 @@ pub mod accessible_names {
     pub const FULLSCREEN: &str = "Toggle fullscreen";
     /// Accessible name for the window menu.
     pub const WINDOW_MENU: &str = "Window menu";
+    /// Accessible name for the titlebar region.
+    pub const TITLEBAR: &str = "Window title bar";
 }
 
 pub mod shortcut_hints {
@@ -84,4 +97,40 @@ pub mod shortcut_hints {
     /// Shortcut hint for fullscreen on macOS.
     #[cfg(target_os = "macos")]
     pub const FULLSCREEN_MACOS: &str = "Ctrl+Cmd+F";
+}
+
+/// Return canonical semantics for chrome button nodes in deterministic order.
+#[must_use]
+pub const fn chrome_button_semantics(is_maximized: bool) -> [ChromeButtonSemantics; 5] {
+    [
+        ChromeButtonSemantics {
+            node_id: node_ids::WINDOW_MENU,
+            label: accessible_names::WINDOW_MENU,
+            shortcut_hint: shortcut_hints::WINDOW_MENU,
+        },
+        ChromeButtonSemantics {
+            node_id: node_ids::MINIMIZE_BUTTON,
+            label: accessible_names::MINIMIZE,
+            shortcut_hint: shortcut_hints::MINIMIZE,
+        },
+        ChromeButtonSemantics {
+            node_id: node_ids::MAXIMIZE_BUTTON,
+            label: if is_maximized {
+                accessible_names::RESTORE
+            } else {
+                accessible_names::MAXIMIZE
+            },
+            shortcut_hint: shortcut_hints::MAXIMIZE,
+        },
+        ChromeButtonSemantics {
+            node_id: node_ids::FULLSCREEN_BUTTON,
+            label: accessible_names::FULLSCREEN,
+            shortcut_hint: shortcut_hints::FULLSCREEN,
+        },
+        ChromeButtonSemantics {
+            node_id: node_ids::CLOSE_BUTTON,
+            label: accessible_names::CLOSE,
+            shortcut_hint: shortcut_hints::CLOSE,
+        },
+    ]
 }
