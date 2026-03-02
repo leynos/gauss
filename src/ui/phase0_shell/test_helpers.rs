@@ -6,6 +6,8 @@
 
 use std::path::Path;
 
+use accesskit::TreeUpdate;
+
 use crate::model::history::HistoryError;
 use crate::model::{
     Command, Document, ResourceStore, SelectToolState, Selection, ShapeId, UserError, Vec2,
@@ -293,10 +295,10 @@ impl Phase0Shell {
         self.a11y_service.clear_update_records();
     }
 
-    /// Drain queued AccessKit `TreeUpdate` values for adapter-facing tests.
+    /// Drain and return queued AccessKit updates for adapter-facing tests.
     #[must_use]
-    pub fn drain_a11y_tree_updates_for_tests(&mut self) -> usize {
-        self.a11y_service.drain_pending_updates().len()
+    pub fn drain_a11y_tree_updates_for_tests(&mut self) -> Vec<TreeUpdate> {
+        self.a11y_service.drain_pending_updates()
     }
 
     /// Trigger an undo operation through the shell's history system.

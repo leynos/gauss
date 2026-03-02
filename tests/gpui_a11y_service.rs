@@ -2,6 +2,7 @@
 
 mod common;
 
+use accesskit::{Action, Node, Role, TreeUpdate};
 use common::{ensure_initial_draw, init_test_app};
 use gauss::model::{Selection, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
@@ -18,10 +19,34 @@ fn setup_window(
     (visual_cx, view)
 }
 
+fn find_update_node(update: &TreeUpdate, node_id: u64) -> &Node {
+    update
+        .nodes
+        .iter()
+        .find_map(|(candidate, node)| (candidate.0 == node_id).then_some(node))
+        .unwrap_or_else(|| panic!("expected node {node_id:#x} in drained accessibility update"))
+}
+
+fn assert_chrome_button_semantics(
+    update: &TreeUpdate,
+    node_id: u64,
+    expected_label: &str,
+    expected_hint: &str,
+) {
+    let node = find_update_node(update, node_id);
+    assert_eq!(node.role(), Role::Button);
+    assert_eq!(node.label(), Some(expected_label));
+    assert_eq!(node.description(), Some(expected_hint));
+    assert!(node.supports_action(Action::Click));
+}
+
 #[gpui::test]
 fn a11y_initial_tree_update_is_emitted_on_first_draw(cx: &mut TestAppContext) {
     let (visual_cx, view) = setup_window(cx);
     let records = visual_cx.read(|app| view.read(app).a11y_update_records_for_tests().to_vec());
+    let drained_updates = visual_cx.update(|_window, app| {
+        view.update(app, |shell, _cx| shell.drain_a11y_tree_updates_for_tests())
+    });
     assert_eq!(
         records.len(),
         1,
@@ -36,6 +61,54 @@ fn a11y_initial_tree_update_is_emitted_on_first_draw(cx: &mut TestAppContext) {
             .inserted_node_ids
             .contains(&accessibility::node_ids::TITLEBAR),
         "expected titlebar node to be included in inserted IDs"
+    );
+
+    assert_eq!(
+        drained_updates.len(),
+        1,
+        "expected one initial serialized tree update"
+    );
+    let initial_update = drained_updates
+        .first()
+        .expect("expected one initial serialized tree update");
+    assert!(
+        initial_update.tree.is_some(),
+        "expected initial update to include tree metadata"
+    );
+
+    let titlebar = find_update_node(initial_update, accessibility::node_ids::TITLEBAR);
+    assert_eq!(titlebar.role(), Role::TitleBar);
+    assert_eq!(titlebar.label(), Some("Window title bar"));
+
+    assert_chrome_button_semantics(
+        initial_update,
+        accessibility::node_ids::WINDOW_MENU,
+        accessibility::accessible_names::WINDOW_MENU,
+        accessibility::shortcut_hints::WINDOW_MENU,
+    );
+    assert_chrome_button_semantics(
+        initial_update,
+        accessibility::node_ids::MINIMIZE_BUTTON,
+        accessibility::accessible_names::MINIMIZE,
+        accessibility::shortcut_hints::MINIMIZE,
+    );
+    assert_chrome_button_semantics(
+        initial_update,
+        accessibility::node_ids::MAXIMIZE_BUTTON,
+        accessibility::accessible_names::MAXIMIZE,
+        accessibility::shortcut_hints::MAXIMIZE,
+    );
+    assert_chrome_button_semantics(
+        initial_update,
+        accessibility::node_ids::FULLSCREEN_BUTTON,
+        accessibility::accessible_names::FULLSCREEN,
+        accessibility::shortcut_hints::FULLSCREEN,
+    );
+    assert_chrome_button_semantics(
+        initial_update,
+        accessibility::node_ids::CLOSE_BUTTON,
+        accessibility::accessible_names::CLOSE,
+        accessibility::shortcut_hints::CLOSE,
     );
 }
 
