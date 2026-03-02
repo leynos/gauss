@@ -5,10 +5,7 @@ This Execution Plan (ExecPlan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: DRAFT (2026-03-02)
-
-This branch is plan-only right now. Implementation starts only after explicit
-approval of this plan.
+Status: COMPLETE (2026-03-02)
 
 No `PLANS.md` exists in this repository.
 
@@ -118,27 +115,39 @@ Success is observable when:
   - Marisa (leta symbol/test map),
   - Axel (grepai-first implementation gap analysis).
 - [x] (2026-03-02) Drafted this ExecPlan document.
-- [ ] Implement `0.6.2` code changes.
-- [ ] Add/adjust unit, BDD, and GPUI tests for `0.6.2` semantics.
-- [ ] Update architecture and user documentation.
-- [ ] Run required gates with tee logs.
-- [ ] Mark roadmap item `0.6.2` done after all gates pass.
+- [x] (2026-03-02) Implemented `0.6.2` code changes:
+  canonical chrome semantics in `accessibility.rs`, tree wiring in
+  `tree_builder.rs`, and GPUI payload access for semantic assertions.
+- [x] (2026-03-02) Added/adjusted unit, BDD, and GPUI tests for `0.6.2`
+  semantics, including restore-label edge coverage for maximized windows.
+- [x] (2026-03-02) Updated architecture and user documentation.
+- [x] (2026-03-02) Ran required gates with tee logs:
+  `/tmp/check-fmt-gauss-0-6-2-wire-existing-stable-node-ids.out`,
+  `/tmp/lint-gauss-0-6-2-wire-existing-stable-node-ids.out`,
+  `/tmp/test-gauss-0-6-2-wire-existing-stable-node-ids.out`.
+- [x] (2026-03-02) Marked roadmap item `0.6.2` done after all gates passed.
 
 ## Surprises & Discoveries
 
 - `0.6.1` already wired stable chrome IDs into `tree_builder.rs` and has broad
   coverage for initial/incremental/no-op/error paths.
-- Existing tests strongly validate node presence and update shape, but they do
-  not yet fully lock down chrome role/label semantics at the granularity needed
-  for `0.6.2` closure.
+- Existing tests validated node presence and update shape, but required explicit
+  semantic assertions (role/label/shortcut metadata) across all test layers to
+  close `0.6.2`.
 - `docs/roadmap.md` contains both checklist status (`0.6.1` done, `0.6.2`
   open) and a narrative accessibility-wiring section that should be reconciled
   during completion updates.
+- Clippy style policies created a helper-function tension between
+  `no_unwrap_or_else_panic`, `expect_used`, and
+  `unnecessary_option_map_or_else`; the stable pattern was returning
+  `Option<&Node>` from helpers and using explicit `let ... else` assertions at
+  call sites.
 
 ## Decision Log
 
-- 2026-03-02: Keep this turn plan-only and avoid implementation changes.
-  Rationale: the explicit request is to formulate an execplan.
+- 2026-03-02: Moved from plan-only to implementation after explicit user
+  approval. Rationale: follow execplan approval gate and keep roadmap status
+  aligned with delivered behaviour.
 
 - 2026-03-02: Treat `accessibility.rs` as the canonical stable-ID and
   chrome-metadata source. Rationale: avoids drift and aligns with roadmap
@@ -148,22 +157,34 @@ Success is observable when:
   and GPUI layers before marking `0.6.2` complete. Rationale: checklist closure
   depends on behaviour, not only code structure.
 
+- 2026-03-02: Keep chrome role mapping as `Role::TitleBar` for the drag region
+  plus `Role::Button` for controls, while enriching nodes with label,
+  description, keyboard shortcut, and click action metadata. Rationale: this
+  matches current AccessKit role affordances and keeps parity with existing
+  window-control behaviour.
+
 ## Outcomes & Retrospective
 
-Current outcome: planning artifact complete; implementation not started.
+Current outcome: roadmap item `0.6.2` is fully delivered with green required
+gates.
 
-This plan provides:
+Delivered outcomes:
 
-- concrete implementation stages,
-- explicit test and documentation obligations,
-- deterministic gate commands with evidence-log paths,
-- clear closure criteria tied to roadmap status updates.
+- canonical chrome semantics are centralized in
+  `src/ui/phase0_shell/accessibility.rs` and consumed directly by tree
+  construction;
+- AccessKit chrome nodes expose stable IDs plus explicit role/label/shortcut
+  metadata in initial and incremental updates;
+- unit, BDD, and GPUI coverage now verifies semantic behaviour, not just node
+  presence;
+- roadmap and architecture/user docs are synchronized with delivered state.
 
-Retrospective update to fill in after implementation:
+Retrospective summary:
 
-- what was changed,
-- what trade-offs were made,
-- what test/doc evidence closed `0.6.2`.
+- Worker-agent parallelization accelerated implementation but required one
+  follow-up polish commit to satisfy strict cross-lint helper constraints.
+- Keeping documentation closure in the same pass as gate replay prevented
+  roadmap status drift.
 
 ## Context and orientation
 
@@ -316,16 +337,17 @@ Acceptance for Stage F:
 
 ## Validation checklist (implementation-time)
 
-- [ ] Unit tests assert chrome roles/labels/shortcut hints and stable IDs.
-- [ ] BDD scenarios cover happy/unhappy semantics for chrome nodes.
-- [ ] GPUI tests verify runtime wiring and unchanged-state no-op behaviour.
-- [ ] `make check-fmt` passes.
-- [ ] `make lint` passes.
-- [ ] `make test` passes.
-- [ ] `docs/gauss-architecture-design.md` updated with design decisions.
-- [ ] `docs/users-guide.md` updated if user-visible behaviour changed.
-- [ ] `docs/roadmap.md` `0.6.2` marked done only after gates pass.
+- [x] Unit tests assert chrome roles/labels/shortcut hints and stable IDs.
+- [x] BDD scenarios cover happy/unhappy semantics for chrome nodes.
+- [x] GPUI tests verify runtime wiring and unchanged-state no-op behaviour.
+- [x] `make check-fmt` passes.
+- [x] `make lint` passes.
+- [x] `make test` passes.
+- [x] `docs/gauss-architecture-design.md` updated with design decisions.
+- [x] `docs/users-guide.md` updated for user-visible accessibility semantics.
+- [x] `docs/roadmap.md` `0.6.2` marked done only after gates pass.
 
 ## Approval gate
 
-Do not begin implementation until this plan is explicitly approved.
+Satisfied: explicit approval received on 2026-03-02, then implementation
+proceeded to completion.

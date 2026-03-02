@@ -174,9 +174,9 @@ phases depend upon. See architecture document §20.
 - [x] 0.6.1. Create `A11yService` structure.
   - [x] Build AccessKit tree from UI and document state.
   - [x] Push incremental updates. See architecture §11.1.
-- [ ] 0.6.2. Wire existing stable node IDs.
-  - [ ] Connect pre-defined IDs in `accessibility.rs` to AccessKit.
-  - [ ] Expose roles and labels for window chrome.
+- [x] 0.6.2. Wire existing stable node IDs.
+  - [x] Connect pre-defined IDs in `accessibility.rs` to AccessKit.
+  - [x] Expose roles and labels for window chrome.
 - [ ] 0.6.3. Map AccessKit action requests to Gauss Actions.
   - [ ] Accessibility actions trigger the same command pipeline as UI.
   - [ ] Ensure keyboard-only operation parity.
@@ -901,13 +901,16 @@ Expansion required:
 
 ### Accessibility wiring
 
-The accessibility framework has stable node IDs defined but is not connected to
-AccessKit. Steps:
+The accessibility framework now publishes an AccessKit tree with stable node
+IDs, incremental updates, and explicit chrome semantics. Completed:
 
-1. Implement `A11yService` as described in architecture §11.1.
-2. Wire existing node IDs to AccessKit tree.
-3. Expose roles and labels for UI chrome.
-4. Add incremental update mechanism.
+1. Implemented `A11yService` as described in architecture §11.1.
+2. Wired existing node IDs to the AccessKit tree.
+3. Exposed roles and labels for UI chrome.
+4. Added incremental update mechanism.
+
+Remaining accessibility wiring work is roadmap item `0.6.3` (map AccessKit
+action requests into the command pipeline).
 
 ### Scripting integration
 
