@@ -159,16 +159,21 @@ fn pointer_up_without_primary_event() -> ToolInputEvent {
 }
 
 #[rstest]
-#[case(SelectToolState::Marquee)]
-#[case(SelectToolState::Transforming)]
-fn select_tool_pointer_move_is_noop_for_reserved_states(#[case] state: SelectToolState) {
+#[case(SelectToolState::Marquee, false)]
+#[case(SelectToolState::Transforming, false)]
+fn select_tool_pointer_move_is_noop_for_reserved_states(
+    #[case] state: SelectToolState,
+    #[case] is_dragging: bool,
+) {
+    assert!(!matches!(state, SelectToolState::Dragging(_)));
+
     let transition = Tool::transition(
         &SelectTool,
         ToolMode::Manipulate,
         EdgeMode::Line,
         ToolInputEvent::SelectPointerMove {
             input: Box::new(SelectPointerMoveInput {
-                is_dragging: matches!(state, SelectToolState::Dragging(_)),
+                is_dragging,
                 cursor_world: Vec2::new(3.0, 4.0),
                 has_primary_button: true,
             }),
