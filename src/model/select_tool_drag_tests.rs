@@ -113,7 +113,7 @@ fn assert_pointer_event_is_noop(state: SelectToolState, event: ToolInputEvent) {
     let normalized_event = match event {
         ToolInputEvent::SelectPointerMove { input } => ToolInputEvent::SelectPointerMove {
             input: Box::new(SelectPointerMoveInput {
-                state,
+                is_dragging: matches!(state, SelectToolState::Dragging(_)),
                 cursor_world: input.cursor_world,
                 has_primary_button: input.has_primary_button,
             }),
@@ -140,7 +140,7 @@ fn assert_pointer_event_is_noop(state: SelectToolState, event: ToolInputEvent) {
 fn pointer_move_without_primary_event() -> ToolInputEvent {
     ToolInputEvent::SelectPointerMove {
         input: Box::new(SelectPointerMoveInput {
-            state: SelectToolState::Idle,
+            is_dragging: false,
             cursor_world: Vec2::new(7.0, 8.0),
             has_primary_button: false,
         }),
@@ -167,7 +167,7 @@ fn select_tool_pointer_move_is_noop_for_reserved_states(#[case] state: SelectToo
         EdgeMode::Line,
         ToolInputEvent::SelectPointerMove {
             input: Box::new(SelectPointerMoveInput {
-                state,
+                is_dragging: matches!(state, SelectToolState::Dragging(_)),
                 cursor_world: Vec2::new(3.0, 4.0),
                 has_primary_button: true,
             }),
@@ -353,20 +353,20 @@ fn select_tool_pointer_up_after_control_point_drag_emits_expected_command_and_id
         up.commands.first(),
         Some(ToolCommand::RestoreSelectDragPreview)
     ));
+    assert!(matches!(
+        up.commands.get(1),
+        Some(ToolCommand::SetSelectToolState(SelectToolState::Idle))
+    ));
     match expected {
         ExpectedPointerUpCommand::MoveAnchor => assert!(matches!(
-            up.commands.get(1),
+            up.commands.get(2),
             Some(ToolCommand::ApplyDocumentCommand(command))
                 if matches!(command.as_ref(), Command::MoveAnchor { .. })
         )),
         ExpectedPointerUpCommand::MoveHandle => assert!(matches!(
-            up.commands.get(1),
+            up.commands.get(2),
             Some(ToolCommand::ApplyDocumentCommand(command))
                 if matches!(command.as_ref(), Command::MoveHandle { .. })
         )),
     }
-    assert!(matches!(
-        up.commands.last(),
-        Some(ToolCommand::SetSelectToolState(SelectToolState::Idle))
-    ));
 }

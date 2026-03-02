@@ -13,7 +13,7 @@ use gpui::{MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels};
 use crate::model::{
     SelectAnchorHit, SelectHandleHit, SelectHandleHitKind, SelectPointerDownInput,
     SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput, SelectSegmentHit,
-    SelectShapeHit, SelectTool, Tool, ToolInputEvent, Vec2,
+    SelectShapeHit, SelectTool, SelectToolState, Tool, ToolInputEvent, Vec2,
 };
 
 use super::{Phase0Shell, draw::ToolMode};
@@ -57,13 +57,13 @@ impl Phase0Shell {
     }
 
     pub(super) fn handle_canvas_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
-        let select_tool_state = self.select_tool_state.clone();
+        let is_dragging = matches!(self.select_tool_state, SelectToolState::Dragging(_));
         self.handle_pointer_event(
             event.position,
             event.pressed_button == Some(MouseButton::Left),
-            move |cursor_world| ToolInputEvent::SelectPointerMove {
+            |cursor_world| ToolInputEvent::SelectPointerMove {
                 input: Box::new(SelectPointerMoveInput {
-                    state: select_tool_state,
+                    is_dragging,
                     cursor_world,
                     has_primary_button: true,
                 }),

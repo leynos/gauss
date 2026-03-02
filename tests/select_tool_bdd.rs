@@ -8,7 +8,7 @@ use gauss::model::{
     Vec2,
 };
 use rstest::fixture;
-use rstest_bdd_macros::{given, scenario, then, when};
+use rstest_bdd_macros::{given, then, when};
 use test_support::{TestSupportError, TestSupportResult};
 
 #[derive(Default)]
@@ -224,9 +224,10 @@ fn given_pointer_move(
     state: String,
     has_primary_button: bool,
 ) -> TestSupportResult<()> {
+    let resolved_state = resolve_state(world, state.as_str())?;
     world.input_event = Some(ToolInputEvent::SelectPointerMove {
         input: Box::new(SelectPointerMoveInput {
-            state: resolve_state(world, state.as_str())?,
+            is_dragging: matches!(resolved_state, SelectToolState::Dragging(_)),
             cursor_world: Vec2::new(8.0, 9.0),
             has_primary_button,
         }),
@@ -383,30 +384,5 @@ fn then_emits_no_commands(world: &SelectToolWorld) -> TestSupportResult<()> {
     then_emits_exact_command_count(world, 0)
 }
 
-macro_rules! select_tool_scenario {
-    ($fn_name:ident, $name:literal) => {
-        #[scenario(path = "tests/features/select_tool.feature", name = $name)]
-        fn $fn_name(world: SelectToolWorld) {
-            let _ = world;
-        }
-    };
-}
-#[rustfmt::skip]
-mod scenario_bindings {
-    //! Scenario entrypoints bound to `tests/features/select_tool.feature`.
-    use super::*;
-    select_tool_scenario!(pointer_down_selects_and_starts_drag, "Pointer down on shape selects it and starts drag state");
-    select_tool_scenario!(shift_pointer_down_toggles_and_stays_idle, "Shift pointer down toggles selection and stays idle");
-    select_tool_scenario!(pointer_move_emits_preview, "Pointer move with dragging state emits preview command");
-    select_tool_scenario!(pointer_up_no_delta_restores_and_idles, "Pointer up with no movement restores preview and returns idle");
-    select_tool_scenario!(pointer_up_delta_emits_move_and_idles, "Pointer up with movement emits move command and returns idle");
-    select_tool_scenario!(pointer_move_in_draw_is_noop, "Pointer move in draw mode emits nothing");
-    select_tool_scenario!(pointer_move_in_marquee_is_noop, "Pointer move in Marquee state emits nothing");
-    select_tool_scenario!(pointer_move_in_transforming_is_noop, "Pointer move in Transforming state emits nothing");
-    select_tool_scenario!(pointer_move_dragging_without_primary_is_noop, "Pointer move with dragging state and released primary button emits nothing");
-    select_tool_scenario!(pointer_up_in_marquee_is_noop, "Pointer up in Marquee state emits nothing");
-    select_tool_scenario!(pointer_up_in_transforming_is_noop, "Pointer up in Transforming state emits nothing");
-    select_tool_scenario!(pointer_up_dragging_non_primary_is_noop, "Pointer up with dragging state and non-primary button emits nothing");
-    select_tool_scenario!(pointer_up_anchor_drag_emits_move_anchor, "Pointer up with anchor drag emits move anchor command and returns idle");
-    select_tool_scenario!(pointer_up_handle_drag_emits_move_handle, "Pointer up with handle drag emits move handle command and returns idle");
-}
+#[path = "select_tool_bdd/scenario_bindings.rs"]
+mod scenario_bindings;

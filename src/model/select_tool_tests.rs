@@ -79,10 +79,11 @@ fn pointer_input(
     is_primary: bool,
     kind: PointerInputKind,
 ) -> ToolInputEvent {
+    let is_dragging = matches!(&state, SelectToolState::Dragging(_));
     match kind {
         PointerInputKind::Move => ToolInputEvent::SelectPointerMove {
             input: Box::new(SelectPointerMoveInput {
-                state,
+                is_dragging,
                 cursor_world: cursor,
                 has_primary_button: is_primary,
             }),
@@ -98,13 +99,14 @@ fn pointer_input(
 }
 
 fn extract_drag_state(commands: &[ToolCommand]) -> SelectToolState {
-    commands
-        .iter()
-        .find_map(|command| match command {
-            ToolCommand::SetSelectToolState(state) => Some(state.clone()),
-            _ => None,
-        })
-        .unwrap_or(SelectToolState::Idle)
+    let extracted_state = commands.iter().find_map(|command| match command {
+        ToolCommand::SetSelectToolState(state) => Some(state.clone()),
+        _ => None,
+    });
+    let Some(state) = extracted_state else {
+        panic!("expected SetSelectToolState command to be emitted");
+    };
+    state
 }
 
 struct SelectToolTestFixture {
@@ -332,11 +334,11 @@ fn select_tool_pointer_up_with_delta_emits_document_command_and_returns_idle() {
     ));
     assert!(matches!(
         up.commands.get(1),
-        Some(ToolCommand::ApplyDocumentCommand(command))
-            if matches!(command.as_ref(), Command::MoveShapes { .. })
+        Some(ToolCommand::SetSelectToolState(SelectToolState::Idle))
     ));
     assert!(matches!(
-        up.commands.last(),
-        Some(ToolCommand::SetSelectToolState(SelectToolState::Idle))
+        up.commands.get(2),
+        Some(ToolCommand::ApplyDocumentCommand(command))
+            if matches!(command.as_ref(), Command::MoveShapes { .. })
     ));
 }

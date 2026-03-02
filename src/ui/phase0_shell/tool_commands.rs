@@ -38,7 +38,7 @@ impl Phase0Shell {
                 Err(error) => {
                     log::error!("{error}");
                     self.last_history_error = Some(error.to_string());
-                    return false;
+                    return did_change;
                 }
             }
         }

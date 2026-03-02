@@ -116,8 +116,8 @@ pub struct SelectPointerDownInput {
 /// Input context for one manipulate pointer-move transition.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SelectPointerMoveInput {
-    /// Current select-tool state.
-    pub state: SelectToolState,
+    /// Whether the current select-tool state is dragging.
+    pub is_dragging: bool,
     /// Pointer position in world coordinates.
     pub cursor_world: Vec2,
     /// Whether primary button is still pressed.
@@ -221,7 +221,7 @@ fn on_pointer_move(input: &SelectPointerMoveInput) -> ToolTransition {
         return ToolTransition::default();
     }
 
-    if !matches!(input.state, SelectToolState::Dragging(_)) {
+    if !input.is_dragging {
         return ToolTransition::default();
     }
 
@@ -239,12 +239,13 @@ fn on_pointer_up(input: &SelectPointerUpInput) -> ToolTransition {
         return ToolTransition::default();
     };
 
-    let mut commands = vec![ToolCommand::RestoreSelectDragPreview];
+    let mut commands = vec![
+        ToolCommand::RestoreSelectDragPreview,
+        ToolCommand::SetSelectToolState(SelectToolState::Idle),
+    ];
 
     if let Some(command) = finish_drag_command(drag_state, input.cursor_world) {
         commands.push(ToolCommand::ApplyDocumentCommand(Box::new(command)));
     }
-
-    commands.push(ToolCommand::SetSelectToolState(SelectToolState::Idle));
     ToolTransition::with_commands(commands)
 }
