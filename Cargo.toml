@@ -12,7 +12,7 @@ camino = "1.2.2"
 cap-std = { version = "4.0.0", features = ["fs_utf8"] }
 futures = "0.3.31"
 gpui = "0.2.2"
-gpui-component = "0.5.0"
+gpui-component = "0.5.1"
 log = "0.4.29"
 roxmltree = "0.21.1"
 slotmap = "1.1.1"
