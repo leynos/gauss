@@ -11,19 +11,40 @@ use crate::model::{
 use super::{Phase0Shell, draw::DrawEdgeMode};
 
 impl Phase0Shell {
+    /// Activate draw mode with an optional edge mode override.
+    ///
+    /// `edge_mode` is forwarded to the draw activation event; `Some(mode)`
+    /// requests that mode, while `None` keeps draw mode activation without an
+    /// explicit override. Returns `true` when applying emitted tool commands
+    /// changes shell state or document state.
     pub(super) fn activate_draw_tool(&mut self, edge_mode: Option<DrawEdgeMode>) -> bool {
         self.handle_tool_input_event(ToolInputEvent::ActivateDraw { edge_mode })
     }
 
+    /// Activate manipulate/select mode through the tool FSM.
+    ///
+    /// Returns `true` when emitted commands mutate state (for example tool
+    /// mode, selection, or select-tool runtime state).
     pub(super) fn activate_select_tool(&mut self) -> bool {
         self.handle_tool_input_event(ToolInputEvent::ActivateManipulate)
     }
 
+    /// Evaluate one tool input event and apply all resulting commands.
+    ///
+    /// The transition is computed via `ToolModeFsm.transition(...)`, and
+    /// command application may mutate document/editor state. Returns `true`
+    /// when at least one emitted command changes state.
     pub(super) fn handle_tool_input_event(&mut self, event: ToolInputEvent) -> bool {
         let transition = ToolModeFsm.transition(self.state.tool_mode, self.state.edge_mode, event);
         self.apply_tool_commands(transition.commands)
     }
 
+    /// Apply a sequence of tool commands in order.
+    ///
+    /// Accepts any `IntoIterator<Item = ToolCommand>`, mutates shell/document
+    /// state per command, and returns whether any command changed state. On
+    /// command errors this logs the error, records `last_history_error`, and
+    /// returns the accumulated change state for commands applied before failure.
     pub(super) fn apply_tool_commands(
         &mut self,
         commands: impl IntoIterator<Item = ToolCommand>,
@@ -82,6 +103,7 @@ impl Phase0Shell {
         }
 
         if mode != ToolMode::Manipulate && self.select_tool_state != SelectToolState::Idle {
+            self.restore_select_drag_if_possible();
             self.select_tool_state = SelectToolState::Idle;
             did_change = true;
         }
@@ -125,6 +147,11 @@ impl Phase0Shell {
         if self.select_tool_state == state {
             return false;
         }
+
+        if state == SelectToolState::Idle {
+            self.restore_select_drag_if_possible();
+        }
+
         self.select_tool_state = state;
         true
     }

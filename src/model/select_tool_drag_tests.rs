@@ -69,13 +69,14 @@ fn pointer_down_input(
 }
 
 fn extract_drag_state(commands: &[ToolCommand]) -> SelectToolState {
-    commands
-        .iter()
-        .find_map(|command| match command {
-            ToolCommand::SetSelectToolState(state) => Some(state.clone()),
-            _ => None,
-        })
-        .unwrap_or(SelectToolState::Idle)
+    let extracted_state = commands.iter().find_map(|command| match command {
+        ToolCommand::SetSelectToolState(state) => Some(state.clone()),
+        _ => None,
+    });
+    let Some(state) = extracted_state else {
+        panic!("expected ToolCommand::SetSelectToolState emission for SelectToolState");
+    };
+    state
 }
 
 fn setup_drag_test(

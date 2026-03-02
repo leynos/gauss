@@ -73,7 +73,7 @@ Success is observable when:
 - Test churn: if BDD step rewrites exceed 12 scenario-step modifications,
   stop, and split into an explicit fixture/schema alignment pass.
 - Iteration: if gates fail across three repair cycles without reducing failure
-  count, stop and escalate with evidence.
+  count, stop, and escalate with evidence.
 - Environment: if external contention (for example Cargo lock contention across
   worktrees) prevents reliable gate completion, stop, and record blocker
   evidence before closure.
