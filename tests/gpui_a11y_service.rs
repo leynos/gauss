@@ -19,12 +19,11 @@ fn setup_window(
     (visual_cx, view)
 }
 
-fn find_update_node(update: &TreeUpdate, node_id: u64) -> &Node {
+fn find_update_node(update: &TreeUpdate, node_id: u64) -> Option<&Node> {
     update
         .nodes
         .iter()
         .find_map(|(candidate, node)| (candidate.0 == node_id).then_some(node))
-        .unwrap_or_else(|| panic!("expected node {node_id:#x} in drained accessibility update"))
 }
 
 fn assert_chrome_button_semantics(
@@ -33,7 +32,9 @@ fn assert_chrome_button_semantics(
     expected_label: &str,
     expected_hint: &str,
 ) {
-    let node = find_update_node(update, node_id);
+    let Some(node) = find_update_node(update, node_id) else {
+        panic!("expected node {node_id:#x} in drained accessibility update");
+    };
     assert_eq!(node.role(), Role::Button);
     assert_eq!(node.label(), Some(expected_label));
     assert_eq!(node.description(), Some(expected_hint));
@@ -76,7 +77,12 @@ fn a11y_initial_tree_update_is_emitted_on_first_draw(cx: &mut TestAppContext) {
         "expected initial update to include tree metadata"
     );
 
-    let titlebar = find_update_node(initial_update, accessibility::node_ids::TITLEBAR);
+    let Some(titlebar) = find_update_node(initial_update, accessibility::node_ids::TITLEBAR) else {
+        panic!(
+            "expected node {:#x} in drained accessibility update",
+            accessibility::node_ids::TITLEBAR
+        );
+    };
     assert_eq!(titlebar.role(), Role::TitleBar);
     assert_eq!(titlebar.label(), Some("Window title bar"));
 

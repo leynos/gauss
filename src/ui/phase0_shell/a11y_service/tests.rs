@@ -44,16 +44,19 @@ fn snapshot_with_state(
     }
 }
 
-fn chrome_node(nodes: &std::collections::BTreeMap<NodeId, Node>, node_id: u64) -> &Node {
-    nodes
-        .get(&NodeId(node_id))
-        .unwrap_or_else(|| panic!("expected node map to contain chrome node id {node_id:#x}"))
+fn chrome_node(nodes: &std::collections::BTreeMap<NodeId, Node>, node_id: u64) -> Option<&Node> {
+    nodes.get(&NodeId(node_id))
 }
 
 #[rstest]
 fn titlebar_node_uses_stable_role_label_and_children_order() {
     let (nodes, _) = build_node_map(&snapshot(&[], &[])).expect("node map build should succeed");
-    let titlebar = chrome_node(&nodes, accessibility::node_ids::TITLEBAR);
+    let Some(titlebar) = chrome_node(&nodes, accessibility::node_ids::TITLEBAR) else {
+        panic!(
+            "expected node map to contain chrome node id {:#x}",
+            accessibility::node_ids::TITLEBAR
+        );
+    };
     let expected_children = accessibility::chrome_button_semantics(false)
         .into_iter()
         .map(|button| NodeId(button.node_id))
@@ -98,7 +101,9 @@ fn chrome_button_nodes_expose_role_label_hint_and_click_action(
     #[case] expected_shortcut_hint: &'static str,
 ) {
     let (nodes, _) = build_node_map(&snapshot(&[], &[])).expect("node map build should succeed");
-    let node = chrome_node(&nodes, node_id);
+    let Some(node) = chrome_node(&nodes, node_id) else {
+        panic!("expected node map to contain chrome node id {node_id:#x}");
+    };
     assert_eq!(node.role(), Role::Button);
     assert_eq!(node.label(), Some(expected_label));
     assert_eq!(node.description(), Some(expected_shortcut_hint));
@@ -115,7 +120,13 @@ fn maximize_button_label_matches_window_state(
 ) {
     let (nodes, _) = build_node_map(&snapshot_with_state(&[], &[], is_maximized))
         .expect("node map build should succeed");
-    let maximize_button = chrome_node(&nodes, accessibility::node_ids::MAXIMIZE_BUTTON);
+    let Some(maximize_button) = chrome_node(&nodes, accessibility::node_ids::MAXIMIZE_BUTTON)
+    else {
+        panic!(
+            "expected node map to contain chrome node id {:#x}",
+            accessibility::node_ids::MAXIMIZE_BUTTON
+        );
+    };
     assert_eq!(maximize_button.label(), Some(expected_label));
     assert_eq!(
         maximize_button.keyboard_shortcut(),
