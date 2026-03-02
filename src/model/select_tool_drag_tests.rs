@@ -350,6 +350,7 @@ fn select_tool_pointer_up_after_control_point_drag_emits_expected_command_and_id
         },
     );
 
+    assert_eq!(up.commands.len(), 3);
     assert!(matches!(
         up.commands.first(),
         Some(ToolCommand::RestoreSelectDragPreview)
