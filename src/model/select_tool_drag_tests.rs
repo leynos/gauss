@@ -6,7 +6,7 @@ use super::{
     SelectPointerMoveInput, SelectPointerUpInput, SelectSegmentHit, SelectShapeHit, SelectTool,
     SelectToolState, Shape, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, Vec2,
 };
-use rstest::rstest;
+use rstest::{fixture, rstest};
 
 fn shape_id(raw: u64) -> ShapeId {
     ShapeId::from_accesskit_node_id(raw)
@@ -79,10 +79,11 @@ fn extract_drag_state(commands: &[ToolCommand]) -> SelectToolState {
     state
 }
 
+#[fixture]
 fn setup_drag_test(
-    shape_id: ShapeId,
-    hit: SelectPointerHit,
-    cursor_pos: Vec2,
+    #[default(shape_id(1))] shape_id: ShapeId,
+    #[default(SelectPointerHit::None)] hit: SelectPointerHit,
+    #[default(Vec2::ZERO)] cursor_pos: Vec2,
 ) -> (Document, SelectToolState) {
     let mut doc = Document::new();
     let _new_shape = doc.append_shape(shape_with_handles(shape_id));
@@ -224,8 +225,16 @@ fn select_tool_pointer_events_are_noop_when_dragging_without_primary_button(
     #[case] selected_shape_id: ShapeId,
     #[case] hit: SelectPointerHit,
     #[case] event_factory: fn() -> ToolInputEvent,
+    #[with(selected_shape_id, hit, Vec2::new(5.0, 5.0))] setup_drag_test: (
+        Document,
+        SelectToolState,
+    ),
 ) {
-    let (_doc, drag_state) = setup_drag_test(selected_shape_id, hit, Vec2::new(5.0, 5.0));
+    assert!(matches!(
+        hit,
+        SelectPointerHit::Shape(SelectShapeHit { shape_id, .. }) if shape_id == selected_shape_id
+    ));
+    let (_doc, drag_state) = setup_drag_test;
     assert!(matches!(drag_state, SelectToolState::Dragging(_)));
 
     assert_pointer_event_is_noop(drag_state, event_factory());
@@ -340,8 +349,18 @@ fn select_tool_pointer_up_after_control_point_drag_emits_expected_command_and_id
     #[case] selected_shape_id: ShapeId,
     #[case] hit: SelectPointerHit,
     #[case] expected: ExpectedPointerUpCommand,
+    #[with(selected_shape_id, hit, Vec2::new(2.0, 2.0))] setup_drag_test: (
+        Document,
+        SelectToolState,
+    ),
 ) {
-    let (_doc, drag_state) = setup_drag_test(selected_shape_id, hit, Vec2::new(2.0, 2.0));
+    assert!(matches!(
+        hit,
+        SelectPointerHit::Anchor(SelectAnchorHit { shape_id, .. })
+            | SelectPointerHit::Handle(SelectHandleHit { shape_id, .. })
+            if shape_id == selected_shape_id
+    ));
+    let (_doc, drag_state) = setup_drag_test;
     let up = Tool::transition(
         &SelectTool,
         ToolMode::Manipulate,
