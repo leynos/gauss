@@ -685,6 +685,40 @@ Design decisions:
 - **Rationale**: this keeps one-entry-per-gesture undo semantics while
   preserving immediate drag feedback and deterministic replay behaviour.
 
+#### 6.5.1 SelectTool pointer gesture command sequence
+
+Accessibility caption: this sequence shows manipulate pointer-down, move, and
+up handling, including selection updates, drag preview application and restore,
+optional drag commit command emission, and the final transition back to idle.
+
+```mermaid
+sequenceDiagram
+  participant UI as Phase0Shell
+  participant Tool as SelectTool FSM
+  participant Cmd as ToolCommand Queue
+  participant Doc as Document
+
+  UI->>Tool: SelectPointerDown(input)
+  Tool->>Tool: compute hit and new selection
+  Tool->>Cmd: emit SetSelection / RecordSelectionChange
+  Tool->>Cmd: emit SetSelectToolState(Dragging)
+  Tool-->>UI: ToolTransition(commands)
+
+  UI->>Tool: SelectPointerMove(input) [Dragging]
+  Tool->>Cmd: emit PreviewSelectDrag{cursor_world}
+  Cmd->>Doc: apply_select_drag_preview(...)
+  Tool-->>UI: ToolTransition(preview commands)
+
+  UI->>Tool: SelectPointerUp(input)
+  Tool->>Tool: finish_drag_command() -> optional ApplyDocumentCommand
+  Tool->>Cmd: emit RestoreSelectDragPreview
+  Cmd->>Doc: restore_select_drag_preview(...)
+  Tool->>Cmd: emit ApplyDocumentCommand(MoveShapes/MoveAnchor/MoveHandle)?
+  Cmd->>Doc: apply_command(...)
+  Tool->>Cmd: emit SetSelectToolState(Idle)
+  Tool-->>UI: ToolTransition(commands)
+```
+
 ______________________________________________________________________
 
 ## 7. Command System (Undo/Redo + Scripting)
