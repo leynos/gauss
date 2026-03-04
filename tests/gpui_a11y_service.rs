@@ -48,7 +48,10 @@ fn assert_initial_serialised_update(initial_update: &TreeUpdate) {
         );
     };
     assert_eq!(titlebar.role(), Role::TitleBar);
-    assert_eq!(titlebar.label(), Some("Window title bar"));
+    assert_eq!(
+        titlebar.label(),
+        Some(accessibility::accessible_names::TITLEBAR)
+    );
     for expected in accessibility::chrome_button_semantics(false) {
         assert_chrome_button_semantics(
             initial_update,

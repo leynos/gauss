@@ -73,10 +73,10 @@ Success is observable when:
 - Blast-radius tolerance: if >12 files or >500 net LOC are required for `0.6.2`,
   pause and decompose before continuing.
 - Semantics tolerance: if AccessKit role/state APIs in the pinned version cannot
-  express required chrome semantics without breaking compatibility, pause and
+  express required chrome semantics without breaking compatibility, pause, and
   document fallback options.
 - Test tolerance: if test changes require broad fixture redesign outside
-  accessibility suites, pause and split into a follow-up work item.
+  accessibility suites, pause, and split into a follow-up work item.
 - Gate tolerance: if `make check-fmt`, `make lint`, or `make test` fail due to
   unrelated pre-existing issues, record evidence and keep completion status
   partial rather than marking roadmap work done.

@@ -68,45 +68,21 @@ fn titlebar_node_uses_stable_role_label_and_children_order() {
 }
 
 #[rstest]
-#[case(
-    accessibility::node_ids::WINDOW_MENU,
-    accessibility::accessible_names::WINDOW_MENU,
-    accessibility::shortcut_hints::WINDOW_MENU
-)]
-#[case(
-    accessibility::node_ids::MINIMIZE_BUTTON,
-    accessibility::accessible_names::MINIMIZE,
-    accessibility::shortcut_hints::minimize_for_platform()
-)]
-#[case(
-    accessibility::node_ids::MAXIMIZE_BUTTON,
-    accessibility::accessible_names::MAXIMIZE,
-    accessibility::shortcut_hints::MAXIMIZE
-)]
-#[case(
-    accessibility::node_ids::FULLSCREEN_BUTTON,
-    accessibility::accessible_names::FULLSCREEN,
-    accessibility::shortcut_hints::fullscreen_for_platform()
-)]
-#[case(
-    accessibility::node_ids::CLOSE_BUTTON,
-    accessibility::accessible_names::CLOSE,
-    accessibility::shortcut_hints::close_for_platform()
-)]
-fn chrome_button_nodes_expose_role_label_hint_and_click_action(
-    #[case] node_id: u64,
-    #[case] expected_label: &'static str,
-    #[case] expected_shortcut_hint: &'static str,
-) {
+fn chrome_button_nodes_expose_role_label_hint_and_click_action() {
     let (nodes, _) = build_node_map(&snapshot(&[], &[])).expect("node map build should succeed");
-    let Some(node) = accessibility::chrome_node_from_map(&nodes, node_id) else {
-        panic!("expected node map to contain chrome node id {node_id:#x}");
-    };
-    assert_eq!(node.role(), Role::Button);
-    assert_eq!(node.label(), Some(expected_label));
-    assert_eq!(node.description(), Some(expected_shortcut_hint));
-    assert_eq!(node.keyboard_shortcut(), Some(expected_shortcut_hint));
-    assert!(node.supports_action(Action::Click));
+    for expected in accessibility::chrome_button_semantics(false) {
+        let Some(node) = accessibility::chrome_node_from_map(&nodes, expected.node_id) else {
+            panic!(
+                "expected node map to contain chrome node id {:#x}",
+                expected.node_id
+            );
+        };
+        assert_eq!(node.role(), Role::Button);
+        assert_eq!(node.label(), Some(expected.label));
+        assert_eq!(node.description(), Some(expected.shortcut_hint));
+        assert_eq!(node.keyboard_shortcut(), Some(expected.shortcut_hint));
+        assert!(node.supports_action(Action::Click));
+    }
 }
 
 #[rstest]

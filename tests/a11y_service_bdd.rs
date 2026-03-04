@@ -240,7 +240,7 @@ fn chrome_nodes_expose_expected_roles_labels_and_shortcut_hints(
     world: &A11yWorld,
 ) -> TestSupportResult<()> {
     assert_titlebar_semantics(world)?;
-    for expected in accessibility::chrome_button_semantics(false) {
+    for expected in accessibility::chrome_button_semantics(world.snapshot.is_maximized) {
         assert_chrome_button(world, &expected)?;
     }
     Ok(())
