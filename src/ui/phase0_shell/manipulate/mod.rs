@@ -11,9 +11,9 @@
 use gpui::{MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels};
 
 use crate::model::{
-    SelectAnchorHit, SelectHandleHit, SelectHandleHitKind, SelectPointerDownInput,
-    SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput, SelectSegmentHit,
-    SelectShapeHit, SelectTool, SelectToolState, Tool, ToolInputEvent, Vec2,
+    SelectAnchorHit, SelectDragDocumentSnapshot, SelectHandleHit, SelectHandleHitKind,
+    SelectPointerDownInput, SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput,
+    SelectSegmentHit, SelectShapeHit, SelectTool, SelectToolState, Tool, ToolInputEvent, Vec2,
 };
 
 use super::{Phase0Shell, draw::ToolMode};
@@ -44,7 +44,7 @@ impl Phase0Shell {
             self.state.edge_mode,
             ToolInputEvent::SelectPointerDown {
                 input: Box::new(SelectPointerDownInput {
-                    document: self.state.document.clone(),
+                    drag_snapshot: SelectDragDocumentSnapshot::from_document(&self.state.document),
                     previous_selection: self.state.selection.clone(),
                     hit: map_hit(hit),
                     cursor_world,

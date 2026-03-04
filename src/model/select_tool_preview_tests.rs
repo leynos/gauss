@@ -1,57 +1,14 @@
 //! Preview/restore edge tests for `SelectTool` drag helpers.
 
 use super::{
-    Anchor, Document, EdgeMode, Paint, PaintStyle, PathGeom, SegmentKind, SelectAnchorHit,
-    SelectHandleHit, SelectHandleHitKind, SelectPointerDownInput, SelectPointerHit, SelectShapeHit,
-    SelectTool, SelectToolState, Shape, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, Vec2,
+    Document, EdgeMode, SelectAnchorHit, SelectDragDocumentSnapshot, SelectHandleHit,
+    SelectHandleHitKind, SelectPointerDownInput, SelectPointerHit, SelectShapeHit, SelectTool,
+    SelectToolState, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, Vec2,
     apply_select_drag_preview, restore_select_drag_preview,
 };
 use rstest::rstest;
 
-fn shape_id(raw: u64) -> ShapeId {
-    ShapeId::from_accesskit_node_id(raw)
-}
-
-fn default_style() -> PaintStyle {
-    PaintStyle {
-        stroke: Paint::Solid(super::Rgba::new(16, 32, 64, 255)),
-        stroke_width: 2.0,
-        fill: Paint::None,
-    }
-}
-
-fn shape_with_handles(id: ShapeId) -> Shape {
-    Shape {
-        id,
-        z: 0,
-        style: default_style(),
-        path: PathGeom {
-            anchors: vec![
-                Anchor {
-                    pos: Vec2::new(0.0, 0.0),
-                    handle_in: Some(Vec2::new(-2.0, -1.0)),
-                    handle_out: Some(Vec2::new(2.0, 1.0)),
-                },
-                Anchor::new(Vec2::new(12.0, 0.0)),
-                Anchor::new(Vec2::new(12.0, 12.0)),
-                Anchor::new(Vec2::new(0.0, 12.0)),
-            ],
-            segments: vec![SegmentKind::Cubic, SegmentKind::Line, SegmentKind::Line],
-            closed: true,
-            closing_segment: SegmentKind::Line,
-        },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
-}
-
-fn selection_for_shape(shape_id: ShapeId) -> super::Selection {
-    super::Selection {
-        items: vec![super::SelItem::Shape(shape_id)],
-    }
-}
+use super::select_tool_test_helpers::{selection_for_shape, shape_id, shape_with_handles};
 
 fn extract_drag_state(commands: &[ToolCommand]) -> SelectToolState {
     commands
@@ -88,7 +45,7 @@ fn test_stale_preview_returns_false<F>(
         EdgeMode::Line,
         ToolInputEvent::SelectPointerDown {
             input: Box::new(SelectPointerDownInput {
-                document: doc.clone(),
+                drag_snapshot: SelectDragDocumentSnapshot::from_document(&doc),
                 previous_selection,
                 hit,
                 cursor_world,

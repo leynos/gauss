@@ -8,7 +8,8 @@ mod common;
 
 use common::{
     canvas_bounds, canvas_drag_scenario, draw_point, ensure_initial_draw, init_test_app,
-    read_history_len, simulate_escape, switch_to_manipulate_mode_and_verify,
+    read_document, read_history_len, require_draw_shape, simulate_escape,
+    switch_to_manipulate_mode_and_verify,
 };
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
@@ -79,6 +80,14 @@ fn escape_during_manipulate_drag_preview_cancels_without_history_commit(cx: &mut
     switch_to_manipulate_mode_and_verify(visual_cx, &view, scenario.first);
 
     let history_before_drag = read_history_len(visual_cx, &view);
+    let anchors_before_escape = {
+        let doc = read_document(visual_cx, &view);
+        require_draw_shape(&doc, "before escape during drag preview")
+            .expect("expected draw shape before escape")
+            .path
+            .anchors
+            .clone()
+    };
 
     let drag_start = point(
         px(math::midpoint(
@@ -123,5 +132,18 @@ fn escape_during_manipulate_drag_preview_cancels_without_history_commit(cx: &mut
     assert_eq!(
         history_after_escape, history_before_drag,
         "escape during preview should not create history entries"
+    );
+
+    let anchors_after_escape = {
+        let doc = read_document(visual_cx, &view);
+        require_draw_shape(&doc, "after escape during drag preview")
+            .expect("expected draw shape after escape")
+            .path
+            .anchors
+            .clone()
+    };
+    assert_eq!(
+        anchors_after_escape, anchors_before_escape,
+        "escape during drag preview should not change shape geometry"
     );
 }

@@ -55,9 +55,9 @@ pub use resource_store::{
     RadialGradient, ResourceStore, SymbolId, SymbolResource,
 };
 pub use select_tool::{
-    SelectAnchorHit, SelectHandleHit, SelectHandleHitKind, SelectPointerDownInput,
-    SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput, SelectSegmentHit,
-    SelectShapeHit, SelectTool, SelectToolState, apply_select_drag_preview,
+    SelectAnchorHit, SelectDragDocumentSnapshot, SelectHandleHit, SelectHandleHitKind,
+    SelectPointerDownInput, SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput,
+    SelectSegmentHit, SelectShapeHit, SelectTool, SelectToolState, apply_select_drag_preview,
     restore_select_drag_preview,
 };
 pub use selection::{SelItem, Selection};
@@ -78,6 +78,8 @@ mod resource_store_tests;
 mod select_tool_drag_tests;
 #[cfg(test)]
 mod select_tool_preview_tests;
+#[cfg(test)]
+mod select_tool_test_helpers;
 #[cfg(test)]
 mod select_tool_tests;
 #[cfg(test)]

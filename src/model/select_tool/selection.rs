@@ -47,20 +47,6 @@ fn toggle_selection_for_hit(current: &Selection, hit: SelectPointerHit) -> Selec
     toggle_item_with_parent(current, item)
 }
 
-fn toggle_item_in_selection(mut selection: Selection, item: SelItem) -> Selection {
-    if let Some(pos) = selection
-        .items
-        .iter()
-        .position(|existing| existing == &item)
-    {
-        selection.items.remove(pos);
-    } else {
-        selection.items.push(item);
-    }
-
-    selection
-}
-
 fn toggle_item_with_parent(current: &Selection, item: SelItem) -> Selection {
     match item {
         SelItem::Shape(shape_id) => toggle_shape_with_children(current, shape_id),
@@ -79,7 +65,9 @@ fn toggle_shape_with_children(current: &Selection, shape_id: ShapeId) -> Selecti
                 .collect(),
         }
     } else {
-        toggle_item_in_selection(current.clone(), SelItem::Shape(shape_id))
+        let mut selection = current.clone();
+        selection.items.push(SelItem::Shape(shape_id));
+        selection
     }
 }
 
@@ -91,7 +79,17 @@ fn toggle_detail_item(current: &Selection, item: SelItem) -> Selection {
         selection.items.push(SelItem::Shape(shape_id));
     }
 
-    toggle_item_in_selection(selection, item)
+    if let Some(pos) = selection
+        .items
+        .iter()
+        .position(|existing| existing == &item)
+    {
+        selection.items.remove(pos);
+    } else {
+        selection.items.push(item);
+    }
+
+    selection
 }
 
 fn selection_for_non_shift_hit(previous_selection: &Selection, hit: SelectPointerHit) -> Selection {
@@ -135,26 +133,25 @@ fn selection_for_shape_detail_hit(
     shape_id: ShapeId,
     detail: SelItem,
 ) -> Selection {
-    let previous_shapes = shapes_only(previous_selection);
-
-    let mut items = if previous_shapes.contains(&SelItem::Shape(shape_id)) {
-        previous_shapes.items
-    } else {
-        vec![SelItem::Shape(shape_id)]
-    };
-
-    items.push(detail);
-    Selection { items }
-}
-
-fn shapes_only(selection: &Selection) -> Selection {
     let mut items = Vec::new();
-    for item in &selection.items {
+    let mut hit_shape_previously_selected = false;
+    for item in &previous_selection.items {
         let SelItem::Shape(id) = item else {
             continue;
         };
+
+        if *id == shape_id {
+            hit_shape_previously_selected = true;
+        }
         items.push(SelItem::Shape(*id));
     }
+
+    if !hit_shape_previously_selected {
+        items.clear();
+        items.push(SelItem::Shape(shape_id));
+    }
+
+    items.push(detail);
     Selection { items }
 }
 

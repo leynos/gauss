@@ -2,10 +2,10 @@
 
 use gauss::model::{
     Anchor, Command, Document, EdgeMode, Paint, PaintStyle, PathGeom, SegmentKind, SelectAnchorHit,
-    SelectHandleHit, SelectHandleHitKind, SelectPointerDownInput, SelectPointerHit,
-    SelectPointerMoveInput, SelectPointerUpInput, SelectSegmentHit, SelectShapeHit, SelectTool,
-    SelectToolState, Shape, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolTransition,
-    Vec2,
+    SelectDragDocumentSnapshot, SelectHandleHit, SelectHandleHitKind, SelectPointerDownInput,
+    SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput, SelectSegmentHit,
+    SelectShapeHit, SelectTool, SelectToolState, Shape, ShapeId, Tool, ToolCommand, ToolInputEvent,
+    ToolMode, ToolTransition, Vec2,
 };
 use rstest::fixture;
 use rstest_bdd_macros::{given, then, when};
@@ -64,7 +64,7 @@ fn pointer_down_event(
 ) -> ToolInputEvent {
     ToolInputEvent::SelectPointerDown {
         input: Box::new(SelectPointerDownInput {
-            document: document.clone(),
+            drag_snapshot: SelectDragDocumentSnapshot::from_document(document),
             previous_selection: gauss::model::Selection::empty(),
             hit,
             cursor_world,

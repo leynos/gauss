@@ -1,53 +1,13 @@
 //! Unit tests for `SelectTool` manipulate transitions.
 
 use super::{
-    Anchor, Command, Document, EdgeMode, Paint, PaintStyle, PathGeom, SegmentKind,
-    SelectPointerDownInput, SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput,
-    SelectShapeHit, SelectTool, SelectToolState, Shape, ShapeId, Tool, ToolCommand, ToolInputEvent,
-    ToolMode, Vec2,
+    Command, Document, EdgeMode, SelectDragDocumentSnapshot, SelectPointerDownInput,
+    SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput, SelectShapeHit, SelectTool,
+    SelectToolState, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, Vec2,
 };
 use rstest::rstest;
 
-fn shape_id(raw: u64) -> ShapeId {
-    ShapeId::from_accesskit_node_id(raw)
-}
-
-fn default_style() -> PaintStyle {
-    PaintStyle {
-        stroke: Paint::Solid(super::Rgba::new(16, 32, 64, 255)),
-        stroke_width: 2.0,
-        fill: Paint::None,
-    }
-}
-
-fn square_shape(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
-    Shape {
-        id,
-        z: 0,
-        style: default_style(),
-        path: PathGeom {
-            anchors: vec![
-                Anchor::new(min),
-                Anchor::new(Vec2::new(max.x, min.y)),
-                Anchor::new(max),
-                Anchor::new(Vec2::new(min.x, max.y)),
-            ],
-            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
-            closed: true,
-            closing_segment: SegmentKind::Line,
-        },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
-}
-
-fn selection_for_shape(shape_id: ShapeId) -> super::Selection {
-    super::Selection {
-        items: vec![super::SelItem::Shape(shape_id)],
-    }
-}
+use super::select_tool_test_helpers::{selection_for_shape, shape_id, square_shape};
 
 fn pointer_down_input(
     doc: &Document,
@@ -56,7 +16,7 @@ fn pointer_down_input(
     previous_selection: super::Selection,
 ) -> SelectPointerDownInput {
     SelectPointerDownInput {
-        document: doc.clone(),
+        drag_snapshot: SelectDragDocumentSnapshot::from_document(doc),
         previous_selection,
         hit: SelectPointerHit::Shape(SelectShapeHit {
             shape_index: 0,
@@ -239,7 +199,7 @@ fn select_tool_shift_click_toggles_selection_and_stays_idle() {
         EdgeMode::Line,
         ToolInputEvent::SelectPointerDown {
             input: Box::new(SelectPointerDownInput {
-                document: doc,
+                drag_snapshot: SelectDragDocumentSnapshot::from_document(&doc),
                 previous_selection: super::Selection::empty(),
                 hit: SelectPointerHit::Shape(SelectShapeHit {
                     shape_index: 0,

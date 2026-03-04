@@ -16,26 +16,40 @@ use super::{
 mod preview;
 
 #[derive(Clone, Debug, PartialEq)]
-pub(super) struct SelectDragStartInput<'a> {
-    doc: &'a Document,
-    selection: &'a crate::model::Selection,
-    cursor_world: Vec2,
-    can_drag_shape_bbox: bool,
+struct SelectDragShapeSnapshot {
+    id: ShapeId,
+    anchors: Vec<Anchor>,
 }
 
-impl<'a> SelectDragStartInput<'a> {
-    pub(super) const fn new(
-        doc: &'a Document,
-        selection: &'a crate::model::Selection,
-        cursor_world: Vec2,
-        can_drag_shape_bbox: bool,
-    ) -> Self {
-        Self {
-            doc,
-            selection,
-            cursor_world,
-            can_drag_shape_bbox,
-        }
+/// Lightweight document snapshot used to initialise select-tool drags.
+///
+/// Drag-start logic only needs shape identity, ordering, and anchor geometry,
+/// so this snapshot avoids carrying full style/metadata document state.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SelectDragDocumentSnapshot {
+    shapes: Vec<SelectDragShapeSnapshot>,
+}
+
+impl SelectDragDocumentSnapshot {
+    /// Capture drag-start data from a document.
+    #[must_use]
+    pub fn from_document(doc: &Document) -> Self {
+        let shapes = doc
+            .iter_in_draw_order()
+            .map(|shape| SelectDragShapeSnapshot {
+                id: shape.id,
+                anchors: shape.path.anchors.clone(),
+            })
+            .collect();
+        Self { shapes }
+    }
+
+    fn find_index(&self, id: ShapeId) -> Option<usize> {
+        self.shapes.iter().position(|shape| shape.id == id)
+    }
+
+    fn shape_at(&self, index: usize) -> Option<&SelectDragShapeSnapshot> {
+        self.shapes.get(index)
     }
 }
 
@@ -98,23 +112,29 @@ pub struct HandleDragState {
     pub original_handle: Vec2,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct SelectDragStartParams {
+    pub cursor_world: Vec2,
+    pub can_drag_shape_bbox: bool,
+}
+
 pub(super) fn start_drag(
-    input: &SelectDragStartInput<'_>,
+    snapshot: &SelectDragDocumentSnapshot,
+    selection: &crate::model::Selection,
+    start: SelectDragStartParams,
     hit: SelectPointerHit,
 ) -> Option<SelectDragState> {
     match hit {
         SelectPointerHit::Handle(handle_hit) => {
-            start_handle_drag(input.doc, handle_hit, input.cursor_world)
-                .map(SelectDragState::Handle)
+            start_handle_drag(snapshot, handle_hit, start.cursor_world).map(SelectDragState::Handle)
         }
         SelectPointerHit::Anchor(anchor_hit) => {
-            start_anchor_drag(input.doc, anchor_hit, input.cursor_world)
-                .map(SelectDragState::Anchor)
+            start_anchor_drag(snapshot, anchor_hit, start.cursor_world).map(SelectDragState::Anchor)
         }
         SelectPointerHit::Segment(segment_hit) => start_shapes_drag(
-            input.doc,
-            input.selection,
-            input.cursor_world,
+            snapshot,
+            selection,
+            start.cursor_world,
             SelectShapeHit {
                 shape_index: segment_hit.shape_index,
                 shape_id: segment_hit.shape_id,
@@ -125,13 +145,13 @@ pub(super) fn start_drag(
             shape_id,
             shape_index,
         }) => {
-            if !input.can_drag_shape_bbox {
+            if !start.can_drag_shape_bbox {
                 return None;
             }
             start_shapes_drag(
-                input.doc,
-                input.selection,
-                input.cursor_world,
+                snapshot,
+                selection,
+                start.cursor_world,
                 SelectShapeHit {
                     shape_index,
                     shape_id,
@@ -147,16 +167,23 @@ pub(super) fn finish_drag_command(
     drag_state: &SelectDragState,
     cursor_world: Vec2,
 ) -> Option<Command> {
-    match drag_state {
-        SelectDragState::Shapes(shape_drag) => finish_shapes_drag_command(shape_drag, cursor_world),
-        SelectDragState::Anchor(anchor_drag) => {
-            finish_anchor_drag_command(anchor_drag, cursor_world)
-        }
-        SelectDragState::Handle(handle_drag) => {
-            finish_handle_drag_command(handle_drag, cursor_world)
-                .map(|movement| Command::MoveHandle { movement })
-        }
+    let delta = match drag_state {
+        SelectDragState::Shapes(drag) => drag_delta(drag.start_cursor_world, cursor_world),
+        SelectDragState::Anchor(drag) => drag_delta(drag.start_cursor_world, cursor_world),
+        SelectDragState::Handle(drag) => drag_delta(drag.start_cursor_world, cursor_world),
+    };
+
+    if is_zero_delta(delta) {
+        return None;
     }
+
+    Some(match drag_state {
+        SelectDragState::Shapes(shape_drag) => finish_shapes_drag_command(shape_drag, delta),
+        SelectDragState::Anchor(anchor_drag) => finish_anchor_drag_command(anchor_drag, delta),
+        SelectDragState::Handle(handle_drag) => Command::MoveHandle {
+            movement: finish_handle_drag_command(handle_drag, delta),
+        },
+    })
 }
 
 pub(super) fn apply_drag_preview(
@@ -172,7 +199,7 @@ pub(super) fn restore_drag_preview(doc: &mut Document, drag_state: &SelectDragSt
 }
 
 fn start_shapes_drag(
-    doc: &Document,
+    snapshot: &SelectDragDocumentSnapshot,
     selection: &crate::model::Selection,
     cursor_world: Vec2,
     hit: SelectShapeHit,
@@ -186,18 +213,21 @@ fn start_shapes_drag(
 
     let mut shapes = Vec::new();
     let mut hit_index_hint = Some(hit.shape_index).filter(|index| {
-        doc.shape_at(*index)
+        snapshot
+            .shape_at(*index)
             .is_some_and(|shape| shape.id == hit.shape_id)
     });
 
     for shape_id in shape_ids {
         let index = if shape_id == hit.shape_id {
-            hit_index_hint.take().or_else(|| doc.find_index(shape_id))?
+            hit_index_hint
+                .take()
+                .or_else(|| snapshot.find_index(shape_id))?
         } else {
-            doc.find_index(shape_id)?
+            snapshot.find_index(shape_id)?
         };
 
-        let shape = doc.shape_at(index)?;
+        let shape = snapshot.shape_at(index)?;
         if shape.id != shape_id {
             continue;
         }
@@ -205,7 +235,7 @@ fn start_shapes_drag(
         shapes.push(DraggedShape {
             shape: shape_id,
             index,
-            original_anchors: shape.path.anchors.clone(),
+            original_anchors: shape.anchors.clone(),
         });
     }
 
@@ -216,15 +246,15 @@ fn start_shapes_drag(
 }
 
 fn start_anchor_drag(
-    doc: &Document,
+    snapshot: &SelectDragDocumentSnapshot,
     hit: SelectAnchorHit,
     cursor_world: Vec2,
 ) -> Option<AnchorDragState> {
-    let shape = doc.shape_at(hit.shape_index)?;
+    let shape = snapshot.shape_at(hit.shape_index)?;
     if shape.id != hit.shape_id {
         return None;
     }
-    let anchor = shape.path.anchors.get(hit.anchor_index)?.clone();
+    let anchor = shape.anchors.get(hit.anchor_index)?.clone();
 
     Some(AnchorDragState {
         shape: hit.shape_id,
@@ -236,16 +266,16 @@ fn start_anchor_drag(
 }
 
 fn start_handle_drag(
-    doc: &Document,
+    snapshot: &SelectDragDocumentSnapshot,
     hit: SelectHandleHit,
     cursor_world: Vec2,
 ) -> Option<HandleDragState> {
-    let shape = doc.shape_at(hit.shape_index)?;
+    let shape = snapshot.shape_at(hit.shape_index)?;
     if shape.id != hit.shape_id {
         return None;
     }
 
-    let anchor = shape.path.anchors.get(hit.anchor_index)?;
+    let anchor = shape.anchors.get(hit.anchor_index)?;
     let original_handle = match hit.kind {
         SelectHandleHitKind::In => anchor.handle_in?,
         SelectHandleHitKind::Out => anchor.handle_out?,
@@ -261,9 +291,7 @@ fn start_handle_drag(
     })
 }
 
-fn finish_shapes_drag_command(drag: &ShapesDragState, cursor_world: Vec2) -> Option<Command> {
-    let delta = drag_delta(drag.start_cursor_world, cursor_world)?;
-
+fn finish_shapes_drag_command(drag: &ShapesDragState, delta: Vec2) -> Command {
     let movements = drag
         .shapes
         .iter()
@@ -273,30 +301,23 @@ fn finish_shapes_drag_command(drag: &ShapesDragState, cursor_world: Vec2) -> Opt
         })
         .collect();
 
-    Some(Command::MoveShapes { movements })
+    Command::MoveShapes { movements }
 }
 
-fn finish_anchor_drag_command(drag: &AnchorDragState, cursor_world: Vec2) -> Option<Command> {
-    let delta = drag_delta(drag.start_cursor_world, cursor_world)?;
-
-    Some(Command::MoveAnchor {
+fn finish_anchor_drag_command(drag: &AnchorDragState, delta: Vec2) -> Command {
+    Command::MoveAnchor {
         movement: AnchorMovement {
             shape_id: drag.shape,
             anchor_index: drag.anchor_index,
             original: drag.original_anchor.clone(),
             delta,
         },
-    })
+    }
 }
 
-fn finish_handle_drag_command(
-    drag: &HandleDragState,
-    cursor_world: Vec2,
-) -> Option<HandleMovement> {
-    let delta = drag_delta(drag.start_cursor_world, cursor_world)?;
-
+const fn finish_handle_drag_command(drag: &HandleDragState, delta: Vec2) -> HandleMovement {
     let to = drag.original_handle.add(delta);
-    Some(HandleMovement {
+    HandleMovement {
         shape_id: drag.shape,
         anchor_index: drag.anchor_index,
         kind: match drag.kind {
@@ -305,15 +326,13 @@ fn finish_handle_drag_command(
         },
         from: Some(drag.original_handle),
         to: Some(to),
-    })
+    }
 }
 
-fn drag_delta(start_cursor_world: Vec2, cursor_world: Vec2) -> Option<Vec2> {
-    let delta = cursor_world.sub(start_cursor_world);
+const fn drag_delta(start_cursor_world: Vec2, cursor_world: Vec2) -> Vec2 {
+    cursor_world.sub(start_cursor_world)
+}
 
-    if delta.x.abs() <= f32::EPSILON && delta.y.abs() <= f32::EPSILON {
-        return None;
-    }
-
-    Some(delta)
+const fn is_zero_delta(delta: Vec2) -> bool {
+    delta.x.abs() <= f32::EPSILON && delta.y.abs() <= f32::EPSILON
 }

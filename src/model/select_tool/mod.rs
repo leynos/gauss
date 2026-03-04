@@ -10,11 +10,12 @@ use crate::model::tool::{EdgeMode, Tool, ToolCommand, ToolInputEvent, ToolMode, 
 use crate::model::{Document, Selection, ShapeId, Vec2};
 
 use self::drag::{
-    SelectDragStartInput, apply_drag_preview, finish_drag_command, restore_drag_preview, start_drag,
+    SelectDragStartParams, apply_drag_preview, finish_drag_command, restore_drag_preview,
+    start_drag,
 };
 use self::selection::{can_drag_shape_bbox, selection_for_hit};
 
-pub use self::drag::SelectDragState;
+pub use self::drag::{SelectDragDocumentSnapshot, SelectDragState};
 
 /// FSM state for manipulate interactions.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -101,8 +102,8 @@ pub struct SelectSegmentHit {
 /// Input context for one manipulate pointer-down transition.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SelectPointerDownInput {
-    /// Document snapshot used for deterministic drag-start state creation.
-    pub document: Document,
+    /// Lightweight drag-start snapshot captured from the current document.
+    pub drag_snapshot: SelectDragDocumentSnapshot,
     /// Selection state before processing pointer-down.
     pub previous_selection: Selection,
     /// Pointer-down hit payload.
@@ -202,12 +203,12 @@ fn on_pointer_down(input: &SelectPointerDownInput) -> ToolTransition {
 
     let can_drag_bbox = can_drag_shape_bbox(&input.previous_selection, input.hit);
     let next_state = start_drag(
-        &SelectDragStartInput::new(
-            &input.document,
-            &new_selection,
-            input.cursor_world,
-            can_drag_bbox,
-        ),
+        &input.drag_snapshot,
+        &new_selection,
+        SelectDragStartParams {
+            cursor_world: input.cursor_world,
+            can_drag_shape_bbox: can_drag_bbox,
+        },
         input.hit,
     )
     .map_or(SelectToolState::Idle, SelectToolState::Dragging);
