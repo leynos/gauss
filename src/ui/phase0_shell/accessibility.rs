@@ -18,6 +18,10 @@
 //! are intended to remain stable as later accessibility milestones are
 //! implemented.
 
+use std::collections::BTreeMap;
+
+use accesskit::{Node, NodeId, TreeUpdate};
+
 /// Canonical semantics for a chrome button in the accessibility tree.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ChromeButtonSemantics {
@@ -97,6 +101,20 @@ pub mod shortcut_hints {
     /// Shortcut hint for fullscreen on macOS.
     #[cfg(target_os = "macos")]
     pub const FULLSCREEN_MACOS: &str = "Ctrl+Cmd+F";
+
+    /// Return the fullscreen shortcut hint for the current platform.
+    #[cfg(target_os = "macos")]
+    #[must_use]
+    pub const fn fullscreen_for_platform() -> &'static str {
+        FULLSCREEN_MACOS
+    }
+
+    /// Return the fullscreen shortcut hint for the current platform.
+    #[cfg(not(target_os = "macos"))]
+    #[must_use]
+    pub const fn fullscreen_for_platform() -> &'static str {
+        FULLSCREEN
+    }
 }
 
 /// Return canonical semantics for chrome button nodes in deterministic order.
@@ -125,7 +143,7 @@ pub const fn chrome_button_semantics(is_maximized: bool) -> [ChromeButtonSemanti
         ChromeButtonSemantics {
             node_id: node_ids::FULLSCREEN_BUTTON,
             label: accessible_names::FULLSCREEN,
-            shortcut_hint: shortcut_hints::FULLSCREEN,
+            shortcut_hint: shortcut_hints::fullscreen_for_platform(),
         },
         ChromeButtonSemantics {
             node_id: node_ids::CLOSE_BUTTON,
@@ -133,4 +151,19 @@ pub const fn chrome_button_semantics(is_maximized: bool) -> [ChromeButtonSemanti
             shortcut_hint: shortcut_hints::CLOSE,
         },
     ]
+}
+
+/// Return a chrome node from a node map keyed by AccessKit IDs.
+#[must_use]
+pub fn chrome_node_from_map(nodes: &BTreeMap<NodeId, Node>, node_id: u64) -> Option<&Node> {
+    nodes.get(&NodeId(node_id))
+}
+
+/// Return a chrome node from a serialized `TreeUpdate` payload.
+#[must_use]
+pub fn chrome_node_from_update(update: &TreeUpdate, node_id: u64) -> Option<&Node> {
+    update
+        .nodes
+        .iter()
+        .find_map(|(candidate, node)| (candidate.0 == node_id).then_some(node))
 }

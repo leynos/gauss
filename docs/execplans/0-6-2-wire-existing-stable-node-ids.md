@@ -26,8 +26,9 @@ Success is observable when:
   `src/ui/phase0_shell/accessibility.rs`.
 - Window chrome nodes expose clear roles and labels (and documented shortcut
   hints) in initial and incremental updates.
-- Unit tests (`rstest`), behaviour tests (`rstest-bdd` v0.5.0), and GPUI tests
-  cover happy paths, unhappy paths, and key edge cases.
+- Unit tests (`rstest`), behaviour-driven development (BDD) tests
+  (`rstest-bdd` v0.5.0), and GPU-accelerated UI (GPUI) tests cover happy paths,
+  unhappy paths, and key edge cases.
 - `docs/gauss-architecture-design.md` records design decisions taken in `0.6.2`.
 - `docs/users-guide.md` reflects any user-visible accessibility behaviour
   change.

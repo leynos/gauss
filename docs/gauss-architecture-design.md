@@ -1278,7 +1278,7 @@ Create an `A11yService` that:
 - maps AccessKit action requests back into Gauss Actions/Commands
 
 Roadmap items `0.6.1` and `0.6.2` now implement the tree projection,
-incremental update, and stable chrome semantic portions of this contract in the
+incremental update, and the stable chrome semantics of this contract in the
 Phase 0 shell:
 
 - `A11yService` snapshots `Phase0Shell` state into a deterministic AccessKit

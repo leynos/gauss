@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use accesskit::{Action, Node, Role};
+use accesskit::{Action, Node, NodeId, Role};
 use gauss::model::{EdgeMode, ShapeId, ToolMode};
 use gauss::ui::phase0_shell::{
     A11yService, A11yServiceError, A11yShapeSnapshot, A11ySnapshot, A11yUpdateKind, accessibility,
@@ -14,7 +14,7 @@ use test_support::{TestSupportError, TestSupportResult};
 struct A11yWorld {
     service: A11yService,
     snapshot: A11ySnapshot,
-    last_emitted_nodes: BTreeMap<u64, Node>,
+    last_emitted_nodes: BTreeMap<NodeId, Node>,
     appended_shape_id: Option<u64>,
     last_publish_result: Option<Result<bool, A11yServiceError>>,
     update_count_before: usize,
@@ -60,7 +60,7 @@ fn capture_last_emitted_nodes(world: &mut A11yWorld) {
         world.last_emitted_nodes = update
             .nodes
             .iter()
-            .map(|(node_id, node)| (node_id.0, node.clone()))
+            .map(|(node_id, node)| (*node_id, node.clone()))
             .collect();
     }
 }
@@ -70,9 +70,7 @@ fn chrome_node<'a>(
     node_id: u64,
     context: &str,
 ) -> TestSupportResult<&'a Node> {
-    world
-        .last_emitted_nodes
-        .get(&node_id)
+    accessibility::chrome_node_from_map(&world.last_emitted_nodes, node_id)
         .ok_or_else(|| TestSupportError::missing("emitted accessibility node", context))
 }
 

@@ -1,6 +1,6 @@
 //! Unit tests for AccessKit tree projection and incremental updates.
 
-use accesskit::{Action, Node, NodeId, Role};
+use accesskit::{Action, NodeId, Role};
 use rstest::rstest;
 
 use crate::model::{EdgeMode, ShapeId, ToolMode};
@@ -44,14 +44,12 @@ fn snapshot_with_state(
     }
 }
 
-fn chrome_node(nodes: &std::collections::BTreeMap<NodeId, Node>, node_id: u64) -> Option<&Node> {
-    nodes.get(&NodeId(node_id))
-}
-
 #[rstest]
 fn titlebar_node_uses_stable_role_label_and_children_order() {
     let (nodes, _) = build_node_map(&snapshot(&[], &[])).expect("node map build should succeed");
-    let Some(titlebar) = chrome_node(&nodes, accessibility::node_ids::TITLEBAR) else {
+    let Some(titlebar) =
+        accessibility::chrome_node_from_map(&nodes, accessibility::node_ids::TITLEBAR)
+    else {
         panic!(
             "expected node map to contain chrome node id {:#x}",
             accessibility::node_ids::TITLEBAR
@@ -88,7 +86,7 @@ fn titlebar_node_uses_stable_role_label_and_children_order() {
 #[case(
     accessibility::node_ids::FULLSCREEN_BUTTON,
     accessibility::accessible_names::FULLSCREEN,
-    accessibility::shortcut_hints::FULLSCREEN
+    accessibility::shortcut_hints::fullscreen_for_platform()
 )]
 #[case(
     accessibility::node_ids::CLOSE_BUTTON,
@@ -101,7 +99,7 @@ fn chrome_button_nodes_expose_role_label_hint_and_click_action(
     #[case] expected_shortcut_hint: &'static str,
 ) {
     let (nodes, _) = build_node_map(&snapshot(&[], &[])).expect("node map build should succeed");
-    let Some(node) = chrome_node(&nodes, node_id) else {
+    let Some(node) = accessibility::chrome_node_from_map(&nodes, node_id) else {
         panic!("expected node map to contain chrome node id {node_id:#x}");
     };
     assert_eq!(node.role(), Role::Button);
@@ -120,7 +118,8 @@ fn maximize_button_label_matches_window_state(
 ) {
     let (nodes, _) = build_node_map(&snapshot_with_state(&[], &[], is_maximized))
         .expect("node map build should succeed");
-    let Some(maximize_button) = chrome_node(&nodes, accessibility::node_ids::MAXIMIZE_BUTTON)
+    let Some(maximize_button) =
+        accessibility::chrome_node_from_map(&nodes, accessibility::node_ids::MAXIMIZE_BUTTON)
     else {
         panic!(
             "expected node map to contain chrome node id {:#x}",
@@ -228,14 +227,11 @@ fn duplicate_shape_ids_return_error() {
 #[case(0x2_0000_0001)]
 fn shape_snapshot_ids_stay_outside_reserved_chrome_id_space(#[case] raw_shape_id: u64) {
     let projected_shape_node_id = shape_id(raw_shape_id).to_accesskit_node_id();
-    let reserved_chrome_node_ids = [
-        accessibility::node_ids::WINDOW_MENU,
-        accessibility::node_ids::MINIMIZE_BUTTON,
-        accessibility::node_ids::MAXIMIZE_BUTTON,
-        accessibility::node_ids::FULLSCREEN_BUTTON,
-        accessibility::node_ids::CLOSE_BUTTON,
-        accessibility::node_ids::TITLEBAR,
-    ];
+    let reserved_chrome_node_ids = accessibility::chrome_button_semantics(false)
+        .into_iter()
+        .map(|button| button.node_id)
+        .chain(std::iter::once(accessibility::node_ids::TITLEBAR))
+        .collect::<Vec<_>>();
     assert!(
         !reserved_chrome_node_ids.contains(&projected_shape_node_id),
         "shape node id {projected_shape_node_id:#x} must not overlap reserved chrome ids"

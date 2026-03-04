@@ -2,7 +2,7 @@
 
 mod common;
 
-use accesskit::{Action, Node, Role, TreeUpdate};
+use accesskit::{Action, Role, TreeUpdate};
 use common::{ensure_initial_draw, init_test_app};
 use gauss::model::{Selection, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
@@ -19,20 +19,13 @@ fn setup_window(
     (visual_cx, view)
 }
 
-fn find_update_node(update: &TreeUpdate, node_id: u64) -> Option<&Node> {
-    update
-        .nodes
-        .iter()
-        .find_map(|(candidate, node)| (candidate.0 == node_id).then_some(node))
-}
-
 fn assert_chrome_button_semantics(
     update: &TreeUpdate,
     node_id: u64,
     expected_label: &str,
     expected_hint: &str,
 ) {
-    let Some(node) = find_update_node(update, node_id) else {
+    let Some(node) = accessibility::chrome_node_from_update(update, node_id) else {
         panic!("expected node {node_id:#x} in drained accessibility update");
     };
     assert_eq!(node.role(), Role::Button);
@@ -46,7 +39,9 @@ fn assert_initial_serialised_update(initial_update: &TreeUpdate) {
         initial_update.tree.is_some(),
         "expected initial update to include tree metadata"
     );
-    let Some(titlebar) = find_update_node(initial_update, accessibility::node_ids::TITLEBAR) else {
+    let Some(titlebar) =
+        accessibility::chrome_node_from_update(initial_update, accessibility::node_ids::TITLEBAR)
+    else {
         panic!(
             "expected node {:#x} in drained accessibility update",
             accessibility::node_ids::TITLEBAR
