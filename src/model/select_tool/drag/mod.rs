@@ -89,7 +89,9 @@ pub struct DraggedShape {
 pub struct AnchorDragState {
     /// Stable shape identifier.
     pub shape: ShapeId,
+    /// Draw-order index captured at drag start.
     pub shape_index: usize,
+    /// Anchor index captured at drag start.
     pub anchor_index: usize,
     /// Cursor position at drag start.
     pub start_cursor_world: Vec2,
@@ -102,7 +104,9 @@ pub struct AnchorDragState {
 pub struct HandleDragState {
     /// Stable shape identifier.
     pub shape: ShapeId,
+    /// Draw-order index captured at drag start.
     pub shape_index: usize,
+    /// Anchor index captured at drag start.
     pub anchor_index: usize,
     /// Which handle endpoint is being dragged.
     pub kind: SelectHandleHitKind,

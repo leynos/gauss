@@ -719,6 +719,9 @@ sequenceDiagram
   Tool-->>UI: ToolTransition(commands)
 ```
 
+Figure: SelectTool pointer gesture command sequence across `Phase0Shell`,
+`SelectTool` FSM, `ToolCommand` queue, and `Document`.
+
 ______________________________________________________________________
 
 ## 7. Command System (Undo/Redo + Scripting)

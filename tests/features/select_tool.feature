@@ -3,13 +3,13 @@ Feature: SelectTool command emission
   SelectTool transitions are deterministic and emit commands for selection and
   drag lifecycles in manipulate mode.
 
-  Scenario: Pointer down on shape selects it and starts drag state
+  Scenario: Pointer down on shape selects it and stays idle
     Given the select tool mode is Manipulate
     And the select tool event is pointer down on shape without shift
     When the select tool transition is evaluated
     Then it emits a selection change record
     And it emits SetSelection for the hit shape
-    And it emits SetSelectToolState Dragging
+    And it emits SetSelectToolState Idle
 
   Scenario: Shift pointer down toggles selection and stays idle
     Given the select tool mode is Manipulate

@@ -7,6 +7,10 @@ use crate::model::{SelItem, Selection, ShapeId};
 
 use super::{SelectHandleHit, SelectHandleHitKind, SelectPointerHit, SelectShapeHit};
 
+/// Resolve the next selection for a pointer hit in manipulate mode.
+///
+/// Shift-held transitions toggle hit items; non-shift transitions replace or
+/// refine selection according to hit detail semantics.
 pub(super) fn selection_for_hit(
     previous: &Selection,
     hit: SelectPointerHit,
@@ -19,6 +23,10 @@ pub(super) fn selection_for_hit(
     }
 }
 
+/// Return whether a shape-body hit is eligible to start a bbox drag.
+///
+/// Shape-body drags require the hit shape to already be selected. Other hit
+/// kinds are always eligible for drag start.
 pub(super) fn can_drag_shape_bbox(previous: &Selection, hit: SelectPointerHit) -> bool {
     match hit {
         SelectPointerHit::Shape(SelectShapeHit { shape_id, .. }) => {
@@ -28,6 +36,7 @@ pub(super) fn can_drag_shape_bbox(previous: &Selection, hit: SelectPointerHit) -
     }
 }
 
+/// Return selected shape identifiers in selection order for drag snapshots.
 pub(super) fn selected_shape_ids_for_drag(selection: &Selection) -> Vec<ShapeId> {
     selection
         .items

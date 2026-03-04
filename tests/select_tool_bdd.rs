@@ -201,7 +201,7 @@ fn given_mode_draw(world: &mut SelectToolWorld) {
 
 #[given("the select tool event is pointer down on shape without shift")]
 #[rustfmt::skip]
-fn given_pointer_down_without_shift(world: &mut SelectToolWorld) { world.input_event = Some(pointer_down_event(&world.document, SelectPointerHit::Segment(SelectSegmentHit { shape_index: 0, shape_id: world.shape_id, seg_index: 0 }), Vec2::new(5.0, 5.0), false)); }
+fn given_pointer_down_without_shift(world: &mut SelectToolWorld) { world.input_event = Some(pointer_down_event(&world.document, SelectPointerHit::Shape(SelectShapeHit { shape_index: 0, shape_id: world.shape_id }), Vec2::new(5.0, 5.0), false)); }
 
 #[given("the select tool event is pointer down on shape with shift")]
 #[rustfmt::skip]
