@@ -168,10 +168,7 @@ fn update_includes_chrome_node_ids(world: &A11yWorld) -> TestSupportResult<()> {
     Ok(())
 }
 
-#[then("the chrome nodes expose expected roles, labels, and shortcut hints")]
-fn chrome_nodes_expose_expected_roles_labels_and_shortcut_hints(
-    world: &A11yWorld,
-) -> TestSupportResult<()> {
+fn assert_titlebar_semantics(world: &A11yWorld) -> TestSupportResult<()> {
     let titlebar = chrome_node(
         world,
         accessibility::node_ids::TITLEBAR,
@@ -191,49 +188,63 @@ fn chrome_nodes_expose_expected_roles_labels_and_shortcut_hints(
             titlebar.label()
         )));
     }
+    Ok(())
+}
 
-    for expected in accessibility::chrome_button_semantics(false) {
-        let node = chrome_node(world, expected.node_id, "chrome button semantics")?;
-        if node.role() != Role::Button {
-            return Err(TestSupportError::expectation(format!(
-                "expected node {:#x} role {:?}, got {:?}",
-                expected.node_id,
-                Role::Button,
-                node.role()
-            )));
-        }
-        if node.label() != Some(expected.label) {
-            return Err(TestSupportError::expectation(format!(
-                "expected node {:#x} label {:?}, got {:?}",
-                expected.node_id,
-                expected.label,
-                node.label()
-            )));
-        }
-        if node.description() != Some(expected.shortcut_hint) {
-            return Err(TestSupportError::expectation(format!(
-                "expected node {:#x} description {:?}, got {:?}",
-                expected.node_id,
-                expected.shortcut_hint,
-                node.description()
-            )));
-        }
-        if node.keyboard_shortcut() != Some(expected.shortcut_hint) {
-            return Err(TestSupportError::expectation(format!(
-                "expected node {:#x} keyboard shortcut {:?}, got {:?}",
-                expected.node_id,
-                expected.shortcut_hint,
-                node.keyboard_shortcut()
-            )));
-        }
-        if !node.supports_action(Action::Click) {
-            return Err(TestSupportError::expectation(format!(
-                "expected node {:#x} to support click action",
-                expected.node_id
-            )));
-        }
+fn assert_chrome_button(
+    world: &A11yWorld,
+    expected: &accessibility::ChromeButtonSemantics,
+) -> TestSupportResult<()> {
+    let node = chrome_node(world, expected.node_id, "chrome button semantics")?;
+    if node.role() != Role::Button {
+        return Err(TestSupportError::expectation(format!(
+            "expected node {:#x} role {:?}, got {:?}",
+            expected.node_id,
+            Role::Button,
+            node.role()
+        )));
     }
+    if node.label() != Some(expected.label) {
+        return Err(TestSupportError::expectation(format!(
+            "expected node {:#x} label {:?}, got {:?}",
+            expected.node_id,
+            expected.label,
+            node.label()
+        )));
+    }
+    if node.description() != Some(expected.shortcut_hint) {
+        return Err(TestSupportError::expectation(format!(
+            "expected node {:#x} description {:?}, got {:?}",
+            expected.node_id,
+            expected.shortcut_hint,
+            node.description()
+        )));
+    }
+    if node.keyboard_shortcut() != Some(expected.shortcut_hint) {
+        return Err(TestSupportError::expectation(format!(
+            "expected node {:#x} keyboard shortcut {:?}, got {:?}",
+            expected.node_id,
+            expected.shortcut_hint,
+            node.keyboard_shortcut()
+        )));
+    }
+    if !node.supports_action(Action::Click) {
+        return Err(TestSupportError::expectation(format!(
+            "expected node {:#x} to support click action",
+            expected.node_id
+        )));
+    }
+    Ok(())
+}
 
+#[then("the chrome nodes expose expected roles, labels, and shortcut hints")]
+fn chrome_nodes_expose_expected_roles_labels_and_shortcut_hints(
+    world: &A11yWorld,
+) -> TestSupportResult<()> {
+    assert_titlebar_semantics(world)?;
+    for expected in accessibility::chrome_button_semantics(false) {
+        assert_chrome_button(world, &expected)?;
+    }
     Ok(())
 }
 
