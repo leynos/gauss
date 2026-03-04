@@ -105,11 +105,19 @@ pub(crate) fn set_drag_state_from_hit(
         world.edge_mode,
         down_event,
     );
-    world.drag_state = Some(extract_drag_state(&down_transition).ok_or_else(|| {
+    let extracted_state = extract_drag_state(&down_transition).ok_or_else(|| {
         TestSupportError::expectation(
             "expected pointer-down transition to yield SelectToolState".to_owned(),
         )
-    })?);
+    })?;
+
+    if !matches!(extracted_state, SelectToolState::Dragging(_)) {
+        return Err(TestSupportError::expectation(format!(
+            "expected pointer-down transition to yield SelectToolState::Dragging(_); got {extracted_state:?}",
+        )));
+    }
+
+    world.drag_state = Some(extracted_state);
     Ok(())
 }
 
