@@ -719,8 +719,8 @@ sequenceDiagram
   Tool-->>UI: ToolTransition(commands)
 ```
 
-_Figure 6.1: SelectTool pointer gesture command sequence across `Phase0Shell`,
-`SelectTool` FSM, `ToolCommand` queue, and `Document`._
+*Figure 6.1: SelectTool pointer gesture command sequence across `Phase0Shell`,
+`SelectTool` FSM, `ToolCommand` queue, and `Document`.*
 
 ______________________________________________________________________
 
