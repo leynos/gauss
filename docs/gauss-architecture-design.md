@@ -678,9 +678,9 @@ Design decisions:
   logic free of UI/runtime dependencies, and avoids direct state mutation by
   delegating all effects to explicit `ToolCommand` outputs.
 
-- **Decision (2026-03-01)**: keep the manipulation of drag-preview mutation
-  reversible and free of commands until pointer-up by emitting
-  `PreviewSelectDrag` and `RestoreSelectDragPreview` around an optional
+- **Decision (2026-03-01)**: keep drag-preview changes reversible and defer
+  document application until pointer-up by emitting `PreviewSelectDrag` and
+  `RestoreSelectDragPreview` around an optional
   `ToolCommand::ApplyDocumentCommand`.
 - **Rationale**: this keeps one-entry-per-gesture undo semantics while
   preserving immediate drag feedback and deterministic replay behaviour.
