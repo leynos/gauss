@@ -76,7 +76,7 @@ fn titlebar_node_uses_stable_role_label_and_children_order() {
 #[case(
     accessibility::node_ids::MINIMIZE_BUTTON,
     accessibility::accessible_names::MINIMIZE,
-    accessibility::shortcut_hints::MINIMIZE
+    accessibility::shortcut_hints::minimize_for_platform()
 )]
 #[case(
     accessibility::node_ids::MAXIMIZE_BUTTON,
@@ -91,7 +91,7 @@ fn titlebar_node_uses_stable_role_label_and_children_order() {
 #[case(
     accessibility::node_ids::CLOSE_BUTTON,
     accessibility::accessible_names::CLOSE,
-    accessibility::shortcut_hints::CLOSE
+    accessibility::shortcut_hints::close_for_platform()
 )]
 fn chrome_button_nodes_expose_role_label_hint_and_click_action(
     #[case] node_id: u64,

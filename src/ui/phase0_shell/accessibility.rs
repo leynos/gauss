@@ -102,6 +102,34 @@ pub mod shortcut_hints {
     #[cfg(target_os = "macos")]
     pub const FULLSCREEN_MACOS: &str = "Ctrl+Cmd+F";
 
+    /// Return the minimize shortcut hint for the current platform.
+    #[cfg(target_os = "macos")]
+    #[must_use]
+    pub const fn minimize_for_platform() -> &'static str {
+        MINIMIZE_MACOS
+    }
+
+    /// Return the minimize shortcut hint for the current platform.
+    #[cfg(not(target_os = "macos"))]
+    #[must_use]
+    pub const fn minimize_for_platform() -> &'static str {
+        MINIMIZE
+    }
+
+    /// Return the close shortcut hint for the current platform.
+    #[cfg(target_os = "macos")]
+    #[must_use]
+    pub const fn close_for_platform() -> &'static str {
+        CLOSE_MACOS
+    }
+
+    /// Return the close shortcut hint for the current platform.
+    #[cfg(not(target_os = "macos"))]
+    #[must_use]
+    pub const fn close_for_platform() -> &'static str {
+        CLOSE
+    }
+
     /// Return the fullscreen shortcut hint for the current platform.
     #[cfg(target_os = "macos")]
     #[must_use]
@@ -129,7 +157,7 @@ pub const fn chrome_button_semantics(is_maximized: bool) -> [ChromeButtonSemanti
         ChromeButtonSemantics {
             node_id: node_ids::MINIMIZE_BUTTON,
             label: accessible_names::MINIMIZE,
-            shortcut_hint: shortcut_hints::MINIMIZE,
+            shortcut_hint: shortcut_hints::minimize_for_platform(),
         },
         ChromeButtonSemantics {
             node_id: node_ids::MAXIMIZE_BUTTON,
@@ -148,7 +176,7 @@ pub const fn chrome_button_semantics(is_maximized: bool) -> [ChromeButtonSemanti
         ChromeButtonSemantics {
             node_id: node_ids::CLOSE_BUTTON,
             label: accessible_names::CLOSE,
-            shortcut_hint: shortcut_hints::CLOSE,
+            shortcut_hint: shortcut_hints::close_for_platform(),
         },
     ]
 }
