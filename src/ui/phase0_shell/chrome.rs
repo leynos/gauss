@@ -2,9 +2,6 @@
 
 use gpui::{Pixels, div, prelude::*, px};
 
-use crate::model::{
-    Command, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolModeFsm, UserError,
-};
 use crate::ui::UiIcon;
 
 /// Top bar vertical padding in normal (non-maximized) state.
@@ -28,9 +25,7 @@ use super::{
     chrome_palette::{
         chrome_background, chrome_border, chrome_muted_text, chrome_panel, chrome_text,
     },
-    chrome_panels,
-    draw::DrawEdgeMode,
-    file_dialogs,
+    chrome_panels, file_dialogs,
     icon_button::{IconButtonState, icon_button},
     resize_border, tool_rail, window_controls,
 };
@@ -299,80 +294,5 @@ impl Phase0Shell {
             shell.did_request_quit = true;
             click_cx.quit();
         }))
-    }
-
-    pub(super) fn activate_draw_tool(&mut self, edge_mode: Option<DrawEdgeMode>) -> bool {
-        self.handle_tool_input_event(ToolInputEvent::ActivateDraw { edge_mode })
-    }
-
-    pub(super) fn activate_select_tool(&mut self) -> bool {
-        self.handle_tool_input_event(ToolInputEvent::ActivateManipulate)
-    }
-
-    pub(super) fn handle_tool_input_event(&mut self, event: ToolInputEvent) -> bool {
-        let transition = ToolModeFsm.transition(self.state.tool_mode, self.state.edge_mode, event);
-        self.apply_tool_commands(transition.commands)
-    }
-
-    pub(super) fn apply_tool_commands(
-        &mut self,
-        commands: impl IntoIterator<Item = ToolCommand>,
-    ) -> bool {
-        let mut did_change = false;
-
-        for command in commands {
-            match self.apply_tool_command(command) {
-                Ok(command_changed) => {
-                    did_change |= command_changed;
-                }
-                Err(error) => {
-                    log::error!("{error}");
-                    self.last_history_error = Some(error.to_string());
-                    return false;
-                }
-            }
-        }
-
-        did_change
-    }
-
-    fn apply_tool_command(&mut self, command: ToolCommand) -> Result<bool, UserError> {
-        match command {
-            ToolCommand::ApplyDocumentCommand(document_command) => {
-                self.apply_document_tool_command(*document_command)
-            }
-            ToolCommand::SetToolMode(mode) => Ok(self.set_tool_mode_if_changed(mode)),
-            ToolCommand::SetEdgeMode(mode) => Ok(self.set_edge_mode_if_changed(mode)),
-            ToolCommand::SetActivePath(path) => Ok(self.set_active_path_if_changed(path)),
-        }
-    }
-
-    fn apply_document_tool_command(&mut self, command: Command) -> Result<bool, UserError> {
-        self.apply_command(command)?;
-        Ok(true)
-    }
-
-    fn set_tool_mode_if_changed(&mut self, mode: ToolMode) -> bool {
-        if self.state.tool_mode == mode {
-            return false;
-        }
-        self.state.tool_mode = mode;
-        true
-    }
-
-    fn set_edge_mode_if_changed(&mut self, mode: DrawEdgeMode) -> bool {
-        if self.state.edge_mode == mode {
-            return false;
-        }
-        self.state.edge_mode = mode;
-        true
-    }
-
-    fn set_active_path_if_changed(&mut self, path: Option<ShapeId>) -> bool {
-        if self.state.active_path == path {
-            return false;
-        }
-        self.state.active_path = path;
-        true
     }
 }

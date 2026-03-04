@@ -2,6 +2,7 @@
 //!
 //! These helpers keep selection state in sync with command-driven edits.
 
+use crate::model::SelectToolState;
 use crate::model::{Action, Selection, prepare_command};
 
 use super::Phase0Shell;
@@ -25,7 +26,7 @@ impl Phase0Shell {
         let new_selection = Selection::empty();
         self.record_selection_change(previous_selection, new_selection.clone());
         self.state.selection = new_selection;
-        self.drag_state = None;
+        self.select_tool_state = SelectToolState::Idle;
         true
     }
 }

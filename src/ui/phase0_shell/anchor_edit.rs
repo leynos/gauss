@@ -3,7 +3,7 @@
 //! Phase 0 keeps anchor edits minimal while routing the mutations through the
 //! Command pipeline so undo/redo stays consistent.
 
-use crate::model::{Action, SelItem, Selection, ShapeId, prepare_command};
+use crate::model::{Action, SelItem, SelectToolState, Selection, ShapeId, prepare_command};
 
 use super::{Phase0Shell, draw::ToolMode};
 
@@ -40,7 +40,7 @@ impl Phase0Shell {
         };
         self.record_selection_change(previous_selection, new_selection.clone());
         self.state.selection = new_selection;
-        self.drag_state = None;
+        self.select_tool_state = SelectToolState::Idle;
         true
     }
 
@@ -66,7 +66,7 @@ impl Phase0Shell {
         let new_selection = Selection::empty();
         self.record_selection_change(previous_selection, new_selection.clone());
         self.state.selection = new_selection;
-        self.drag_state = None;
+        self.select_tool_state = SelectToolState::Idle;
         true
     }
 }
