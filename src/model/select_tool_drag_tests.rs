@@ -116,29 +116,27 @@ fn pointer_up_without_primary_event() -> ToolInputEvent {
     }
 }
 
-#[rstest]
-#[case(SelectToolState::Marquee, false)]
-#[case(SelectToolState::Transforming, false)]
-fn select_tool_pointer_move_is_noop_for_reserved_states(
-    #[case] state: SelectToolState,
-    #[case] is_dragging: bool,
-) {
-    assert!(!matches!(state, SelectToolState::Dragging(_)));
+#[test]
+fn select_tool_pointer_move_is_noop_for_reserved_states() {
+    for state in [SelectToolState::Marquee, SelectToolState::Transforming] {
+        let transition = Tool::transition(
+            &SelectTool,
+            ToolMode::Manipulate,
+            EdgeMode::Line,
+            ToolInputEvent::SelectPointerMove {
+                input: Box::new(SelectPointerMoveInput {
+                    is_dragging: false,
+                    cursor_world: Vec2::new(3.0, 4.0),
+                    has_primary_button: true,
+                }),
+            },
+        );
 
-    let transition = Tool::transition(
-        &SelectTool,
-        ToolMode::Manipulate,
-        EdgeMode::Line,
-        ToolInputEvent::SelectPointerMove {
-            input: Box::new(SelectPointerMoveInput {
-                is_dragging,
-                cursor_world: Vec2::new(3.0, 4.0),
-                has_primary_button: true,
-            }),
-        },
-    );
-
-    assert!(transition.commands.is_empty());
+        assert!(
+            transition.commands.is_empty(),
+            "reserved state {state:?} should not emit pointer-move commands"
+        );
+    }
 }
 
 #[rstest]
