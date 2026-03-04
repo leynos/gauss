@@ -41,6 +41,29 @@ fn assert_chrome_button_semantics(
     assert!(node.supports_action(Action::Click));
 }
 
+fn assert_initial_serialised_update(initial_update: &TreeUpdate) {
+    assert!(
+        initial_update.tree.is_some(),
+        "expected initial update to include tree metadata"
+    );
+    let Some(titlebar) = find_update_node(initial_update, accessibility::node_ids::TITLEBAR) else {
+        panic!(
+            "expected node {:#x} in drained accessibility update",
+            accessibility::node_ids::TITLEBAR
+        );
+    };
+    assert_eq!(titlebar.role(), Role::TitleBar);
+    assert_eq!(titlebar.label(), Some("Window title bar"));
+    for expected in accessibility::chrome_button_semantics(false) {
+        assert_chrome_button_semantics(
+            initial_update,
+            expected.node_id,
+            expected.label,
+            expected.shortcut_hint,
+        );
+    }
+}
+
 #[gpui::test]
 fn a11y_initial_tree_update_is_emitted_on_first_draw(cx: &mut TestAppContext) {
     let (visual_cx, view) = setup_window(cx);
@@ -72,50 +95,7 @@ fn a11y_initial_tree_update_is_emitted_on_first_draw(cx: &mut TestAppContext) {
     let initial_update = drained_updates
         .first()
         .expect("expected one initial serialized tree update");
-    assert!(
-        initial_update.tree.is_some(),
-        "expected initial update to include tree metadata"
-    );
-
-    let Some(titlebar) = find_update_node(initial_update, accessibility::node_ids::TITLEBAR) else {
-        panic!(
-            "expected node {:#x} in drained accessibility update",
-            accessibility::node_ids::TITLEBAR
-        );
-    };
-    assert_eq!(titlebar.role(), Role::TitleBar);
-    assert_eq!(titlebar.label(), Some("Window title bar"));
-
-    assert_chrome_button_semantics(
-        initial_update,
-        accessibility::node_ids::WINDOW_MENU,
-        accessibility::accessible_names::WINDOW_MENU,
-        accessibility::shortcut_hints::WINDOW_MENU,
-    );
-    assert_chrome_button_semantics(
-        initial_update,
-        accessibility::node_ids::MINIMIZE_BUTTON,
-        accessibility::accessible_names::MINIMIZE,
-        accessibility::shortcut_hints::MINIMIZE,
-    );
-    assert_chrome_button_semantics(
-        initial_update,
-        accessibility::node_ids::MAXIMIZE_BUTTON,
-        accessibility::accessible_names::MAXIMIZE,
-        accessibility::shortcut_hints::MAXIMIZE,
-    );
-    assert_chrome_button_semantics(
-        initial_update,
-        accessibility::node_ids::FULLSCREEN_BUTTON,
-        accessibility::accessible_names::FULLSCREEN,
-        accessibility::shortcut_hints::FULLSCREEN,
-    );
-    assert_chrome_button_semantics(
-        initial_update,
-        accessibility::node_ids::CLOSE_BUTTON,
-        accessibility::accessible_names::CLOSE,
-        accessibility::shortcut_hints::CLOSE,
-    );
+    assert_initial_serialised_update(initial_update);
 }
 
 #[gpui::test]
