@@ -632,6 +632,15 @@ Implement as a reusable service:
 - `HitTestIndex` built from node bounding boxes (R-tree, BVH, or coarse grid)
 - `SnapService` with strategies (grid, guides, anchors, object bounds)
 
+Implementation status (roadmap `0.5.4`):
+
+- shared deterministic hit testing now lives in `src/model/hit_test/` via
+  `HitTestIndex` with a `LinearScan` backend;
+- `Phase0Shell` manipulate adapters now resolve both pointer-down selection and
+  hover hit targets through the shared index service; and
+- the index boundary remains explicit so `LinearScan` can be replaced by
+  `R-tree`/`BVH` without changing adapter call sites.
+
 ### 6.3 Tool ↔ Command boundary
 
 Tools do not directly mutate state. Instead, they emit `ToolCommand` outputs:
@@ -668,7 +677,9 @@ Implementation status (roadmap 0.5.1 to 0.5.3):
 - `SelectToolState` currently ships `Idle` and `Dragging` runtime paths, with
   `Marquee` and `Transforming` reserved as explicit no-op placeholders until
   later milestones activate those interactions.
-- The remaining tool-framework milestone is `0.5.4` (shared hit-test service).
+- `0.5.4` completed shared hit testing via `HitTestIndex`; future optimisation
+  work is now implementation strategy replacement (`LinearScan` -> spatial
+  index), not adapter/API extraction.
 
 Design decisions:
 
@@ -684,6 +695,14 @@ Design decisions:
   `ToolCommand::ApplyDocumentCommand`.
 - **Rationale**: this keeps one-entry-per-gesture undo semantics while
   preserving immediate drag feedback and deterministic replay behaviour.
+
+- **Decision (2026-03-05)**: implement shared hit testing behind
+  `src/model/hit_test/` with `HitTestIndex` and an explicit `LinearScan`
+  backend, and route both selection pointer-down and hover queries through this
+  shared index API.
+- **Rationale**: this closes roadmap item `0.5.4` while preserving deterministic
+  hit ordering and preparing a low-friction swap to `R-tree`/`BVH` indexing in
+  later performance-focused milestones.
 
 #### 6.5.1 SelectTool pointer gesture command sequence
 
@@ -1594,10 +1613,10 @@ broad feature work accelerates:
 7. **i18n scaffolding** (string catalog, localized command names)
 8. **Widget capability audit** (GPUI Component vs custom controls plan)
 
-Status update: roadmap items `0.5.1`, `0.5.2`, and `0.5.3` implemented the Tool
-trait boundary, PenTool extraction, and SelectTool extraction. The remaining
-tool-framework milestone is `0.5.4` (shared hit-test service). Roadmap items
-`0.6.1` and `0.6.2` are now implemented in the Phase 0 shell. Remaining
+Status update: roadmap items `0.5.1` through `0.5.4` implemented the tool
+framework baseline: Tool trait boundary, PenTool extraction, SelectTool
+extraction, and shared deterministic hit testing for selection/hover. Roadmap
+items `0.6.1` and `0.6.2` are now implemented in the Phase 0 shell. Remaining
 accessibility milestone is `0.6.3` (AccessKit action request mapping).
 
 ______________________________________________________________________

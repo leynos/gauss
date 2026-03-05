@@ -4,8 +4,8 @@
 //! chrome layout module so each module remains small and focused.
 
 use crate::model::{
-    Command, SelectToolState, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolModeFsm, UserError,
-    apply_select_drag_preview, restore_select_drag_preview,
+    Command, SelectPointerHit, SelectToolState, Tool, ToolCommand, ToolInputEvent, ToolMode,
+    ToolModeFsm, UserError, apply_select_drag_preview, restore_select_drag_preview,
 };
 
 use super::{Phase0Shell, draw::DrawEdgeMode};
@@ -135,6 +135,11 @@ impl Phase0Shell {
         if mode != ToolMode::Manipulate && self.select_tool_state != SelectToolState::Idle {
             restore_select_drag_preview(&mut self.state.document, &self.select_tool_state);
             self.select_tool_state = SelectToolState::Idle;
+            did_change = true;
+        }
+
+        if mode != ToolMode::Manipulate && self.hover_hit != SelectPointerHit::None {
+            self.hover_hit = SelectPointerHit::None;
             did_change = true;
         }
 

@@ -11,18 +11,11 @@
 use gpui::{MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels};
 
 use crate::model::{
-    SelectAnchorHit, SelectDragDocumentSnapshot, SelectHandleHit, SelectHandleHitKind,
-    SelectPointerDownInput, SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput,
-    SelectSegmentHit, SelectShapeHit, SelectTool, SelectToolState, Tool, ToolInputEvent, Vec2,
+    HitTestIndex, SelectDragDocumentSnapshot, SelectPointerDownInput, SelectPointerMoveInput,
+    SelectPointerUpInput, SelectTool, SelectToolState, Tool, ToolInputEvent, Vec2,
 };
 
 use super::{Phase0Shell, draw::ToolMode};
-
-mod hit_test;
-
-use hit_test::{
-    AnchorHit, HandleHit, HandleHitKind, MouseDownHit, SegmentHit, ShapeHit, hit_under_cursor,
-};
 
 impl Phase0Shell {
     pub(super) fn handle_canvas_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
@@ -36,7 +29,9 @@ impl Phase0Shell {
 
         let cursor_world = cursor_world(&self.state.viewport, event.position);
         let tolerance_world = 4.0 / self.state.viewport.zoom();
-        let hit = hit_under_cursor(&self.state.document, cursor_world, tolerance_world);
+        let hit = self
+            .hit_test_index()
+            .pointer_hit(cursor_world, tolerance_world);
 
         let transition = Tool::transition(
             &SelectTool,
@@ -46,7 +41,7 @@ impl Phase0Shell {
                 input: Box::new(SelectPointerDownInput {
                     drag_snapshot: SelectDragDocumentSnapshot::from_document(&self.state.document),
                     previous_selection: self.state.selection.clone(),
-                    hit: map_hit(hit),
+                    hit,
                     cursor_world,
                     is_shift_held: event.modifiers.shift,
                 }),
@@ -57,8 +52,10 @@ impl Phase0Shell {
     }
 
     pub(super) fn handle_canvas_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
+        let did_update_hover = event.pressed_button != Some(MouseButton::Left)
+            && self.update_hover_hit(event.position);
         let is_dragging = matches!(self.select_tool_state, SelectToolState::Dragging(_));
-        self.handle_pointer_event(
+        let did_apply_pointer_move = self.handle_pointer_event(
             event.position,
             event.pressed_button == Some(MouseButton::Left),
             |cursor_world| ToolInputEvent::SelectPointerMove {
@@ -68,7 +65,9 @@ impl Phase0Shell {
                     has_primary_button: true,
                 }),
             },
-        )
+        );
+
+        did_update_hover || did_apply_pointer_move
     }
 
     pub(super) fn handle_canvas_mouse_up(&mut self, event: &MouseUpEvent) -> bool {
@@ -84,6 +83,28 @@ impl Phase0Shell {
                 }),
             },
         )
+    }
+
+    fn hit_test_index(&self) -> HitTestIndex<'_> {
+        HitTestIndex::from_document(&self.state.document)
+    }
+
+    fn update_hover_hit(&mut self, position: gpui::Point<Pixels>) -> bool {
+        if self.state.tool_mode != ToolMode::Manipulate {
+            return false;
+        }
+
+        let cursor_world = cursor_world(&self.state.viewport, position);
+        let tolerance_world = 4.0 / self.state.viewport.zoom();
+        let next_hover_hit = self
+            .hit_test_index()
+            .hover_hit(cursor_world, tolerance_world);
+        if next_hover_hit == self.hover_hit {
+            return false;
+        }
+
+        self.hover_hit = next_hover_hit;
+        true
     }
 
     fn handle_pointer_event<F>(
@@ -112,57 +133,6 @@ impl Phase0Shell {
         );
 
         self.apply_tool_commands(transition.commands)
-    }
-}
-
-const fn map_hit(hit: MouseDownHit) -> SelectPointerHit {
-    match hit {
-        MouseDownHit::Handle(handle_hit) => SelectPointerHit::Handle(map_handle_hit(handle_hit)),
-        MouseDownHit::Anchor(anchor_hit) => SelectPointerHit::Anchor(map_anchor_hit(anchor_hit)),
-        MouseDownHit::Segment(segment_hit) => {
-            SelectPointerHit::Segment(map_segment_hit(segment_hit))
-        }
-        MouseDownHit::Shape(shape_hit) => SelectPointerHit::Shape(map_shape_hit(shape_hit)),
-        MouseDownHit::None => SelectPointerHit::None,
-    }
-}
-
-const fn map_shape_hit(hit: ShapeHit) -> SelectShapeHit {
-    SelectShapeHit {
-        shape_index: hit.shape_index,
-        shape_id: hit.shape_id,
-    }
-}
-
-const fn map_anchor_hit(hit: AnchorHit) -> SelectAnchorHit {
-    SelectAnchorHit {
-        shape_index: hit.shape_index,
-        shape_id: hit.shape_id,
-        anchor_index: hit.anchor_index,
-    }
-}
-
-const fn map_segment_hit(hit: SegmentHit) -> SelectSegmentHit {
-    SelectSegmentHit {
-        shape_index: hit.shape_index,
-        shape_id: hit.shape_id,
-        seg_index: hit.seg_index,
-    }
-}
-
-const fn map_handle_hit(hit: HandleHit) -> SelectHandleHit {
-    SelectHandleHit {
-        shape_index: hit.shape_index,
-        shape_id: hit.shape_id,
-        anchor_index: hit.anchor_index,
-        kind: map_handle_kind(hit.kind),
-    }
-}
-
-const fn map_handle_kind(kind: HandleHitKind) -> SelectHandleHitKind {
-    match kind {
-        HandleHitKind::In => SelectHandleHitKind::In,
-        HandleHitKind::Out => SelectHandleHitKind::Out,
     }
 }
 

@@ -14,6 +14,7 @@ pub mod document;
 pub mod engine_state;
 pub(crate) mod geometry;
 pub mod history;
+pub mod hit_test;
 pub mod key_context;
 pub mod keybinding;
 pub mod keystroke;
@@ -40,6 +41,7 @@ pub use document::Document;
 pub use engine_state::EngineState;
 pub(crate) use geometry::{CubicSegment, cubic_point, shape_world_bounds};
 pub use history::{DocumentUndoHistory, HistoryError};
+pub use hit_test::{HitTestBackend, HitTestIndex};
 pub use key_context::KeyContext;
 pub use keybinding::{
     ActionBinding, bindings_for_action, bindings_for_context, default_bindings, primary_keystroke,
@@ -68,6 +70,8 @@ pub use tool::{
 };
 pub use viewport::Viewport;
 
+#[cfg(test)]
+mod hit_test_tests;
 #[cfg(test)]
 mod ops_roundtrip_tests;
 #[cfg(test)]
