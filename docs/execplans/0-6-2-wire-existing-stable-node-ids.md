@@ -1,4 +1,4 @@
-# Wire Existing Stable Node IDs Into AccessKit Chrome Semantics (0.6.2)
+# Wire existing stable node IDs into AccessKit Chrome semantics (0.6.2)
 
 This Execution Plan (ExecPlan) is a living document. The sections
 `Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
@@ -56,7 +56,7 @@ Success is observable when:
   - GPUI integration tests using `#[gpui::test]` and test contexts.
 - Do not mark roadmap `0.6.2` done until code, docs, and required gates are
   complete.
-- Follow repository guidance from:
+- Follow repository guidance from
   - `docs/gauss-architecture-design.md`,
   - `docs/using-gpui-and-gpui-component.md`,
   - `docs/accesskit-based-accessibility-in-gpui.md`,
@@ -320,7 +320,7 @@ make lint | tee /tmp/lint-$(get-project)-$(git branch --show).out
 make test | tee /tmp/test-$(get-project)-$(git branch --show).out
 ```
 
-1. If docs changed materially, run documentation gates before final sign-off:
+2. If docs changed materially, run documentation gates before final sign-off:
 
 ```plaintext
 set -o pipefail
@@ -329,7 +329,7 @@ make markdownlint | tee /tmp/markdownlint-$(get-project)-$(git branch --show).ou
 make nixie | tee /tmp/nixie-$(get-project)-$(git branch --show).out
 ```
 
-1. Record gate outcomes and keep status truthful (`complete` vs `partial`).
+3. Record gate outcomes and keep status truthful (`complete` vs `partial`).
 
 Acceptance for Stage F:
 

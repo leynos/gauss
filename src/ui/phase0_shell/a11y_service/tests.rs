@@ -77,11 +77,35 @@ fn chrome_button_nodes_expose_role_label_hint_and_click_action() {
                 expected.node_id
             );
         };
-        assert_eq!(node.role(), Role::Button);
-        assert_eq!(node.label(), Some(expected.label));
-        assert_eq!(node.description(), Some(expected.shortcut_hint));
-        assert_eq!(node.keyboard_shortcut(), Some(expected.shortcut_hint));
-        assert!(node.supports_action(Action::Click));
+        assert_eq!(
+            node.role(),
+            Role::Button,
+            "unexpected role for chrome node id {:#x}",
+            expected.node_id
+        );
+        assert_eq!(
+            node.label(),
+            Some(expected.label),
+            "unexpected label for chrome node id {:#x}",
+            expected.node_id
+        );
+        assert_eq!(
+            node.description(),
+            Some(expected.shortcut_hint),
+            "unexpected description for chrome node id {:#x}",
+            expected.node_id
+        );
+        assert_eq!(
+            node.keyboard_shortcut(),
+            Some(expected.shortcut_hint),
+            "unexpected keyboard shortcut for chrome node id {:#x}",
+            expected.node_id
+        );
+        assert!(
+            node.supports_action(Action::Click),
+            "expected click action support for chrome node id {:#x}",
+            expected.node_id
+        );
     }
 }
 

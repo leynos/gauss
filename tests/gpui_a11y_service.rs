@@ -21,16 +21,18 @@ fn setup_window(
 
 fn assert_chrome_button_semantics(
     update: &TreeUpdate,
-    node_id: u64,
-    expected_label: &str,
-    expected_hint: &str,
+    expected: &accessibility::ChromeButtonSemantics,
 ) {
-    let Some(node) = accessibility::chrome_node_from_update(update, node_id) else {
-        panic!("expected node {node_id:#x} in drained accessibility update");
+    let Some(node) = accessibility::chrome_node_from_update(update, expected.node_id) else {
+        panic!(
+            "expected node {:#x} in drained accessibility update",
+            expected.node_id
+        );
     };
     assert_eq!(node.role(), Role::Button);
-    assert_eq!(node.label(), Some(expected_label));
-    assert_eq!(node.description(), Some(expected_hint));
+    assert_eq!(node.label(), Some(expected.label));
+    assert_eq!(node.description(), Some(expected.shortcut_hint));
+    assert_eq!(node.keyboard_shortcut(), Some(expected.shortcut_hint));
     assert!(node.supports_action(Action::Click));
 }
 
@@ -53,12 +55,7 @@ fn assert_initial_serialised_update(initial_update: &TreeUpdate) {
         Some(accessibility::accessible_names::TITLEBAR)
     );
     for expected in accessibility::chrome_button_semantics(false) {
-        assert_chrome_button_semantics(
-            initial_update,
-            expected.node_id,
-            expected.label,
-            expected.shortcut_hint,
-        );
+        assert_chrome_button_semantics(initial_update, &expected);
     }
 }
 
