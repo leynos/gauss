@@ -141,7 +141,7 @@ Success is observable when:
 - Clippy style policies created a helper-function tension between
   `no_unwrap_or_else_panic`, `expect_used`, and
   `unnecessary_option_map_or_else`; the stable pattern was returning
-  `Option<&Node>` from helpers and using explicit `let ... else` assertions at
+  `Option<&Node>` from helpers and using explicit `let … else` assertions at
   call sites.
 
 ## Decision Log
@@ -313,21 +313,21 @@ Stage F: Gates, evidence, and finalization
 
 1. Run required gates with tee logs:
 
-```plaintext
-set -o pipefail
-make check-fmt | tee /tmp/check-fmt-$(get-project)-$(git branch --show-current).out
-make lint | tee /tmp/lint-$(get-project)-$(git branch --show-current).out
-make test | tee /tmp/test-$(get-project)-$(git branch --show-current).out
-```
+   ```plaintext
+   set -o pipefail
+   make check-fmt | tee /tmp/check-fmt-$(get-project)-$(git branch --show-current).out
+   make lint | tee /tmp/lint-$(get-project)-$(git branch --show-current).out
+   make test | tee /tmp/test-$(get-project)-$(git branch --show-current).out
+   ```
 
 2. If docs changed materially, run documentation gates before final sign-off:
 
-```plaintext
-set -o pipefail
-make fmt | tee /tmp/fmt-$(get-project)-$(git branch --show-current).out
-make markdownlint | tee /tmp/markdownlint-$(get-project)-$(git branch --show-current).out
-make nixie | tee /tmp/nixie-$(get-project)-$(git branch --show-current).out
-```
+   ```plaintext
+   set -o pipefail
+   make fmt | tee /tmp/fmt-$(get-project)-$(git branch --show-current).out
+   make markdownlint | tee /tmp/markdownlint-$(get-project)-$(git branch --show-current).out
+   make nixie | tee /tmp/nixie-$(get-project)-$(git branch --show-current).out
+   ```
 
 3. Record gate outcomes and keep status truthful (`complete` vs `partial`).
 
