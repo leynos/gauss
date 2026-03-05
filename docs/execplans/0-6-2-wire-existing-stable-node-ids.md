@@ -315,18 +315,18 @@ Stage F: Gates, evidence, and finalization
 
 ```plaintext
 set -o pipefail
-make check-fmt | tee /tmp/check-fmt-$(get-project)-$(git branch --show).out
-make lint | tee /tmp/lint-$(get-project)-$(git branch --show).out
-make test | tee /tmp/test-$(get-project)-$(git branch --show).out
+make check-fmt | tee /tmp/check-fmt-$(get-project)-$(git branch --show-current).out
+make lint | tee /tmp/lint-$(get-project)-$(git branch --show-current).out
+make test | tee /tmp/test-$(get-project)-$(git branch --show-current).out
 ```
 
 2. If docs changed materially, run documentation gates before final sign-off:
 
 ```plaintext
 set -o pipefail
-make fmt | tee /tmp/fmt-$(get-project)-$(git branch --show).out
-make markdownlint | tee /tmp/markdownlint-$(get-project)-$(git branch --show).out
-make nixie | tee /tmp/nixie-$(get-project)-$(git branch --show).out
+make fmt | tee /tmp/fmt-$(get-project)-$(git branch --show-current).out
+make markdownlint | tee /tmp/markdownlint-$(get-project)-$(git branch --show-current).out
+make nixie | tee /tmp/nixie-$(get-project)-$(git branch --show-current).out
 ```
 
 3. Record gate outcomes and keep status truthful (`complete` vs `partial`).
