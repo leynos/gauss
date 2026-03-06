@@ -6,6 +6,8 @@
 
 mod a11y_service;
 pub mod accessibility;
+
+mod action_dispatch;
 mod anchor_edit;
 mod chrome;
 mod chrome_palette;
@@ -39,8 +41,8 @@ use crate::model::{EngineState, KeyContext, SelectPointerHit, SelectToolState, V
 use super::phase0_support::demo_document;
 
 pub use self::a11y_service::{
-    A11yService, A11yServiceError, A11yShapeSnapshot, A11ySnapshot, A11yUpdateKind,
-    A11yUpdateRecord,
+    A11yActionRequestError, A11yRequestedAction, A11yService, A11yServiceError,
+    A11yShapeSnapshot, A11ySnapshot, A11yUpdateKind, A11yUpdateRecord, A11yWindowAction,
 };
 use self::file_dialogs::OpenPromptMode;
 

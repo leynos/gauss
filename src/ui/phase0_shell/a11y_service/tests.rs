@@ -1,13 +1,17 @@
 //! Unit tests for AccessKit tree projection and incremental updates.
 
-use accesskit::{Action, NodeId, Role};
+use accesskit::{Action, ActionRequest, NodeId, Role, TreeId};
 use rstest::rstest;
+use uuid::Uuid;
 
 use crate::model::{EdgeMode, ShapeId, ToolMode};
 use crate::ui::phase0_shell::accessibility;
 
 use super::tree_builder::{CANVAS_NODE_ID, SHAPE_LIST_NODE_ID, build_node_map};
-use super::{A11yService, A11yServiceError, A11yShapeSnapshot, A11ySnapshot, A11yUpdateKind};
+use super::{
+    A11yActionRequestError, A11yRequestedAction, A11yService, A11yServiceError, A11yShapeSnapshot,
+    A11ySnapshot, A11yUpdateKind, A11yWindowAction,
+};
 
 fn shape_id(raw: u64) -> ShapeId {
     ShapeId::from_accesskit_node_id(raw)
@@ -243,6 +247,85 @@ fn node_map_focuses_canvas_when_selected_shape_is_missing() {
     let snapshot = snapshot(&[0x2_0000_0001], &[0x2_0000_0002]);
     let (_, focus) = build_node_map(&snapshot).expect("node map build should succeed");
     assert_eq!(focus, CANVAS_NODE_ID);
+}
+
+#[rstest]
+#[case(
+    accessibility::node_ids::WINDOW_MENU,
+    A11yRequestedAction::Window(A11yWindowAction::ShowWindowMenu)
+)]
+#[case(
+    accessibility::node_ids::MINIMIZE_BUTTON,
+    A11yRequestedAction::Window(A11yWindowAction::Minimize)
+)]
+#[case(
+    accessibility::node_ids::MAXIMIZE_BUTTON,
+    A11yRequestedAction::Window(A11yWindowAction::ToggleMaximize)
+)]
+#[case(
+    accessibility::node_ids::FULLSCREEN_BUTTON,
+    A11yRequestedAction::Window(A11yWindowAction::ToggleFullscreen)
+)]
+#[case(
+    accessibility::node_ids::CLOSE_BUTTON,
+    A11yRequestedAction::Window(A11yWindowAction::CloseWindow)
+)]
+fn chrome_click_requests_route_to_existing_window_actions(
+    #[case] node_id: u64,
+    #[case] expected: A11yRequestedAction,
+) {
+    let request = ActionRequest {
+        action: Action::Click,
+        target_tree: TreeId::ROOT,
+        target_node: NodeId(node_id),
+        data: None,
+    };
+
+    let routed = A11yService::route_action_request(&request).expect("chrome click should route");
+
+    assert_eq!(routed, expected);
+}
+
+#[rstest]
+fn unsupported_action_request_is_rejected_without_routing() {
+    let request = ActionRequest {
+        action: Action::Focus,
+        target_tree: TreeId::ROOT,
+        target_node: NodeId(accessibility::node_ids::CLOSE_BUTTON),
+        data: None,
+    };
+
+    let error = A11yService::route_action_request(&request)
+        .expect_err("focus on close button should be unsupported");
+
+    assert_eq!(
+        error,
+        A11yActionRequestError::UnsupportedAction {
+            target_node: accessibility::node_ids::CLOSE_BUTTON,
+            action: Action::Focus,
+        }
+    );
+}
+
+#[rstest]
+fn unsupported_tree_is_rejected() {
+    let unsupported_tree = TreeId(Uuid::from_u128(7));
+    let request = ActionRequest {
+        action: Action::Click,
+        target_tree: unsupported_tree,
+        target_node: NodeId(accessibility::node_ids::CLOSE_BUTTON),
+        data: None,
+    };
+
+    let error = A11yService::route_action_request(&request)
+        .expect_err("non-root tree should be unsupported");
+
+    assert_eq!(
+        error,
+        A11yActionRequestError::UnsupportedTree {
+            target_tree: unsupported_tree
+        }
+    );
 }
 
 #[rstest]

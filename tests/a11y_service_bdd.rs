@@ -2,10 +2,11 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use accesskit::{Action, Node, NodeId, Role};
+use accesskit::{Action, ActionRequest, Node, NodeId, Role, TreeId};
 use gauss::model::{EdgeMode, ShapeId, ToolMode};
 use gauss::ui::phase0_shell::{
-    A11yService, A11yServiceError, A11yShapeSnapshot, A11ySnapshot, A11yUpdateKind, accessibility,
+    A11yActionRequestError, A11yRequestedAction, A11yService, A11yServiceError, A11yShapeSnapshot,
+    A11ySnapshot, A11yUpdateKind, A11yWindowAction, accessibility,
 };
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
@@ -17,6 +18,8 @@ struct A11yWorld {
     last_emitted_nodes: BTreeMap<NodeId, Node>,
     appended_shape_id: Option<u64>,
     last_publish_result: Option<Result<bool, A11yServiceError>>,
+    last_routed_action: Option<A11yRequestedAction>,
+    last_route_error: Option<A11yActionRequestError>,
     update_count_before: usize,
 }
 
@@ -28,6 +31,8 @@ fn world() -> A11yWorld {
         last_emitted_nodes: BTreeMap::new(),
         appended_shape_id: None,
         last_publish_result: None,
+        last_routed_action: None,
+        last_route_error: None,
         update_count_before: 0,
     }
 }
@@ -81,6 +86,8 @@ fn fresh_accessibility_service_snapshot(world: &mut A11yWorld) {
     world.last_emitted_nodes.clear();
     world.last_publish_result = None;
     world.appended_shape_id = None;
+    world.last_routed_action = None;
+    world.last_route_error = None;
 }
 
 #[given("the snapshot marks the window as maximized")]
@@ -320,6 +327,97 @@ fn publish_same_snapshot_again(world: &mut A11yWorld) {
     capture_last_emitted_nodes(world);
 }
 
+fn route_request(world: &mut A11yWorld, request: &ActionRequest) {
+    match A11yService::route_action_request(request) {
+        Ok(action) => {
+            world.last_routed_action = Some(action);
+            world.last_route_error = None;
+        }
+        Err(error) => {
+            world.last_routed_action = None;
+            world.last_route_error = Some(error);
+        }
+    }
+}
+
+#[when("I route a click request for the close accessibility node")]
+fn route_click_request_for_close_node(world: &mut A11yWorld) {
+    route_request(
+        world,
+        &ActionRequest {
+            action: Action::Click,
+            target_tree: TreeId::ROOT,
+            target_node: NodeId(accessibility::node_ids::CLOSE_BUTTON),
+            data: None,
+        },
+    );
+}
+
+#[then("the request routes to the close window action")]
+fn request_routes_to_close_window_action(world: &A11yWorld) -> TestSupportResult<()> {
+    if world.last_routed_action != Some(A11yRequestedAction::Window(A11yWindowAction::CloseWindow))
+    {
+        return Err(TestSupportError::expectation(format!(
+            "expected routed action {:?}, got {:?}",
+            A11yRequestedAction::Window(A11yWindowAction::CloseWindow),
+            world.last_routed_action
+        )));
+    }
+    Ok(())
+}
+
+#[then("accessibility request routing succeeds")]
+fn accessibility_request_routing_succeeds(world: &A11yWorld) -> TestSupportResult<()> {
+    if let Some(error) = &world.last_route_error {
+        return Err(TestSupportError::expectation(format!(
+            "expected routing success, got error {error}"
+        )));
+    }
+    if world.last_routed_action.is_none() {
+        return Err(TestSupportError::missing(
+            "routed accessibility action",
+            "successful route assertion",
+        ));
+    }
+    Ok(())
+}
+
+#[when("I route a focus request for the close accessibility node")]
+fn route_focus_request_for_close_node(world: &mut A11yWorld) {
+    route_request(
+        world,
+        &ActionRequest {
+            action: Action::Focus,
+            target_tree: TreeId::ROOT,
+            target_node: NodeId(accessibility::node_ids::CLOSE_BUTTON),
+            data: None,
+        },
+    );
+}
+
+#[then("routing fails with an unsupported accessibility action error")]
+fn routing_fails_with_unsupported_accessibility_action_error(
+    world: &A11yWorld,
+) -> TestSupportResult<()> {
+    let Some(error) = &world.last_route_error else {
+        return Err(TestSupportError::missing(
+            "routing error",
+            "unsupported routing assertion",
+        ));
+    };
+    if *error
+        != (A11yActionRequestError::UnsupportedAction {
+            target_node: accessibility::node_ids::CLOSE_BUTTON,
+            action: Action::Focus,
+        })
+    {
+        return Err(TestSupportError::expectation(format!(
+            "expected unsupported-action error, got {error:?}"
+        )));
+    }
+    Ok(())
+}
+
 #[then("no new accessibility update is queued")]
 fn no_new_accessibility_update_is_queued(world: &A11yWorld) -> TestSupportResult<()> {
     let current_len = world.service.update_records().len();
@@ -408,5 +506,21 @@ fn unchanged_state_emits_no_accessibility_updates(world: A11yWorld) {
     name = "Duplicate node ID is reported and update is aborted"
 )]
 fn duplicate_node_id_is_reported_and_update_is_aborted(world: A11yWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/a11y_service.feature",
+    name = "Close button click request routes to the existing close action"
+)]
+fn close_button_click_request_routes_to_the_existing_close_action(world: A11yWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/a11y_service.feature",
+    name = "Unsupported close button action request is rejected"
+)]
+fn unsupported_close_button_action_request_is_rejected(world: A11yWorld) {
     let _ = world;
 }

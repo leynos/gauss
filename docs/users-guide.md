@@ -80,8 +80,10 @@ When a selected shape is still present in the document, that shape becomes the
 accessibility focus target. If the selection is stale or missing, focus falls
 back to the canvas node.
 
-Assistive-technology action invocation is not yet mapped into the command
-pipeline. That behaviour is planned in roadmap item `0.6.3`.
+Assistive-technology click requests for the window chrome controls now route
+through the same shell/window action handlers used by keyboard shortcuts and
+UI controls. Unsupported accessibility requests are ignored without changing
+editor state.
 
 ## Tool Modes
 

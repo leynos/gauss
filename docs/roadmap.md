@@ -64,8 +64,8 @@ implemented and tested:
   opacity.
 - **Window chrome**: Minimize, maximize, fullscreen, close; keyboard
   shortcuts; resize handles that respect maximised state.
-- **Accessibility framework**: Stable node IDs defined; AccessKit not yet
-  wired.
+- **Accessibility framework**: Stable node IDs defined; AccessKit tree,
+  incremental updates, and chrome action routing are wired.
 
 **Not yet implemented**: Shape tools, transform handles, layers panel, advanced
 styling, gradients, text, effects, symbols, scripting integration.
@@ -177,9 +177,9 @@ phases depend upon. See architecture document §20.
 - [x] 0.6.2. Wire existing stable node IDs.
   - [x] Connect pre-defined IDs in `accessibility.rs` to AccessKit.
   - [x] Expose roles and labels for window chrome.
-- [ ] 0.6.3. Map AccessKit action requests to Gauss Actions.
-  - [ ] Accessibility actions trigger the same command pipeline as UI.
-  - [ ] Ensure keyboard-only operation parity.
+- [x] 0.6.3. Map AccessKit action requests to Gauss Actions.
+  - [x] Accessibility actions trigger the same command pipeline as UI.
+  - [x] Ensure keyboard-only operation parity.
 
 ### 0.7. i18n scaffolding
 
@@ -909,8 +909,9 @@ IDs, incremental updates, and explicit chrome semantics. Completed:
 3. Exposed roles and labels for UI chrome.
 4. Added incremental update mechanism.
 
-Remaining accessibility wiring work is roadmap item `0.6.3` (map AccessKit
-action requests into the command pipeline).
+Accessibility wiring is complete for Phase 0 scope: AccessKit requests for the
+shipped chrome controls now route through the same shell/window action
+handlers used by keyboard shortcuts and UI controls.
 
 ### Scripting integration
 

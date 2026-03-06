@@ -97,6 +97,12 @@ Accessibility is designed in from day one:
 - Accessibility tree uses **stable node IDs** (critical for immediate-mode
   toolkits) 【110†accesskit-based-accessibility-in-gpui.md】
 
+Implementation note (2026-03): Phase 0 routes supported AccessKit action
+requests for chrome button nodes through the same `Phase0Shell` window-action
+handlers used by GPUI keyboard shortcuts and UI controls. Unsupported
+node/action pairs fail closed with typed routing errors instead of mutating
+state through a parallel accessibility-only path.
+
 ### 2.5 “SVG First” with reversible transforms
 
 Gauss’s native format is currently SVG, and **SVG export is the only v1
@@ -961,7 +967,7 @@ To avoid user-hostile undo behavior:
 
 - group multi-step interactions into a single undo step
 - clear history appropriately when opening a new document (PoC pitfall)
-  【111†using-gpui-and-gpui-component.md】
+  
 
 #### 7.3.1 Single-entry-per-gesture audit (0.3.1)
 
@@ -1051,7 +1057,7 @@ The PoC uses `Canvas` + `PathBuilder` and recommends:
 
 - viewport transform model→screen
 - fill then stroke then selection overlays
-- predictable anchor/handle markers 【111†using-gpui-and-gpui-component.md】
+- predictable anchor/handle markers 
 
 ### 9.1 Render pipeline
 
@@ -1086,7 +1092,7 @@ The renderer uses these to avoid rebuilding paths every frame.
 - The renderer owns caches, but not document truth.
 - The engine triggers “invalidate” notifications to wake observers (GPUI
   `Context::notify`) when state changes.
-  【111†using-gpui-and-gpui-component.md】
+  
 
 ______________________________________________________________________
 
@@ -1286,7 +1292,7 @@ ______________________________________________________________________
 
 AccessKit provides cross-platform adapters and requires an accessibility tree
 with **stable node IDs**; immediate-mode toolkits must keep IDs stable across
-frames. 【110†accesskit-based-accessibility-in-gpui.md】
+frames. 
 
 ### 11.1 A11y service as a first-class subsystem
 
@@ -1408,7 +1414,7 @@ Minimum “day one”:
 
 AccessKit adapters support single/multi-line text controls but **rich
 text/hypertext** support is limited today.
-【110†accesskit-based-accessibility-in-gpui.md】
+
 
 Therefore:
 
@@ -1471,7 +1477,7 @@ ______________________________________________________________________
 ## 14. UI Toolkit Strategy: GPUI Component vs Custom Controls
 
 GPUI Component should be the default for standard UI: buttons, inputs, menus,
-panels, etc. 【111†using-gpui-and-gpui-component.md】
+panels, etc. 
 
 However, an Illustrator-class tool will require **custom controls**, at least
 for:
@@ -1509,7 +1515,7 @@ Create a small `platform` facade providing:
 - font enumeration and text shaping hooks (later)
 
 The PoC already notes headless prompt differences and recommends thin adapters
-for dialog behavior. 【111†using-gpui-and-gpui-component.md】
+for dialog behavior. 
 
 ______________________________________________________________________
 
@@ -1519,7 +1525,7 @@ The PoC recommends:
 
 - behavior-heavy tests at controller/model boundary
 - a small set of `#[gpui::test]` integration tests for wiring/input
-  【111†using-gpui-and-gpui-component.md】
+  
 
 ### 16.1 Test layers
 
