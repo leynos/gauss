@@ -2,6 +2,7 @@
 
 mod common;
 
+use accesskit::{Action, Role, TreeUpdate};
 use common::{ensure_initial_draw, init_test_app};
 use gauss::model::{Selection, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
@@ -18,10 +19,53 @@ fn setup_window(
     (visual_cx, view)
 }
 
+fn assert_chrome_button_semantics(
+    update: &TreeUpdate,
+    expected: &accessibility::ChromeButtonSemantics,
+) {
+    let Some(node) = accessibility::chrome_node_from_update(update, expected.node_id) else {
+        panic!(
+            "expected node {:#x} in drained accessibility update",
+            expected.node_id
+        );
+    };
+    assert_eq!(node.role(), Role::Button);
+    assert_eq!(node.label(), Some(expected.label));
+    assert_eq!(node.description(), Some(expected.shortcut_hint));
+    assert_eq!(node.keyboard_shortcut(), Some(expected.shortcut_hint));
+    assert!(node.supports_action(Action::Click));
+}
+
+fn assert_initial_serialised_update(initial_update: &TreeUpdate) {
+    assert!(
+        initial_update.tree.is_some(),
+        "expected initial update to include tree metadata"
+    );
+    let Some(titlebar) =
+        accessibility::chrome_node_from_update(initial_update, accessibility::node_ids::TITLEBAR)
+    else {
+        panic!(
+            "expected node {:#x} in drained accessibility update",
+            accessibility::node_ids::TITLEBAR
+        );
+    };
+    assert_eq!(titlebar.role(), Role::TitleBar);
+    assert_eq!(
+        titlebar.label(),
+        Some(accessibility::accessible_names::TITLEBAR)
+    );
+    for expected in accessibility::chrome_button_semantics(false) {
+        assert_chrome_button_semantics(initial_update, &expected);
+    }
+}
+
 #[gpui::test]
 fn a11y_initial_tree_update_is_emitted_on_first_draw(cx: &mut TestAppContext) {
     let (visual_cx, view) = setup_window(cx);
     let records = visual_cx.read(|app| view.read(app).a11y_update_records_for_tests().to_vec());
+    let drained_updates = visual_cx.update(|_window, app| {
+        view.update(app, |shell, _cx| shell.drain_a11y_tree_updates_for_tests())
+    });
     assert_eq!(
         records.len(),
         1,
@@ -37,6 +81,16 @@ fn a11y_initial_tree_update_is_emitted_on_first_draw(cx: &mut TestAppContext) {
             .contains(&accessibility::node_ids::TITLEBAR),
         "expected titlebar node to be included in inserted IDs"
     );
+
+    assert_eq!(
+        drained_updates.len(),
+        1,
+        "expected one initial serialized tree update"
+    );
+    let initial_update = drained_updates
+        .first()
+        .expect("expected one initial serialized tree update");
+    assert_initial_serialised_update(initial_update);
 }
 
 #[gpui::test]

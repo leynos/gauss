@@ -4,6 +4,14 @@ Feature: A11yService incremental tree updates
     When I publish the initial accessibility snapshot
     Then one initial accessibility update is queued
     And the update includes titlebar and window control node IDs
+    And the chrome nodes expose expected roles, labels, and shortcut hints
+
+  Scenario: Maximized window exposes restore semantics on the maximize node
+    Given a fresh accessibility service snapshot
+    And the snapshot marks the window as maximized
+    When I publish the initial accessibility snapshot
+    Then one initial accessibility update is queued
+    And the maximize node uses the restore label and maximize shortcut hint
 
   Scenario: Adding a shape emits one inserted accessibility node update
     Given an initialized accessibility service baseline

@@ -39,54 +39,18 @@ pub(super) fn build_node_map(
 }
 
 fn insert_chrome_nodes(nodes: &mut BTreeMap<NodeId, Node>, is_maximized: bool) {
+    let chrome_buttons = accessibility::chrome_button_semantics(is_maximized);
     let mut titlebar = Node::new(Role::TitleBar);
-    titlebar.set_label("Window title bar");
-    titlebar.set_children([
-        NodeId(accessibility::node_ids::WINDOW_MENU),
-        NodeId(accessibility::node_ids::MINIMIZE_BUTTON),
-        NodeId(accessibility::node_ids::MAXIMIZE_BUTTON),
-        NodeId(accessibility::node_ids::FULLSCREEN_BUTTON),
-        NodeId(accessibility::node_ids::CLOSE_BUTTON),
-    ]);
+    titlebar.set_label(accessibility::accessible_names::TITLEBAR);
+    titlebar.set_children(chrome_buttons.map(|button| NodeId(button.node_id)));
     nodes.insert(NodeId(accessibility::node_ids::TITLEBAR), titlebar);
 
-    nodes.insert(
-        NodeId(accessibility::node_ids::WINDOW_MENU),
-        chrome_button_node(
-            accessibility::accessible_names::WINDOW_MENU,
-            accessibility::shortcut_hints::WINDOW_MENU,
-        ),
-    );
-    nodes.insert(
-        NodeId(accessibility::node_ids::MINIMIZE_BUTTON),
-        chrome_button_node(
-            accessibility::accessible_names::MINIMIZE,
-            accessibility::shortcut_hints::MINIMIZE,
-        ),
-    );
-    let maximize_name = if is_maximized {
-        accessibility::accessible_names::RESTORE
-    } else {
-        accessibility::accessible_names::MAXIMIZE
-    };
-    nodes.insert(
-        NodeId(accessibility::node_ids::MAXIMIZE_BUTTON),
-        chrome_button_node(maximize_name, accessibility::shortcut_hints::MAXIMIZE),
-    );
-    nodes.insert(
-        NodeId(accessibility::node_ids::FULLSCREEN_BUTTON),
-        chrome_button_node(
-            accessibility::accessible_names::FULLSCREEN,
-            accessibility::shortcut_hints::FULLSCREEN,
-        ),
-    );
-    nodes.insert(
-        NodeId(accessibility::node_ids::CLOSE_BUTTON),
-        chrome_button_node(
-            accessibility::accessible_names::CLOSE,
-            accessibility::shortcut_hints::CLOSE,
-        ),
-    );
+    for chrome_button in chrome_buttons {
+        nodes.insert(
+            NodeId(chrome_button.node_id),
+            chrome_button_node(chrome_button.label, chrome_button.shortcut_hint),
+        );
+    }
 }
 
 fn insert_canvas_and_status_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot) {
@@ -184,6 +148,7 @@ fn chrome_button_node(label: &'static str, shortcut_hint: &'static str) -> Node 
     let mut node = Node::new(Role::Button);
     node.set_label(label);
     node.set_description(shortcut_hint);
+    node.set_keyboard_shortcut(shortcut_hint);
     node.add_action(Action::Click);
     node
 }

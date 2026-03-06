@@ -1277,8 +1277,9 @@ Create an `A11yService` that:
 - pushes incremental updates
 - maps AccessKit action requests back into Gauss Actions/Commands
 
-Roadmap item `0.6.1` now implements the tree projection and incremental update
-portions of this contract in the Phase 0 shell:
+Roadmap items `0.6.1` and `0.6.2` now implement the tree projection,
+incremental update, and the stable chrome semantics of this contract in the
+Phase 0 shell:
 
 - `A11yService` snapshots `Phase0Shell` state into a deterministic AccessKit
   tree with root window, title bar chrome, status, canvas, and shape list nodes.
@@ -1288,6 +1289,12 @@ portions of this contract in the Phase 0 shell:
 - Shape nodes derive IDs from `ShapeId::to_accesskit_node_id()`, while title
   bar and chrome nodes use reserved constants. ID collisions return typed
   service errors to keep failures explicit during development and testing.
+- `src/ui/phase0_shell/accessibility.rs` now serves as the canonical source for
+  chrome node semantics (stable IDs, labels, and shortcut hints), and tree
+  construction consumes this metadata directly.
+- Window chrome semantics now expose explicit AccessKit roles and labels:
+  titlebar nodes use `Role::TitleBar`, while chrome control nodes use
+  `Role::Button` with label, description, and keyboard shortcut metadata.
 - Accessibility action routing remains deferred to roadmap item `0.6.3`; `0.6.1`
   intentionally establishes the service boundary and update pipeline first.
 
@@ -1589,10 +1596,9 @@ broad feature work accelerates:
 
 Status update: roadmap items `0.5.1`, `0.5.2`, and `0.5.3` implemented the Tool
 trait boundary, PenTool extraction, and SelectTool extraction. The remaining
-tool-framework milestone is `0.5.4` (shared hit-test service). Roadmap item
-`0.6.1` is now implemented in the Phase 0 shell. Remaining accessibility
-milestones are `0.6.2` (stable node ID wiring polish) and `0.6.3` (AccessKit
-action request mapping).
+tool-framework milestone is `0.5.4` (shared hit-test service). Roadmap items
+`0.6.1` and `0.6.2` are now implemented in the Phase 0 shell. Remaining
+accessibility milestone is `0.6.3` (AccessKit action request mapping).
 
 ______________________________________________________________________
 

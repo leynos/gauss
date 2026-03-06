@@ -72,6 +72,10 @@ Gauss now publishes an accessibility tree that covers:
 Accessibility updates are incremental. Unchanged renders do not emit new
 updates; document or UI state changes emit targeted node updates.
 
+Window chrome accessibility semantics are explicit and stable: the titlebar
+uses a titlebar role, and each chrome control publishes a button role with a
+descriptive label plus keyboard shortcut hint.
+
 When a selected shape is still present in the document, that shape becomes the
 accessibility focus target. If the selection is stale or missing, focus falls
 back to the canvas node.
