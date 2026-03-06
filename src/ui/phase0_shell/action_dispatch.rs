@@ -102,42 +102,42 @@ impl Phase0Shell {
         match action {
             SelectionAction::SelectAll => self.select_all(cx),
             SelectionAction::DeselectAll => self.deselect_all(cx),
-            SelectionAction::DeleteSelection => {
-                let has_shape_selection = self.state.selection.selected_shapes().next().is_some();
-                let did_change = if has_shape_selection {
-                    self.delete_selected_shapes()
-                } else {
-                    self.delete_selected_anchors()
-                };
-                if did_change {
-                    cx.notify();
-                }
-            }
+            SelectionAction::DeleteSelection => self.execute_delete_selection(cx),
             SelectionAction::InsertAnchorOnSegment => {
-                if self.insert_anchor_on_selected_segment() {
-                    cx.notify();
-                }
+                self.apply_change(Self::insert_anchor_on_selected_segment, cx);
             }
             SelectionAction::DeleteSelectedAnchors => {
-                if self.delete_selected_anchors() {
-                    cx.notify();
-                }
+                self.apply_change(Self::delete_selected_anchors, cx);
             }
             SelectionAction::RaiseSelection => {
-                if self.raise_selected_shapes() {
-                    cx.notify();
-                }
+                self.apply_change(Self::raise_selected_shapes, cx);
             }
             SelectionAction::LowerSelection => {
-                if self.lower_selected_shapes() {
-                    cx.notify();
-                }
+                self.apply_change(Self::lower_selected_shapes, cx);
             }
             SelectionAction::ToggleSegmentKind => {
-                if self.toggle_selected_segments_kind() {
-                    cx.notify();
-                }
+                self.apply_change(Self::toggle_selected_segments_kind, cx);
             }
+        }
+    }
+
+    /// Calls `f(self)` and invokes [`gpui::Context::notify`] when `f` returns
+    /// `true`.
+    fn apply_change(&mut self, f: fn(&mut Self) -> bool, cx: &mut gpui::Context<Self>) {
+        if f(self) {
+            cx.notify();
+        }
+    }
+
+    fn execute_delete_selection(&mut self, cx: &mut gpui::Context<Self>) {
+        let has_shape_selection = self.state.selection.selected_shapes().next().is_some();
+        let did_change = if has_shape_selection {
+            self.delete_selected_shapes()
+        } else {
+            self.delete_selected_anchors()
+        };
+        if did_change {
+            cx.notify();
         }
     }
 
