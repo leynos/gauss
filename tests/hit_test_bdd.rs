@@ -155,27 +155,61 @@ fn require_pointer_hit(world: &HitTestWorld) -> TestSupportResult<SelectPointerH
         .ok_or_else(|| TestSupportError::missing("pointer_hit", "assertion"))
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "shared BDD helper keeps each step call site explicit and local"
-)]
-fn assert_pointer_hit_matches<F>(
+#[derive(Clone, Copy, Debug)]
+enum HitExpectation {
+    Handle { anchor_index: usize },
+    Segment { seg_index: usize },
+    TopmostShape { shape_index: usize },
+}
+
+impl HitExpectation {
+    fn selector(self) -> fn(&[ShapeId]) -> Option<&ShapeId> {
+        match self {
+            Self::TopmostShape { .. } => <[ShapeId]>::last,
+            Self::Handle { .. } | Self::Segment { .. } => <[ShapeId]>::first,
+        }
+    }
+
+    const fn label(self) -> &'static str {
+        match self {
+            Self::Handle { .. } => "handle assertion",
+            Self::Segment { .. } => "segment assertion",
+            Self::TopmostShape { .. } => "topmost assertion",
+        }
+    }
+
+    fn matches_hit(self, hit: SelectPointerHit, expected_shape: ShapeId) -> bool {
+        match self {
+            Self::Handle { anchor_index } => matches!(
+                hit,
+                SelectPointerHit::Handle(handle_hit)
+                    if handle_hit.shape_id == expected_shape && handle_hit.anchor_index == anchor_index
+            ),
+            Self::Segment { seg_index } => matches!(
+                hit,
+                SelectPointerHit::Segment(segment_hit)
+                    if segment_hit.shape_id == expected_shape && segment_hit.seg_index == seg_index
+            ),
+            Self::TopmostShape { shape_index } => matches!(
+                hit,
+                SelectPointerHit::Shape(shape_hit)
+                    if shape_hit.shape_id == expected_shape && shape_hit.shape_index == shape_index
+            ),
+        }
+    }
+}
+
+fn assert_pointer_hit_matches(
     world: &HitTestWorld,
-    shape_selector: fn(&[ShapeId]) -> Option<&ShapeId>,
-    assertion_label: &str,
-    expected_desc: &str,
-    check: F,
-) -> TestSupportResult<()>
-where
-    F: Fn(SelectPointerHit, ShapeId) -> bool,
-{
-    let expected_shape = shape_selector(&world.shape_ids)
+    expected: HitExpectation,
+) -> TestSupportResult<()> {
+    let expected_shape = expected.selector()(&world.shape_ids)
         .copied()
-        .ok_or_else(|| TestSupportError::missing("shape_id", assertion_label))?;
+        .ok_or_else(|| TestSupportError::missing("shape_id", expected.label()))?;
     let hit = require_pointer_hit(world)?;
-    if !check(hit, expected_shape) {
+    if !expected.matches_hit(hit, expected_shape) {
         return Err(TestSupportError::expectation(format!(
-            "{expected_desc} for {expected_shape:?}; got {hit:?}"
+            "expected {expected:?} for {expected_shape:?}; got {hit:?}"
         )));
     }
     Ok(())
@@ -183,44 +217,17 @@ where
 
 #[then("the hit-test result is Handle")]
 fn then_result_handle(world: &HitTestWorld) -> TestSupportResult<()> {
-    assert_pointer_hit_matches(
-        world,
-        <[ShapeId]>::first,
-        "handle assertion",
-        "expected Handle hit",
-        |hit, expected_shape| {
-            matches!(hit, SelectPointerHit::Handle(handle_hit)
-                if handle_hit.shape_id == expected_shape && handle_hit.anchor_index == 0)
-        },
-    )
+    assert_pointer_hit_matches(world, HitExpectation::Handle { anchor_index: 0 })
 }
 
 #[then("the hit-test result is Segment")]
 fn then_result_segment(world: &HitTestWorld) -> TestSupportResult<()> {
-    assert_pointer_hit_matches(
-        world,
-        <[ShapeId]>::first,
-        "segment assertion",
-        "expected Segment hit",
-        |hit, expected_shape| {
-            matches!(hit, SelectPointerHit::Segment(segment_hit)
-                if segment_hit.shape_id == expected_shape && segment_hit.seg_index == 0)
-        },
-    )
+    assert_pointer_hit_matches(world, HitExpectation::Segment { seg_index: 0 })
 }
 
 #[then("the hit-test result is TopmostShape")]
 fn then_result_topmost_shape(world: &HitTestWorld) -> TestSupportResult<()> {
-    assert_pointer_hit_matches(
-        world,
-        <[ShapeId]>::last,
-        "topmost assertion",
-        "expected topmost Shape hit",
-        |hit, expected_shape| {
-            matches!(hit, SelectPointerHit::Shape(shape_hit)
-                if shape_hit.shape_id == expected_shape && shape_hit.shape_index == 1)
-        },
-    )
+    assert_pointer_hit_matches(world, HitExpectation::TopmostShape { shape_index: 1 })
 }
 
 #[then("the hit-test result is None")]
