@@ -7,6 +7,15 @@ use super::{
 };
 use rstest::rstest;
 
+#[derive(Debug)]
+enum ExpectedHit {
+    Handle { anchor_index: usize },
+    Anchor { anchor_index: usize },
+    Segment { seg_index: usize },
+    Shape,
+    None,
+}
+
 fn shape_id(raw: u64) -> ShapeId {
     ShapeId::from_accesskit_node_id(raw)
 }
@@ -62,67 +71,68 @@ fn reports_linear_scan_backend_by_default() {
 }
 
 #[rstest]
-fn resolves_handle_before_anchor_segment_and_shape() {
+#[case(
+    "handle beats anchor/segment/shape",
+    Vec2::new(2.0, 0.0),
+    0.5,
+    ExpectedHit::Handle { anchor_index: 0 }
+)]
+#[case(
+    "anchor beats segment/shape",
+    Vec2::new(0.0, 0.0),
+    0.5,
+    ExpectedHit::Anchor { anchor_index: 0 }
+)]
+#[case(
+    "segment beats shape",
+    Vec2::new(5.0, 0.0),
+    0.5,
+    ExpectedHit::Segment { seg_index: 0 }
+)]
+#[case(
+    "shape as final fallback",
+    Vec2::new(5.0, 5.0),
+    0.5,
+    ExpectedHit::Shape
+)]
+#[case(
+    "none when outside all targets",
+    Vec2::new(20.0, 20.0),
+    0.5,
+    ExpectedHit::None
+)]
+fn priority_resolution(
+    #[case] label: &str,
+    #[case] point: Vec2,
+    #[case] tolerance: f32,
+    #[case] expected: ExpectedHit,
+) {
     let (document, shape_id) = single_square_document();
     let index = HitTestIndex::from_document(&document);
-    let hit = index.pointer_hit(Vec2::new(2.0, 0.0), 0.5);
+    let hit = index.pointer_hit(point, tolerance);
 
-    assert!(matches!(
-        hit,
-        SelectPointerHit::Handle(handle_hit)
-            if handle_hit.shape_id == shape_id
-                && handle_hit.anchor_index == 0
-    ));
-}
-
-#[rstest]
-fn resolves_anchor_before_segment_and_shape() {
-    let (document, shape_id) = single_square_document();
-    let index = HitTestIndex::from_document(&document);
-    let hit = index.pointer_hit(Vec2::new(0.0, 0.0), 0.5);
-
-    assert!(matches!(
-        hit,
-        SelectPointerHit::Anchor(anchor_hit)
-            if anchor_hit.shape_id == shape_id
-                && anchor_hit.anchor_index == 0
-    ));
-}
-
-#[rstest]
-fn resolves_segment_before_shape() {
-    let (document, shape_id) = single_square_document();
-    let index = HitTestIndex::from_document(&document);
-    let hit = index.pointer_hit(Vec2::new(5.0, 0.0), 0.5);
-
-    assert!(matches!(
-        hit,
-        SelectPointerHit::Segment(segment_hit)
-            if segment_hit.shape_id == shape_id
-                && segment_hit.seg_index == 0
-    ));
-}
-
-#[rstest]
-fn resolves_shape_as_final_fallback() {
-    let (document, shape_id) = single_square_document();
-    let index = HitTestIndex::from_document(&document);
-    let hit = index.pointer_hit(Vec2::new(5.0, 5.0), 0.5);
-
-    assert!(matches!(
-        hit,
-        SelectPointerHit::Shape(shape_hit)
-            if shape_hit.shape_id == shape_id
-    ));
-}
-
-#[rstest]
-fn returns_none_when_outside_all_targets() {
-    let (document, _shape_id) = single_square_document();
-    let index = HitTestIndex::from_document(&document);
-    let hit = index.pointer_hit(Vec2::new(20.0, 20.0), 0.5);
-
-    assert_eq!(hit, SelectPointerHit::None);
+    match expected {
+        ExpectedHit::Handle { anchor_index } => assert!(
+            matches!(&hit, SelectPointerHit::Handle(handle_hit)
+                if handle_hit.shape_id == shape_id && handle_hit.anchor_index == anchor_index),
+            "{label}: expected Handle(anchor_index={anchor_index}); got {hit:?}"
+        ),
+        ExpectedHit::Anchor { anchor_index } => assert!(
+            matches!(&hit, SelectPointerHit::Anchor(anchor_hit)
+                if anchor_hit.shape_id == shape_id && anchor_hit.anchor_index == anchor_index),
+            "{label}: expected Anchor(anchor_index={anchor_index}); got {hit:?}"
+        ),
+        ExpectedHit::Segment { seg_index } => assert!(
+            matches!(&hit, SelectPointerHit::Segment(segment_hit)
+                if segment_hit.shape_id == shape_id && segment_hit.seg_index == seg_index),
+            "{label}: expected Segment(seg_index={seg_index}); got {hit:?}"
+        ),
+        ExpectedHit::Shape => assert!(
+            matches!(&hit, SelectPointerHit::Shape(shape_hit) if shape_hit.shape_id == shape_id),
+            "{label}: expected Shape; got {hit:?}"
+        ),
+        ExpectedHit::None => assert_eq!(hit, SelectPointerHit::None, "{label}"),
+    }
 }
 
 #[rstest]
