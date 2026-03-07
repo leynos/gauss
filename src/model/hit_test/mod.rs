@@ -197,13 +197,7 @@ impl<'a> HitTestIndex<'a> {
     #[must_use]
     pub fn topmost_segment(&self, cursor_world: Vec2, tolerance_world: f32) -> Option<SegmentHit> {
         self.topmost_in_shapes(tolerance_world, |indexed, tolerance| {
-            geometry::find_best_segment_hit(indexed.shape, cursor_world, tolerance * tolerance).map(
-                |seg_index| SegmentHit {
-                    shape_index: indexed.shape_index,
-                    shape_id: indexed.shape.id,
-                    seg_index,
-                },
-            )
+            segment_hit_in_shape(indexed, cursor_world, tolerance * tolerance)
         })
     }
 
@@ -211,12 +205,7 @@ impl<'a> HitTestIndex<'a> {
     #[must_use]
     pub fn topmost_shape(&self, cursor_world: Vec2, tolerance_world: f32) -> Option<ShapeHit> {
         self.topmost_in_shapes(tolerance_world, |indexed, tolerance| {
-            geometry::hit_test_shape_bbox(indexed.shape, cursor_world, tolerance).then_some(
-                ShapeHit {
-                    shape_index: indexed.shape_index,
-                    shape_id: indexed.shape.id,
-                },
-            )
+            shape_hit_in_shape(indexed, cursor_world, tolerance)
         })
     }
 
@@ -317,4 +306,29 @@ fn topmost_anchor_in_shape(
     }
 
     None
+}
+
+fn segment_hit_in_shape(
+    indexed: &IndexedShape<'_>,
+    cursor_world: Vec2,
+    tolerance_squared: f32,
+) -> Option<SegmentHit> {
+    geometry::find_best_segment_hit(indexed.shape, cursor_world, tolerance_squared).map(
+        |seg_index| SegmentHit {
+            shape_index: indexed.shape_index,
+            shape_id: indexed.shape.id,
+            seg_index,
+        },
+    )
+}
+
+fn shape_hit_in_shape(
+    indexed: &IndexedShape<'_>,
+    cursor_world: Vec2,
+    tolerance: f32,
+) -> Option<ShapeHit> {
+    geometry::hit_test_shape_bbox(indexed.shape, cursor_world, tolerance).then_some(ShapeHit {
+        shape_index: indexed.shape_index,
+        shape_id: indexed.shape.id,
+    })
 }
