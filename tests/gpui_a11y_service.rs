@@ -22,6 +22,31 @@ fn setup_window(
     (visual_cx, view)
 }
 
+fn dispatch_accesskit_action(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    action: Action,
+    target_node_id: u64,
+) -> (Result<A11yRequestedAction, A11yActionRequestError>, bool) {
+    let routed = visual_cx.update(|window, app| {
+        view.update(app, |shell, view_cx| {
+            shell.handle_accesskit_action_request_for_tests(
+                &ActionRequest {
+                    action,
+                    target_tree: TreeId::ROOT,
+                    target_node: accesskit::NodeId(target_node_id),
+                    data: None,
+                },
+                window,
+                view_cx,
+            )
+        })
+    });
+    visual_cx.run_until_parked();
+    let did_request_quit = visual_cx.read(|app| view.read(app).did_request_quit());
+    (routed, did_request_quit)
+}
+
 fn assert_chrome_button_semantics(
     update: &TreeUpdate,
     expected: &accessibility::ChromeButtonSemantics,
@@ -184,28 +209,16 @@ fn close_window_gpui_action_requests_quit(cx: &mut TestAppContext) {
 #[gpui::test]
 fn accessibility_close_button_click_requests_quit_via_same_shell_path(cx: &mut TestAppContext) {
     let (visual_cx, view) = setup_window(cx);
-
-    let routed = visual_cx.update(|window, app| {
-        view.update(app, |shell, view_cx| {
-            shell.handle_accesskit_action_request_for_tests(
-                &ActionRequest {
-                    action: Action::Click,
-                    target_tree: TreeId::ROOT,
-                    target_node: accesskit::NodeId(accessibility::node_ids::CLOSE_BUTTON),
-                    data: None,
-                },
-                window,
-                view_cx,
-            )
-        })
-    });
-    visual_cx.run_until_parked();
-
+    let (routed, did_request_quit) = dispatch_accesskit_action(
+        visual_cx,
+        &view,
+        Action::Click,
+        accessibility::node_ids::CLOSE_BUTTON,
+    );
     assert_eq!(
         routed,
         Ok(A11yRequestedAction::Window(A11yWindowAction::CloseWindow))
     );
-    let did_request_quit = visual_cx.read(|app| view.read(app).did_request_quit());
     assert!(
         did_request_quit,
         "expected close accessibility click to request quit"
@@ -215,23 +228,12 @@ fn accessibility_close_button_click_requests_quit_via_same_shell_path(cx: &mut T
 #[gpui::test]
 fn unsupported_accessibility_action_does_not_mutate_shell_state(cx: &mut TestAppContext) {
     let (visual_cx, view) = setup_window(cx);
-
-    let routed = visual_cx.update(|window, app| {
-        view.update(app, |shell, view_cx| {
-            shell.handle_accesskit_action_request_for_tests(
-                &ActionRequest {
-                    action: Action::Focus,
-                    target_tree: TreeId::ROOT,
-                    target_node: accesskit::NodeId(accessibility::node_ids::CLOSE_BUTTON),
-                    data: None,
-                },
-                window,
-                view_cx,
-            )
-        })
-    });
-    visual_cx.run_until_parked();
-
+    let (routed, did_request_quit) = dispatch_accesskit_action(
+        visual_cx,
+        &view,
+        Action::Focus,
+        accessibility::node_ids::CLOSE_BUTTON,
+    );
     assert_eq!(
         routed,
         Err(A11yActionRequestError::UnsupportedAction {
@@ -239,7 +241,6 @@ fn unsupported_accessibility_action_does_not_mutate_shell_state(cx: &mut TestApp
             action: Action::Focus,
         })
     );
-    let did_request_quit = visual_cx.read(|app| view.read(app).did_request_quit());
     assert!(
         !did_request_quit,
         "unsupported accessibility request should not request quit"
