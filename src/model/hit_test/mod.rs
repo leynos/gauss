@@ -134,6 +134,14 @@ impl<'a> HitTestIndex<'a> {
         self.shapes.iter().rev().find_map(f)
     }
 
+    fn topmost_in_shapes<T, F>(&self, tolerance_world: f32, f: F) -> Option<T>
+    where
+        F: Fn(&IndexedShape<'_>, f32) -> Option<T>,
+    {
+        let tolerance = normalize_tolerance(tolerance_world)?;
+        self.scan_shapes_rev(|indexed| f(indexed, tolerance))
+    }
+
     /// Resolve the deterministic pointer-down hit target.
     #[must_use]
     pub fn pointer_hit(&self, cursor_world: Vec2, tolerance_world: f32) -> SelectPointerHit {
@@ -172,33 +180,24 @@ impl<'a> HitTestIndex<'a> {
     /// Return the topmost handle hit at the cursor, if any.
     #[must_use]
     pub fn topmost_handle(&self, cursor_world: Vec2, tolerance_world: f32) -> Option<HandleHit> {
-        let tolerance = normalize_tolerance(tolerance_world)?;
-        let tolerance_squared = tolerance * tolerance;
-
-        self.scan_shapes_rev(|indexed| {
-            topmost_handle_in_shape(indexed, cursor_world, tolerance_squared)
+        self.topmost_in_shapes(tolerance_world, |indexed, tolerance| {
+            topmost_handle_in_shape(indexed, cursor_world, tolerance * tolerance)
         })
     }
 
     /// Return the topmost anchor hit at the cursor, if any.
     #[must_use]
     pub fn topmost_anchor(&self, cursor_world: Vec2, tolerance_world: f32) -> Option<AnchorHit> {
-        let tolerance = normalize_tolerance(tolerance_world)?;
-        let tolerance_squared = tolerance * tolerance;
-
-        self.scan_shapes_rev(|indexed| {
-            topmost_anchor_in_shape(indexed, cursor_world, tolerance_squared)
+        self.topmost_in_shapes(tolerance_world, |indexed, tolerance| {
+            topmost_anchor_in_shape(indexed, cursor_world, tolerance * tolerance)
         })
     }
 
     /// Return the topmost segment hit at the cursor, if any.
     #[must_use]
     pub fn topmost_segment(&self, cursor_world: Vec2, tolerance_world: f32) -> Option<SegmentHit> {
-        let tolerance = normalize_tolerance(tolerance_world)?;
-        let tolerance_squared = tolerance * tolerance;
-
-        self.scan_shapes_rev(|indexed| {
-            geometry::find_best_segment_hit(indexed.shape, cursor_world, tolerance_squared).map(
+        self.topmost_in_shapes(tolerance_world, |indexed, tolerance| {
+            geometry::find_best_segment_hit(indexed.shape, cursor_world, tolerance * tolerance).map(
                 |seg_index| SegmentHit {
                     shape_index: indexed.shape_index,
                     shape_id: indexed.shape.id,
@@ -211,9 +210,7 @@ impl<'a> HitTestIndex<'a> {
     /// Return the topmost shape bounding-box hit at the cursor, if any.
     #[must_use]
     pub fn topmost_shape(&self, cursor_world: Vec2, tolerance_world: f32) -> Option<ShapeHit> {
-        let tolerance = normalize_tolerance(tolerance_world)?;
-
-        self.scan_shapes_rev(|indexed| {
+        self.topmost_in_shapes(tolerance_world, |indexed, tolerance| {
             geometry::hit_test_shape_bbox(indexed.shape, cursor_world, tolerance).then_some(
                 ShapeHit {
                     shape_index: indexed.shape_index,
