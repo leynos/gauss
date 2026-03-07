@@ -910,8 +910,8 @@ IDs, incremental updates, and explicit chrome semantics. Completed:
 4. Added incremental update mechanism.
 
 Accessibility wiring is complete for Phase 0 scope: AccessKit requests for the
-shipped chrome controls now route through the same shell/window action
-handlers used by keyboard shortcuts and UI controls.
+shipped chrome controls now route through the same shell/window action handlers
+used by keyboard shortcuts and UI controls.
 
 ### Scripting integration
 

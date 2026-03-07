@@ -11,9 +11,9 @@ No `PLANS.md` exists in this repository.
 
 ## Purpose / big picture
 
-Roadmap item `0.6.3` in [docs/roadmap.md](../roadmap.md) requires Gauss to
-stop treating accessibility actions as metadata-only semantics and instead
-route AccessKit action requests through the same editor action pipeline used by
+Roadmap item `0.6.3` in [docs/roadmap.md](../roadmap.md) requires Gauss to stop
+treating accessibility actions as metadata-only semantics and instead route
+AccessKit action requests through the same editor action pipeline used by
 keyboard shortcuts and UI controls.
 
 After this milestone is implemented, assistive technology should be able to
@@ -137,11 +137,11 @@ Success is observable when:
 - [x] (2026-03-06) User approved the ExecPlan and authorized implementation.
 - [x] (2026-03-06) Confirmed the current tree only exposes AccessKit actions on
   chrome button nodes, so `0.6.3` will route those requests through the
-  existing shell/window action path and fail closed for unsupported
-  node/action pairs.
+  existing shell/window action path and fail closed for unsupported node/action
+  pairs.
 - [x] (2026-03-06) Implemented the initial request-routing seam plus unit, BDD,
-  GPUI, and documentation updates for `0.6.3`; gate replay remains in
-  progress before roadmap closure.
+  GPUI, and documentation updates for `0.6.3`; gate replay remains in progress
+  before roadmap closure.
 - [x] (2026-03-06) `make check-fmt` passed after applying the one rustfmt
   reflow required in `src/ui/phase0_shell/mod.rs`.
 - [x] (2026-03-06) Completed focused verification for the new unit, BDD, and
@@ -179,9 +179,9 @@ Success is observable when:
   GPUI tests for keybinding/action parity. `0.6.3` can extend those suites
   instead of inventing new harnesses.
 - The shared workspace build directory can be locked by unrelated or abandoned
-  `cargo test` processes in other worktrees. For this implementation, the
-  first focused verification run blocked on that lock until I cleared a stale
-  test process from an earlier local attempt.
+  `cargo test` processes in other worktrees. For this implementation, the first
+  focused verification run blocked on that lock until I cleared a stale test
+  process from an earlier local attempt.
 - Repository lint policy also enforces a 400-line module cap via Whitaker.
   Completing `0.6.3` required moving action-routing and shell-dispatch logic
   into dedicated submodules rather than leaving the new code in already-large
@@ -208,19 +208,19 @@ Success is observable when:
   ExecPlan. Rationale: follow the required approval gate for plan-first work.
 
 - 2026-03-06: `0.6.3` stays open in `docs/roadmap.md` until `make lint` and
-  `make test` pass, even though the code and docs changes are already in
-  place. Rationale: roadmap closure follows the repository gate policy rather
-  than implementation-complete intuition.
+  `make test` pass, even though the code and docs changes are already in place.
+  Rationale: roadmap closure follows the repository gate policy rather than
+  implementation-complete intuition.
 
 - 2026-03-06: Keep BDD coverage focused on the routed-request contract exposed
   by `A11yService`, and use GPUI tests to prove the shell execution path and
   quit-state side effects. Rationale: the existing BDD harness is snapshot-
-  centric, while GPUI tests already provide the end-to-end shell surface
-  needed for parity assertions.
+  centric, while GPUI tests already provide the end-to-end shell surface needed
+  for parity assertions.
 
 - 2026-03-06: Extracted `src/ui/phase0_shell/a11y_service/action_routing.rs`
-  and `src/ui/phase0_shell/action_dispatch.rs` to satisfy repository size
-  gates without weakening the shared action-path design. Rationale: the
+  and `src/ui/phase0_shell/action_dispatch.rs` to satisfy repository size gates
+  without weakening the shared action-path design. Rationale: the
   implementation needs to pass Whitaker's module-length policy, not just
   compile and test.
 
@@ -320,9 +320,8 @@ Use a small team during implementation, coordinated around context pack
    reading `src/ui/phase0_shell/accessibility.rs`,
    `src/ui/phase0_shell/a11y_service/mod.rs`, and related tests.
 2. Explorer B: verify the action execution path from model action definitions
-   through `src/ui/action_bridge/mod.rs` into
-   `src/ui/phase0_shell/view.rs`, and identify which behaviours still use
-   shell-only window actions.
+   through `src/ui/action_bridge/mod.rs` into `src/ui/phase0_shell/view.rs`,
+   and identify which behaviours still use shell-only window actions.
 3. Worker: implement the request-routing seam plus test/doc updates, then run
    the required gates.
 

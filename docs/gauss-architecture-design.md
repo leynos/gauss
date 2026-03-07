@@ -967,7 +967,6 @@ To avoid user-hostile undo behavior:
 
 - group multi-step interactions into a single undo step
 - clear history appropriately when opening a new document (PoC pitfall)
-  
 
 #### 7.3.1 Single-entry-per-gesture audit (0.3.1)
 
@@ -1057,7 +1056,7 @@ The PoC uses `Canvas` + `PathBuilder` and recommends:
 
 - viewport transform model→screen
 - fill then stroke then selection overlays
-- predictable anchor/handle markers 
+- predictable anchor/handle markers
 
 ### 9.1 Render pipeline
 
@@ -1092,7 +1091,6 @@ The renderer uses these to avoid rebuilding paths every frame.
 - The renderer owns caches, but not document truth.
 - The engine triggers “invalidate” notifications to wake observers (GPUI
   `Context::notify`) when state changes.
-  
 
 ______________________________________________________________________
 
@@ -1292,7 +1290,7 @@ ______________________________________________________________________
 
 AccessKit provides cross-platform adapters and requires an accessibility tree
 with **stable node IDs**; immediate-mode toolkits must keep IDs stable across
-frames. 
+frames.
 
 ### 11.1 A11y service as a first-class subsystem
 
@@ -1415,7 +1413,6 @@ Minimum “day one”:
 AccessKit adapters support single/multi-line text controls but **rich
 text/hypertext** support is limited today.
 
-
 Therefore:
 
 - Phase 1 should avoid betting the architecture on a rich-text-heavy UI without
@@ -1477,7 +1474,7 @@ ______________________________________________________________________
 ## 14. UI Toolkit Strategy: GPUI Component vs Custom Controls
 
 GPUI Component should be the default for standard UI: buttons, inputs, menus,
-panels, etc. 
+panels, etc.
 
 However, an Illustrator-class tool will require **custom controls**, at least
 for:
@@ -1515,7 +1512,7 @@ Create a small `platform` facade providing:
 - font enumeration and text shaping hooks (later)
 
 The PoC already notes headless prompt differences and recommends thin adapters
-for dialog behavior. 
+for dialog behavior.
 
 ______________________________________________________________________
 
@@ -1525,7 +1522,6 @@ The PoC recommends:
 
 - behavior-heavy tests at controller/model boundary
 - a small set of `#[gpui::test]` integration tests for wiring/input
-  
 
 ### 16.1 Test layers
 

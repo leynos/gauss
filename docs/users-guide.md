@@ -81,8 +81,8 @@ accessibility focus target. If the selection is stale or missing, focus falls
 back to the canvas node.
 
 Assistive-technology click requests for the window chrome controls now route
-through the same shell/window action handlers used by keyboard shortcuts and
-UI controls. Unsupported accessibility requests are ignored without changing
+through the same shell/window action handlers used by keyboard shortcuts and UI
+controls. Unsupported accessibility requests are ignored without changing
 editor state.
 
 ## Tool Modes
