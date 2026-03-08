@@ -19,127 +19,51 @@ use super::{
     ToggleMaximize, window_controls,
 };
 
-macro_rules! bind_gpui_model_actions {
-    ($el:expr, $cx:expr, [ $( ($GpuiAction:ty, $GaussVariant:expr) ),* $(,)? ]) => {{
-        let el = $el;
-        $(
-        let el = el.on_action(
-            $cx.listener(|shell: &mut Self, _: &$GpuiAction, _, action_cx| {
-                shell.execute_model_action($GaussVariant, action_cx);
-            }),
-        );
-        )*
-        el
-    }};
-}
-
-#[derive(Clone, Copy)]
-enum SelectionAction {
-    SelectAll,
-    DeselectAll,
-    DeleteSelection,
-    InsertAnchorOnSegment,
-    DeleteSelectedAnchors,
-    RaiseSelection,
-    LowerSelection,
-    ToggleSegmentKind,
-}
-
-impl SelectionAction {
-    const fn from_gauss(action: GaussAction) -> Option<Self> {
-        match action {
-            GaussAction::SelectAll => Some(Self::SelectAll),
-            GaussAction::DeselectAll => Some(Self::DeselectAll),
-            GaussAction::DeleteSelection => Some(Self::DeleteSelection),
-            GaussAction::InsertAnchorOnSegment => Some(Self::InsertAnchorOnSegment),
-            GaussAction::DeleteSelectedAnchors => Some(Self::DeleteSelectedAnchors),
-            GaussAction::RaiseSelection => Some(Self::RaiseSelection),
-            GaussAction::LowerSelection => Some(Self::LowerSelection),
-            GaussAction::ToggleSegmentKind => Some(Self::ToggleSegmentKind),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-enum ToolAction {
-    ActivatePenTool,
-    ActivateSelectTool,
-}
-
-impl ToolAction {
-    const fn from_gauss(action: GaussAction) -> Option<Self> {
-        match action {
-            GaussAction::ActivatePenTool => Some(Self::ActivatePenTool),
-            GaussAction::ActivateSelectTool => Some(Self::ActivateSelectTool),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-enum HistoryAction {
-    Undo,
-    Redo,
-    SelectionUndo,
-    SelectionRedo,
-}
-
-impl HistoryAction {
-    const fn from_gauss(action: GaussAction) -> Option<Self> {
-        match action {
-            GaussAction::Undo => Some(Self::Undo),
-            GaussAction::Redo => Some(Self::Redo),
-            GaussAction::SelectionUndo => Some(Self::SelectionUndo),
-            GaussAction::SelectionRedo => Some(Self::SelectionRedo),
-            _ => None,
-        }
-    }
-}
-
 impl Phase0Shell {
     pub(super) fn execute_model_action(
         &mut self,
         action: GaussAction,
         cx: &mut gpui::Context<Self>,
     ) {
-        if let Some(selection_action) = SelectionAction::from_gauss(action) {
-            self.execute_selection_action(selection_action, cx);
-        } else if let Some(tool_action) = ToolAction::from_gauss(action) {
-            self.execute_tool_action(tool_action, cx);
-        } else if let Some(history_action) = HistoryAction::from_gauss(action) {
-            self.execute_history_action(history_action, cx);
-        }
-    }
-
-    fn execute_selection_action(&mut self, action: SelectionAction, cx: &mut gpui::Context<Self>) {
         match action {
-            SelectionAction::SelectAll => self.select_all(cx),
-            SelectionAction::DeselectAll => self.deselect_all(cx),
-            SelectionAction::DeleteSelection => self.execute_delete_selection(cx),
-            SelectionAction::InsertAnchorOnSegment => {
-                self.apply_change(Self::insert_anchor_on_selected_segment, cx);
+            // Selection actions
+            GaussAction::SelectAll => self.select_all(cx),
+            GaussAction::DeselectAll => self.deselect_all(cx),
+            GaussAction::DeleteSelection => self.execute_delete_selection(cx),
+            GaussAction::InsertAnchorOnSegment => {
+                if self.insert_anchor_on_selected_segment() {
+                    cx.notify();
+                }
             }
-            SelectionAction::DeleteSelectedAnchors => {
-                self.apply_change(Self::delete_selected_anchors, cx);
+            GaussAction::DeleteSelectedAnchors => {
+                if self.delete_selected_anchors() {
+                    cx.notify();
+                }
             }
-            SelectionAction::RaiseSelection => {
-                self.apply_change(Self::raise_selected_shapes, cx);
+            GaussAction::RaiseSelection => {
+                if self.raise_selected_shapes() {
+                    cx.notify();
+                }
             }
-            SelectionAction::LowerSelection => {
-                self.apply_change(Self::lower_selected_shapes, cx);
+            GaussAction::LowerSelection => {
+                if self.lower_selected_shapes() {
+                    cx.notify();
+                }
             }
-            SelectionAction::ToggleSegmentKind => {
-                self.apply_change(Self::toggle_selected_segments_kind, cx);
+            GaussAction::ToggleSegmentKind => {
+                if self.toggle_selected_segments_kind() {
+                    cx.notify();
+                }
             }
-        }
-    }
-
-    /// Calls `f(self)` and invokes [`gpui::Context::notify`] when `f` returns
-    /// `true`.
-    fn apply_change(&mut self, f: fn(&mut Self) -> bool, cx: &mut gpui::Context<Self>) {
-        if f(self) {
-            cx.notify();
+            // Tool actions
+            GaussAction::ActivatePenTool | GaussAction::ActivateSelectTool => {
+                self.execute_tool_action(action, cx);
+            }
+            // History actions
+            GaussAction::Undo
+            | GaussAction::Redo
+            | GaussAction::SelectionUndo
+            | GaussAction::SelectionRedo => self.execute_history_action(action, cx),
         }
     }
 
@@ -155,23 +79,36 @@ impl Phase0Shell {
         }
     }
 
-    fn execute_tool_action(&mut self, action: ToolAction, cx: &mut gpui::Context<Self>) {
+    fn execute_tool_action(&mut self, action: GaussAction, cx: &mut gpui::Context<Self>) {
         let error_before = self.last_history_error.clone();
         let did_change = match action {
-            ToolAction::ActivatePenTool => self.activate_draw_tool(None),
-            ToolAction::ActivateSelectTool => self.activate_select_tool(),
+            GaussAction::ActivatePenTool => self.activate_draw_tool(None),
+            GaussAction::ActivateSelectTool => self.activate_select_tool(),
+            _ => {
+                debug_assert!(
+                    false,
+                    "execute_tool_action called with non-tool action: {action:?}"
+                );
+                false
+            }
         };
         if did_change || self.last_history_error != error_before {
             cx.notify();
         }
     }
 
-    fn execute_history_action(&mut self, action: HistoryAction, cx: &mut gpui::Context<Self>) {
+    fn execute_history_action(&mut self, action: GaussAction, cx: &mut gpui::Context<Self>) {
         match action {
-            HistoryAction::Undo => self.undo_document(),
-            HistoryAction::Redo => self.redo_document(),
-            HistoryAction::SelectionUndo => self.undo_selection(),
-            HistoryAction::SelectionRedo => self.redo_selection(),
+            GaussAction::Undo => self.undo_document(),
+            GaussAction::Redo => self.redo_document(),
+            GaussAction::SelectionUndo => self.undo_selection(),
+            GaussAction::SelectionRedo => self.redo_selection(),
+            _ => {
+                debug_assert!(
+                    false,
+                    "execute_history_action called with non-history action: {action:?}"
+                );
+            }
         }
         cx.notify();
     }
@@ -209,7 +146,7 @@ impl Phase0Shell {
         window: &mut Window,
         cx: &mut gpui::Context<Self>,
     ) -> Result<A11yRequestedAction, A11yActionRequestError> {
-        let routed = super::A11yService::route_action_request(request)?;
+        let routed = self.a11y_service.route_action_request(request)?;
         match routed {
             A11yRequestedAction::Model(action) => self.execute_model_action(action, cx),
             A11yRequestedAction::Window(action) => self.execute_window_action(action, window, cx),
@@ -253,35 +190,71 @@ impl Phase0Shell {
     }
 
     pub(super) fn bind_model_actions(el: gpui::Div, cx: &mut gpui::Context<Self>) -> gpui::Div {
-        bind_gpui_model_actions!(
-            el,
-            cx,
-            [
-                // Selection actions
-                (GpuiSelectAll, GaussAction::SelectAll),
-                (GpuiDeselectAll, GaussAction::DeselectAll),
-                // Edit actions
-                (GpuiDeleteSelection, GaussAction::DeleteSelection),
-                (
-                    GpuiInsertAnchorOnSegment,
-                    GaussAction::InsertAnchorOnSegment
-                ),
-                (
-                    GpuiDeleteSelectedAnchors,
-                    GaussAction::DeleteSelectedAnchors
-                ),
-                (GpuiRaiseSelection, GaussAction::RaiseSelection),
-                (GpuiLowerSelection, GaussAction::LowerSelection),
-                (GpuiToggleSegmentKind, GaussAction::ToggleSegmentKind),
-                // Tool actions
-                (GpuiActivatePenTool, GaussAction::ActivatePenTool),
-                (GpuiActivateSelectTool, GaussAction::ActivateSelectTool),
-                // History actions
-                (GpuiUndo, GaussAction::Undo),
-                (GpuiRedo, GaussAction::Redo),
-                (GpuiSelectionUndo, GaussAction::SelectionUndo),
-                (GpuiSelectionRedo, GaussAction::SelectionRedo),
-            ]
+        el.on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiSelectAll, _, action_cx| {
+                shell.execute_model_action(GaussAction::SelectAll, action_cx);
+            }),
+        )
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiDeselectAll, _, action_cx| {
+                shell.execute_model_action(GaussAction::DeselectAll, action_cx);
+            }),
+        )
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiDeleteSelection, _, action_cx| {
+                shell.execute_model_action(GaussAction::DeleteSelection, action_cx);
+            }),
+        )
+        .on_action(cx.listener(
+            |shell: &mut Self, _: &GpuiInsertAnchorOnSegment, _, action_cx| {
+                shell.execute_model_action(GaussAction::InsertAnchorOnSegment, action_cx);
+            },
+        ))
+        .on_action(cx.listener(
+            |shell: &mut Self, _: &GpuiDeleteSelectedAnchors, _, action_cx| {
+                shell.execute_model_action(GaussAction::DeleteSelectedAnchors, action_cx);
+            },
+        ))
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiRaiseSelection, _, action_cx| {
+                shell.execute_model_action(GaussAction::RaiseSelection, action_cx);
+            }),
+        )
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiLowerSelection, _, action_cx| {
+                shell.execute_model_action(GaussAction::LowerSelection, action_cx);
+            }),
+        )
+        .on_action(cx.listener(
+            |shell: &mut Self, _: &GpuiToggleSegmentKind, _, action_cx| {
+                shell.execute_model_action(GaussAction::ToggleSegmentKind, action_cx);
+            },
+        ))
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiActivatePenTool, _, action_cx| {
+                shell.execute_model_action(GaussAction::ActivatePenTool, action_cx);
+            }),
+        )
+        .on_action(cx.listener(
+            |shell: &mut Self, _: &GpuiActivateSelectTool, _, action_cx| {
+                shell.execute_model_action(GaussAction::ActivateSelectTool, action_cx);
+            },
+        ))
+        .on_action(cx.listener(|shell: &mut Self, _: &GpuiUndo, _, action_cx| {
+            shell.execute_model_action(GaussAction::Undo, action_cx);
+        }))
+        .on_action(cx.listener(|shell: &mut Self, _: &GpuiRedo, _, action_cx| {
+            shell.execute_model_action(GaussAction::Redo, action_cx);
+        }))
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiSelectionUndo, _, action_cx| {
+                shell.execute_model_action(GaussAction::SelectionUndo, action_cx);
+            }),
+        )
+        .on_action(
+            cx.listener(|shell: &mut Self, _: &GpuiSelectionRedo, _, action_cx| {
+                shell.execute_model_action(GaussAction::SelectionRedo, action_cx);
+            }),
         )
     }
 }

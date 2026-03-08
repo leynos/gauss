@@ -328,7 +328,7 @@ fn publish_same_snapshot_again(world: &mut A11yWorld) {
 }
 
 fn route_request(world: &mut A11yWorld, request: &ActionRequest) {
-    match A11yService::route_action_request(request) {
+    match world.service.route_action_request(request) {
         Ok(action) => {
             world.last_routed_action = Some(action);
             world.last_route_error = None;

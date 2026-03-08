@@ -1,4 +1,4 @@
-# Map AccessKit action requests to Gauss Actions (0.6.3)
+# Map AccessKit accessibility toolkit action requests to Gauss Actions (0.6.3)
 
 This Execution Plan (ExecPlan) is a living document. The sections
 `Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
@@ -27,11 +27,13 @@ Success is observable when:
   Gauss `Action` values or existing shell/window actions instead of bypassing
   the command path.
 - The same state transitions happen whether a user triggers an operation from a
-  GPUI keybinding, a GPUI control, or an accessibility action request.
+  GPUI (GPU-accelerated UI) keybinding, a GPUI control, or an accessibility
+  action request.
 - Unsupported or stale accessibility requests fail safely without mutating
   state or panicking.
-- Unit tests (`rstest`), behaviour tests (`rstest-bdd` v0.5.0), and GPUI tests
-  cover happy paths, unhappy paths, and parity edge cases.
+- Unit tests (`rstest`), behaviour-driven development (BDD) tests
+  (`rstest-bdd` v0.5.0), and GPUI tests cover happy paths, unhappy paths, and
+  parity edge cases.
 - `docs/gauss-architecture-design.md` records the final action-routing
   decision, `docs/users-guide.md` stops describing accessibility action
   invocation as unimplemented, and `docs/roadmap.md` marks `0.6.3` done only
@@ -180,8 +182,8 @@ Success is observable when:
   instead of inventing new harnesses.
 - The shared workspace build directory can be locked by unrelated or abandoned
   `cargo test` processes in other worktrees. For this implementation, the first
-  focused verification run blocked on that lock until I cleared a stale test
-  process from an earlier local attempt.
+  focused verification run blocked on that lock until a stale test process from
+  an earlier local attempt was cleared.
 - Repository lint policy also enforces a 400-line module cap via Whitaker.
   Completing `0.6.3` required moving action-routing and shell-dispatch logic
   into dedicated submodules rather than leaving the new code in already-large
@@ -414,7 +416,7 @@ Acceptance for Stage C:
 
 ### Stage D: Extend behaviour-driven coverage
 
-Add BDD scenarios to:
+Add behaviour-driven development (BDD) scenarios to:
 
 - `tests/features/a11y_service.feature`
 - `tests/a11y_service_bdd.rs`

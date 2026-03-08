@@ -48,6 +48,14 @@ fn snapshot_with_state(
     }
 }
 
+fn routed_service() -> A11yService {
+    let mut service = A11yService::new();
+    service
+        .sync_from_shell_like(snapshot(&[], &[]))
+        .expect("baseline accessibility snapshot should sync");
+    service
+}
+
 #[rstest]
 fn titlebar_node_uses_stable_role_label_and_children_order() {
     let (nodes, _) = build_node_map(&snapshot(&[], &[])).expect("node map build should succeed");
@@ -274,6 +282,7 @@ fn chrome_click_requests_route_to_existing_window_actions(
     #[case] node_id: u64,
     #[case] expected: A11yRequestedAction,
 ) {
+    let service = routed_service();
     let request = ActionRequest {
         action: Action::Click,
         target_tree: TreeId::ROOT,
@@ -281,13 +290,16 @@ fn chrome_click_requests_route_to_existing_window_actions(
         data: None,
     };
 
-    let routed = A11yService::route_action_request(&request).expect("chrome click should route");
+    let routed = service
+        .route_action_request(&request)
+        .expect("chrome click should route");
 
     assert_eq!(routed, expected);
 }
 
 #[rstest]
 fn unsupported_action_request_is_rejected_without_routing() {
+    let service = routed_service();
     let request = ActionRequest {
         action: Action::Focus,
         target_tree: TreeId::ROOT,
@@ -295,7 +307,8 @@ fn unsupported_action_request_is_rejected_without_routing() {
         data: None,
     };
 
-    let error = A11yService::route_action_request(&request)
+    let error = service
+        .route_action_request(&request)
         .expect_err("focus on close button should be unsupported");
 
     assert_eq!(
@@ -308,7 +321,31 @@ fn unsupported_action_request_is_rejected_without_routing() {
 }
 
 #[rstest]
+fn unsupported_node_request_is_rejected_without_routing() {
+    let service = routed_service();
+    let request = ActionRequest {
+        action: Action::Click,
+        target_tree: TreeId::ROOT,
+        target_node: NodeId(0xbeef),
+        data: None,
+    };
+
+    let error = service
+        .route_action_request(&request)
+        .expect_err("unknown accessibility node should be unsupported");
+
+    assert_eq!(
+        error,
+        A11yActionRequestError::UnsupportedAction {
+            target_node: 0xbeef,
+            action: Action::Click,
+        }
+    );
+}
+
+#[rstest]
 fn unsupported_tree_is_rejected() {
+    let service = routed_service();
     let unsupported_tree = TreeId(Uuid::from_u128(7));
     let request = ActionRequest {
         action: Action::Click,
@@ -317,7 +354,8 @@ fn unsupported_tree_is_rejected() {
         data: None,
     };
 
-    let error = A11yService::route_action_request(&request)
+    let error = service
+        .route_action_request(&request)
         .expect_err("non-root tree should be unsupported");
 
     assert_eq!(
