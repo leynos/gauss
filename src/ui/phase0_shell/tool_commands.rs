@@ -150,14 +150,18 @@ impl Phase0Shell {
         }
 
         if mode != ToolMode::Manipulate && self.select_tool_state != SelectToolState::Idle {
-            restore_select_drag_preview(&mut self.state.document, &self.select_tool_state);
+            let did_restore =
+                restore_select_drag_preview(&mut self.state.document, &self.select_tool_state);
+            if did_restore {
+                self.invalidate_hover_cache();
+            }
             self.select_tool_state = SelectToolState::Idle;
             did_change = true;
         }
 
         if mode != ToolMode::Manipulate && self.hover_hit != SelectPointerHit::None {
             self.hover_hit = SelectPointerHit::None;
-            self.hover_cache = None;
+            self.invalidate_hover_cache();
             did_change = true;
         }
 
