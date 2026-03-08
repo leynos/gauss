@@ -162,20 +162,18 @@ impl<'a> HitTestIndex<'a> {
     /// Return the topmost hit target at the cursor, if any.
     #[must_use]
     pub fn topmost_target(&self, cursor_world: Vec2, tolerance_world: f32) -> Option<HitTarget> {
-        let tolerance = normalize_tolerance(tolerance_world)?;
-
-        self.topmost_handle(cursor_world, tolerance)
+        self.topmost_handle(cursor_world, tolerance_world)
             .map(HitTarget::Handle)
             .or_else(|| {
-                self.topmost_anchor(cursor_world, tolerance)
+                self.topmost_anchor(cursor_world, tolerance_world)
                     .map(HitTarget::Anchor)
             })
             .or_else(|| {
-                self.topmost_segment(cursor_world, tolerance)
+                self.topmost_segment(cursor_world, tolerance_world)
                     .map(HitTarget::Segment)
             })
             .or_else(|| {
-                self.topmost_shape(cursor_world, tolerance)
+                self.topmost_shape(cursor_world, tolerance_world)
                     .map(HitTarget::Shape)
             })
     }
