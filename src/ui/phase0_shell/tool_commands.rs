@@ -121,6 +121,8 @@ impl Phase0Shell {
 
     fn apply_document_tool_command(&mut self, command: Command) -> Result<bool, UserError> {
         self.apply_command(command)?;
+        self.document_generation = self.document_generation.wrapping_add(1);
+        self.hover_cache = None;
         Ok(true)
     }
 
@@ -140,6 +142,7 @@ impl Phase0Shell {
 
         if mode != ToolMode::Manipulate && self.hover_hit != SelectPointerHit::None {
             self.hover_hit = SelectPointerHit::None;
+            self.hover_cache = None;
             did_change = true;
         }
 

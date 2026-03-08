@@ -44,6 +44,21 @@ pub use self::a11y_service::{
 };
 use self::file_dialogs::OpenPromptMode;
 
+struct HoverCache {
+    cursor_world: Vec2,
+    tolerance_world: f32,
+    generation: u64,
+    result: SelectPointerHit,
+}
+
+impl HoverCache {
+    fn matches(&self, cursor_world: Vec2, tolerance_world: f32, generation: u64) -> bool {
+        self.cursor_world == cursor_world
+            && self.tolerance_world.to_bits() == tolerance_world.to_bits()
+            && self.generation == generation
+    }
+}
+
 /// Trigger an “Open…” workflow for loading a document from disk.
 #[derive(Clone, Debug, Default, PartialEq, gpui::Action)]
 #[action(no_json)]
@@ -175,6 +190,8 @@ pub struct Phase0Shell {
     // Interaction state
     select_tool_state: SelectToolState,
     hover_hit: SelectPointerHit,
+    document_generation: u64,
+    hover_cache: Option<HoverCache>,
     last_canvas_click_screen: Option<Vec2>,
 
     // File I/O state
@@ -215,6 +232,8 @@ impl Phase0Shell {
             selection_history: History::new(),
             select_tool_state: SelectToolState::Idle,
             hover_hit: SelectPointerHit::None,
+            document_generation: 0,
+            hover_cache: None,
             last_canvas_click_screen: None,
             last_saved_path: None,
             last_save_error: None,

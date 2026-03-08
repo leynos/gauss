@@ -15,7 +15,7 @@ use crate::model::{
     SelectPointerUpInput, SelectTool, SelectToolState, Tool, ToolInputEvent, Vec2,
 };
 
-use super::{Phase0Shell, draw::ToolMode};
+use super::{HoverCache, Phase0Shell, draw::ToolMode};
 
 /// Default hit-test tolerance in screen pixels.
 const HIT_TOLERANCE_PX: f32 = 4.0;
@@ -99,9 +99,29 @@ impl Phase0Shell {
 
         let cursor_world = cursor_world(&self.state.viewport, position);
         let tolerance_world = HIT_TOLERANCE_PX / self.state.viewport.zoom();
+        if let Some(ref cache) = self.hover_cache
+            && cache.matches(cursor_world, tolerance_world, self.document_generation)
+        {
+            let next = cache.result;
+            return if next == self.hover_hit {
+                false
+            } else {
+                self.hover_hit = next;
+                true
+            };
+        }
+
         let next_hover_hit = self
             .hit_test_index()
             .hover_hit(cursor_world, tolerance_world);
+
+        self.hover_cache = Some(HoverCache {
+            cursor_world,
+            tolerance_world,
+            generation: self.document_generation,
+            result: next_hover_hit,
+        });
+
         if next_hover_hit == self.hover_hit {
             return false;
         }
