@@ -328,6 +328,10 @@ fn publish_same_snapshot_again(world: &mut A11yWorld) {
 }
 
 fn route_request(world: &mut A11yWorld, request: &ActionRequest) {
+    if world.service.update_records().is_empty() {
+        world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
+        capture_last_emitted_nodes(world);
+    }
     match world.service.route_action_request(request) {
         Ok(action) => {
             world.last_routed_action = Some(action);

@@ -64,8 +64,9 @@ implemented and tested:
   opacity.
 - **Window chrome**: Minimize, maximize, fullscreen, close; keyboard
   shortcuts; resize handles that respect maximised state.
-- **Accessibility framework**: Stable node IDs defined; AccessKit tree,
-  incremental updates, and chrome action routing are wired.
+- **Accessibility framework**: Phase 0 chrome wiring complete: stable node IDs,
+  AccessKit tree projection, incremental updates, and chrome action routing are
+  wired; Phase 1 accessibility work remains open beyond section `1.9`.
 
 **Not yet implemented**: Shape tools, transform handles, layers panel, advanced
 styling, gradients, text, effects, symbols, scripting integration.

@@ -248,7 +248,9 @@ Gate evidence:
 - `make lint` passed, including Whitaker's module-size and style checks.
 - `make test` passed with the full workspace target set.
 
-If executed successfully, this milestone will leave the repository with:
+Status: COMPLETE
+
+This milestone left the repository with:
 
 - a documented and tested route from supported AccessKit action requests into
   existing Gauss action handlers;
@@ -256,9 +258,6 @@ If executed successfully, this milestone will leave the repository with:
 - parity coverage showing keyboard and accessibility requests exercise the same
   behaviour;
 - synchronized roadmap, architecture, and users-guide status.
-
-Retrospective placeholder: update this section after implementation and gate
-replay complete.
 
 ## Context and orientation
 

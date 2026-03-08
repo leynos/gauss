@@ -1318,8 +1318,11 @@ Phase 0 shell:
 - Window chrome semantics now expose explicit AccessKit roles and labels:
   titlebar nodes use `Role::TitleBar`, while chrome control nodes use
   `Role::Button` with label, description, and keyboard shortcut metadata.
-- Accessibility action routing remains deferred to roadmap item `0.6.3`; `0.6.1`
-  intentionally establishes the service boundary and update pipeline first.
+- Phase 0 now routes supported AccessKit chrome button requests through the
+  existing `Phase0Shell` window-action handlers, keeping keyboard, UI, and
+  accessibility activation on the same execution path.
+- Unsupported or stale AccessKit node/action pairs fail closed with typed
+  routing errors instead of mutating shell state or silently no-oping.
 
 #### 11.1.1 Initial accessibility tree publication sequence
 
@@ -1618,11 +1621,11 @@ broad feature work accelerates:
 Status update: roadmap items `0.5.1` through `0.5.4` implemented the tool
 framework baseline: Tool trait boundary, PenTool extraction, SelectTool
 extraction, and shared deterministic hit testing for selection/hover. Roadmap
-items `0.6.1` and `0.6.2` are now implemented in the Phase 0 shell. Remaining
-accessibility milestone is `0.6.3` (AccessKit action request mapping).
+items `0.6.1`, `0.6.2`, and `0.6.3` are now implemented in the Phase 0 shell,
+including AccessKit chrome action routing through `Phase0Shell` with typed
+fail-closed handling for unsupported node/action pairs.
 
 ______________________________________________________________________
-
 ### Appendix A: Terminology
 
 - **Action**: an intent (e.g., “Delete Selection”)

@@ -19,6 +19,20 @@ use super::{
     ToggleMaximize, window_controls,
 };
 
+macro_rules! bind_gpui_model_actions {
+    ($el:expr, $cx:expr, [ $( ($gpui_action:ty, $gauss_action:expr) ),* $(,)? ]) => {{
+        let el = $el;
+        $(
+        let el = el.on_action(
+            $cx.listener(|shell: &mut Self, _: &$gpui_action, _, action_cx| {
+                shell.execute_model_action($gauss_action, action_cx);
+            }),
+        );
+        )*
+        el
+    }};
+}
+
 impl Phase0Shell {
     pub(super) fn execute_model_action(
         &mut self,
@@ -190,71 +204,31 @@ impl Phase0Shell {
     }
 
     pub(super) fn bind_model_actions(el: gpui::Div, cx: &mut gpui::Context<Self>) -> gpui::Div {
-        el.on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiSelectAll, _, action_cx| {
-                shell.execute_model_action(GaussAction::SelectAll, action_cx);
-            }),
-        )
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiDeselectAll, _, action_cx| {
-                shell.execute_model_action(GaussAction::DeselectAll, action_cx);
-            }),
-        )
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiDeleteSelection, _, action_cx| {
-                shell.execute_model_action(GaussAction::DeleteSelection, action_cx);
-            }),
-        )
-        .on_action(cx.listener(
-            |shell: &mut Self, _: &GpuiInsertAnchorOnSegment, _, action_cx| {
-                shell.execute_model_action(GaussAction::InsertAnchorOnSegment, action_cx);
-            },
-        ))
-        .on_action(cx.listener(
-            |shell: &mut Self, _: &GpuiDeleteSelectedAnchors, _, action_cx| {
-                shell.execute_model_action(GaussAction::DeleteSelectedAnchors, action_cx);
-            },
-        ))
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiRaiseSelection, _, action_cx| {
-                shell.execute_model_action(GaussAction::RaiseSelection, action_cx);
-            }),
-        )
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiLowerSelection, _, action_cx| {
-                shell.execute_model_action(GaussAction::LowerSelection, action_cx);
-            }),
-        )
-        .on_action(cx.listener(
-            |shell: &mut Self, _: &GpuiToggleSegmentKind, _, action_cx| {
-                shell.execute_model_action(GaussAction::ToggleSegmentKind, action_cx);
-            },
-        ))
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiActivatePenTool, _, action_cx| {
-                shell.execute_model_action(GaussAction::ActivatePenTool, action_cx);
-            }),
-        )
-        .on_action(cx.listener(
-            |shell: &mut Self, _: &GpuiActivateSelectTool, _, action_cx| {
-                shell.execute_model_action(GaussAction::ActivateSelectTool, action_cx);
-            },
-        ))
-        .on_action(cx.listener(|shell: &mut Self, _: &GpuiUndo, _, action_cx| {
-            shell.execute_model_action(GaussAction::Undo, action_cx);
-        }))
-        .on_action(cx.listener(|shell: &mut Self, _: &GpuiRedo, _, action_cx| {
-            shell.execute_model_action(GaussAction::Redo, action_cx);
-        }))
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiSelectionUndo, _, action_cx| {
-                shell.execute_model_action(GaussAction::SelectionUndo, action_cx);
-            }),
-        )
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiSelectionRedo, _, action_cx| {
-                shell.execute_model_action(GaussAction::SelectionRedo, action_cx);
-            }),
+        bind_gpui_model_actions!(
+            el,
+            cx,
+            [
+                (GpuiSelectAll, GaussAction::SelectAll),
+                (GpuiDeselectAll, GaussAction::DeselectAll),
+                (GpuiDeleteSelection, GaussAction::DeleteSelection),
+                (
+                    GpuiInsertAnchorOnSegment,
+                    GaussAction::InsertAnchorOnSegment
+                ),
+                (
+                    GpuiDeleteSelectedAnchors,
+                    GaussAction::DeleteSelectedAnchors
+                ),
+                (GpuiRaiseSelection, GaussAction::RaiseSelection),
+                (GpuiLowerSelection, GaussAction::LowerSelection),
+                (GpuiToggleSegmentKind, GaussAction::ToggleSegmentKind),
+                (GpuiActivatePenTool, GaussAction::ActivatePenTool),
+                (GpuiActivateSelectTool, GaussAction::ActivateSelectTool),
+                (GpuiUndo, GaussAction::Undo),
+                (GpuiRedo, GaussAction::Redo),
+                (GpuiSelectionUndo, GaussAction::SelectionUndo),
+                (GpuiSelectionRedo, GaussAction::SelectionRedo),
+            ]
         )
     }
 }
