@@ -99,6 +99,11 @@ struct IndexedShape<'a> {
 }
 
 /// Queryable hit-test index built from a document snapshot.
+///
+/// `HitTestIndex` is intentionally a lightweight borrowed view over
+/// [`Document`]. Rebuilding it for high-frequency pointer queries is
+/// allocation-free, which avoids introducing a self-referential cache inside
+/// `Phase0Shell` before a real spatial index exists.
 #[derive(Clone, Debug)]
 pub struct HitTestIndex<'a> {
     backend: HitTestBackend,
