@@ -9,8 +9,6 @@ pub const TEST_ID_VERSION: u64 = 0xffff_fffe;
 ///
 /// The low 32 bits of the seed are used to avoid collisions when values exceed
 /// `u32::MAX`.
-///
-///
 #[must_use]
 pub fn shape_id_from_seed(seed: u128) -> ShapeId {
     let masked = seed & u128::from(u32::MAX);

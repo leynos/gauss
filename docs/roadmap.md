@@ -167,7 +167,7 @@ phases depend upon. See architecture document §20.
   - [x] Handle selection, drag, and transform states.
 - [x] 0.5.4. Create shared hit-test service.
   - [x] Deterministic hit testing for selection and hover.
-  - [x] Prepare for R-tree/BVH optimisation. See architecture §6.2.
+  - [x] Prepare for R-tree/BVH optimization. See architecture §6.2.
 
 ### 0.6. A11yService skeleton
 

@@ -256,6 +256,12 @@ fn normalize_tolerance(tolerance_world: f32) -> Option<f32> {
         .then_some(tolerance_world.max(0.0))
 }
 
+/// Resolve the first handle hit found in `indexed.shape.path.anchors`.
+///
+/// This checks `anchor.handle_in` before `anchor.handle_out`, so
+/// `HandleHitKind::In` wins deterministically over `HandleHitKind::Out` via
+/// `build_handle_hit` even when the outgoing handle is closer. That ordering is
+/// the expected user-visible behaviour when both handles fall within tolerance.
 fn topmost_handle_in_shape(
     indexed: &IndexedShape<'_>,
     cursor_world: Vec2,

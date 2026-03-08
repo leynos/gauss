@@ -83,6 +83,10 @@ fn point_segment_distance_squared(p: Vec2, a: Vec2, b: Vec2) -> f32 {
 }
 
 fn cubic_distance_squared(p: Vec2, cubic: CubicSegment) -> f32 {
+    // `cubic_distance_squared` uses `STEPS = 16` as a practical balance
+    // between hit-test accuracy and pointer-move performance. Increase
+    // `STEPS` here for higher-fidelity sampling, or decrease it for faster
+    // but less precise cubic hit testing.
     const STEPS: u8 = 16;
     let mut best = f32::INFINITY;
     let mut previous = cubic.start;

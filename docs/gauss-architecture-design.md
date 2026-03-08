@@ -677,7 +677,7 @@ Implementation status (roadmap 0.5.1 to 0.5.3):
 - `SelectToolState` currently ships `Idle` and `Dragging` runtime paths, with
   `Marquee` and `Transforming` reserved as explicit no-op placeholders until
   later milestones activate those interactions.
-- `0.5.4` completed shared hit testing via `HitTestIndex`; future optimisation
+- `0.5.4` completed shared hit testing via `HitTestIndex`; future optimization
   work is now implementation strategy replacement (`LinearScan` -> spatial
   index), not adapter/API extraction.
 

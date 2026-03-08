@@ -17,6 +17,9 @@ use crate::model::{
 
 use super::{Phase0Shell, draw::ToolMode};
 
+/// Default hit-test tolerance in screen pixels.
+const HIT_TOLERANCE_PX: f32 = 4.0;
+
 impl Phase0Shell {
     pub(super) fn handle_canvas_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
         if self.state.tool_mode != ToolMode::Manipulate {
@@ -28,7 +31,7 @@ impl Phase0Shell {
         }
 
         let cursor_world = cursor_world(&self.state.viewport, event.position);
-        let tolerance_world = 4.0 / self.state.viewport.zoom();
+        let tolerance_world = HIT_TOLERANCE_PX / self.state.viewport.zoom();
         let hit = self
             .hit_test_index()
             .pointer_hit(cursor_world, tolerance_world);
@@ -95,7 +98,7 @@ impl Phase0Shell {
         }
 
         let cursor_world = cursor_world(&self.state.viewport, position);
-        let tolerance_world = 4.0 / self.state.viewport.zoom();
+        let tolerance_world = HIT_TOLERANCE_PX / self.state.viewport.zoom();
         let next_hover_hit = self
             .hit_test_index()
             .hover_hit(cursor_world, tolerance_world);
