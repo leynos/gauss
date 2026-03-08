@@ -7,8 +7,9 @@ pub const TEST_ID_VERSION: u64 = 0xffff_fffe;
 
 /// Create a deterministic `ShapeId` from a seed value.
 ///
-/// The low 32 bits of the seed are used to avoid collisions when values exceed
-/// `u32::MAX`.
+/// Only the low 32 bits of `seed` are preserved so the derived index fits the
+/// AccessKit node-ID index field. Seeds that differ only in upper bits above
+/// bit 31 map to the same `ShapeId` by design.
 #[must_use]
 pub fn shape_id_from_seed(seed: u128) -> ShapeId {
     let masked = seed & u128::from(u32::MAX);
