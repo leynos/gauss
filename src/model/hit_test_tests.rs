@@ -1,17 +1,24 @@
 //! Unit tests for shared hit-testing.
 
 use super::hit_test::{HitTestBackend, HitTestIndex};
-use super::{
-    Anchor, Document, Paint, PaintStyle, PathGeom, SegmentKind, SelItem, SelectPointerHit,
-    Selection, Shape, ShapeId, Vec2,
+use super::{Document, SelItem, SelectHandleHitKind, SelectPointerHit, Selection, ShapeId, Vec2};
+use crate::test_helpers::{
+    cubic_shape, handle_in_only_shape, square_shape, square_shape_with_out_handle,
 };
 use rstest::rstest;
 
 #[derive(Debug)]
 enum ExpectedHit {
-    Handle { anchor_index: usize },
-    Anchor { anchor_index: usize },
-    Segment { seg_index: usize },
+    Handle {
+        anchor_index: usize,
+        kind: SelectHandleHitKind,
+    },
+    Anchor {
+        anchor_index: usize,
+    },
+    Segment {
+        seg_index: usize,
+    },
     Shape,
     None,
 }
@@ -20,45 +27,32 @@ fn shape_id(raw: u64) -> ShapeId {
     ShapeId::from_accesskit_node_id(raw)
 }
 
-const fn sample_style() -> PaintStyle {
-    PaintStyle {
-        stroke: Paint::Solid(super::Rgba::new(16, 32, 64, 255)),
-        stroke_width: 2.0,
-        fill: Paint::None,
-    }
-}
+fn is_expected_handle_hit(
+    hit: &SelectPointerHit,
+    shape_id: ShapeId,
+    anchor_index: usize,
+    kind: SelectHandleHitKind,
+) -> bool {
+    let SelectPointerHit::Handle(handle_hit) = hit else {
+        return false;
+    };
 
-fn square_shape(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
-    let mut first_anchor = Anchor::new(min);
-    first_anchor.handle_out = Some(min.add(Vec2::new(2.0, 0.0)));
-
-    Shape {
-        id,
-        z: 0,
-        style: sample_style(),
-        path: PathGeom {
-            anchors: vec![
-                first_anchor,
-                Anchor::new(Vec2::new(max.x, min.y)),
-                Anchor::new(max),
-                Anchor::new(Vec2::new(min.x, max.y)),
-            ],
-            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
-            closed: true,
-            closing_segment: SegmentKind::Line,
-        },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
+    (
+        handle_hit.shape_id,
+        handle_hit.anchor_index,
+        handle_hit.kind,
+    ) == (shape_id, anchor_index, kind)
 }
 
 fn single_square_document() -> (Document, ShapeId) {
     let mut document = Document::new();
     let id = shape_id(7);
-    let _inserted =
-        document.append_shape(square_shape(id, Vec2::new(0.0, 0.0), Vec2::new(10.0, 10.0)));
+    let _inserted = document.append_shape(square_shape_with_out_handle(
+        id,
+        Vec2::new(0.0, 0.0),
+        Vec2::new(10.0, 10.0),
+        Vec2::new(2.0, 0.0),
+    ));
 
     (document, id)
 }
@@ -75,7 +69,10 @@ fn reports_linear_scan_backend_by_default() {
     "handle beats anchor/segment/shape",
     Vec2::new(2.0, 0.0),
     0.5,
-    ExpectedHit::Handle { anchor_index: 0 }
+    ExpectedHit::Handle {
+        anchor_index: 0,
+        kind: SelectHandleHitKind::Out,
+    }
 )]
 #[case(
     "anchor beats segment/shape",
@@ -112,10 +109,9 @@ fn priority_resolution(
     let hit = index.pointer_hit(point, tolerance);
 
     match expected {
-        ExpectedHit::Handle { anchor_index } => assert!(
-            matches!(&hit, SelectPointerHit::Handle(handle_hit)
-                if handle_hit.shape_id == shape_id && handle_hit.anchor_index == anchor_index),
-            "{label}: expected Handle(anchor_index={anchor_index}); got {hit:?}"
+        ExpectedHit::Handle { anchor_index, kind } => assert!(
+            is_expected_handle_hit(&hit, shape_id, anchor_index, kind),
+            "{label}: expected Handle(anchor_index={anchor_index}, kind={kind:?}); got {hit:?}"
         ),
         ExpectedHit::Anchor { anchor_index } => assert!(
             matches!(&hit, SelectPointerHit::Anchor(anchor_hit)
@@ -133,6 +129,51 @@ fn priority_resolution(
         ),
         ExpectedHit::None => assert_eq!(hit, SelectPointerHit::None, "{label}"),
     }
+}
+
+#[rstest]
+fn handle_in_pointer_hit_returns_handle_in() {
+    let mut document = Document::new();
+    let shape_id = shape_id(21);
+    let anchor_pos = Vec2::new(100.0, 100.0);
+    let _inserted = document.append_shape(handle_in_only_shape(
+        shape_id,
+        anchor_pos,
+        Vec2::new(-4.0, 0.0),
+    ));
+
+    let index = HitTestIndex::from_document(&document);
+    let hit = index.pointer_hit(anchor_pos.add(Vec2::new(-4.0, 0.0)), 0.5);
+
+    assert!(is_expected_handle_hit(
+        &hit,
+        shape_id,
+        0,
+        SelectHandleHitKind::In,
+    ));
+}
+
+#[rstest]
+fn cubic_segment_pointer_hit_returns_segment() {
+    let mut document = Document::new();
+    let shape_id = shape_id(22);
+    let start = Vec2::new(50.0, 100.0);
+    let end = Vec2::new(150.0, 100.0);
+    let _inserted = document.append_shape(cubic_shape(
+        shape_id,
+        start,
+        end,
+        Vec2::new(33.333_332, -20.0),
+    ));
+
+    let index = HitTestIndex::from_document(&document);
+    let hit = index.pointer_hit(Vec2::new(100.0, 100.0), 2.0);
+
+    assert!(matches!(
+        hit,
+        SelectPointerHit::Segment(segment_hit)
+            if segment_hit.shape_id == shape_id && segment_hit.seg_index == 0
+    ));
 }
 
 #[rstest]

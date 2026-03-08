@@ -102,22 +102,16 @@ struct IndexedShape<'a> {
 #[derive(Clone, Debug)]
 pub struct HitTestIndex<'a> {
     backend: HitTestBackend,
-    shapes: Vec<IndexedShape<'a>>,
+    doc: &'a Document,
 }
 
 impl<'a> HitTestIndex<'a> {
     /// Build a hit-test index from the document's draw-order snapshot.
     #[must_use]
-    pub fn from_document(doc: &'a Document) -> Self {
-        let shapes = doc
-            .iter_in_draw_order()
-            .enumerate()
-            .map(|(shape_index, shape)| IndexedShape { shape_index, shape })
-            .collect();
-
+    pub const fn from_document(doc: &'a Document) -> Self {
         Self {
             backend: HitTestBackend::LinearScan,
-            shapes,
+            doc,
         }
     }
 
@@ -131,7 +125,11 @@ impl<'a> HitTestIndex<'a> {
     where
         F: Fn(&IndexedShape<'_>) -> Option<T>,
     {
-        self.shapes.iter().rev().find_map(f)
+        (0..self.doc.len()).rev().find_map(|shape_index| {
+            let shape = self.doc.shape_at(shape_index)?;
+            let indexed = IndexedShape { shape_index, shape };
+            f(&indexed)
+        })
     }
 
     fn topmost_in_shapes<T, F>(&self, tolerance_world: f32, f: F) -> Option<T>

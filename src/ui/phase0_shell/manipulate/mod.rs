@@ -85,7 +85,7 @@ impl Phase0Shell {
         )
     }
 
-    fn hit_test_index(&self) -> HitTestIndex<'_> {
+    const fn hit_test_index(&self) -> HitTestIndex<'_> {
         HitTestIndex::from_document(&self.state.document)
     }
 

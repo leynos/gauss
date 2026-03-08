@@ -1,9 +1,7 @@
 //! Behaviour tests for the shared hit-test service.
 
-use gauss::model::{
-    Anchor, Document, HitTestIndex, Paint, PaintStyle, PathGeom, SegmentKind, SelectPointerHit,
-    Shape, ShapeId, Vec2,
-};
+use gauss::model::{Document, HitTestIndex, SelectPointerHit, ShapeId, Vec2};
+use gauss::test_helpers::square_shape_with_out_handle;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};
@@ -27,41 +25,7 @@ fn shape_id(raw: u64) -> ShapeId {
     ShapeId::from_accesskit_node_id(raw)
 }
 
-const fn sample_style() -> PaintStyle {
-    PaintStyle {
-        stroke: Paint::Solid(gauss::model::Rgba::new(16, 32, 64, 255)),
-        stroke_width: 2.0,
-        fill: Paint::None,
-    }
-}
-
-fn square_shape_with_out_handle(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
-    let mut first_anchor = Anchor::new(min);
-    first_anchor.handle_out = Some(min.add(Vec2::new(2.0, 0.0)));
-
-    Shape {
-        id,
-        z: 0,
-        style: sample_style(),
-        path: PathGeom {
-            anchors: vec![
-                first_anchor,
-                Anchor::new(Vec2::new(max.x, min.y)),
-                Anchor::new(max),
-                Anchor::new(Vec2::new(min.x, max.y)),
-            ],
-            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
-            closed: true,
-            closing_segment: SegmentKind::Line,
-        },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
-}
-
-fn index(world: &HitTestWorld) -> HitTestIndex<'_> {
+const fn index(world: &HitTestWorld) -> HitTestIndex<'_> {
     HitTestIndex::from_document(&world.document)
 }
 
@@ -85,6 +49,7 @@ fn given_document_with_one_square(world: &mut HitTestWorld) {
         id,
         Vec2::new(0.0, 0.0),
         Vec2::new(10.0, 10.0),
+        Vec2::new(2.0, 0.0),
     ));
     world.shape_ids.push(id);
 }
@@ -101,11 +66,13 @@ fn given_document_with_overlapping_shapes(world: &mut HitTestWorld) {
         bottom,
         Vec2::new(0.0, 0.0),
         Vec2::new(10.0, 10.0),
+        Vec2::new(2.0, 0.0),
     ));
     let _top = world.document.append_shape(square_shape_with_out_handle(
         top,
         Vec2::new(0.0, 0.0),
         Vec2::new(10.0, 10.0),
+        Vec2::new(2.0, 0.0),
     ));
 
     world.shape_ids.push(bottom);

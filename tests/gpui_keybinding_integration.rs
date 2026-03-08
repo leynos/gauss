@@ -15,34 +15,12 @@
 mod common;
 
 use common::{ensure_initial_draw, init_test_app, read_selection_items};
-use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
+use gauss::model::{Document, SelItem, ShapeId, Vec2};
+use gauss::test_helpers::square_shape;
 use gauss::ui::{
     GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeselectAll, GpuiSelectAll, Phase0Shell,
 };
 use gpui::TestAppContext;
-
-fn demo_square(id: ShapeId) -> Shape {
-    Shape {
-        id,
-        z: 0,
-        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
-        path: gauss::model::PathGeom {
-            anchors: vec![
-                gauss::model::Anchor::new(Vec2::new(10.0, 10.0)),
-                gauss::model::Anchor::new(Vec2::new(60.0, 10.0)),
-                gauss::model::Anchor::new(Vec2::new(60.0, 60.0)),
-                gauss::model::Anchor::new(Vec2::new(10.0, 60.0)),
-            ],
-            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
-            closed: true,
-            closing_segment: SegmentKind::Line,
-        },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
-}
 
 // === ui::init registration tests ===
 
@@ -71,8 +49,16 @@ fn gpui_select_all_action_selects_all_shapes(cx: &mut TestAppContext) {
     let mut doc = Document::new();
     let first_shape = doc.allocate_shape_id();
     let second_shape = doc.allocate_shape_id();
-    doc.append_shape(demo_square(first_shape));
-    doc.append_shape(demo_square(second_shape));
+    doc.append_shape(square_shape(
+        first_shape,
+        Vec2::new(10.0, 10.0),
+        Vec2::new(60.0, 60.0),
+    ));
+    doc.append_shape(square_shape(
+        second_shape,
+        Vec2::new(10.0, 10.0),
+        Vec2::new(60.0, 60.0),
+    ));
 
     // Add two shapes to the document.
     visual_cx.update(|_window, app| {
@@ -115,7 +101,11 @@ fn gpui_deselect_all_action_clears_selection(cx: &mut TestAppContext) {
 
     let mut doc = Document::new();
     let shape_id = doc.allocate_shape_id();
-    doc.append_shape(demo_square(shape_id));
+    doc.append_shape(square_shape(
+        shape_id,
+        Vec2::new(10.0, 10.0),
+        Vec2::new(60.0, 60.0),
+    ));
 
     // Add a shape and select it.
     visual_cx.update(|_window, app| {

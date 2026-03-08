@@ -4,9 +4,10 @@
 //! is routed through the Tool trait boundary.
 
 use gauss::model::{
-    Anchor, EdgeMode, Paint, PaintStyle, PathGeom, PenTool, PenToolActiveShape, PenToolClickInput,
-    SegmentKind, Shape, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolTransition, Vec2,
+    Anchor, EdgeMode, PathGeom, PenTool, PenToolActiveShape, PenToolClickInput, SegmentKind, Shape,
+    ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolTransition, Vec2,
 };
+use gauss::test_helpers::sample_style;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};
@@ -35,14 +36,6 @@ fn world() -> PenToolWorld {
 
 fn shape_id(raw: u64) -> ShapeId {
     ShapeId::from_accesskit_node_id(raw)
-}
-
-const fn sample_style() -> PaintStyle {
-    PaintStyle {
-        stroke: Paint::Solid(gauss::model::Rgba::new(16, 32, 64, 255)),
-        stroke_width: 2.0,
-        fill: Paint::None,
-    }
 }
 
 fn open_shape(id: ShapeId, anchors: Vec<Vec2>, edge_mode: EdgeMode) -> Shape {

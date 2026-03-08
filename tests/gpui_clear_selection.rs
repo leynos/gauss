@@ -10,32 +10,10 @@
 mod common;
 
 use common::{click_left_and_wait, ensure_initial_draw, init_test_app, read_selection_items};
-use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
+use gauss::model::{Document, SelItem, ShapeId, Vec2};
+use gauss::test_helpers::square_shape;
 use gauss::ui::Phase0Shell;
 use gpui::{TestAppContext, point, px};
-
-fn demo_square(min: Vec2, max: Vec2) -> Shape {
-    Shape {
-        id: ShapeId::default(),
-        z: 0,
-        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
-        path: gauss::model::PathGeom {
-            anchors: vec![
-                gauss::model::Anchor::new(min),
-                gauss::model::Anchor::new(Vec2::new(max.x, min.y)),
-                gauss::model::Anchor::new(max),
-                gauss::model::Anchor::new(Vec2::new(min.x, max.y)),
-            ],
-            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
-            closed: true,
-            closing_segment: SegmentKind::Line,
-        },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
-}
 
 #[gpui::test]
 fn clicking_empty_space_clears_selection(cx: &mut TestAppContext) {
@@ -51,7 +29,8 @@ fn clicking_empty_space_clears_selection(cx: &mut TestAppContext) {
     let height = f32::from(bounds.size.height);
 
     let mut doc = Document::new();
-    let shape_id = doc.append_shape(demo_square(
+    let shape_id = doc.append_shape(square_shape(
+        ShapeId::default(),
         origin.add(Vec2::new(10.0, 10.0)),
         origin.add(Vec2::new(60.0, 60.0)),
     ));

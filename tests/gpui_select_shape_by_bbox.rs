@@ -7,33 +7,11 @@
 mod common;
 
 use common::{canvas_bounds, ensure_initial_draw, init_test_app};
-use gauss::model::{Document, PaintStyle, Rgba, SegmentKind, SelItem, Shape, ShapeId, Vec2};
+use gauss::model::{Document, SelItem, ShapeId, Vec2};
+use gauss::test_helpers::square_shape;
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 use test_support::math;
-
-fn demo_square(min: Vec2, max: Vec2) -> Shape {
-    Shape {
-        id: ShapeId::default(),
-        z: 0,
-        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
-        path: gauss::model::PathGeom {
-            anchors: vec![
-                gauss::model::Anchor::new(min),
-                gauss::model::Anchor::new(Vec2::new(max.x, min.y)),
-                gauss::model::Anchor::new(max),
-                gauss::model::Anchor::new(Vec2::new(min.x, max.y)),
-            ],
-            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
-            closed: true,
-            closing_segment: SegmentKind::Line,
-        },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
-}
 
 #[gpui::test]
 fn clicking_inside_shape_bbox_selects_shape(cx: &mut TestAppContext) {
@@ -53,7 +31,7 @@ fn clicking_inside_shape_bbox_selects_shape(cx: &mut TestAppContext) {
     let centre = Vec2::new(math::midpoint(min.x, max.x), math::midpoint(min.y, max.y));
 
     let mut doc = Document::new();
-    let shape_id = doc.append_shape(demo_square(min, max));
+    let shape_id = doc.append_shape(square_shape(ShapeId::default(), min, max));
 
     visual_cx.update(|_window, app| {
         view.update(app, |shell, view_cx| {
