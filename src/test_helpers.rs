@@ -33,14 +33,27 @@ pub const fn sample_style() -> PaintStyle {
     }
 }
 
-/// Create a closed square with line segments.
+/// Create a test shape with shared default metadata and style values.
 #[must_use]
-pub fn square_shape(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
+pub const fn test_shape(id: ShapeId, path: PathGeom) -> Shape {
     Shape {
         id,
         z: 0,
         style: sample_style(),
-        path: PathGeom {
+        path,
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
+    }
+}
+
+/// Create a closed square with line segments.
+#[must_use]
+pub fn square_shape(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
+    test_shape(
+        id,
+        PathGeom {
             anchors: vec![
                 Anchor::new(min),
                 Anchor::new(Vec2::new(max.x, min.y)),
@@ -51,11 +64,7 @@ pub fn square_shape(id: ShapeId, min: Vec2, max: Vec2) -> Shape {
             closed: true,
             closing_segment: SegmentKind::Line,
         },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
+    )
 }
 
 /// Create a square whose first anchor exposes an outgoing handle.
@@ -68,7 +77,7 @@ pub fn square_shape_with_out_handle(
 ) -> Shape {
     let mut shape = square_shape(id, min, max);
     if let Some(first_anchor) = shape.path.anchors.first_mut() {
-        first_anchor.handle_out = Some(min.add(handle_offset));
+        first_anchor.handle_out = Some(first_anchor.pos.add(handle_offset));
     }
     shape
 }
@@ -79,21 +88,15 @@ pub fn handle_in_only_shape(id: ShapeId, pos: Vec2, handle_offset: Vec2) -> Shap
     let mut anchor = Anchor::new(pos);
     anchor.handle_in = Some(pos.add(handle_offset));
 
-    Shape {
+    test_shape(
         id,
-        z: 0,
-        style: sample_style(),
-        path: PathGeom {
+        PathGeom {
             anchors: vec![anchor],
             segments: vec![],
             closed: false,
             closing_segment: SegmentKind::Line,
         },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
+    )
 }
 
 /// Create an open two-anchor cubic segment with symmetric handles.
@@ -104,19 +107,13 @@ pub fn cubic_shape(id: ShapeId, start: Vec2, end: Vec2, ctrl_offset: Vec2) -> Sh
     first_anchor.handle_out = Some(start.add(ctrl_offset));
     second_anchor.handle_in = Some(end.sub(ctrl_offset));
 
-    Shape {
+    test_shape(
         id,
-        z: 0,
-        style: sample_style(),
-        path: PathGeom {
+        PathGeom {
             anchors: vec![first_anchor, second_anchor],
             segments: vec![SegmentKind::Cubic],
             closed: false,
             closing_segment: SegmentKind::Line,
         },
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
+    )
 }
