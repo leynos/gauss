@@ -53,8 +53,8 @@ Success is observable when:
   system:
   - model actions are defined in `src/model/action.rs`;
   - GPUI action bindings live in `src/ui/action_bridge/mod.rs`;
-  - shell handlers live in `src/ui/phase0_shell/view.rs` and
-    `src/ui/phase0_shell/input.rs`.
+  - shell action bindings and handlers live in
+    `src/ui/phase0_shell/action_dispatch.rs`.
 - Keep stable node metadata centralized in
   `src/ui/phase0_shell/accessibility.rs`.
 - Keep accessibility projection logic and accessibility request routing inside
@@ -169,8 +169,10 @@ Success is observable when:
   - model actions are declared in `src/model/action.rs`;
   - default keybindings live in `src/model/keybinding/mod.rs`;
   - GPUI bridge structs and registrations live in `src/ui/action_bridge/mod.rs`;
-  - `Phase0Shell::bind_model_actions()` in `src/ui/phase0_shell/view.rs`
-    performs the actual state changes.
+  - `Phase0Shell::bind_model_actions()`,
+    `Phase0Shell::bind_window_actions()`, and
+    `Phase0Shell::execute_model_action()` in
+    `src/ui/phase0_shell/action_dispatch.rs` perform the actual dispatch.
 - Window chrome actions (`MinimizeWindow`, `ToggleMaximize`,
   `ToggleFullscreen`, `CloseWindow`, `ShowWindowMenu`) are separate GPUI action
   handlers, not model `Action` enum variants. The implementation needs one
@@ -187,7 +189,7 @@ Success is observable when:
 - Repository lint policy also enforces a 400-line module cap via Whitaker.
   Completing `0.6.3` required moving action-routing and shell-dispatch logic
   into dedicated submodules rather than leaving the new code in already-large
-  `a11y_service/mod.rs` and `view.rs`.
+  `a11y_service/mod.rs` and `action_dispatch.rs`.
 
 ## Decision Log
 
@@ -288,12 +290,9 @@ Current code surfaces:
   - current keyboard bindings, which define the parity baseline.
 - `src/ui/action_bridge/mod.rs`
   - GPUI action bridge types and keybinding registration.
-- `src/ui/phase0_shell/view.rs`
-  - `bind_window_actions()` and `bind_model_actions()` are the current action
-    execution points.
-- `src/ui/phase0_shell/input.rs`
-  - keyboard-only special handling for Escape and Tab, which must remain
-    coherent with accessibility routing expectations.
+- `src/ui/phase0_shell/action_dispatch.rs`
+  - `bind_window_actions()`, `bind_model_actions()`, and
+    `execute_model_action()` are the current shell action-dispatch points.
 
 Current validation surfaces:
 
@@ -321,8 +320,9 @@ Use a small team during implementation, coordinated around context pack
    reading `src/ui/phase0_shell/accessibility.rs`,
    `src/ui/phase0_shell/a11y_service/mod.rs`, and related tests.
 2. Explorer B: verify the action execution path from model action definitions
-   through `src/ui/action_bridge/mod.rs` into `src/ui/phase0_shell/view.rs`,
-   and identify which behaviours still use shell-only window actions.
+   through `src/ui/action_bridge/mod.rs` into
+   `src/ui/phase0_shell/action_dispatch.rs`, and identify which behaviours
+   still use shell-only window actions.
 3. Worker: implement the request-routing seam plus test/doc updates, then run
    the required gates.
 
@@ -386,7 +386,7 @@ and GPUI controls.
 Expected code touchpoints:
 
 - `src/ui/phase0_shell/a11y_service/mod.rs`
-- `src/ui/phase0_shell/view.rs`
+- `src/ui/phase0_shell/action_dispatch.rs`
 - possibly `src/ui/phase0_shell/mod.rs` or `test_helpers.rs`
 - only extend `src/model/action.rs` if a genuinely missing action is required
   and approved.

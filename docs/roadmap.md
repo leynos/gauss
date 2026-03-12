@@ -179,8 +179,12 @@ phases depend upon. See architecture document §20.
   - [x] Connect pre-defined IDs in `accessibility.rs` to AccessKit.
   - [x] Expose roles and labels for window chrome.
 - [x] 0.6.3. Map AccessKit action requests to Gauss Actions.
-  - [x] Accessibility actions trigger the same command pipeline as UI.
-  - [x] Ensure keyboard-only operation parity.
+  - [x] Scope for "Map AccessKit action requests to Gauss Actions" is limited
+    to Phase0Shell chrome routing: supported AccessKit chrome requests route
+    through existing Phase0Shell window handlers.
+  - [x] Verify keyboard-only parity for those Phase 0 chrome routes.
+  - [x] Broader AccessKit-to-model-action mapping stays out of scope for `0.6.3`
+    and moves to a later task.
 
 ### 0.7. i18n scaffolding
 

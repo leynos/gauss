@@ -1,53 +1,18 @@
 //! Behaviour tests for the Phase 0 accessibility tree service.
 
-use std::collections::{BTreeMap, BTreeSet};
+#[path = "a11y_service_bdd/support.rs"]
+mod a11y_service_bdd_support;
 
-use accesskit::{Action, ActionRequest, Node, NodeId, Role, TreeId};
-use gauss::model::{EdgeMode, ShapeId, ToolMode};
+use accesskit::{Action, Role};
+use gauss::model::ShapeId;
 use gauss::ui::phase0_shell::{
-    A11yActionRequestError, A11yRequestedAction, A11yService, A11yServiceError, A11yShapeSnapshot,
-    A11ySnapshot, A11yUpdateKind, A11yWindowAction, accessibility,
+    A11yService, A11yServiceError, A11yShapeSnapshot, A11yUpdateKind, accessibility,
 };
-use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
-use test_support::{TestSupportError, TestSupportResult};
 
-struct A11yWorld {
-    service: A11yService,
-    snapshot: A11ySnapshot,
-    last_emitted_nodes: BTreeMap<NodeId, Node>,
-    appended_shape_id: Option<u64>,
-    last_publish_result: Option<Result<bool, A11yServiceError>>,
-    last_routed_action: Option<A11yRequestedAction>,
-    last_route_error: Option<A11yActionRequestError>,
-    update_count_before: usize,
-}
+use a11y_service_bdd_support::*;
 
-#[fixture]
-fn world() -> A11yWorld {
-    A11yWorld {
-        service: A11yService::new(),
-        snapshot: empty_snapshot(),
-        last_emitted_nodes: BTreeMap::new(),
-        appended_shape_id: None,
-        last_publish_result: None,
-        last_routed_action: None,
-        last_route_error: None,
-        update_count_before: 0,
-    }
-}
-
-const fn empty_snapshot() -> A11ySnapshot {
-    A11ySnapshot {
-        tool_mode: ToolMode::Draw,
-        edge_mode: EdgeMode::Line,
-        can_undo: false,
-        can_redo: false,
-        is_maximized: false,
-        selected_shape_ids: BTreeSet::new(),
-        shapes: Vec::new(),
-    }
-}
+const APPENDED_SHAPE_ID: u64 = 0x2_0000_0001;
 
 fn shape_snapshot(raw_id: u64) -> A11yShapeSnapshot {
     A11yShapeSnapshot {
@@ -74,20 +39,23 @@ fn chrome_node<'a>(
     world: &'a A11yWorld,
     node_id: u64,
     context: &str,
-) -> TestSupportResult<&'a Node> {
+) -> TestSupportResult<&'a accesskit::Node> {
     accessibility::chrome_node_from_map(&world.last_emitted_nodes, node_id)
         .ok_or_else(|| TestSupportError::missing("emitted accessibility node", context))
 }
 
-#[given("a fresh accessibility service snapshot")]
-fn fresh_accessibility_service_snapshot(world: &mut A11yWorld) {
+#[given("an initialized accessibility service baseline")]
+fn initialized_accessibility_service_baseline(world: &mut A11yWorld) -> TestSupportResult<()> {
     world.service = A11yService::new();
     world.snapshot = empty_snapshot();
-    world.last_emitted_nodes.clear();
-    world.last_publish_result = None;
-    world.appended_shape_id = None;
-    world.last_routed_action = None;
-    world.last_route_error = None;
+    world
+        .service
+        .sync_snapshot(world.snapshot.clone())
+        .map_err(|error| {
+            TestSupportError::expectation(format!("baseline initialization failed: {error}"))
+        })?;
+    world.service.clear_update_records();
+    Ok(())
 }
 
 #[given("the snapshot marks the window as maximized")]
@@ -253,29 +221,12 @@ fn chrome_nodes_expose_expected_roles_labels_and_shortcut_hints(
     Ok(())
 }
 
-#[given("an initialized accessibility service baseline")]
-fn initialized_accessibility_service_baseline(world: &mut A11yWorld) -> TestSupportResult<()> {
-    world.service = A11yService::new();
-    world.snapshot = empty_snapshot();
-    world
-        .service
-        .sync_snapshot(world.snapshot.clone())
-        .map_err(|error| {
-            TestSupportError::expectation(format!("baseline initialization failed: {error}"))
-        })?;
-    world.service.clear_update_records();
-    world.update_count_before = world.service.update_records().len();
-    Ok(())
-}
-
 #[when("I append one shape and publish an incremental snapshot")]
 fn append_shape_and_publish_incremental_snapshot(world: &mut A11yWorld) {
-    let appended_shape_id = 0x2_0000_0001;
     world
         .snapshot
         .shapes
-        .push(shape_snapshot(appended_shape_id));
-    world.appended_shape_id = Some(appended_shape_id);
+        .push(shape_snapshot(APPENDED_SHAPE_ID));
     world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
     capture_last_emitted_nodes(world);
 }
@@ -283,11 +234,10 @@ fn append_shape_and_publish_incremental_snapshot(world: &mut A11yWorld) {
 #[then("one incremental accessibility update is queued")]
 fn one_incremental_accessibility_update_is_queued(world: &A11yWorld) -> TestSupportResult<()> {
     let records = world.service.update_records();
-    if records.len() != world.update_count_before + 1 {
+    if records.len() != 1 {
         return Err(TestSupportError::expectation(format!(
-            "expected one incremental update, got {} total records (before {})",
-            records.len(),
-            world.update_count_before
+            "expected one incremental update, got {} total records",
+            records.len()
         )));
     }
     let last = records
@@ -304,17 +254,14 @@ fn one_incremental_accessibility_update_is_queued(world: &A11yWorld) -> TestSupp
 
 #[then("the inserted node list contains the appended shape node ID")]
 fn inserted_node_list_contains_appended_shape_id(world: &A11yWorld) -> TestSupportResult<()> {
-    let expected_shape_id = world
-        .appended_shape_id
-        .ok_or_else(|| TestSupportError::missing("appended shape id", "insert assertion"))?;
     let last = world
         .service
         .update_records()
         .last()
         .ok_or_else(|| TestSupportError::missing("incremental update", "insert assertion"))?;
-    if !last.inserted_node_ids.contains(&expected_shape_id) {
+    if !last.inserted_node_ids.contains(&APPENDED_SHAPE_ID) {
         return Err(TestSupportError::expectation(format!(
-            "expected inserted node IDs {:?} to contain {expected_shape_id:#x}",
+            "expected inserted node IDs {:?} to contain {APPENDED_SHAPE_ID:#x}",
             last.inserted_node_ids
         )));
     }
@@ -327,108 +274,12 @@ fn publish_same_snapshot_again(world: &mut A11yWorld) {
     capture_last_emitted_nodes(world);
 }
 
-fn route_request(world: &mut A11yWorld, request: &ActionRequest) {
-    if world.service.update_records().is_empty() {
-        world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
-        capture_last_emitted_nodes(world);
-    }
-    match world.service.route_action_request(request) {
-        Ok(action) => {
-            world.last_routed_action = Some(action);
-            world.last_route_error = None;
-        }
-        Err(error) => {
-            world.last_routed_action = None;
-            world.last_route_error = Some(error);
-        }
-    }
-}
-
-#[when("I route a click request for the close accessibility node")]
-fn route_click_request_for_close_node(world: &mut A11yWorld) {
-    route_request(
-        world,
-        &ActionRequest {
-            action: Action::Click,
-            target_tree: TreeId::ROOT,
-            target_node: NodeId(accessibility::node_ids::CLOSE_BUTTON),
-            data: None,
-        },
-    );
-}
-
-#[then("the request routes to the close window action")]
-fn request_routes_to_close_window_action(world: &A11yWorld) -> TestSupportResult<()> {
-    if world.last_routed_action != Some(A11yRequestedAction::Window(A11yWindowAction::CloseWindow))
-    {
-        return Err(TestSupportError::expectation(format!(
-            "expected routed action {:?}, got {:?}",
-            A11yRequestedAction::Window(A11yWindowAction::CloseWindow),
-            world.last_routed_action
-        )));
-    }
-    Ok(())
-}
-
-#[then("accessibility request routing succeeds")]
-fn accessibility_request_routing_succeeds(world: &A11yWorld) -> TestSupportResult<()> {
-    if let Some(error) = &world.last_route_error {
-        return Err(TestSupportError::expectation(format!(
-            "expected routing success, got error {error}"
-        )));
-    }
-    if world.last_routed_action.is_none() {
-        return Err(TestSupportError::missing(
-            "routed accessibility action",
-            "successful route assertion",
-        ));
-    }
-    Ok(())
-}
-
-#[when("I route a focus request for the close accessibility node")]
-fn route_focus_request_for_close_node(world: &mut A11yWorld) {
-    route_request(
-        world,
-        &ActionRequest {
-            action: Action::Focus,
-            target_tree: TreeId::ROOT,
-            target_node: NodeId(accessibility::node_ids::CLOSE_BUTTON),
-            data: None,
-        },
-    );
-}
-
-#[then("routing fails with an unsupported accessibility action error")]
-fn routing_fails_with_unsupported_accessibility_action_error(
-    world: &A11yWorld,
-) -> TestSupportResult<()> {
-    let Some(error) = &world.last_route_error else {
-        return Err(TestSupportError::missing(
-            "routing error",
-            "unsupported routing assertion",
-        ));
-    };
-    if *error
-        != (A11yActionRequestError::UnsupportedAction {
-            target_node: accessibility::node_ids::CLOSE_BUTTON,
-            action: Action::Focus,
-        })
-    {
-        return Err(TestSupportError::expectation(format!(
-            "expected unsupported-action error, got {error:?}"
-        )));
-    }
-    Ok(())
-}
-
 #[then("no new accessibility update is queued")]
 fn no_new_accessibility_update_is_queued(world: &A11yWorld) -> TestSupportResult<()> {
     let current_len = world.service.update_records().len();
-    if current_len != world.update_count_before {
+    if current_len != 0 {
         return Err(TestSupportError::expectation(format!(
-            "expected no new records, before {}, after {}",
-            world.update_count_before, current_len
+            "expected no new records, got {current_len}"
         )));
     }
     if let Some(Ok(queued)) = world.last_publish_result.as_ref()
@@ -510,21 +361,5 @@ fn unchanged_state_emits_no_accessibility_updates(world: A11yWorld) {
     name = "Duplicate node ID is reported and update is aborted"
 )]
 fn duplicate_node_id_is_reported_and_update_is_aborted(world: A11yWorld) {
-    let _ = world;
-}
-
-#[scenario(
-    path = "tests/features/a11y_service.feature",
-    name = "Close button click request routes to the existing close action"
-)]
-fn close_button_click_request_routes_to_the_existing_close_action(world: A11yWorld) {
-    let _ = world;
-}
-
-#[scenario(
-    path = "tests/features/a11y_service.feature",
-    name = "Unsupported close button action request is rejected"
-)]
-fn unsupported_close_button_action_request_is_rejected(world: A11yWorld) {
     let _ = world;
 }
