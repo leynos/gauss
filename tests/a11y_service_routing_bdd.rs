@@ -11,18 +11,6 @@ use rstest_bdd_macros::{scenario, then, when};
 
 use a11y_service_bdd_support::*;
 
-fn capture_last_emitted_nodes(world: &mut A11yWorld) {
-    let pending_updates = world.service.drain_pending_updates();
-    world.last_emitted_nodes.clear();
-    if let Some(update) = pending_updates.last() {
-        world.last_emitted_nodes = update
-            .nodes
-            .iter()
-            .map(|(node_id, node)| (*node_id, node.clone()))
-            .collect();
-    }
-}
-
 fn route_request(world: &mut A11yWorld, request: &ActionRequest) -> TestSupportResult<()> {
     if world.service.update_records().is_empty() {
         world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));

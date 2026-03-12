@@ -12,9 +12,9 @@ No `PLANS.md` exists in this repository.
 ## Purpose / big picture
 
 Roadmap item `0.6.3` in [docs/roadmap.md](../roadmap.md) requires Gauss to stop
-treating accessibility actions as metadata-only semantics and instead route
-AccessKit action requests through the same editor action pipeline used by
-keyboard shortcuts and UI controls.
+treating the AccessKit (Accessibility Toolkit) action requests as metadata-only
+semantics and instead route AccessKit action requests through the same editor
+action pipeline used by keyboard shortcuts and UI controls.
 
 After this milestone is implemented, assistive technology should be able to
 invoke supported chrome and editor actions without special-case behaviour, and

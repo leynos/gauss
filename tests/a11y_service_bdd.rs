@@ -23,18 +23,6 @@ fn shape_snapshot(raw_id: u64) -> A11yShapeSnapshot {
     }
 }
 
-fn capture_last_emitted_nodes(world: &mut A11yWorld) {
-    let pending_updates = world.service.drain_pending_updates();
-    world.last_emitted_nodes.clear();
-    if let Some(update) = pending_updates.last() {
-        world.last_emitted_nodes = update
-            .nodes
-            .iter()
-            .map(|(node_id, node)| (*node_id, node.clone()))
-            .collect();
-    }
-}
-
 fn chrome_node<'a>(
     world: &'a A11yWorld,
     node_id: u64,
@@ -301,7 +289,7 @@ fn no_new_accessibility_update_is_queued(world: &A11yWorld) -> TestSupportResult
 fn accessibility_snapshot_with_duplicate_shape_node_ids(world: &mut A11yWorld) {
     world.service = A11yService::new();
     world.snapshot = empty_snapshot();
-    let duplicate_raw_id = 0x2_0000_0001;
+    let duplicate_raw_id = APPENDED_SHAPE_ID;
     world.snapshot.shapes.push(shape_snapshot(duplicate_raw_id));
     world.snapshot.shapes.push(shape_snapshot(duplicate_raw_id));
 }

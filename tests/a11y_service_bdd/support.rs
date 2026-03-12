@@ -43,6 +43,18 @@ pub(crate) const fn empty_snapshot() -> A11ySnapshot {
     }
 }
 
+pub(crate) fn capture_last_emitted_nodes(world: &mut A11yWorld) {
+    let pending_updates = world.service.drain_pending_updates();
+    world.last_emitted_nodes.clear();
+    if let Some(update) = pending_updates.last() {
+        world.last_emitted_nodes = update
+            .nodes
+            .iter()
+            .map(|(node_id, node)| (*node_id, node.clone()))
+            .collect();
+    }
+}
+
 #[given("a fresh accessibility service snapshot")]
 pub(crate) fn fresh_accessibility_service_snapshot(world: &mut A11yWorld) {
     world.service = A11yService::new();
