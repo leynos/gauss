@@ -40,17 +40,21 @@ fn route_request(world: &mut A11yWorld, request: &ActionRequest) {
     }
 }
 
-#[when("I route a click request for the close accessibility node")]
-fn route_click_request_for_close_node(world: &mut A11yWorld) {
+fn route_action_for_close_node(world: &mut A11yWorld, action: Action) {
     route_request(
         world,
         &ActionRequest {
-            action: Action::Click,
+            action,
             target_tree: TreeId::ROOT,
             target_node: NodeId(accessibility::node_ids::CLOSE_BUTTON),
             data: None,
         },
     );
+}
+
+#[when("I route a click request for the close accessibility node")]
+fn route_click_request_for_close_node(world: &mut A11yWorld) {
+    route_action_for_close_node(world, Action::Click);
 }
 
 #[then("the request routes to the close window action")]
@@ -84,15 +88,7 @@ fn accessibility_request_routing_succeeds(world: &A11yWorld) -> TestSupportResul
 
 #[when("I route a focus request for the close accessibility node")]
 fn route_focus_request_for_close_node(world: &mut A11yWorld) {
-    route_request(
-        world,
-        &ActionRequest {
-            action: Action::Focus,
-            target_tree: TreeId::ROOT,
-            target_node: NodeId(accessibility::node_ids::CLOSE_BUTTON),
-            data: None,
-        },
-    );
+    route_action_for_close_node(world, Action::Focus);
 }
 
 #[then("routing fails with an unsupported accessibility action error")]
