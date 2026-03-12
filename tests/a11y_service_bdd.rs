@@ -282,14 +282,19 @@ fn no_new_accessibility_update_is_queued(world: &A11yWorld) -> TestSupportResult
             "expected no new records, got {current_len}"
         )));
     }
-    if let Some(Ok(queued)) = world.last_publish_result.as_ref()
-        && *queued
-    {
-        return Err(TestSupportError::expectation(
+    match world.last_publish_result.as_ref() {
+        Some(Ok(false)) => Ok(()),
+        Some(Ok(true)) => Err(TestSupportError::expectation(
             "expected sync_snapshot to return false for unchanged input",
-        ));
+        )),
+        Some(Err(error)) => Err(TestSupportError::expectation(format!(
+            "expected sync_snapshot to return false for unchanged input, got error {error}"
+        ))),
+        None => Err(TestSupportError::missing(
+            "publish result",
+            "unchanged-input assertion",
+        )),
     }
-    Ok(())
 }
 
 #[given("an accessibility snapshot with duplicate shape node IDs")]

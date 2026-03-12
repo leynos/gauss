@@ -23,9 +23,14 @@ fn capture_last_emitted_nodes(world: &mut A11yWorld) {
     }
 }
 
-fn route_request(world: &mut A11yWorld, request: &ActionRequest) {
+fn route_request(world: &mut A11yWorld, request: &ActionRequest) -> TestSupportResult<()> {
     if world.service.update_records().is_empty() {
         world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
+        if let Some(Err(error)) = world.last_publish_result.as_ref() {
+            return Err(TestSupportError::expectation(format!(
+                "routing bootstrap sync failed: {error}"
+            )));
+        }
         capture_last_emitted_nodes(world);
     }
     match world.service.route_action_request(request) {
@@ -38,9 +43,10 @@ fn route_request(world: &mut A11yWorld, request: &ActionRequest) {
             world.last_route_error = Some(error);
         }
     }
+    Ok(())
 }
 
-fn route_action_for_close_node(world: &mut A11yWorld, action: Action) {
+fn route_action_for_close_node(world: &mut A11yWorld, action: Action) -> TestSupportResult<()> {
     route_request(
         world,
         &ActionRequest {
@@ -49,12 +55,12 @@ fn route_action_for_close_node(world: &mut A11yWorld, action: Action) {
             target_node: NodeId(accessibility::node_ids::CLOSE_BUTTON),
             data: None,
         },
-    );
+    )
 }
 
 #[when("I route a click request for the close accessibility node")]
-fn route_click_request_for_close_node(world: &mut A11yWorld) {
-    route_action_for_close_node(world, Action::Click);
+fn route_click_request_for_close_node(world: &mut A11yWorld) -> TestSupportResult<()> {
+    route_action_for_close_node(world, Action::Click)
 }
 
 #[then("the request routes to the close window action")]
@@ -87,8 +93,8 @@ fn accessibility_request_routing_succeeds(world: &A11yWorld) -> TestSupportResul
 }
 
 #[when("I route a focus request for the close accessibility node")]
-fn route_focus_request_for_close_node(world: &mut A11yWorld) {
-    route_action_for_close_node(world, Action::Focus);
+fn route_focus_request_for_close_node(world: &mut A11yWorld) -> TestSupportResult<()> {
+    route_action_for_close_node(world, Action::Focus)
 }
 
 #[then("routing fails with an unsupported accessibility action error")]

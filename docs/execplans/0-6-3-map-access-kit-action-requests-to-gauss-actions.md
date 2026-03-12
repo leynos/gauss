@@ -270,15 +270,17 @@ Primary requirement anchors:
   `A11yService` action-routing contract.
 - `docs/gauss-architecture-design.md` lines 1583-1601 mark `0.6.3` as the
   remaining accessibility milestone in the architecture-foundation phase.
-- `docs/users-guide.md` accessibility status currently states that
-  assistive-technology action invocation is not yet mapped into the command
-  pipeline.
+- `docs/users-guide.md` accessibility status now states that
+  assistive-technology click requests for the shipped chrome controls are
+  mapped through the same shell/window action handlers used by keyboard
+  shortcuts and UI controls.
 
 Current code surfaces:
 
 - `src/ui/phase0_shell/a11y_service/mod.rs`
-  - current tree projection and incremental update bookkeeping;
-  - likely home for request-to-action translation entrypoint and typed errors.
+  - current tree projection and incremental update bookkeeping.
+- `src/ui/phase0_shell/a11y_service/action_routing.rs`
+  - current request-to-action translation entrypoint and typed routing errors.
 - `src/ui/phase0_shell/accessibility.rs`
   - stable node IDs and chrome semantics;
   - authoritative source for which node IDs represent actionable chrome
@@ -298,9 +300,11 @@ Current validation surfaces:
 
 - Unit:
   - `src/ui/phase0_shell/a11y_service/tests.rs`
+    - current `rstest` coverage for tree projection, incremental updates, and
+      routed request handling.
 - Behaviour:
   - `tests/a11y_service_bdd.rs`
-  - `tests/features/a11y_service.feature`
+  - `tests/a11y_service_routing_bdd.rs`
 - GPUI:
   - `tests/gpui_a11y_service.rs`
   - `tests/gpui_keybinding_integration.rs`
