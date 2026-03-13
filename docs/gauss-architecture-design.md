@@ -1626,6 +1626,7 @@ including AccessKit chrome action routing through `Phase0Shell` with typed
 fail-closed handling for unsupported node/action pairs.
 
 ______________________________________________________________________
+
 ### Appendix A: Terminology
 
 - **Action**: an intent (e.g., “Delete Selection”)
