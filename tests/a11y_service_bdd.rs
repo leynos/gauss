@@ -32,6 +32,17 @@ fn chrome_node<'a>(
         .ok_or_else(|| TestSupportError::missing("emitted accessibility node", context))
 }
 
+fn publish_snapshot(world: &mut A11yWorld, context: &str) -> TestSupportResult<()> {
+    world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
+    if let Some(Err(error)) = world.last_publish_result.as_ref() {
+        return Err(TestSupportError::expectation(format!(
+            "{context} failed: {error}"
+        )));
+    }
+    capture_last_emitted_nodes(world);
+    Ok(())
+}
+
 #[given("an initialized accessibility service baseline")]
 fn initialized_accessibility_service_baseline(world: &mut A11yWorld) -> TestSupportResult<()> {
     world.service = A11yService::new();
@@ -52,9 +63,8 @@ fn snapshot_marks_window_as_maximized(world: &mut A11yWorld) {
 }
 
 #[when("I publish the initial accessibility snapshot")]
-fn publish_initial_accessibility_snapshot(world: &mut A11yWorld) {
-    world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
-    capture_last_emitted_nodes(world);
+fn publish_initial_accessibility_snapshot(world: &mut A11yWorld) -> TestSupportResult<()> {
+    publish_snapshot(world, "initial accessibility snapshot publish")
 }
 
 #[then("one initial accessibility update is queued")]
@@ -210,13 +220,12 @@ fn chrome_nodes_expose_expected_roles_labels_and_shortcut_hints(
 }
 
 #[when("I append one shape and publish an incremental snapshot")]
-fn append_shape_and_publish_incremental_snapshot(world: &mut A11yWorld) {
+fn append_shape_and_publish_incremental_snapshot(world: &mut A11yWorld) -> TestSupportResult<()> {
     world
         .snapshot
         .shapes
         .push(shape_snapshot(APPENDED_SHAPE_ID));
-    world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
-    capture_last_emitted_nodes(world);
+    publish_snapshot(world, "incremental accessibility snapshot publish")
 }
 
 #[then("one incremental accessibility update is queued")]
@@ -257,9 +266,8 @@ fn inserted_node_list_contains_appended_shape_id(world: &A11yWorld) -> TestSuppo
 }
 
 #[when("I publish the same snapshot again")]
-fn publish_same_snapshot_again(world: &mut A11yWorld) {
-    world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
-    capture_last_emitted_nodes(world);
+fn publish_same_snapshot_again(world: &mut A11yWorld) -> TestSupportResult<()> {
+    publish_snapshot(world, "unchanged accessibility snapshot publish")
 }
 
 #[then("no new accessibility update is queued")]
