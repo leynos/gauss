@@ -5,9 +5,7 @@ mod a11y_service_bdd_support;
 
 use accesskit::{Action, Role};
 use gauss::model::ShapeId;
-use gauss::ui::phase0_shell::{
-    A11yServiceError, A11yShapeSnapshot, A11yUpdateKind, accessibility,
-};
+use gauss::ui::phase0_shell::{A11yServiceError, A11yShapeSnapshot, A11yUpdateKind, accessibility};
 use rstest_bdd_macros::{given, scenario, then, when};
 
 use a11y_service_bdd_support::*;
@@ -296,9 +294,14 @@ fn no_new_accessibility_update_is_queued(world: &A11yWorld) -> TestSupportResult
 #[given("an accessibility snapshot with duplicate shape node IDs")]
 fn accessibility_snapshot_with_duplicate_shape_node_ids(world: &mut A11yWorld) {
     fresh_accessibility_service_snapshot(world);
-    let duplicate_raw_id = APPENDED_SHAPE_ID;
-    world.snapshot.shapes.push(shape_snapshot(duplicate_raw_id));
-    world.snapshot.shapes.push(shape_snapshot(duplicate_raw_id));
+    world
+        .snapshot
+        .shapes
+        .push(shape_snapshot(APPENDED_SHAPE_ID));
+    world
+        .snapshot
+        .shapes
+        .push(shape_snapshot(APPENDED_SHAPE_ID));
 }
 
 #[when("I publish the duplicate-node accessibility snapshot")]
