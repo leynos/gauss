@@ -263,6 +263,20 @@ fn inserted_node_list_contains_appended_shape_id(world: &A11yWorld) -> TestSuppo
     Ok(())
 }
 
+fn assert_unchanged_snapshot_publish_result(
+    result: &Result<bool, A11yServiceError>,
+) -> TestSupportResult<()> {
+    match result {
+        Ok(false) => Ok(()),
+        Ok(true) => Err(TestSupportError::expectation(
+            "expected sync_snapshot to return false for unchanged input",
+        )),
+        Err(error) => Err(TestSupportError::expectation(format!(
+            "expected sync_snapshot to return false for unchanged input, got error {error}"
+        ))),
+    }
+}
+
 #[when("I publish the same snapshot again")]
 fn publish_same_snapshot_again(world: &mut A11yWorld) -> TestSupportResult<()> {
     publish_snapshot(world, "unchanged accessibility snapshot publish")
@@ -276,19 +290,11 @@ fn no_new_accessibility_update_is_queued(world: &A11yWorld) -> TestSupportResult
             "expected no new records, got {current_len}"
         )));
     }
-    match world.last_publish_result.as_ref() {
-        Some(Ok(false)) => Ok(()),
-        Some(Ok(true)) => Err(TestSupportError::expectation(
-            "expected sync_snapshot to return false for unchanged input",
-        )),
-        Some(Err(error)) => Err(TestSupportError::expectation(format!(
-            "expected sync_snapshot to return false for unchanged input, got error {error}"
-        ))),
-        None => Err(TestSupportError::missing(
-            "publish result",
-            "unchanged-input assertion",
-        )),
-    }
+    let result = world
+        .last_publish_result
+        .as_ref()
+        .ok_or_else(|| TestSupportError::missing("publish result", "unchanged-input assertion"))?;
+    assert_unchanged_snapshot_publish_result(result)
 }
 
 #[given("an accessibility snapshot with duplicate shape node IDs")]

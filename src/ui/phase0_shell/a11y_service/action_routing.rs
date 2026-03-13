@@ -3,7 +3,7 @@
 //! This module translates supported AccessKit action requests into the
 //! existing shell/model action paths used elsewhere in Phase 0.
 
-use accesskit::{ActionRequest, NodeId, TreeId};
+use accesskit::{ActionRequest, TreeId};
 use thiserror::Error;
 
 use crate::model::Action;
@@ -71,10 +71,7 @@ impl A11yService {
             });
         }
 
-        if !self
-            .previous_nodes
-            .contains_key(&NodeId(request.target_node.0))
-        {
+        if !self.previous_nodes.contains_key(&request.target_node) {
             return Err(A11yActionRequestError::UnsupportedAction {
                 target_node: request.target_node.0,
                 action: request.action,

@@ -378,7 +378,7 @@ This layer should return one of:
 Acceptance for Stage A:
 
 - supported node/action pairs are enumerated in code and tests;
-- stale or unsupported requests are explicit and side-effect free;
+- stale or unsupported requests are explicit and side-effect-free;
 - the translation layer does not mutate state directly.
 
 ### Stage B: Reuse the existing execution path
