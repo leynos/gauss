@@ -4,8 +4,8 @@
 //! chrome layout module so each module remains small and focused.
 
 use crate::model::{
-    Command, SelectToolState, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolModeFsm, UserError,
-    apply_select_drag_preview, restore_select_drag_preview,
+    Command, SelectPointerHit, SelectToolState, Tool, ToolCommand, ToolInputEvent, ToolMode,
+    ToolModeFsm, UserError, apply_select_drag_preview, restore_select_drag_preview,
 };
 
 use super::{Phase0Shell, draw::DrawEdgeMode};
@@ -108,20 +108,37 @@ impl Phase0Shell {
                 }
             }
             ToolCommand::SetSelectToolState(state) => self.set_select_tool_state_if_changed(state),
-            ToolCommand::PreviewSelectDrag { cursor_world } => apply_select_drag_preview(
-                &mut self.state.document,
-                &self.select_tool_state,
-                cursor_world,
-            ),
+            ToolCommand::PreviewSelectDrag { cursor_world } => {
+                let did_change = apply_select_drag_preview(
+                    &mut self.state.document,
+                    &self.select_tool_state,
+                    cursor_world,
+                );
+                if did_change {
+                    self.invalidate_hover_cache();
+                }
+                did_change
+            }
             ToolCommand::RestoreSelectDragPreview => {
-                restore_select_drag_preview(&mut self.state.document, &self.select_tool_state)
+                let did_change =
+                    restore_select_drag_preview(&mut self.state.document, &self.select_tool_state);
+                if did_change {
+                    self.invalidate_hover_cache();
+                }
+                did_change
             }
         })
     }
 
     fn apply_document_tool_command(&mut self, command: Command) -> Result<bool, UserError> {
         self.apply_command(command)?;
+        self.invalidate_hover_cache();
         Ok(true)
+    }
+
+    const fn invalidate_hover_cache(&mut self) {
+        self.document_generation = self.document_generation.wrapping_add(1);
+        self.hover_cache = None;
     }
 
     fn set_tool_mode_if_changed(&mut self, mode: ToolMode) -> bool {
@@ -133,8 +150,18 @@ impl Phase0Shell {
         }
 
         if mode != ToolMode::Manipulate && self.select_tool_state != SelectToolState::Idle {
-            restore_select_drag_preview(&mut self.state.document, &self.select_tool_state);
+            let did_restore =
+                restore_select_drag_preview(&mut self.state.document, &self.select_tool_state);
+            if did_restore {
+                self.invalidate_hover_cache();
+            }
             self.select_tool_state = SelectToolState::Idle;
+            did_change = true;
+        }
+
+        if mode != ToolMode::Manipulate && self.hover_hit != SelectPointerHit::None {
+            self.hover_hit = SelectPointerHit::None;
+            self.invalidate_hover_cache();
             did_change = true;
         }
 

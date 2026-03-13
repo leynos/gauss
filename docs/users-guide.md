@@ -117,6 +117,11 @@ Manipulate pointer interactions are also routed through the SelectTool state
 machine. In this phase, marquee and transform gestures are reserved and behave
 as no-op placeholders until later roadmap milestones activate them.
 
+Pointer target resolution in Manipulate mode is deterministic. When multiple
+targets overlap within hit tolerance, Gauss resolves in this order: handle,
+anchor, segment, then shape body (bounding-box fallback). The same ordering is
+used for click-selection hit resolution and internal hover-target resolution.
+
 Tab routing is context-dependent: in Draw mode it toggles edge mode through the
 tool state machine, while in Manipulate mode it routes to segment-kind toggling
 for the current selection.

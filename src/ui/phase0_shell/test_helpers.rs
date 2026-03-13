@@ -10,8 +10,8 @@ use accesskit::TreeUpdate;
 
 use crate::model::history::HistoryError;
 use crate::model::{
-    Command, Document, ResourceStore, SelectToolState, Selection, ShapeId, UserError, Vec2,
-    Viewport,
+    Command, Document, ResourceStore, SelectPointerHit, SelectToolState, Selection, ShapeId,
+    UserError, Vec2, Viewport,
 };
 
 use super::{A11yUpdateRecord, Phase0Shell, draw, file_dialogs::OpenPromptMode};
@@ -121,6 +121,7 @@ impl Phase0Shell {
     pub fn replace_document_for_tests(&mut self, document: Document) {
         self.state.document = document;
         self.select_tool_state = SelectToolState::Idle;
+        self.hover_hit = SelectPointerHit::None;
         self.state.active_path = None;
     }
 
@@ -132,6 +133,7 @@ impl Phase0Shell {
     pub fn replace_selection_for_tests(&mut self, selection: Selection) {
         self.state.selection = selection;
         self.select_tool_state = SelectToolState::Idle;
+        self.hover_hit = SelectPointerHit::None;
     }
 
     /// Return whether a drag gesture is currently active.
@@ -141,6 +143,12 @@ impl Phase0Shell {
     #[must_use]
     pub const fn is_dragging(&self) -> bool {
         matches!(self.select_tool_state, SelectToolState::Dragging(_))
+    }
+
+    /// Return the latest manipulate hover hit snapshot.
+    #[must_use]
+    pub const fn hover_hit_for_tests(&self) -> SelectPointerHit {
+        self.hover_hit
     }
 
     /// Return whether a quit request has been triggered from the UI.
