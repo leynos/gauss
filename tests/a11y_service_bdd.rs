@@ -6,7 +6,7 @@ mod a11y_service_bdd_support;
 use accesskit::{Action, Role};
 use gauss::model::ShapeId;
 use gauss::ui::phase0_shell::{
-    A11yService, A11yServiceError, A11yShapeSnapshot, A11yUpdateKind, accessibility,
+    A11yServiceError, A11yShapeSnapshot, A11yUpdateKind, accessibility,
 };
 use rstest_bdd_macros::{given, scenario, then, when};
 
@@ -45,14 +45,14 @@ fn publish_snapshot(world: &mut A11yWorld, context: &str) -> TestSupportResult<(
 
 #[given("an initialized accessibility service baseline")]
 fn initialized_accessibility_service_baseline(world: &mut A11yWorld) -> TestSupportResult<()> {
-    world.service = A11yService::new();
-    world.snapshot = empty_snapshot();
+    fresh_accessibility_service_snapshot(world);
     world
         .service
         .sync_snapshot(world.snapshot.clone())
         .map_err(|error| {
             TestSupportError::expectation(format!("baseline initialization failed: {error}"))
         })?;
+    let _ = world.service.drain_pending_updates();
     world.service.clear_update_records();
     Ok(())
 }
@@ -295,8 +295,7 @@ fn no_new_accessibility_update_is_queued(world: &A11yWorld) -> TestSupportResult
 
 #[given("an accessibility snapshot with duplicate shape node IDs")]
 fn accessibility_snapshot_with_duplicate_shape_node_ids(world: &mut A11yWorld) {
-    world.service = A11yService::new();
-    world.snapshot = empty_snapshot();
+    fresh_accessibility_service_snapshot(world);
     let duplicate_raw_id = APPENDED_SHAPE_ID;
     world.snapshot.shapes.push(shape_snapshot(duplicate_raw_id));
     world.snapshot.shapes.push(shape_snapshot(duplicate_raw_id));
