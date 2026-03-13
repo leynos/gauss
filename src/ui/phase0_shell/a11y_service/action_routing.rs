@@ -65,6 +65,8 @@ impl A11yService {
         &self,
         request: &ActionRequest,
     ) -> Result<A11yRequestedAction, A11yActionRequestError> {
+        use super::super::accessibility::node_ids;
+
         if request.target_tree != TreeId::ROOT {
             return Err(A11yActionRequestError::UnsupportedTree {
                 target_tree: request.target_tree,
@@ -79,20 +81,19 @@ impl A11yService {
         }
 
         let routed = match (request.target_node.0, request.action) {
-            (super::super::accessibility::node_ids::WINDOW_MENU, accesskit::Action::Click) => {
+            (node_ids::WINDOW_MENU, accesskit::Action::Click) => {
                 A11yRequestedAction::Window(A11yWindowAction::ShowWindowMenu)
             }
-            (super::super::accessibility::node_ids::MINIMIZE_BUTTON, accesskit::Action::Click) => {
+            (node_ids::MINIMIZE_BUTTON, accesskit::Action::Click) => {
                 A11yRequestedAction::Window(A11yWindowAction::Minimize)
             }
-            (super::super::accessibility::node_ids::MAXIMIZE_BUTTON, accesskit::Action::Click) => {
+            (node_ids::MAXIMIZE_BUTTON, accesskit::Action::Click) => {
                 A11yRequestedAction::Window(A11yWindowAction::ToggleMaximize)
             }
-            (
-                super::super::accessibility::node_ids::FULLSCREEN_BUTTON,
-                accesskit::Action::Click,
-            ) => A11yRequestedAction::Window(A11yWindowAction::ToggleFullscreen),
-            (super::super::accessibility::node_ids::CLOSE_BUTTON, accesskit::Action::Click) => {
+            (node_ids::FULLSCREEN_BUTTON, accesskit::Action::Click) => {
+                A11yRequestedAction::Window(A11yWindowAction::ToggleFullscreen)
+            }
+            (node_ids::CLOSE_BUTTON, accesskit::Action::Click) => {
                 A11yRequestedAction::Window(A11yWindowAction::CloseWindow)
             }
             _ => {
