@@ -15,44 +15,52 @@ Roadmap item `0.7.1` in [docs/roadmap.md](../roadmap.md) is the first
 localization milestone. The architecture in
 [docs/gauss-architecture-design.md](../gauss-architecture-design.md) §12 says
 Gauss must treat localizability as a first-class concern, but the current code
-still hard-codes English strings in model helpers such as
-`Action::name()`, `Command::name()`, `KeyContext::name()`,
-`ToolMode::label()`, `EdgeMode::label()`, and in Phase 0 shell UI and
-accessibility text.
+still hard-codes English strings in model helpers such as `Action::name()`,
+`Command::name()`, `KeyContext::name()`, `ToolMode::label()`,
+`EdgeMode::label()`, and in Phase 0 shell UI and accessibility text.
 
 This milestone should establish the module boundary and catalog shape that
-later milestones can build on without forcing a large rewrite. After this work
-lands, Gauss should have a GPUI-independent `i18n` module, a default English
-catalog, locale selection plus fallback behaviour, typed translation errors,
-and one narrow end-to-end integration slice that proves real UI and
+later milestones can build on without forcing a large rewrite. Because Gauss
+intends to ship multilingual support from the beginning, `0.7.1` must choose
+infrastructure that is suitable for translator-authored resources and for the
+initial locale set: `en-GB`, `de`, `fr`, `es`, `hi`, `zh-Hans`, `ar`, and `ja`.
+
+After this work lands, Gauss should have a GPUI-independent `i18n` module, a
+Fluent-backed message catalog, locale selection plus fallback behaviour, typed
+translation errors, direction metadata needed for future right-to-left (RTL)
+work, and one narrow end-to-end integration slice that proves real UI and
 accessibility code can render through the new service. Broad string extraction
-belongs to roadmap item `0.7.2`, and localized command names belong to
-`0.7.3`.
+still belongs to roadmap item `0.7.2`, and localized command names still belong
+to `0.7.3`, but the underlying localization infrastructure should be
+production-grade from the start.
 
 Success is observable when:
 
 - `src/i18n/` exists and exposes a small, testable public API for message
-  lookup, fallback, and formatting.
+  lookup, fallback, formatting, and locale metadata.
 - The implementation records a concrete Fluent-versus-keyed decision in
   [docs/gauss-architecture-design.md](../gauss-architecture-design.md) §12,
-  including why that choice fits `0.7.1`.
+  including why Fluent fits `0.7.1`.
+- Fluent resource bundles exist for the initial locale set: `en-GB`, `de`,
+  `fr`, `es`, `hi`, `zh-Hans`, `ar`, and `ja`, at least for the proving slice
+  implemented in this milestone.
 - At least one real Phase 0 shell surface renders through the `i18n` module so
   GPUI and AccessKit tests can observe the behaviour instead of only testing an
   unused helper.
 - Unit tests (`rstest`), behaviour tests (`rstest-bdd` v0.5.0), and GPUI tests
   cover happy paths, unhappy paths, and edge cases.
 - Documentation and roadmap state are synchronized, and required gates pass:
-  `make fmt`, `make markdownlint`, `make nixie`, `make check-fmt`,
-  `make lint`, and `make test`.
+  `make fmt`, `make markdownlint`, `make nixie`, `make check-fmt`, `make lint`,
+  and `make test`.
 
 ## Agent team
 
 Implementation should be coordinated as one small agent team with clear
 ownership and short hand-offs:
 
-- Architecture agent: confirm the module boundary, evaluate Fluent versus a
-  simpler keyed system, and update the architecture document with the final
-  rationale and follow-up triggers.
+- Architecture agent: confirm the module boundary, document why Fluent is the
+  correct foundation for Gauss, and update the architecture document with the
+  final rationale and follow-up triggers.
 - Core i18n agent: implement `src/i18n/`, including locale handling, catalog
   lookup, fallback, and typed errors.
 - UI and accessibility agent: wire one proving integration slice into
@@ -78,6 +86,11 @@ file ownership is disjoint.
 - Keep the `i18n` module independent of GPUI. Views may consume localized
   strings, but catalog lookup and locale logic must not depend on GPUI types or
   window context.
+- The chosen catalog structure must be capable of supporting the initial
+  locale set immediately: `en-GB`, `de`, `fr`, `es`, `hi`, `zh-Hans`, `ar`, and
+  `ja`.
+- The foundation must expose locale direction metadata or an equivalent seam so
+  later RTL layout work for Arabic does not require redesigning the i18n API.
 - Do not use process-global locale state or environment mutation for tests.
   Locale selection must be injected so tests remain deterministic and parallel.
 - Prefer typed errors and explicit fallbacks over silent English-only
@@ -94,10 +107,9 @@ file ownership is disjoint.
 - Scope tolerance: if making the scaffold observable requires converting more
   than two existing UI or accessibility surfaces, stop and split the extra
   extraction into `0.7.2`.
-- Dependency tolerance: if Fluent requires more than straightforward crate
-  additions and a thin adapter layer for this milestone, stop and prefer the
-  simpler keyed system unless the user explicitly authorizes the broader
-  investment.
+- Dependency tolerance: if Fluent integration requires broad invasive
+  restructuring outside a localized module and one proving call path, stop and
+  decompose the adapter work rather than retreating to a less capable backend.
 - Blast-radius tolerance: if correct delivery grows beyond 14 files or 700 net
   lines of code and docs, stop and decompose the work before continuing.
 - API tolerance: if the best design requires changing existing public action,
@@ -114,13 +126,13 @@ file ownership is disjoint.
 - Risk: `0.7.1` expands into `0.7.2` and `0.7.3`, turning a scaffold into a
   large extraction. Mitigation: keep the end-to-end proof to one narrow Phase 0
   shell surface plus one accessibility surface.
-- Risk: choosing Fluent too early adds parser, loader, and formatting
-  complexity before Gauss has multiple shipped locales or grammar-heavy
-  messages. Mitigation: evaluate Fluent honestly, but bias toward the smallest
-  abstraction that still leaves a migration path.
-- Risk: choosing a keyed system now could make later Fluent migration awkward.
-  Mitigation: hide lookup behind a small `i18n` API and use stable message
-  identifiers so the backend can change later.
+- Risk: Fluent integration adds parser, loader, and bundle-management
+  complexity in a repo that does not yet use localization directly. Mitigation:
+  keep the Fluent dependency and loading logic inside `src/i18n/` and expose a
+  small Gauss-owned facade to the rest of the codebase.
+- Risk: the initial locale promise could turn `0.7.1` into a broad translation
+  exercise. Mitigation: require locale bundles for the proving slice now, and
+  let `0.7.2` expand message coverage across the application surface.
 - Risk: global locale state would create flaky tests. Mitigation: pass locale
   or localizer values through constructors or test-only setters.
 - Risk: accessibility strings drift from visible UI strings. Mitigation: use
@@ -135,8 +147,8 @@ Implementation should proceed in five milestones.
    fallback, message lookup, and formatting failures. Add `rstest-bdd` feature
    scenarios that describe catalog lookup and fallback behaviour in business
    terms. Add one GPUI test that proves a Phase 0 shell surface changes when a
-   non-default test catalog is injected. The first pass should fail because the
-   i18n layer does not exist yet.
+   shipped non-English locale is selected. The first pass should fail because
+   the i18n layer does not exist yet.
 
 2. Add the core module under `src/i18n/`. Keep files small and purpose-driven,
    likely split as `mod.rs`, `locale.rs`, `message.rs`, `catalog.rs`, and
@@ -146,15 +158,17 @@ Implementation should proceed in five milestones.
    - stable message identifiers,
    - a localizer or catalog lookup service,
    - typed lookup and formatting errors,
-   - explicit fallback to the default catalog.
+   - explicit fallback to the default catalog,
+   - locale metadata needed for later layout decisions, including text
+     direction.
 
 3. Implement the catalog backend for `0.7.1`. The recommended choice for this
-   milestone is a simple keyed system, not Fluent. The catalog should be
-   compile-time data owned by Gauss, not an external runtime service. Prefer
-   stable message identifiers with a single registry of shipped keys over raw
-   ad hoc string lookup. The default catalog should be `en-GB` only, while
-   tests may add an in-memory or test-only alternate catalog to prove that
-   translation lookup actually changes output.
+   milestone is Fluent, not a simpler keyed system. Store translator-authored
+   resources in locale-specific Fluent files and load them through a small
+   Gauss-owned adapter so the rest of the application is not coupled directly
+   to Fluent internals. Provide locale bundles for `en-GB`, `de`, `fr`, `es`,
+   `hi`, `zh-Hans`, `ar`, and `ja` for the messages introduced in this
+   milestone. Use a fallback chain rooted at `en-GB`.
 
 4. Wire one real integration slice. Keep it intentionally narrow. The best
    proving seam in the current codebase is the mode/status text shared between
@@ -165,43 +179,41 @@ Implementation should proceed in five milestones.
    - the Phase 0 shell status line uses the new message IDs,
    - the accessibility status node uses the same localized message IDs,
    - tests can override the catalog without mutating global state.
-   Leave other chrome labels, tooltips, and command names for the later
-   roadmap items.
+   Leave other chrome labels, tooltips, and command names for the later roadmap
+   items.
 
 5. Record the decision and close the milestone. Update the architecture
-   document to explain why `0.7.1` chose a keyed catalog now, what would force
-   a Fluent migration later, and which future roadmap items own broader string
-   extraction and grammar-sensitive localization. Update the user guide with
-   any user-visible behaviour change. If the implementation ships only English
-   plus a test-only alternate catalog, say that explicitly. Then update the
-   roadmap checkbox for `0.7.1` only after all gates pass.
+   document to explain why `0.7.1` chose Fluent now, how the initial locale set
+   is represented, and which future roadmap items own broader string extraction
+   and command-name localization. Update the user guide with any user-visible
+   behaviour change, including the initial locale support story if it becomes
+   observable through system-locale selection or an equivalent app-level seam.
+   Then update the roadmap checkbox for `0.7.1` only after all gates pass.
 
 ## Recommended design
 
 The recommended `0.7.1` design is:
 
 - `src/i18n/` as a top-level library module, not nested under `model` or `ui`.
-- A simple keyed catalog backend with stable Gauss-owned message identifiers.
-- One shipped production locale, `en-GB`, plus test-only alternate catalogs.
+- A Fluent-backed catalog behind a Gauss-owned facade with stable message
+  identifiers.
+- Shipped locale bundles for `en-GB`, `de`, `fr`, `es`, `hi`, `zh-Hans`, `ar`,
+  and `ja` for the initial message set.
 - Explicit locale fallback to `en-GB`.
-- No user-facing locale preference UI yet.
+- Locale metadata that can distinguish left-to-right (LTR) and RTL locales.
+- No requirement to build a full locale-preference UI in this milestone.
 - No attempt to localize every existing string in this milestone.
 
-This choice fits the current codebase because Gauss only needs scaffolding in
-`0.7.1`. The existing strings are short labels, status fragments, and a11y
-descriptions. The repository has no direct localization dependency today, and
-introducing full Fluent machinery now would create more moving parts than the
-current milestone needs. The architecture update should still record concrete
-re-evaluation triggers:
+This choice fits the actual architectural goal better than a keyed system.
+Gauss intends to provide multilingual support from the beginning, including
+German, French, Spanish, Hindi, Simplified Chinese, Arabic, and Japanese as
+soon as the infrastructure exists. That implies translator-authored resources,
+placeholder formatting across multiple grammatical systems, and an early path
+for Arabic and later RTL UI work. Fluent is a better fit for those constraints
+than inventing a custom keyed format now and migrating later.
 
-- the first shipped non-English locale,
-- pluralization or grammatical selection requirements,
-- translator-authored resource workflows,
-- or text that can no longer be handled safely by keyed substitution.
-
-If any of those triggers are reached, the project can revisit Fluent in
-`0.7.2`, `0.7.3`, or roadmap item `2.5.1` without breaking call sites, because
-the backend is hidden behind the `i18n` module.
+The Gauss-facing API should still stay small so future changes remain local to
+`src/i18n/`, but the backend decision for `0.7.1` should be Fluent.
 
 ## Concrete file plan
 
@@ -212,6 +224,14 @@ Expected files to add or update:
 - `src/i18n/message.rs`
 - `src/i18n/catalog.rs`
 - `src/i18n/error.rs`
+- `i18n/en-GB/gauss.ftl`
+- `i18n/de/gauss.ftl`
+- `i18n/fr/gauss.ftl`
+- `i18n/es/gauss.ftl`
+- `i18n/hi/gauss.ftl`
+- `i18n/zh-Hans/gauss.ftl`
+- `i18n/ar/gauss.ftl`
+- `i18n/ja/gauss.ftl`
 - `src/lib.rs`
 - `src/ui/phase0_shell/mod.rs` or `src/ui/phase0_shell/test_helpers.rs` for an
   injected localizer seam
@@ -227,8 +247,8 @@ Expected files to add or update:
 During implementation, keep an eye on `src/model/tool.rs`,
 `src/model/action.rs`, `src/model/command/command_def.rs`, and
 `src/model/key_context.rs`. They already document future i18n work in comments.
-For `0.7.1`, prefer adding adjacent message-identifier helpers only when
-needed by the proving slice, not broad API churn.
+For `0.7.1`, prefer adding adjacent message-identifier helpers only when needed
+by the proving slice, not broad API churn.
 
 ## Validation
 
@@ -236,24 +256,28 @@ Validation must follow a red-green-refactor flow.
 
 Unit tests should use `rstest` and cover:
 
-- successful lookup in the default catalog,
+- successful lookup in every shipped locale for the initial message set,
 - locale fallback when a requested locale is unsupported,
 - typed failure for an unknown message identifier,
 - typed failure for missing formatting arguments,
-- stability of the shipped message registry.
+- stability of the shipped message registry,
+- locale metadata such as text direction for Arabic versus the LTR locales.
 
 Behaviour tests should use `rstest-bdd` v0.5.0 and cover:
 
-- a requested locale using its own catalog,
+- a requested locale using its own Fluent catalog,
 - fallback to English when a locale is unsupported,
-- failure reporting when a message key is unavailable.
+- failure reporting when a message key is unavailable,
+- selection of one LTR locale and one RTL locale from the shipped set.
 
 GPUI tests should cover:
 
-- the Phase 0 shell status text rendering localized output through an injected
-  test catalog,
+- the Phase 0 shell status text rendering localized output through a shipped
+  non-English locale,
 - the accessibility status node using the same localized output,
-- unchanged behaviour when the default English catalog is used.
+- unchanged behaviour when the default English catalog is used,
+- exposure of locale direction metadata through the proving seam if the UI seam
+  surfaces it.
 
 Use `set -o pipefail` and `tee` for every long-running gate. Expected commands:
 
@@ -285,6 +309,9 @@ Completion evidence is:
   installed in this environment, and fell back to `rg` for plain-text search.
 - [x] (2026-03-14) Drafted this ExecPlan with an explicit approval gate before
   implementation.
+- [x] (2026-03-14) Revised the draft to align with the requirement that Gauss
+  should support multilingual operation from the start, including the initial
+  locale set `en-GB`, `de`, `fr`, `es`, `hi`, `zh-Hans`, `ar`, and `ja`.
 - [ ] Await user approval.
 - [ ] Implement the i18n module and proving slice.
 - [ ] Run all required gates with tee logs.
@@ -304,18 +331,22 @@ Completion evidence is:
   `"Drawing canvas"`, `"Shapes"`, `"Shape {n}"`, and `"Gauss"`, which confirms
   there is plenty of follow-on work for `0.7.2`.
 - Gauss has no direct localization dependency in `Cargo.toml` today. Fluent and
-  related crates only appear transitively in `Cargo.lock`.
+  related crates only appear transitively in `Cargo.lock`, so `0.7.1` will need
+  to choose and add a direct localization stack intentionally.
 - Existing test seams are already strong enough for this work: model-layer
   `rstest` tests, `rstest-bdd` scenario tests, and GPUI shell tests all exist.
+- The architectural requirement is stronger than the current proof-of-concept
+  UI surface. The i18n choice therefore needs to optimize for the future
+  multilingual application, not for today's small set of English strings.
 
 ## Decision Log
 
 - 2026-03-14: Plan `0.7.1` as a narrow scaffold milestone, not the full string
   extraction. Rationale: the roadmap explicitly splits module creation,
   extraction, and command-name localization into separate items.
-- 2026-03-14: Recommend a simple keyed catalog for `0.7.1` instead of Fluent.
-  Rationale: the current milestone needs a stable boundary and observable
-  behaviour, not translator-facing grammar machinery.
+- 2026-03-14: Revise the recommendation from a keyed catalog to Fluent.
+  Rationale: Gauss intends to support multiple locales from the start, with
+  translator-authored resources and early RTL-aware foundations.
 - 2026-03-14: Require one real UI plus accessibility proving slice instead of a
   dead internal helper. Rationale: the repository requires GPUI tests and the
   ExecPlan must lead to observable behaviour.
@@ -333,7 +364,9 @@ If executed as written, this milestone should leave Gauss with a small,
 coherent localization spine:
 
 - a top-level, GPUI-independent `i18n` module,
-- a documented decision for a keyed catalog now and Fluent later if needed,
+- a documented decision for Fluent now,
+- initial locale bundles for `en-GB`, `de`, `fr`, `es`, `hi`, `zh-Hans`, `ar`,
+  and `ja` for the proving slice,
 - one real localized shell plus accessibility path,
 - tests at unit, behaviour, and GPUI levels,
 - synchronized architecture, user, and roadmap documentation.
