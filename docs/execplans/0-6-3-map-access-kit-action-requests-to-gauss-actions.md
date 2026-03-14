@@ -148,7 +148,7 @@ Success is observable when:
   reflow required in `src/ui/phase0_shell/mod.rs`.
 - [x] (2026-03-06) Completed focused verification for the new unit, BDD, and
   GPUI coverage before the full gate replay.
-- [x] (2026-03-06) Updated architecture, users-guide, and roadmap documents to
+- [x] (2026-03-06) Updated architecture, user's guide, and roadmap documents to
   match shipped behaviour.
 - [x] (2026-03-06) Ran required gates with tee logs:
   - `/tmp/check-fmt-gauss-0-6-3-map-access-kit-action-requests-to-gauss-actions.out`
@@ -278,7 +278,7 @@ This milestone left the repository with:
 - explicit unsupported-action handling for out-of-scope requests;
 - parity coverage showing keyboard and accessibility requests exercise the same
   behaviour;
-- synchronized roadmap, architecture, and users-guide status.
+- synchronized roadmap, architecture, and user's guide status.
 
 ## Context and orientation
 
