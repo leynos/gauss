@@ -118,7 +118,7 @@ Success is observable when:
 
 - Risk: docs drift could leave `docs/users-guide.md` and `docs/roadmap.md`
   claiming accessibility action invocation is still deferred. Mitigation:
-  update design doc, users guide, and roadmap in the same change sequence
+  update design doc, user's guide, and roadmap in the same change sequence
   before the final gate replay.
 
 ## Progress
