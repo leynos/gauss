@@ -43,6 +43,12 @@ pub enum A11yActionRequestError {
         /// Tree requested by the accessibility client.
         target_tree: TreeId,
     },
+    /// The request targeted a node that is not present in the current tree.
+    #[error("unknown accessibility node id {target_node:#x}")]
+    UnknownNode {
+        /// The target node ID from the request.
+        target_node: u64,
+    },
     /// The request targeted a node/action pair not supported by Gauss.
     #[error("node {target_node:#x} does not support accessibility action {action:?}")]
     UnsupportedAction {
@@ -59,8 +65,8 @@ impl A11yService {
     /// # Errors
     ///
     /// Returns [`A11yActionRequestError`] when the target tree is not the root
-    /// tree or when the node/action pair is not supported by the current
-    /// accessibility surface.
+    /// tree, when the node is missing from the current accessibility surface,
+    /// or when the node/action pair is not supported by Gauss.
     pub fn route_action_request(
         &self,
         request: &ActionRequest,
@@ -74,9 +80,8 @@ impl A11yService {
         }
 
         if !self.previous_nodes.contains_key(&request.target_node) {
-            return Err(A11yActionRequestError::UnsupportedAction {
+            return Err(A11yActionRequestError::UnknownNode {
                 target_node: request.target_node.0,
-                action: request.action,
             });
         }
 

@@ -39,3 +39,8 @@ Feature: A11yService incremental tree updates
     Given a fresh accessibility service snapshot
     When I route a focus request for the close accessibility node
     Then routing fails with an unsupported accessibility action error
+
+  Scenario: Unknown accessibility node request is rejected
+    Given a fresh accessibility service snapshot
+    When I route a click request for an unknown accessibility node
+    Then routing fails with an unknown accessibility node error

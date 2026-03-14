@@ -246,3 +246,20 @@ fn unsupported_accessibility_action_does_not_mutate_shell_state(cx: &mut TestApp
         "unsupported accessibility request should not request quit"
     );
 }
+
+#[gpui::test]
+fn unknown_accessibility_node_does_not_mutate_shell_state(cx: &mut TestAppContext) {
+    let (visual_cx, view) = setup_window(cx);
+    let (routed, did_request_quit) =
+        dispatch_accesskit_action(visual_cx, &view, Action::Click, 0xbeef);
+    assert_eq!(
+        routed,
+        Err(A11yActionRequestError::UnknownNode {
+            target_node: 0xbeef
+        })
+    );
+    assert!(
+        !did_request_quit,
+        "unknown accessibility node should not request quit"
+    );
+}

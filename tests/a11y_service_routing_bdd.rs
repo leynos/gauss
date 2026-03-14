@@ -85,6 +85,21 @@ fn route_focus_request_for_close_node(world: &mut A11yWorld) -> TestSupportResul
     route_action_for_close_node(world, Action::Focus)
 }
 
+#[when("I route a click request for an unknown accessibility node")]
+fn route_click_request_for_an_unknown_accessibility_node(
+    world: &mut A11yWorld,
+) -> TestSupportResult<()> {
+    route_request(
+        world,
+        &ActionRequest {
+            action: Action::Click,
+            target_tree: TreeId::ROOT,
+            target_node: NodeId(0xbeef),
+            data: None,
+        },
+    )
+}
+
 #[then("routing fails with an unsupported accessibility action error")]
 fn routing_fails_with_unsupported_accessibility_action_error(
     world: &A11yWorld,
@@ -108,6 +123,28 @@ fn routing_fails_with_unsupported_accessibility_action_error(
     Ok(())
 }
 
+#[then("routing fails with an unknown accessibility node error")]
+fn routing_fails_with_an_unknown_accessibility_node_error(
+    world: &A11yWorld,
+) -> TestSupportResult<()> {
+    let Some(error) = &world.last_route_error else {
+        return Err(TestSupportError::missing(
+            "routing error",
+            "unknown-node routing assertion",
+        ));
+    };
+    if *error
+        != (A11yActionRequestError::UnknownNode {
+            target_node: 0xbeef,
+        })
+    {
+        return Err(TestSupportError::expectation(format!(
+            "expected unknown-node error, got {error:?}"
+        )));
+    }
+    Ok(())
+}
+
 #[scenario(
     path = "tests/features/a11y_service.feature",
     name = "Close button click request routes to the existing close action"
@@ -121,5 +158,13 @@ fn close_button_click_request_routes_to_the_existing_close_action(world: A11yWor
     name = "Unsupported close button action request is rejected"
 )]
 fn unsupported_close_button_action_request_is_rejected(world: A11yWorld) {
+    let _ = world;
+}
+
+#[scenario(
+    path = "tests/features/a11y_service.feature",
+    name = "Unknown accessibility node request is rejected"
+)]
+fn unknown_accessibility_node_request_is_rejected(world: A11yWorld) {
     let _ = world;
 }

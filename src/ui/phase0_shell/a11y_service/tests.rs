@@ -298,17 +298,12 @@ fn chrome_click_requests_route_to_existing_window_actions(
 }
 
 #[rstest]
-#[case(Action::Focus, accessibility::node_ids::CLOSE_BUTTON)]
-#[case(Action::Click, 0xbeef)]
-fn unsupported_action_request_is_rejected_without_routing(
-    #[case] action: Action,
-    #[case] target_node: u64,
-) {
+fn unsupported_action_request_is_rejected_without_routing() {
     let service = routed_service();
     let request = ActionRequest {
-        action,
+        action: Action::Focus,
         target_tree: TreeId::ROOT,
-        target_node: NodeId(target_node),
+        target_node: NodeId(accessibility::node_ids::CLOSE_BUTTON),
         data: None,
     };
 
@@ -319,8 +314,30 @@ fn unsupported_action_request_is_rejected_without_routing(
     assert_eq!(
         error,
         A11yActionRequestError::UnsupportedAction {
-            target_node,
-            action,
+            target_node: accessibility::node_ids::CLOSE_BUTTON,
+            action: Action::Focus,
+        }
+    );
+}
+
+#[rstest]
+fn unknown_action_request_node_is_rejected_without_routing() {
+    let service = routed_service();
+    let request = ActionRequest {
+        action: Action::Click,
+        target_tree: TreeId::ROOT,
+        target_node: NodeId(0xbeef),
+        data: None,
+    };
+
+    let error = service
+        .route_action_request(&request)
+        .expect_err("unknown accessibility node should be rejected");
+
+    assert_eq!(
+        error,
+        A11yActionRequestError::UnknownNode {
+            target_node: 0xbeef,
         }
     );
 }

@@ -156,6 +156,12 @@ Success is observable when:
   - `/tmp/test-gauss-0-6-3-map-access-kit-action-requests-to-gauss-actions.out`
 - [x] (2026-03-06) Marked roadmap item `0.6.3` done after implementation,
   documentation sync, and green gates.
+- [x] (2026-03-14) Verified the follow-up routing review finding against the
+  current branch, kept the local `UnknownNode` versus `UnsupportedAction`
+  split, and reran the full gate stack with fresh tee logs:
+  - `/tmp/check-fmt-gauss-0-6-3-map-access-kit-action-requests-to-gauss-actions.out`
+  - `/tmp/lint-gauss-0-6-3-map-access-kit-action-requests-to-gauss-actions.out`
+  - `/tmp/test-gauss-0-6-3-map-access-kit-action-requests-to-gauss-actions.out`
 
 ## Surprises & Discoveries
 
@@ -239,6 +245,9 @@ Delivered behaviour:
   shortcuts;
 - unsupported tree IDs or unsupported node/action pairs fail closed with typed
   routing errors and do not mutate shell state;
+- stale or missing accessibility node IDs now fail with
+  `A11yActionRequestError::UnknownNode`, keeping them distinct from unsupported
+  action kinds on otherwise valid nodes;
 - unit tests, `rstest-bdd` scenarios, and GPUI tests cover supported routing,
   unsupported requests, and shell-side quit behaviour parity;
 - `docs/gauss-architecture-design.md`, `docs/users-guide.md`, and
