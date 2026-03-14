@@ -100,49 +100,47 @@ fn route_click_request_for_an_unknown_accessibility_node(
     )
 }
 
+fn assert_last_route_error(
+    world: &A11yWorld,
+    expected: &A11yActionRequestError,
+    context: &str,
+) -> TestSupportResult<()> {
+    let Some(error) = &world.last_route_error else {
+        return Err(TestSupportError::missing("routing error", context));
+    };
+    if error != expected {
+        return Err(TestSupportError::expectation(format!(
+            "expected {expected:?}, got {error:?}"
+        )));
+    }
+    Ok(())
+}
+
 #[then("routing fails with an unsupported accessibility action error")]
 fn routing_fails_with_unsupported_accessibility_action_error(
     world: &A11yWorld,
 ) -> TestSupportResult<()> {
-    let Some(error) = &world.last_route_error else {
-        return Err(TestSupportError::missing(
-            "routing error",
-            "unsupported routing assertion",
-        ));
-    };
-    if *error
-        != (A11yActionRequestError::UnsupportedAction {
+    assert_last_route_error(
+        world,
+        &A11yActionRequestError::UnsupportedAction {
             target_node: accessibility::node_ids::CLOSE_BUTTON,
             action: Action::Focus,
-        })
-    {
-        return Err(TestSupportError::expectation(format!(
-            "expected unsupported-action error, got {error:?}"
-        )));
-    }
-    Ok(())
+        },
+        "unsupported routing assertion",
+    )
 }
 
 #[then("routing fails with an unknown accessibility node error")]
 fn routing_fails_with_an_unknown_accessibility_node_error(
     world: &A11yWorld,
 ) -> TestSupportResult<()> {
-    let Some(error) = &world.last_route_error else {
-        return Err(TestSupportError::missing(
-            "routing error",
-            "unknown-node routing assertion",
-        ));
-    };
-    if *error
-        != (A11yActionRequestError::UnknownNode {
+    assert_last_route_error(
+        world,
+        &A11yActionRequestError::UnknownNode {
             target_node: 0xbeef,
-        })
-    {
-        return Err(TestSupportError::expectation(format!(
-            "expected unknown-node error, got {error:?}"
-        )));
-    }
-    Ok(())
+        },
+        "unknown-node routing assertion",
+    )
 }
 
 #[scenario(

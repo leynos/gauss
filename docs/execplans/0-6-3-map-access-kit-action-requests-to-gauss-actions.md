@@ -162,6 +162,9 @@ Success is observable when:
   - `/tmp/check-fmt-gauss-0-6-3-map-access-kit-action-requests-to-gauss-actions.out`
   - `/tmp/lint-gauss-0-6-3-map-access-kit-action-requests-to-gauss-actions.out`
   - `/tmp/test-gauss-0-6-3-map-access-kit-action-requests-to-gauss-actions.out`
+- [x] (2026-03-14) Removed duplicated BDD routing-error assertion scaffolding
+  by extracting a shared helper in `tests/a11y_service_routing_bdd.rs`, then
+  reran `make check-fmt`, `make lint`, and `make test` on the refactor.
 
 ## Surprises & Discoveries
 
