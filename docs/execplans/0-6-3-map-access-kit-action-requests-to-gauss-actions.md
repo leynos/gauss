@@ -166,7 +166,7 @@ Success is observable when:
   by extracting a shared helper in `tests/a11y_service_routing_bdd.rs`, then
   reran `make check-fmt`, `make lint`, and `make test` on the refactor.
 - [x] (2026-03-14) Collapsed duplicate unit tests in
-  `src/ui/phase0_shell/a11y_service/tests.rs` into one parameterised `rstest`,
+  `src/ui/phase0_shell/a11y_service/tests.rs` into one parameterized `rstest`,
   then reran `make check-fmt`, `make lint`, and `make test`.
 
 ## Surprises & Discoveries
