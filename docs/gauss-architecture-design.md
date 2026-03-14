@@ -97,6 +97,12 @@ Accessibility is designed in from day one:
 - Accessibility tree uses **stable node IDs** (critical for immediate-mode
   toolkits) 【110†accesskit-based-accessibility-in-gpui.md】
 
+Implementation note (2026-03): Phase 0 routes supported AccessKit action
+requests for chrome button nodes through the same `Phase0Shell` window-action
+handlers used by GPUI keyboard shortcuts and UI controls. Unsupported
+node/action pairs fail closed with typed routing errors instead of mutating
+state through a parallel accessibility-only path.
+
 ### 2.5 “SVG First” with reversible transforms
 
 Gauss’s native format is currently SVG, and **SVG export is the only v1
@@ -961,7 +967,6 @@ To avoid user-hostile undo behavior:
 
 - group multi-step interactions into a single undo step
 - clear history appropriately when opening a new document (PoC pitfall)
-  【111†using-gpui-and-gpui-component.md】
 
 #### 7.3.1 Single-entry-per-gesture audit (0.3.1)
 
@@ -1051,7 +1056,7 @@ The PoC uses `Canvas` + `PathBuilder` and recommends:
 
 - viewport transform model→screen
 - fill then stroke then selection overlays
-- predictable anchor/handle markers 【111†using-gpui-and-gpui-component.md】
+- predictable anchor/handle markers
 
 ### 9.1 Render pipeline
 
@@ -1086,7 +1091,6 @@ The renderer uses these to avoid rebuilding paths every frame.
 - The renderer owns caches, but not document truth.
 - The engine triggers “invalidate” notifications to wake observers (GPUI
   `Context::notify`) when state changes.
-  【111†using-gpui-and-gpui-component.md】
 
 ______________________________________________________________________
 
@@ -1286,7 +1290,7 @@ ______________________________________________________________________
 
 AccessKit provides cross-platform adapters and requires an accessibility tree
 with **stable node IDs**; immediate-mode toolkits must keep IDs stable across
-frames. 【110†accesskit-based-accessibility-in-gpui.md】
+frames.
 
 ### 11.1 A11y service as a first-class subsystem
 
@@ -1314,8 +1318,11 @@ Phase 0 shell:
 - Window chrome semantics now expose explicit AccessKit roles and labels:
   titlebar nodes use `Role::TitleBar`, while chrome control nodes use
   `Role::Button` with label, description, and keyboard shortcut metadata.
-- Accessibility action routing remains deferred to roadmap item `0.6.3`; `0.6.1`
-  intentionally establishes the service boundary and update pipeline first.
+- Phase 0 now routes supported AccessKit chrome button requests through the
+  existing `Phase0Shell` window-action handlers, keeping keyboard, UI, and
+  accessibility activation on the same execution path.
+- Unsupported or stale AccessKit node/action pairs fail closed with typed
+  routing errors instead of mutating shell state or silently no-oping.
 
 #### 11.1.1 Initial accessibility tree publication sequence
 
@@ -1408,7 +1415,6 @@ Minimum “day one”:
 
 AccessKit adapters support single/multi-line text controls but **rich
 text/hypertext** support is limited today.
-【110†accesskit-based-accessibility-in-gpui.md】
 
 Therefore:
 
@@ -1471,7 +1477,7 @@ ______________________________________________________________________
 ## 14. UI Toolkit Strategy: GPUI Component vs Custom Controls
 
 GPUI Component should be the default for standard UI: buttons, inputs, menus,
-panels, etc. 【111†using-gpui-and-gpui-component.md】
+panels, etc.
 
 However, an Illustrator-class tool will require **custom controls**, at least
 for:
@@ -1509,7 +1515,7 @@ Create a small `platform` facade providing:
 - font enumeration and text shaping hooks (later)
 
 The PoC already notes headless prompt differences and recommends thin adapters
-for dialog behavior. 【111†using-gpui-and-gpui-component.md】
+for dialog behavior.
 
 ______________________________________________________________________
 
@@ -1519,7 +1525,6 @@ The PoC recommends:
 
 - behavior-heavy tests at controller/model boundary
 - a small set of `#[gpui::test]` integration tests for wiring/input
-  【111†using-gpui-and-gpui-component.md】
 
 ### 16.1 Test layers
 
@@ -1616,8 +1621,9 @@ broad feature work accelerates:
 Status update: roadmap items `0.5.1` through `0.5.4` implemented the tool
 framework baseline: Tool trait boundary, PenTool extraction, SelectTool
 extraction, and shared deterministic hit testing for selection/hover. Roadmap
-items `0.6.1` and `0.6.2` are now implemented in the Phase 0 shell. Remaining
-accessibility milestone is `0.6.3` (AccessKit action request mapping).
+items `0.6.1`, `0.6.2`, and `0.6.3` are now implemented in the Phase 0 shell,
+including AccessKit chrome action routing through `Phase0Shell` with typed
+fail-closed handling for unsupported node/action pairs.
 
 ______________________________________________________________________
 

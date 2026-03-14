@@ -1,48 +1,16 @@
 //! Behaviour tests for the Phase 0 accessibility tree service.
 
-use std::collections::{BTreeMap, BTreeSet};
+#[path = "a11y_service_bdd/support.rs"]
+mod a11y_service_bdd_support;
 
-use accesskit::{Action, Node, NodeId, Role};
-use gauss::model::{EdgeMode, ShapeId, ToolMode};
-use gauss::ui::phase0_shell::{
-    A11yService, A11yServiceError, A11yShapeSnapshot, A11ySnapshot, A11yUpdateKind, accessibility,
-};
-use rstest::fixture;
+use accesskit::{Action, Role};
+use gauss::model::ShapeId;
+use gauss::ui::phase0_shell::{A11yServiceError, A11yShapeSnapshot, A11yUpdateKind, accessibility};
 use rstest_bdd_macros::{given, scenario, then, when};
-use test_support::{TestSupportError, TestSupportResult};
 
-struct A11yWorld {
-    service: A11yService,
-    snapshot: A11ySnapshot,
-    last_emitted_nodes: BTreeMap<NodeId, Node>,
-    appended_shape_id: Option<u64>,
-    last_publish_result: Option<Result<bool, A11yServiceError>>,
-    update_count_before: usize,
-}
+use a11y_service_bdd_support::*;
 
-#[fixture]
-fn world() -> A11yWorld {
-    A11yWorld {
-        service: A11yService::new(),
-        snapshot: empty_snapshot(),
-        last_emitted_nodes: BTreeMap::new(),
-        appended_shape_id: None,
-        last_publish_result: None,
-        update_count_before: 0,
-    }
-}
-
-const fn empty_snapshot() -> A11ySnapshot {
-    A11ySnapshot {
-        tool_mode: ToolMode::Draw,
-        edge_mode: EdgeMode::Line,
-        can_undo: false,
-        can_redo: false,
-        is_maximized: false,
-        selected_shape_ids: BTreeSet::new(),
-        shapes: Vec::new(),
-    }
-}
+const APPENDED_SHAPE_ID: u64 = 0x2_0000_0001;
 
 fn shape_snapshot(raw_id: u64) -> A11yShapeSnapshot {
     A11yShapeSnapshot {
@@ -53,34 +21,38 @@ fn shape_snapshot(raw_id: u64) -> A11yShapeSnapshot {
     }
 }
 
-fn capture_last_emitted_nodes(world: &mut A11yWorld) {
-    let pending_updates = world.service.drain_pending_updates();
-    world.last_emitted_nodes.clear();
-    if let Some(update) = pending_updates.last() {
-        world.last_emitted_nodes = update
-            .nodes
-            .iter()
-            .map(|(node_id, node)| (*node_id, node.clone()))
-            .collect();
-    }
-}
-
 fn chrome_node<'a>(
     world: &'a A11yWorld,
     node_id: u64,
     context: &str,
-) -> TestSupportResult<&'a Node> {
+) -> TestSupportResult<&'a accesskit::Node> {
     accessibility::chrome_node_from_map(&world.last_emitted_nodes, node_id)
         .ok_or_else(|| TestSupportError::missing("emitted accessibility node", context))
 }
 
-#[given("a fresh accessibility service snapshot")]
-fn fresh_accessibility_service_snapshot(world: &mut A11yWorld) {
-    world.service = A11yService::new();
-    world.snapshot = empty_snapshot();
-    world.last_emitted_nodes.clear();
-    world.last_publish_result = None;
-    world.appended_shape_id = None;
+fn publish_snapshot(world: &mut A11yWorld, context: &str) -> TestSupportResult<()> {
+    world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
+    if let Some(Err(error)) = world.last_publish_result.as_ref() {
+        return Err(TestSupportError::expectation(format!(
+            "{context} failed: {error}"
+        )));
+    }
+    capture_last_emitted_nodes(world);
+    Ok(())
+}
+
+#[given("an initialized accessibility service baseline")]
+fn initialized_accessibility_service_baseline(world: &mut A11yWorld) -> TestSupportResult<()> {
+    fresh_accessibility_service_snapshot(world);
+    world
+        .service
+        .sync_snapshot(world.snapshot.clone())
+        .map_err(|error| {
+            TestSupportError::expectation(format!("baseline initialization failed: {error}"))
+        })?;
+    let _ = world.service.drain_pending_updates();
+    world.service.clear_update_records();
+    Ok(())
 }
 
 #[given("the snapshot marks the window as maximized")]
@@ -89,9 +61,8 @@ fn snapshot_marks_window_as_maximized(world: &mut A11yWorld) {
 }
 
 #[when("I publish the initial accessibility snapshot")]
-fn publish_initial_accessibility_snapshot(world: &mut A11yWorld) {
-    world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
-    capture_last_emitted_nodes(world);
+fn publish_initial_accessibility_snapshot(world: &mut A11yWorld) -> TestSupportResult<()> {
+    publish_snapshot(world, "initial accessibility snapshot publish")
 }
 
 #[then("one initial accessibility update is queued")]
@@ -246,41 +217,22 @@ fn chrome_nodes_expose_expected_roles_labels_and_shortcut_hints(
     Ok(())
 }
 
-#[given("an initialized accessibility service baseline")]
-fn initialized_accessibility_service_baseline(world: &mut A11yWorld) -> TestSupportResult<()> {
-    world.service = A11yService::new();
-    world.snapshot = empty_snapshot();
-    world
-        .service
-        .sync_snapshot(world.snapshot.clone())
-        .map_err(|error| {
-            TestSupportError::expectation(format!("baseline initialization failed: {error}"))
-        })?;
-    world.service.clear_update_records();
-    world.update_count_before = world.service.update_records().len();
-    Ok(())
-}
-
 #[when("I append one shape and publish an incremental snapshot")]
-fn append_shape_and_publish_incremental_snapshot(world: &mut A11yWorld) {
-    let appended_shape_id = 0x2_0000_0001;
+fn append_shape_and_publish_incremental_snapshot(world: &mut A11yWorld) -> TestSupportResult<()> {
     world
         .snapshot
         .shapes
-        .push(shape_snapshot(appended_shape_id));
-    world.appended_shape_id = Some(appended_shape_id);
-    world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
-    capture_last_emitted_nodes(world);
+        .push(shape_snapshot(APPENDED_SHAPE_ID));
+    publish_snapshot(world, "incremental accessibility snapshot publish")
 }
 
 #[then("one incremental accessibility update is queued")]
 fn one_incremental_accessibility_update_is_queued(world: &A11yWorld) -> TestSupportResult<()> {
     let records = world.service.update_records();
-    if records.len() != world.update_count_before + 1 {
+    if records.len() != 1 {
         return Err(TestSupportError::expectation(format!(
-            "expected one incremental update, got {} total records (before {})",
-            records.len(),
-            world.update_count_before
+            "expected one incremental update, got {} total records",
+            records.len()
         )));
     }
     let last = records
@@ -297,55 +249,65 @@ fn one_incremental_accessibility_update_is_queued(world: &A11yWorld) -> TestSupp
 
 #[then("the inserted node list contains the appended shape node ID")]
 fn inserted_node_list_contains_appended_shape_id(world: &A11yWorld) -> TestSupportResult<()> {
-    let expected_shape_id = world
-        .appended_shape_id
-        .ok_or_else(|| TestSupportError::missing("appended shape id", "insert assertion"))?;
     let last = world
         .service
         .update_records()
         .last()
         .ok_or_else(|| TestSupportError::missing("incremental update", "insert assertion"))?;
-    if !last.inserted_node_ids.contains(&expected_shape_id) {
+    if !last.inserted_node_ids.contains(&APPENDED_SHAPE_ID) {
         return Err(TestSupportError::expectation(format!(
-            "expected inserted node IDs {:?} to contain {expected_shape_id:#x}",
+            "expected inserted node IDs {:?} to contain {APPENDED_SHAPE_ID:#x}",
             last.inserted_node_ids
         )));
     }
     Ok(())
 }
 
+fn assert_unchanged_snapshot_publish_result(
+    result: &Result<bool, A11yServiceError>,
+) -> TestSupportResult<()> {
+    match result {
+        Ok(false) => Ok(()),
+        Ok(true) => Err(TestSupportError::expectation(
+            "expected sync_snapshot to return false for unchanged input",
+        )),
+        Err(error) => Err(TestSupportError::expectation(format!(
+            "expected sync_snapshot to return false for unchanged input, got error {error}"
+        ))),
+    }
+}
+
 #[when("I publish the same snapshot again")]
-fn publish_same_snapshot_again(world: &mut A11yWorld) {
-    world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
-    capture_last_emitted_nodes(world);
+fn publish_same_snapshot_again(world: &mut A11yWorld) -> TestSupportResult<()> {
+    publish_snapshot(world, "unchanged accessibility snapshot publish")
 }
 
 #[then("no new accessibility update is queued")]
 fn no_new_accessibility_update_is_queued(world: &A11yWorld) -> TestSupportResult<()> {
     let current_len = world.service.update_records().len();
-    if current_len != world.update_count_before {
+    if current_len != 0 {
         return Err(TestSupportError::expectation(format!(
-            "expected no new records, before {}, after {}",
-            world.update_count_before, current_len
+            "expected no new records, got {current_len}"
         )));
     }
-    if let Some(Ok(queued)) = world.last_publish_result.as_ref()
-        && *queued
-    {
-        return Err(TestSupportError::expectation(
-            "expected sync_snapshot to return false for unchanged input",
-        ));
-    }
-    Ok(())
+    let result = world
+        .last_publish_result
+        .as_ref()
+        .ok_or_else(|| TestSupportError::missing("publish result", "unchanged-input assertion"))?;
+    assert_unchanged_snapshot_publish_result(result)
 }
 
 #[given("an accessibility snapshot with duplicate shape node IDs")]
 fn accessibility_snapshot_with_duplicate_shape_node_ids(world: &mut A11yWorld) {
-    world.service = A11yService::new();
-    world.snapshot = empty_snapshot();
-    let duplicate_raw_id = 0x2_0000_0001;
-    world.snapshot.shapes.push(shape_snapshot(duplicate_raw_id));
-    world.snapshot.shapes.push(shape_snapshot(duplicate_raw_id));
+    fresh_accessibility_service_snapshot(world);
+    world
+        .snapshot
+        .shapes
+        .push(shape_snapshot(APPENDED_SHAPE_ID));
+    world
+        .snapshot
+        .shapes
+        .push(shape_snapshot(APPENDED_SHAPE_ID));
 }
 
 #[when("I publish the duplicate-node accessibility snapshot")]

@@ -5,10 +5,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::model::{EdgeMode, ShapeId, ToolMode};
 use accesskit::{Node, NodeId, Tree, TreeId, TreeUpdate};
 use thiserror::Error;
-
-use crate::model::{EdgeMode, ShapeId, ToolMode};
 
 use super::Phase0Shell;
 use diff::{
@@ -16,10 +15,13 @@ use diff::{
 };
 use tree_builder::{ROOT_NODE_ID, build_node_map};
 
+mod action_routing;
 mod diff;
 #[cfg(test)]
 mod tests;
 mod tree_builder;
+
+pub use self::action_routing::{A11yActionRequestError, A11yRequestedAction, A11yWindowAction};
 
 const MAX_PENDING_UPDATES: usize = 128;
 const MAX_UPDATE_RECORDS: usize = 512;

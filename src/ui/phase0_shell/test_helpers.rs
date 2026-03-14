@@ -6,7 +6,7 @@
 
 use std::path::Path;
 
-use accesskit::TreeUpdate;
+use accesskit::{ActionRequest, TreeUpdate};
 
 use crate::model::history::HistoryError;
 use crate::model::{
@@ -14,7 +14,10 @@ use crate::model::{
     UserError, Vec2, Viewport,
 };
 
-use super::{A11yUpdateRecord, Phase0Shell, draw, file_dialogs::OpenPromptMode};
+use super::{
+    A11yActionRequestError, A11yRequestedAction, A11yUpdateRecord, Phase0Shell, draw,
+    file_dialogs::OpenPromptMode,
+};
 
 impl Phase0Shell {
     /// Construct a new shell configured for headless `#[gpui::test]` tests.
@@ -307,6 +310,21 @@ impl Phase0Shell {
     #[must_use]
     pub fn drain_a11y_tree_updates_for_tests(&mut self) -> Vec<TreeUpdate> {
         self.a11y_service.drain_pending_updates()
+    }
+
+    /// Route and execute an AccessKit action request through the shell.
+    ///
+    /// # Errors
+    ///
+    /// Returns any unsupported-tree or unsupported-node failure produced by
+    /// the accessibility action router.
+    pub fn handle_accesskit_action_request_for_tests(
+        &mut self,
+        request: &ActionRequest,
+        window: &mut gpui::Window,
+        cx: &mut gpui::Context<Self>,
+    ) -> Result<A11yRequestedAction, A11yActionRequestError> {
+        self.handle_accesskit_action_request(request, window, cx)
     }
 
     /// Trigger an undo operation through the shell's history system.

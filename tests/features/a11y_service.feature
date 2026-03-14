@@ -28,3 +28,19 @@ Feature: A11yService incremental tree updates
     Given an accessibility snapshot with duplicate shape node IDs
     When I publish the duplicate-node accessibility snapshot
     Then publishing fails with a duplicate shape node ID error
+
+  Scenario: Close button click request routes to the existing close action
+    Given a fresh accessibility service snapshot
+    When I route a click request for the close accessibility node
+    Then accessibility request routing succeeds
+    And the request routes to the close window action
+
+  Scenario: Unsupported close button action request is rejected
+    Given a fresh accessibility service snapshot
+    When I route a focus request for the close accessibility node
+    Then routing fails with an unsupported accessibility action error
+
+  Scenario: Unknown accessibility node request is rejected
+    Given a fresh accessibility service snapshot
+    When I route a click request for an unknown accessibility node
+    Then routing fails with an unknown accessibility node error

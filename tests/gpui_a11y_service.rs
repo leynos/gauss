@@ -2,11 +2,14 @@
 
 mod common;
 
-use accesskit::{Action, Role, TreeUpdate};
+use accesskit::{Action, ActionRequest, Role, TreeId, TreeUpdate};
 use common::{ensure_initial_draw, init_test_app};
 use gauss::model::{Selection, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
-use gauss::ui::phase0_shell::{A11yUpdateKind, accessibility};
+use gauss::ui::phase0_shell::{
+    A11yActionRequestError, A11yRequestedAction, A11yUpdateKind, A11yWindowAction, CloseWindow,
+    accessibility,
+};
 use gpui::TestAppContext;
 
 fn setup_window(
@@ -17,6 +20,31 @@ fn setup_window(
         cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
     ensure_initial_draw(visual_cx);
     (visual_cx, view)
+}
+
+fn dispatch_accesskit_action(
+    visual_cx: &mut gpui::VisualTestContext,
+    view: &gpui::Entity<Phase0Shell>,
+    action: Action,
+    target_node_id: u64,
+) -> (Result<A11yRequestedAction, A11yActionRequestError>, bool) {
+    let routed = visual_cx.update(|window, app| {
+        view.update(app, |shell, view_cx| {
+            shell.handle_accesskit_action_request_for_tests(
+                &ActionRequest {
+                    action,
+                    target_tree: TreeId::ROOT,
+                    target_node: accesskit::NodeId(target_node_id),
+                    data: None,
+                },
+                window,
+                view_cx,
+            )
+        })
+    });
+    visual_cx.run_until_parked();
+    let did_request_quit = visual_cx.read(|app| view.read(app).did_request_quit());
+    (routed, did_request_quit)
 }
 
 fn assert_chrome_button_semantics(
@@ -161,5 +189,77 @@ fn a11y_stale_shape_selection_is_ignored_without_crashing(cx: &mut TestAppContex
     assert_eq!(
         update_count, 0,
         "expected stale selection to be ignored and emit no update"
+    );
+}
+
+#[gpui::test]
+fn close_window_gpui_action_requests_quit(cx: &mut TestAppContext) {
+    let (visual_cx, view) = setup_window(cx);
+
+    visual_cx.dispatch_action(CloseWindow);
+    visual_cx.run_until_parked();
+
+    let did_request_quit = visual_cx.read(|app| view.read(app).did_request_quit());
+    assert!(
+        did_request_quit,
+        "expected direct CloseWindow action to request quit"
+    );
+}
+
+#[gpui::test]
+fn accessibility_close_button_click_requests_quit_via_same_shell_path(cx: &mut TestAppContext) {
+    let (visual_cx, view) = setup_window(cx);
+    let (routed, did_request_quit) = dispatch_accesskit_action(
+        visual_cx,
+        &view,
+        Action::Click,
+        accessibility::node_ids::CLOSE_BUTTON,
+    );
+    assert_eq!(
+        routed,
+        Ok(A11yRequestedAction::Window(A11yWindowAction::CloseWindow))
+    );
+    assert!(
+        did_request_quit,
+        "expected close accessibility click to request quit"
+    );
+}
+
+#[gpui::test]
+fn unsupported_accessibility_action_does_not_mutate_shell_state(cx: &mut TestAppContext) {
+    let (visual_cx, view) = setup_window(cx);
+    let (routed, did_request_quit) = dispatch_accesskit_action(
+        visual_cx,
+        &view,
+        Action::Focus,
+        accessibility::node_ids::CLOSE_BUTTON,
+    );
+    assert_eq!(
+        routed,
+        Err(A11yActionRequestError::UnsupportedAction {
+            target_node: accessibility::node_ids::CLOSE_BUTTON,
+            action: Action::Focus,
+        })
+    );
+    assert!(
+        !did_request_quit,
+        "unsupported accessibility request should not request quit"
+    );
+}
+
+#[gpui::test]
+fn unknown_accessibility_node_does_not_mutate_shell_state(cx: &mut TestAppContext) {
+    let (visual_cx, view) = setup_window(cx);
+    let (routed, did_request_quit) =
+        dispatch_accesskit_action(visual_cx, &view, Action::Click, 0xbeef);
+    assert_eq!(
+        routed,
+        Err(A11yActionRequestError::UnknownNode {
+            target_node: 0xbeef
+        })
+    );
+    assert!(
+        !did_request_quit,
+        "unknown accessibility node should not request quit"
     );
 }

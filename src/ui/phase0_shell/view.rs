@@ -2,17 +2,11 @@
 
 use gpui::{Window, div, prelude::*, white};
 
-use crate::ui::action_bridge::{
-    GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeleteSelectedAnchors, GpuiDeleteSelection,
-    GpuiDeselectAll, GpuiInsertAnchorOnSegment, GpuiLowerSelection, GpuiRaiseSelection, GpuiRedo,
-    GpuiSelectAll, GpuiSelectionRedo, GpuiSelectionUndo, GpuiToggleSegmentKind, GpuiUndo,
-    context_for_tool_mode,
-};
+use crate::ui::action_bridge::context_for_tool_mode;
 
 use super::{
-    CloseWindow, ExportSvgWebReady, MinimizeWindow, OpenSvg, Phase0Shell, SaveSvg, ShowWindowMenu,
-    StartWindowMove, StartWindowResize, ToggleEdgeMode, ToggleFullscreen, ToggleMaximize,
-    chrome_palette::chrome_border, draw, file_dialogs, window_controls,
+    ExportSvgWebReady, OpenSvg, Phase0Shell, SaveSvg, ToggleEdgeMode,
+    chrome_palette::chrome_border, draw, file_dialogs,
 };
 
 impl Phase0Shell {
@@ -173,157 +167,6 @@ impl Phase0Shell {
             cx.notify();
             cx.stop_propagation();
         }
-    }
-}
-
-impl Phase0Shell {
-    /// Bind window control action handlers to the root element.
-    fn bind_window_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
-        el.on_action(cx.listener(|_: &mut Self, _: &MinimizeWindow, w, view_cx| {
-            window_controls::minimize(w);
-            view_cx.notify();
-        }))
-        .on_action(cx.listener(|_: &mut Self, _: &ToggleMaximize, w, view_cx| {
-            window_controls::toggle_maximize(w);
-            view_cx.notify();
-        }))
-        .on_action(
-            cx.listener(|_: &mut Self, _: &ToggleFullscreen, w, view_cx| {
-                window_controls::toggle_fullscreen(w);
-                view_cx.notify();
-            }),
-        )
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &CloseWindow, _, action_cx| {
-                shell.did_request_quit = true;
-                action_cx.quit();
-            }),
-        )
-        .on_action(cx.listener(|_: &mut Self, _: &StartWindowMove, w, _cx| {
-            window_controls::start_move(w);
-        }))
-        .on_action(cx.listener(|_: &mut Self, _: &StartWindowResize, w, _cx| {
-            window_controls::start_resize(w, gpui::ResizeEdge::BottomRight);
-        }))
-        .on_action(cx.listener(|_: &mut Self, _: &ShowWindowMenu, w, _cx| {
-            window_controls::show_window_menu(w);
-        }))
-    }
-}
-
-impl Phase0Shell {
-    /// Bind model action handlers (from the action bridge) to the root element.
-    fn bind_model_actions(root: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
-        let mut el = Self::bind_selection_actions(root, cx);
-        el = Self::bind_edit_actions(el, cx);
-        el = Self::bind_tool_actions(el, cx);
-        Self::bind_history_actions(el, cx)
-    }
-
-    fn bind_selection_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
-        el.on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiSelectAll, _, action_cx| {
-                shell.select_all(action_cx);
-            }),
-        )
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiDeselectAll, _, action_cx| {
-                shell.deselect_all(action_cx);
-            }),
-        )
-    }
-
-    fn bind_edit_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
-        el.on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiDeleteSelection, _, action_cx| {
-                let has_shape_selection = shell.state.selection.selected_shapes().next().is_some();
-                let did_change = if has_shape_selection {
-                    shell.delete_selected_shapes()
-                } else {
-                    shell.delete_selected_anchors()
-                };
-                if did_change {
-                    action_cx.notify();
-                }
-            }),
-        )
-        .on_action(cx.listener(
-            |shell: &mut Self, _: &GpuiInsertAnchorOnSegment, _, action_cx| {
-                if shell.insert_anchor_on_selected_segment() {
-                    action_cx.notify();
-                }
-            },
-        ))
-        .on_action(cx.listener(
-            |shell: &mut Self, _: &GpuiDeleteSelectedAnchors, _, action_cx| {
-                if shell.delete_selected_anchors() {
-                    action_cx.notify();
-                }
-            },
-        ))
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiRaiseSelection, _, action_cx| {
-                if shell.raise_selected_shapes() {
-                    action_cx.notify();
-                }
-            }),
-        )
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiLowerSelection, _, action_cx| {
-                if shell.lower_selected_shapes() {
-                    action_cx.notify();
-                }
-            }),
-        )
-        .on_action(cx.listener(
-            |shell: &mut Self, _: &GpuiToggleSegmentKind, _, action_cx| {
-                if shell.toggle_selected_segments_kind() {
-                    action_cx.notify();
-                }
-            },
-        ))
-    }
-
-    fn bind_tool_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
-        el.on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiActivatePenTool, _, action_cx| {
-                let error_before = shell.last_history_error.clone();
-                if shell.activate_draw_tool(None) || shell.last_history_error != error_before {
-                    action_cx.notify();
-                }
-            }),
-        )
-        .on_action(cx.listener(
-            |shell: &mut Self, _: &GpuiActivateSelectTool, _, action_cx| {
-                let error_before = shell.last_history_error.clone();
-                if shell.activate_select_tool() || shell.last_history_error != error_before {
-                    action_cx.notify();
-                }
-            },
-        ))
-    }
-
-    fn bind_history_actions(el: gpui::Div, cx: &mut Context<Self>) -> gpui::Div {
-        el.on_action(cx.listener(|shell: &mut Self, _: &GpuiUndo, _, action_cx| {
-            shell.undo_document();
-            action_cx.notify();
-        }))
-        .on_action(cx.listener(|shell: &mut Self, _: &GpuiRedo, _, action_cx| {
-            shell.redo_document();
-            action_cx.notify();
-        }))
-        .on_action(
-            cx.listener(|shell: &mut Self, _: &GpuiSelectionUndo, _, action_cx| {
-                shell.undo_selection();
-                action_cx.notify();
-            }),
-        )
-        .on_action(cx.listener(
-            |shell: &mut Self, _: &GpuiSelectionRedo, _, action_cx| {
-                shell.redo_selection();
-                action_cx.notify();
-            },
-        ))
     }
 }
 
