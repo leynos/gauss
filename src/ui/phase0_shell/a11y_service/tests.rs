@@ -298,48 +298,38 @@ fn chrome_click_requests_route_to_existing_window_actions(
 }
 
 #[rstest]
-fn unsupported_action_request_is_rejected_without_routing() {
-    let service = routed_service();
-    let request = ActionRequest {
+#[case(
+    Action::Focus,
+    accessibility::node_ids::CLOSE_BUTTON,
+    "unsupported accessibility request should be rejected",
+    A11yActionRequestError::UnsupportedAction {
+        target_node: accessibility::node_ids::CLOSE_BUTTON,
         action: Action::Focus,
-        target_tree: TreeId::ROOT,
-        target_node: NodeId(accessibility::node_ids::CLOSE_BUTTON),
-        data: None,
-    };
-
-    let error = service
-        .route_action_request(&request)
-        .expect_err("unsupported accessibility request should be rejected");
-
-    assert_eq!(
-        error,
-        A11yActionRequestError::UnsupportedAction {
-            target_node: accessibility::node_ids::CLOSE_BUTTON,
-            action: Action::Focus,
-        }
-    );
-}
-
-#[rstest]
-fn unknown_action_request_node_is_rejected_without_routing() {
+    },
+)]
+#[case(
+    Action::Click,
+    0xbeef_u64,
+    "unknown accessibility node should be rejected",
+    A11yActionRequestError::UnknownNode { target_node: 0xbeef },
+)]
+fn rejected_action_requests_return_expected_error(
+    #[case] action: Action,
+    #[case] node_id: u64,
+    #[case] msg: &str,
+    #[case] expected_error: A11yActionRequestError,
+) {
     let service = routed_service();
     let request = ActionRequest {
-        action: Action::Click,
+        action,
         target_tree: TreeId::ROOT,
-        target_node: NodeId(0xbeef),
+        target_node: NodeId(node_id),
         data: None,
     };
 
-    let error = service
-        .route_action_request(&request)
-        .expect_err("unknown accessibility node should be rejected");
+    let error = service.route_action_request(&request).expect_err(msg);
 
-    assert_eq!(
-        error,
-        A11yActionRequestError::UnknownNode {
-            target_node: 0xbeef,
-        }
-    );
+    assert_eq!(error, expected_error);
 }
 
 #[rstest]
