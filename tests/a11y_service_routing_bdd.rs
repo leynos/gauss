@@ -11,6 +11,8 @@ use rstest_bdd_macros::{scenario, then, when};
 
 use a11y_service_bdd_support::*;
 
+const UNKNOWN_NODE_ID: u64 = 0xbeef;
+
 fn route_request(world: &mut A11yWorld, request: &ActionRequest) -> TestSupportResult<()> {
     if world.service.update_records().is_empty() {
         world.last_publish_result = Some(world.service.sync_snapshot(world.snapshot.clone()));
@@ -94,7 +96,7 @@ fn route_click_request_for_an_unknown_accessibility_node(
         &ActionRequest {
             action: Action::Click,
             target_tree: TreeId::ROOT,
-            target_node: NodeId(0xbeef),
+            target_node: NodeId(UNKNOWN_NODE_ID),
             data: None,
         },
     )
@@ -137,7 +139,7 @@ fn routing_fails_with_an_unknown_accessibility_node_error(
     assert_last_route_error(
         world,
         &A11yActionRequestError::UnknownNode {
-            target_node: 0xbeef,
+            target_node: UNKNOWN_NODE_ID,
         },
         "unknown-node routing assertion",
     )

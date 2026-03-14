@@ -168,6 +168,10 @@ Success is observable when:
 - [x] (2026-03-14) Collapsed duplicate unit tests in
   `src/ui/phase0_shell/a11y_service/tests.rs` into one parameterized `rstest`,
   then reran `make check-fmt`, `make lint`, and `make test`.
+- [x] (2026-03-14) Replaced the duplicated unknown-node literal in
+  `tests/a11y_service_routing_bdd.rs` with a shared constant, then reran
+  `make check-fmt`, `make lint`, and `make test` after the crash-restarted gate
+  stack completed successfully.
 
 ## Surprises & Discoveries
 
