@@ -287,8 +287,9 @@ This naturally maps to SVG: groups, shapes, and defs.
 ### 5.4 EngineState (implemented 2025-12)
 
 The `EngineState` struct unifies all editor state into a single source of
-truth, per guiding principle §2.2. It lives in `src/model/engine_state.rs` and
-is GPUI-independent for testability and scripting.
+truth, per guiding principle §2.2. It lives in
+`crates/gauss-core/src/model/engine_state.rs` and is GPUI-independent for
+testability and scripting.
 
 **Design decision:** EngineState consolidates document, selection, viewport,
 tool mode, and resources into a single struct, rather than scattering them
@@ -640,7 +641,8 @@ Implement as a reusable service:
 
 Implementation status (roadmap `0.5.4`):
 
-- shared deterministic hit testing now lives in `src/model/hit_test/` via
+- shared deterministic hit testing now lives in
+  `crates/gauss-core/src/model/hit_test/` via
   `HitTestIndex` with a `LinearScan` backend;
 - `Phase0Shell` manipulate adapters now resolve both pointer-down selection and
   hover hit targets through the shared index service; and
@@ -660,24 +662,26 @@ Tools do not directly mutate state. Instead, they emit `ToolCommand` outputs:
 
 Implementation status (roadmap 0.5.1 to 0.5.3):
 
-- `src/model/tool.rs` now defines the Tool FSM contract via `Tool`,
+- `crates/gauss-core/src/model/tool.rs` now defines the Tool FSM contract via
+  `Tool`,
   `ToolInputEvent`, `ToolCommand`, and `ToolTransition`.
 - `ToolModeFsm` provides deterministic Draw/Manipulate transition behaviour and
   emits command outputs.
 - `Phase0Shell` applies emitted `ToolCommand` values in one place via
   `handle_tool_input_event` and `apply_tool_commands`, keeping UI handlers free
   of direct tool-state mutation.
-- `PenTool` draw-click transitions now live in `src/model/tool.rs` as a
+- `PenTool` draw-click transitions now live in
+  `crates/gauss-core/src/model/tool.rs` as a
   dedicated FSM that implements `Tool`.
 - Pen geometry operations used by draw-click transitions are extracted to
-  `src/model/pen_geometry.rs` so the behaviour is GPUI-independent and directly
-  unit-testable.
+  `crates/gauss-core/src/model/pen_geometry.rs` so the behaviour is
+  GPUI-independent and directly unit-testable.
 - `Phase0Shell` remains an adapter: it snapshots click context into
   `PenToolClickInput`, executes `PenTool::transition`, and applies emitted
   `ToolCommand` outputs through `apply_tool_commands`.
 - `SelectTool` now owns manipulate pointer transitions in
-  `src/model/select_tool/mod.rs` and emits `ToolCommand` values for selection
-  updates, drag preview/restore, and drag commit.
+  `crates/gauss-core/src/model/select_tool/mod.rs` and emits `ToolCommand`
+  values for selection updates, drag preview/restore, and drag commit.
 - `Phase0Shell` manipulate pointer handlers now build `SelectTool` input
   snapshots and apply emitted commands centrally via `apply_tool_commands`.
 - `SelectToolState` currently ships `Idle` and `Dragging` runtime paths, with
@@ -703,9 +707,9 @@ Design decisions:
   preserving immediate drag feedback and deterministic replay behaviour.
 
 - **Decision (2026-03-05)**: implement shared hit testing behind
-  `src/model/hit_test/` with `HitTestIndex` and an explicit `LinearScan`
-  backend, and route both selection pointer-down and hover queries through this
-  shared index API.
+  `crates/gauss-core/src/model/hit_test/` with `HitTestIndex` and an explicit
+  `LinearScan` backend, and route both selection pointer-down and hover queries
+  through this shared index API.
 - **Rationale**: this closes roadmap item `0.5.4` while preserving deterministic
   hit ordering and preparing a low-friction swap to `R-tree`/`BVH` indexing in
   later performance-focused milestones.
@@ -777,9 +781,10 @@ methods** rather than a trait, for the following reasons:
   recording and playback.
 - **Simplicity**: No type erasure or dynamic dispatch complexity.
 
-The `Action` enum lives in `src/model/action.rs` and is GPUI-independent for
-testability. Each variant carries only the data needed to describe the intent;
-actual execution is delegated to the command dispatch layer.
+The `Action` enum lives in `crates/gauss-core/src/model/action.rs` and is
+GPUI-independent for testability. Each variant carries only the data needed to
+describe the intent; actual execution is delegated to the command dispatch
+layer.
 
 Actions are categorized by `ActionKind`:
 
@@ -808,9 +813,9 @@ than a trait, for the following reasons:
 - **Consistency**: Matches the Action enum design from task 0.1.1.
 - **Simplicity**: No type erasure or dynamic dispatch complexity.
 
-The `Command` enum lives in `src/model/command.rs` and is GPUI-independent for
-testability. The relationship between Actions, Commands, and DocOps (document
-operations) is:
+The `Command` enum lives in `crates/gauss-core/src/model/command.rs` and is
+GPUI-independent for testability. The relationship between Actions, Commands,
+and DocOps (document operations) is:
 
 For screen readers: The following diagram shows Actions flowing to Commands,
 then to DocOps.
@@ -832,8 +837,9 @@ Terminology:
 - **DocChange (plural DocChanges)**: An ordered batch of DocOps applied as a
   single unit.
 
-DocOps are atomic, invertible document mutations defined in `src/model/ops.rs`.
-A `DocChange` batches multiple DocOps into a single unit of application.
+DocOps are atomic, invertible document mutations defined in
+`crates/gauss-core/src/model/ops.rs`. A `DocChange` batches multiple DocOps
+into a single unit of application.
 
 Commands sit above DocOps as user-intent operations and the unit of undo/redo.
 Command implementations may either emit DocOps/DocChanges or mutate the
@@ -889,7 +895,8 @@ central, GPUI-independent binding registry.
 - **GPUI compatibility**: `AsRef<str>` provides string conversion for GPUI's
   key binding API.
 
-The `KeyContext` enum lives in `src/model/key_context.rs` with variants:
+The `KeyContext` enum lives in `crates/gauss-core/src/model/key_context.rs`
+with variants:
 
 - `Global` — Always active (Undo, Redo, Selection Undo/Redo, tool switching)
 - `DrawMode` — Active when Pen tool is selected
@@ -916,9 +923,9 @@ Context strings use the format `gauss-{name}` for namespacing (e.g.,
 
 ```text
 Model Layer (GPUI-independent)
-├── KeyContext enum           src/model/key_context.rs
-├── Keystroke type            src/model/keystroke.rs
-└── ActionBinding registry    src/model/keybinding.rs
+├── KeyContext enum           crates/gauss-core/src/model/key_context.rs
+├── Keystroke type            crates/gauss-core/src/model/keystroke.rs
+└── ActionBinding registry    crates/gauss-core/src/model/keybinding.rs
 
 UI Layer (GPUI-dependent)
 ├── GPUI Action bridge        src/ui/action_bridge.rs
@@ -1249,10 +1256,12 @@ Gauss document-level metadata.
 
 **Implementation modules**:
 
-- `src/svg/metadata.rs` — `shape_id_to_hex()`, `shape_id_from_hex()`.
-- `src/svg/import/gauss_attrs.rs` — namespace-aware extraction via full
+- `crates/gauss-svg/src/svg/metadata.rs` — `shape_id_to_hex()`,
+  `shape_id_from_hex()`.
+- `crates/gauss-svg/src/svg/import/gauss_attrs.rs` — namespace-aware extraction
+  via full
   `roxmltree` parse.
-- `src/svg/export/mod.rs` — `write_shape_gauss_metadata()`,
+- `crates/gauss-svg/src/svg/export/mod.rs` — `write_shape_gauss_metadata()`,
   `write_metadata_block()`, `export_svg_with_metadata()`.
 
 #### 10.1.4 Web-ready export policy
@@ -1543,21 +1552,18 @@ The PoC recommends:
 
 ______________________________________________________________________
 
-## 17. Repository / Crate Structure (Recommended Evolution)
+## 17. Repository / Crate Structure
 
-If the repo is currently a single crate, treat this as an evolution path toward
-a workspace that enforces boundaries:
+Gauss now uses a workspace that enforces the first crate boundary split:
 
 ```text
 /crates
   gauss-core        # document, selection, viewport, commands, tools
-  gauss-geometry    # bezier math, hit testing, booleans later
   gauss-svg         # svg parse/serialize + gauss metadata
-  gauss-render      # scene extraction + caching + draw adapters
-  gauss-a11y        # accesskit tree builder + action mapping
-  gauss-script      # rustpython host + gauss Python module
-/apps
-  gauss-desktop     # GPUI app wiring, views, panels, keymaps
+  test_support      # workspace-private fixtures on gauss-core
+/src
+  ui                # GPUI app wiring, views, panels, keymaps
+  main.rs           # desktop entrypoint for the gauss binary
 /docs
   ARCHITECTURE.md   # this doc
   ADR/              # architectural decision records
@@ -1567,8 +1573,16 @@ a workspace that enforces boundaries:
 Enforce dependencies:
 
 - `gauss-core` has no GPUI dependency
-- `gauss-desktop` depends on core/render/a11y/script
-- `gauss-render` depends on core + GPUI drawing APIs
+- `gauss-svg` depends on `gauss-core`
+- `gauss` depends on `gauss-core`, `gauss-svg`, and GPUI-facing crates
+- `test_support` depends on `gauss-core`, not on the app crate
+
+Future extraction remains available if the codebase grows into it:
+
+- `gauss-geometry` for heavier geometry kernels or boolean operations
+- `gauss-render` for scene extraction and draw adapters
+- `gauss-a11y` for reusable AccessKit integration
+- `gauss-script` for RustPython hosting
 
 ______________________________________________________________________
 

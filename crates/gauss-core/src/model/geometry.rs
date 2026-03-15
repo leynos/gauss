@@ -42,17 +42,6 @@ impl Bounds {
             _ => None,
         }
     }
-
-    pub(crate) const fn contains(self, point: Vec2, tolerance: f32) -> bool {
-        let Some((min, max)) = self.to_tuple() else {
-            return false;
-        };
-
-        point.x >= (min.x - tolerance)
-            && point.x <= (max.x + tolerance)
-            && point.y >= (min.y - tolerance)
-            && point.y <= (max.y + tolerance)
-    }
 }
 
 /// A cubic Bézier segment in world space.
@@ -116,7 +105,12 @@ pub(crate) fn cubic_point(cubic: CubicSegment, t: f32) -> Vec2 {
     )
 }
 
-pub(crate) fn shape_world_bounds(shape: &Shape) -> Option<Bounds> {
+/// Compute axis-aligned world-space bounds for a shape.
+///
+/// The bounds include cubic Bézier extrema, so the result is suitable for UI
+/// overlays and hit-test broad phases that need to match the visible curve.
+#[must_use]
+pub fn shape_world_bounds(shape: &Shape) -> Option<(Vec2, Vec2)> {
     let mut bounds = Bounds::new();
 
     for anchor in &shape.path.anchors {
@@ -160,7 +154,7 @@ pub(crate) fn shape_world_bounds(shape: &Shape) -> Option<Bounds> {
         }
     }
 
-    bounds.to_tuple().map(|_| bounds)
+    bounds.to_tuple()
 }
 
 fn extend_bounds_with_cubic(bounds: &mut Bounds, cubic: CubicSegment) {

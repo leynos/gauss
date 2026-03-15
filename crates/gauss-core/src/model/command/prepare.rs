@@ -51,7 +51,7 @@ const DISPATCHER_BUG_MSG: &str = concat!(
 /// # Examples
 ///
 /// ```rust
-/// use gauss::model::{Action, EngineState, prepare_command};
+/// use gauss_core::model::{Action, EngineState, prepare_command};
 ///
 /// let state = EngineState::new();
 ///

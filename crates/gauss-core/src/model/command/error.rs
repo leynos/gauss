@@ -12,7 +12,7 @@ use crate::model::ShapeId;
 /// UI code should handle [`UserError`] gracefully:
 ///
 /// ```rust,ignore
-/// use gauss::model::{Action, UserError, prepare_command};
+/// use gauss_core::model::{Action, UserError, prepare_command};
 ///
 /// // In UI action handler:
 /// match prepare_command(action, &state) {

@@ -13,11 +13,14 @@ use crate::model::{
 };
 
 pub(super) fn hit_test_shape_bbox(shape: &Shape, cursor_world: Vec2, tolerance_world: f32) -> bool {
-    let Some(bounds) = shape_world_bounds(shape) else {
+    let Some((min, max)) = shape_world_bounds(shape) else {
         return false;
     };
 
-    bounds.contains(cursor_world, tolerance_world)
+    cursor_world.x >= (min.x - tolerance_world)
+        && cursor_world.x <= (max.x + tolerance_world)
+        && cursor_world.y >= (min.y - tolerance_world)
+        && cursor_world.y <= (max.y + tolerance_world)
 }
 
 pub(super) fn find_best_segment_hit(

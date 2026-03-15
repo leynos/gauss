@@ -287,6 +287,9 @@ impl CollectedBindings {
                     ctx,
                 ));
             }
+            _ => {
+                debug_assert!(false, "unsupported future model action binding: {action:?}");
+            }
         }
     }
 

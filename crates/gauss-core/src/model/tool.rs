@@ -27,7 +27,7 @@ use crate::model::select_tool::{
 /// # Examples
 ///
 /// ```rust
-/// use gauss::model::ToolMode;
+/// use gauss_core::model::ToolMode;
 ///
 /// let mode = ToolMode::Draw;
 /// assert_eq!(mode.label(), "Draw");
@@ -63,7 +63,7 @@ impl ToolMode {
 /// # Examples
 ///
 /// ```rust
-/// use gauss::model::EdgeMode;
+/// use gauss_core::model::EdgeMode;
 ///
 /// let mode = EdgeMode::Line;
 /// assert_eq!(mode.label(), "Line");

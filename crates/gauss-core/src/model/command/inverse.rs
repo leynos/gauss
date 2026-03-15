@@ -23,7 +23,7 @@ use super::types::{
 /// # Examples
 ///
 /// ```rust
-/// use gauss::model::{CommandInverse, DeletedShape, Document};
+/// use gauss_core::model::{CommandInverse, DeletedShape, Document};
 ///
 /// let mut doc = Document::default();
 /// let inverse = CommandInverse::RestoreShapes {
@@ -173,7 +173,7 @@ impl CommandInverse {
     /// # Examples
     ///
     /// ```rust
-    /// use gauss::model::{CommandInverse, DeletedShape, Document};
+    /// use gauss_core::model::{CommandInverse, DeletedShape, Document};
     ///
     /// let mut doc = Document::default();
     /// let inverse = CommandInverse::RestoreShapes {

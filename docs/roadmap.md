@@ -49,7 +49,8 @@ redesigned.
 Phase 0 (proof-of-concept) is complete. The following capabilities are
 implemented and tested:
 
-- **Model/view separation**: Pure data model in `src/model/` with no GPUI
+- **Model/view separation**: Pure data model in `crates/gauss-core/src/model/`
+  with no GPUI
   dependency; UI logic in `src/ui/`.
 - **Draw mode**: Click-to-place anchors with line or auto-smooth cubic
   segments; snap-to-first closes paths.
@@ -927,16 +928,21 @@ RustPython is not yet integrated. Steps:
 3. Define Python API surface per architecture §13.2.
 4. Ensure all actions are callable from scripts.
 
-### Crate extraction (optional)
+### Crate extraction
 
-The current codebase is a single crate with `crates/test_support/`. The
-architecture document (§17) recommends extraction into workspace crates:
+The repository now uses a Cargo workspace with the following landed split:
 
-- `gauss-core`: document, selection, viewport, commands, tools.
-- `gauss-geometry`: bezier math, hit testing, booleans.
-- `gauss-svg`: SVG parse/serialize.
-- `gauss-render`: scene extraction, caching, draw adapters.
-- `gauss-a11y`: AccessKit integration.
+- `gauss-core`: document, selection, viewport, commands, tools, and shared
+  deterministic test helpers.
+- `gauss-svg`: SVG parse/serialize plus Gauss metadata handling.
+- `gauss`: GPUI desktop application wiring, views, accessibility, and the
+  user-facing binary.
+- `test_support`: workspace-private test fixtures layered on `gauss-core`.
+
+Further extraction remains optional as the codebase grows:
+
+- `gauss-geometry`: additional Bézier maths, booleans, or heavier geometry
+  kernels if they outgrow `gauss-core`.
+- `gauss-render`: scene extraction, caching, and draw adapters.
+- `gauss-a11y`: AccessKit integration if it becomes reusable beyond the app.
 - `gauss-script`: RustPython host.
-
-This extraction can be performed incrementally as the codebase grows.

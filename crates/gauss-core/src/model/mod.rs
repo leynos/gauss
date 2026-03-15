@@ -31,7 +31,7 @@ pub(crate) mod unique_string;
 pub mod viewport;
 
 pub use action::{Action, ActionKind};
-pub(crate) use colour::{format_hex_rgb, parse_hex_rgb};
+pub use colour::{HexColourParseError, format_hex_rgb, parse_hex_rgb};
 pub use command::{
     AnchorDeletion, AnchorDeletionResult, AnchorMovement, AnchorRestoration, AnchorRestorationKind,
     Command, CommandInverse, DeletedShape, HandleKind, HandleMovement, ReorderOp, SegmentChange,
@@ -39,7 +39,8 @@ pub use command::{
 };
 pub use document::Document;
 pub use engine_state::EngineState;
-pub(crate) use geometry::{CubicSegment, cubic_point, shape_world_bounds};
+pub use geometry::shape_world_bounds;
+pub(crate) use geometry::{CubicSegment, cubic_point};
 pub use history::{DocumentUndoHistory, HistoryError};
 pub use hit_test::{HitTestBackend, HitTestIndex};
 pub use key_context::KeyContext;

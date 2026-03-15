@@ -6,8 +6,10 @@ Tailwind-style set of UI controls and layout helpers.
 
 This document captures the lessons from the Phase 0 proof of concept (PoC) and
 provides guidance for Phase 1, which will introduce a functional user
-interface. It assumes the current project structure and uses GPUI 0.2.2 and
-GPUI Component 0.5.0 as pinned in this repository.
+interface. Gauss now uses a split workspace: `gauss-core` owns the pure editor
+model, `gauss-svg` owns SVG persistence, and the root `gauss` package keeps the
+GPUI application shell. The guidance here applies to that root app package and
+uses GPUI 0.2.2 and GPUI Component 0.5.0 as pinned in this repository.
 
 ## Why this exists
 
@@ -97,8 +99,8 @@ fn main() {
 }
 ```
 
-Gauss centralises this setup in `gauss::ui::init`, and the entrypoint in
-`src/main.rs` calls it before opening the window.
+Gauss centralises this setup in `gauss::ui::init`, and the root app entrypoint
+in `src/main.rs` calls it before opening the window.
 
 ## Mental model: three registers
 

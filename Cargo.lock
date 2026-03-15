@@ -2177,18 +2177,38 @@ dependencies = [
  "camino",
  "cap-std 4.0.2",
  "futures",
+ "gauss-core",
+ "gauss-svg",
  "gpui",
  "gpui-component",
  "log",
- "roxmltree 0.21.1",
  "rstest",
  "rstest-bdd",
  "rstest-bdd-macros",
- "slotmap",
  "test_support",
  "thiserror 2.0.18",
- "undo_2",
  "uuid",
+]
+
+[[package]]
+name = "gauss-core"
+version = "0.1.0"
+dependencies = [
+ "rstest",
+ "slotmap",
+ "thiserror 2.0.18",
+ "undo_2",
+]
+
+[[package]]
+name = "gauss-svg"
+version = "0.1.0"
+dependencies = [
+ "gauss-core",
+ "roxmltree 0.21.1",
+ "rstest",
+ "slotmap",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -6286,7 +6306,7 @@ dependencies = [
 name = "test_support"
 version = "0.1.0"
 dependencies = [
- "gauss",
+ "gauss-core",
  "thiserror 2.0.18",
 ]
 

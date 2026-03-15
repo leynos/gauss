@@ -3,6 +3,7 @@
 //! This module keeps command routing separate from rendering so the view module
 //! stays focused on layout and paint concerns.
 
+#[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
 use accesskit::ActionRequest;
 use gpui::{InteractiveElement, Window};
 
@@ -13,10 +14,11 @@ use crate::ui::action_bridge::{
     GpuiSelectAll, GpuiSelectionRedo, GpuiSelectionUndo, GpuiToggleSegmentKind, GpuiUndo,
 };
 
+#[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+use super::{A11yActionRequestError, A11yRequestedAction};
 use super::{
-    A11yActionRequestError, A11yRequestedAction, A11yWindowAction, CloseWindow, MinimizeWindow,
-    Phase0Shell, ShowWindowMenu, StartWindowMove, StartWindowResize, ToggleFullscreen,
-    ToggleMaximize, window_controls,
+    A11yWindowAction, CloseWindow, MinimizeWindow, Phase0Shell, ShowWindowMenu, StartWindowMove,
+    StartWindowResize, ToggleFullscreen, ToggleMaximize, window_controls,
 };
 
 macro_rules! bind_gpui_model_actions {
@@ -78,6 +80,9 @@ impl Phase0Shell {
             | GaussAction::Redo
             | GaussAction::SelectionUndo
             | GaussAction::SelectionRedo => self.execute_history_action(action, cx),
+            _ => {
+                debug_assert!(false, "unsupported future model action: {action:?}");
+            }
         }
     }
 
@@ -154,6 +159,7 @@ impl Phase0Shell {
         }
     }
 
+    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     pub(super) fn handle_accesskit_action_request(
         &mut self,
         request: &ActionRequest,

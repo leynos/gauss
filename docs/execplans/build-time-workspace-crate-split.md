@@ -5,7 +5,7 @@ This Execution Plan (ExecPlan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: DRAFT (2026-03-14)
+Status: COMPLETE (2026-03-15)
 
 No `PLANS.md` exists in this repository.
 
@@ -51,7 +51,7 @@ binary and GPUI shell. Success is observable when:
 - Keep `crates/test_support` private to the workspace and re-point it at the
   smallest useful crate instead of the full app package.
 - Do not introduce new third-party runtime dependencies.
-- Do not start implementation until the user explicitly approves this plan.
+- The user approved implementation on 2026-03-15.
 
 ## Tolerances (exception triggers)
 
@@ -103,7 +103,15 @@ binary and GPUI shell. Success is observable when:
 - [x] (2026-03-14) Measured a cold `cargo build` and captured the finding that
   the largest compile units are upstream GUI dependencies, not Gauss itself.
 - [x] (2026-03-14) Drafted this ExecPlan.
-- [ ] Await user approval before implementation.
+- [x] (2026-03-15) Created `crates/gauss-core` and moved `src/model/**` plus
+  `src/test_helpers.rs` into it.
+- [x] (2026-03-15) Created `crates/gauss-svg` and moved `src/svg/**` into it.
+- [x] (2026-03-15) Rewired the root `gauss` package to re-export `model` and
+  `svg` while keeping the binary name and GPUI shell unchanged.
+- [x] (2026-03-15) Re-pointed `crates/test_support` at `gauss-core`.
+- [x] (2026-03-15) Replayed `make fmt`, `make markdownlint`, `make nixie`,
+  `make check-fmt`, `make lint`, `make test`, and `git diff --check` with tee
+  logs.
 
 ## Surprises & Discoveries
 
@@ -117,6 +125,12 @@ binary and GPUI shell. Success is observable when:
 - The measured cold build cost is dominated by `ash`, `naga`, `gpui`, and
   `gpui-component`; `gauss` itself is comparatively cheap. This means the split
   improves selective builds more than it improves the worst-case clean build.
+- Keeping the root package as the app crate let the existing `gauss::model`
+  and `gauss::svg` import paths survive as thin re-exports, which sharply
+  reduced the UI rewrite surface.
+- Moving code across crate boundaries surfaced a few implicit app-to-core
+  contracts, notably the selection-overlay bounds helper and `Action`'s
+  `#[non_exhaustive]` matches in the app crate.
 
 ## Decision Log
 
@@ -229,6 +243,28 @@ Validation gate:
 
 ## Outcomes & Retrospective
 
-Pending. This section must record the final crate graph, the observed change in
-targeted build/test workflows, any developer-command changes, and whether the
-workspace split delivered the expected selective-build improvement.
+The landed crate graph is `gauss` -> (`gauss-core`, `gauss-svg`) and
+`gauss-svg` -> `gauss-core`, with `test_support` depending only on
+`gauss-core`. Focused validation passes for:
+
+- `cargo metadata --format-version 1`
+- `cargo test -p gauss-core`
+- `cargo test -p gauss-svg`
+- `cargo build -p gauss`
+- `cargo test -p test_support`
+
+The full workspace gate replay also passed:
+
+- `make fmt`
+- `make markdownlint`
+- `make nixie`
+- `make check-fmt`
+- `make lint`
+- `make test`
+- `git diff --check`
+
+The split delivered the expected selective-build improvement: `cargo test -p
+gauss-core` and `cargo test -p gauss-svg` now validate their respective layers
+without compiling the GPUI shell, while the root `gauss` package keeps the
+existing binary name and public `gauss::model` / `gauss::svg` import paths via
+re-exports.

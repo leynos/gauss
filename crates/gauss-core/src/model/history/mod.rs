@@ -62,8 +62,8 @@ impl HistoryEntry {
 /// # Examples
 ///
 /// ```rust
-/// use gauss::model::history::DocumentUndoHistory;
-/// use gauss::model::{Command, Document};
+/// use gauss_core::model::history::DocumentUndoHistory;
+/// use gauss_core::model::{Command, Document};
 ///
 /// let mut doc = Document::default();
 /// let mut history = DocumentUndoHistory::new();
@@ -101,7 +101,7 @@ impl DocumentUndoHistory {
     /// # Examples
     ///
     /// ```rust
-    /// use gauss::model::history::DocumentUndoHistory;
+    /// use gauss_core::model::history::DocumentUndoHistory;
     ///
     /// let history = DocumentUndoHistory::with_max_depth(100);
     /// assert_eq!(history.max_depth(), 100);
@@ -246,7 +246,7 @@ impl DocumentUndoHistory {
     /// # Examples
     ///
     /// ```rust
-    /// use gauss::model::history::DocumentUndoHistory;
+    /// use gauss_core::model::history::DocumentUndoHistory;
     ///
     /// let history = DocumentUndoHistory::new();
     /// assert_eq!(history.len(), 0);
@@ -261,7 +261,7 @@ impl DocumentUndoHistory {
     /// # Examples
     ///
     /// ```rust
-    /// use gauss::model::history::DocumentUndoHistory;
+    /// use gauss_core::model::history::DocumentUndoHistory;
     ///
     /// let history = DocumentUndoHistory::new();
     /// assert!(history.is_empty());

@@ -175,6 +175,7 @@ fn bindings_for_action(collected: &CollectedBindings, action: Action) -> &[KeyBi
         Action::RaiseSelection => &collected.raise_selection,
         Action::LowerSelection => &collected.lower_selection,
         Action::ToggleSegmentKind => &collected.toggle_segment_kind,
+        _ => panic!("unsupported future model action under test: {action:?}"),
     }
 }
 
