@@ -3,7 +3,6 @@
 //! This module keeps command routing separate from rendering so the view module
 //! stays focused on layout and paint concerns.
 
-#[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
 use accesskit::ActionRequest;
 use gpui::{InteractiveElement, Window};
 
@@ -14,7 +13,6 @@ use crate::ui::action_bridge::{
     GpuiSelectAll, GpuiSelectionRedo, GpuiSelectionUndo, GpuiToggleSegmentKind, GpuiUndo,
 };
 
-#[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
 use super::{A11yActionRequestError, A11yRequestedAction};
 use super::{
     A11yWindowAction, CloseWindow, MinimizeWindow, Phase0Shell, ShowWindowMenu, StartWindowMove,
@@ -164,7 +162,15 @@ impl Phase0Shell {
         }
     }
 
-    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+    // Prepared for production AccessKit integration; currently exercised only
+    // via test_helpers::handle_accesskit_action_request_for_tests.
+    #[cfg_attr(
+        not(any(test, feature = "test-support", coverage, coverage_nightly)),
+        expect(
+            dead_code,
+            reason = "compiled unconditionally for production readiness; no GPUI event hook yet"
+        )
+    )]
     pub(super) fn handle_accesskit_action_request(
         &mut self,
         request: &ActionRequest,

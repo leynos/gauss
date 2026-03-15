@@ -55,10 +55,6 @@ fn parse_hex_colour(hex: &str, allow_alpha: bool) -> Result<Rgba, HexColourParse
         255
     };
 
-    if iter.next().is_some() {
-        return Err(HexColourParseError::InvalidLength);
-    }
-
     Ok(Rgba::new(r, g, b, a))
 }
 

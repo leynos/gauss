@@ -14,7 +14,7 @@ uses GPUI 0.2.2 and GPUI Component 0.5.1 as pinned in this repository.
 ## Why this exists
 
 GPUI is pre-1.0 and changes frequently. The best way to stay productive is to
-standardise how the app boots, how state is organised, how the UI is rendered,
+standardize how the app boots, how state is organized, how the UI is rendered,
 and how behaviour is tested. This guide records the patterns that worked in
 Phase 0, highlights pitfalls, and outlines how to extend the UI safely.
 
