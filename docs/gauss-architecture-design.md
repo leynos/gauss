@@ -1550,7 +1550,7 @@ The PoC recommends:
 
 ______________________________________________________________________
 
-## 17. Repository / Crate Structure
+## 17. Repository / crate structure
 
 Gauss now uses a workspace that enforces the first crate boundary split:
 

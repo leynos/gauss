@@ -3,30 +3,19 @@
 //! This module keeps hex colour handling consistent so we do not diverge
 //! between SVG import/export and the UI colour picker integration.
 
-use std::{error::Error, fmt};
-
 use crate::model::Rgba;
 
 /// Errors returned when parsing hexadecimal RGB colour literals.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum HexColourParseError {
     /// The input did not contain the expected number of hexadecimal digits.
+    #[error("hex colour has an invalid length")]
     InvalidLength,
     /// The input contained a non-hexadecimal digit.
+    #[error("hex colour contains an invalid digit")]
     InvalidDigit,
 }
-
-impl fmt::Display for HexColourParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::InvalidLength => write!(f, "hex colour has an invalid length"),
-            Self::InvalidDigit => write!(f, "hex colour contains an invalid digit"),
-        }
-    }
-}
-
-impl Error for HexColourParseError {}
 
 /// Format an RGB colour as a lowercase `#rrggbb` string.
 ///
