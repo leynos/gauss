@@ -5,17 +5,34 @@
 
 use crate::model::Rgba;
 
-#[derive(Clone, Copy, Debug)]
-pub(crate) enum HexColourParseError {
+/// Errors returned when parsing hexadecimal RGB colour literals.
+#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum HexColourParseError {
+    /// The input did not contain the expected number of hexadecimal digits.
+    #[error("hex colour has an invalid length")]
     InvalidLength,
+    /// The input contained a non-hexadecimal digit.
+    #[error("hex colour contains an invalid digit")]
     InvalidDigit,
 }
 
-pub(crate) fn format_hex_rgb(colour: Rgba) -> String {
+/// Format an RGB colour as a lowercase `#rrggbb` string.
+///
+/// The alpha channel (`colour.a`) is ignored; the output always contains
+/// exactly three hex pairs for red, green, and blue.
+#[must_use]
+pub fn format_hex_rgb(colour: Rgba) -> String {
     format!("#{:02x}{:02x}{:02x}", colour.r, colour.g, colour.b)
 }
 
-pub(crate) fn parse_hex_rgb(hex: &str) -> Result<Rgba, HexColourParseError> {
+/// Parse a `#rrggbb` or `rrggbb` string into an opaque [`Rgba`] value.
+///
+/// # Errors
+///
+/// Returns [`HexColourParseError`] when the input is not valid hexadecimal RGB
+/// text.
+pub fn parse_hex_rgb(hex: &str) -> Result<Rgba, HexColourParseError> {
     parse_hex_colour(hex, false)
 }
 
@@ -37,10 +54,6 @@ fn parse_hex_colour(hex: &str, allow_alpha: bool) -> Result<Rgba, HexColourParse
     } else {
         255
     };
-
-    if iter.next().is_some() {
-        return Err(HexColourParseError::InvalidLength);
-    }
 
     Ok(Rgba::new(r, g, b, a))
 }

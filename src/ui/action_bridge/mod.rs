@@ -223,6 +223,10 @@ impl CollectedBindings {
     }
 
     /// Add a single binding to the appropriate collection.
+    #[expect(
+        clippy::unreachable,
+        reason = "wildcard arm must panic in all builds when a new Action variant is unhandled"
+    )]
     fn add_binding(&mut self, action: Action, keystroke: &str, ctx: Option<&str>) {
         match action {
             Action::DeleteSelection => {
@@ -286,6 +290,9 @@ impl CollectedBindings {
                     GpuiToggleSegmentKind,
                     ctx,
                 ));
+            }
+            _ => {
+                unreachable!("unsupported future model action binding: {action:?}");
             }
         }
     }

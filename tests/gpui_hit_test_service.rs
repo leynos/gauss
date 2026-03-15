@@ -4,8 +4,8 @@ mod common;
 
 use common::{canvas_bounds, ensure_initial_draw, init_test_app};
 use gauss::model::{Document, SelItem, SelectPointerHit, ShapeId, Vec2};
-use gauss::test_helpers::square_shape_with_out_handle;
 use gauss::ui::{GpuiActivatePenTool, Phase0Shell};
+use gauss_core::test_helpers::square_shape_with_out_handle;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 
 #[gpui::test]

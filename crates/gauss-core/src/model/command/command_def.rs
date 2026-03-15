@@ -31,7 +31,7 @@ use super::types::{
 /// # Examples
 ///
 /// ```rust
-/// use gauss::model::{Command, DeletedShape};
+/// use gauss_core::model::{Command, DeletedShape};
 ///
 /// // Commands can be matched exhaustively within this crate
 /// let cmd = Command::DeleteShapes { targets: vec![] };
@@ -133,7 +133,7 @@ impl Command {
     /// # Examples
     ///
     /// ```rust
-    /// use gauss::model::Command;
+    /// use gauss_core::model::Command;
     ///
     /// let cmd = Command::DeleteShapes { targets: vec![] };
     /// assert_eq!(cmd.name(), "Delete");
@@ -175,7 +175,7 @@ impl Command {
     /// # Examples
     ///
     /// ```rust
-    /// use gauss::model::{Command, CommandInverse, DeletedShape, Document};
+    /// use gauss_core::model::{Command, CommandInverse, DeletedShape, Document};
     ///
     /// let mut doc = Document::default();
     /// let cmd = Command::DeleteShapes { targets: vec![] };

@@ -1,6 +1,6 @@
 //! Shared geometry helpers for editor features.
 //!
-//! This module centralises lightweight cubic Bézier math used by both hit
+//! This module centralizes lightweight cubic Bézier math used by both hit
 //! testing and selection overlays. The focus is on clarity and predictable
 //! bounds rather than high-performance tessellation.
 
@@ -12,6 +12,27 @@
 use crate::model::{SegmentKind, Shape, Vec2};
 
 const CUBIC_EXTREMA_EPSILON: f32 = 1.0e-6;
+
+/// Axis-aligned world-space bounds for a shape.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ShapeWorldBounds {
+    /// Minimum corner (smallest x and y).
+    pub min: Vec2,
+    /// Maximum corner (largest x and y).
+    pub max: Vec2,
+}
+
+impl ShapeWorldBounds {
+    /// Test whether a point lies within these bounds, expanded by `tolerance`
+    /// in every direction.
+    #[must_use]
+    pub fn contains_with_tolerance(self, point: Vec2, tolerance: f32) -> bool {
+        point.x >= (self.min.x - tolerance)
+            && point.x <= (self.max.x + tolerance)
+            && point.y >= (self.min.y - tolerance)
+            && point.y <= (self.max.y + tolerance)
+    }
+}
 
 /// Axis-aligned bounds in world space.
 #[derive(Clone, Copy, Debug)]
@@ -41,17 +62,6 @@ impl Bounds {
             (Some(min), Some(max)) => Some((min, max)),
             _ => None,
         }
-    }
-
-    pub(crate) const fn contains(self, point: Vec2, tolerance: f32) -> bool {
-        let Some((min, max)) = self.to_tuple() else {
-            return false;
-        };
-
-        point.x >= (min.x - tolerance)
-            && point.x <= (max.x + tolerance)
-            && point.y >= (min.y - tolerance)
-            && point.y <= (max.y + tolerance)
     }
 }
 
@@ -116,7 +126,12 @@ pub(crate) fn cubic_point(cubic: CubicSegment, t: f32) -> Vec2 {
     )
 }
 
-pub(crate) fn shape_world_bounds(shape: &Shape) -> Option<Bounds> {
+/// Compute axis-aligned world-space bounds for a shape.
+///
+/// The bounds include cubic Bézier extrema, so the result is suitable for UI
+/// overlays and hit-test broad phases that need to match the visible curve.
+#[must_use]
+pub fn shape_world_bounds(shape: &Shape) -> Option<ShapeWorldBounds> {
     let mut bounds = Bounds::new();
 
     for anchor in &shape.path.anchors {
@@ -160,7 +175,8 @@ pub(crate) fn shape_world_bounds(shape: &Shape) -> Option<Bounds> {
         }
     }
 
-    bounds.to_tuple().map(|_| bounds)
+    let (min, max) = bounds.to_tuple()?;
+    Some(ShapeWorldBounds { min, max })
 }
 
 fn extend_bounds_with_cubic(bounds: &mut Bounds, cubic: CubicSegment) {

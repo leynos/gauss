@@ -36,7 +36,7 @@
 //! # Examples
 //!
 //! ```rust,no_run
-//! use gauss::model::{Action, ActionKind};
+//! use gauss_core::model::{Action, ActionKind};
 //!
 //! let action = Action::DeleteSelection;
 //! assert_eq!(action.kind(), ActionKind::Document);
@@ -79,7 +79,7 @@ pub enum ActionKind {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use gauss::model::Action;
+/// use gauss_core::model::Action;
 ///
 /// // Actions can be matched exhaustively within this crate
 /// let action = Action::Undo;
@@ -196,7 +196,7 @@ impl Action {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::{Action, ActionKind};
+    /// use gauss_core::model::{Action, ActionKind};
     ///
     /// assert_eq!(Action::DeleteSelection.kind(), ActionKind::Document);
     /// assert_eq!(Action::SelectAll.kind(), ActionKind::Editor);
@@ -243,7 +243,7 @@ impl Action {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::Action;
+    /// use gauss_core::model::Action;
     ///
     /// assert_eq!(Action::DeleteSelection.name(), "Delete Selection");
     /// assert_eq!(Action::Undo.name(), "Undo");
@@ -281,7 +281,7 @@ impl Action {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::Action;
+    /// use gauss_core::model::Action;
     ///
     /// assert!(Action::DeleteSelection.requires_selection());
     /// assert!(!Action::SelectAll.requires_selection());

@@ -22,7 +22,7 @@
 //! # Examples
 //!
 //! ```rust,no_run
-//! use gauss::model::Keystroke;
+//! use gauss_core::model::Keystroke;
 //!
 //! // Simple key
 //! let tab = Keystroke::new("tab");
@@ -66,7 +66,7 @@ pub enum Modifier {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use gauss::model::Modifiers;
+/// use gauss_core::model::Modifiers;
 ///
 /// let mods = Modifiers::default().with_secondary().with_shift();
 /// assert!(mods.secondary);
@@ -138,13 +138,13 @@ impl Modifiers {
     /// The order matches the canonical modifier ordering used by UI
     /// formatters: Control, Alt, Shift, Secondary (Cmd/Ctrl).
     ///
-    /// This centralises modifier ordering logic so all output methods
+    /// This centralizes modifier ordering logic so all output methods
     /// (serializers, display names) share a single source of truth.
     ///
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::{Modifiers, Modifier};
+    /// use gauss_core::model::{Modifiers, Modifier};
     ///
     /// let mods = Modifiers::default().with_secondary().with_shift();
     /// let active: Vec<_> = mods.active_in_order().collect();
@@ -170,7 +170,7 @@ impl Modifiers {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use gauss::model::Keystroke;
+/// use gauss_core::model::Keystroke;
 ///
 /// // Simple key
 /// let delete = Keystroke::new("backspace");
@@ -195,7 +195,7 @@ impl Keystroke {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::Keystroke;
+    /// use gauss_core::model::Keystroke;
     ///
     /// let tab = Keystroke::new("tab");
     /// assert_eq!(tab.key, "tab");
@@ -213,7 +213,7 @@ impl Keystroke {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::Keystroke;
+    /// use gauss_core::model::Keystroke;
     ///
     /// let undo = Keystroke::secondary("z");
     /// assert!(undo.modifiers.secondary);
@@ -231,7 +231,7 @@ impl Keystroke {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::Keystroke;
+    /// use gauss_core::model::Keystroke;
     ///
     /// let redo = Keystroke::secondary_shift("z");
     /// assert!(redo.modifiers.secondary);
@@ -250,7 +250,7 @@ impl Keystroke {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::Keystroke;
+    /// use gauss_core::model::Keystroke;
     ///
     /// let close = Keystroke::alt("f4");
     /// assert!(close.modifiers.alt);
@@ -268,7 +268,7 @@ impl Keystroke {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::{Keystroke, Modifiers};
+    /// use gauss_core::model::{Keystroke, Modifiers};
     ///
     /// let mods = Modifiers::default().with_control().with_shift();
     /// let keystroke = Keystroke::with_modifiers("a", mods);
@@ -293,7 +293,7 @@ impl Keystroke {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::Keystroke;
+    /// use gauss_core::model::Keystroke;
     ///
     /// let undo = Keystroke::secondary("z");
     /// // macOS: "⌘Z", Linux/Windows: "Ctrl+Z"

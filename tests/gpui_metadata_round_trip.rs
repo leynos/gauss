@@ -8,8 +8,8 @@ use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};
 use common::{TempFileGuard, ensure_initial_draw, init_test_app};
 use gauss::svg::metadata::GAUSS_METADATA_NAMESPACE;
-use gauss::test_helpers::shape_id_from_seed;
 use gauss::ui::{OpenSvg, Phase0Shell, SaveSvg};
+use gauss_core::test_helpers::shape_id_from_seed;
 use gpui::TestAppContext;
 use uuid::Uuid;
 

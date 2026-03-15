@@ -14,7 +14,7 @@
 //! # Examples
 //!
 //! ```rust
-//! use gauss::model::{Document, EdgeMode, EngineState, ToolMode};
+//! use gauss_core::model::{Document, EdgeMode, EngineState, ToolMode};
 //!
 //! // Create empty state
 //! let state = EngineState::new();
@@ -113,7 +113,7 @@ impl EngineState {
     /// # Examples
     ///
     /// ```rust
-    /// use gauss::model::EngineState;
+    /// use gauss_core::model::EngineState;
     ///
     /// let state = EngineState::new();
     /// assert!(state.document.is_empty());
@@ -144,7 +144,7 @@ impl EngineState {
     /// # Examples
     ///
     /// ```rust
-    /// use gauss::model::{Document, EngineState, Shape};
+    /// use gauss_core::model::{Document, EngineState, Shape};
     ///
     /// let mut doc = Document::default();
     /// // Add shapes to doc...

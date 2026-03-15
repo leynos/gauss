@@ -1,6 +1,7 @@
 //! Small maths helpers for tests.
 
 /// Return the midpoint between `a` and `b`.
+#[must_use]
 #[expect(
     clippy::float_arithmetic,
     reason = "tests need midpoint calculations for positioning gestures"
