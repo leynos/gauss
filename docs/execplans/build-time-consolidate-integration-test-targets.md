@@ -93,7 +93,7 @@ observable when:
 - [x] (2026-03-14) Drafted this ExecPlan.
 - [ ] Await user approval before implementation.
 
-## Surprises & Discoveries
+## Surprises & discoveries
 
 - The current integration suite is already partway modularized: many folders
   under `tests/` are helper-only modules, which means the consolidation work is
@@ -105,7 +105,7 @@ observable when:
   family, so they may only need modest consolidation or may even stay mostly as
   they are if the GPUI reduction delivers enough win.
 
-## Decision Log
+## Decision log
 
 - 2026-03-14: Treat GPUI target consolidation as the primary goal and keep
   non-GPUI consolidation secondary. Rationale: the GPUI targets repeatedly pull
@@ -205,7 +205,7 @@ Validation gate:
 - `make test`
 - `git diff --check`
 
-## Outcomes & Retrospective
+## Outcomes & retrospective
 
 Pending. Record the before/after top-level integration target counts, the final
 group names, any CI or nextest filter changes, and whether the consolidation
