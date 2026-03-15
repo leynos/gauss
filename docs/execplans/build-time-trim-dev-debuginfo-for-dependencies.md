@@ -30,7 +30,7 @@ After this plan is implemented, success is observable when:
 ## Constraints
 
 - Limit this work to development and test profiles. Do not change release
-  optimisation or debuginfo policy in this plan.
+  optimization or debuginfo policy in this plan.
 - Prefer dependency-only debuginfo trimming over first-party crate trimming so
   Gauss engineers can still debug Gauss code effectively.
 - Do not introduce new tools or dependencies just to manage profile settings.

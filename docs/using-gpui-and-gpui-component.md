@@ -99,7 +99,7 @@ fn main() {
 }
 ```
 
-Gauss centralises this setup in `gauss::ui::init`, and the root app entrypoint
+Gauss centralizes this setup in `gauss::ui::init`, and the root app entrypoint
 in `src/main.rs` calls it before opening the window.
 
 ## Mental model: three registers

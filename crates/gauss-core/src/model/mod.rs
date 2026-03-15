@@ -39,8 +39,8 @@ pub use command::{
 };
 pub use document::Document;
 pub use engine_state::EngineState;
-pub use geometry::shape_world_bounds;
 pub(crate) use geometry::{CubicSegment, cubic_point};
+pub use geometry::{ShapeWorldBounds, shape_world_bounds};
 pub use history::{DocumentUndoHistory, HistoryError};
 pub use hit_test::{HitTestBackend, HitTestIndex};
 pub use key_context::KeyContext;

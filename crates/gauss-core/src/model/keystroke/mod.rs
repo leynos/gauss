@@ -138,7 +138,7 @@ impl Modifiers {
     /// The order matches the canonical modifier ordering used by UI
     /// formatters: Control, Alt, Shift, Secondary (Cmd/Ctrl).
     ///
-    /// This centralises modifier ordering logic so all output methods
+    /// This centralizes modifier ordering logic so all output methods
     /// (serializers, display names) share a single source of truth.
     ///
     /// # Examples

@@ -36,6 +36,10 @@ macro_rules! bind_gpui_model_actions {
 }
 
 impl Phase0Shell {
+    #[expect(
+        clippy::unreachable,
+        reason = "wildcard arm must panic in all builds when a new Action variant is unhandled"
+    )]
     pub(super) fn execute_model_action(
         &mut self,
         action: GaussAction,
@@ -81,7 +85,7 @@ impl Phase0Shell {
             | GaussAction::SelectionUndo
             | GaussAction::SelectionRedo => self.execute_history_action(action, cx),
             _ => {
-                debug_assert!(false, "unsupported future model action: {action:?}");
+                unreachable!("unsupported future model action: {action:?}");
             }
         }
     }

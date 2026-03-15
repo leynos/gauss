@@ -5,7 +5,7 @@ edition.workspace = true
 
 [workspace]
 members = ["crates/gauss-core", "crates/gauss-svg", "crates/test_support"]
-default-members = [".", "crates/gauss-core", "crates/gauss-svg", "crates/test_support"]
+default-members = [".", "crates/gauss-core", "crates/gauss-svg"]
 
 [workspace.package]
 version = "0.1.0"

@@ -50,8 +50,7 @@ Phase 0 (proof-of-concept) is complete. The following capabilities are
 implemented and tested:
 
 - **Model/view separation**: Pure data model in `crates/gauss-core/src/model/`
-  with no GPUI
-  dependency; UI logic in `src/ui/`.
+  with no GPUI dependency; UI logic in `src/ui/`.
 - **Draw mode**: Click-to-place anchors with line or auto-smooth cubic
   segments; snap-to-first closes paths.
 - **Manipulate mode**: Selection of shapes, anchors, handles, and segments;

@@ -642,8 +642,8 @@ Implement as a reusable service:
 Implementation status (roadmap `0.5.4`):
 
 - shared deterministic hit testing now lives in
-  `crates/gauss-core/src/model/hit_test/` via
-  `HitTestIndex` with a `LinearScan` backend;
+  `crates/gauss-core/src/model/hit_test/` via `HitTestIndex` with a
+  `LinearScan` backend;
 - `Phase0Shell` manipulate adapters now resolve both pointer-down selection and
   hover hit targets through the shared index service; and
 - the index boundary remains explicit so `LinearScan` can be replaced by
@@ -663,16 +663,15 @@ Tools do not directly mutate state. Instead, they emit `ToolCommand` outputs:
 Implementation status (roadmap 0.5.1 to 0.5.3):
 
 - `crates/gauss-core/src/model/tool.rs` now defines the Tool FSM contract via
-  `Tool`,
-  `ToolInputEvent`, `ToolCommand`, and `ToolTransition`.
+  `Tool`, `ToolInputEvent`, `ToolCommand`, and `ToolTransition`.
 - `ToolModeFsm` provides deterministic Draw/Manipulate transition behaviour and
   emits command outputs.
 - `Phase0Shell` applies emitted `ToolCommand` values in one place via
   `handle_tool_input_event` and `apply_tool_commands`, keeping UI handlers free
   of direct tool-state mutation.
 - `PenTool` draw-click transitions now live in
-  `crates/gauss-core/src/model/tool.rs` as a
-  dedicated FSM that implements `Tool`.
+  `crates/gauss-core/src/model/tool.rs` as a dedicated FSM that implements
+  `Tool`.
 - Pen geometry operations used by draw-click transitions are extracted to
   `crates/gauss-core/src/model/pen_geometry.rs` so the behaviour is
   GPUI-independent and directly unit-testable.
@@ -1259,8 +1258,7 @@ Gauss document-level metadata.
 - `crates/gauss-svg/src/svg/metadata.rs` — `shape_id_to_hex()`,
   `shape_id_from_hex()`.
 - `crates/gauss-svg/src/svg/import/gauss_attrs.rs` — namespace-aware extraction
-  via full
-  `roxmltree` parse.
+  via full `roxmltree` parse.
 - `crates/gauss-svg/src/svg/export/mod.rs` — `write_shape_gauss_metadata()`,
   `write_metadata_block()`, `export_svg_with_metadata()`.
 
@@ -1562,6 +1560,7 @@ Gauss now uses a workspace that enforces the first crate boundary split:
   gauss-svg         # svg parse/serialize + gauss metadata
   test_support      # workspace-private fixtures on gauss-core
 /src
+  lib.rs            # re-exports gauss::model and gauss::svg from workspace crates
   ui                # GPUI app wiring, views, panels, keymaps
   main.rs           # desktop entrypoint for the gauss binary
 /docs

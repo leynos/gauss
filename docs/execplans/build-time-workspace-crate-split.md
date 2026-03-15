@@ -162,7 +162,7 @@ The intended future structure is:
 
 - `crates/gauss-core/` for `model` plus deterministic non-UI test helpers.
 - `crates/gauss-svg/` for SVG import/export built on `gauss-core`.
-- the root package or `crates/gauss-app/` for `ui` and the binary entrypoint.
+- the root package (the app crate) for `ui` and the binary entrypoint.
 - `crates/test_support/` updated to depend on `gauss-core`.
 
 Relevant files to read before implementation:
@@ -263,8 +263,8 @@ The full workspace gate replay also passed:
 - `make test`
 - `git diff --check`
 
-The split delivered the expected selective-build improvement: `cargo test -p
-gauss-core` and `cargo test -p gauss-svg` now validate their respective layers
-without compiling the GPUI shell, while the root `gauss` package keeps the
-existing binary name and public `gauss::model` / `gauss::svg` import paths via
-re-exports.
+The split delivered the expected selective-build improvement:
+`cargo test -p gauss-core` and `cargo test -p gauss-svg` now validate their
+respective layers without compiling the GPUI shell, while the root `gauss`
+package keeps the existing binary name and public `gauss::model` / `gauss::svg`
+import paths via re-exports.
