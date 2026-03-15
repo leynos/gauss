@@ -923,7 +923,7 @@ Context strings use the format `gauss-{name}` for namespacing (e.g.,
 ```text
 Model Layer (GPUI-independent)
 ├── KeyContext enum           crates/gauss-core/src/model/key_context.rs
-├── Keystroke type            crates/gauss-core/src/model/keystroke.rs
+├── Keystroke type            crates/gauss-core/src/model/keystroke/mod.rs
 └── ActionBinding registry    crates/gauss-core/src/model/keybinding.rs
 
 UI Layer (GPUI-dependent)
@@ -1558,7 +1558,7 @@ Gauss now uses a workspace that enforces the first crate boundary split:
 /crates
   gauss-core        # document, selection, viewport, commands, tools
   gauss-svg         # svg parse/serialize + gauss metadata
-  test_support      # workspace-private fixtures on gauss-core
+  test_support      # workspace-private fixtures on gauss-core (excluded from default-members)
 /src
   lib.rs            # re-exports gauss::model and gauss::svg from workspace crates
   ui                # GPUI app wiring, views, panels, keymaps
@@ -1575,6 +1575,10 @@ Enforce dependencies:
 - `gauss-svg` depends on `gauss-core`
 - `gauss` depends on `gauss-core`, `gauss-svg`, and GPUI-facing crates
 - `test_support` depends on `gauss-core`, not on the app crate
+
+Plain `cargo build` and `cargo test` skip `test_support` because it is excluded
+from the workspace `default-members` list. Use `cargo test --workspace` or
+`cargo test -p test_support` to include it explicitly.
 
 Future extraction remains available if the codebase grows into it:
 

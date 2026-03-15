@@ -85,15 +85,15 @@ accesskit = "0.24.0"
 camino = "1.2.2"
 cap-std = { version = "4.0.2", features = ["fs_utf8"] }
 futures = "0.3.31"
-gauss-core = { path = "crates/gauss-core" }
-gauss-svg = { path = "crates/gauss-svg" }
+gauss-core = { version = "0.1.0", path = "crates/gauss-core" }
+gauss-svg = { version = "0.1.0", path = "crates/gauss-svg" }
 gpui = "0.2.2"
 gpui-component = "0.5.1"
 log = "0.4.29"
 thiserror = "2.0.18"
 
 [dev-dependencies]
-gauss-core = { path = "crates/gauss-core", features = ["test-support"] }
+gauss-core = { version = "0.1.0", path = "crates/gauss-core", features = ["test-support"] }
 gpui = { version = "0.2.2", features = ["test-support"] }
 rstest = "0.26.1"
 rstest-bdd = "0.5.0"

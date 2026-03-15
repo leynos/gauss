@@ -9,7 +9,7 @@ provides guidance for Phase 1, which will introduce a functional user
 interface. Gauss now uses a split workspace: `gauss-core` owns the pure editor
 model, `gauss-svg` owns SVG persistence, and the root `gauss` package keeps the
 GPUI application shell. The guidance here applies to that root app package and
-uses GPUI 0.2.2 and GPUI Component 0.5.0 as pinned in this repository.
+uses GPUI 0.2.2 and GPUI Component 0.5.1 as pinned in this repository.
 
 ## Why this exists
 
@@ -21,7 +21,7 @@ Phase 0, highlights pitfalls, and outlines how to extend the UI safely.
 ## Version and platform constraints
 
 - GPUI is pre-1.0, so API changes are expected between versions.
-- This repo pins `gpui = "0.2.2"` and `gpui-component = "0.5.0"` in
+- This repo pins `gpui = "0.2.2"` and `gpui-component = "0.5.1"` in
   `Cargo.toml`. When either changes, update this guide.
 - Track versions intentionally and expect occasional update work.
 - GPUI targets macOS and Linux and expects the latest stable Rust. This repo
@@ -36,7 +36,7 @@ Phase 0, highlights pitfalls, and outlines how to extend the UI safely.
   ```
 
 - Local rustdoc copies live under `docs/rustdoc-gpui-0.2.2` and
-  `docs/rustdoc-gpui-component-0.5.0`. They are not committed, so a fresh clone
+  `docs/rustdoc-gpui-component-0.5.1`. They are not committed, so a fresh clone
   will not include them.
 
 ## Getting started from scratch
@@ -49,9 +49,9 @@ on the same version as `gpui-component`.
 ```toml
 [dependencies]
 gpui = "0.2.2"
-gpui-component = "0.5.0"
+gpui-component = "0.5.1"
 # Optional, for bundled icon assets
-# gpui-component-assets = "0.5.0"
+# gpui-component-assets = "0.5.1"
 anyhow = "1.0"
 ```
 
@@ -361,7 +361,7 @@ possible. This keeps tests fast and reduces UI coupling.
 
 - GPUI docs: `docs/rustdoc-gpui-0.2.2/gpui/index.html`
 - GPUI Component docs:
-  `docs/rustdoc-gpui-component-0.5.0/gpui_component/index.html`
+  `docs/rustdoc-gpui-component-0.5.1/gpui_component/index.html`
 
 These local docs should be consulted before introducing new GPUI APIs so the
 project stays aligned with the pinned versions.

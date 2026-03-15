@@ -29,6 +29,9 @@ impl fmt::Display for HexColourParseError {
 impl Error for HexColourParseError {}
 
 /// Format an RGB colour as a lowercase `#rrggbb` string.
+///
+/// The alpha channel (`colour.a`) is ignored; the output always contains
+/// exactly three hex pairs for red, green, and blue.
 #[must_use]
 pub fn format_hex_rgb(colour: Rgba) -> String {
     format!("#{:02x}{:02x}{:02x}", colour.r, colour.g, colour.b)

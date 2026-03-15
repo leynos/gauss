@@ -7,13 +7,13 @@ edition.workspace = true
 test-support = ["gauss-core/test-support"]
 
 [dependencies]
-gauss-core = { path = "../gauss-core" }
+gauss-core = { version = "0.1.0", path = "../gauss-core" }
 roxmltree = "0.21.1"
 slotmap = "1.1.1"
 thiserror = "2.0.18"
 
 [dev-dependencies]
-gauss-core = { path = "../gauss-core", features = ["test-support"] }
+gauss-core = { version = "0.1.0", path = "../gauss-core", features = ["test-support"] }
 rstest = "0.26.1"
 
 [lints]

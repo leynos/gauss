@@ -102,17 +102,17 @@ impl Phase0Shell {
         }
     }
 
+    #[expect(
+        clippy::unreachable,
+        reason = "wildcard arm must panic in all builds when a non-tool action is dispatched"
+    )]
     fn execute_tool_action(&mut self, action: GaussAction, cx: &mut gpui::Context<Self>) {
         let error_before = self.last_history_error.clone();
         let did_change = match action {
             GaussAction::ActivatePenTool => self.activate_draw_tool(None),
             GaussAction::ActivateSelectTool => self.activate_select_tool(),
             _ => {
-                debug_assert!(
-                    false,
-                    "execute_tool_action called with non-tool action: {action:?}"
-                );
-                false
+                unreachable!("execute_tool_action called with non-tool action: {action:?}")
             }
         };
         if did_change || self.last_history_error != error_before {
@@ -120,6 +120,10 @@ impl Phase0Shell {
         }
     }
 
+    #[expect(
+        clippy::unreachable,
+        reason = "wildcard arm must panic in all builds when a non-history action is dispatched"
+    )]
     fn execute_history_action(&mut self, action: GaussAction, cx: &mut gpui::Context<Self>) {
         match action {
             GaussAction::Undo => self.undo_document(),
@@ -127,10 +131,7 @@ impl Phase0Shell {
             GaussAction::SelectionUndo => self.undo_selection(),
             GaussAction::SelectionRedo => self.redo_selection(),
             _ => {
-                debug_assert!(
-                    false,
-                    "execute_history_action called with non-history action: {action:?}"
-                );
+                unreachable!("execute_history_action called with non-history action: {action:?}")
             }
         }
         cx.notify();

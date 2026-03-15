@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-gauss-core = { path = "../gauss-core", features = ["test-support"] }
+gauss-core = { version = "0.1.0", path = "../gauss-core", features = ["test-support"] }
 thiserror = "2.0.18"
 
 [lints]

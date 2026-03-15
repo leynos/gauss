@@ -180,9 +180,8 @@ Relevant files to read before implementation:
 ### Stage A: establish the target Cargo workspace shape
 
 Update the root `Cargo.toml` so the workspace declares the new crate members,
-shared metadata, and a stable default member set. Decide whether the root
-package remains the app crate or becomes a virtual workspace with the app under
-`crates/gauss-app/`.
+shared metadata, and a stable default member set. The root package remained the
+app crate rather than introducing a virtual workspace.
 
 Validation gate:
 
