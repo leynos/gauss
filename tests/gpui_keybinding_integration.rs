@@ -16,10 +16,10 @@ mod common;
 
 use common::{ensure_initial_draw, init_test_app, read_selection_items};
 use gauss::model::{Document, SelItem, ShapeId, Vec2};
-use gauss::test_helpers::square_shape;
 use gauss::ui::{
     GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeselectAll, GpuiSelectAll, Phase0Shell,
 };
+use gauss_core::test_helpers::square_shape;
 use gpui::TestAppContext;
 
 // === ui::init registration tests ===
