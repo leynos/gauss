@@ -34,10 +34,6 @@ macro_rules! bind_gpui_model_actions {
 }
 
 impl Phase0Shell {
-    #[expect(
-        clippy::unreachable,
-        reason = "wildcard arm must panic in all builds when a new Action variant is unhandled"
-    )]
     pub(super) fn execute_model_action(
         &mut self,
         action: GaussAction,
@@ -82,6 +78,10 @@ impl Phase0Shell {
             | GaussAction::Redo
             | GaussAction::SelectionUndo
             | GaussAction::SelectionRedo => self.execute_history_action(action, cx),
+            #[expect(
+                clippy::unreachable,
+                reason = "wildcard arm must panic in all builds when a new Action variant is unhandled"
+            )]
             _ => {
                 unreachable!("unsupported future model action: {action:?}");
             }
@@ -100,15 +100,15 @@ impl Phase0Shell {
         }
     }
 
-    #[expect(
-        clippy::unreachable,
-        reason = "wildcard arm must panic in all builds when a non-tool action is dispatched"
-    )]
     fn execute_tool_action(&mut self, action: GaussAction, cx: &mut gpui::Context<Self>) {
         let error_before = self.last_history_error.clone();
         let did_change = match action {
             GaussAction::ActivatePenTool => self.activate_draw_tool(None),
             GaussAction::ActivateSelectTool => self.activate_select_tool(),
+            #[expect(
+                clippy::unreachable,
+                reason = "wildcard arm must panic in all builds when a non-tool action is dispatched"
+            )]
             _ => {
                 unreachable!("execute_tool_action called with non-tool action: {action:?}")
             }
@@ -118,16 +118,16 @@ impl Phase0Shell {
         }
     }
 
-    #[expect(
-        clippy::unreachable,
-        reason = "wildcard arm must panic in all builds when a non-history action is dispatched"
-    )]
     fn execute_history_action(&mut self, action: GaussAction, cx: &mut gpui::Context<Self>) {
         match action {
             GaussAction::Undo => self.undo_document(),
             GaussAction::Redo => self.redo_document(),
             GaussAction::SelectionUndo => self.undo_selection(),
             GaussAction::SelectionRedo => self.redo_selection(),
+            #[expect(
+                clippy::unreachable,
+                reason = "wildcard arm must panic in all builds when a non-history action is dispatched"
+            )]
             _ => {
                 unreachable!("execute_history_action called with non-history action: {action:?}")
             }
