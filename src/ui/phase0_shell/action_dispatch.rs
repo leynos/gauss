@@ -162,6 +162,7 @@ impl Phase0Shell {
         }
     }
 
+    // FIXME: remove once the production GPUI event hook is wired — see roadmap §1.9.5
     // Prepared for production AccessKit integration; currently exercised only
     // via test_helpers::handle_accesskit_action_request_for_tests.
     #[cfg_attr(
