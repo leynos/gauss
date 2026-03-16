@@ -38,7 +38,7 @@ After this plan is implemented, success is observable when:
   after the profile change.
 - Document the trade-off honestly: this plan optimizes compile time at the cost
   of dependency-level debugging depth.
-- Do not start implementation until the user explicitly approves this plan.
+- Do not start implementation until a maintainer approves the pull request.
 
 ## Tolerances (exception triggers)
 

@@ -6,7 +6,7 @@
 use crate::model::Rgba;
 
 /// Errors returned when parsing hexadecimal RGB colour literals.
-#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum HexColourParseError {
     /// The input did not contain the expected number of hexadecimal digits.

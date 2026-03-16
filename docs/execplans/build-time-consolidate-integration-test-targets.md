@@ -45,7 +45,7 @@ observable when:
   - ordinary Rust tests for integration checks that do not need GPUI.
 - Avoid changing application code unless a narrow testing seam is genuinely
   required to keep the merged tests readable.
-- Do not start implementation until the user explicitly approves this plan.
+- Do not start implementation until a maintainer approves the pull request.
 
 ## Tolerances (exception triggers)
 

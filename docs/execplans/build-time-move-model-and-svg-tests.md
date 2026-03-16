@@ -34,13 +34,14 @@ After this plan is implemented, success is observable when:
   same behaviour unless the refactor exposes a genuine bug.
 - Keep GPUI-dependent tests in the app crate. Do not force `#[gpui::test]`
   into `gauss-core` or `gauss-svg`.
-- Preserve existing BDD coverage where it is still appropriate. If a BDD suite
-  is pure model or pure SVG behaviour, it should move with the logic it tests.
+- Preserve existing behaviour-driven development (BDD) coverage where it is
+  still appropriate. If a BDD suite is pure model or pure SVG behaviour, it
+  should move with the logic it tests.
 - Keep shared fixtures deterministic and avoid panicking helpers outside
   `#[test]` or `#[cfg(test)]` boundaries.
 - Reuse `crates/test_support` or successor helper crates instead of duplicating
   fixtures across packages.
-- Do not start implementation until the user explicitly approves this plan.
+- Do not start implementation until a maintainer approves the pull request.
 
 ## Tolerances (exception triggers)
 

@@ -40,7 +40,7 @@ Success is observable when:
 - Keep feature selection explicit in `Cargo.toml` once a decision is made.
 - Avoid adding custom feature flags to Gauss unless they are necessary to
   express target-specific backend choices cleanly.
-- Do not start implementation until the user explicitly approves this plan.
+- Do not start implementation until a maintainer approves the pull request.
 
 ## Tolerances (exception triggers)
 

@@ -1573,13 +1573,14 @@ Enforce dependencies:
 
 - `gauss-core` has no GPUI dependency
 - `gauss-svg` and `gauss` both depend on `gauss-core`; `gauss` additionally
-  depends
-  on `gauss-svg` and GPUI-facing crates
+  depends on `gauss-svg` and GPUI-facing crates
 - `test_support` depends on `gauss-core`, not on the app crate
 
-Plain `cargo build` and `cargo test` skip `test_support` because it is excluded
-from the workspace `default-members` list. Use `cargo test --workspace` or
-`cargo test -p test_support` to include it explicitly.
+Plain `cargo build` and `cargo test` do not select `test_support` as a
+top-level workspace member because it is excluded from the workspace
+`default-members` list. Cargo can still build `test_support` when it is a
+dependency of selected packages. Use `cargo test --workspace` or
+`cargo test -p test_support` to run that package explicitly.
 
 Future extraction remains available if the codebase grows into it:
 

@@ -73,7 +73,7 @@ Success is observable when:
   - `docs/gauss-architecture-design.md`,
   - `docs/users-guide.md`,
   - `docs/roadmap.md`.
-- Do not start implementation until the user explicitly approves this plan.
+- Do not start implementation until a maintainer approves the pull request.
 
 ## Tolerances (exception triggers)
 

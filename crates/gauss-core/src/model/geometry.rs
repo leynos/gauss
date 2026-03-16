@@ -27,10 +27,11 @@ impl ShapeWorldBounds {
     /// in every direction.
     #[must_use]
     pub fn contains_with_tolerance(self, point: Vec2, tolerance: f32) -> bool {
-        point.x >= (self.min.x - tolerance)
-            && point.x <= (self.max.x + tolerance)
-            && point.y >= (self.min.y - tolerance)
-            && point.y <= (self.max.y + tolerance)
+        let normalized_tolerance = tolerance.max(0.0);
+        point.x >= (self.min.x - normalized_tolerance)
+            && point.x <= (self.max.x + normalized_tolerance)
+            && point.y >= (self.min.y - normalized_tolerance)
+            && point.y <= (self.max.y + normalized_tolerance)
     }
 }
 

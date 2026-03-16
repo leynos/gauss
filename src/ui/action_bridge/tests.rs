@@ -175,7 +175,11 @@ fn bindings_for_action(collected: &CollectedBindings, action: Action) -> &[KeyBi
         Action::RaiseSelection => &collected.raise_selection,
         Action::LowerSelection => &collected.lower_selection,
         Action::ToggleSegmentKind => &collected.toggle_segment_kind,
-        _ => panic!("unsupported future model action under test: {action:?}"),
+        #[expect(
+            clippy::unreachable,
+            reason = "Action is #[non_exhaustive]; wildcard required but all current variants are handled"
+        )]
+        _ => unreachable!("all Action variants should be explicitly matched above"),
     }
 }
 
