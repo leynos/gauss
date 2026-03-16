@@ -83,7 +83,7 @@ Success is observable when:
 - [x] (2026-03-14) Drafted this ExecPlan.
 - [ ] Await user approval before implementation.
 
-## Surprises & Discoveries
+## Surprises and discoveries
 
 - The audit target is not just `gpui`; `gpui-component` also deserves review
   because it may bring optional feature surfaces that Gauss does not use.
@@ -180,7 +180,7 @@ Validation gate:
 - `make test`
 - `git diff --check`
 
-## Outcomes & Retrospective
+## Outcomes and retrospective
 
 Pending. Record the verified platform matrix, the final dependency declaration,
 the before/after evidence, and whether the audit ended with a narrowed feature

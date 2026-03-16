@@ -113,7 +113,7 @@ binary and GPUI shell. Success is observable when:
   `make check-fmt`, `make lint`, `make test`, and `git diff --check` with tee
   logs.
 
-## Surprises & Discoveries
+## Surprises and discoveries
 
 - The existing code comments already describe the right split: `src/lib.rs`
   calls `model` pure logic, `svg` persistence, and `ui` GPUI-specific wiring.
@@ -240,7 +240,7 @@ Validation gate:
 - `make test`
 - `git diff --check`
 
-## Outcomes & Retrospective
+## Outcomes and retrospective
 
 The landed crate graph is `gauss` -> (`gauss-core`, `gauss-svg`) and
 `gauss-svg` -> `gauss-core`, with `test_support` depending only on

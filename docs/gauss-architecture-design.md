@@ -812,7 +812,7 @@ than a trait, for the following reasons:
 - **Consistency**: Matches the Action enum design from task 0.1.1.
 - **Simplicity**: No type erasure or dynamic dispatch complexity.
 
-The `Command` enum lives in `crates/gauss-core/src/model/command.rs` and is
+The `Command` enum lives in `crates/gauss-core/src/model/command/mod.rs` and is
 GPUI-independent for testability. The relationship between Actions, Commands,
 and DocOps (document operations) is:
 
