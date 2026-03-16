@@ -1572,7 +1572,8 @@ Gauss now uses a workspace that enforces the first crate boundary split:
 Enforce dependencies:
 
 - `gauss-core` has no GPUI dependency
-- `gauss-svg` and `gauss` both depend on `gauss-core`; `gauss` additionally depends
+- `gauss-svg` and `gauss` both depend on `gauss-core`; `gauss` additionally
+  depends
   on `gauss-svg` and GPUI-facing crates
 - `test_support` depends on `gauss-core`, not on the app crate
 

@@ -1,4 +1,4 @@
-# Split Gauss into core, SVG, and app workspace crates
+# Split Gauss into core, Scalable Vector Graphics (SVG), and app workspace crates
 
 This Execution Plan (ExecPlan) is a living document. The sections
 `Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,

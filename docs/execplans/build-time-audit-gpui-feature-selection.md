@@ -23,8 +23,8 @@ Success is observable when:
 - the repository has a documented decision on whether to keep or narrow GPUI
   features;
 - any adopted feature narrowing preserves the platforms Gauss supports;
-- developer, CI, and release commands still build the application correctly;
-  and
+- developer, continuous integration (CI), and release commands still build the
+  application correctly; and
 - the decision is backed by measurement rather than intuition.
 
 ## Constraints
