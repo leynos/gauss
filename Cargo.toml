@@ -99,7 +99,7 @@ rstest = "0.26.1"
 rstest-bdd = "0.5.0"
 rstest-bdd-macros = "0.5.0"
 test_support = { path = "crates/test_support" }
-uuid = { version = "1.21.0", features = ["v4"] }
+uuid = { version = "1.22.0", features = ["v4"] }
 
 [features]
 test-support = ["gauss-core/test-support"]
