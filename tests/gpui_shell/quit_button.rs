@@ -4,9 +4,9 @@
 //! invoked, so the shell exposes a `did_request_quit` flag for stable headless
 //! assertions.
 
-mod common;
 
-use common::{ensure_initial_draw, init_test_app};
+
+use crate::common::{ensure_initial_draw, init_test_app};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, TestAppContext, point, px};
 

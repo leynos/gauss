@@ -7,9 +7,9 @@
     reason = "integration tests use floating point geometry inputs"
 )]
 
-mod common;
 
-use common::{
+
+use crate::common::{
     anchor_to_canvas_point, canvas_bounds, draw_point, ensure_initial_draw, init_test_app,
     require_draw_shape, shift_secondary, simulate_escape,
 };
@@ -36,8 +36,8 @@ fn canvas_points(
 ) -> TestSupportResult<(gpui::Bounds<gpui::Pixels>, gpui::Point<gpui::Pixels>)> {
     let bounds = canvas_bounds(visual_cx)?;
     let p1 = point(
-        bounds.origin.x + px(common::CANVAS_PADDING_PX),
-        bounds.origin.y + px(common::CANVAS_PADDING_PX),
+        bounds.origin.x + px(crate::common::CANVAS_PADDING_PX),
+        bounds.origin.y + px(crate::common::CANVAS_PADDING_PX),
     );
     Ok((bounds, p1))
 }

@@ -6,9 +6,9 @@
 //! - `Tab` toggling the draw edge mode label, and
 //! - manipulate mode not displaying an edge mode suffix.
 
-mod common;
 
-use common::{ensure_initial_draw, init_test_app};
+
+use crate::common::{ensure_initial_draw, init_test_app};
 use gauss::ui::Phase0Shell;
 use gpui::TestAppContext;
 

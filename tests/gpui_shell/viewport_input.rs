@@ -7,9 +7,9 @@
     reason = "integration tests use floating point geometry inputs"
 )]
 
-mod common;
 
-use common::{canvas_bounds, ensure_initial_draw, init_test_app};
+
+use crate::common::{canvas_bounds, ensure_initial_draw, init_test_app};
 use gauss::model::Vec2;
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, ScrollDelta, ScrollWheelEvent, TestAppContext, TouchPhase, point, px};
@@ -20,8 +20,8 @@ fn canvas_position(
 ) -> TestSupportResult<gpui::Point<gpui::Pixels>> {
     let bounds = canvas_bounds(visual_cx)?;
     Ok(point(
-        bounds.origin.x + px(common::CANVAS_PADDING_PX),
-        bounds.origin.y + px(common::CANVAS_PADDING_PX),
+        bounds.origin.x + px(crate::common::CANVAS_PADDING_PX),
+        bounds.origin.y + px(crate::common::CANVAS_PADDING_PX),
     ))
 }
 

@@ -1,9 +1,9 @@
 //! GPUI integration coverage for the accessibility tree service wiring.
 
-mod common;
+
 
 use accesskit::{Action, ActionRequest, Role, TreeId, TreeUpdate};
-use common::{ensure_initial_draw, init_test_app};
+use crate::common::{ensure_initial_draw, init_test_app};
 use gauss::model::{Selection, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gauss::ui::phase0_shell::{
@@ -133,7 +133,7 @@ fn a11y_shape_insert_emits_incremental_update(cx: &mut TestAppContext) {
 
     let inserted_shape_id = visual_cx.update(|_window, app| {
         view.update(app, |shell, view_cx| {
-            let shape_id = common::add_square(
+            let shape_id = crate::common::add_square(
                 shell.document_mut_for_tests(),
                 Vec2::new(10.0, 10.0),
                 Vec2::new(40.0, 40.0),

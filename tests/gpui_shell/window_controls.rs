@@ -3,9 +3,9 @@
 //! This module tests the keyboard-accessible window controls and verifies
 //! that resize zones are properly disabled when the window is maximised.
 
-mod common;
 
-use common::{ensure_initial_draw, init_test_app};
+
+use crate::common::{ensure_initial_draw, init_test_app};
 use gauss::ui::Phase0Shell;
 use gpui::{Entity, Modifiers, MouseButton, Pixels, TestAppContext, VisualTestContext, point, px};
 

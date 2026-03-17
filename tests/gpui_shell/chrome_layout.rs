@@ -1,8 +1,8 @@
 //! Behavioural tests for the Phase 1 chrome layout.
 
-mod common;
 
-use common::{canvas_bounds, click_canvas_and_wait, ensure_initial_draw, init_test_app};
+
+use crate::common::{canvas_bounds, click_canvas_and_wait, ensure_initial_draw, init_test_app};
 use gauss::ui::Phase0Shell;
 use gpui::{TestAppContext, point, px};
 
@@ -128,7 +128,7 @@ fn chrome_undo_redo_buttons_update_document(cx: &mut TestAppContext) {
     click_canvas_and_wait(visual_cx, p2);
 
     let before = visual_cx.read(|app| view.read(app).document().clone());
-    let shape_before = common::require_draw_shape(&before, "after drawing")
+    let shape_before = crate::common::require_draw_shape(&before, "after drawing")
         .expect("expected draw shape after drawing");
     let anchor_count = shape_before.path.anchors.len();
     assert!(
@@ -146,7 +146,7 @@ fn chrome_undo_redo_buttons_update_document(cx: &mut TestAppContext) {
     click_canvas_and_wait(visual_cx, undo_pos);
 
     let after_undo = visual_cx.read(|app| view.read(app).document().clone());
-    let shape_after_undo = common::require_draw_shape(&after_undo, "after undo")
+    let shape_after_undo = crate::common::require_draw_shape(&after_undo, "after undo")
         .expect("expected draw shape after undo");
     assert_eq!(
         shape_after_undo.path.anchors.len(),
@@ -164,7 +164,7 @@ fn chrome_undo_redo_buttons_update_document(cx: &mut TestAppContext) {
     click_canvas_and_wait(visual_cx, redo_pos);
 
     let after_redo = visual_cx.read(|app| view.read(app).document().clone());
-    let shape_after_redo = common::require_draw_shape(&after_redo, "after redo")
+    let shape_after_redo = crate::common::require_draw_shape(&after_redo, "after redo")
         .expect("expected draw shape after redo");
     assert_eq!(
         shape_after_redo.path.anchors.len(),
