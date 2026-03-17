@@ -267,6 +267,7 @@ the pattern `gpui_{group}_{test_name}.rs`. This provides the organizational
 benefits of grouping while avoiding Rust module path complexity.
 
 **Rationale**:
+
 - Nested modules (`tests/gpui_shell/foo.rs`) require `super::super::common`
   imports and more complex module declarations
 - Flat naming (`tests/gpui_shell_foo.rs`) keeps simple `mod common` imports
@@ -284,6 +285,7 @@ goal of organizing tests by feature area was achieved through consistent naming.
 
 **Expected impact**: While this approach does not reduce the number of test
 *targets* (still 56), it provides:
+
 - Clear feature-area organization via naming convention
 - Easier test discovery (`cargo test --test gpui_shell_*`)
 - Maintained test isolation and parallel execution
@@ -324,6 +326,7 @@ If build-time reduction becomes a priority, consider:
 ### Commit gates status
 
 All applicable commit gates passed:
+
 - ✅ `make fmt` - Rust and Markdown formatting applied
 - ✅ `make markdownlint` - All Markdown files pass linting
 - ✅ `make nixie` - Mermaid diagram validation passed
