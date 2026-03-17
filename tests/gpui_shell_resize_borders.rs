@@ -5,11 +5,11 @@
 //! These tests only run on non-Linux platforms where the inner resize borders
 //! are used.
 
-#[cfg(not(target_os = "linux"))]
+mod common;
 
-
 #[cfg(not(target_os = "linux"))]
-use crate::common::{ensure_initial_draw, init_test_app};
+#[cfg(not(target_os = "linux"))]
+use common::{ensure_initial_draw, init_test_app};
 #[cfg(not(target_os = "linux"))]
 use gauss::ui::Phase0Shell;
 #[cfg(not(target_os = "linux"))]

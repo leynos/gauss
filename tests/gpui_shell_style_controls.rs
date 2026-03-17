@@ -1,8 +1,8 @@
 //! GPUI headless integration tests for Phase 0 stroke/fill controls.
 
+mod common;
 
-
-use crate::common::{
+use common::{
     anchor_to_canvas_point, click_canvas_and_wait, ensure_initial_draw, init_test_app,
     read_document, read_history_len, require_draw_shape, simulate_escape,
 };
@@ -43,7 +43,7 @@ fn style_changes_apply_to_selected_shapes_and_are_undoable(cx: &mut TestAppConte
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
-    let bounds = crate::common::canvas_bounds(visual_cx).expect("canvas bounds should be available");
+    let bounds = common::canvas_bounds(visual_cx).expect("canvas bounds should be available");
     let p1 = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));
     let p2 = point(
         bounds.origin.x + bounds.size.width - px(2.0),
@@ -98,8 +98,8 @@ fn style_changes_apply_to_selected_shapes_and_are_undoable(cx: &mut TestAppConte
         "expected fill to be updated to blue"
     );
 
-    crate::common::simulate_document_undo(visual_cx);
-    crate::common::simulate_document_undo(visual_cx);
+    common::simulate_document_undo(visual_cx);
+    common::simulate_document_undo(visual_cx);
 
     let doc_after_undo = read_document(visual_cx, &view);
     let shape_after_undo =

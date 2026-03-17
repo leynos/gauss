@@ -1,11 +1,12 @@
 //! GPUI tests for history state reset when opening a document.
 
-use std::path::Path;
+mod common;
 
+use std::path::Path;
 
 use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};
-use crate::common::{TempFileGuard, ensure_initial_draw, init_test_app, read_history_len, read_selection};
+use common::{TempFileGuard, ensure_initial_draw, init_test_app, read_history_len, read_selection};
 use gauss::model::{Command, SelItem, Selection, ShapeMovement, Vec2};
 use gauss::ui::{OpenSvg, Phase0Shell};
 use gpui::{Entity, TestAppContext, VisualTestContext};

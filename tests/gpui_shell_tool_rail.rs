@@ -1,8 +1,8 @@
 //! Behavioural tests for the Phase 1 tool rail.
 
+mod common;
 
-
-use crate::common::{click_left_and_wait, ensure_initial_draw, init_test_app};
+use common::{click_left_and_wait, ensure_initial_draw, init_test_app};
 use gauss::ui::Phase0Shell;
 use gpui::{TestAppContext, point, px};
 

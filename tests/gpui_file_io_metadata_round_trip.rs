@@ -1,10 +1,12 @@
 //! GPUI headless integration tests for metadata round-trip through save/open.
 
+mod common;
+
 use std::path::Path;
 
 use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};
-use crate::crate::common::{TempFileGuard, ensure_initial_draw, init_test_app};
+use common::{TempFileGuard, ensure_initial_draw, init_test_app};
 use gauss::svg::metadata::GAUSS_METADATA_NAMESPACE;
 use gauss::ui::{OpenSvg, Phase0Shell, SaveSvg};
 use gauss_core::test_helpers::shape_id_from_seed;

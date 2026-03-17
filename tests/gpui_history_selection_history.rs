@@ -1,9 +1,9 @@
 //! GPUI headless integration tests for Phase 0 selection history.
+
 #![expect(
     clippy::float_arithmetic,
     reason = "integration tests use floating point geometry inputs"
 )]
-
 mod common;
 
 use common::{

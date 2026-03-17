@@ -3,9 +3,9 @@
 //! These tests validate Save prompt wiring and SVG file output without needing
 //! a real window manager.
 
-use std::path::Path;
-
 mod common;
+
+use std::path::Path;
 
 use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};

@@ -7,11 +7,11 @@
 //!
 //! This test also covers undo: once a segment is toggled, `Undo` should restore
 //! both the segment kind and the handle positions.
+
 #![expect(
     clippy::float_arithmetic,
     reason = "integration tests use floating point geometry inputs"
 )]
-
 mod common;
 
 use common::{

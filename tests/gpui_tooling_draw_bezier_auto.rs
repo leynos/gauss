@@ -8,11 +8,11 @@
 //!
 //! This test asserts that switching to Bézier auto via `Tab` yields cubic
 //! segments with the expected handle positions.
+
 #![expect(
     clippy::float_arithmetic,
     reason = "integration tests use floating point geometry inputs"
 )]
-
 mod common;
 
 use common::{
