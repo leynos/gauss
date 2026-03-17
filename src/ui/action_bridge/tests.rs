@@ -56,7 +56,6 @@ fn get_binding_field<'a>(collected: &'a CollectedBindings, name: &str) -> &'a [K
 #[case("activate_pen_tool")]
 #[case("activate_select_tool")]
 #[case("insert_anchor_on_segment")]
-#[case("delete_selected_anchors")]
 #[case("raise_selection")]
 #[case("lower_selection")]
 #[case("toggle_segment_kind")]
