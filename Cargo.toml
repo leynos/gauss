@@ -84,7 +84,7 @@ missing_crate_level_docs = "deny"
 accesskit = "0.24.0"
 camino = "1.2.2"
 cap-std = { version = "4.0.2", features = ["fs_utf8"] }
-futures = "0.3.31"
+futures = "0.3.32"
 gauss-core = { version = "0.1.0", path = "crates/gauss-core" }
 gauss-svg = { version = "0.1.0", path = "crates/gauss-svg" }
 gpui = "0.2.2"
