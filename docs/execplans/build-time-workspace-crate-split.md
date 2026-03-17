@@ -51,7 +51,7 @@ binary and GPUI shell. Success is observable when:
 - Keep `crates/test_support` private to the workspace and re-point it at the
   smallest useful crate instead of the full app package.
 - Do not introduce new third-party runtime dependencies.
-- The user approved implementation on 2026-03-15.
+- A maintainer approved the implementation on 2026-03-15.
 
 ## Tolerances (exception triggers)
 
@@ -132,7 +132,7 @@ binary and GPUI shell. Success is observable when:
   contracts, notably the selection-overlay bounds helper and `Action`'s
   `#[non_exhaustive]` matches in the app crate.
 
-## Decision Log
+## Decision log
 
 - 2026-03-14: Plan around three top-level product crates plus the existing test
   helper crate rather than creating many micro-crates. Rationale: the current

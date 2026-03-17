@@ -24,7 +24,7 @@ observable when:
 - the top-level `tests/*.rs` target count is reduced from the current `56` to a
   materially smaller grouped set;
 - the `39` current `gpui_*.rs` integration targets are consolidated into a few
-  larger GPUI-focused binaries by feature area;
+  larger GPU-accelerated UI (GPUI)-focused binaries by feature area;
 - non-GPUI integration tests stay readable and do not get mixed into
   GPUI-specific setup unnecessarily; and
 - `cargo test --workspace --no-run`, `make test`, and the standard formatting
@@ -41,7 +41,7 @@ observable when:
   support modules instead of duplicating setup code.
 - Preserve current test harness choices:
   - `#[gpui::test]` for windowing and platform wiring,
-  - `rstest-bdd` for behavioural scenarios,
+  - `rstest-bdd` for behaviour-driven development (BDD) scenarios,
   - ordinary Rust tests for integration checks that do not need GPUI.
 - Avoid changing application code unless a narrow testing seam is genuinely
   required to keep the merged tests readable.
@@ -56,9 +56,9 @@ observable when:
   without a clean module split, stop and group the domain differently.
 - Coverage tolerance: if a proposed merge would force GPUI-only setup into a
   pure model/SVG test path, stop and keep those tests separate.
-- Tooling tolerance: if `nextest` or existing CI filtering depends on the exact
-  current test target names, stop and record the required CI updates before
-  renaming targets.
+- Tooling tolerance: if `nextest` or existing continuous integration (CI)
+  filtering depends on the exact current test target names, stop and record the
+  required CI updates before renaming targets.
 - Failure tolerance: if merged crates expose order-dependence or shared-state
   leaks that current isolated crates mask, stop and fix the test isolation
   problem before proceeding further.
@@ -91,9 +91,9 @@ observable when:
   `tests/common`, `tests/select_tool_bdd`, `tests/command_unit_tests`, and
   other support directories.
 - [x] (2026-03-14) Drafted this ExecPlan.
-- [ ] Await user approval before implementation.
+- [ ] Await maintainer approval of the pull request before implementation.
 
-## Surprises & discoveries
+## Surprises and discoveries
 
 - The current integration suite is already partway modularized: many folders
   under `tests/` are helper-only modules, which means the consolidation work is

@@ -1,6 +1,6 @@
 //! Shared geometry helpers for editor features.
 //!
-//! This module centralizes lightweight cubic Bézier math used by both hit
+//! This module centralizes lightweight cubic Bézier maths used by both hit
 //! testing and selection overlays. The focus is on clarity and predictable
 //! bounds rather than high-performance tessellation.
 

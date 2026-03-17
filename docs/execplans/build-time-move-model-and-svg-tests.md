@@ -80,9 +80,9 @@ After this plan is implemented, success is observable when:
   `tests/resource_store_bdd.rs`, `tests/hit_test_bdd.rs`,
   `tests/metadata_round_trip_bdd.rs`, and `tests/web_ready_export_bdd.rs`.
 - [x] (2026-03-14) Drafted this ExecPlan.
-- [ ] Await user approval before implementation.
+- [ ] Await maintainer approval of the pull request before implementation.
 
-## Surprises & Discoveries
+## Surprises and discoveries
 
 - Gauss already mixes three testing styles for model and SVG work:
   in-module unit tests, top-level integration tests, and BDD entrypoints. The
@@ -93,7 +93,7 @@ After this plan is implemented, success is observable when:
   move because they provide meaningful isolated coverage today but still sit in
   the app-level test graph.
 
-## Decision Log
+## Decision log
 
 - 2026-03-14: Use crate ownership as the deciding rule for test location.
   Rationale: tests should live with the logic they validate unless they

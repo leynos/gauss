@@ -224,8 +224,9 @@ Success is observable when:
   path. Rationale: today the codebase already separates model `Action` values
   from window-control GPUI actions.
 
-- 2026-03-06: No implementation work begins until the user approves this
-  ExecPlan. Rationale: follow the required approval gate for plan-first work.
+- 2026-03-06: No implementation work begins until a maintainer approves the
+  pull request. Rationale: follow the required approval gate for plan-first
+  work.
 
 - 2026-03-06: `0.6.3` stays open in `docs/roadmap.md` until `make lint` and
   `make test` pass, even though the code and docs changes are already in place.
@@ -520,5 +521,5 @@ Acceptance for Stage G:
 
 ## Approval gate
 
-Implementation must not begin until the user explicitly approves this document
-or requests revisions to it.
+Implementation must not begin until a maintainer approves the pull request or
+requests revisions to it.

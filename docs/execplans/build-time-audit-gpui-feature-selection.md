@@ -81,7 +81,7 @@ Success is observable when:
 - [x] (2026-03-14) Observed timing evidence showing expensive Linux GUI units
   such as `x11rb-protocol` in the current build graph.
 - [x] (2026-03-14) Drafted this ExecPlan.
-- [ ] Await user approval before implementation.
+- [ ] Await maintainer approval of the pull request before implementation.
 
 ## Surprises and discoveries
 
@@ -92,7 +92,7 @@ Success is observable when:
 - Because this work is feature-audit-first, a carefully documented “no change”
   outcome is a valid success case.
 
-## Decision Log
+## Decision log
 
 - 2026-03-14: Treat this as an audit with an implementation branch point, not
   as a guaranteed manifest change. Rationale: platform support is more

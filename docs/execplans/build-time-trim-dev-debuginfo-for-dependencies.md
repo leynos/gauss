@@ -76,9 +76,9 @@ After this plan is implemented, success is observable when:
 - [x] (2026-03-14) Measured a cold `cargo build` and confirmed the heaviest
   units are third-party crates rather than Gauss itself.
 - [x] (2026-03-14) Drafted this ExecPlan.
-- [ ] Await user approval before implementation.
+- [ ] Await maintainer approval of the pull request before implementation.
 
-## Surprises & Discoveries
+## Surprises and discoveries
 
 - The current root manifest is almost entirely profile-default, which makes
   this optimization relatively low-risk to prototype because there is no
@@ -86,7 +86,7 @@ After this plan is implemented, success is observable when:
 - The compile hotspots are exactly the kind of dependencies that tend to emit a
   lot of debuginfo: large graphics, windowing, and parsing crates.
 
-## Decision Log
+## Decision log
 
 - 2026-03-14: Start with dependency-only debuginfo trimming rather than a broad
   `[profile.dev] debug = 0`. Rationale: the main build-time pain is in
