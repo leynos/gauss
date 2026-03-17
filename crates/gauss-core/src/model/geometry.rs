@@ -17,14 +17,46 @@ const CUBIC_EXTREMA_EPSILON: f32 = 1.0e-6;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ShapeWorldBounds {
     /// Minimum corner (smallest x and y).
-    pub min: Vec2,
+    min: Vec2,
     /// Maximum corner (largest x and y).
-    pub max: Vec2,
+    max: Vec2,
 }
 
 impl ShapeWorldBounds {
+    /// Create normalized bounds from two corners.
+    ///
+    /// The constructor ensures `min ≤ max` on both axes by computing the
+    /// component-wise minimum and maximum.
+    #[must_use]
+    pub const fn new(a: Vec2, b: Vec2) -> Self {
+        let min = Vec2::new(
+            if a.x < b.x { a.x } else { b.x },
+            if a.y < b.y { a.y } else { b.y },
+        );
+        let max = Vec2::new(
+            if a.x > b.x { a.x } else { b.x },
+            if a.y > b.y { a.y } else { b.y },
+        );
+        Self { min, max }
+    }
+
+    /// Return the minimum corner.
+    #[must_use]
+    pub const fn min(self) -> Vec2 {
+        self.min
+    }
+
+    /// Return the maximum corner.
+    #[must_use]
+    pub const fn max(self) -> Vec2 {
+        self.max
+    }
+
     /// Test whether a point lies within these bounds, expanded by `tolerance`
     /// in every direction.
+    ///
+    /// Negative tolerance values are clamped to zero, so callers need not
+    /// perform their own clamping.
     #[must_use]
     pub fn contains_with_tolerance(self, point: Vec2, tolerance: f32) -> bool {
         let normalized_tolerance = tolerance.max(0.0);
@@ -131,6 +163,8 @@ pub(crate) fn cubic_point(cubic: CubicSegment, t: f32) -> Vec2 {
 ///
 /// The bounds include cubic Bézier extrema, so the result is suitable for UI
 /// overlays and hit-test broad phases that need to match the visible curve.
+///
+/// Returns `None` for shapes with no anchors.
 #[must_use]
 pub fn shape_world_bounds(shape: &Shape) -> Option<ShapeWorldBounds> {
     let mut bounds = Bounds::new();
@@ -177,7 +211,7 @@ pub fn shape_world_bounds(shape: &Shape) -> Option<ShapeWorldBounds> {
     }
 
     let (min, max) = bounds.to_tuple()?;
-    Some(ShapeWorldBounds { min, max })
+    Some(ShapeWorldBounds::new(min, max))
 }
 
 fn extend_bounds_with_cubic(bounds: &mut Bounds, cubic: CubicSegment) {
