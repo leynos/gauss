@@ -21,7 +21,7 @@
 //! # Examples
 //!
 //! ```rust,no_run
-//! use gauss::model::{Action, KeyContext, default_bindings, bindings_for_action};
+//! use gauss_core::model::{Action, KeyContext, default_bindings, bindings_for_action};
 //!
 //! // Get all default bindings
 //! let all_bindings = default_bindings();
@@ -58,7 +58,7 @@ use super::keystroke::Keystroke;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use gauss::model::{Action, ActionBinding, KeyContext, Keystroke};
+/// use gauss_core::model::{Action, ActionBinding, KeyContext, Keystroke};
 ///
 /// let binding = ActionBinding {
 ///     action: Action::DeleteSelection,
@@ -133,7 +133,7 @@ impl ActionBinding {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::{Action, ActionBinding, KeyContext};
+    /// use gauss_core::model::{Action, ActionBinding, KeyContext};
     ///
     /// let global_binding = ActionBinding::secondary(
     ///     Action::Undo, "z", &[KeyContext::Global]
@@ -232,7 +232,7 @@ static DEFAULT_BINDINGS: LazyLock<Vec<ActionBinding>> = LazyLock::new(|| {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use gauss::model::default_bindings;
+/// use gauss_core::model::default_bindings;
 ///
 /// let bindings = default_bindings();
 /// assert!(!bindings.is_empty());
@@ -255,7 +255,7 @@ pub fn default_bindings() -> &'static [ActionBinding] {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use gauss::model::{Action, bindings_for_action};
+/// use gauss_core::model::{Action, bindings_for_action};
 ///
 /// let redo_bindings = bindings_for_action(Action::Redo);
 /// // Redo has one binding: Cmd+Y
@@ -288,7 +288,7 @@ pub fn bindings_for_action(action: Action) -> Vec<ActionBinding> {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use gauss::model::{KeyContext, bindings_for_context};
+/// use gauss_core::model::{KeyContext, bindings_for_context};
 ///
 /// let draw_bindings = bindings_for_context(KeyContext::DrawMode);
 /// // Draw mode has global bindings (Undo, Redo, tools) but not Delete
@@ -318,7 +318,7 @@ pub fn bindings_for_context(context: KeyContext) -> Vec<ActionBinding> {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use gauss::model::{Action, primary_keystroke};
+/// use gauss_core::model::{Action, primary_keystroke};
 ///
 /// let undo_key = primary_keystroke(Action::Undo);
 /// assert!(undo_key.is_some());

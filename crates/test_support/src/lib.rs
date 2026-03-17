@@ -18,21 +18,33 @@ pub type TestSupportResult<T> = result::Result<T, TestSupportError>;
 pub enum TestSupportError {
     /// Required data was missing when a test helper attempted to read it.
     #[error("missing {kind}: {context}")]
-    Missing { kind: String, context: String },
+    Missing {
+        /// The category of data that was expected.
+        kind: String,
+        /// Additional context describing where the data was needed.
+        context: String,
+    },
     /// A test assertion failed inside a fixture helper.
     #[error("expectation failed: {context}")]
-    Expectation { context: String },
+    Expectation {
+        /// Additional context describing the failed expectation.
+        context: String,
+    },
     /// Converting a value to an `i32` failed for a test fixture.
     #[error("i32 conversion failed for {context}: {source}")]
     ZOrderOverflow {
+        /// Additional context describing the failed conversion.
         context: String,
+        /// The underlying integer conversion error.
         #[source]
         source: TryFromIntError,
     },
     /// An I/O operation failed in test support code.
     #[error("io error during {context}: {source}")]
     Io {
+        /// Additional context describing the I/O operation.
         context: String,
+        /// The underlying I/O error.
         #[source]
         source: io::Error,
     },

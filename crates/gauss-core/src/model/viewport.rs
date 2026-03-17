@@ -72,7 +72,7 @@ impl Viewport {
     /// # Example
     ///
     /// ```
-    /// use gauss::model::{Viewport, Vec2};
+    /// use gauss_core::model::{Viewport, Vec2};
     ///
     /// let mut viewport = Viewport::new();
     /// viewport.pan = Vec2::new(50.0, 25.0);

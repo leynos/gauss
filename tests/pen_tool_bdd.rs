@@ -7,7 +7,7 @@ use gauss::model::{
     Anchor, EdgeMode, PathGeom, PenTool, PenToolActiveShape, PenToolClickInput, SegmentKind, Shape,
     ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolTransition, Vec2,
 };
-use gauss::test_helpers::sample_style;
+use gauss_core::test_helpers::sample_style;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};

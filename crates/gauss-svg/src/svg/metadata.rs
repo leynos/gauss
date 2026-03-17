@@ -119,8 +119,8 @@ fn first_non_canonical_gauss_binding(document: &roxmltree::Document<'_>) -> Opti
 /// # Examples
 ///
 /// ```rust
-/// use gauss::svg::metadata::shape_id_to_hex;
-/// use gauss::model::ShapeId;
+/// use gauss_svg::svg::metadata::shape_id_to_hex;
+/// use gauss_core::model::ShapeId;
 ///
 /// let hex = shape_id_to_hex(ShapeId::default());
 /// assert_eq!(hex.len(), 16);
@@ -138,8 +138,8 @@ pub fn shape_id_to_hex(id: ShapeId) -> String {
 /// # Examples
 ///
 /// ```rust
-/// use gauss::svg::metadata::{shape_id_from_hex, shape_id_to_hex};
-/// use gauss::model::ShapeId;
+/// use gauss_svg::svg::metadata::{shape_id_from_hex, shape_id_to_hex};
+/// use gauss_core::model::ShapeId;
 /// use slotmap::KeyData;
 ///
 /// let id = KeyData::from_ffi(0x0000_0001_0000_0000).into();

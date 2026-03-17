@@ -1,7 +1,7 @@
 //! Test helpers for creating shape fixtures.
 
-use gauss::model::{Anchor, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2};
-use gauss::test_helpers::shape_id_from_seed;
+use gauss_core::model::{Anchor, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2};
+use gauss_core::test_helpers::shape_id_from_seed;
 
 /// Create a `ShapeId` from a seed value.
 ///

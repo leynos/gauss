@@ -11,8 +11,8 @@ mod common;
 
 use common::{click_left_and_wait, ensure_initial_draw, init_test_app, read_selection_items};
 use gauss::model::{Document, SelItem, ShapeId, Vec2};
-use gauss::test_helpers::square_shape;
 use gauss::ui::Phase0Shell;
+use gauss_core::test_helpers::square_shape;
 use gpui::{TestAppContext, point, px};
 
 #[gpui::test]

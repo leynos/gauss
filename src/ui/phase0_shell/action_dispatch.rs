@@ -13,10 +13,10 @@ use crate::ui::action_bridge::{
     GpuiSelectAll, GpuiSelectionRedo, GpuiSelectionUndo, GpuiToggleSegmentKind, GpuiUndo,
 };
 
+use super::{A11yActionRequestError, A11yRequestedAction};
 use super::{
-    A11yActionRequestError, A11yRequestedAction, A11yWindowAction, CloseWindow, MinimizeWindow,
-    Phase0Shell, ShowWindowMenu, StartWindowMove, StartWindowResize, ToggleFullscreen,
-    ToggleMaximize, window_controls,
+    A11yWindowAction, CloseWindow, MinimizeWindow, Phase0Shell, ShowWindowMenu, StartWindowMove,
+    StartWindowResize, ToggleFullscreen, ToggleMaximize, window_controls,
 };
 
 macro_rules! bind_gpui_model_actions {
@@ -78,6 +78,13 @@ impl Phase0Shell {
             | GaussAction::Redo
             | GaussAction::SelectionUndo
             | GaussAction::SelectionRedo => self.execute_history_action(action, cx),
+            #[expect(
+                clippy::unreachable,
+                reason = "wildcard arm must panic in all builds when a new Action variant is unhandled"
+            )]
+            _ => {
+                unreachable!("unsupported future model action: {action:?}");
+            }
         }
     }
 
@@ -98,12 +105,12 @@ impl Phase0Shell {
         let did_change = match action {
             GaussAction::ActivatePenTool => self.activate_draw_tool(None),
             GaussAction::ActivateSelectTool => self.activate_select_tool(),
+            #[expect(
+                clippy::unreachable,
+                reason = "wildcard arm must panic in all builds when a non-tool action is dispatched"
+            )]
             _ => {
-                debug_assert!(
-                    false,
-                    "execute_tool_action called with non-tool action: {action:?}"
-                );
-                false
+                unreachable!("execute_tool_action called with non-tool action: {action:?}")
             }
         };
         if did_change || self.last_history_error != error_before {
@@ -117,11 +124,12 @@ impl Phase0Shell {
             GaussAction::Redo => self.redo_document(),
             GaussAction::SelectionUndo => self.undo_selection(),
             GaussAction::SelectionRedo => self.redo_selection(),
+            #[expect(
+                clippy::unreachable,
+                reason = "wildcard arm must panic in all builds when a non-history action is dispatched"
+            )]
             _ => {
-                debug_assert!(
-                    false,
-                    "execute_history_action called with non-history action: {action:?}"
-                );
+                unreachable!("execute_history_action called with non-history action: {action:?}")
             }
         }
         cx.notify();
@@ -154,6 +162,16 @@ impl Phase0Shell {
         }
     }
 
+    // FIXME: remove once the production GPUI event hook is wired — see roadmap §1.9.5
+    // Prepared for production AccessKit integration; currently exercised only
+    // via test_helpers::handle_accesskit_action_request_for_tests.
+    #[cfg_attr(
+        not(any(test, feature = "test-support", coverage, coverage_nightly)),
+        expect(
+            dead_code,
+            reason = "compiled unconditionally for production readiness; no GPUI event hook yet"
+        )
+    )]
     pub(super) fn handle_accesskit_action_request(
         &mut self,
         request: &ActionRequest,

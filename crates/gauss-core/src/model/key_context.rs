@@ -24,7 +24,7 @@
 //! # Examples
 //!
 //! ```rust,no_run
-//! use gauss::model::KeyContext;
+//! use gauss_core::model::KeyContext;
 //!
 //! let context = KeyContext::Global;
 //! assert_eq!(context.as_ref(), "gauss-global");
@@ -47,7 +47,7 @@ use std::fmt;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use gauss::model::KeyContext;
+/// use gauss_core::model::KeyContext;
 ///
 /// // Convert to GPUI-compatible string
 /// let context = KeyContext::DrawMode;
@@ -101,7 +101,7 @@ impl KeyContext {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::KeyContext;
+    /// use gauss_core::model::KeyContext;
     ///
     /// assert_eq!(KeyContext::Global.name(), "Global");
     /// assert_eq!(KeyContext::DrawMode.name(), "Draw Mode");
@@ -124,7 +124,7 @@ impl KeyContext {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss::model::KeyContext;
+    /// use gauss_core::model::KeyContext;
     ///
     /// for context in KeyContext::all() {
     ///     println!("{}: {}", context.name(), context.as_ref());

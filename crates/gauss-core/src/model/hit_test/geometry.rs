@@ -17,7 +17,7 @@ pub(super) fn hit_test_shape_bbox(shape: &Shape, cursor_world: Vec2, tolerance_w
         return false;
     };
 
-    bounds.contains(cursor_world, tolerance_world)
+    bounds.contains_with_tolerance(cursor_world, tolerance_world)
 }
 
 pub(super) fn find_best_segment_hit(

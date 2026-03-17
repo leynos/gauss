@@ -1,6 +1,6 @@
 //! Shared geometry helpers for editor features.
 //!
-//! This module centralises lightweight cubic Bézier math used by both hit
+//! This module centralizes lightweight cubic Bézier maths used by both hit
 //! testing and selection overlays. The focus is on clarity and predictable
 //! bounds rather than high-performance tessellation.
 
@@ -12,6 +12,60 @@
 use crate::model::{SegmentKind, Shape, Vec2};
 
 const CUBIC_EXTREMA_EPSILON: f32 = 1.0e-6;
+
+/// Axis-aligned world-space bounds for a shape.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ShapeWorldBounds {
+    /// Minimum corner (smallest x and y).
+    min: Vec2,
+    /// Maximum corner (largest x and y).
+    max: Vec2,
+}
+
+impl ShapeWorldBounds {
+    /// Create normalized bounds from two corners.
+    ///
+    /// The constructor ensures `min ≤ max` on both axes by computing the
+    /// component-wise minimum and maximum.
+    #[must_use]
+    pub const fn new(a: Vec2, b: Vec2) -> Self {
+        let min = Vec2::new(
+            if a.x < b.x { a.x } else { b.x },
+            if a.y < b.y { a.y } else { b.y },
+        );
+        let max = Vec2::new(
+            if a.x > b.x { a.x } else { b.x },
+            if a.y > b.y { a.y } else { b.y },
+        );
+        Self { min, max }
+    }
+
+    /// Return the minimum corner.
+    #[must_use]
+    pub const fn min(self) -> Vec2 {
+        self.min
+    }
+
+    /// Return the maximum corner.
+    #[must_use]
+    pub const fn max(self) -> Vec2 {
+        self.max
+    }
+
+    /// Test whether a point lies within these bounds, expanded by `tolerance`
+    /// in every direction.
+    ///
+    /// Negative tolerance values are clamped to zero, so callers need not
+    /// perform their own clamping.
+    #[must_use]
+    pub fn contains_with_tolerance(self, point: Vec2, tolerance: f32) -> bool {
+        let normalized_tolerance = tolerance.max(0.0);
+        point.x >= (self.min.x - normalized_tolerance)
+            && point.x <= (self.max.x + normalized_tolerance)
+            && point.y >= (self.min.y - normalized_tolerance)
+            && point.y <= (self.max.y + normalized_tolerance)
+    }
+}
 
 /// Axis-aligned bounds in world space.
 #[derive(Clone, Copy, Debug)]
@@ -41,17 +95,6 @@ impl Bounds {
             (Some(min), Some(max)) => Some((min, max)),
             _ => None,
         }
-    }
-
-    pub(crate) const fn contains(self, point: Vec2, tolerance: f32) -> bool {
-        let Some((min, max)) = self.to_tuple() else {
-            return false;
-        };
-
-        point.x >= (min.x - tolerance)
-            && point.x <= (max.x + tolerance)
-            && point.y >= (min.y - tolerance)
-            && point.y <= (max.y + tolerance)
     }
 }
 
@@ -116,7 +159,14 @@ pub(crate) fn cubic_point(cubic: CubicSegment, t: f32) -> Vec2 {
     )
 }
 
-pub(crate) fn shape_world_bounds(shape: &Shape) -> Option<Bounds> {
+/// Compute axis-aligned world-space bounds for a shape.
+///
+/// The bounds include cubic Bézier extrema, so the result is suitable for UI
+/// overlays and hit-test broad phases that need to match the visible curve.
+///
+/// Returns `None` for shapes with no anchors.
+#[must_use]
+pub fn shape_world_bounds(shape: &Shape) -> Option<ShapeWorldBounds> {
     let mut bounds = Bounds::new();
 
     for anchor in &shape.path.anchors {
@@ -160,7 +210,8 @@ pub(crate) fn shape_world_bounds(shape: &Shape) -> Option<Bounds> {
         }
     }
 
-    bounds.to_tuple().map(|_| bounds)
+    let (min, max) = bounds.to_tuple()?;
+    Some(ShapeWorldBounds::new(min, max))
 }
 
 fn extend_bounds_with_cubic(bounds: &mut Bounds, cubic: CubicSegment) {

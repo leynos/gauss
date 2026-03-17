@@ -3,7 +3,7 @@
 use gauss::model::{Document, GaussAttribute, ResourceStore, Shape};
 use gauss::svg::export::{CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata};
 use gauss::svg::import::{ImportedSvg, import_svg_with_resources};
-use gauss::test_helpers::shape_id_from_seed;
+use gauss_core::test_helpers::shape_id_from_seed;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult, line_shape};

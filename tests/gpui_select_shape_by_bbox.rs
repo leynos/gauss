@@ -8,8 +8,8 @@ mod common;
 
 use common::{canvas_bounds, ensure_initial_draw, init_test_app};
 use gauss::model::{Document, SelItem, ShapeId, Vec2};
-use gauss::test_helpers::square_shape;
 use gauss::ui::Phase0Shell;
+use gauss_core::test_helpers::square_shape;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 use test_support::math;
 

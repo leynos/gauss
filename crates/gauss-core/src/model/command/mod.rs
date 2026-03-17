@@ -47,7 +47,7 @@
 //! # Examples
 //!
 //! ```rust
-//! use gauss::model::{Action, EngineState, prepare_command};
+//! use gauss_core::model::{Action, EngineState, prepare_command};
 //!
 //! // Prepare a command from an action using unified engine state
 //! let state = EngineState::new();
