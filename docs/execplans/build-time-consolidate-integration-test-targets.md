@@ -259,7 +259,7 @@ pattern `gpui_{group}_{test_name}.rs`:
      select tool interactions
 
 5. **Tooling** (7 tests): `gpui_tooling_*.rs`
-   - Path closing, bezier drawing, draw mode, escape behavior, hit testing,
+   - Path closing, bezier drawing, draw mode, escape behaviour, hit testing,
      keybindings, segment toggling
 
 ### Non-GPUI tests (unchanged)
