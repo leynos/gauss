@@ -3,10 +3,6 @@
 //! These tests exercise scroll wheel event dispatch against the Phase 0 view,
 //! asserting the viewport pan/zoom state updates as expected.
 
-#![expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
 mod common;
 
 use common::{canvas_bounds, ensure_initial_draw, init_test_app};
@@ -15,6 +11,10 @@ use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, ScrollDelta, ScrollWheelEvent, TestAppContext, TouchPhase, point, px};
 use test_support::TestSupportResult;
 
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 fn canvas_position(
     visual_cx: &mut gpui::VisualTestContext,
 ) -> TestSupportResult<gpui::Point<gpui::Pixels>> {
@@ -26,6 +26,10 @@ fn canvas_position(
 }
 
 #[gpui::test]
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 fn scroll_wheel_pans_viewport(cx: &mut TestAppContext) {
     init_test_app(cx);
 
@@ -55,6 +59,10 @@ fn scroll_wheel_pans_viewport(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 fn secondary_scroll_wheel_zooms_around_cursor(cx: &mut TestAppContext) {
     init_test_app(cx);
 

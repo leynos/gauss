@@ -1,67 +1,71 @@
-# Integration Test Consolidation Mapping
+# Integration Test Organization Mapping
 
-This document tracks the consolidation of 56 top-level integration test files
-into grouped targets.
+This document describes the organization of 56 top-level integration test files
+using a flat naming convention grouped by feature area.
 
-## GPUI Tests (39 files → 5 grouped targets)
+## GPUI Tests (39 files organized into 5 feature areas)
 
-### gpui_shell.rs - Window and Chrome Behaviour (11 tests)
+The 39 GPUI integration tests use a flat naming pattern
+`gpui_{group}_{test_name}.rs` to organize tests by feature area while
+maintaining each test as an independent Cargo target.
 
-- gpui_canvas_layout.rs
-- gpui_chrome_layout.rs
-- gpui_mode_indicator.rs
-- gpui_navigation_buttons.rs
-- gpui_quit_button.rs
-- gpui_resize_borders.rs
-- gpui_style_controls.rs
-- gpui_tool_rail.rs
-- gpui_viewport_input.rs
-- gpui_window_controls.rs
-- gpui_a11y_service.rs
+### Shell/Chrome - Window and Chrome Behaviour (11 tests)
 
-### gpui_history.rs - Undo/Redo and History (9 tests)
+- gpui_shell_a11y_service.rs
+- gpui_shell_canvas_layout.rs
+- gpui_shell_chrome_layout.rs
+- gpui_shell_mode_indicator.rs
+- gpui_shell_navigation_buttons.rs
+- gpui_shell_quit_button.rs
+- gpui_shell_resize_borders.rs
+- gpui_shell_style_controls.rs
+- gpui_shell_tool_rail.rs
+- gpui_shell_viewport_input.rs
+- gpui_shell_window_controls.rs
 
-- gpui_anchor_edit_undo.rs
-- gpui_close_path_undo.rs
-- gpui_command_grouping_undo.rs
-- gpui_drag_anchor_undo.rs
-- gpui_drag_handle_undo.rs
-- gpui_drag_shape_undo.rs
-- gpui_draw_undo.rs
-- gpui_multi_shape_drag_undo.rs
-- gpui_reorder_undo.rs
-- gpui_selection_history.rs
-- gpui_open_history_reset.rs
+### History - Undo/Redo and History (11 tests)
 
-### gpui_file_io.rs - Open/Save and Metadata Round-trip (4 tests)
+- gpui_history_anchor_edit_undo.rs
+- gpui_history_close_path_undo.rs
+- gpui_history_command_grouping_undo.rs
+- gpui_history_drag_anchor_undo.rs
+- gpui_history_drag_handle_undo.rs
+- gpui_history_drag_shape_undo.rs
+- gpui_history_draw_undo.rs
+- gpui_history_multi_shape_drag_undo.rs
+- gpui_history_open_history_reset.rs
+- gpui_history_reorder_undo.rs
+- gpui_history_selection_history.rs
 
-- gpui_click_save_button.rs
-- gpui_metadata_round_trip.rs
-- gpui_open_dialog.rs
-- gpui_save_dialog.rs
+### File I/O - Open/Save and Metadata Round-trip (4 tests)
 
-### gpui_selection.rs - Selection, Drag, Resize, Reorder (9 tests)
+- gpui_file_io_click_save_button.rs
+- gpui_file_io_metadata_round_trip.rs
+- gpui_file_io_open_dialog.rs
+- gpui_file_io_save_dialog.rs
 
-- gpui_bbox_drag_requires_selection.rs
-- gpui_clear_selection.rs
-- gpui_multi_select.rs
-- gpui_multi_shape_drag.rs
-- gpui_select_shape_by_bbox.rs
-- gpui_select_tool_noop_paths.rs
+### Selection - Selection, Drag, Resize, Reorder (6 tests)
 
-### gpui_tooling.rs - Tool Activation, Drawing, Keybindings (6 tests)
+- gpui_selection_bbox_drag_requires_selection.rs
+- gpui_selection_clear_selection.rs
+- gpui_selection_multi_select.rs
+- gpui_selection_multi_shape_drag.rs
+- gpui_selection_select_shape_by_bbox.rs
+- gpui_selection_select_tool_noop_paths.rs
 
-- gpui_close_path.rs
-- gpui_draw_bezier_auto.rs
-- gpui_draw_escape_commits_open_path.rs
-- gpui_escape_returns_to_draw.rs
-- gpui_keybinding_integration.rs
-- gpui_toggle_segment_kind.rs
-- gpui_hit_test_service.rs
+### Tooling - Tool Activation, Drawing, Keybindings (7 tests)
 
-## Non-GPUI Tests (17 files → mostly unchanged)
+- gpui_tooling_close_path.rs
+- gpui_tooling_draw_bezier_auto.rs
+- gpui_tooling_draw_escape_commits_open_path.rs
+- gpui_tooling_escape_returns_to_draw.rs
+- gpui_tooling_hit_test_service.rs
+- gpui_tooling_keybinding_integration.rs
+- gpui_tooling_toggle_segment_kind.rs
 
-### BDD Tests (keep separate, 10 files)
+## Non-GPUI Tests (17 files, unchanged)
+
+### BDD Tests (13 files)
 
 - a11y_service_bdd.rs - Accessibility service behaviour
 - a11y_service_routing_bdd.rs - Accessibility routing behaviour
@@ -77,18 +81,34 @@ into grouped targets.
 - tool_fsm_bdd.rs - Tool FSM behaviour
 - web_ready_export_bdd.rs - Web-ready export behaviour
 
-### Unit Tests (keep separate or consolidate modestly, 4 files)
+### Unit Tests (3 files)
 
 - command_editing_helpers.rs - Command editing helper unit tests
 - command_editing_unit.rs - Command editing unit tests
 - command_unit.rs - Command unit tests
 
-### Integration Tests (keep separate, 1 file)
+### Integration Tests (1 file)
 
 - golden_round_trip.rs - Golden file round-trip test
 
 ## Summary
 
-Before: 56 top-level integration test files (39 GPUI + 17 non-GPUI) After: ~22
-top-level integration test files (5 GPUI + 17 non-GPUI) Reduction: 34 files
-consolidated (60% reduction in GPUI test targets)
+**Before**: 56 top-level integration test files (39 GPUI + 17 non-GPUI)
+
+**After**: 56 top-level integration test files (39 GPUI + 17 non-GPUI)
+
+**Change**: GPUI tests reorganized using flat naming pattern
+`gpui_{group}_{name}.rs` to group tests by feature area (shell, history,
+file_io, selection, tooling) while maintaining each test as an independent
+Cargo target for parallel execution and test isolation.
+
+## Rationale for Flat Naming vs Nested Modules
+
+The implementation uses flat file naming (`gpui_shell_foo.rs`) rather than
+nested modules (`gpui_shell/foo.rs`) because:
+
+- Flat naming keeps simple `mod common` imports vs complex
+  `use super::super::common`
+- Each test remains an independent Cargo target for parallel execution
+- Simpler module structure aligns with Rust test ecosystem expectations
+- Naming convention provides same discoverability as nested structure

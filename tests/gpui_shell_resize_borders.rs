@@ -8,7 +8,6 @@
 mod common;
 
 #[cfg(not(target_os = "linux"))]
-#[cfg(not(target_os = "linux"))]
 use common::{ensure_initial_draw, init_test_app};
 #[cfg(not(target_os = "linux"))]
 use gauss::ui::Phase0Shell;

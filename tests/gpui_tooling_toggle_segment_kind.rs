@@ -8,10 +8,6 @@
 //! This test also covers undo: once a segment is toggled, `Undo` should restore
 //! both the segment kind and the handle positions.
 
-#![expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
 mod common;
 
 use common::{
@@ -54,6 +50,10 @@ fn select_segment0(
     Ok(())
 }
 
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 fn assert_segment0_is_cubic_with_initial_handles(
     shape: &Shape,
     start_pos: Vec2,
@@ -142,6 +142,10 @@ fn assert_segment0_restores_line_without_handles(shape: &Shape) -> TestSupportRe
 }
 
 #[gpui::test]
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 fn tab_toggles_selected_segment_kind_and_undo_restores(cx: &mut TestAppContext) {
     init_test_app(cx);
 

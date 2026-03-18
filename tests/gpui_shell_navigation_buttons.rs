@@ -3,10 +3,6 @@
 //! Phase 0 maps mouse "back/forward" navigation buttons to undo/redo. Holding
 //! Shift switches to the selection history stack.
 
-#![expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
 mod common;
 
 use common::{
@@ -42,6 +38,10 @@ fn canvas_points(
     Ok((bounds, p1))
 }
 
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 fn second_point(
     bounds: &gpui::Bounds<gpui::Pixels>,
     p1: gpui::Point<gpui::Pixels>,
@@ -54,6 +54,10 @@ fn second_point(
     point(p1.x + px(dx), p1.y + px(dy))
 }
 
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 fn clear_point(bounds: &gpui::Bounds<gpui::Pixels>) -> gpui::Point<gpui::Pixels> {
     let width = f32::from(bounds.size.width);
     let height = f32::from(bounds.size.height);
@@ -128,6 +132,10 @@ fn expect_stroke_is_red(doc: &Document, context: &str) -> TestSupportResult<()> 
 }
 
 #[gpui::test]
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 fn navigation_buttons_undo_redo_document_history(cx: &mut TestAppContext) {
     init_test_app(cx);
 
@@ -170,6 +178,10 @@ fn navigation_buttons_undo_redo_document_history(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 fn navigation_buttons_undo_redo_selection_history_with_shift(cx: &mut TestAppContext) {
     init_test_app(cx);
 

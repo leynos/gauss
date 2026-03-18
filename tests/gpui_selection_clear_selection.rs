@@ -3,10 +3,6 @@
 //! Phase 0 uses `on_mouse_down` for selection. This test verifies that clicking
 //! empty canvas space clears the current selection.
 
-#![expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
 mod common;
 
 use common::{click_left_and_wait, ensure_initial_draw, init_test_app, read_selection_items};
@@ -16,6 +12,10 @@ use gauss_core::test_helpers::square_shape;
 use gpui::{TestAppContext, point, px};
 
 #[gpui::test]
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 fn clicking_empty_space_clears_selection(cx: &mut TestAppContext) {
     init_test_app(cx);
 
