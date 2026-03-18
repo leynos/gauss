@@ -142,10 +142,6 @@ fn assert_segment0_restores_line_without_handles(shape: &Shape) -> TestSupportRe
 }
 
 #[gpui::test]
-#[expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
 fn tab_toggles_selected_segment_kind_and_undo_restores(cx: &mut TestAppContext) {
     init_test_app(cx);
 
