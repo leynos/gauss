@@ -3,7 +3,7 @@
 This document describes the organization of 56 top-level integration test files
 using a flat naming convention grouped by feature area.
 
-## GPUI Tests (39 files organized into 5 feature areas)
+## GPUI (General Purpose UI) Tests (39 files organized into 5 feature areas)
 
 The 39 GPUI integration tests use a flat naming pattern
 `gpui_{group}_{test_name}.rs` to organize tests by feature area while
@@ -65,7 +65,7 @@ maintaining each test as an independent Cargo target.
 
 ## Non-GPUI Tests (17 files, unchanged)
 
-### BDD Tests (13 files)
+### BDD (Behavior-Driven Development) Tests (13 files)
 
 - a11y_service_bdd.rs - Accessibility service behaviour
 - a11y_service_routing_bdd.rs - Accessibility routing behaviour

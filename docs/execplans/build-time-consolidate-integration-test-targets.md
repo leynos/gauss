@@ -17,18 +17,18 @@ repository pays repeated compile and link overhead during `cargo test --no-run`
 and the test phase of `make test`.
 
 After this plan is implemented, Gauss will keep the same behavioural coverage
-while reducing the number of top-level integration test crates by grouping
-related scenarios into a small set of domain-focused binaries. Success is
-observable when:
+while reorganizing integration tests into domain/feature-focused groups with
+consistent naming. Success is observable when:
 
-- the top-level `tests/*.rs` target count is reduced from the current `56` to a
-  materially smaller grouped set;
-- the `39` current `gpui_*.rs` integration targets are consolidated into a few
-  larger GPU-accelerated UI (GPUI)-focused binaries by feature area;
+- integration tests are reorganized into domain/feature-focused groups with
+  consistent naming (GPUI tests consolidated by feature area using
+  `gpui_{group}_{name}.rs` pattern);
+- the reorganization preserves behavioral coverage and all tests remain
+  discoverable;
 - non-GPUI integration tests stay readable and do not get mixed into
   GPUI-specific setup unnecessarily; and
 - `cargo test --workspace --no-run`, `make test`, and the standard formatting
-  and lint gates all succeed after the consolidation.
+  and lint gates all succeed after the reorganization.
 
 ## Constraints
 
