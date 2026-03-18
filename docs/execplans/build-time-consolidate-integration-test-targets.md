@@ -21,9 +21,9 @@ while reorganizing integration tests into domain/feature-focused groups with
 consistent naming. Success is observable when:
 
 - integration tests are reorganized into domain/feature-focused groups with
-  consistent naming (GPUI tests consolidated by feature area using
-  `gpui_{group}_{name}.rs` pattern);
-- the reorganization preserves behavioral coverage and all tests remain
+  consistent naming (GPUI (General Purpose UI) tests consolidated by feature
+  area using `gpui_{group}_{name}.rs` pattern);
+- the reorganization preserves behavioural coverage and all tests remain
   discoverable;
 - non-GPUI integration tests stay readable and do not get mixed into
   GPUI-specific setup unnecessarily; and
