@@ -1,8 +1,4 @@
 //! GPUI headless integration tests for Phase 0 selection history.
-#![expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
 
 mod common;
 
@@ -15,6 +11,10 @@ use gauss::ui::Phase0Shell;
 use gpui::{TestAppContext, point, px};
 
 #[gpui::test]
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 fn selection_undo_uses_shift_modified_stack(cx: &mut TestAppContext) {
     init_test_app(cx);
 

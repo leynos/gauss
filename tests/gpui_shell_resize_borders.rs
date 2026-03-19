@@ -5,7 +5,6 @@
 //! These tests only run on non-Linux platforms where the inner resize borders
 //! are used.
 
-#[cfg(not(target_os = "linux"))]
 mod common;
 
 #[cfg(not(target_os = "linux"))]

@@ -4,9 +4,9 @@
 //! Phase 0 therefore routes “Open…” through `prompt_for_new_path` when the
 //! `Phase0Shell` is constructed via `Phase0Shell::new_for_tests`.
 
-use std::path::Path;
-
 mod common;
+
+use std::path::Path;
 
 use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};

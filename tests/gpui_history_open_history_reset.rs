@@ -1,8 +1,8 @@
 //! GPUI tests for history state reset when opening a document.
 
-use std::path::Path;
-
 mod common;
+
+use std::path::Path;
 
 use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};

@@ -8,10 +8,6 @@
 //!
 //! This test asserts that switching to Bézier auto via `Tab` yields cubic
 //! segments with the expected handle positions.
-#![expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
 
 mod common;
 
@@ -26,6 +22,10 @@ use test_support::{TestSupportError, TestSupportResult};
 
 const CATMULL_ROM_TENSION: f32 = 1.0;
 
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 fn catmull_rom_controls(p0: Vec2, p1: Vec2, p2: Vec2, p3: Vec2) -> (Vec2, Vec2) {
     let t = CATMULL_ROM_TENSION / 6.0;
     let c1 = p1.add(p2.sub(p0).mul(t));

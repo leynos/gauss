@@ -2,10 +2,6 @@
 //!
 //! These tests exercise scroll wheel event dispatch against the Phase 0 view,
 //! asserting the viewport pan/zoom state updates as expected.
-#![expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
 
 mod common;
 
@@ -76,8 +72,8 @@ fn secondary_scroll_wheel_zooms_around_cursor(cx: &mut TestAppContext) {
 
         let after = visual_cx.read(|app| view.read(app).viewport());
         assert!(
-            (after.zoom() - before.zoom()).abs() > 0.0001,
-            "zoom should change when using the secondary scroll modifier"
+            after.zoom() > before.zoom(),
+            "zoom should increase when using the secondary scroll modifier"
         );
 
         let world_after = after.screen_to_world(cursor);
