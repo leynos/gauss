@@ -72,8 +72,8 @@ fn secondary_scroll_wheel_zooms_around_cursor(cx: &mut TestAppContext) {
 
         let after = visual_cx.read(|app| view.read(app).viewport());
         assert!(
-            (after.zoom() - before.zoom()).abs() > 0.0001,
-            "zoom should change when using the secondary scroll modifier"
+            after.zoom() > before.zoom(),
+            "zoom should increase when using the secondary scroll modifier"
         );
 
         let world_after = after.screen_to_world(cursor);

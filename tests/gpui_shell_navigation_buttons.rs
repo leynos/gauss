@@ -132,10 +132,6 @@ fn expect_stroke_is_red(doc: &Document, context: &str) -> TestSupportResult<()> 
 }
 
 #[gpui::test]
-#[expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
 fn navigation_buttons_undo_redo_document_history(cx: &mut TestAppContext) {
     init_test_app(cx);
 
@@ -178,10 +174,6 @@ fn navigation_buttons_undo_redo_document_history(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
-#[expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
 fn navigation_buttons_undo_redo_selection_history_with_shift(cx: &mut TestAppContext) {
     init_test_app(cx);
 

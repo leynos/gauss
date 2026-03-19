@@ -97,10 +97,6 @@ fn require_handle_in(shape: &Shape, anchor_index: usize, context: &str) -> TestS
 }
 
 #[gpui::test]
-#[expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
 fn tab_switches_to_bezier_auto_and_synthesises_handles(cx: &mut TestAppContext) {
     init_test_app(cx);
 
