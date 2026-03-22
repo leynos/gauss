@@ -63,7 +63,7 @@ fn tool_rail_controls_match_audit(cx: &mut TestAppContext) {
     // Find controls that claim tool_rail.rs as evidence
     let with_evidence = inventory.with_evidence();
     let tool_rail_controls: Vec<_> = with_evidence
-        .iter()
+        .into_iter()
         .filter(|c| {
             c.current_evidence
                 .file_path
@@ -101,7 +101,7 @@ fn style_controls_match_audit(cx: &mut TestAppContext) {
     // Find controls that claim style_controls.rs as evidence
     let with_evidence = inventory.with_evidence();
     let style_controls: Vec<_> = with_evidence
-        .iter()
+        .into_iter()
         .filter(|c| {
             c.current_evidence
                 .file_path

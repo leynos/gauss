@@ -117,8 +117,7 @@ fn test_required_surfaces_have_controls(#[case] surface: ControlSurface) {
     let surface_controls = inventory.by_surface(surface);
     assert!(
         !surface_controls.is_empty(),
-        "Surface '{}' must have at least one control",
-        surface
+        "Surface '{surface}' must have at least one control"
     );
 }
 

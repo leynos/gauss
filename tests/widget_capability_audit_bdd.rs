@@ -198,11 +198,7 @@ fn then_includes_line_tool(world: &AuditWorld) -> TestSupportResult<()> {
 
 #[then("the inventory includes an X Position Field")]
 fn then_includes_x_position(world: &AuditWorld) -> TestSupportResult<()> {
-    if !world
-        .controls
-        .iter()
-        .any(|name| name == "X Position Field")
-    {
+    if !world.controls.iter().any(|name| name == "X Position Field") {
         return Err(TestSupportError::expectation(
             "Inventory must include X Position Field",
         ));
@@ -212,11 +208,7 @@ fn then_includes_x_position(world: &AuditWorld) -> TestSupportResult<()> {
 
 #[then("the inventory includes a Y Position Field")]
 fn then_includes_y_position(world: &AuditWorld) -> TestSupportResult<()> {
-    if !world
-        .controls
-        .iter()
-        .any(|name| name == "Y Position Field")
-    {
+    if !world.controls.iter().any(|name| name == "Y Position Field") {
         return Err(TestSupportError::expectation(
             "Inventory must include Y Position Field",
         ));
@@ -256,7 +248,11 @@ fn then_includes_rotation(world: &AuditWorld) -> TestSupportResult<()> {
 
 #[then("the inventory includes alignment controls for left, center, and right")]
 fn then_includes_horizontal_alignment(world: &AuditWorld) -> TestSupportResult<()> {
-    if !world.controls.iter().any(|name| name.contains("Align Left")) {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Align Left"))
+    {
         return Err(TestSupportError::expectation("Must include Align Left"));
     }
     if !world
@@ -268,7 +264,11 @@ fn then_includes_horizontal_alignment(world: &AuditWorld) -> TestSupportResult<(
             "Must include Align Center Horizontal",
         ));
     }
-    if !world.controls.iter().any(|name| name.contains("Align Right")) {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Align Right"))
+    {
         return Err(TestSupportError::expectation("Must include Align Right"));
     }
     Ok(())
@@ -288,7 +288,11 @@ fn then_includes_vertical_alignment(world: &AuditWorld) -> TestSupportResult<()>
             "Must include Align Center Vertical",
         ));
     }
-    if !world.controls.iter().any(|name| name.contains("Align Bottom")) {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Align Bottom"))
+    {
         return Err(TestSupportError::expectation("Must include Align Bottom"));
     }
     Ok(())
@@ -319,12 +323,20 @@ fn then_includes_distribution(world: &AuditWorld) -> TestSupportResult<()> {
 
 #[then("the inventory includes stroke color, width, and opacity controls")]
 fn then_includes_stroke_controls(world: &AuditWorld) -> TestSupportResult<()> {
-    if !world.controls.iter().any(|name| name.contains("Stroke Color")) {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Stroke Color"))
+    {
         return Err(TestSupportError::expectation(
             "Must include Stroke Color Picker",
         ));
     }
-    if !world.controls.iter().any(|name| name.contains("Stroke Width")) {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Stroke Width"))
+    {
         return Err(TestSupportError::expectation(
             "Must include Stroke Width Field",
         ));
@@ -343,7 +355,11 @@ fn then_includes_stroke_controls(world: &AuditWorld) -> TestSupportResult<()> {
 
 #[then("the inventory includes fill color and opacity controls")]
 fn then_includes_fill_controls(world: &AuditWorld) -> TestSupportResult<()> {
-    if !world.controls.iter().any(|name| name.contains("Fill Color")) {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Fill Color"))
+    {
         return Err(TestSupportError::expectation(
             "Must include Fill Color Picker",
         ));
@@ -367,7 +383,11 @@ fn then_includes_layer_visibility(world: &AuditWorld) -> TestSupportResult<()> {
 
 #[then("the inventory includes layer lock toggle")]
 fn then_includes_layer_lock(world: &AuditWorld) -> TestSupportResult<()> {
-    if !world.controls.iter().any(|name| name.contains("Layer Lock")) {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Layer Lock"))
+    {
         return Err(TestSupportError::expectation(
             "Must include Layer Lock Toggle",
         ));
@@ -558,7 +578,10 @@ fn then_evidence_has_path(world: &AuditWorld) -> TestSupportResult<()> {
 fn then_each_tool_has_shortcut(world: &AuditWorld) -> TestSupportResult<()> {
     if let Some(ref inventory) = world.inventory {
         let toolbar_controls = inventory.by_surface(ControlSurface::Toolbar);
-        for control in toolbar_controls.iter().filter(|c| c.phase() == Phase::Phase1) {
+        for control in toolbar_controls
+            .iter()
+            .filter(|c| c.phase() == Phase::Phase1)
+        {
             if control.keyboard.shortcut.is_none() {
                 return Err(TestSupportError::expectation(format!(
                     "Toolbar tool '{}' must have keyboard shortcut",
@@ -607,9 +630,7 @@ fn then_action_linkage_required(world: &AuditWorld) -> TestSupportResult<()> {
 fn then_action_linkage_documented(world: &AuditWorld) -> TestSupportResult<()> {
     if let Some(ref inventory) = world.inventory {
         for control in inventory.all() {
-            if control.action_linkage.requires_action
-                && control.action_linkage.notes.is_empty()
-            {
+            if control.action_linkage.requires_action && control.action_linkage.notes.is_empty() {
                 return Err(TestSupportError::expectation(format!(
                     "Control '{}' requires action but has no linkage notes",
                     control.name()
