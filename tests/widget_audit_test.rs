@@ -75,6 +75,19 @@ fn test_phase2_controls_exist() {
     );
 }
 
+fn assert_phase2_surface_all_phase2(surface: ControlSurface) {
+    let inventory = ControlInventory::new();
+    let controls = inventory.by_surface(surface);
+
+    assert!(
+        !controls.is_empty(),
+        "Phase 2 must define {surface} controls"
+    );
+
+    let all_phase2 = controls.iter().all(|c| c.phase() == Phase::Phase2);
+    assert!(all_phase2, "All {surface} controls should be Phase 2");
+}
+
 #[rstest]
 #[case(ControlSurface::Toolbar)]
 #[case(ControlSurface::PropertiesPanel)]
@@ -261,33 +274,8 @@ fn test_alignment_panel_has_distribution_controls() {
 }
 
 #[rstest]
-fn test_phase2_character_panel_exists() {
-    let inventory = ControlInventory::new();
-    let character_controls = inventory.by_surface(ControlSurface::CharacterPanel);
-
-    assert!(
-        !character_controls.is_empty(),
-        "Phase 2 must define Character panel controls"
-    );
-
-    let all_phase2 = character_controls
-        .iter()
-        .all(|c| c.phase() == Phase::Phase2);
-    assert!(all_phase2, "All Character panel controls should be Phase 2");
-}
-
-#[rstest]
-fn test_phase2_paragraph_panel_exists() {
-    let inventory = ControlInventory::new();
-    let paragraph_controls = inventory.by_surface(ControlSurface::ParagraphPanel);
-
-    assert!(
-        !paragraph_controls.is_empty(),
-        "Phase 2 must define Paragraph panel controls"
-    );
-
-    let all_phase2 = paragraph_controls
-        .iter()
-        .all(|c| c.phase() == Phase::Phase2);
-    assert!(all_phase2, "All Paragraph panel controls should be Phase 2");
+#[case(ControlSurface::CharacterPanel)]
+#[case(ControlSurface::ParagraphPanel)]
+fn test_phase2_panel_controls_are_all_phase2(#[case] surface: ControlSurface) {
+    assert_phase2_surface_all_phase2(surface);
 }

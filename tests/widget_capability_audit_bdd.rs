@@ -4,7 +4,7 @@
 //! control inventory satisfies roadmap requirements expressed in Gherkin
 //! scenarios.
 
-use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase};
+use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase, RequiredControl};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};
@@ -67,6 +67,20 @@ where
         }
     }
     Ok(())
+}
+
+fn assert_each_control<P, M>(world: &AuditWorld, predicate: P, message: M) -> TestSupportResult<()>
+where
+    P: Fn(&RequiredControl) -> bool,
+    M: Fn(&RequiredControl) -> String,
+{
+    for_each_control(world, |c| {
+        if !predicate(c) {
+            Err(TestSupportError::expectation(message(c)))
+        } else {
+            Ok(())
+        }
+    })
 }
 
 // === Given steps ===
@@ -334,70 +348,52 @@ fn then_each_has_name(world: &AuditWorld) -> TestSupportResult<()> {
             "Inventory must have controls",
         ));
     }
-    for_each_control(world, |control| {
-        if control.name().is_empty() {
-            return Err(TestSupportError::expectation("Control must have name"));
-        }
-        Ok(())
-    })
+    assert_each_control(
+        world,
+        |c| !c.name().is_empty(),
+        |_| "Control must have name".to_string(),
+    )
 }
 
 #[then("each control has a user job description")]
 fn then_each_has_user_job(world: &AuditWorld) -> TestSupportResult<()> {
-    for_each_control(world, |control| {
-        if control.user_job.description.is_empty() {
-            return Err(TestSupportError::expectation(format!(
-                "Control '{}' must have user job",
-                control.name()
-            )));
-        }
-        Ok(())
-    })
+    assert_each_control(
+        world,
+        |c| !c.user_job.description.is_empty(),
+        |c| format!("Control '{}' must have user job", c.name()),
+    )
 }
 
 #[then("each control has at least one defined state")]
 fn then_each_has_states(world: &AuditWorld) -> TestSupportResult<()> {
-    for_each_control(world, |control| {
-        if control.states.states.is_empty() {
-            return Err(TestSupportError::expectation(format!(
-                "Control '{}' must have states",
-                control.name()
-            )));
-        }
-        Ok(())
-    })
+    assert_each_control(
+        world,
+        |c| !c.states.states.is_empty(),
+        |c| format!("Control '{}' must have states", c.name()),
+    )
 }
 
 #[then("each control has an accessibility role and label")]
 fn then_each_has_accessibility(world: &AuditWorld) -> TestSupportResult<()> {
-    for_each_control(world, |control| {
-        if control.accessibility.role.is_empty() {
-            return Err(TestSupportError::expectation(format!(
-                "Control '{}' must have a11y role",
-                control.name()
-            )));
-        }
-        if control.accessibility.label.is_empty() {
-            return Err(TestSupportError::expectation(format!(
-                "Control '{}' must have a11y label",
-                control.name()
-            )));
-        }
-        Ok(())
-    })
+    assert_each_control(
+        world,
+        |c| !c.accessibility.role.is_empty(),
+        |c| format!("Control '{}' must have a11y role", c.name()),
+    )?;
+    assert_each_control(
+        world,
+        |c| !c.accessibility.label.is_empty(),
+        |c| format!("Control '{}' must have a11y label", c.name()),
+    )
 }
 
 #[then("each control cites at least one requirement source")]
 fn then_each_cites_source(world: &AuditWorld) -> TestSupportResult<()> {
-    for_each_control(world, |control| {
-        if control.sources.is_empty() {
-            return Err(TestSupportError::expectation(format!(
-                "Control '{}' must cite sources",
-                control.name()
-            )));
-        }
-        Ok(())
-    })
+    assert_each_control(
+        world,
+        |c| !c.sources.is_empty(),
+        |c| format!("Control '{}' must cite sources", c.name()),
+    )
 }
 
 #[then("at least one control has evidence")]
@@ -449,39 +445,37 @@ fn then_each_tool_has_shortcut(world: &AuditWorld) -> TestSupportResult<()> {
 
 #[then("each control supports keyboard-only operation")]
 fn then_each_supports_keyboard(world: &AuditWorld) -> TestSupportResult<()> {
-    for_each_control(world, |control| {
-        if !control.keyboard.keyboard_only_operation {
-            return Err(TestSupportError::expectation(format!(
+    assert_each_control(
+        world,
+        |c| c.keyboard.keyboard_only_operation,
+        |c| {
+            format!(
                 "Control '{}' must support keyboard-only operation",
-                control.name()
-            )));
-        }
-        Ok(())
-    })
+                c.name()
+            )
+        },
+    )
 }
 
 #[then("controls that modify state require action linkage")]
 fn then_action_linkage_required(world: &AuditWorld) -> TestSupportResult<()> {
-    for_each_control(world, |control| {
-        if !control.action_linkage.requires_action {
-            return Err(TestSupportError::expectation(format!(
-                "Control '{}' should require action linkage",
-                control.name()
-            )));
-        }
-        Ok(())
-    })
+    assert_each_control(
+        world,
+        |c| c.action_linkage.requires_action,
+        |c| format!("Control '{}' should require action linkage", c.name()),
+    )
 }
 
 #[then("action linkage includes implementation notes")]
 fn then_action_linkage_documented(world: &AuditWorld) -> TestSupportResult<()> {
-    for_each_control(world, |control| {
-        if control.action_linkage.requires_action && control.action_linkage.notes.is_empty() {
-            return Err(TestSupportError::expectation(format!(
+    assert_each_control(
+        world,
+        |c| !(c.action_linkage.requires_action && c.action_linkage.notes.is_empty()),
+        |c| {
+            format!(
                 "Control '{}' requires action but has no linkage notes",
-                control.name()
-            )));
-        }
-        Ok(())
-    })
+                c.name()
+            )
+        },
+    )
 }
