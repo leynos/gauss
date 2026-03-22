@@ -2,15 +2,15 @@
 
 use std::collections::HashMap;
 
-use gauss::i18n::{Catalog, Locale, Localizer, MessageId};
-use rstest_bdd::{given, scenarios, then, when};
+use gauss::i18n::{Catalog, I18nError, Locale, Localizer, MessageId};
+use rstest_bdd_macros::{given, scenario, then, when};
 
-scenarios!("tests/features/i18n.feature");
+scenario!("tests/features/i18n.feature");
 
 struct I18nTestContext {
     locale: Locale,
     localizer: Option<Localizer>,
-    lookup_result: Option<Result<String, gauss::i18n::I18nError>>,
+    lookup_result: Option<Result<String, I18nError>>,
     fallback_occurred: bool,
 }
 

@@ -187,8 +187,13 @@ impl Localizer {
     /// let msg = localizer.lookup(&Locale::en_gb(), &MessageId::tool_mode_draw());
     /// assert_eq!(msg.unwrap(), "Draw");
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the message is not found in the requested locale or
+    /// the fallback locale, or if the locale is not supported.
     pub fn lookup(&self, locale: &Locale, message_id: &MessageId) -> Result<String, I18nError> {
-        let fallback_catalog = self.catalogs.get(locale).or_else(|| {
+        let catalog = self.catalogs.get(locale).or_else(|| {
             if locale == &self.default_locale {
                 None
             } else {
@@ -196,13 +201,13 @@ impl Localizer {
             }
         });
 
-        let Some(catalog) = fallback_catalog else {
+        let Some(fallback_catalog) = catalog else {
             return Err(I18nError::UnsupportedLocale {
                 requested: locale.language_tag().to_owned(),
             });
         };
 
-        catalog
+        fallback_catalog
             .get(message_id)
             .map(ToOwned::to_owned)
             .ok_or_else(|| I18nError::MessageNotFound {

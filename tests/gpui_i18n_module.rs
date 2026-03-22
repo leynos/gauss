@@ -3,10 +3,9 @@
 use std::collections::HashMap;
 
 use accesskit::Role;
-use gpui::{Context as _, TestAppContext};
+use gpui::TestAppContext;
 
 use gauss::i18n::{Catalog, Locale, Localizer};
-use gauss::model::{EdgeMode, ToolMode};
 use gauss::ui::phase0_shell::Phase0Shell;
 
 #[gpui::test]
