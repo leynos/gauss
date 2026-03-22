@@ -104,5 +104,11 @@ uuid = { version = "1.21.0", features = ["v4"] }
 [features]
 test-support = ["gauss-core/test-support"]
 
+[profile.dev.package."*"]
+debug = 0
+
+[profile.test.package."*"]
+debug = 0
+
 [lints]
 workspace = true

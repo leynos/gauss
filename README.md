@@ -14,6 +14,31 @@ selection history.
 
     cargo run
 
+## Build performance
+
+Gauss uses a custom Cargo profile configuration to reduce dependency
+compilation time. The `dev` and `test` profiles disable debuginfo for all
+dependencies (`debug = 0` for `package."*"`), while first-party Gauss crates
+retain full debuginfo.
+
+### Trade-offs
+
+- **Faster builds**: Dependency compilation is ~24% faster (measured on a clean
+  build).
+- **Limited third-party debugging**: Stack traces and debugger symbols for
+  dependencies (GPUI, ash, naga, etc.) are reduced.
+- **Gauss code remains debuggable**: First-party crates (gauss, gauss-core,
+  gauss-svg) retain full debuginfo.
+
+### Temporary escape hatch
+
+If you need full debuginfo for dependencies during debugging:
+
+1. Comment out the `[profile.dev.package."*"]` and
+   `[profile.test.package."*"]` sections in `Cargo.toml`.
+2. Run `cargo clean` and rebuild.
+3. Restore the profile settings and clean build again when done.
+
 ## Quality gates
 
 Run the required quality gates before committing changes:
