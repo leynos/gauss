@@ -2,8 +2,7 @@
 
 use super::types::{
     AccessibilityRequirements, ActionCommandLinkage, ControlStates, ControlSurface,
-    CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource,
-    UserJob,
+    CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
 
 pub(super) fn controls() -> Vec<RequiredControl> {

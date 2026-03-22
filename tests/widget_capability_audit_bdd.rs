@@ -200,7 +200,10 @@ fn then_includes_horizontal_alignment(world: &AuditWorld) -> TestSupportResult<(
         world,
         &[
             ("Align Left", "Must include Align Left"),
-            ("Align Center Horizontal", "Must include Align Center Horizontal"),
+            (
+                "Align Center Horizontal",
+                "Must include Align Center Horizontal",
+            ),
             ("Align Right", "Must include Align Right"),
         ],
     )
@@ -212,7 +215,10 @@ fn then_includes_vertical_alignment(world: &AuditWorld) -> TestSupportResult<()>
         world,
         &[
             ("Align Top", "Must include Align Top"),
-            ("Align Center Vertical", "Must include Align Center Vertical"),
+            (
+                "Align Center Vertical",
+                "Must include Align Center Vertical",
+            ),
             ("Align Bottom", "Must include Align Bottom"),
         ],
     )
@@ -223,7 +229,10 @@ fn then_includes_distribution(world: &AuditWorld) -> TestSupportResult<()> {
     assert_includes_substrings(
         world,
         &[
-            ("Distribute Horizontal", "Must include Distribute Horizontal"),
+            (
+                "Distribute Horizontal",
+                "Must include Distribute Horizontal",
+            ),
             ("Distribute Vertical", "Must include Distribute Vertical"),
         ],
     )
@@ -261,12 +270,18 @@ fn then_includes_layer_lock(world: &AuditWorld) -> TestSupportResult<()> {
 
 #[then("the inventory includes layer rename capability")]
 fn then_includes_layer_rename(world: &AuditWorld) -> TestSupportResult<()> {
-    assert_includes_substrings(world, &[("Layer Rename", "Must include Layer Rename Field")])
+    assert_includes_substrings(
+        world,
+        &[("Layer Rename", "Must include Layer Rename Field")],
+    )
 }
 
 #[then("the inventory includes layer reorder capability")]
 fn then_includes_layer_reorder(world: &AuditWorld) -> TestSupportResult<()> {
-    assert_includes_substrings(world, &[("Layer Reorder", "Must include Layer Reorder Handle")])
+    assert_includes_substrings(
+        world,
+        &[("Layer Reorder", "Must include Layer Reorder Handle")],
+    )
 }
 
 #[then("the inventory includes character panel controls")]
