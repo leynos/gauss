@@ -13,7 +13,8 @@ not by the i18n code or any pre-existing test code errors.
 ### The Problem
 
 Test compilation fails with:
-```
+
+```text
 mold: fatal: library not found: xcb
 clang: error: linker command failed with exit code 1
 ```
@@ -40,7 +41,8 @@ clang: error: linker command failed with exit code 1
 ### Initial Hypothesis: test_helpers Module
 
 The initial error messages suggested test_helpers methods were not found:
-```
+
+```text
 error[E0599]: no method named `document` found for reference `&Phase0Shell`
 error[E0599]: no function or associated item named `new_for_tests` found
 ```
@@ -51,6 +53,7 @@ actually checking if the methods existed.
 
 **Verification**: The test_helpers module is properly gated and would be
 included during test compilation if linking succeeded:
+
 ```rust
 #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
 mod test_helpers;
@@ -80,7 +83,7 @@ mod test_helpers;
 
 The implementation is complete and follows the execplan:
 
-```
+```text
 src/i18n/
 ├── mod.rs          - Public API exports and module documentation
 ├── locale.rs       - Locale handling with BCP 47 language tags (143 lines)
@@ -104,6 +107,7 @@ All files are under the 400-line policy limit.
 ### Option 1: Fix System Libraries (Recommended for Production)
 
 Install the development package:
+
 ```bash
 # Debian/Ubuntu
 apt-get install libxcb-dev
@@ -116,6 +120,7 @@ ln -s /usr/lib/x86_64-unknown-linux-gnu/libxcb.so.1 \
 ### Option 2: Test Without GPUI Dependencies
 
 The i18n module itself has no GPUI dependencies. Test it in isolation:
+
 ```bash
 # Test gauss-core (pure business logic, no GPUI)
 cargo test --package gauss-core
@@ -127,6 +132,7 @@ cargo test --package gauss-core
 ### Option 3: Use a Different Linker
 
 Temporarily switch from mold to lld or ld:
+
 ```bash
 # In .cargo/config.toml, change:
 # [target.x86_64-unknown-linux-gnu]
@@ -159,16 +165,19 @@ task that will unblock all future test runs.
 ### Verification Steps (Once Linking Fixed)
 
 1. Run i18n unit tests:
+
    ```bash
    cargo nextest run --lib -E 'test(i18n)'
    ```
 
 2. Run all unit tests:
+
    ```bash
    make test-quick
    ```
 
 3. Run full test suite:
+
    ```bash
    make test
    ```
@@ -194,6 +203,6 @@ The test infrastructure improvements (nextest migration, configuration) are in
 place and will provide significant benefits once the system library issue is
 resolved.
 
-**Status**: i18n module implementation ✅ COMPLETE
-**Blocker**: System library configuration (libxcb-dev)
-**Next Step**: Install libxcb-dev or create libxcb.so symlink
+**Status**: i18n module implementation ✅ COMPLETE **Blocker**: System library
+configuration (libxcb-dev) **Next Step**: Install libxcb-dev or create
+libxcb.so symlink

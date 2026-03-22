@@ -4,7 +4,9 @@ Date: 2026-03-22
 
 ## Problem Statement
 
-The `make test` command timed out during execution with the following observation:
+The `make test` command timed out during execution with the following
+observation:
+
 - Timeout occurred during test compilation, not test execution
 - Library compilation succeeds quickly (< 4 seconds when cached)
 - Test compilation takes significantly longer due to heavyweight dependencies
@@ -26,7 +28,7 @@ increase test compilation time:
 Investigation revealed pre-existing test compilation errors unrelated to the
 i18n implementation:
 
-```
+```text
 error[E0599]: no method named `document` found for reference `&Phase0Shell`
 error[E0599]: no method named `selection` found for reference `&Phase0Shell`
 error[E0599]: no function or associated item named `new_for_tests` found
@@ -42,6 +44,7 @@ suggesting the test suite may have been broken prior to the i18n implementation.
 Replaced `cargo test` with `cargo nextest run` in the Makefile:
 
 **Benefits:**
+
 - Parallel test execution with configurable thread limits
 - Better output formatting and test grouping
 - Retry support for flaky tests
@@ -51,6 +54,7 @@ Replaced `cargo test` with `cargo nextest run` in the Makefile:
 ### 2. Created .config/nextest.toml
 
 Configured nextest with:
+
 - Default profile for local development
 - CI profile with stricter settings
 - Test groups for heavyweight GPUI tests (serial execution)
@@ -66,15 +70,18 @@ Configured nextest with:
 ## Performance Characteristics
 
 ### Library Build Time
+
 - Cached: ~4 seconds
 - Clean: Variable based on dependency count
 
 ### Test Build Time
+
 - **Issue**: Pre-existing compilation errors prevent full test build
 - **Expected**: 2-5 minutes for clean build with all test dependencies
 - **Cached**: Should be significantly faster after first build
 
 ### Test Execution Time (once compilation works)
+
 - Unit tests (i18n): Expected < 1s
 - BDD tests: Expected < 5s
 - GPUI integration tests: Expected 10-30s (serial execution)
@@ -118,6 +125,7 @@ The timeout was caused by heavyweight test dependencies compiling slowly,
 combined with pre-existing test compilation errors. The nextest migration
 provides better test execution once the compilation issues are resolved.
 
-The i18n implementation itself is complete and the library compiles successfully.
-The test infrastructure improvements (nextest configuration) are in place and
-will provide benefits once the underlying compilation issues are fixed.
+The i18n implementation itself is complete and the library compiles
+successfully. The test infrastructure improvements (nextest configuration) are
+in place and will provide benefits once the underlying compilation issues are
+fixed.

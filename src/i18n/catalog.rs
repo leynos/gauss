@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use super::{Error, Locale, MessageId};
+use super::{I18nError, Locale, MessageId};
 
 /// A message catalog for a specific locale.
 ///
@@ -41,7 +41,7 @@ impl Catalog {
     /// let catalog = Catalog::from_messages(messages);
     /// ```
     #[must_use]
-    pub fn from_messages(messages: HashMap<String, String>) -> Self {
+    pub const fn from_messages(messages: HashMap<String, String>) -> Self {
         Self { messages }
     }
 
@@ -134,7 +134,7 @@ impl Localizer {
     /// let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
     /// ```
     #[must_use]
-    pub fn with_catalogs(catalogs: HashMap<Locale, Catalog>, default_locale: Locale) -> Self {
+    pub const fn with_catalogs(catalogs: HashMap<Locale, Catalog>, default_locale: Locale) -> Self {
         Self {
             catalogs,
             default_locale,
@@ -171,6 +171,13 @@ impl Localizer {
     /// If the requested locale is not available, falls back to the default
     /// locale. Returns an error if the message is not found in either catalog.
     ///
+    /// # Errors
+    ///
+    /// Returns [`I18nError::UnsupportedLocale`] if neither the requested locale
+    /// nor the default locale are available. Returns
+    /// [`I18nError::MessageNotFound`] if the message identifier is not found in
+    /// the catalog.
+    ///
     /// # Examples
     ///
     /// ```rust
@@ -180,17 +187,17 @@ impl Localizer {
     /// let msg = localizer.lookup(&Locale::en_gb(), &MessageId::tool_mode_draw());
     /// assert_eq!(msg.unwrap(), "Draw");
     /// ```
-    pub fn lookup(&self, locale: &Locale, message_id: &MessageId) -> Result<String, Error> {
-        let catalog = self.catalogs.get(locale).or_else(|| {
-            if locale != &self.default_locale {
-                self.catalogs.get(&self.default_locale)
-            } else {
+    pub fn lookup(&self, locale: &Locale, message_id: &MessageId) -> Result<String, I18nError> {
+        let fallback_catalog = self.catalogs.get(locale).or_else(|| {
+            if locale == &self.default_locale {
                 None
+            } else {
+                self.catalogs.get(&self.default_locale)
             }
         });
 
-        let Some(catalog) = catalog else {
-            return Err(Error::UnsupportedLocale {
+        let Some(catalog) = fallback_catalog else {
+            return Err(I18nError::UnsupportedLocale {
                 requested: locale.language_tag().to_owned(),
             });
         };
@@ -198,7 +205,7 @@ impl Localizer {
         catalog
             .get(message_id)
             .map(ToOwned::to_owned)
-            .ok_or_else(|| Error::MessageNotFound {
+            .ok_or_else(|| I18nError::MessageNotFound {
                 message_id: message_id.as_str().to_owned(),
                 locale: locale.language_tag().to_owned(),
             })
@@ -287,10 +294,10 @@ mod tests {
         let result = localizer.lookup(&Locale::en_gb(), &MessageId::from("nonexistent"));
         assert!(result.is_err());
         match result.expect_err("Should have returned error") {
-            Error::MessageNotFound { message_id, .. } => {
+            I18nError::MessageNotFound { message_id, .. } => {
                 assert_eq!(message_id, "nonexistent");
             }
-            Error::UnsupportedLocale { .. } => {
+            I18nError::UnsupportedLocale { .. } => {
                 panic!("Expected MessageNotFound error")
             }
         }

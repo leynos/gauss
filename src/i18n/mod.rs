@@ -38,6 +38,6 @@ mod locale;
 mod message;
 
 pub use catalog::{Catalog, Localizer};
-pub use error::Error;
+pub use error::I18nError;
 pub use locale::Locale;
 pub use message::MessageId;

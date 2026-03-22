@@ -4,7 +4,7 @@ use std::fmt;
 
 /// Errors that can occur during i18n operations.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Error {
+pub enum I18nError {
     /// The requested message identifier was not found in the catalog.
     MessageNotFound {
         /// The message identifier that was not found.
@@ -19,22 +19,23 @@ pub enum Error {
     },
 }
 
-impl fmt::Display for Error {
+impl fmt::Display for I18nError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::MessageNotFound { message_id, locale } => write!(
-                f,
-                "Message '{}' not found in catalog for locale '{}'",
-                message_id, locale
-            ),
+            Self::MessageNotFound { message_id, locale } => {
+                write!(
+                    f,
+                    "Message '{message_id}' not found in catalog for locale '{locale}'"
+                )
+            }
             Self::UnsupportedLocale { requested } => {
-                write!(f, "Unsupported locale: '{}'", requested)
+                write!(f, "Unsupported locale: '{requested}'")
             }
         }
     }
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for I18nError {}
 
 #[cfg(test)]
 mod tests {
@@ -42,7 +43,7 @@ mod tests {
 
     #[test]
     fn message_not_found_displays_correctly() {
-        let error = Error::MessageNotFound {
+        let error = I18nError::MessageNotFound {
             message_id: "test.key".to_owned(),
             locale: "en-GB".to_owned(),
         };
@@ -53,7 +54,7 @@ mod tests {
 
     #[test]
     fn unsupported_locale_displays_correctly() {
-        let error = Error::UnsupportedLocale {
+        let error = I18nError::UnsupportedLocale {
             requested: "invalid".to_owned(),
         };
         let display = format!("{error}");

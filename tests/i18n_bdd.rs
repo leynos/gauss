@@ -10,7 +10,7 @@ scenarios!("tests/features/i18n.feature");
 struct I18nTestContext {
     locale: Locale,
     localizer: Option<Localizer>,
-    lookup_result: Option<Result<String, gauss::i18n::Error>>,
+    lookup_result: Option<Result<String, gauss::i18n::I18nError>>,
     fallback_occurred: bool,
 }
 

@@ -5,7 +5,7 @@ use std::fmt;
 /// A stable message identifier for catalog lookups.
 ///
 /// Message identifiers use dot-separated namespaces to organize translations.
-/// For example: "tool_mode.draw", "edge_mode.line".
+/// For example: `"tool_mode.draw"`, `"edge_mode.line"`.
 ///
 /// # Examples
 ///

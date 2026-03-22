@@ -386,8 +386,8 @@ Key lessons from implementation:
 - Adding `localizer` and `locale` fields to `Phase0Shell` and `A11ySnapshot`
   was straightforward with the dependency injection pattern.
 - The `PartialEq` constraint on `A11ySnapshot` required deriving `PartialEq`
-  for both `Catalog` and `Localizer`, which was trivial since `HashMap`
-  already implements `PartialEq`.
+  for both `Catalog` and `Localizer`, which was trivial since `HashMap` already
+  implements `PartialEq`.
 - Test helper methods (`set_localizer`, `set_locale`) enabled clean GPUI test
   injection without global state mutation.
 - The keyed catalog approach proved simple and sufficient for the current
