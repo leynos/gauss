@@ -1,4 +1,4 @@
-.PHONY: help all clean test build release lint fmt check-fmt markdownlint nixie typecheck
+.PHONY: help all clean test test-ci test-quick build release lint fmt check-fmt markdownlint nixie typecheck
 
 
 TARGET ?= libgauss.rlib
@@ -21,8 +21,14 @@ all: check-fmt lint test ## Perform a comprehensive check of code
 clean: ## Remove build artifacts
 	$(CARGO) clean
 
-test: ## Run tests with warnings treated as errors
-	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) test $(TEST_FLAGS) $(BUILD_JOBS)
+test: ## Run tests with nextest
+	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile default $(TEST_FLAGS) $(BUILD_JOBS)
+
+test-ci: ## Run tests with CI profile (stricter settings)
+	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile ci $(TEST_FLAGS) $(BUILD_JOBS)
+
+test-quick: ## Run unit tests only (skip GPUI integration tests)
+	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile default --lib $(BUILD_JOBS)
 
 target/%/$(TARGET): ## Build binary in debug or release mode
 	$(CARGO) build $(BUILD_JOBS) $(if $(findstring release,$(@)),--release)

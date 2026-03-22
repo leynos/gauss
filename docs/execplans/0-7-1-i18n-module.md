@@ -293,7 +293,13 @@ Completion evidence is:
   module.
 - [x] (2026-03-22) Updated architecture document §12 with implementation
   decision and re-evaluation triggers.
-- [ ] Run all required gates with tee logs and verify all tests pass.
+- [x] (2026-03-22) Ran quality gates: fmt, markdownlint, nixie, check-fmt all
+  passed. Library compilation successful.
+- [x] (2026-03-22) Migrated test infrastructure from cargo test to cargo-nextest
+  with proper configuration for heavyweight GPUI tests.
+- [ ] Resolve pre-existing test compilation errors (see test timeout analysis
+  document for details).
+- [ ] Verify i18n tests pass once compilation issues are resolved.
 - [ ] Update the roadmap entry to done.
 
 ## Surprises & Discoveries
@@ -319,6 +325,13 @@ Completion evidence is:
   catalogs.
 - (2026-03-22) The `A11ySnapshot` struct's `PartialEq` derive had to be relaxed
   to allow `Localizer` (which contains `HashMap` and doesn't derive `Eq`).
+- (2026-03-22) Test timeout analysis revealed the issue was not with test
+  execution but with heavyweight test dependency compilation. Pre-existing test
+  compilation errors were discovered that prevent the full test suite from
+  building. See `0-7-1-i18n-module-test-timeout-analysis.md` for details.
+- (2026-03-22) Migrated to cargo-nextest for better test execution control,
+  parallel execution, and timeout management. Created `.config/nextest.toml`
+  with profiles for local development and CI.
 
 ## Decision Log
 

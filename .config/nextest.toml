@@ -1,0 +1,71 @@
+# Nextest configuration for Gauss
+# See https://nexte.st/book/configuration.html for complete documentation
+
+[profile.default]
+# Run tests in parallel with reasonable resource limits
+test-threads = "num-cpus"
+
+# Retry flaky tests once
+retries = 1
+
+# Fail fast on first test failure during development
+fail-fast = false
+
+# Test timeout settings
+slow-timeout = { period = "60s", terminate-after = 3 }
+leak-timeout = "100ms"
+
+# Status level for test output
+status-level = "pass"
+final-status-level = "fail"
+
+# Show output for failing tests
+success-output = "never"
+failure-output = "immediate-final"
+
+[profile.default.junit]
+# JUnit output for CI integration
+path = "target/nextest/default/junit.xml"
+
+[profile.ci]
+# CI-specific profile with stricter settings
+retries = 0
+fail-fast = true
+test-threads = "num-cpus"
+
+# Longer timeouts for CI (slow machines, debug builds)
+slow-timeout = { period = "120s", terminate-after = 3 }
+
+# Always capture output in CI
+success-output = "never"
+failure-output = "final"
+
+[profile.ci.junit]
+path = "target/nextest/ci/junit.xml"
+store-success-output = true
+store-failure-output = true
+
+[test-groups]
+# GPUI tests are heavyweight and should run serially
+gpui = { max-threads = 1 }
+
+# BDD tests can run in parallel but may need more time
+bdd = { max-threads = 4 }
+
+[[profile.default.overrides]]
+# GPUI tests need more time and serial execution
+filter = 'test(gpui)'
+test-group = 'gpui'
+slow-timeout = { period = "120s" }
+threads-required = 1
+
+[[profile.default.overrides]]
+# BDD tests may need more time for scenario execution
+filter = 'test(bdd)'
+test-group = 'bdd'
+slow-timeout = { period = "90s" }
+
+[[profile.default.overrides]]
+# i18n tests are fast unit tests
+filter = 'test(i18n) and not test(gpui)'
+slow-timeout = { period = "30s" }
