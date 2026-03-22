@@ -1,232 +1,40 @@
-//! Widget capability audit for Phase 1-2 controls.
-//!
-//! This module defines a typed inventory of all UI controls required by the
-//! Phase 1 and Phase 2 roadmap. It serves as the canonical source of truth for
-//! control requirements before implementation begins.
-//!
-//! Each control entry records:
-//! - Which phase requires it
-//! - Which surface it belongs to (toolbar, panel, etc.)
-//! - What user job it supports
-//! - What states it must expose
-//! - Keyboard and accessibility requirements
-//! - Source documents that justify its inclusion
-//! - Whether current shell evidence exists
-//!
-//! This is an internal planning artefact, not a public product API.
+//! Control inventory implementation with builder functions.
 
-use std::fmt;
-
-/// Phase identifier for roadmap requirements.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Phase {
-    /// Phase 1: MVP Core Editing Tools and Foundation
-    Phase1,
-    /// Phase 2: Text and Advanced Styling
-    Phase2,
-}
-
-impl fmt::Display for Phase {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Phase1 => write!(f, "Phase 1"),
-            Self::Phase2 => write!(f, "Phase 2"),
-        }
-    }
-}
-
-/// UI surface type where a control appears.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ControlSurface {
-    /// Tool selection toolbar (left rail or top bar)
-    Toolbar,
-    /// Properties inspector panel (width, height, rotation, etc.)
-    PropertiesPanel,
-    /// Stroke and fill styling panel
-    StylePanel,
-    /// Layers list panel
-    LayersPanel,
-    /// History/undo panel
-    HistoryPanel,
-    /// Character formatting panel (Phase 2)
-    CharacterPanel,
-    /// Paragraph formatting panel (Phase 2)
-    ParagraphPanel,
-    /// Alignment and distribution controls
-    AlignmentPanel,
-    /// On-canvas text editing affordance
-    CanvasTextEditor,
-    /// Popover or contextual control
-    Popover,
-}
-
-impl fmt::Display for ControlSurface {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Toolbar => write!(f, "Toolbar"),
-            Self::PropertiesPanel => write!(f, "Properties Panel"),
-            Self::StylePanel => write!(f, "Style Panel"),
-            Self::LayersPanel => write!(f, "Layers Panel"),
-            Self::HistoryPanel => write!(f, "History Panel"),
-            Self::CharacterPanel => write!(f, "Character Panel"),
-            Self::ParagraphPanel => write!(f, "Paragraph Panel"),
-            Self::AlignmentPanel => write!(f, "Alignment Panel"),
-            Self::CanvasTextEditor => write!(f, "Canvas Text Editor"),
-            Self::Popover => write!(f, "Popover"),
-        }
-    }
-}
-
-/// User-facing job or capability the control supports.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UserJob {
-    /// Brief description of what the user accomplishes with this control.
-    pub description: &'static str,
-}
-
-/// Required states a control must expose.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ControlStates {
-    /// List of states (e.g., "selected", "disabled", "focused", "active").
-    pub states: Vec<&'static str>,
-}
-
-/// Keyboard interaction requirements.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct KeyboardRequirements {
-    /// Keyboard shortcut if applicable (e.g., "V" for Selection tool).
-    pub shortcut: Option<&'static str>,
-    /// Whether control must support keyboard-only operation.
-    pub keyboard_only_operation: bool,
-    /// Additional keyboard behaviour notes.
-    pub notes: &'static str,
-}
-
-/// Accessibility requirements.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AccessibilityRequirements {
-    /// ARIA role or AccessKit role.
-    pub role: &'static str,
-    /// Required accessible label.
-    pub label: &'static str,
-    /// Required accessible states to expose.
-    pub states: Vec<&'static str>,
-    /// Additional a11y notes.
-    pub notes: &'static str,
-}
-
-/// Action-to-Command routing requirement.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ActionCommandLinkage {
-    /// Whether this control must route through an Action.
-    pub requires_action: bool,
-    /// Action name if known, or placeholder.
-    pub action_name: Option<&'static str>,
-    /// Additional routing notes.
-    pub notes: &'static str,
-}
-
-/// Source document anchor justifying this control's inclusion.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RequirementSource {
-    /// Roadmap item reference (e.g., "0.8.1", "1.3.4").
-    Roadmap(&'static str),
-    /// Feature plan section.
-    FeaturePlan(&'static str),
-    /// Architecture document section.
-    Architecture(&'static str),
-}
-
-impl fmt::Display for RequirementSource {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Roadmap(item) => write!(f, "Roadmap {item}"),
-            Self::FeaturePlan(section) => write!(f, "Feature Plan: {section}"),
-            Self::Architecture(section) => write!(f, "Architecture §{section}"),
-        }
-    }
-}
-
-/// Evidence that this control already exists in current shell.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CurrentShellEvidence {
-    /// Whether evidence exists.
-    pub exists: bool,
-    /// File path if evidence exists (e.g., `src/ui/phase0_shell/tool_rail.rs`).
-    pub file_path: Option<&'static str>,
-    /// Additional notes about current implementation.
-    pub notes: &'static str,
-}
-
-/// A complete control requirement entry.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RequiredControl {
-    /// Control name (e.g., "Selection Tool", "Width Field", "Fill Color Picker").
-    pub name: &'static str,
-    /// Phase that requires this control.
-    pub phase: Phase,
-    /// Surface where control appears.
-    pub surface: ControlSurface,
-    /// User job this control supports.
-    pub user_job: UserJob,
-    /// Required states.
-    pub states: ControlStates,
-    /// Keyboard requirements.
-    pub keyboard: KeyboardRequirements,
-    /// Accessibility requirements.
-    pub accessibility: AccessibilityRequirements,
-    /// Action/Command routing.
-    pub action_linkage: ActionCommandLinkage,
-    /// Requirement sources.
-    pub sources: Vec<RequirementSource>,
-    /// Current shell evidence.
-    pub current_evidence: CurrentShellEvidence,
-}
-
-impl RequiredControl {
-    /// Returns the control name.
-    #[must_use]
-    pub const fn name(&self) -> &'static str {
-        self.name
-    }
-
-    /// Returns the phase.
-    #[must_use]
-    pub const fn phase(&self) -> Phase {
-        self.phase
-    }
-
-    /// Returns the surface.
-    #[must_use]
-    pub const fn surface(&self) -> ControlSurface {
-        self.surface
-    }
-
-    /// Checks if current shell evidence exists for this control.
-    #[must_use]
-    pub const fn has_current_evidence(&self) -> bool {
-        self.current_evidence.exists
-    }
-}
+use super::control::{
+    AccessibilityRequirements, ActionCommandLinkage, ControlStates, CurrentShellEvidence,
+    KeyboardRequirements, RequiredControl, UserJob,
+};
+use super::types::{ControlSurface, Phase, RequirementSource};
 
 /// Complete inventory of required controls for Phase 1-2.
 pub struct ControlInventory {
     controls: Vec<RequiredControl>,
 }
-
 impl ControlInventory {
     /// Creates a new inventory with the complete Phase 1-2 control set.
-    ///
-    /// This function is intentionally long because it defines the complete
-    /// control inventory as a single cohesive data structure.
     #[must_use]
+    pub fn new() -> Self {
+        let mut controls = Vec::new();
+        controls.extend(Self::toolbar_controls());
+        controls.extend(Self::properties_panel_controls());
+        controls.extend(Self::alignment_panel_controls());
+        controls.extend(Self::style_panel_stroke_controls());
+        controls.extend(Self::style_panel_fill_controls());
+        controls.extend(Self::layers_panel_controls());
+        controls.extend(Self::history_panel_controls());
+        controls.extend(Self::character_panel_controls());
+        controls.extend(Self::paragraph_panel_controls());
+        controls.extend(Self::canvas_text_editor_controls());
+        Self { controls }
+    }
+
+    /// Toolbar controls (7 tools).
     #[expect(
         clippy::too_many_lines,
-        reason = "Complete control inventory defined as cohesive data structure"
+        reason = "Flat data table for Toolbar controls; no meaningful sub-structure to extract"
     )]
-    pub fn new() -> Self {
-        let controls = vec![
-            // ===== Toolbar controls =====
+    fn toolbar_controls() -> Vec<RequiredControl> {
+        vec![
             RequiredControl {
                 name: "Selection Tool",
                 phase: Phase::Phase1,
@@ -479,7 +287,16 @@ impl ControlInventory {
                     notes: "Phase 2 feature",
                 },
             },
-            // ===== Properties Panel =====
+        ]
+    }
+
+    /// Properties Panel controls (5 fields).
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Flat data table for Properties Panel controls; no meaningful sub-structure to extract"
+    )]
+    fn properties_panel_controls() -> Vec<RequiredControl> {
+        vec![
             RequiredControl {
                 name: "X Position Field",
                 phase: Phase::Phase1,
@@ -660,7 +477,16 @@ impl ControlInventory {
                     notes: "Not yet implemented",
                 },
             },
-            // ===== Alignment Panel =====
+        ]
+    }
+
+    /// Alignment Panel controls (8 controls).
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Flat data table for Alignment Panel controls; no meaningful sub-structure to extract"
+    )]
+    fn alignment_panel_controls() -> Vec<RequiredControl> {
+        vec![
             RequiredControl {
                 name: "Align Left",
                 phase: Phase::Phase1,
@@ -949,7 +775,12 @@ impl ControlInventory {
                     notes: "Not yet implemented",
                 },
             },
-            // ===== Style Panel: Stroke Controls =====
+        ]
+    }
+
+    /// Style Panel stroke controls (3 controls).
+    fn style_panel_stroke_controls() -> Vec<RequiredControl> {
+        vec![
             RequiredControl {
                 name: "Stroke Color Picker",
                 phase: Phase::Phase1,
@@ -1059,7 +890,12 @@ impl ControlInventory {
                     notes: "Stroke opacity control exists in current shell",
                 },
             },
-            // ===== Style Panel: Fill Controls =====
+        ]
+    }
+
+    /// Style Panel fill controls (3 controls).
+    fn style_panel_fill_controls() -> Vec<RequiredControl> {
+        vec![
             RequiredControl {
                 name: "Fill Color Picker",
                 phase: Phase::Phase1,
@@ -1169,7 +1005,16 @@ impl ControlInventory {
                     notes: "Not yet implemented as explicit toggle",
                 },
             },
-            // ===== Layers Panel =====
+        ]
+    }
+
+    /// Layers Panel controls (5 controls).
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Flat data table for Layers Panel controls; no meaningful sub-structure to extract"
+    )]
+    fn layers_panel_controls() -> Vec<RequiredControl> {
+        vec![
             RequiredControl {
                 name: "Layer Row",
                 phase: Phase::Phase1,
@@ -1350,44 +1195,56 @@ impl ControlInventory {
                     notes: "Not yet implemented",
                 },
             },
-            // ===== History Panel (Optional Phase 1) =====
-            RequiredControl {
-                name: "History Entry Row",
-                phase: Phase::Phase1,
-                surface: ControlSurface::HistoryPanel,
-                user_job: UserJob {
-                    description: "Display and select a history state for undo/redo",
-                },
-                states: ControlStates {
-                    states: vec!["current", "past", "future", "focused"],
-                },
-                keyboard: KeyboardRequirements {
-                    shortcut: None,
-                    keyboard_only_operation: true,
-                    notes: "Must support arrow keys for navigation, Enter to jump to state",
-                },
-                accessibility: AccessibilityRequirements {
-                    role: "ListItem",
-                    label: "History Entry",
-                    states: vec!["focusable", "selected"],
-                    notes: "Must announce action description and temporal position",
-                },
-                action_linkage: ActionCommandLinkage {
-                    requires_action: true,
-                    action_name: Some("JumpToHistoryState"),
-                    notes: "Jumping to history state routes through undo/redo system",
-                },
-                sources: vec![
-                    RequirementSource::Roadmap("1.6.2"),
-                    RequirementSource::FeaturePlan("Phase 1: History UI"),
-                ],
-                current_evidence: CurrentShellEvidence {
-                    exists: false,
-                    file_path: None,
-                    notes: "History panel UI not yet implemented",
-                },
+        ]
+    }
+
+    /// History Panel controls (1 control).
+    fn history_panel_controls() -> Vec<RequiredControl> {
+        vec![RequiredControl {
+            name: "History Entry Row",
+            phase: Phase::Phase1,
+            surface: ControlSurface::HistoryPanel,
+            user_job: UserJob {
+                description: "Display and select a history state for undo/redo",
             },
-            // ===== Phase 2: Character Panel =====
+            states: ControlStates {
+                states: vec!["current", "past", "future", "focused"],
+            },
+            keyboard: KeyboardRequirements {
+                shortcut: None,
+                keyboard_only_operation: true,
+                notes: "Must support arrow keys for navigation, Enter to jump to state",
+            },
+            accessibility: AccessibilityRequirements {
+                role: "ListItem",
+                label: "History Entry",
+                states: vec!["focusable", "selected"],
+                notes: "Must announce action description and temporal position",
+            },
+            action_linkage: ActionCommandLinkage {
+                requires_action: true,
+                action_name: Some("JumpToHistoryState"),
+                notes: "Jumping to history state routes through undo/redo system",
+            },
+            sources: vec![
+                RequirementSource::Roadmap("1.6.2"),
+                RequirementSource::FeaturePlan("Phase 1: History UI"),
+            ],
+            current_evidence: CurrentShellEvidence {
+                exists: false,
+                file_path: None,
+                notes: "History panel UI not yet implemented",
+            },
+        }]
+    }
+
+    /// Character Panel controls (6 controls - Phase 2).
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Flat data table for Character Panel controls; no meaningful sub-structure to extract"
+    )]
+    fn character_panel_controls() -> Vec<RequiredControl> {
+        vec![
             RequiredControl {
                 name: "Font Family Selector",
                 phase: Phase::Phase2,
@@ -1604,7 +1461,12 @@ impl ControlInventory {
                     notes: "Phase 2 feature; will reuse color picker infrastructure",
                 },
             },
-            // ===== Phase 2: Paragraph Panel =====
+        ]
+    }
+
+    /// Paragraph Panel controls (3 controls - Phase 2).
+    fn paragraph_panel_controls() -> Vec<RequiredControl> {
+        vec![
             RequiredControl {
                 name: "Paragraph Spacing Field",
                 phase: Phase::Phase2,
@@ -1713,46 +1575,47 @@ impl ControlInventory {
                     notes: "Phase 2 feature",
                 },
             },
-            // ===== Canvas Text Editor =====
-            RequiredControl {
-                name: "Inline Text Cursor",
-                phase: Phase::Phase2,
-                surface: ControlSurface::CanvasTextEditor,
-                user_job: UserJob {
-                    description: "Position cursor within text for editing",
-                },
-                states: ControlStates {
-                    states: vec!["visible", "blinking", "focused"],
-                },
-                keyboard: KeyboardRequirements {
-                    shortcut: None,
-                    keyboard_only_operation: true,
-                    notes: "Must support arrow keys, Home/End, text selection shortcuts",
-                },
-                accessibility: AccessibilityRequirements {
-                    role: "TextInput",
-                    label: "Text Editor",
-                    states: vec!["focusable", "editable"],
-                    notes: "Must announce cursor position and text content",
-                },
-                action_linkage: ActionCommandLinkage {
-                    requires_action: true,
-                    action_name: Some("EditText"),
-                    notes: "Text edits route through command system for undo/redo",
-                },
-                sources: vec![
-                    RequirementSource::Roadmap("2.1.2"),
-                    RequirementSource::FeaturePlan("Phase 2: Text Engine"),
-                ],
-                current_evidence: CurrentShellEvidence {
-                    exists: false,
-                    file_path: None,
-                    notes: "Phase 2 feature",
-                },
-            },
-        ];
+        ]
+    }
 
-        Self { controls }
+    /// Canvas Text Editor controls (1 control - Phase 2).
+    fn canvas_text_editor_controls() -> Vec<RequiredControl> {
+        vec![RequiredControl {
+            name: "Inline Text Cursor",
+            phase: Phase::Phase2,
+            surface: ControlSurface::CanvasTextEditor,
+            user_job: UserJob {
+                description: "Position cursor within text for editing",
+            },
+            states: ControlStates {
+                states: vec!["visible", "blinking", "focused"],
+            },
+            keyboard: KeyboardRequirements {
+                shortcut: None,
+                keyboard_only_operation: true,
+                notes: "Must support arrow keys, Home/End, text selection shortcuts",
+            },
+            accessibility: AccessibilityRequirements {
+                role: "TextInput",
+                label: "Text Editor",
+                states: vec!["focusable", "editable"],
+                notes: "Must announce cursor position and text content",
+            },
+            action_linkage: ActionCommandLinkage {
+                requires_action: true,
+                action_name: Some("EditText"),
+                notes: "Text edits route through command system for undo/redo",
+            },
+            sources: vec![
+                RequirementSource::Roadmap("2.1.2"),
+                RequirementSource::FeaturePlan("Phase 2: Text Engine"),
+            ],
+            current_evidence: CurrentShellEvidence {
+                exists: false,
+                file_path: None,
+                notes: "Phase 2 feature",
+            },
+        }]
     }
 
     /// Returns all controls in the inventory.
