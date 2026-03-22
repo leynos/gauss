@@ -10,8 +10,19 @@
 //! - All controls that should have keyboard shortcuts do have them
 //! - All controls have proper accessibility requirements
 
-use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase};
+use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase, RequiredControl};
 use rstest::rstest;
+
+fn assert_all_controls_satisfy(label: &str, predicate: fn(&RequiredControl) -> bool) {
+    let inventory = ControlInventory::new();
+    for control in inventory.all() {
+        assert!(
+            predicate(control),
+            "Control '{}' failed invariant: {label}",
+            control.name()
+        );
+    }
+}
 
 #[rstest]
 fn test_inventory_is_not_empty() {
@@ -23,67 +34,25 @@ fn test_inventory_is_not_empty() {
 }
 
 #[rstest]
-fn test_all_controls_have_names() {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        assert!(
-            !control.name().is_empty(),
-            "Control must have a non-empty name"
-        );
-    }
-}
-
-#[rstest]
-fn test_all_controls_have_user_jobs() {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        assert!(
-            !control.user_job.description.is_empty(),
-            "Control '{}' must have a user job description",
-            control.name()
-        );
-    }
-}
-
-#[rstest]
-fn test_all_controls_have_states() {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        assert!(
-            !control.states.states.is_empty(),
-            "Control '{}' must define at least one state",
-            control.name()
-        );
-    }
-}
-
-#[rstest]
-fn test_all_controls_have_accessibility_roles() {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        assert!(
-            !control.accessibility.role.is_empty(),
-            "Control '{}' must have an accessibility role",
-            control.name()
-        );
-        assert!(
-            !control.accessibility.label.is_empty(),
-            "Control '{}' must have an accessibility label",
-            control.name()
-        );
-    }
-}
-
-#[rstest]
-fn test_all_controls_have_requirement_sources() {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        assert!(
-            !control.sources.is_empty(),
-            "Control '{}' must cite at least one requirement source",
-            control.name()
-        );
-    }
+#[case("has a non-empty name",
+       (|c: &RequiredControl| !c.name().is_empty()) as fn(&RequiredControl) -> bool)]
+#[case("has a user job description",
+       (|c: &RequiredControl| !c.user_job.description.is_empty()) as fn(&RequiredControl) -> bool)]
+#[case("defines at least one state",
+       (|c: &RequiredControl| !c.states.states.is_empty()) as fn(&RequiredControl) -> bool)]
+#[case("has an accessibility role",
+       (|c: &RequiredControl| !c.accessibility.role.is_empty()) as fn(&RequiredControl) -> bool)]
+#[case("has an accessibility label",
+       (|c: &RequiredControl| !c.accessibility.label.is_empty()) as fn(&RequiredControl) -> bool)]
+#[case("cites at least one requirement source",
+       (|c: &RequiredControl| !c.sources.is_empty()) as fn(&RequiredControl) -> bool)]
+#[case("supports keyboard-only operation",
+       (|c: &RequiredControl| c.keyboard.keyboard_only_operation) as fn(&RequiredControl) -> bool)]
+fn test_all_controls_satisfy_invariant(
+    #[case] label: &str,
+    #[case] predicate: fn(&RequiredControl) -> bool,
+) {
+    assert_all_controls_satisfy(label, predicate);
 }
 
 #[rstest]
@@ -184,19 +153,6 @@ fn test_controls_without_evidence_have_notes() {
         assert!(
             !control.current_evidence.notes.is_empty(),
             "Control '{}' has no evidence and should explain why",
-            control.name()
-        );
-    }
-}
-
-#[rstest]
-fn test_all_controls_support_keyboard_only_operation() {
-    let inventory = ControlInventory::new();
-
-    for control in inventory.all() {
-        assert!(
-            control.keyboard.keyboard_only_operation,
-            "Control '{}' must support keyboard-only operation per architecture requirements",
             control.name()
         );
     }

@@ -15,14 +15,83 @@
 //!
 //! This is an internal planning artefact, not a public product API.
 
-pub mod types;
-pub mod control;
-pub mod inventory;
+mod alignment;
+mod canvas;
+mod character;
+mod history;
+mod layers;
+mod paragraph;
+mod properties;
+mod style;
+mod toolbar;
+mod types;
 
-// Flatten the public API so existing use paths continue to work.
-pub use types::{Phase, ControlSurface, RequirementSource};
-pub use control::{
-    UserJob, ControlStates, KeyboardRequirements, AccessibilityRequirements,
-    ActionCommandLinkage, CurrentShellEvidence, RequiredControl,
-};
-pub use inventory::ControlInventory;
+pub use types::*;
+
+/// Complete inventory of required controls for Phase 1-2.
+pub struct ControlInventory {
+    controls: Vec<RequiredControl>,
+}
+
+impl ControlInventory {
+    /// Creates a new inventory with the complete Phase 1-2 control set.
+    #[must_use]
+    pub fn new() -> Self {
+        let mut controls = Vec::new();
+        controls.extend(toolbar::controls());
+        controls.extend(properties::controls());
+        controls.extend(alignment::controls());
+        controls.extend(style::controls());
+        controls.extend(layers::controls());
+        controls.extend(history::controls());
+        controls.extend(character::controls());
+        controls.extend(paragraph::controls());
+        controls.extend(canvas::controls());
+        Self { controls }
+    }
+
+    /// Returns all controls in the inventory.
+    #[must_use]
+    pub fn all(&self) -> &[RequiredControl] {
+        &self.controls
+    }
+
+    /// Returns controls filtered by phase.
+    #[must_use]
+    pub fn by_phase(&self, phase: Phase) -> Vec<&RequiredControl> {
+        self.controls.iter().filter(|c| c.phase == phase).collect()
+    }
+
+    /// Returns controls filtered by surface.
+    #[must_use]
+    pub fn by_surface(&self, surface: ControlSurface) -> Vec<&RequiredControl> {
+        self.controls
+            .iter()
+            .filter(|c| c.surface == surface)
+            .collect()
+    }
+
+    /// Returns controls that have current shell evidence.
+    #[must_use]
+    pub fn with_evidence(&self) -> Vec<&RequiredControl> {
+        self.controls
+            .iter()
+            .filter(|c| c.current_evidence.exists)
+            .collect()
+    }
+
+    /// Returns controls without current shell evidence.
+    #[must_use]
+    pub fn without_evidence(&self) -> Vec<&RequiredControl> {
+        self.controls
+            .iter()
+            .filter(|c| !c.current_evidence.exists)
+            .collect()
+    }
+}
+
+impl Default for ControlInventory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
