@@ -61,8 +61,8 @@ fn tool_rail_controls_match_audit(cx: &mut TestAppContext) {
     let inventory = ControlInventory::new();
 
     // Find controls that claim tool_rail.rs as evidence
-    let tool_rail_controls: Vec<_> = inventory
-        .with_evidence()
+    let with_evidence = inventory.with_evidence();
+    let tool_rail_controls: Vec<_> = with_evidence
         .iter()
         .filter(|c| {
             c.current_evidence
@@ -99,8 +99,8 @@ fn style_controls_match_audit(cx: &mut TestAppContext) {
     let inventory = ControlInventory::new();
 
     // Find controls that claim style_controls.rs as evidence
-    let style_controls: Vec<_> = inventory
-        .with_evidence()
+    let with_evidence = inventory.with_evidence();
+    let style_controls: Vec<_> = with_evidence
         .iter()
         .filter(|c| {
             c.current_evidence

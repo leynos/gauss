@@ -7,510 +7,615 @@
 mod common;
 
 use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase};
-use rstest_bdd::{feature, given, scenario, then, when};
+use rstest::fixture;
+use rstest_bdd_macros::{given, scenario, then, when};
+use test_support::{TestSupportError, TestSupportResult};
 
-#[feature("tests/features/widget_capability_audit.feature")]
-#[scenario("Phase 1 toolbar tools are catalogued")]
-fn test_phase1_toolbar_tools_catalogued() {}
-
-#[feature("tests/features/widget_capability_audit.feature")]
-#[scenario("Phase 1 properties panel controls are catalogued")]
-fn test_phase1_properties_panel_catalogued() {}
-
-#[feature("tests/features/widget_capability_audit.feature")]
-#[scenario("Phase 1 alignment controls are catalogued")]
-fn test_phase1_alignment_controls_catalogued() {}
-
-#[feature("tests/features/widget_capability_audit.feature")]
-#[scenario("Phase 1 style panel controls are catalogued")]
-fn test_phase1_style_panel_catalogued() {}
-
-#[feature("tests/features/widget_capability_audit.feature")]
-#[scenario("Phase 1 layers panel controls are catalogued")]
-fn test_phase1_layers_panel_catalogued() {}
-
-#[feature("tests/features/widget_capability_audit.feature")]
-#[scenario("Phase 2 text controls are catalogued")]
-fn test_phase2_text_controls_catalogued() {}
-
-#[feature("tests/features/widget_capability_audit.feature")]
-#[scenario("All controls have complete requirement fields")]
-fn test_all_controls_complete() {}
-
-#[feature("tests/features/widget_capability_audit.feature")]
-#[scenario("Current shell evidence is tracked")]
-fn test_shell_evidence_tracked() {}
-
-#[feature("tests/features/widget_capability_audit.feature")]
-#[scenario("All toolbar tools have keyboard shortcuts")]
-fn test_toolbar_keyboard_shortcuts() {}
-
-#[feature("tests/features/widget_capability_audit.feature")]
-#[scenario("All controls support keyboard-only operation")]
-fn test_keyboard_only_operation() {}
-
-#[feature("tests/features/widget_capability_audit.feature")]
-#[scenario("All controls integrate with Action/Command system")]
-fn test_action_command_integration() {}
-
-// Step definitions
-
-#[given("the widget capability audit inventory is loaded")]
-fn given_inventory_loaded() -> ControlInventory {
-    ControlInventory::new()
+/// World state for widget audit BDD tests.
+#[derive(Default)]
+struct AuditWorld {
+    inventory: Option<ControlInventory>,
+    controls: Vec<String>,
+    count: usize,
 }
 
+#[fixture]
+fn world() -> AuditWorld {
+    AuditWorld::default()
+}
+
+#[scenario("tests/features/widget_capability_audit.feature")]
+fn widget_capability_audit() {}
+
+// === Given steps ===
+
+#[given("the widget capability audit inventory is loaded")]
+fn given_inventory_loaded(world: &mut AuditWorld) {
+    world.inventory = Some(ControlInventory::new());
+}
+
+// === When steps ===
+
 #[when("I query controls for Phase 1 toolbar")]
-fn when_query_phase1_toolbar(inventory: &ControlInventory) -> Vec<String> {
-    inventory
-        .by_surface(ControlSurface::Toolbar)
-        .iter()
-        .filter(|c| c.phase() == Phase::Phase1)
-        .map(|c| c.name().to_string())
-        .collect()
+fn when_query_phase1_toolbar(world: &mut AuditWorld) {
+    if let Some(ref inventory) = world.inventory {
+        world.controls = inventory
+            .by_surface(ControlSurface::Toolbar)
+            .iter()
+            .filter(|c| c.phase() == Phase::Phase1)
+            .map(|c| c.name().to_string())
+            .collect();
+    }
 }
 
 #[when("I query controls for Phase 1 properties panel")]
-fn when_query_phase1_properties(inventory: &ControlInventory) -> Vec<String> {
-    inventory
-        .by_surface(ControlSurface::PropertiesPanel)
-        .iter()
-        .filter(|c| c.phase() == Phase::Phase1)
-        .map(|c| c.name().to_string())
-        .collect()
+fn when_query_phase1_properties(world: &mut AuditWorld) {
+    if let Some(ref inventory) = world.inventory {
+        world.controls = inventory
+            .by_surface(ControlSurface::PropertiesPanel)
+            .iter()
+            .filter(|c| c.phase() == Phase::Phase1)
+            .map(|c| c.name().to_string())
+            .collect();
+    }
 }
 
 #[when("I query controls for Phase 1 alignment panel")]
-fn when_query_phase1_alignment(inventory: &ControlInventory) -> Vec<String> {
-    inventory
-        .by_surface(ControlSurface::AlignmentPanel)
-        .iter()
-        .filter(|c| c.phase() == Phase::Phase1)
-        .map(|c| c.name().to_string())
-        .collect()
+fn when_query_phase1_alignment(world: &mut AuditWorld) {
+    if let Some(ref inventory) = world.inventory {
+        world.controls = inventory
+            .by_surface(ControlSurface::AlignmentPanel)
+            .iter()
+            .filter(|c| c.phase() == Phase::Phase1)
+            .map(|c| c.name().to_string())
+            .collect();
+    }
 }
 
 #[when("I query controls for Phase 1 style panel")]
-fn when_query_phase1_style(inventory: &ControlInventory) -> Vec<String> {
-    inventory
-        .by_surface(ControlSurface::StylePanel)
-        .iter()
-        .filter(|c| c.phase() == Phase::Phase1)
-        .map(|c| c.name().to_string())
-        .collect()
+fn when_query_phase1_style(world: &mut AuditWorld) {
+    if let Some(ref inventory) = world.inventory {
+        world.controls = inventory
+            .by_surface(ControlSurface::StylePanel)
+            .iter()
+            .filter(|c| c.phase() == Phase::Phase1)
+            .map(|c| c.name().to_string())
+            .collect();
+    }
 }
 
 #[when("I query controls for Phase 1 layers panel")]
-fn when_query_phase1_layers(inventory: &ControlInventory) -> Vec<String> {
-    inventory
-        .by_surface(ControlSurface::LayersPanel)
-        .iter()
-        .filter(|c| c.phase() == Phase::Phase1)
-        .map(|c| c.name().to_string())
-        .collect()
+fn when_query_phase1_layers(world: &mut AuditWorld) {
+    if let Some(ref inventory) = world.inventory {
+        world.controls = inventory
+            .by_surface(ControlSurface::LayersPanel)
+            .iter()
+            .filter(|c| c.phase() == Phase::Phase1)
+            .map(|c| c.name().to_string())
+            .collect();
+    }
 }
 
 #[when("I query controls for Phase 2")]
-fn when_query_phase2(inventory: &ControlInventory) -> Vec<String> {
-    inventory
-        .by_phase(Phase::Phase2)
-        .iter()
-        .map(|c| c.name().to_string())
-        .collect()
+fn when_query_phase2(world: &mut AuditWorld) {
+    if let Some(ref inventory) = world.inventory {
+        world.controls = inventory
+            .by_phase(Phase::Phase2)
+            .iter()
+            .map(|c| c.name().to_string())
+            .collect();
+    }
 }
 
 #[when("I examine all controls in the inventory")]
-fn when_examine_all_controls(inventory: &ControlInventory) -> usize {
-    inventory.all().len()
+fn when_examine_all_controls(world: &mut AuditWorld) {
+    if let Some(ref inventory) = world.inventory {
+        world.count = inventory.all().len();
+    }
 }
 
 #[when("I query controls with current shell evidence")]
-fn when_query_with_evidence(inventory: &ControlInventory) -> Vec<String> {
-    inventory
-        .with_evidence()
-        .iter()
-        .map(|c| c.name().to_string())
-        .collect()
+fn when_query_with_evidence(world: &mut AuditWorld) {
+    if let Some(ref inventory) = world.inventory {
+        world.controls = inventory
+            .with_evidence()
+            .iter()
+            .map(|c| c.name().to_string())
+            .collect();
+    }
 }
 
 #[when("I query Phase 1 toolbar controls")]
-fn when_query_toolbar_phase1(inventory: &ControlInventory) -> Vec<String> {
-    inventory
-        .by_surface(ControlSurface::Toolbar)
-        .iter()
-        .filter(|c| c.phase() == Phase::Phase1)
-        .map(|c| c.name().to_string())
-        .collect()
+fn when_query_toolbar_phase1(world: &mut AuditWorld) {
+    when_query_phase1_toolbar(world);
 }
 
+// === Then steps ===
+
 #[then("the inventory includes a Selection Tool")]
-fn then_includes_selection_tool(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name == "Selection Tool"),
-        "Inventory must include Selection Tool"
-    );
+fn then_includes_selection_tool(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name == "Selection Tool") {
+        return Err(TestSupportError::expectation(
+            "Inventory must include Selection Tool",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes a Direct Selection Tool")]
-fn then_includes_direct_selection_tool(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name == "Direct Selection Tool"),
-        "Inventory must include Direct Selection Tool"
-    );
+fn then_includes_direct_selection_tool(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name == "Direct Selection Tool")
+    {
+        return Err(TestSupportError::expectation(
+            "Inventory must include Direct Selection Tool",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes a Pen Tool")]
-fn then_includes_pen_tool(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name == "Pen Tool"),
-        "Inventory must include Pen Tool"
-    );
+fn then_includes_pen_tool(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name == "Pen Tool") {
+        return Err(TestSupportError::expectation(
+            "Inventory must include Pen Tool",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes a Rectangle Tool")]
-fn then_includes_rectangle_tool(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name == "Rectangle Tool"),
-        "Inventory must include Rectangle Tool"
-    );
+fn then_includes_rectangle_tool(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name == "Rectangle Tool") {
+        return Err(TestSupportError::expectation(
+            "Inventory must include Rectangle Tool",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes an Ellipse Tool")]
-fn then_includes_ellipse_tool(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name == "Ellipse Tool"),
-        "Inventory must include Ellipse Tool"
-    );
+fn then_includes_ellipse_tool(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name == "Ellipse Tool") {
+        return Err(TestSupportError::expectation(
+            "Inventory must include Ellipse Tool",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes a Line Tool")]
-fn then_includes_line_tool(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name == "Line Tool"),
-        "Inventory must include Line Tool"
-    );
+fn then_includes_line_tool(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name == "Line Tool") {
+        return Err(TestSupportError::expectation(
+            "Inventory must include Line Tool",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes an X Position Field")]
-fn then_includes_x_position(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name == "X Position Field"),
-        "Inventory must include X Position Field"
-    );
+fn then_includes_x_position(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name == "X Position Field")
+    {
+        return Err(TestSupportError::expectation(
+            "Inventory must include X Position Field",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes a Y Position Field")]
-fn then_includes_y_position(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name == "Y Position Field"),
-        "Inventory must include Y Position Field"
-    );
+fn then_includes_y_position(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name == "Y Position Field")
+    {
+        return Err(TestSupportError::expectation(
+            "Inventory must include Y Position Field",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes a Width Field")]
-fn then_includes_width(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name == "Width Field"),
-        "Inventory must include Width Field"
-    );
+fn then_includes_width(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name == "Width Field") {
+        return Err(TestSupportError::expectation(
+            "Inventory must include Width Field",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes a Height Field")]
-fn then_includes_height(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name == "Height Field"),
-        "Inventory must include Height Field"
-    );
+fn then_includes_height(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name == "Height Field") {
+        return Err(TestSupportError::expectation(
+            "Inventory must include Height Field",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes a Rotation Field")]
-fn then_includes_rotation(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name == "Rotation Field"),
-        "Inventory must include Rotation Field"
-    );
+fn then_includes_rotation(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name == "Rotation Field") {
+        return Err(TestSupportError::expectation(
+            "Inventory must include Rotation Field",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes alignment controls for left, center, and right")]
-fn then_includes_horizontal_alignment(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name.contains("Align Left")),
-        "Must include Align Left"
-    );
-    assert!(
-        controls
-            .iter()
-            .any(|name| name.contains("Align Center Horizontal")),
-        "Must include Align Center Horizontal"
-    );
-    assert!(
-        controls.iter().any(|name| name.contains("Align Right")),
-        "Must include Align Right"
-    );
+fn then_includes_horizontal_alignment(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name.contains("Align Left")) {
+        return Err(TestSupportError::expectation("Must include Align Left"));
+    }
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Align Center Horizontal"))
+    {
+        return Err(TestSupportError::expectation(
+            "Must include Align Center Horizontal",
+        ));
+    }
+    if !world.controls.iter().any(|name| name.contains("Align Right")) {
+        return Err(TestSupportError::expectation("Must include Align Right"));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes alignment controls for top, center, and bottom")]
-fn then_includes_vertical_alignment(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name.contains("Align Top")),
-        "Must include Align Top"
-    );
-    assert!(
-        controls
-            .iter()
-            .any(|name| name.contains("Align Center Vertical")),
-        "Must include Align Center Vertical"
-    );
-    assert!(
-        controls.iter().any(|name| name.contains("Align Bottom")),
-        "Must include Align Bottom"
-    );
+fn then_includes_vertical_alignment(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name.contains("Align Top")) {
+        return Err(TestSupportError::expectation("Must include Align Top"));
+    }
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Align Center Vertical"))
+    {
+        return Err(TestSupportError::expectation(
+            "Must include Align Center Vertical",
+        ));
+    }
+    if !world.controls.iter().any(|name| name.contains("Align Bottom")) {
+        return Err(TestSupportError::expectation("Must include Align Bottom"));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes distribution controls for horizontal and vertical")]
-fn then_includes_distribution(controls: &Vec<String>) {
-    assert!(
-        controls
-            .iter()
-            .any(|name| name.contains("Distribute Horizontal")),
-        "Must include Distribute Horizontal"
-    );
-    assert!(
-        controls
-            .iter()
-            .any(|name| name.contains("Distribute Vertical")),
-        "Must include Distribute Vertical"
-    );
+fn then_includes_distribution(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Distribute Horizontal"))
+    {
+        return Err(TestSupportError::expectation(
+            "Must include Distribute Horizontal",
+        ));
+    }
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Distribute Vertical"))
+    {
+        return Err(TestSupportError::expectation(
+            "Must include Distribute Vertical",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes stroke color, width, and opacity controls")]
-fn then_includes_stroke_controls(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name.contains("Stroke Color")),
-        "Must include Stroke Color Picker"
-    );
-    assert!(
-        controls.iter().any(|name| name.contains("Stroke Width")),
-        "Must include Stroke Width Field"
-    );
-    assert!(
-        controls.iter().any(|name| name.contains("Stroke Opacity")),
-        "Must include Stroke Opacity Slider"
-    );
+fn then_includes_stroke_controls(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name.contains("Stroke Color")) {
+        return Err(TestSupportError::expectation(
+            "Must include Stroke Color Picker",
+        ));
+    }
+    if !world.controls.iter().any(|name| name.contains("Stroke Width")) {
+        return Err(TestSupportError::expectation(
+            "Must include Stroke Width Field",
+        ));
+    }
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Stroke Opacity"))
+    {
+        return Err(TestSupportError::expectation(
+            "Must include Stroke Opacity Slider",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes fill color and opacity controls")]
-fn then_includes_fill_controls(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name.contains("Fill Color")),
-        "Must include Fill Color Picker"
-    );
-    // Note: Fill Opacity may not be implemented yet but should be in inventory
+fn then_includes_fill_controls(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name.contains("Fill Color")) {
+        return Err(TestSupportError::expectation(
+            "Must include Fill Color Picker",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes layer visibility toggle")]
-fn then_includes_layer_visibility(controls: &Vec<String>) {
-    assert!(
-        controls
-            .iter()
-            .any(|name| name.contains("Layer Visibility")),
-        "Must include Layer Visibility Toggle"
-    );
+fn then_includes_layer_visibility(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Layer Visibility"))
+    {
+        return Err(TestSupportError::expectation(
+            "Must include Layer Visibility Toggle",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes layer lock toggle")]
-fn then_includes_layer_lock(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name.contains("Layer Lock")),
-        "Must include Layer Lock Toggle"
-    );
+fn then_includes_layer_lock(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name.contains("Layer Lock")) {
+        return Err(TestSupportError::expectation(
+            "Must include Layer Lock Toggle",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes layer rename capability")]
-fn then_includes_layer_rename(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name.contains("Layer Rename")),
-        "Must include Layer Rename Field"
-    );
+fn then_includes_layer_rename(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Layer Rename"))
+    {
+        return Err(TestSupportError::expectation(
+            "Must include Layer Rename Field",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes layer reorder capability")]
-fn then_includes_layer_reorder(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name.contains("Layer Reorder")),
-        "Must include Layer Reorder Handle"
-    );
+fn then_includes_layer_reorder(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Layer Reorder"))
+    {
+        return Err(TestSupportError::expectation(
+            "Must include Layer Reorder Handle",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes character panel controls")]
-fn then_includes_character_panel(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name.contains("Font")),
-        "Must include font controls"
-    );
-    assert!(
-        controls
-            .iter()
-            .any(|name| name.contains("Bold") || name.contains("Italic")),
-        "Must include text formatting controls"
-    );
+fn then_includes_character_panel(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name.contains("Font")) {
+        return Err(TestSupportError::expectation("Must include font controls"));
+    }
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Bold") || name.contains("Italic"))
+    {
+        return Err(TestSupportError::expectation(
+            "Must include text formatting controls",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes paragraph panel controls")]
-fn then_includes_paragraph_panel(controls: &Vec<String>) {
-    assert!(
-        controls.iter().any(|name| name.contains("Paragraph")
-            || name.contains("Line Spacing")
-            || name.contains("Indentation")),
-        "Must include paragraph formatting controls"
-    );
+fn then_includes_paragraph_panel(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| {
+        name.contains("Paragraph") || name.contains("Line Spacing") || name.contains("Indentation")
+    }) {
+        return Err(TestSupportError::expectation(
+            "Must include paragraph formatting controls",
+        ));
+    }
+    Ok(())
 }
 
 #[then("the inventory includes canvas text editing controls")]
-fn then_includes_canvas_text(controls: &Vec<String>) {
-    assert!(
-        controls
-            .iter()
-            .any(|name| name.contains("Text Cursor") || name.contains("Inline Text")),
-        "Must include canvas text editing controls"
-    );
+fn then_includes_canvas_text(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Text Cursor") || name.contains("Inline Text"))
+    {
+        return Err(TestSupportError::expectation(
+            "Must include canvas text editing controls",
+        ));
+    }
+    Ok(())
 }
 
 #[then("each control has a non-empty name")]
-fn then_each_has_name(count: &usize) {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        assert!(!control.name().is_empty(), "Control must have name");
+fn then_each_has_name(world: &AuditWorld) -> TestSupportResult<()> {
+    if let Some(ref inventory) = world.inventory {
+        for control in inventory.all() {
+            if control.name().is_empty() {
+                return Err(TestSupportError::expectation("Control must have name"));
+            }
+        }
     }
-    assert!(*count > 0, "Inventory must have controls");
+    if world.count == 0 {
+        return Err(TestSupportError::expectation(
+            "Inventory must have controls",
+        ));
+    }
+    Ok(())
 }
 
 #[then("each control has a user job description")]
-fn then_each_has_user_job(_count: &usize) {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        assert!(
-            !control.user_job.description.is_empty(),
-            "Control '{}' must have user job",
-            control.name()
-        );
+fn then_each_has_user_job(world: &AuditWorld) -> TestSupportResult<()> {
+    if let Some(ref inventory) = world.inventory {
+        for control in inventory.all() {
+            if control.user_job.description.is_empty() {
+                return Err(TestSupportError::expectation(format!(
+                    "Control '{}' must have user job",
+                    control.name()
+                )));
+            }
+        }
     }
+    Ok(())
 }
 
 #[then("each control has at least one defined state")]
-fn then_each_has_states(_count: &usize) {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        assert!(
-            !control.states.states.is_empty(),
-            "Control '{}' must have states",
-            control.name()
-        );
+fn then_each_has_states(world: &AuditWorld) -> TestSupportResult<()> {
+    if let Some(ref inventory) = world.inventory {
+        for control in inventory.all() {
+            if control.states.states.is_empty() {
+                return Err(TestSupportError::expectation(format!(
+                    "Control '{}' must have states",
+                    control.name()
+                )));
+            }
+        }
     }
+    Ok(())
 }
 
 #[then("each control has an accessibility role and label")]
-fn then_each_has_accessibility(_count: &usize) {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        assert!(
-            !control.accessibility.role.is_empty(),
-            "Control '{}' must have a11y role",
-            control.name()
-        );
-        assert!(
-            !control.accessibility.label.is_empty(),
-            "Control '{}' must have a11y label",
-            control.name()
-        );
+fn then_each_has_accessibility(world: &AuditWorld) -> TestSupportResult<()> {
+    if let Some(ref inventory) = world.inventory {
+        for control in inventory.all() {
+            if control.accessibility.role.is_empty() {
+                return Err(TestSupportError::expectation(format!(
+                    "Control '{}' must have a11y role",
+                    control.name()
+                )));
+            }
+            if control.accessibility.label.is_empty() {
+                return Err(TestSupportError::expectation(format!(
+                    "Control '{}' must have a11y label",
+                    control.name()
+                )));
+            }
+        }
     }
+    Ok(())
 }
 
 #[then("each control cites at least one requirement source")]
-fn then_each_cites_source(_count: &usize) {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        assert!(
-            !control.sources.is_empty(),
-            "Control '{}' must cite sources",
-            control.name()
-        );
+fn then_each_cites_source(world: &AuditWorld) -> TestSupportResult<()> {
+    if let Some(ref inventory) = world.inventory {
+        for control in inventory.all() {
+            if control.sources.is_empty() {
+                return Err(TestSupportError::expectation(format!(
+                    "Control '{}' must cite sources",
+                    control.name()
+                )));
+            }
+        }
     }
+    Ok(())
 }
 
 #[then("at least one control has evidence")]
-fn then_at_least_one_evidence(controls: &Vec<String>) {
-    assert!(
-        !controls.is_empty(),
-        "At least one control must have shell evidence"
-    );
+fn then_at_least_one_evidence(world: &AuditWorld) -> TestSupportResult<()> {
+    if world.controls.is_empty() {
+        return Err(TestSupportError::expectation(
+            "At least one control must have shell evidence",
+        ));
+    }
+    Ok(())
 }
 
 #[then("each control with evidence references a source file path")]
-fn then_evidence_has_path(_controls: &Vec<String>) {
-    let inventory = ControlInventory::new();
-    for control in inventory.with_evidence() {
-        assert!(
-            control.current_evidence.file_path.is_some(),
-            "Control '{}' claims evidence but has no file path",
-            control.name()
-        );
+fn then_evidence_has_path(world: &AuditWorld) -> TestSupportResult<()> {
+    if let Some(ref inventory) = world.inventory {
+        for control in inventory.with_evidence() {
+            if control.current_evidence.file_path.is_none() {
+                return Err(TestSupportError::expectation(format!(
+                    "Control '{}' claims evidence but has no file path",
+                    control.name()
+                )));
+            }
+        }
     }
+    Ok(())
 }
 
 #[then("each tool has a keyboard shortcut defined")]
-fn then_each_tool_has_shortcut(controls: &Vec<String>) {
-    let inventory = ControlInventory::new();
-    let toolbar_controls = inventory.by_surface(ControlSurface::Toolbar);
-
-    for control in toolbar_controls
-        .iter()
-        .filter(|c| c.phase() == Phase::Phase1)
-    {
-        assert!(
-            control.keyboard.shortcut.is_some(),
-            "Toolbar tool '{}' must have keyboard shortcut",
-            control.name()
-        );
+fn then_each_tool_has_shortcut(world: &AuditWorld) -> TestSupportResult<()> {
+    if let Some(ref inventory) = world.inventory {
+        let toolbar_controls = inventory.by_surface(ControlSurface::Toolbar);
+        for control in toolbar_controls.iter().filter(|c| c.phase() == Phase::Phase1) {
+            if control.keyboard.shortcut.is_none() {
+                return Err(TestSupportError::expectation(format!(
+                    "Toolbar tool '{}' must have keyboard shortcut",
+                    control.name()
+                )));
+            }
+        }
     }
-    assert!(!controls.is_empty(), "Must have toolbar controls");
+    if world.controls.is_empty() {
+        return Err(TestSupportError::expectation("Must have toolbar controls"));
+    }
+    Ok(())
 }
 
 #[then("each control supports keyboard-only operation")]
-fn then_each_supports_keyboard(_count: &usize) {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        assert!(
-            control.keyboard.keyboard_only_operation,
-            "Control '{}' must support keyboard-only operation",
-            control.name()
-        );
+fn then_each_supports_keyboard(world: &AuditWorld) -> TestSupportResult<()> {
+    if let Some(ref inventory) = world.inventory {
+        for control in inventory.all() {
+            if !control.keyboard.keyboard_only_operation {
+                return Err(TestSupportError::expectation(format!(
+                    "Control '{}' must support keyboard-only operation",
+                    control.name()
+                )));
+            }
+        }
     }
+    Ok(())
 }
 
 #[then("controls that modify state require action linkage")]
-fn then_action_linkage_required(_count: &usize) {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        // All controls in this inventory should require actions since they're all interactive
-        assert!(
-            control.action_linkage.requires_action,
-            "Control '{}' should require action linkage",
-            control.name()
-        );
+fn then_action_linkage_required(world: &AuditWorld) -> TestSupportResult<()> {
+    if let Some(ref inventory) = world.inventory {
+        for control in inventory.all() {
+            if !control.action_linkage.requires_action {
+                return Err(TestSupportError::expectation(format!(
+                    "Control '{}' should require action linkage",
+                    control.name()
+                )));
+            }
+        }
     }
+    Ok(())
 }
 
 #[then("action linkage includes implementation notes")]
-fn then_action_linkage_documented(_count: &usize) {
-    let inventory = ControlInventory::new();
-    for control in inventory.all() {
-        if control.action_linkage.requires_action {
-            assert!(
-                !control.action_linkage.notes.is_empty(),
-                "Control '{}' requires action but has no linkage notes",
-                control.name()
-            );
+fn then_action_linkage_documented(world: &AuditWorld) -> TestSupportResult<()> {
+    if let Some(ref inventory) = world.inventory {
+        for control in inventory.all() {
+            if control.action_linkage.requires_action
+                && control.action_linkage.notes.is_empty()
+            {
+                return Err(TestSupportError::expectation(format!(
+                    "Control '{}' requires action but has no linkage notes",
+                    control.name()
+                )));
+            }
         }
     }
+    Ok(())
 }
