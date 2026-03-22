@@ -59,12 +59,40 @@ fn insert_canvas_and_status_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: 
     nodes.insert(CANVAS_NODE_ID, canvas);
 
     let mut status = Node::new(Role::Status);
-    status.set_label(format!(
-        "Mode: {} ({})",
-        snapshot.tool_mode.label(),
-        snapshot.edge_mode.label()
-    ));
+    let tool_label =
+        localized_tool_mode_label(snapshot.tool_mode, &snapshot.localizer, &snapshot.locale);
+    let edge_label =
+        localized_edge_mode_label(snapshot.edge_mode, &snapshot.localizer, &snapshot.locale);
+    status.set_label(format!("Mode: {tool_label} ({edge_label})"));
     nodes.insert(STATUS_NODE_ID, status);
+}
+
+fn localized_tool_mode_label(
+    tool_mode: crate::model::ToolMode,
+    localizer: &crate::i18n::Localizer,
+    locale: &crate::i18n::Locale,
+) -> String {
+    let message_id = match tool_mode {
+        crate::model::ToolMode::Draw => crate::i18n::MessageId::tool_mode_draw(),
+        crate::model::ToolMode::Manipulate => crate::i18n::MessageId::tool_mode_manipulate(),
+    };
+    localizer
+        .lookup(locale, &message_id)
+        .unwrap_or_else(|_| tool_mode.label().to_owned())
+}
+
+fn localized_edge_mode_label(
+    edge_mode: crate::model::EdgeMode,
+    localizer: &crate::i18n::Localizer,
+    locale: &crate::i18n::Locale,
+) -> String {
+    let message_id = match edge_mode {
+        crate::model::EdgeMode::Line => crate::i18n::MessageId::edge_mode_line(),
+        crate::model::EdgeMode::BezierAuto => crate::i18n::MessageId::edge_mode_bezier_auto(),
+    };
+    localizer
+        .lookup(locale, &message_id)
+        .unwrap_or_else(|_| edge_mode.label().to_owned())
 }
 
 fn insert_shape_list_nodes(

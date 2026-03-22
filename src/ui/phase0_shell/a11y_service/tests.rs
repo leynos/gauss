@@ -45,6 +45,8 @@ fn snapshot_with_state(
         is_maximized,
         selected_shape_ids,
         shapes,
+        localizer: crate::i18n::Localizer::default(),
+        locale: crate::i18n::Locale::default(),
     }
 }
 

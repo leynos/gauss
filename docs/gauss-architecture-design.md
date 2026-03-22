@@ -1441,12 +1441,60 @@ Localizability must be designed in from day one:
 - Number/date formatting uses locale-aware formatting
 - UI layout must tolerate string expansion (German, Finnish, etc.)
 
-Suggested approach:
+### 12.1 Implementation Decision (Roadmap 0.7.1)
 
-- `i18n` module with a message catalog (e.g., Fluent, ICU-based, or a simple
-  keyed system)
-- Keep i18n independent of GPUI; views request localized strings from the
-  service
+As of roadmap item 0.7.1, Gauss uses a simple keyed message catalog system for
+localization. The implementation provides:
+
+- A top-level `i18n` module independent of GPUI
+- Stable message identifiers (e.g., `tool_mode.draw`, `edge_mode.line`)
+- A `Localizer` service that performs lookup with automatic fallback to en-GB
+- Typed errors for missing messages or unsupported locales
+- One shipped locale (en-GB) plus test-only alternate catalogs
+
+**Rationale for choosing a keyed catalog over Fluent (0.7.1):**
+
+The current milestone needed a stable module boundary and observable behaviour,
+not translator-facing grammar machinery. Gauss currently has only short labels,
+status fragments, and accessibility descriptions. The repository has no direct
+localization dependency today, and introducing full Fluent machinery now would
+create more moving parts than the current milestone needs.
+
+The `i18n` module API hides the catalog backend, so a future migration to
+Fluent (or another system) can occur without breaking client code.
+
+**Re-evaluation triggers for migrating to Fluent:**
+
+If any of the following conditions are met, the project should revisit Fluent
+in roadmap items 0.7.2, 0.7.3, or 2.5.1:
+
+- The first shipped non-English locale is added
+- Pluralization or grammatical selection requirements emerge
+- Translator-authored resource workflows become necessary
+- Text that can no longer be handled safely by keyed substitution appears
+
+**Current integration scope (0.7.1):**
+
+The proving integration slice covers mode/status text shared between the Phase
+0 shell status line (`src/ui/phase0_shell/view.rs`) and the accessibility
+status node (`src/ui/phase0_shell/a11y_service/tree_builder.rs`). Both use the
+same localized message identifiers derived from `ToolMode` and `EdgeMode` enum
+values.
+
+Broader string extraction belongs to roadmap item 0.7.2, and localized command
+names belong to 0.7.3.
+
+### 12.2 Architecture
+
+The `i18n` module consists of four main components:
+
+- `Locale`: Represents a locale identifier using BCP 47 language tags
+- `MessageId`: Stable message identifiers for catalog lookups
+- `Catalog`: Storage for locale-specific message translations
+- `Localizer`: Service that provides lookup with automatic fallback
+
+The module is GPUI-independent. Views consume localized strings by calling the
+`Localizer::lookup` method with the current locale and message identifier.
 
 ______________________________________________________________________
 

@@ -11,26 +11,42 @@ use super::{
 
 impl Phase0Shell {
     pub(super) fn mode_status_line(&self) -> String {
+        let tool_label = self.localized_tool_mode_label();
+        let edge_label = self.localized_edge_mode_label();
+
         let maximized_indicator = if self.last_maximized_state == Some(true) {
             " [MAX]"
         } else {
             ""
         };
         match self.state.tool_mode {
-            draw::ToolMode::Draw => format!(
-                "Mode: {} ({}){}",
-                self.state.tool_mode.label(),
-                self.state.edge_mode.label(),
-                maximized_indicator
-            ),
+            draw::ToolMode::Draw => {
+                format!("Mode: {tool_label} ({edge_label}){maximized_indicator}")
+            }
             draw::ToolMode::Manipulate => {
-                format!(
-                    "Mode: {}{}",
-                    self.state.tool_mode.label(),
-                    maximized_indicator
-                )
+                format!("Mode: {tool_label}{maximized_indicator}")
             }
         }
+    }
+
+    fn localized_tool_mode_label(&self) -> String {
+        let message_id = match self.state.tool_mode {
+            draw::ToolMode::Draw => crate::i18n::MessageId::tool_mode_draw(),
+            draw::ToolMode::Manipulate => crate::i18n::MessageId::tool_mode_manipulate(),
+        };
+        self.localizer
+            .lookup(&self.locale, &message_id)
+            .unwrap_or_else(|_| self.state.tool_mode.label().to_owned())
+    }
+
+    fn localized_edge_mode_label(&self) -> String {
+        let message_id = match self.state.edge_mode {
+            draw::DrawEdgeMode::Line => crate::i18n::MessageId::edge_mode_line(),
+            draw::DrawEdgeMode::BezierAuto => crate::i18n::MessageId::edge_mode_bezier_auto(),
+        };
+        self.localizer
+            .lookup(&self.locale, &message_id)
+            .unwrap_or_else(|_| self.state.edge_mode.label().to_owned())
     }
 
     pub(super) fn file_status_line(&self) -> Option<String> {

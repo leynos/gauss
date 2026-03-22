@@ -18,4 +18,5 @@ pub use gauss_core::model;
 pub use gauss_core::test_helpers;
 pub use gauss_svg::svg;
 
+pub mod i18n;
 pub mod ui;

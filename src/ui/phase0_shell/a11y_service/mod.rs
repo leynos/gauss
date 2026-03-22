@@ -70,7 +70,7 @@ pub enum A11yServiceError {
 }
 
 /// Snapshot input consumed by [`A11yService`] to generate tree updates.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct A11ySnapshot {
     /// Active tool mode reflected in status node text.
     pub tool_mode: ToolMode,
@@ -86,6 +86,10 @@ pub struct A11ySnapshot {
     pub selected_shape_ids: BTreeSet<ShapeId>,
     /// Draw-order shape snapshot entries.
     pub shapes: Vec<A11yShapeSnapshot>,
+    /// Localizer for internationalized accessibility strings.
+    pub localizer: crate::i18n::Localizer,
+    /// Current locale for accessibility strings.
+    pub locale: crate::i18n::Locale,
 }
 
 /// Shape projection used to generate list nodes in the accessibility tree.
@@ -330,6 +334,8 @@ fn snapshot_from_shell(shell: &Phase0Shell) -> A11ySnapshot {
         is_maximized: shell.last_maximized_state == Some(true),
         selected_shape_ids,
         shapes,
+        localizer: shell.localizer.clone(),
+        locale: shell.locale.clone(),
     }
 }
 

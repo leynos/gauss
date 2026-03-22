@@ -369,4 +369,18 @@ impl Phase0Shell {
     pub const fn last_history_error_typed_for_tests(&self) -> Option<&HistoryError> {
         self.last_history_error_typed.as_ref()
     }
+
+    /// Set the localizer for tests.
+    ///
+    /// This allows tests to inject custom catalogs for verifying i18n behaviour.
+    pub fn set_localizer(&mut self, localizer: crate::i18n::Localizer) {
+        self.localizer = localizer;
+    }
+
+    /// Set the current locale for tests.
+    ///
+    /// This allows tests to verify that UI strings respond to locale changes.
+    pub fn set_locale(&mut self, locale: crate::i18n::Locale) {
+        self.locale = locale;
+    }
 }
