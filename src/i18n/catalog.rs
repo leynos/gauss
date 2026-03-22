@@ -269,17 +269,24 @@ mod tests {
         assert_eq!(result.expect("Should have found message"), "Draw");
     }
 
-    #[test]
-    fn localizer_lookup_succeeds_for_available_locale() {
-        let mut catalogs = HashMap::new();
-        let mut fr_messages = HashMap::new();
-        fr_messages.insert("test".to_owned(), "test_fr".to_owned());
-        catalogs.insert(Locale::fr_fr(), Catalog::from_messages(fr_messages));
+    fn fr_test_catalog() -> Catalog {
+        let mut messages = HashMap::new();
+        messages.insert("test".to_owned(), "test_fr".to_owned());
+        Catalog::from_messages(messages)
+    }
 
-        let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
+    fn assert_fr_test_lookup_succeeds(localizer: &Localizer) {
         let result = localizer.lookup(&Locale::fr_fr(), &MessageId::from("test"));
         assert!(result.is_ok());
         assert_eq!(result.expect("Should have found message"), "test_fr");
+    }
+
+    #[test]
+    fn localizer_lookup_succeeds_for_available_locale() {
+        let mut catalogs = HashMap::new();
+        catalogs.insert(Locale::fr_fr(), fr_test_catalog());
+        let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
+        assert_fr_test_lookup_succeeds(&localizer);
     }
 
     #[test]
@@ -311,12 +318,7 @@ mod tests {
     #[test]
     fn localizer_add_catalog_works() {
         let mut localizer = Localizer::new();
-        let mut fr_messages = HashMap::new();
-        fr_messages.insert("test".to_owned(), "test_fr".to_owned());
-        localizer.add_catalog(Locale::fr_fr(), Catalog::from_messages(fr_messages));
-
-        let result = localizer.lookup(&Locale::fr_fr(), &MessageId::from("test"));
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Should have found message"), "test_fr");
+        localizer.add_catalog(Locale::fr_fr(), fr_test_catalog());
+        assert_fr_test_lookup_succeeds(&localizer);
     }
 }

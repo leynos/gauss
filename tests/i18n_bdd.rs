@@ -83,26 +83,28 @@ fn lookup_error_returned(ctx: I18nTestContext) {
     );
 }
 
-fn create_en_catalog() -> Catalog {
-    let mut messages = HashMap::new();
-    messages.insert("tool_mode.draw".to_owned(), "Draw".to_owned());
-    messages.insert("tool_mode.manipulate".to_owned(), "Manipulate".to_owned());
-    messages.insert("edge_mode.line".to_owned(), "Line".to_owned());
-    messages.insert(
-        "edge_mode.bezier_auto".to_owned(),
-        "Bezier (auto)".to_owned(),
-    );
+fn make_catalog(entries: &[(&str, &str)]) -> Catalog {
+    let messages = entries
+        .iter()
+        .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
+        .collect();
     Catalog::from_messages(messages)
 }
 
+fn create_en_catalog() -> Catalog {
+    make_catalog(&[
+        ("tool_mode.draw", "Draw"),
+        ("tool_mode.manipulate", "Manipulate"),
+        ("edge_mode.line", "Line"),
+        ("edge_mode.bezier_auto", "Bezier (auto)"),
+    ])
+}
+
 fn create_fr_catalog() -> Catalog {
-    let mut messages = HashMap::new();
-    messages.insert("tool_mode.draw".to_owned(), "Dessiner".to_owned());
-    messages.insert("tool_mode.manipulate".to_owned(), "Manipuler".to_owned());
-    messages.insert("edge_mode.line".to_owned(), "Ligne".to_owned());
-    messages.insert(
-        "edge_mode.bezier_auto".to_owned(),
-        "Bézier (auto)".to_owned(),
-    );
-    Catalog::from_messages(messages)
+    make_catalog(&[
+        ("tool_mode.draw", "Dessiner"),
+        ("tool_mode.manipulate", "Manipuler"),
+        ("edge_mode.line", "Ligne"),
+        ("edge_mode.bezier_auto", "Bézier (auto)"),
+    ])
 }
