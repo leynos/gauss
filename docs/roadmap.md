@@ -188,9 +188,9 @@ phases depend upon. See architecture document §20.
 
 ### 0.7. i18n scaffolding
 
-- [x] 0.7.1. Create i18n module.
-  - [x] Define message catalog structure.
-  - [x] Evaluate Fluent vs simpler keyed system. See architecture §12.
+- [ ] 0.7.1. Create i18n module.
+  - [ ] Define message catalog structure.
+  - [ ] Evaluate Fluent vs simpler keyed system. See architecture §12.
 - [ ] 0.7.2. Extract UI strings.
   - [ ] Replace inline strings with resource IDs.
   - [ ] Start with window chrome and tool names.
@@ -200,9 +200,9 @@ phases depend upon. See architecture document §20.
 
 ### 0.8. Widget capability audit
 
-- [ ] 0.8.1. List required controls for Phase 1–2.
-  - [ ] Toolbars, panels, layers, properties, colour pickers.
-  - [ ] Document each control's requirements.
+- [x] 0.8.1. List required controls for Phase 1–2.
+  - [x] Toolbars, panels, layers, properties, colour pickers.
+  - [x] Document each control's requirements.
 - [ ] 0.8.2. Map controls to gpui-component widgets.
   - [ ] Identify which widgets exist and are sufficient.
   - [ ] Flag controls needing custom implementation.
