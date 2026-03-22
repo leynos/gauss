@@ -284,9 +284,9 @@ impl Phase0Shell {
     ///
     /// In test mode, this can be overridden via [`Self::set_maximized_for_tests`].
     /// In production, this queries the actual window state.
-    #[expect(
-        clippy::unused_self,
-        reason = "self is used in test configuration for test_maximized_override"
+    #[cfg_attr(
+        not(any(test, feature = "test-support", coverage, coverage_nightly)),
+        expect(clippy::unused_self, reason = "self.test_maximized_override only exists in test builds")
     )]
     pub(super) fn is_maximized_for_resize_borders(&self, window: &gpui::Window) -> bool {
         #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
