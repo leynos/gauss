@@ -4,8 +4,6 @@
 //! control inventory satisfies roadmap requirements expressed in Gherkin
 //! scenarios.
 
-mod common;
-
 use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
