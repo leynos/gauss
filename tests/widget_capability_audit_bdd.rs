@@ -31,7 +31,7 @@ fn query_by_phase_and_surface(world: &mut AuditWorld, phase: Phase, surface: Con
             .by_surface(surface)
             .iter()
             .filter(|c| c.phase() == phase)
-            .map(|c| c.name().to_string())
+            .map(|c| c.name().to_owned())
             .collect();
     }
 }
@@ -75,10 +75,10 @@ where
     M: Fn(&RequiredControl) -> String,
 {
     for_each_control(world, |c| {
-        if !predicate(c) {
-            Err(TestSupportError::expectation(message(c)))
-        } else {
+        if predicate(c) {
             Ok(())
+        } else {
+            Err(TestSupportError::expectation(message(c)))
         }
     })
 }
@@ -123,7 +123,7 @@ fn when_query_phase2(world: &mut AuditWorld) {
         world.controls = inventory
             .by_phase(Phase::Phase2)
             .iter()
-            .map(|c| c.name().to_string())
+            .map(|c| c.name().to_owned())
             .collect();
     }
 }
@@ -141,7 +141,7 @@ fn when_query_with_evidence(world: &mut AuditWorld) {
         world.controls = inventory
             .with_evidence()
             .iter()
-            .map(|c| c.name().to_string())
+            .map(|c| c.name().to_owned())
             .collect();
     }
 }
@@ -351,7 +351,7 @@ fn then_each_has_name(world: &AuditWorld) -> TestSupportResult<()> {
     assert_each_control(
         world,
         |c| !c.name().is_empty(),
-        |_| "Control must have name".to_string(),
+        |_| "Control must have name".to_owned(),
     )
 }
 

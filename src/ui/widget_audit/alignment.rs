@@ -5,77 +5,98 @@ use super::types::{
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "Alignment panel controls assembler; multiline formatting for struct literals adds lines"
+)]
 pub(super) fn controls() -> Vec<RequiredControl> {
     vec![
         make_alignment_panel_button(
             "Align Left",
             "Align selected objects to the leftmost edge",
-            "AlignObjectsLeft",
+            AlignmentAction {
+                name: "AlignObjectsLeft",
+                notes: "Alignment operation must be undoable",
+            },
             "1.3.4",
-            "Alignment operation must be undoable",
         ),
         make_alignment_panel_button(
             "Align Center Horizontal",
             "Align selected objects to horizontal center",
-            "AlignObjectsCenterHorizontal",
+            AlignmentAction {
+                name: "AlignObjectsCenterHorizontal",
+                notes: "Alignment operation must be undoable",
+            },
             "1.3.4",
-            "Alignment operation must be undoable",
         ),
         make_alignment_panel_button(
             "Align Right",
             "Align selected objects to the rightmost edge",
-            "AlignObjectsRight",
+            AlignmentAction {
+                name: "AlignObjectsRight",
+                notes: "Alignment operation must be undoable",
+            },
             "1.3.4",
-            "Alignment operation must be undoable",
         ),
         make_alignment_panel_button(
             "Align Top",
             "Align selected objects to the topmost edge",
-            "AlignObjectsTop",
+            AlignmentAction {
+                name: "AlignObjectsTop",
+                notes: "Alignment operation must be undoable",
+            },
             "1.3.4",
-            "Alignment operation must be undoable",
         ),
         make_alignment_panel_button(
             "Align Center Vertical",
             "Align selected objects to vertical center",
-            "AlignObjectsCenterVertical",
+            AlignmentAction {
+                name: "AlignObjectsCenterVertical",
+                notes: "Alignment operation must be undoable",
+            },
             "1.3.4",
-            "Alignment operation must be undoable",
         ),
         make_alignment_panel_button(
             "Align Bottom",
             "Align selected objects to the bottommost edge",
-            "AlignObjectsBottom",
+            AlignmentAction {
+                name: "AlignObjectsBottom",
+                notes: "Alignment operation must be undoable",
+            },
             "1.3.4",
-            "Alignment operation must be undoable",
         ),
         make_alignment_panel_button(
             "Distribute Horizontal",
             "Distribute selected objects evenly along horizontal axis",
-            "DistributeObjectsHorizontal",
+            AlignmentAction {
+                name: "DistributeObjectsHorizontal",
+                notes: "Distribution operation must be undoable",
+            },
             "1.3.5",
-            "Distribution operation must be undoable",
         ),
         make_alignment_panel_button(
             "Distribute Vertical",
             "Distribute selected objects evenly along vertical axis",
-            "DistributeObjectsVertical",
+            AlignmentAction {
+                name: "DistributeObjectsVertical",
+                notes: "Distribution operation must be undoable",
+            },
             "1.3.5",
-            "Distribution operation must be undoable",
         ),
     ]
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "Builder function for alignment panel buttons; five parameters capture exactly the varying fields"
-)]
+#[derive(Clone, Copy)]
+struct AlignmentAction {
+    name: &'static str,
+    notes: &'static str,
+}
+
 fn make_alignment_panel_button(
     name: &'static str,
     description: &'static str,
-    action_name: &'static str,
+    action: AlignmentAction,
     roadmap_ref: &'static str,
-    operation_notes: &'static str,
 ) -> RequiredControl {
     RequiredControl {
         name,
@@ -98,8 +119,8 @@ fn make_alignment_panel_button(
         },
         action_linkage: ActionCommandLinkage {
             requires_action: true,
-            action_name: Some(action_name),
-            notes: operation_notes,
+            action_name: Some(action.name),
+            notes: action.notes,
         },
         sources: vec![
             RequirementSource::Roadmap(roadmap_ref),

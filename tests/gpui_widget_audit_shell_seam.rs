@@ -49,8 +49,7 @@ fn tool_rail_controls_match_audit() {
         .filter(|c| {
             c.current_evidence
                 .file_path
-                .map(|p| p.contains("tool_rail.rs"))
-                .unwrap_or(false)
+                .is_some_and(|p| p.contains("tool_rail.rs"))
         })
         .collect();
 
@@ -79,8 +78,7 @@ fn style_controls_match_audit() {
         .filter(|c| {
             c.current_evidence
                 .file_path
-                .map(|p| p.contains("style_controls.rs"))
-                .unwrap_or(false)
+                .is_some_and(|p| p.contains("style_controls.rs"))
         })
         .collect();
 
@@ -142,6 +140,8 @@ fn controls_without_evidence_are_documented() {
 
 #[test]
 fn audit_inventory_is_complete() {
+    use gauss::ui::widget_audit::ControlSurface;
+
     let inventory = ControlInventory::new();
 
     // Verify we have a reasonable number of controls for Phase 1-2
@@ -166,7 +166,6 @@ fn audit_inventory_is_complete() {
     );
 
     // Verify all required surfaces are covered
-    use gauss::ui::widget_audit::ControlSurface;
     let required_surfaces = [
         ControlSurface::Toolbar,
         ControlSurface::PropertiesPanel,
@@ -180,8 +179,7 @@ fn audit_inventory_is_complete() {
     for surface in required_surfaces {
         assert!(
             !inventory.by_surface(surface).is_empty(),
-            "Required surface '{}' must have at least one control",
-            surface
+            "Required surface '{surface}' must have at least one control"
         );
     }
 }

@@ -5,247 +5,150 @@ use super::types::{
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
 
+#[derive(Clone, Copy)]
+struct CharacterControlSpec {
+    name: &'static str,
+    description: &'static str,
+    shortcut: Option<&'static str>,
+    keyboard_notes: &'static str,
+    control_states: &'static [&'static str],
+    a11y_role: &'static str,
+    a11y_label: &'static str,
+    a11y_states: &'static [&'static str],
+    a11y_notes: &'static str,
+    action_name: &'static str,
+    action_notes: &'static str,
+    evidence_notes: &'static str,
+}
+
+fn make_character_control(spec: CharacterControlSpec) -> RequiredControl {
+    RequiredControl {
+        name: spec.name,
+        phase: Phase::Phase2,
+        surface: ControlSurface::CharacterPanel,
+        user_job: UserJob {
+            description: spec.description,
+        },
+        states: ControlStates {
+            states: spec.control_states.to_vec(),
+        },
+        keyboard: KeyboardRequirements {
+            shortcut: spec.shortcut,
+            keyboard_only_operation: true,
+            notes: spec.keyboard_notes,
+        },
+        accessibility: AccessibilityRequirements {
+            role: spec.a11y_role,
+            label: spec.a11y_label,
+            states: spec.a11y_states.to_vec(),
+            notes: spec.a11y_notes,
+        },
+        action_linkage: ActionCommandLinkage {
+            requires_action: true,
+            action_name: Some(spec.action_name),
+            notes: spec.action_notes,
+        },
+        sources: vec![
+            RequirementSource::Roadmap("2.2"),
+            RequirementSource::FeaturePlan("Phase 2: Text and Advanced Styling"),
+        ],
+        current_evidence: CurrentShellEvidence {
+            exists: false,
+            file_path: None,
+            notes: spec.evidence_notes,
+        },
+    }
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "Character panel controls assembler; each control requires ~12 spec fields"
+)]
 pub(super) fn controls() -> Vec<RequiredControl> {
     vec![
-        font_family_selector(),
-        font_size_field(),
-        bold_toggle(),
-        italic_toggle(),
-        text_alignment_buttons(),
-        text_color_picker(),
-    ]
-}
-
-fn font_family_selector() -> RequiredControl {
-    RequiredControl {
-        name: "Font Family Selector",
-        phase: Phase::Phase2,
-        surface: ControlSurface::CharacterPanel,
-        user_job: UserJob {
+        make_character_control(CharacterControlSpec {
+            name: "Font Family Selector",
             description: "Select font family for text",
-        },
-        states: ControlStates {
-            states: vec!["enabled", "disabled", "focused", "open", "closed"],
-        },
-        keyboard: KeyboardRequirements {
             shortcut: None,
-            keyboard_only_operation: true,
-            notes: "Must support keyboard navigation and search through font list",
-        },
-        accessibility: AccessibilityRequirements {
-            role: "ComboBox",
-            label: "Font Family",
-            states: vec!["focusable", "expanded", "collapsed"],
-            notes: "Must announce current font family and selection changes",
-        },
-        action_linkage: ActionCommandLinkage {
-            requires_action: true,
-            action_name: Some("SetFontFamily"),
-            notes: "Font change must be undoable",
-        },
-        sources: vec![
-            RequirementSource::Roadmap("2.2"),
-            RequirementSource::FeaturePlan("Phase 2: Text and Advanced Styling"),
-        ],
-        current_evidence: CurrentShellEvidence {
-            exists: false,
-            file_path: None,
-            notes: "Phase 2 feature",
-        },
-    }
-}
-
-fn font_size_field() -> RequiredControl {
-    RequiredControl {
-        name: "Font Size Field",
-        phase: Phase::Phase2,
-        surface: ControlSurface::CharacterPanel,
-        user_job: UserJob {
+            keyboard_notes: "Must support keyboard navigation and search through font list",
+            control_states: &["enabled", "disabled", "focused", "open", "closed"],
+            a11y_role: "ComboBox",
+            a11y_label: "Font Family",
+            a11y_states: &["focusable", "expanded", "collapsed"],
+            a11y_notes: "Must announce current font family and selection changes",
+            action_name: "SetFontFamily",
+            action_notes: "Font change must be undoable",
+            evidence_notes: "Phase 2 feature",
+        }),
+        make_character_control(CharacterControlSpec {
+            name: "Font Size Field",
             description: "Set font size in points",
-        },
-        states: ControlStates {
-            states: vec!["enabled", "disabled", "focused"],
-        },
-        keyboard: KeyboardRequirements {
             shortcut: None,
-            keyboard_only_operation: true,
-            notes: "Must support keyboard input, arrow keys for nudge",
-        },
-        accessibility: AccessibilityRequirements {
-            role: "TextInput",
-            label: "Font Size",
-            states: vec!["focusable", "editable"],
-            notes: "Must announce current size in points",
-        },
-        action_linkage: ActionCommandLinkage {
-            requires_action: true,
-            action_name: Some("SetFontSize"),
-            notes: "Size change must be undoable",
-        },
-        sources: vec![
-            RequirementSource::Roadmap("2.2"),
-            RequirementSource::FeaturePlan("Phase 2: Text and Advanced Styling"),
-        ],
-        current_evidence: CurrentShellEvidence {
-            exists: false,
-            file_path: None,
-            notes: "Phase 2 feature",
-        },
-    }
-}
-
-fn bold_toggle() -> RequiredControl {
-    RequiredControl {
-        name: "Bold Toggle",
-        phase: Phase::Phase2,
-        surface: ControlSurface::CharacterPanel,
-        user_job: UserJob {
+            keyboard_notes: "Must support keyboard input, arrow keys for nudge",
+            control_states: &["enabled", "disabled", "focused"],
+            a11y_role: "TextInput",
+            a11y_label: "Font Size",
+            a11y_states: &["focusable", "editable"],
+            a11y_notes: "Must announce current size in points",
+            action_name: "SetFontSize",
+            action_notes: "Size change must be undoable",
+            evidence_notes: "Phase 2 feature",
+        }),
+        make_character_control(CharacterControlSpec {
+            name: "Bold Toggle",
             description: "Apply or remove bold formatting",
-        },
-        states: ControlStates {
-            states: vec!["enabled", "disabled", "focused", "active"],
-        },
-        keyboard: KeyboardRequirements {
             shortcut: Some("Cmd+B / Ctrl+B"),
-            keyboard_only_operation: true,
-            notes: "Standard bold shortcut must work",
-        },
-        accessibility: AccessibilityRequirements {
-            role: "ToggleButton",
-            label: "Bold",
-            states: vec!["focusable", "checked", "unchecked"],
-            notes: "Must announce formatting state",
-        },
-        action_linkage: ActionCommandLinkage {
-            requires_action: true,
-            action_name: Some("ToggleBold"),
-            notes: "Formatting change must be undoable",
-        },
-        sources: vec![
-            RequirementSource::Roadmap("2.2"),
-            RequirementSource::FeaturePlan("Phase 2: Text and Advanced Styling"),
-        ],
-        current_evidence: CurrentShellEvidence {
-            exists: false,
-            file_path: None,
-            notes: "Phase 2 feature",
-        },
-    }
-}
-
-fn italic_toggle() -> RequiredControl {
-    RequiredControl {
-        name: "Italic Toggle",
-        phase: Phase::Phase2,
-        surface: ControlSurface::CharacterPanel,
-        user_job: UserJob {
+            keyboard_notes: "Standard bold shortcut must work",
+            control_states: &["enabled", "disabled", "focused", "active"],
+            a11y_role: "ToggleButton",
+            a11y_label: "Bold",
+            a11y_states: &["focusable", "checked", "unchecked"],
+            a11y_notes: "Must announce formatting state",
+            action_name: "ToggleBold",
+            action_notes: "Formatting change must be undoable",
+            evidence_notes: "Phase 2 feature",
+        }),
+        make_character_control(CharacterControlSpec {
+            name: "Italic Toggle",
             description: "Apply or remove italic formatting",
-        },
-        states: ControlStates {
-            states: vec!["enabled", "disabled", "focused", "active"],
-        },
-        keyboard: KeyboardRequirements {
             shortcut: Some("Cmd+I / Ctrl+I"),
-            keyboard_only_operation: true,
-            notes: "Standard italic shortcut must work",
-        },
-        accessibility: AccessibilityRequirements {
-            role: "ToggleButton",
-            label: "Italic",
-            states: vec!["focusable", "checked", "unchecked"],
-            notes: "Must announce formatting state",
-        },
-        action_linkage: ActionCommandLinkage {
-            requires_action: true,
-            action_name: Some("ToggleItalic"),
-            notes: "Formatting change must be undoable",
-        },
-        sources: vec![
-            RequirementSource::Roadmap("2.2"),
-            RequirementSource::FeaturePlan("Phase 2: Text and Advanced Styling"),
-        ],
-        current_evidence: CurrentShellEvidence {
-            exists: false,
-            file_path: None,
-            notes: "Phase 2 feature",
-        },
-    }
-}
-
-fn text_alignment_buttons() -> RequiredControl {
-    RequiredControl {
-        name: "Text Alignment Buttons",
-        phase: Phase::Phase2,
-        surface: ControlSurface::CharacterPanel,
-        user_job: UserJob {
+            keyboard_notes: "Standard italic shortcut must work",
+            control_states: &["enabled", "disabled", "focused", "active"],
+            a11y_role: "ToggleButton",
+            a11y_label: "Italic",
+            a11y_states: &["focusable", "checked", "unchecked"],
+            a11y_notes: "Must announce formatting state",
+            action_name: "ToggleItalic",
+            action_notes: "Formatting change must be undoable",
+            evidence_notes: "Phase 2 feature",
+        }),
+        make_character_control(CharacterControlSpec {
+            name: "Text Alignment Buttons",
             description: "Set text alignment (left, center, right, justify)",
-        },
-        states: ControlStates {
-            states: vec!["enabled", "disabled", "focused", "selected"],
-        },
-        keyboard: KeyboardRequirements {
             shortcut: None,
-            keyboard_only_operation: true,
-            notes: "Must support keyboard navigation between alignment options",
-        },
-        accessibility: AccessibilityRequirements {
-            role: "RadioGroup",
-            label: "Text Alignment",
-            states: vec!["focusable"],
-            notes: "Must announce current alignment selection",
-        },
-        action_linkage: ActionCommandLinkage {
-            requires_action: true,
-            action_name: Some("SetTextAlignment"),
-            notes: "Alignment change must be undoable",
-        },
-        sources: vec![
-            RequirementSource::Roadmap("2.2"),
-            RequirementSource::FeaturePlan("Phase 2: Text and Advanced Styling"),
-        ],
-        current_evidence: CurrentShellEvidence {
-            exists: false,
-            file_path: None,
-            notes: "Phase 2 feature",
-        },
-    }
-}
-
-fn text_color_picker() -> RequiredControl {
-    RequiredControl {
-        name: "Text Color Picker",
-        phase: Phase::Phase2,
-        surface: ControlSurface::CharacterPanel,
-        user_job: UserJob {
+            keyboard_notes: "Must support keyboard navigation between alignment options",
+            control_states: &["enabled", "disabled", "focused", "selected"],
+            a11y_role: "RadioGroup",
+            a11y_label: "Text Alignment",
+            a11y_states: &["focusable"],
+            a11y_notes: "Must announce current alignment selection",
+            action_name: "SetTextAlignment",
+            action_notes: "Alignment change must be undoable",
+            evidence_notes: "Phase 2 feature",
+        }),
+        make_character_control(CharacterControlSpec {
+            name: "Text Color Picker",
             description: "Set color for text characters",
-        },
-        states: ControlStates {
-            states: vec!["enabled", "disabled", "focused", "open", "closed"],
-        },
-        keyboard: KeyboardRequirements {
             shortcut: None,
-            keyboard_only_operation: true,
-            notes: "Must support keyboard navigation through color picker",
-        },
-        accessibility: AccessibilityRequirements {
-            role: "ColorPicker",
-            label: "Text Color",
-            states: vec!["focusable", "expanded", "collapsed"],
-            notes: "Must announce current color value; reuses fill/stroke color infrastructure per roadmap 2.2",
-        },
-        action_linkage: ActionCommandLinkage {
-            requires_action: true,
-            action_name: Some("SetTextColor"),
-            notes: "Color change must be undoable",
-        },
-        sources: vec![
-            RequirementSource::Roadmap("2.2"),
-            RequirementSource::FeaturePlan("Phase 2: Text and Advanced Styling"),
-        ],
-        current_evidence: CurrentShellEvidence {
-            exists: false,
-            file_path: None,
-            notes: "Phase 2 feature; will reuse color picker infrastructure",
-        },
-    }
+            keyboard_notes: "Must support keyboard navigation through color picker",
+            control_states: &["enabled", "disabled", "focused", "open", "closed"],
+            a11y_role: "ColorPicker",
+            a11y_label: "Text Color",
+            a11y_states: &["focusable", "expanded", "collapsed"],
+            a11y_notes: "Must announce current color value; reuses fill/stroke color infrastructure per roadmap 2.2",
+            action_name: "SetTextColor",
+            action_notes: "Color change must be undoable",
+            evidence_notes: "Phase 2 feature; will reuse color picker infrastructure",
+        }),
+    ]
 }
