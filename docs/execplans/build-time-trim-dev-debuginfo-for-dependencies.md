@@ -211,7 +211,7 @@ Validation gate:
 
 ## Outcomes & Retrospective
 
-### Profile Settings Adopted
+### Profile settings adopted
 
 ```toml
 [profile.dev.package."*"]
@@ -221,13 +221,13 @@ debug = 0
 debug = 0
 ```
 
-### Measured Improvement
+### Measured improvement
 
 - **Before**: Clean `cargo build` took 2m22.767s (142.8 seconds)
 - **After**: Clean `cargo build` took 1m47.979s (108.0 seconds)
 - **Improvement**: 34.8 seconds faster (24.4% reduction)
 
-### Trade-offs Accepted
+### Trade-offs accepted
 
 1. **Reduced third-party debugging**: Stack traces and debugger symbols for
    dependencies (GPUI, ash, naga, etc.) are limited. Stepping into dependency
@@ -250,12 +250,13 @@ debug = 0
 
 ### Validation
 
-- ✅ All formatting and lint checks pass
-- ✅ All markdown validation passes
-- ✅ All Mermaid diagrams validate
-- ✅ No git whitespace issues
-- ✅ Repository builds successfully with new profile
-- ⏳ Full test suite running (in progress)
+- ✅ Formatting checks pass (`make fmt`, `make check-fmt`)
+- ✅ Markdown validation passes (`make markdownlint`)
+- ✅ Mermaid diagram validation passes (`make nixie`)
+- ✅ No git whitespace issues (`git diff --check`)
+- ✅ Repository builds successfully with new profile (`cargo build`)
+- ⏳ Lint checks in progress (`make lint`)
+- ⏳ Full test suite pending (`make test`)
 
 ### Conclusion
 

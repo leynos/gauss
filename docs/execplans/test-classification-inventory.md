@@ -1,4 +1,4 @@
-# Test Classification Inventory for Test Move ExecPlan
+# Test classification inventory for test move execplan
 
 ## Purpose
 
@@ -122,8 +122,8 @@ Supporting directories:
 
 ## Notes
 
-- All tests currently compile and pass with `cargo test --workspace
-  --all-targets --all-features`
+- All tests currently compile and pass with
+  `cargo test --workspace --all-targets --all-features`
 - The `test-support` feature must remain enabled for integration tests to access
   Phase0Shell test helper methods
 - Common test helpers in `tests/common/` may need to be refactored into
