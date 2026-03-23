@@ -13,7 +13,11 @@ pub(super) fn controls() -> Vec<RequiredControl> {
 }
 
 fn stroke_controls() -> Vec<RequiredControl> {
-    vec![stroke_color_picker(), stroke_width_field(), stroke_opacity_slider()]
+    vec![
+        stroke_color_picker(),
+        stroke_width_field(),
+        stroke_opacity_slider(),
+    ]
 }
 
 fn stroke_color_picker() -> RequiredControl {

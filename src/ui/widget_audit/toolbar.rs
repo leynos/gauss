@@ -25,7 +25,9 @@ fn make_toolbar_tool(spec: ToolbarControlSpec) -> RequiredControl {
         name: spec.name,
         phase: spec.phase,
         surface: ControlSurface::Toolbar,
-        user_job: UserJob { description: spec.description },
+        user_job: UserJob {
+            description: spec.description,
+        },
         states: ControlStates {
             states: vec!["selected", "disabled", "focused"],
         },
