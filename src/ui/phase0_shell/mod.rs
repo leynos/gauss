@@ -14,6 +14,7 @@ mod chrome_palette;
 mod chrome_panels;
 pub(crate) mod draw;
 mod file_dialogs;
+mod i18n_helpers;
 mod icon_button;
 mod input;
 mod manipulate;

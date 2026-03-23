@@ -366,3 +366,25 @@ pub fn switch_to_manipulate_mode_and_verify(
 pub fn read_history_len(visual_cx: &VisualTestContext, view: &Entity<Phase0Shell>) -> usize {
     visual_cx.read(|app| view.read(app).document_history_len_for_tests())
 }
+
+/// i18n test helpers
+///
+/// Creates a test catalog with the given key-value pairs.
+pub fn make_test_catalog(entries: &[(&str, &str)]) -> gauss::i18n::Catalog {
+    use std::collections::HashMap;
+    let mut messages = HashMap::new();
+    for (key, value) in entries {
+        messages.insert((*key).to_owned(), (*value).to_owned());
+    }
+    gauss::i18n::Catalog::from_messages(messages)
+}
+
+/// Creates a French test catalog with common UI messages.
+pub fn test_french_catalog() -> gauss::i18n::Catalog {
+    make_test_catalog(&[
+        ("tool_mode.draw", "Dessiner"),
+        ("tool_mode.manipulate", "Manipuler"),
+        ("edge_mode.line", "Ligne"),
+        ("edge_mode.bezier_auto", "Bézier (auto)"),
+    ])
+}

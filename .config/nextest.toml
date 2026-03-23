@@ -8,7 +8,7 @@ test-threads = "num-cpus"
 # Retry flaky tests once
 retries = 1
 
-# Fail fast on first test failure during development
+# Continue running all tests even after failures (for comprehensive feedback)
 fail-fast = false
 
 # Test timeout settings

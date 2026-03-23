@@ -1,11 +1,10 @@
 //! Error types for i18n operations.
 
-use std::fmt;
-
 /// Errors that can occur during i18n operations.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 pub enum I18nError {
     /// The requested message identifier was not found in the catalog.
+    #[error("Message '{message_id}' not found in catalog for locale '{locale}'")]
     MessageNotFound {
         /// The message identifier that was not found.
         message_id: String,
@@ -13,29 +12,12 @@ pub enum I18nError {
         locale: String,
     },
     /// The requested locale is not supported.
+    #[error("Unsupported locale: '{requested}'")]
     UnsupportedLocale {
         /// The locale that was requested.
         requested: String,
     },
 }
-
-impl fmt::Display for I18nError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::MessageNotFound { message_id, locale } => {
-                write!(
-                    f,
-                    "Message '{message_id}' not found in catalog for locale '{locale}'"
-                )
-            }
-            Self::UnsupportedLocale { requested } => {
-                write!(f, "Unsupported locale: '{requested}'")
-            }
-        }
-    }
-}
-
-impl std::error::Error for I18nError {}
 
 #[cfg(test)]
 mod tests {

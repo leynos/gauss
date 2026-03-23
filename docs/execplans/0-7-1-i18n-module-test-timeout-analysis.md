@@ -114,7 +114,7 @@ Configured nextest with:
    - Run test-quick for rapid feedback
    - Run full test suite on merge to main
 
-3. **Test Organization**
+3. **Test Organisation**
    - Keep unit tests in module files (fast)
    - Move integration tests to separate binaries (can be built selectively)
    - Use test groups effectively in nextest config

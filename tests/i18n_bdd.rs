@@ -1,10 +1,14 @@
 //! BDD tests for i18n module message lookup and fallback behaviour.
 
+mod common;
+
 use std::collections::HashMap;
 
-use gauss::i18n::{Catalog, I18nError, Locale, Localizer, MessageId};
+use gauss::i18n::{I18nError, Locale, Localizer, MessageId};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
+
+use common::{make_test_catalog, test_french_catalog};
 
 #[derive(Clone, Default)]
 struct I18nTestContext {
@@ -30,7 +34,7 @@ fn default_catalog_exists(mut ctx: I18nTestContext) -> I18nTestContext {
 #[given("a test French catalog is available for testing")]
 fn french_catalog_available(mut ctx: I18nTestContext) -> I18nTestContext {
     if let Some(ref mut localizer) = ctx.localizer {
-        localizer.add_catalog(Locale::fr_fr(), create_fr_catalog());
+        localizer.add_catalog(Locale::fr_fr(), test_french_catalog());
     }
     ctx
 }
@@ -49,8 +53,15 @@ fn lookup_message(mut ctx: I18nTestContext, message_key: String) -> I18nTestCont
         // Strip quotes from the message key (feature file includes quotes)
         let key = message_key.trim_matches('"');
         let message_id = MessageId::from(key.to_owned());
+
+        // Check if the requested locale's catalog contains the message
+        let requested_catalog_has_message = localizer.catalog_contains(&ctx.locale, &message_id);
+
+        // Perform the lookup (which may fall back to default locale)
         let result = localizer.lookup(&ctx.locale, &message_id);
-        ctx.fallback_occurred = result.is_ok() && ctx.locale != Locale::en_gb();
+
+        // Fallback occurred if lookup succeeded but the requested catalog didn't have it
+        ctx.fallback_occurred = result.is_ok() && !requested_catalog_has_message;
         ctx.lookup_result = Some(result);
     }
     ctx
@@ -103,29 +114,12 @@ fn lookup_error_returned(ctx: I18nTestContext) {
     );
 }
 
-fn make_catalog(entries: &[(&str, &str)]) -> Catalog {
-    let messages = entries
-        .iter()
-        .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
-        .collect();
-    Catalog::from_messages(messages)
-}
-
-fn create_en_catalog() -> Catalog {
-    make_catalog(&[
+fn create_en_catalog() -> gauss::i18n::Catalog {
+    make_test_catalog(&[
         ("tool_mode.draw", "Draw"),
         ("tool_mode.manipulate", "Manipulate"),
         ("edge_mode.line", "Line"),
         ("edge_mode.bezier_auto", "Bezier (auto)"),
-    ])
-}
-
-fn create_fr_catalog() -> Catalog {
-    make_catalog(&[
-        ("tool_mode.draw", "Dessiner"),
-        ("tool_mode.manipulate", "Manipuler"),
-        ("edge_mode.line", "Ligne"),
-        ("edge_mode.bezier_auto", "Bézier (auto)"),
     ])
 }
 

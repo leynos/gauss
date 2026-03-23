@@ -1,4 +1,4 @@
-# Create the i18n module (0.7.1)
+# Create the internationalisation (i18n) module (0.7.1)
 
 This ExecPlan (execution plan) is a living document. The sections
 `Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
@@ -56,9 +56,10 @@ ownership and short hand-offs:
 - UI and accessibility agent: wire one proving integration slice into
   `Phase0Shell` and `A11yService` without broad extraction that belongs to
   `0.7.2`.
-- Test and docs agent: drive red-green coverage across unit, BDD, and GPUI
-  layers; update `docs/users-guide.md`; replay all gates with tee logs; and
-  mark `0.7.1` done in the roadmap only after green results.
+- Test and docs agent: drive red-green coverage across unit, behaviour-driven
+  development (BDD), and GPUI (GPU-based UI framework) layers; update
+  `docs/users-guide.md`; replay all gates with tee logs; and mark `0.7.1` done
+  in the roadmap only after green results.
 
 The team should work milestone-by-milestone, not by parallel speculative
 rewrites. Parallel exploration is appropriate; parallel editing is not unless
@@ -323,9 +324,9 @@ Completion evidence is:
   `src/ui/phase0_shell/view.rs` and
   `src/ui/phase0_shell/a11y_service/tree_builder.rs` both build English status
   strings from `ToolMode::label()` and `EdgeMode::label()`.
-- `A11yService` currently hard-codes additional English strings such as
-  `"Drawing canvas"`, `"Shapes"`, `"Shape {n}"`, and `"Gauss"`, which confirms
-  there is plenty of follow-on work for `0.7.2`.
+- `A11yService` (accessibility service) currently hard-codes additional English
+  strings such as `"Drawing canvas"`, `"Shapes"`, `"Shape {n}"`, and
+  `"Gauss"`, which confirms there is plenty of follow-on work for `0.7.2`.
 - Gauss has no direct localization dependency in `Cargo.toml` today. Fluent and
   related crates only appear transitively in `Cargo.lock`.
 - Existing test seams are already strong enough for this work: model-layer

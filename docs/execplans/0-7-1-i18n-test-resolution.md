@@ -110,11 +110,11 @@ Install the development package:
 
 ```bash
 # Debian/Ubuntu
-apt-get install libxcb-dev
+apt-get install libxcb1-dev
 
 # Or create the symlink manually
-ln -s /usr/lib/x86_64-unknown-linux-gnu/libxcb.so.1 \
-      /usr/lib/x86_64-unknown-linux-gnu/libxcb.so
+ln -s /usr/lib/x86_64-linux-gnu/libxcb.so.1 \
+      /usr/lib/x86_64-linux-gnu/libxcb.so
 ```
 
 ### Option 2: Test Without GPUI Dependencies
@@ -203,6 +203,8 @@ The test infrastructure improvements (nextest migration, configuration) are in
 place and will provide significant benefits once the system library issue is
 resolved.
 
-**Status**: i18n module implementation ✅ COMPLETE **Blocker**: System library
-configuration (libxcb-dev) **Next Step**: Install libxcb-dev or create
-libxcb.so symlink
+**Status**: i18n module implementation ✅ COMPLETE
+
+**Blocker**: System library configuration (libxcb-dev)
+
+**Next Step**: Install libxcb-dev or create libxcb.so symlink

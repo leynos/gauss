@@ -9,7 +9,7 @@ use gpui::TestAppContext;
 use gauss::i18n::{Catalog, Locale, Localizer};
 use gauss::ui::phase0_shell::Phase0Shell;
 
-use common::init_test_app;
+use common::{init_test_app, test_french_catalog};
 
 #[gpui::test]
 fn phase0_shell_status_uses_default_english_catalog(cx: &mut TestAppContext) {
@@ -32,7 +32,7 @@ fn phase0_shell_status_uses_default_english_catalog(cx: &mut TestAppContext) {
 fn phase0_shell_status_uses_injected_test_catalog(cx: &mut TestAppContext) {
     init_test_app(cx);
     let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), create_test_french_catalog());
+    catalogs.insert(Locale::fr_fr(), test_french_catalog());
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
     let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
@@ -58,7 +58,7 @@ fn phase0_shell_status_uses_injected_test_catalog(cx: &mut TestAppContext) {
 fn locale_switching_updates_status_line(cx: &mut TestAppContext) {
     init_test_app(cx);
     let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), create_test_french_catalog());
+    catalogs.insert(Locale::fr_fr(), test_french_catalog());
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
     let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
@@ -123,16 +123,4 @@ fn fallback_to_default_locale_when_message_missing(cx: &mut TestAppContext) {
         status.contains("Line"),
         "Expected English fallback 'Line' for missing message, got: {status}"
     );
-}
-
-fn create_test_french_catalog() -> Catalog {
-    let mut messages = HashMap::new();
-    messages.insert("tool_mode.draw".to_owned(), "Dessiner".to_owned());
-    messages.insert("tool_mode.manipulate".to_owned(), "Manipuler".to_owned());
-    messages.insert("edge_mode.line".to_owned(), "Ligne".to_owned());
-    messages.insert(
-        "edge_mode.bezier_auto".to_owned(),
-        "Bézier (auto)".to_owned(),
-    );
-    Catalog::from_messages(messages)
 }

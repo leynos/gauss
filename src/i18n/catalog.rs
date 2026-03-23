@@ -166,6 +166,17 @@ impl Localizer {
         self.catalogs.insert(locale, catalog);
     }
 
+    /// Check if a specific locale's catalog contains a message.
+    ///
+    /// Returns `true` if the locale has a catalog and that catalog contains
+    /// the message, `false` otherwise (including if the locale doesn't exist).
+    #[must_use]
+    pub fn catalog_contains(&self, locale: &Locale, message_id: &MessageId) -> bool {
+        self.catalogs
+            .get(locale)
+            .is_some_and(|catalog| catalog.get(message_id).is_some())
+    }
+
     /// Look up a message for the given locale and message identifier.
     ///
     /// If the requested locale is not available, falls back to the default
@@ -192,28 +203,51 @@ impl Localizer {
     ///
     /// Returns an error if the message is not found in the requested locale or
     /// the fallback locale, or if the locale is not supported.
+    ///
+    /// When falling back to the default locale, errors report the effective
+    /// catalog's locale (i.e. the locale that was actually queried).
     pub fn lookup(&self, locale: &Locale, message_id: &MessageId) -> Result<String, I18nError> {
-        let catalog = self.catalogs.get(locale).or_else(|| {
-            if locale == &self.default_locale {
-                None
-            } else {
-                self.catalogs.get(&self.default_locale)
-            }
-        });
+        // First, try the requested locale's catalog if it exists
+        if let Some(catalog) = self.catalogs.get(locale)
+            && let Some(message) = catalog.get(message_id)
+        {
+            return Ok(message.to_owned());
+        }
 
-        let Some(fallback_catalog) = catalog else {
+        // If not found and requested locale differs from default, try default catalog
+        if locale != &self.default_locale
+            && let Some(default_catalog) = self.catalogs.get(&self.default_locale)
+        {
+            return default_catalog.get(message_id).map_or_else(
+                || {
+                    // Message not found in default catalog either
+                    Err(I18nError::MessageNotFound {
+                        message_id: message_id.as_str().to_owned(),
+                        locale: self.default_locale.language_tag().to_owned(),
+                    })
+                },
+                |message| Ok(message.to_owned()),
+            );
+        }
+
+        // Either:
+        // 1. Requested locale == default locale, but message not found, or
+        // 2. Requested locale != default, but neither catalog has the message, or
+        // 3. No catalog exists for either locale
+        let effective_locale = if self.catalogs.contains_key(locale) {
+            locale
+        } else if self.catalogs.contains_key(&self.default_locale) {
+            &self.default_locale
+        } else {
             return Err(I18nError::UnsupportedLocale {
                 requested: locale.language_tag().to_owned(),
             });
         };
 
-        fallback_catalog
-            .get(message_id)
-            .map(ToOwned::to_owned)
-            .ok_or_else(|| I18nError::MessageNotFound {
-                message_id: message_id.as_str().to_owned(),
-                locale: locale.language_tag().to_owned(),
-            })
+        Err(I18nError::MessageNotFound {
+            message_id: message_id.as_str().to_owned(),
+            locale: effective_locale.language_tag().to_owned(),
+        })
     }
 }
 

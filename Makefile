@@ -21,14 +21,19 @@ all: check-fmt lint test ## Perform a comprehensive check of code
 clean: ## Remove build artifacts
 	$(CARGO) clean
 
-test: ## Run tests with nextest
-	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile default $(TEST_FLAGS) $(BUILD_JOBS)
+test: ## Run tests (nextest if available, otherwise cargo test)
+	@if $(CARGO) nextest --version >/dev/null 2>&1; then \
+		RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile default $(TEST_FLAGS) $(BUILD_JOBS); \
+	else \
+		echo "cargo-nextest not installed, falling back to cargo test"; \
+		RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) test $(TEST_FLAGS) $(BUILD_JOBS); \
+	fi
 
 test-ci: ## Run tests with CI profile (stricter settings)
 	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile ci $(TEST_FLAGS) $(BUILD_JOBS)
 
 test-quick: ## Run unit tests only (skip GPUI integration tests)
-	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile default --lib $(BUILD_JOBS)
+	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile default --lib $(TEST_FLAGS) $(BUILD_JOBS)
 
 target/%/$(TARGET): ## Build binary in debug or release mode
 	$(CARGO) build $(BUILD_JOBS) $(if $(findstring release,$(@)),--release)

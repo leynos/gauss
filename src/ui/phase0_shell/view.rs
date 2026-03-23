@@ -30,23 +30,19 @@ impl Phase0Shell {
     }
 
     fn localized_tool_mode_label(&self) -> String {
-        let message_id = match self.state.tool_mode {
-            draw::ToolMode::Draw => crate::i18n::MessageId::tool_mode_draw(),
-            draw::ToolMode::Manipulate => crate::i18n::MessageId::tool_mode_manipulate(),
-        };
-        self.localizer
-            .lookup(&self.locale, &message_id)
-            .unwrap_or_else(|_| self.state.tool_mode.label().to_owned())
+        super::i18n_helpers::localized_tool_mode_label(
+            self.state.tool_mode,
+            &self.localizer,
+            &self.locale,
+        )
     }
 
     fn localized_edge_mode_label(&self) -> String {
-        let message_id = match self.state.edge_mode {
-            draw::DrawEdgeMode::Line => crate::i18n::MessageId::edge_mode_line(),
-            draw::DrawEdgeMode::BezierAuto => crate::i18n::MessageId::edge_mode_bezier_auto(),
-        };
-        self.localizer
-            .lookup(&self.locale, &message_id)
-            .unwrap_or_else(|_| self.state.edge_mode.label().to_owned())
+        super::i18n_helpers::localized_edge_mode_label(
+            self.state.edge_mode,
+            &self.localizer,
+            &self.locale,
+        )
     }
 
     pub(super) fn file_status_line(&self) -> Option<String> {

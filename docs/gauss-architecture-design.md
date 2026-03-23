@@ -1488,7 +1488,7 @@ names belong to 0.7.3.
 
 The `i18n` module consists of four main components:
 
-- `Locale`: Represents a locale identifier using BCP 47 language tags
+- `Locale`: Represents a locale identifier using BCP 47 (Best Current Practice 47) language tags
 - `MessageId`: Stable message identifiers for catalog lookups
 - `Catalog`: Storage for locale-specific message translations
 - `Localizer`: Service that provides lookup with automatic fallback
