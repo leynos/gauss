@@ -3,7 +3,7 @@
 //! These tests use `rstest-bdd` to validate that shape IDs remain stable when
 //! documents are reordered and when IDs are mapped to AccessKit node IDs.
 
-use gauss::model::{Document, PaintStyle, PathGeom, Shape, ShapeId};
+use gauss_core::model::{Document, PaintStyle, PathGeom, Shape, ShapeId};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};

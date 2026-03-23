@@ -1,9 +1,9 @@
 //! Behaviour tests for metadata round-trip fidelity.
 
-use gauss::model::{Document, GaussAttribute, ResourceStore, Shape};
-use gauss::svg::export::{CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata};
-use gauss::svg::import::{ImportedSvg, import_svg_with_resources};
+use gauss_core::model::{Document, GaussAttribute, ResourceStore, Shape};
 use gauss_core::test_helpers::shape_id_from_seed;
+use gauss_svg::svg::export::{CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata};
+use gauss_svg::svg::import::{ImportedSvg, import_svg_with_resources};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult, line_shape};

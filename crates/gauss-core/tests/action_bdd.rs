@@ -3,7 +3,7 @@
 //! These tests use `rstest-bdd` to validate that actions are correctly
 //! categorized for dispatch routing.
 
-use gauss::model::{Action, ActionKind};
+use gauss_core::model::{Action, ActionKind};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then};
 use test_support::{TestSupportError, TestSupportResult};

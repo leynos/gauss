@@ -3,11 +3,11 @@
 //! These tests use `rstest-bdd` to validate user-facing behaviour at the
 //! controller/model boundary, without a running GPUI window.
 
-use gauss::model::{
+use gauss_core::model::{
     Anchor, DocChange, DocOp, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId,
     Vec2,
 };
-use gauss::svg::export::{CanvasSize, export_svg};
+use gauss_svg::svg::export::{CanvasSize, export_svg};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};

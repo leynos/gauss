@@ -1,6 +1,6 @@
 //! Behaviour tests for the shared hit-test service.
 
-use gauss::model::{Document, HitTestIndex, SelectPointerHit, ShapeId, Vec2};
+use gauss_core::model::{Document, HitTestIndex, SelectPointerHit, ShapeId, Vec2};
 use gauss_core::test_helpers::square_shape_with_out_handle;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};

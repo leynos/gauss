@@ -3,7 +3,7 @@
 //! These tests verify that commands return appropriate errors when operating
 //! on non-existent shapes, anchors, or segments.
 
-use gauss::model::{
+use gauss_core::model::{
     Anchor, AnchorMovement, Command, Document, HandleKind, HandleMovement, PaintStyle, ReorderOp,
     SegmentChange, SegmentKind, ShapeMovement, StyleChange, UserError, Vec2,
 };

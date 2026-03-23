@@ -6,15 +6,16 @@
 
 use camino::Utf8Path;
 use cap_std::{ambient_authority, fs_utf8::Dir};
-use gauss::model::{
-    Anchor, Document, GaussAttribute, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind, Shape,
+use gauss_core::model::{
+    Anchor, Document, GaussAttribute, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind,
+    Shape, Vec2,
 };
-use gauss::svg::export::{
+use gauss_core::test_helpers::shape_id_from_seed;
+use gauss_svg::svg::export::{
     CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata,
     export_svg_with_resources_web_ready,
 };
-use gauss::svg::import::import_svg_with_resources;
-use gauss_core::test_helpers::shape_id_from_seed;
+use gauss_svg::svg::import::import_svg_with_resources;
 use rstest::{fixture, rstest};
 use test_support::{TestSupportError, TestSupportResult};
 
@@ -24,9 +25,9 @@ const GOLDEN_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/golden");
 fn triangle_path() -> PathGeom {
     PathGeom {
         anchors: vec![
-            Anchor::new(gauss::model::Vec2::new(10.0, 10.0)),
-            Anchor::new(gauss::model::Vec2::new(90.0, 10.0)),
-            Anchor::new(gauss::model::Vec2::new(50.0, 80.0)),
+            Anchor::new(Vec2::new(10.0, 10.0)),
+            Anchor::new(Vec2::new(90.0, 10.0)),
+            Anchor::new(Vec2::new(50.0, 80.0)),
         ],
         segments: vec![SegmentKind::Line, SegmentKind::Line],
         closed: true,
@@ -130,7 +131,7 @@ fn plain_svg_without_gauss_metadata(
 ) -> TestSupportResult<()> {
     let mut doc = Document::new();
     let shape = Shape {
-        id: gauss::model::ShapeId::default(),
+        id: gauss_core::model::ShapeId::default(),
         z: 0,
         style: default_style,
         path: triangle_path,
@@ -244,8 +245,8 @@ fn full_round_trip_combined(
         style: default_style,
         path: PathGeom {
             anchors: vec![
-                Anchor::new(gauss::model::Vec2::new(20.0, 20.0)),
-                Anchor::new(gauss::model::Vec2::new(80.0, 80.0)),
+                Anchor::new(Vec2::new(20.0, 20.0)),
+                Anchor::new(Vec2::new(80.0, 80.0)),
             ],
             segments: vec![SegmentKind::Line],
             closed: false,
