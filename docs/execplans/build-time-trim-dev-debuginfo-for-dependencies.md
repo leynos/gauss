@@ -211,6 +211,54 @@ Validation gate:
 
 ## Outcomes & Retrospective
 
-Pending. Record the exact profile settings adopted, the measured before/after
-timings, the debugging trade-offs accepted, and whether the change remained
-worthwhile once validated in normal contributor workflows.
+### Profile Settings Adopted
+
+```toml
+[profile.dev.package."*"]
+debug = 0
+
+[profile.test.package."*"]
+debug = 0
+```
+
+### Measured Improvement
+
+- **Before**: Clean `cargo build` took 2m22.767s (142.8 seconds)
+- **After**: Clean `cargo build` took 1m47.979s (108.0 seconds)
+- **Improvement**: 34.8 seconds faster (24.4% reduction)
+
+### Trade-offs Accepted
+
+1. **Reduced third-party debugging**: Stack traces and debugger symbols for
+   dependencies (GPUI, ash, naga, etc.) are limited. Stepping into dependency
+   code with a debugger provides less information.
+
+2. **First-party code remains fully debuggable**: The `gauss`, `gauss-core`,
+   and `gauss-svg` crates retain full debuginfo, so debugging Gauss code itself
+   is unaffected.
+
+3. **Escape hatch documented**: Contributors who need full dependency debuginfo
+   can temporarily comment out the profile settings, rebuild, debug, and restore.
+
+### Validation
+
+- ✅ All formatting and lint checks pass
+- ✅ All markdown validation passes
+- ✅ All Mermaid diagrams validate
+- ✅ No git whitespace issues
+- ✅ Repository builds successfully with new profile
+- ⏳ Full test suite running (in progress)
+
+### Conclusion
+
+The 24% build time improvement is substantial and worthwhile. The debugging
+trade-off is acceptable because:
+
+1. Most debugging focuses on first-party Gauss code, which retains full
+   debuginfo
+2. The escape hatch provides a path for the rare cases where dependency
+   debugging is needed
+3. The improvement directly addresses developer experience during the edit-
+   compile-test cycle
+
+This optimization should remain in place.

@@ -80,6 +80,14 @@ After this plan is implemented, success is observable when:
   `tests/resource_store_bdd.rs`, `tests/hit_test_bdd.rs`,
   `tests/metadata_round_trip_bdd.rs`, and `tests/web_ready_export_bdd.rs`.
 - [x] (2026-03-14) Drafted this ExecPlan.
+- [x] (2026-03-22) Stage A: Classified all 66 integration tests by owning crate:
+  - 12 pure model tests identified for move to `crates/gauss-core/tests/`
+  - 3 pure SVG tests identified for move to `crates/gauss-svg/tests/`
+  - 51 GPUI-dependent tests to remain in app crate `tests/`
+  - Created `docs/execplans/test-classification-inventory.md` with full
+    inventory and classification rationale
+  - Verified all tests currently compile and pass with `cargo test --workspace
+    --all-targets --all-features`
 - [ ] Await maintainer approval of the pull request before implementation.
 
 ## Surprises and discoveries
