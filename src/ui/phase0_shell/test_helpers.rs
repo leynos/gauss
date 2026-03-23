@@ -182,6 +182,14 @@ impl Phase0Shell {
         let _ = self.activate_select_tool();
     }
 
+    /// Set the tool mode directly for tests.
+    ///
+    /// This allows tests to verify behavior across different tool modes without
+    /// relying on keyboard dispatch.
+    pub const fn set_tool_mode_for_tests(&mut self, tool_mode: draw::ToolMode) {
+        self.state.tool_mode = tool_mode;
+    }
+
     /// Return the last canvas click position in screen coordinates.
     ///
     /// This is intended for tests and debugging while Phase 0 is still

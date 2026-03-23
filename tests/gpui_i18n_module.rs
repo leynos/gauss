@@ -124,3 +124,43 @@ fn fallback_to_default_locale_when_message_missing(cx: &mut TestAppContext) {
         "Expected English fallback 'Line' for missing message, got: {status}"
     );
 }
+
+#[gpui::test]
+fn manipulate_mode_omits_edge_mode_in_status_line(cx: &mut TestAppContext) {
+    use gauss::model::ToolMode;
+
+    init_test_app(cx);
+    let mut catalogs = HashMap::new();
+    catalogs.insert(Locale::fr_fr(), test_french_catalog());
+    let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
+
+    let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
+        let mut shell_instance = Phase0Shell::new(view_cx);
+        shell_instance.set_localizer(localizer.clone());
+        shell_instance.set_locale(Locale::fr_fr());
+        shell_instance
+    });
+
+    // Switch to Manipulate mode
+    shell.update(cx, |s, _cx| {
+        s.set_tool_mode_for_tests(ToolMode::Manipulate);
+    });
+
+    let status = shell.read_with(cx, |s, _cx| s.mode_status_line_for_tests());
+
+    // Should contain localized tool mode
+    assert!(
+        status.contains("Manipuler"),
+        "Expected French 'Manipuler' for Manipulate mode, got: {status}"
+    );
+
+    // Should NOT contain edge mode (neither French nor English)
+    assert!(
+        !status.contains("Ligne") && !status.contains("Line"),
+        "Manipulate mode should omit edge mode fragment, got: {status}"
+    );
+    assert!(
+        !status.contains("Bézier") && !status.contains("Bezier"),
+        "Manipulate mode should omit edge mode fragment, got: {status}"
+    );
+}

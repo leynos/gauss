@@ -187,11 +187,11 @@ The recommended `0.7.1` design is:
 - No attempt to localize every existing string in this milestone.
 
 This choice fits the current codebase because Gauss only needs scaffolding in
-`0.7.1`. The existing strings are short labels, status fragments, and a11y
-descriptions. The repository has no direct localization dependency today, and
-introducing full Fluent machinery now would create more moving parts than the
-current milestone needs. The architecture update should still record concrete
-re-evaluation triggers:
+`0.7.1`. The existing strings are short labels, status fragments, and
+accessibility (a11y) descriptions. The repository has no direct localization
+dependency today, and introducing full Fluent machinery now would create more
+moving parts than the current milestone needs. The architecture update should
+still record concrete re-evaluation triggers:
 
 - the first shipped non-English locale,
 - pluralization or grammatical selection requirements,

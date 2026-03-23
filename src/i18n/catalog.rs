@@ -259,6 +259,8 @@ impl Default for Localizer {
 
 #[cfg(test)]
 mod tests {
+    use rstest::{fixture, rstest};
+
     use super::*;
 
     #[test]
@@ -303,24 +305,25 @@ mod tests {
         assert_eq!(result.expect("Should have found message"), "Draw");
     }
 
+    #[fixture]
     fn fr_test_catalog() -> Catalog {
         let mut messages = HashMap::new();
         messages.insert("test".to_owned(), "test_fr".to_owned());
         Catalog::from_messages(messages)
     }
 
-    fn assert_fr_test_lookup_succeeds(localizer: &Localizer) {
-        let result = localizer.lookup(&Locale::fr_fr(), &MessageId::from("test"));
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Should have found message"), "test_fr");
+    #[fixture]
+    fn fr_test_localizer(fr_test_catalog: Catalog) -> Localizer {
+        let mut catalogs = HashMap::new();
+        catalogs.insert(Locale::fr_fr(), fr_test_catalog);
+        Localizer::with_catalogs(catalogs, Locale::en_gb())
     }
 
-    #[test]
-    fn localizer_lookup_succeeds_for_available_locale() {
-        let mut catalogs = HashMap::new();
-        catalogs.insert(Locale::fr_fr(), fr_test_catalog());
-        let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
-        assert_fr_test_lookup_succeeds(&localizer);
+    #[rstest]
+    fn localizer_lookup_succeeds_for_available_locale(fr_test_localizer: Localizer) {
+        let result = fr_test_localizer.lookup(&Locale::fr_fr(), &MessageId::from("test"));
+        assert!(result.is_ok());
+        assert_eq!(result.expect("Should have found message"), "test_fr");
     }
 
     #[test]
@@ -349,10 +352,12 @@ mod tests {
         }
     }
 
-    #[test]
-    fn localizer_add_catalog_works() {
+    #[rstest]
+    fn localizer_add_catalog_works(fr_test_catalog: Catalog) {
         let mut localizer = Localizer::new();
-        localizer.add_catalog(Locale::fr_fr(), fr_test_catalog());
-        assert_fr_test_lookup_succeeds(&localizer);
+        localizer.add_catalog(Locale::fr_fr(), fr_test_catalog);
+        let result = localizer.lookup(&Locale::fr_fr(), &MessageId::from("test"));
+        assert!(result.is_ok());
+        assert_eq!(result.expect("Should have found message"), "test_fr");
     }
 }
