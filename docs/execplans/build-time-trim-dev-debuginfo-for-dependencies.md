@@ -97,7 +97,7 @@ After this plan is implemented, success is observable when:
     and worthwhile. First-party Gauss crates retain full debuginfo, so
     debugging Gauss code remains practical.
   - Note: Test compilation has pre-existing errors in test code (unrelated
-    to the profile change), but the improvement in dependencies compilation
+    to the profile change), but the improvement in dependency compilation
     time is measurable and significant.
 - [x] (2026-03-22) Stage D: Documented the trade-off:
   - Added a "Build performance" section to `README.md` explaining the profile
@@ -233,12 +233,20 @@ debug = 0
    dependencies (GPUI, ash, naga, etc.) are limited. Stepping into dependency
    code with a debugger provides less information.
 
-2. **First-party code remains fully debuggable**: The `gauss`, `gauss-core`,
-   and `gauss-svg` crates retain full debuginfo, so debugging Gauss code itself
-   is unaffected.
+2. **Impact on diagnostics**: Panic backtraces from third-party crates will
+   show function names but may lack precise line numbers and source context.
+   Error messages that include location information for third-party code will
+   be less actionable. This affects both interactive debugging and post-mortem
+   analysis of failures in dependency code.
 
-3. **Escape hatch documented**: Contributors who need full dependency debuginfo
-   can temporarily comment out the profile settings, rebuild, debug, and restore.
+3. **First-party code remains fully debuggable**: The `gauss`, `gauss-core`,
+   and `gauss-svg` crates retain full debuginfo, so debugging Gauss code itself
+   is unaffected. Panics and errors in first-party code retain full diagnostic
+   quality.
+
+4. **Escape hatch documented**: Contributors who need full dependency debuginfo
+   can temporarily comment out the profile settings, rebuild, debug, and
+   restore.
 
 ### Validation
 

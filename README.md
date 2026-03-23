@@ -32,12 +32,32 @@ retain full debuginfo.
 
 ### Temporary escape hatch
 
-If you need full debuginfo for dependencies during debugging:
+If you need full debuginfo for dependencies during debugging, use one of these
+ephemeral approaches to avoid long-lived changes to the committed profile:
+
+#### Option 1: Per-user config override (recommended)
+
+Create or edit `.cargo/config.toml` in the repository root (gitignored):
+
+    [profile.dev.package."*"]
+    debug = 2
+
+    [profile.test.package."*"]
+    debug = 2
+
+Then run `cargo clean` and rebuild. Remove `.cargo/config.toml` when done.
+
+#### Option 2: Git stash workflow
 
 1. Comment out the `[profile.dev.package."*"]` and
    `[profile.test.package."*"]` sections in `Cargo.toml`.
 2. Run `cargo clean` and rebuild.
-3. Restore the profile settings and clean build again when done.
+3. Stash the change with `git stash` when done (or restore manually).
+
+#### Option 3: Throwaway commit
+
+1. Make the profile change, rebuild, and debug.
+2. Use `git reset --soft HEAD~1` to undo the commit without losing other work.
 
 ## Quality gates
 
