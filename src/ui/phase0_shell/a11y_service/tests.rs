@@ -58,6 +58,35 @@ fn routed_service() -> A11yService {
     service
 }
 
+fn fr_locale_snapshot(localizer: crate::i18n::Localizer) -> A11ySnapshot {
+    use std::collections::BTreeSet;
+    A11ySnapshot {
+        tool_mode: ToolMode::Draw,
+        edge_mode: EdgeMode::Line,
+        can_undo: false,
+        can_redo: false,
+        is_maximized: false,
+        selected_shape_ids: BTreeSet::new(),
+        shapes: vec![],
+        localizer,
+        locale: crate::i18n::Locale::fr_fr(),
+    }
+}
+
+fn get_status_label(snapshot: &A11ySnapshot) -> String {
+    let (nodes, _) = build_node_map(snapshot).expect("node map build should succeed");
+    let status_node = nodes.get(&STATUS_NODE_ID).unwrap_or_else(|| {
+        panic!(
+            "expected node map to contain status node id {:#x}",
+            STATUS_NODE_ID.0
+        )
+    });
+    status_node
+        .label()
+        .expect("status node should have a label")
+        .to_owned()
+}
+
 #[rstest]
 fn titlebar_node_uses_stable_role_label_and_children_order() {
     let (nodes, _) = build_node_map(&snapshot(&[], &[])).expect("node map build should succeed");
@@ -386,43 +415,15 @@ fn emitted_updates_are_bounded_to_prevent_unbounded_growth() {
 #[rstest]
 fn status_node_uses_localized_tool_mode_label() {
     use crate::i18n::{Catalog, Locale, Localizer};
-    use std::collections::{BTreeSet, HashMap};
+    use std::collections::HashMap;
 
-    // Create a French catalog
     let mut messages = HashMap::new();
     messages.insert("tool_mode.draw".to_owned(), "Dessiner".to_owned());
-    let fr_catalog = Catalog::from_messages(messages);
-
     let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), fr_catalog);
+    catalogs.insert(Locale::fr_fr(), Catalog::from_messages(messages));
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
-    // Create snapshot with French locale
-    let shapes = vec![];
-    let selected_shape_ids = BTreeSet::new();
-    let snapshot_fr = A11ySnapshot {
-        tool_mode: ToolMode::Draw,
-        edge_mode: EdgeMode::Line,
-        can_undo: false,
-        can_redo: false,
-        is_maximized: false,
-        selected_shape_ids,
-        shapes,
-        localizer,
-        locale: Locale::fr_fr(),
-    };
-
-    let (nodes, _) = build_node_map(&snapshot_fr).expect("node map build should succeed");
-    let Some(status_node) = nodes.get(&STATUS_NODE_ID) else {
-        panic!(
-            "expected node map to contain status node id {:#x}",
-            STATUS_NODE_ID.0
-        );
-    };
-
-    let label = status_node
-        .label()
-        .expect("status node should have a label");
+    let label = get_status_label(&fr_locale_snapshot(localizer));
     assert!(
         label.contains("Dessiner"),
         "Expected localized French 'Dessiner', got: {label}"
@@ -432,48 +433,19 @@ fn status_node_uses_localized_tool_mode_label() {
 #[rstest]
 fn status_node_falls_back_to_default_locale_when_message_missing() {
     use crate::i18n::{Catalog, Locale, Localizer};
-    use std::collections::{BTreeSet, HashMap};
+    use std::collections::HashMap;
 
-    // Create a partial French catalog missing tool_mode.draw
     let mut messages = HashMap::new();
     messages.insert("edge_mode.line".to_owned(), "Ligne".to_owned());
-    let partial_fr_catalog = Catalog::from_messages(messages);
-
     let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), partial_fr_catalog);
+    catalogs.insert(Locale::fr_fr(), Catalog::from_messages(messages));
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
-    let shapes = vec![];
-    let selected_shape_ids = BTreeSet::new();
-    let snapshot_fr = A11ySnapshot {
-        tool_mode: ToolMode::Draw,
-        edge_mode: EdgeMode::Line,
-        can_undo: false,
-        can_redo: false,
-        is_maximized: false,
-        selected_shape_ids,
-        shapes,
-        localizer,
-        locale: Locale::fr_fr(),
-    };
-
-    let (nodes, _) = build_node_map(&snapshot_fr).expect("node map build should succeed");
-    let Some(status_node) = nodes.get(&STATUS_NODE_ID) else {
-        panic!(
-            "expected node map to contain status node id {:#x}",
-            STATUS_NODE_ID.0
-        );
-    };
-
-    let label = status_node
-        .label()
-        .expect("status node should have a label");
-    // Should fall back to English for missing tool_mode.draw
+    let label = get_status_label(&fr_locale_snapshot(localizer));
     assert!(
         label.contains("Draw"),
         "Expected fallback English 'Draw' for missing message, got: {label}"
     );
-    // Should have French for available edge_mode.line
     assert!(
         label.contains("Ligne"),
         "Expected French 'Ligne' from partial catalog, got: {label}"
