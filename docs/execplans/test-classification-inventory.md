@@ -32,6 +32,7 @@ guide the test move implementation in `build-time-move-model-and-svg-tests.md`.
 - `tests/tool_fsm_bdd.rs` - Tool FSM (model layer)
 
 Supporting directories:
+
 - `tests/command_unit_tests/` - Command unit test fixtures
 - `tests/command_editing_unit_helpers/` - Command editing helpers
 - `tests/features/` - BDD feature files (if model-specific)
@@ -43,6 +44,7 @@ Supporting directories:
 - `tests/web_ready_export_bdd.rs` - Web-ready SVG export
 
 Supporting directories:
+
 - `tests/golden/` - Golden test fixtures
 
 ### App Integration Tests → Stay in `tests/`
@@ -50,20 +52,24 @@ Supporting directories:
 All GPUI-dependent tests stay in the app crate:
 
 #### Accessibility Tests
+
 - `tests/a11y_service_bdd.rs` - AccessKit service (requires GPUI)
 - `tests/a11y_service_routing_bdd.rs` - AccessKit routing (requires GPUI)
 - `tests/gpui_shell_a11y_service.rs` - Shell accessibility integration
 
 Supporting directories:
+
 - `tests/a11y_service_bdd/` - AccessKit BDD fixtures
 
 #### File I/O Tests
+
 - `tests/gpui_file_io_click_save_button.rs` - Save button interaction
 - `tests/gpui_file_io_metadata_round_trip.rs` - Metadata via file dialogs
 - `tests/gpui_file_io_open_dialog.rs` - Open dialog integration
 - `tests/gpui_file_io_save_dialog.rs` - Save dialog integration
 
 #### History Tests
+
 - `tests/gpui_history_anchor_edit_undo.rs` - Anchor editing with undo
 - `tests/gpui_history_close_path_undo.rs` - Path closing with undo
 - `tests/gpui_history_command_grouping_undo.rs` - Command grouping with undo
@@ -77,6 +83,7 @@ Supporting directories:
 - `tests/gpui_history_selection_history.rs` - Selection history
 
 #### Selection Tests
+
 - `tests/gpui_selection_bbox_drag_requires_selection.rs` - Bbox drag behavior
 - `tests/gpui_selection_clear_selection.rs` - Selection clearing
 - `tests/gpui_selection_multi_select.rs` - Multi-selection
@@ -85,6 +92,7 @@ Supporting directories:
 - `tests/gpui_selection_select_tool_noop_paths.rs` - Select tool edge cases
 
 #### Shell/UI Tests
+
 - `tests/gpui_shell_canvas_layout.rs` - Canvas layout
 - `tests/gpui_shell_chrome_layout.rs` - Chrome layout
 - `tests/gpui_shell_mode_indicator.rs` - Mode indicator
@@ -97,6 +105,7 @@ Supporting directories:
 - `tests/gpui_shell_window_controls.rs` - Window controls
 
 #### Tooling Tests
+
 - `tests/gpui_tooling_close_path.rs` - Path closing tool integration
 - `tests/gpui_tooling_draw_bezier_auto.rs` - Bezier auto drawing
 - `tests/gpui_tooling_draw_escape_commits_open_path.rs` - Escape commits path
@@ -106,18 +115,22 @@ Supporting directories:
 - `tests/gpui_tooling_toggle_segment_kind.rs` - Segment kind toggling
 
 Supporting directories:
+
 - `tests/common/` - Common test helpers (likely stays)
 
 #### Undo Entry Count Tests
+
 - `tests/undo_entry_count_bdd/` - BDD tests for undo entry counting (multi-file)
 
 ## Summary
 
 **To move:**
+
 - 12 pure model tests → `crates/gauss-core/tests/`
 - 3 pure SVG tests → `crates/gauss-svg/tests/`
 
 **To stay:**
+
 - 51 GPUI-dependent tests → `tests/` (app crate)
 
 ## Notes
