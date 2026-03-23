@@ -107,7 +107,7 @@ Supporting directories:
 #### Tooling Tests
 
 - `tests/gpui_tooling_close_path.rs` - Path closing tool integration
-- `tests/gpui_tooling_draw_bezier_auto.rs` - Bezier auto drawing
+- `tests/gpui_tooling_draw_bezier_auto.rs` - Bezier auto-drawing
 - `tests/gpui_tooling_draw_escape_commits_open_path.rs` - Escape commits path
 - `tests/gpui_tooling_escape_returns_to_draw.rs` - Escape returns to draw mode
 - `tests/gpui_tooling_hit_test_service.rs` - Hit test service integration
