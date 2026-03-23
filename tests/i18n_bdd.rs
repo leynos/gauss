@@ -57,8 +57,14 @@ fn lookup_message(mut ctx: I18nTestContext, message_key: String) -> I18nTestCont
 }
 
 #[then("the message should be {expected}")]
-#[expect(clippy::expect_used, reason = "Test code - panic on missing result is acceptable")]
-#[expect(clippy::unwrap_used, reason = "Test code - unwrap after assert is safe")]
+#[expect(
+    clippy::expect_used,
+    reason = "Test code - panic on missing result is acceptable"
+)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "Test code - unwrap after assert is safe"
+)]
 fn message_should_be(ctx: I18nTestContext, expected: String) {
     let result = ctx.lookup_result.as_ref().expect("No lookup result");
     // Strip quotes from the expected value (feature file includes quotes)
@@ -80,8 +86,14 @@ fn fallback_occurred(ctx: I18nTestContext) {
 }
 
 #[then("a lookup error should be returned")]
-#[expect(clippy::expect_used, reason = "Test code - panic on missing result is acceptable")]
-#[expect(clippy::unwrap_used, reason = "Test code - unwrap in error message is acceptable")]
+#[expect(
+    clippy::expect_used,
+    reason = "Test code - panic on missing result is acceptable"
+)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "Test code - unwrap in error message is acceptable"
+)]
 fn lookup_error_returned(ctx: I18nTestContext) {
     let result = ctx.lookup_result.as_ref().expect("No lookup result");
     assert!(
