@@ -65,8 +65,11 @@ fn insert_canvas_and_status_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: 
         localized_tool_mode_label(snapshot.tool_mode, &snapshot.localizer, &snapshot.locale);
     let status_text = match snapshot.tool_mode {
         ToolMode::Draw => {
-            let edge_label =
-                localized_edge_mode_label(snapshot.edge_mode, &snapshot.localizer, &snapshot.locale);
+            let edge_label = localized_edge_mode_label(
+                snapshot.edge_mode,
+                &snapshot.localizer,
+                &snapshot.locale,
+            );
             format!("Mode: {tool_label} ({edge_label})")
         }
         ToolMode::Manipulate => {
