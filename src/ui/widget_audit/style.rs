@@ -6,11 +6,17 @@ use super::types::{
 };
 
 /// Style panel controls (stroke and fill).
+pub(super) fn controls() -> Vec<RequiredControl> {
+    let mut v = stroke_controls();
+    v.extend(fill_controls());
+    v
+}
+
 #[expect(
     clippy::too_many_lines,
-    reason = "Flat data table for Style Panel controls; no meaningful sub-structure to extract"
+    reason = "Flat data table for StylePanel stroke/fill controls; no meaningful sub-structure to extract"
 )]
-pub(super) fn controls() -> Vec<RequiredControl> {
+fn stroke_controls() -> Vec<RequiredControl> {
     vec![
         RequiredControl {
             name: "Stroke Color Picker",
@@ -121,6 +127,15 @@ pub(super) fn controls() -> Vec<RequiredControl> {
                 notes: "Stroke opacity control exists in current shell",
             },
         },
+    ]
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "Flat data table for StylePanel stroke/fill controls; no meaningful sub-structure to extract"
+)]
+fn fill_controls() -> Vec<RequiredControl> {
+    vec![
         RequiredControl {
             name: "Fill Color Picker",
             phase: Phase::Phase1,

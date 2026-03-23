@@ -60,11 +60,13 @@ fn make_character_control(spec: CharacterControlSpec) -> RequiredControl {
     }
 }
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "Character panel controls assembler; each control requires ~12 spec fields"
-)]
 pub(super) fn controls() -> Vec<RequiredControl> {
+    let mut v = font_property_controls();
+    v.extend(text_style_controls());
+    v
+}
+
+fn font_property_controls() -> Vec<RequiredControl> {
     vec![
         make_character_control(CharacterControlSpec {
             name: "Font Family Selector",
@@ -94,6 +96,11 @@ pub(super) fn controls() -> Vec<RequiredControl> {
             action_notes: "Size change must be undoable",
             evidence_notes: "Phase 2 feature",
         }),
+    ]
+}
+
+fn text_style_controls() -> Vec<RequiredControl> {
+    vec![
         make_character_control(CharacterControlSpec {
             name: "Bold Toggle",
             description: "Apply or remove bold formatting",
