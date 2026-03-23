@@ -5,11 +5,13 @@ use super::types::{
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "Alignment panel controls assembler; multiline formatting for struct literals adds lines"
-)]
 pub(super) fn controls() -> Vec<RequiredControl> {
+    let mut v = alignment_buttons();
+    v.extend(distribution_buttons());
+    v
+}
+
+fn alignment_buttons() -> Vec<RequiredControl> {
     vec![
         make_alignment_panel_button(
             "Align Left",
@@ -65,6 +67,11 @@ pub(super) fn controls() -> Vec<RequiredControl> {
             },
             "1.3.4",
         ),
+    ]
+}
+
+fn distribution_buttons() -> Vec<RequiredControl> {
+    vec![
         make_alignment_panel_button(
             "Distribute Horizontal",
             "Distribute selected objects evenly along horizontal axis",
