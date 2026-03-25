@@ -1,0 +1,347 @@
+//! Then step definitions for widget capability audit BDD tests.
+
+use crate::{AuditWorld, assert_each_control, assert_includes, assert_includes_substrings};
+use gauss::ui::widget_audit::{ControlSurface, Phase};
+use rstest_bdd_macros::then;
+use test_support::TestSupportResult;
+
+#[then("the inventory includes a Selection Tool")]
+pub(crate) fn then_includes_selection_tool(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes(world, "Selection Tool")
+}
+
+#[then("the inventory includes a Direct Selection Tool")]
+pub(crate) fn then_includes_direct_selection_tool(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes(world, "Direct Selection Tool")
+}
+
+#[then("the inventory includes a Pen Tool")]
+pub(crate) fn then_includes_pen_tool(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes(world, "Pen Tool")
+}
+
+#[then("the inventory includes a Rectangle Tool")]
+pub(crate) fn then_includes_rectangle_tool(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes(world, "Rectangle Tool")
+}
+
+#[then("the inventory includes an Ellipse Tool")]
+pub(crate) fn then_includes_ellipse_tool(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes(world, "Ellipse Tool")
+}
+
+#[then("the inventory includes a Line Tool")]
+pub(crate) fn then_includes_line_tool(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes(world, "Line Tool")
+}
+
+#[then("the inventory includes an X Position Field")]
+pub(crate) fn then_includes_x_position(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes(world, "X Position Field")
+}
+
+#[then("the inventory includes a Y Position Field")]
+pub(crate) fn then_includes_y_position(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes(world, "Y Position Field")
+}
+
+#[then("the inventory includes a Width Field")]
+pub(crate) fn then_includes_width(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes(world, "Width Field")
+}
+
+#[then("the inventory includes a Height Field")]
+pub(crate) fn then_includes_height(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes(world, "Height Field")
+}
+
+#[then("the inventory includes a Rotation Field")]
+pub(crate) fn then_includes_rotation(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes(world, "Rotation Field")
+}
+
+#[then("the inventory includes alignment controls for left, centre, and right")]
+pub(crate) fn then_includes_horizontal_alignment(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(
+        world,
+        &[
+            ("Align Left", "Must include Align Left"),
+            (
+                "Align Centre Horizontal",
+                "Must include Align Centre Horizontal",
+            ),
+            ("Align Right", "Must include Align Right"),
+        ],
+    )
+}
+
+#[then("the inventory includes alignment controls for top, centre, and bottom")]
+pub(crate) fn then_includes_vertical_alignment(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(
+        world,
+        &[
+            ("Align Top", "Must include Align Top"),
+            (
+                "Align Centre Vertical",
+                "Must include Align Centre Vertical",
+            ),
+            ("Align Bottom", "Must include Align Bottom"),
+        ],
+    )
+}
+
+#[then("the inventory includes distribution controls for horizontal and vertical")]
+pub(crate) fn then_includes_distribution(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(
+        world,
+        &[
+            (
+                "Distribute Horizontal",
+                "Must include Distribute Horizontal",
+            ),
+            ("Distribute Vertical", "Must include Distribute Vertical"),
+        ],
+    )
+}
+
+#[then("the inventory includes stroke colour, width, and opacity controls")]
+pub(crate) fn then_includes_stroke_controls(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(
+        world,
+        &[
+            ("Stroke Colour", "Must include Stroke Colour Picker"),
+            ("Stroke Width", "Must include Stroke Width Field"),
+            ("Stroke Opacity", "Must include Stroke Opacity Slider"),
+        ],
+    )
+}
+
+#[then("the inventory includes fill colour and opacity controls")]
+pub(crate) fn then_includes_fill_controls(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(
+        world,
+        &[
+            ("Fill Colour", "Must include Fill Colour Picker"),
+            ("Fill Opacity", "Must include Fill Opacity Slider"),
+        ],
+    )
+}
+
+#[then("the inventory includes layer visibility toggle")]
+pub(crate) fn then_includes_layer_visibility(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(
+        world,
+        &[("Layer Visibility", "Must include Layer Visibility Toggle")],
+    )
+}
+
+#[then("the inventory includes layer lock toggle")]
+pub(crate) fn then_includes_layer_lock(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(world, &[("Layer Lock", "Must include Layer Lock Toggle")])
+}
+
+#[then("the inventory includes layer rename capability")]
+pub(crate) fn then_includes_layer_rename(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(
+        world,
+        &[("Layer Rename", "Must include Layer Rename Field")],
+    )
+}
+
+#[then("the inventory includes layer reorder capability")]
+pub(crate) fn then_includes_layer_reorder(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(
+        world,
+        &[("Layer Reorder", "Must include Layer Reorder Handle")],
+    )
+}
+
+#[then("the inventory includes character panel controls")]
+pub(crate) fn then_includes_character_panel(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| name.contains("Font")) {
+        return Err(test_support::TestSupportError::expectation(
+            "Must include font controls",
+        ));
+    }
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Bold") || name.contains("Italic"))
+    {
+        return Err(test_support::TestSupportError::expectation(
+            "Must include text formatting controls",
+        ));
+    }
+    Ok(())
+}
+
+#[then("the inventory includes paragraph panel controls")]
+pub(crate) fn then_includes_paragraph_panel(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world.controls.iter().any(|name| {
+        name.contains("Paragraph") || name.contains("Line Spacing") || name.contains("Indentation")
+    }) {
+        return Err(test_support::TestSupportError::expectation(
+            "Must include paragraph formatting controls",
+        ));
+    }
+    Ok(())
+}
+
+#[then("the inventory includes canvas text editing controls")]
+pub(crate) fn then_includes_canvas_text(world: &AuditWorld) -> TestSupportResult<()> {
+    if !world
+        .controls
+        .iter()
+        .any(|name| name.contains("Text Cursor") || name.contains("Inline Text"))
+    {
+        return Err(test_support::TestSupportError::expectation(
+            "Must include canvas text editing controls",
+        ));
+    }
+    Ok(())
+}
+
+#[then("each control has a non-empty name")]
+pub(crate) fn then_each_has_name(world: &AuditWorld) -> TestSupportResult<()> {
+    if world.count == 0 {
+        return Err(test_support::TestSupportError::expectation(
+            "Inventory must have controls",
+        ));
+    }
+    assert_each_control(
+        world,
+        |c| !c.name().is_empty(),
+        |_| "Control must have name".to_owned(),
+    )
+}
+
+#[then("each control has a user job description")]
+pub(crate) fn then_each_has_user_job(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_each_control(
+        world,
+        |c| !c.user_job.description.is_empty(),
+        |c| format!("Control '{}' must have user job", c.name()),
+    )
+}
+
+#[then("each control has at least one defined state")]
+pub(crate) fn then_each_has_states(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_each_control(
+        world,
+        |c| !c.states.states.is_empty(),
+        |c| format!("Control '{}' must have states", c.name()),
+    )
+}
+
+#[then("each control has an accessibility role and label")]
+pub(crate) fn then_each_has_accessibility(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_each_control(
+        world,
+        |c| !c.accessibility.role.is_empty(),
+        |c| format!("Control '{}' must have a11y role", c.name()),
+    )?;
+    assert_each_control(
+        world,
+        |c| !c.accessibility.label.is_empty(),
+        |c| format!("Control '{}' must have a11y label", c.name()),
+    )
+}
+
+#[then("each control cites at least one requirement source")]
+pub(crate) fn then_each_cites_source(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_each_control(
+        world,
+        |c| !c.sources.is_empty(),
+        |c| format!("Control '{}' must cite sources", c.name()),
+    )
+}
+
+#[then("at least one control has evidence")]
+pub(crate) fn then_at_least_one_evidence(world: &AuditWorld) -> TestSupportResult<()> {
+    if world.controls.is_empty() {
+        return Err(test_support::TestSupportError::expectation(
+            "At least one control must have shell evidence",
+        ));
+    }
+    Ok(())
+}
+
+#[then("each control with evidence references a source file path")]
+pub(crate) fn then_evidence_has_path(world: &AuditWorld) -> TestSupportResult<()> {
+    if let Some(ref inventory) = world.inventory {
+        for control in inventory.with_evidence() {
+            if control.current_evidence.file_path.is_none() {
+                return Err(test_support::TestSupportError::expectation(format!(
+                    "Control '{}' claims evidence but has no file path",
+                    control.name()
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
+#[then("each tool has a keyboard shortcut defined")]
+pub(crate) fn then_each_tool_has_shortcut(world: &AuditWorld) -> TestSupportResult<()> {
+    if let Some(ref inventory) = world.inventory {
+        let toolbar_controls = inventory.by_surface(ControlSurface::Toolbar);
+        let phase1_tools: Vec<_> = toolbar_controls
+            .iter()
+            .filter(|c| c.phase() == Phase::Phase1)
+            .collect();
+
+        // Validate that at least one Phase 1 toolbar control exists before checking shortcuts
+        if phase1_tools.is_empty() {
+            return Err(test_support::TestSupportError::expectation(
+                "Must have toolbar controls",
+            ));
+        }
+
+        for control in phase1_tools {
+            if control.keyboard.shortcut.is_none() {
+                return Err(test_support::TestSupportError::expectation(format!(
+                    "Toolbar tool '{}' must have keyboard shortcut",
+                    control.name()
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
+#[then("each control supports keyboard-only operation")]
+pub(crate) fn then_each_supports_keyboard(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_each_control(
+        world,
+        |c| c.keyboard.keyboard_only_operation,
+        |c| {
+            format!(
+                "Control '{}' must support keyboard-only operation",
+                c.name()
+            )
+        },
+    )
+}
+
+#[then("all controls require action linkage")]
+pub(crate) fn then_action_linkage_required(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_each_control(
+        world,
+        |c| c.action_linkage.requires_action,
+        |c| format!("Control '{}' should require action linkage", c.name()),
+    )
+}
+
+#[then("action linkage includes implementation notes")]
+pub(crate) fn then_action_linkage_documented(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_each_control(
+        world,
+        |c| !(c.action_linkage.requires_action && c.action_linkage.notes.is_empty()),
+        |c| {
+            format!(
+                "Control '{}' requires action but has no linkage notes",
+                c.name()
+            )
+        },
+    )
+}

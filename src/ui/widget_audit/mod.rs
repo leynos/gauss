@@ -26,7 +26,10 @@ mod style;
 mod toolbar;
 mod types;
 
-pub use types::*;
+pub use types::{
+    AccessibilityRequirements, ActionCommandLinkage, ControlStates, ControlSurface,
+    CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
+};
 
 /// Complete inventory of required controls for Phase 1-2.
 pub struct ControlInventory {

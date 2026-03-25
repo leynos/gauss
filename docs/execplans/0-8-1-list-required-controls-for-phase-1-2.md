@@ -250,7 +250,7 @@ Implementation should proceed in four milestones.
 
 1. Establish the audit source of truth.
 
-Create a new internal module such as `src/ui/widget_audit.rs` that defines a
+Create a new internal module such as `src/ui/widget_audit/` that defines a
 typed `RequiredControl` record and supporting enums. Keep the schema focused on
 requirements rather than implementation mapping. A novice should be able to
 open that module and answer, for each control, all of the following:

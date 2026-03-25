@@ -9,6 +9,7 @@
 //! not the runtime GPUI behavior (which requires the full common test helpers).
 
 use gauss::ui::widget_audit::ControlInventory;
+use std::path::Path;
 
 #[test]
 fn controls_with_evidence_have_valid_paths() {
@@ -27,11 +28,10 @@ fn controls_with_evidence_have_valid_paths() {
             .file_path
             .expect("Control claims evidence but has no file path");
 
-        // Verify the file path looks reasonable
-        // (actual file existence is validated by Rust's module system at compile time)
+        // Verify the file path exists (catches typos like "stlye_controls.rs")
         assert!(
-            file_path.starts_with("src/ui/phase0_shell/"),
-            "Control '{}' claims evidence in '{}' which should be in phase0_shell",
+            Path::new(&file_path).exists(),
+            "Control '{}' claims evidence in '{}' but that path does not exist",
             control.name(),
             file_path
         );

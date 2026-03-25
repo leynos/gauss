@@ -1,4 +1,14 @@
 //! Layers panel control definitions.
+//!
+//! This module defines the layer panel controls required for Phase 1, including:
+//! - **Layer Row** — Represents and selects a layer in the document hierarchy
+//! - **Layer Visibility Toggle** — Shows or hides a layer
+//! - **Layer Lock Toggle** — Locks or unlocks a layer to prevent edits
+//! - **Layer Rename Field** — Edits layer names inline
+//! - **Layer Reorder Handle** — Drags to reorder layers in stacking order
+//!
+//! These controls are used by the widget capability audit to verify that
+//! the Phase 0 shell implements the required layer panel functionality.
 
 use super::types::{
     AccessibilityRequirements, ActionCommandLinkage, ControlStates, ControlSurface,

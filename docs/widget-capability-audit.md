@@ -1,12 +1,12 @@
 # Widget Capability Audit for Phase 1-2
 
-This document presents the canonical inventory of UI controls required by Gauss
+This document presents the canonical inventory of user interface (UI) controls required by Gauss
 Phase 1 and Phase 2, as defined by roadmap item 0.8.1. The inventory serves as
 the authoritative source for control requirements before implementation begins.
 
 ## Purpose
 
-Before broad UI development accelerates, we must establish which controls the
+Before broad UI development accelerates, it is necessary to establish which controls the
 application needs, what each control must do, and which accessibility,
 keyboard, and action-routing requirements each one carries. This audit
 distinguishes between stock `gpui-component` coverage and future custom-control
@@ -14,7 +14,7 @@ pressure, as mandated by architecture section 14.1.
 
 ## Source of Truth
 
-The typed inventory is maintained in `src/ui/widget_audit.rs` as a Rust module.
+The typed inventory is maintained in `src/ui/widget_audit/` as a Rust module directory.
 This ensures the audit can be validated through automated tests and kept
 consistent with the roadmap. Each control entry records:
 
@@ -64,10 +64,10 @@ emit undoable commands on value change.
 #### Alignment Panel (8 controls)
 
 - **Align Left** — Align selected objects to leftmost edge
-- **Align Center Horizontal** — Align to horizontal center
+- **Align Centre Horizontal** — Align to horizontal centre
 - **Align Right** — Align to rightmost edge
 - **Align Top** — Align to topmost edge
-- **Align Center Vertical** — Align to vertical center
+- **Align Centre Vertical** — Align to vertical centre
 - **Align Bottom** — Align to bottommost edge
 - **Distribute Horizontal** — Distribute objects evenly along horizontal axis
 - **Distribute Vertical** — Distribute objects evenly along vertical axis
@@ -78,13 +78,13 @@ All alignment and distribution operations must be undoable.
 
 **Stroke Controls:**
 
-- **Stroke Color Picker** — Select stroke color *(existing)*
+- **Stroke Colour Picker** — Select stroke colour *(existing)*
 - **Stroke Width Field** — Set stroke width in pixels/points *(existing)*
 - **Stroke Opacity Slider** — Adjust stroke transparency 0–100% *(existing)*
 
 **Fill Controls:**
 
-- **Fill Color Picker** — Select fill color or no-fill state *(existing)*
+- **Fill Colour Picker** — Select fill colour or no-fill state *(existing)*
 - **Fill Opacity Slider** — Adjust fill transparency 0–100%
 - **No Fill Toggle** — Remove fill from shapes
 
@@ -115,8 +115,8 @@ Phase 2 adds text editing and advanced styling capabilities.
 - **Font Size Field** — Set font size in points
 - **Bold Toggle** (`Cmd+B`/`Ctrl+B`) — Apply or remove bold formatting
 - **Italic Toggle** (`Cmd+I`/`Ctrl+I`) — Apply or remove italic formatting
-- **Text Alignment Buttons** — Set alignment (left, center, right, justify)
-- **Text Color Picker** — Set color for text characters (reuses fill/stroke
+- **Text Alignment Buttons** — Set alignment (left, centre, right, justify)
+- **Text Colour Picker** — Set colour for text characters (reuses fill/stroke
   color infrastructure per roadmap 2.2)
 
 #### Paragraph Panel (3 controls)
@@ -192,7 +192,7 @@ The control inventory is validated by:
   entries
 - **BDD tests** (`rstest-bdd`) that verify roadmap requirements map to typed
   inventory entries
-- **GPUI tests** that prove shell-seam consistency for controls with current
+- **GPUI (Zed's GPU-accelerated UI framework) tests** that prove shell-seam consistency for controls with current
   evidence
 
 See `tests/widget_audit_test.rs` and `tests/widget_capability_audit_bdd.rs` for
@@ -212,4 +212,4 @@ This audit satisfies roadmap item 0.8.1. Subsequent work includes:
 - Roadmap: `docs/roadmap.md` section 0.8
 - Feature Plan: `docs/gauss-feature-plan.md` Phase 1 and Phase 2
 - Architecture: `docs/gauss-architecture-design.md` section 14.1
-- Typed Inventory: `src/ui/widget_audit.rs`
+- Typed Inventory: `src/ui/widget_audit/`

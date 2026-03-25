@@ -26,14 +26,14 @@ Feature: Widget Capability Audit for Phase 1-2
 
   Scenario: Phase 1 alignment controls are catalogued
     When I query controls for Phase 1 alignment panel
-    Then the inventory includes alignment controls for left, center, and right
-    And the inventory includes alignment controls for top, center, and bottom
+    Then the inventory includes alignment controls for left, centre, and right
+    And the inventory includes alignment controls for top, centre, and bottom
     And the inventory includes distribution controls for horizontal and vertical
 
   Scenario: Phase 1 style panel controls are catalogued
     When I query controls for Phase 1 style panel
-    Then the inventory includes stroke color, width, and opacity controls
-    And the inventory includes fill color and opacity controls
+    Then the inventory includes stroke colour, width, and opacity controls
+    And the inventory includes fill colour and opacity controls
 
   Scenario: Phase 1 layers panel controls are catalogued
     When I query controls for Phase 1 layers panel
@@ -71,5 +71,5 @@ Feature: Widget Capability Audit for Phase 1-2
 
   Scenario: All controls integrate with Action/Command system
     When I examine all controls in the inventory
-    Then controls that modify state require action linkage
+    Then all controls require action linkage
     And action linkage includes implementation notes

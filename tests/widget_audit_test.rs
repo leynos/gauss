@@ -1,7 +1,7 @@
 //! Unit tests for widget capability audit inventory.
 //!
 //! This test module validates the Phase 1-2 control inventory defined in
-//! `src/ui/widget_audit.rs`. Tests ensure:
+//! `src/ui/widget_audit/mod.rs`. Tests ensure:
 //!
 //! - All control entries have complete required fields
 //! - Phase 1 and Phase 2 controls are properly categorized
