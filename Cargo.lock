@@ -2194,6 +2194,7 @@ dependencies = [
 name = "gauss-core"
 version = "0.1.0"
 dependencies = [
+ "gauss-core",
  "rstest",
  "rstest-bdd",
  "rstest-bdd-macros",

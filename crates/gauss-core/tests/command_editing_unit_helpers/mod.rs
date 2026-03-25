@@ -6,7 +6,8 @@
 use std::sync::Arc;
 
 use gauss_core::model::{
-    Action, Command, CommandInverse, Document, EngineState, SelItem, Shape, ShapeReplacement,
+    Action, Command, CommandInverse, Document, EngineState, SelItem, Shape, ShapeId,
+    ShapeReplacement, UserError, prepare_command,
 };
 
 use crate::command_editing_helpers::{shape_at, shape_with_handles};
@@ -14,11 +15,11 @@ use crate::command_editing_helpers::{shape_at, shape_with_handles};
 #[derive(Debug, thiserror::Error)]
 pub(super) enum CommandEditingTestError {
     #[error("apply failed")]
-    Apply(#[source] gauss_core::model::UserError),
+    Apply(#[source] UserError),
     #[error("undo failed")]
-    Undo(#[source] gauss_core::model::UserError),
+    Undo(#[source] UserError),
     #[error("prepare failed")]
-    Prepare(#[source] gauss_core::model::UserError),
+    Prepare(#[source] UserError),
     #[error("shape missing")]
     ShapeMissing,
     #[error("shape was not updated: expected {expected:?}, got {actual:?}")]
@@ -46,8 +47,8 @@ pub(super) enum CommandEditingTestError {
 
 pub(super) fn assert_shape_replacement_applies_and_undoes(
     shape_index: usize,
-    old_shape: gauss_core::model::Shape,
-    new_shape: gauss_core::model::Shape,
+    old_shape: Shape,
+    new_shape: Shape,
     create_command: impl Fn(ShapeReplacement) -> Command,
 ) -> Result<(), CommandEditingTestError> {
     let expected_old = old_shape.clone();
@@ -86,7 +87,7 @@ pub(super) fn assert_shape_replacement_applies_and_undoes(
 }
 
 pub(super) fn assert_prepare_command_returns_variant(
-    shape_id: gauss_core::model::ShapeId,
+    shape_id: ShapeId,
     selection_item: SelItem,
     action: Action,
     matches_pattern: impl Fn(&Command) -> bool,
@@ -97,8 +98,7 @@ pub(super) fn assert_prepare_command_returns_variant(
     let mut state = EngineState::with_document(doc);
     state.selection.items = vec![selection_item];
 
-    let cmd = gauss_core::model::prepare_command(action, &state)
-        .map_err(CommandEditingTestError::Prepare)?;
+    let cmd = prepare_command(action, &state).map_err(CommandEditingTestError::Prepare)?;
     if !matches_pattern(&cmd) {
         return Err(CommandEditingTestError::CommandMismatch);
     }
@@ -122,7 +122,7 @@ pub(super) fn assert_insert_anchor_on_segment_effect(
 pub(super) fn assert_insert_anchor_on_segment_command(
     state: &EngineState,
 ) -> Result<Command, CommandEditingTestError> {
-    let cmd = gauss_core::model::prepare_command(Action::InsertAnchorOnSegment, state)
+    let cmd = prepare_command(Action::InsertAnchorOnSegment, state)
         .map_err(CommandEditingTestError::Prepare)?;
     if !matches!(cmd, Command::InsertAnchorOnSegment { .. }) {
         return Err(CommandEditingTestError::CommandMismatch);

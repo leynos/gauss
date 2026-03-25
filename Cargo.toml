@@ -107,8 +107,26 @@ test-support = ["gauss-core/test-support"]
 [profile.dev.package."*"]
 debug = 0
 
+[profile.dev.package.gauss]
+debug = 2
+
+[profile.dev.package.gauss-core]
+debug = 2
+
+[profile.dev.package.gauss-svg]
+debug = 2
+
 [profile.test.package."*"]
 debug = 0
+
+[profile.test.package.gauss]
+debug = 2
+
+[profile.test.package.gauss-core]
+debug = 2
+
+[profile.test.package.gauss-svg]
+debug = 2
 
 [lints]
 workspace = true

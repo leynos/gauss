@@ -141,3 +141,22 @@ Supporting directories:
   Phase0Shell test helper methods
 - Common test helpers in `tests/common/` may need to be refactored into
   `crates/test_support` or duplicated as needed
+
+## Regenerating this inventory
+
+To verify or update this inventory after adding/removing/renaming tests, run:
+
+```bash
+# List all test files by location
+echo "=== gauss-core tests ===" && ls crates/gauss-core/tests/*.rs 2>/dev/null | wc -l && \
+echo "=== gauss-svg tests ===" && ls crates/gauss-svg/tests/*.rs 2>/dev/null | wc -l && \
+echo "=== App crate tests ===" && ls tests/*.rs 2>/dev/null | wc -l
+
+# Detailed listing
+echo -e "\n=== gauss-core test files ===" && ls crates/gauss-core/tests/*.rs 2>/dev/null && \
+echo -e "\n=== gauss-svg test files ===" && ls crates/gauss-svg/tests/*.rs 2>/dev/null && \
+echo -e "\n=== App crate test files ===" && ls tests/*.rs 2>/dev/null
+```
+
+The test files listed in this document should match the output of these
+commands.

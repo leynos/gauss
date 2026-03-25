@@ -8,7 +8,7 @@ use camino::Utf8Path;
 use cap_std::{ambient_authority, fs_utf8::Dir};
 use gauss_core::model::{
     Anchor, Document, GaussAttribute, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind,
-    Shape, Vec2,
+    Shape, ShapeId, Vec2,
 };
 use gauss_core::test_helpers::shape_id_from_seed;
 use gauss_svg::svg::export::{
@@ -131,7 +131,7 @@ fn plain_svg_without_gauss_metadata(
 ) -> TestSupportResult<()> {
     let mut doc = Document::new();
     let shape = Shape {
-        id: gauss_core::model::ShapeId::default(),
+        id: ShapeId::default(),
         z: 0,
         style: default_style,
         path: triangle_path,
