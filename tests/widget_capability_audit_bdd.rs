@@ -23,7 +23,9 @@ fn world() -> AuditWorld {
 }
 
 #[scenario("tests/features/widget_capability_audit.feature")]
-fn widget_capability_audit() {}
+fn widget_capability_audit(world: AuditWorld) {
+    let _ = world;
+}
 
 fn query_by_phase_and_surface(world: &mut AuditWorld, phase: Phase, surface: ControlSurface) {
     if let Some(ref inventory) = world.inventory {
