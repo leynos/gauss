@@ -126,8 +126,8 @@ Supporting directories:
 
 **To move:**
 
-- 12 pure model tests → `crates/gauss-core/tests/`
-- 3 pure SVG tests → `crates/gauss-svg/tests/`
+- 10 pure model tests → `crates/gauss-core/tests/`
+- 5 pure SVG tests → `crates/gauss-svg/tests/`
 
 **To stay:**
 
