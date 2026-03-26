@@ -90,6 +90,12 @@ impl Catalog {
             "edge_mode.bezier_auto".to_owned(),
             "Bezier (auto)".to_owned(),
         );
+        // Status templates for accessibility tree labels
+        messages.insert(
+            "tool.status.mode_with_edge".to_owned(),
+            "Mode: {tool} ({edge})".to_owned(),
+        );
+        messages.insert("tool.status.mode".to_owned(), "Mode: {tool}".to_owned());
         Self::from_messages(messages)
     }
 }

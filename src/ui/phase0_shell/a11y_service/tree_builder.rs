@@ -5,6 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use accesskit::{Action, Node, NodeId, Role};
 
 use crate::ui::phase0_shell::accessibility;
+use crate::ui::phase0_shell::i18n_helpers::localized_status_label;
 
 use super::{A11yServiceError, A11ySnapshot};
 
@@ -54,33 +55,20 @@ fn insert_chrome_nodes(nodes: &mut BTreeMap<NodeId, Node>, is_maximized: bool) {
 }
 
 fn insert_canvas_and_status_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot) {
-    use crate::model::ToolMode;
-
     let mut canvas = Node::new(Role::Canvas);
     canvas.set_label("Drawing canvas");
     nodes.insert(CANVAS_NODE_ID, canvas);
 
     let mut status = Node::new(Role::Status);
-    let tool_label =
-        localized_tool_mode_label(snapshot.tool_mode, &snapshot.localizer, &snapshot.locale);
-    let status_text = match snapshot.tool_mode {
-        ToolMode::Draw => {
-            let edge_label = localized_edge_mode_label(
-                snapshot.edge_mode,
-                &snapshot.localizer,
-                &snapshot.locale,
-            );
-            format!("Mode: {tool_label} ({edge_label})")
-        }
-        ToolMode::Manipulate => {
-            format!("Mode: {tool_label}")
-        }
-    };
+    let status_text = localized_status_label(
+        snapshot.tool_mode,
+        snapshot.edge_mode,
+        &snapshot.localizer,
+        &snapshot.locale,
+    );
     status.set_label(status_text);
     nodes.insert(STATUS_NODE_ID, status);
 }
-
-use super::super::i18n_helpers::{localized_edge_mode_label, localized_tool_mode_label};
 
 fn insert_shape_list_nodes(
     nodes: &mut BTreeMap<NodeId, Node>,

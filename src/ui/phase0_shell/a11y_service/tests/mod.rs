@@ -4,14 +4,18 @@ use accesskit::{Action, ActionRequest, NodeId, Role, TreeId};
 use rstest::rstest;
 use uuid::Uuid;
 
-use crate::model::{EdgeMode, ShapeId, ToolMode};
+use crate::model::ShapeId;
 use crate::ui::phase0_shell::accessibility;
 
-use super::tree_builder::{CANVAS_NODE_ID, SHAPE_LIST_NODE_ID, STATUS_NODE_ID, build_node_map};
+use super::tree_builder::{CANVAS_NODE_ID, SHAPE_LIST_NODE_ID, build_node_map};
 use super::{
     A11yActionRequestError, A11yRequestedAction, A11yService, A11yServiceError, A11yShapeSnapshot,
     A11ySnapshot, A11yUpdateKind, A11yWindowAction,
 };
+
+// i18n-specific tests are in the i18n_tests submodule
+#[cfg(test)]
+mod i18n_tests;
 
 fn shape_id(raw: u64) -> ShapeId {
     ShapeId::from_accesskit_node_id(raw)
@@ -38,8 +42,8 @@ fn snapshot_with_state(
         .collect::<Vec<_>>();
     let selected_shape_ids = selected_ids.iter().map(|id| shape_id(*id)).collect();
     A11ySnapshot {
-        tool_mode: ToolMode::Draw,
-        edge_mode: EdgeMode::Line,
+        tool_mode: crate::model::ToolMode::Draw,
+        edge_mode: crate::model::EdgeMode::Line,
         can_undo: false,
         can_redo: false,
         is_maximized,
@@ -56,35 +60,6 @@ fn routed_service() -> A11yService {
         .sync_from_shell_like(snapshot(&[], &[]))
         .expect("baseline accessibility snapshot should sync");
     service
-}
-
-fn fr_locale_snapshot(localizer: crate::i18n::Localizer) -> A11ySnapshot {
-    use std::collections::BTreeSet;
-    A11ySnapshot {
-        tool_mode: ToolMode::Draw,
-        edge_mode: EdgeMode::Line,
-        can_undo: false,
-        can_redo: false,
-        is_maximized: false,
-        selected_shape_ids: BTreeSet::new(),
-        shapes: vec![],
-        localizer,
-        locale: crate::i18n::Locale::fr_fr(),
-    }
-}
-
-fn get_status_label(snapshot: &A11ySnapshot) -> String {
-    let (nodes, _) = build_node_map(snapshot).expect("node map build should succeed");
-    let status_node = nodes.get(&STATUS_NODE_ID).unwrap_or_else(|| {
-        panic!(
-            "expected node map to contain status node id {:#x}",
-            STATUS_NODE_ID.0
-        )
-    });
-    status_node
-        .label()
-        .expect("status node should have a label")
-        .to_owned()
 }
 
 #[rstest]
@@ -409,45 +384,5 @@ fn emitted_updates_are_bounded_to_prevent_unbounded_growth() {
             .iter()
             .any(|update| update.tree.is_some()),
         "expected overflow handling to retain a full-tree rebase update"
-    );
-}
-
-#[rstest]
-fn status_node_uses_localized_tool_mode_label() {
-    use crate::i18n::{Catalog, Locale, Localizer};
-    use std::collections::HashMap;
-
-    let mut messages = HashMap::new();
-    messages.insert("tool_mode.draw".to_owned(), "Dessiner".to_owned());
-    let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), Catalog::from_messages(messages));
-    let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
-
-    let label = get_status_label(&fr_locale_snapshot(localizer));
-    assert!(
-        label.contains("Dessiner"),
-        "Expected localized French 'Dessiner', got: {label}"
-    );
-}
-
-#[rstest]
-fn status_node_falls_back_to_default_locale_when_message_missing() {
-    use crate::i18n::{Catalog, Locale, Localizer};
-    use std::collections::HashMap;
-
-    let mut messages = HashMap::new();
-    messages.insert("edge_mode.line".to_owned(), "Ligne".to_owned());
-    let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), Catalog::from_messages(messages));
-    let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
-
-    let label = get_status_label(&fr_locale_snapshot(localizer));
-    assert!(
-        label.contains("Draw"),
-        "Expected fallback English 'Draw' for missing message, got: {label}"
-    );
-    assert!(
-        label.contains("Ligne"),
-        "Expected French 'Ligne' from partial catalog, got: {label}"
     );
 }

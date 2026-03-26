@@ -74,6 +74,18 @@ impl MessageId {
     pub fn edge_mode_bezier_auto() -> Self {
         Self::new("edge_mode.bezier_auto")
     }
+
+    /// Message identifier for status template with edge mode.
+    #[must_use]
+    pub fn tool_status_mode_with_edge() -> Self {
+        Self::new("tool.status.mode_with_edge")
+    }
+
+    /// Message identifier for status template without edge mode.
+    #[must_use]
+    pub fn tool_status_mode() -> Self {
+        Self::new("tool.status.mode")
+    }
 }
 
 impl From<String> for MessageId {

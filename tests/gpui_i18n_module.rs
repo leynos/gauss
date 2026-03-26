@@ -97,10 +97,14 @@ fn fallback_to_default_locale_when_message_missing(cx: &mut TestAppContext) {
     // Create a French catalog with only one message (missing the edge mode messages)
     let mut messages = HashMap::new();
     messages.insert("tool_mode.draw".to_owned(), "Dessiner".to_owned());
-    let partial_catalog = Catalog::from_messages(messages);
+    let partial_fr_catalog = Catalog::from_messages(messages);
+
+    // Include default en-GB catalog for fallback
+    let en_catalog = Catalog::default_en_gb();
 
     let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), partial_catalog);
+    catalogs.insert(Locale::fr_fr(), partial_fr_catalog);
+    catalogs.insert(Locale::en_gb(), en_catalog);
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
     let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {

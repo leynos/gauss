@@ -1,11 +1,11 @@
-# Create the internationalisation (i18n) module (0.7.1)
+# Create the internationalization (i18n) module (0.7.1)
 
 This ExecPlan (execution plan) is a living document. The sections
 `Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: DRAFT (2026-03-14)
+Status: COMPLETE (2026-03-25)
 
 No `PLANS.md` exists in this repository.
 
@@ -188,10 +188,12 @@ The recommended `0.7.1` design is:
 
 This choice fits the current codebase because Gauss only needs scaffolding in
 `0.7.1`. The existing strings are short labels, status fragments, and
-accessibility (a11y) descriptions. The repository has no direct localization
-dependency today, and introducing full Fluent machinery now would create more
-moving parts than the current milestone needs. The architecture update should
-still record concrete re-evaluation triggers:
+accessibility (a11y) descriptions. Accessibility (a11y) refers to the practice
+of making software usable by people with disabilities through screen readers,
+keyboard navigation, and other assistive technologies. The repository has no
+direct localization dependency today, and introducing full Fluent machinery now
+would create more moving parts than the current milestone needs. The
+architecture update should still record concrete re-evaluation triggers:
 
 - the first shipped non-English locale,
 - pluralization or grammatical selection requirements,
@@ -300,7 +302,7 @@ Completion evidence is:
   with proper configuration for heavyweight GPUI tests.
 - [x] (2026-03-22) Investigated test compilation errors. Root cause identified:
   missing libxcb.so symlink (system library issue, not code issue). See
-  `0-7-1-i18n-test-resolution.md` for complete analysis.
+  `0-7-1-i18n-module-test-timeout-analysis.md` for complete analysis.
 - [x] (2026-03-22) Verified i18n implementation is complete and correct.
   Library compiles successfully, all quality gates passed. gauss-core tests
   compile successfully (no GPUI dependencies).
@@ -400,7 +402,7 @@ Validation notes:
   - Fixed format string inlining, shadowing, and control flow lints
 - Full workspace test compilation blocked by pre-existing GPUI test API
   signature issues and system library xcb linking (documented separately in
-  `0-7-1-i18n-test-resolution.md`)
+  `0-7-1-i18n-module-test-timeout-analysis.md`)
 - Library code compiles successfully with all lints passing
 
 Key lessons from implementation:
