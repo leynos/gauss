@@ -23,10 +23,8 @@ guide the test move implementation in `build-time-move-model-and-svg-tests.md`.
 - `tests/command_editing_helpers.rs` - Helper for command tests
 - `tests/command_editing_unit.rs` - Command editing unit tests
 - `tests/command_unit.rs` - Command unit tests
-- `tests/gauss_model_ops_bdd.rs` - Model operations BDD
 - `tests/hit_test_bdd.rs` - Hit testing (model layer)
 - `tests/pen_tool_bdd.rs` - Pen tool state machine (model layer)
-- `tests/resource_store_bdd.rs` - Resource store (model layer)
 - `tests/select_tool_bdd.rs` - Select tool state machine (model layer)
 - `tests/stable_id_bdd.rs` - Stable ID generation (model layer)
 - `tests/tool_fsm_bdd.rs` - Tool FSM (model layer)
@@ -39,8 +37,10 @@ Supporting directories:
 
 ### Pure SVG Tests → Move to `crates/gauss-svg/tests/`
 
+- `tests/gauss_model_ops_bdd.rs` - Model operations BDD (tests both model and SVG)
 - `tests/golden_round_trip.rs` - SVG round-trip validation
 - `tests/metadata_round_trip_bdd.rs` - Metadata preservation in SVG
+- `tests/resource_store_bdd.rs` - Resource store (tests both model and SVG)
 - `tests/web_ready_export_bdd.rs` - Web-ready SVG export
 
 Supporting directories:
@@ -131,7 +131,7 @@ Supporting directories:
 
 **To stay:**
 
-- 51 GPUI-dependent tests → `tests/` (app crate)
+- 41 GPUI-dependent tests → `tests/` (app crate)
 
 ## Notes
 
