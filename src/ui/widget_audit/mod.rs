@@ -13,7 +13,8 @@
 //! - Source documents that justify its inclusion
 //! - Whether current shell evidence exists
 //!
-//! This is an internal planning artefact, not a public product API.
+//! This module is public to enable integration testing and external validation
+//! of the control inventory against roadmap requirements.
 
 mod alignment;
 mod canvas;

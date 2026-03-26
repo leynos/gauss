@@ -88,8 +88,8 @@ All alignment and distribution operations must be undoable.
 - **Fill Opacity Slider** — Adjust fill transparency 0–100%
 - **No Fill Toggle** — Remove fill from shapes
 
-Current shell evidence exists for stroke color, stroke width, stroke opacity,
-and fill color via `src/ui/phase0_shell/style_controls.rs`.
+Current shell evidence exists for stroke colour, stroke width, stroke opacity,
+and fill colour via `src/ui/phase0_shell/style_controls.rs`.
 
 #### Layers Panel (5 controls)
 

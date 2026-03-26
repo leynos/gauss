@@ -5,6 +5,57 @@ use gauss::ui::widget_audit::{ControlSurface, Phase};
 use rstest_bdd_macros::then;
 use test_support::TestSupportResult;
 
+/// Inclusion groups for control assertions.
+#[derive(Clone, Copy)]
+enum InclusionGroup {
+    HorizontalAlignment,
+    VerticalAlignment,
+    StrokeControls,
+    FillControls,
+}
+
+const H_ALIGN: &[(&str, &str)] = &[
+    ("Align Left", "Must include Align Left"),
+    (
+        "Align Centre Horizontal",
+        "Must include Align Centre Horizontal",
+    ),
+    ("Align Right", "Must include Align Right"),
+];
+
+const V_ALIGN: &[(&str, &str)] = &[
+    ("Align Top", "Must include Align Top"),
+    (
+        "Align Centre Vertical",
+        "Must include Align Centre Vertical",
+    ),
+    ("Align Bottom", "Must include Align Bottom"),
+];
+
+const STROKE: &[(&str, &str)] = &[
+    ("Stroke Colour", "Must include Stroke Colour Picker"),
+    ("Stroke Width", "Must include Stroke Width Field"),
+    ("Stroke Opacity", "Must include Stroke Opacity Slider"),
+];
+
+const FILL: &[(&str, &str)] = &[
+    ("Fill Colour", "Must include Fill Colour Picker"),
+    ("Fill Opacity", "Must include Fill Opacity Slider"),
+];
+
+const fn group_checks(group: InclusionGroup) -> &'static [(&'static str, &'static str)] {
+    match group {
+        InclusionGroup::HorizontalAlignment => H_ALIGN,
+        InclusionGroup::VerticalAlignment => V_ALIGN,
+        InclusionGroup::StrokeControls => STROKE,
+        InclusionGroup::FillControls => FILL,
+    }
+}
+
+fn assert_includes_group(world: &AuditWorld, group: InclusionGroup) -> TestSupportResult<()> {
+    assert_includes_substrings(world, group_checks(group))
+}
+
 #[then("the inventory includes a Selection Tool")]
 pub(crate) fn then_includes_selection_tool(world: &AuditWorld) -> TestSupportResult<()> {
     assert_includes(world, "Selection Tool")
@@ -62,32 +113,12 @@ pub(crate) fn then_includes_rotation(world: &AuditWorld) -> TestSupportResult<()
 
 #[then("the inventory includes alignment controls for left, centre, and right")]
 pub(crate) fn then_includes_horizontal_alignment(world: &AuditWorld) -> TestSupportResult<()> {
-    assert_includes_substrings(
-        world,
-        &[
-            ("Align Left", "Must include Align Left"),
-            (
-                "Align Centre Horizontal",
-                "Must include Align Centre Horizontal",
-            ),
-            ("Align Right", "Must include Align Right"),
-        ],
-    )
+    assert_includes_group(world, InclusionGroup::HorizontalAlignment)
 }
 
 #[then("the inventory includes alignment controls for top, centre, and bottom")]
 pub(crate) fn then_includes_vertical_alignment(world: &AuditWorld) -> TestSupportResult<()> {
-    assert_includes_substrings(
-        world,
-        &[
-            ("Align Top", "Must include Align Top"),
-            (
-                "Align Centre Vertical",
-                "Must include Align Centre Vertical",
-            ),
-            ("Align Bottom", "Must include Align Bottom"),
-        ],
-    )
+    assert_includes_group(world, InclusionGroup::VerticalAlignment)
 }
 
 #[then("the inventory includes distribution controls for horizontal and vertical")]
@@ -106,25 +137,12 @@ pub(crate) fn then_includes_distribution(world: &AuditWorld) -> TestSupportResul
 
 #[then("the inventory includes stroke colour, width, and opacity controls")]
 pub(crate) fn then_includes_stroke_controls(world: &AuditWorld) -> TestSupportResult<()> {
-    assert_includes_substrings(
-        world,
-        &[
-            ("Stroke Colour", "Must include Stroke Colour Picker"),
-            ("Stroke Width", "Must include Stroke Width Field"),
-            ("Stroke Opacity", "Must include Stroke Opacity Slider"),
-        ],
-    )
+    assert_includes_group(world, InclusionGroup::StrokeControls)
 }
 
 #[then("the inventory includes fill colour and opacity controls")]
 pub(crate) fn then_includes_fill_controls(world: &AuditWorld) -> TestSupportResult<()> {
-    assert_includes_substrings(
-        world,
-        &[
-            ("Fill Colour", "Must include Fill Colour Picker"),
-            ("Fill Opacity", "Must include Fill Opacity Slider"),
-        ],
-    )
+    assert_includes_group(world, InclusionGroup::FillControls)
 }
 
 #[then("the inventory includes layer visibility toggle")]
@@ -268,14 +286,15 @@ pub(crate) fn then_at_least_one_evidence(world: &AuditWorld) -> TestSupportResul
 
 #[then("each control with evidence references a source file path")]
 pub(crate) fn then_evidence_has_path(world: &AuditWorld) -> TestSupportResult<()> {
-    if let Some(ref inventory) = world.inventory {
-        for control in inventory.with_evidence() {
-            if control.current_evidence.file_path.is_none() {
-                return Err(test_support::TestSupportError::expectation(format!(
-                    "Control '{}' claims evidence but has no file path",
-                    control.name()
-                )));
-            }
+    let inventory = world.inventory.as_ref().ok_or_else(|| {
+        test_support::TestSupportError::expectation("Inventory not loaded".to_owned())
+    })?;
+    for control in inventory.with_evidence() {
+        if control.current_evidence.file_path.is_none() {
+            return Err(test_support::TestSupportError::expectation(format!(
+                "Control '{}' claims evidence but has no file path",
+                control.name()
+            )));
         }
     }
     Ok(())
@@ -283,29 +302,30 @@ pub(crate) fn then_evidence_has_path(world: &AuditWorld) -> TestSupportResult<()
 
 #[then("each tool has a keyboard shortcut defined")]
 pub(crate) fn then_each_tool_has_shortcut(world: &AuditWorld) -> TestSupportResult<()> {
-    if let Some(ref inventory) = world.inventory {
-        let toolbar_controls = inventory.by_surface(ControlSurface::Toolbar);
-        let phase1_tools: Vec<_> = toolbar_controls
-            .iter()
-            .filter(|c| c.phase() == Phase::Phase1)
-            .collect();
+    let inventory = world
+        .inventory
+        .as_ref()
+        .ok_or_else(|| test_support::TestSupportError::expectation("Inventory must be loaded"))?;
 
-        // Validate that at least one Phase 1 toolbar control exists before checking shortcuts
-        if phase1_tools.is_empty() {
-            return Err(test_support::TestSupportError::expectation(
-                "Must have toolbar controls",
-            ));
-        }
+    let phase1_tools: Vec<_> = inventory
+        .by_surface(ControlSurface::Toolbar)
+        .into_iter()
+        .filter(|c| c.phase() == Phase::Phase1)
+        .collect();
 
-        for control in phase1_tools {
-            if control.keyboard.shortcut.is_none() {
-                return Err(test_support::TestSupportError::expectation(format!(
-                    "Toolbar tool '{}' must have keyboard shortcut",
-                    control.name()
-                )));
-            }
-        }
+    if phase1_tools.is_empty() {
+        return Err(test_support::TestSupportError::expectation(
+            "Must have toolbar controls",
+        ));
     }
+
+    if let Some(missing) = phase1_tools.iter().find(|c| c.keyboard.shortcut.is_none()) {
+        return Err(test_support::TestSupportError::expectation(format!(
+            "Toolbar tool '{}' must have keyboard shortcut",
+            missing.name()
+        )));
+    }
+
     Ok(())
 }
 
