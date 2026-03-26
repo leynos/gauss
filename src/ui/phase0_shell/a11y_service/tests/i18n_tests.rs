@@ -26,18 +26,19 @@ fn fr_locale_snapshot(localizer: Localizer) -> A11ySnapshot {
     }
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "Test helper - flexibility needed for test state construction"
-)]
-fn snapshot_with_full_state(
-    shape_ids: &[u64],
-    selected_ids: &[u64],
-    is_maximized: bool,
+/// Parameter object for localised mode state in test snapshots.
+struct LocalisedModeState {
     tool_mode: ToolMode,
     edge_mode: EdgeMode,
     localizer: Localizer,
     locale: Locale,
+}
+
+fn snapshot_with_full_state(
+    shape_ids: &[u64],
+    selected_ids: &[u64],
+    is_maximized: bool,
+    mode: LocalisedModeState,
 ) -> A11ySnapshot {
     let shapes = shape_ids
         .iter()
@@ -51,15 +52,15 @@ fn snapshot_with_full_state(
         .collect::<Vec<_>>();
     let selected_shape_ids = selected_ids.iter().map(|id| shape_id(*id)).collect();
     A11ySnapshot {
-        tool_mode,
-        edge_mode,
+        tool_mode: mode.tool_mode,
+        edge_mode: mode.edge_mode,
         can_undo: false,
         can_redo: false,
         is_maximized,
         selected_shape_ids,
         shapes,
-        localizer,
-        locale,
+        localizer: mode.localizer,
+        locale: mode.locale,
     }
 }
 
@@ -105,10 +106,12 @@ fn status_node_uses_localized_edge_mode_label() {
         &[],
         &[],
         false,
-        ToolMode::Draw,
-        EdgeMode::Line,
-        localizer,
-        Locale::fr_fr(),
+        LocalisedModeState {
+            tool_mode: ToolMode::Draw,
+            edge_mode: EdgeMode::Line,
+            localizer,
+            locale: Locale::fr_fr(),
+        },
     );
     let label = get_status_label(&snapshot);
     assert!(
@@ -157,10 +160,12 @@ fn status_node_omits_edge_mode_for_manipulate_tool() {
         &[],
         &[],
         false,
-        ToolMode::Manipulate,
-        EdgeMode::Line,
-        localizer,
-        Locale::fr_fr(),
+        LocalisedModeState {
+            tool_mode: ToolMode::Manipulate,
+            edge_mode: EdgeMode::Line,
+            localizer,
+            locale: Locale::fr_fr(),
+        },
     );
     let label = get_status_label(&snapshot);
     assert!(
