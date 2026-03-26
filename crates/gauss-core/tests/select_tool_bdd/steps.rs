@@ -22,8 +22,7 @@ fn given_mode_draw(world: &mut SelectToolWorld) {
     world.mode = ToolMode::Draw;
 }
 
-#[given("the select tool event is pointer down on shape without shift")]
-fn given_pointer_down_without_shift(world: &mut SelectToolWorld) {
+fn pointer_down_on_shape(world: &mut SelectToolWorld, is_shift_held: bool) {
     world.input_event = Some(pointer_down_event(
         &world.document,
         PointerDownEventInput {
@@ -32,26 +31,20 @@ fn given_pointer_down_without_shift(world: &mut SelectToolWorld) {
                 shape_id: world.shape_id,
             }),
             cursor_world: Vec2::new(5.0, 5.0),
-            is_shift_held: false,
+            is_shift_held,
             previous_selection: Selection::empty(),
         },
     ));
 }
 
+#[given("the select tool event is pointer down on shape without shift")]
+fn given_pointer_down_without_shift(world: &mut SelectToolWorld) {
+    pointer_down_on_shape(world, false);
+}
+
 #[given("the select tool event is pointer down on shape with shift")]
 fn given_pointer_down_with_shift(world: &mut SelectToolWorld) {
-    world.input_event = Some(pointer_down_event(
-        &world.document,
-        PointerDownEventInput {
-            hit: SelectPointerHit::Shape(SelectShapeHit {
-                shape_index: 0,
-                shape_id: world.shape_id,
-            }),
-            cursor_world: Vec2::new(5.0, 5.0),
-            is_shift_held: true,
-            previous_selection: Selection::empty(),
-        },
-    ));
+    pointer_down_on_shape(world, true);
 }
 
 #[given("the select tool has an active {drag_kind:word} dragging state")]
