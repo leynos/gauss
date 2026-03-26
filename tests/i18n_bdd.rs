@@ -124,12 +124,7 @@ fn test_french_catalog() -> Catalog {
 }
 
 fn create_en_catalog() -> Catalog {
-    make_test_catalog(&[
-        ("tool_mode.draw", "Draw"),
-        ("tool_mode.manipulate", "Manipulate"),
-        ("edge_mode.line", "Line"),
-        ("edge_mode.bezier_auto", "Bezier (auto)"),
-    ])
+    Catalog::default_en_gb()
 }
 
 // Test functions for each scenario in the feature file

@@ -95,12 +95,28 @@ fn locale_switching_updates_status_line(cx: &mut TestAppContext) {
 fn fallback_to_default_locale_when_message_missing(cx: &mut TestAppContext) {
     init_test_app(cx);
     // Create a French catalog with only one message (missing the edge mode messages)
-    let mut messages = HashMap::new();
-    messages.insert("tool_mode.draw".to_owned(), "Dessiner".to_owned());
-    let partial_fr_catalog = Catalog::from_messages(messages);
+    let mut fr_messages = HashMap::new();
+    fr_messages.insert("tool_mode.draw".to_owned(), "Dessiner".to_owned());
+    let partial_fr_catalog = Catalog::from_messages(fr_messages);
 
-    // Include default en-GB catalog for fallback
-    let en_catalog = Catalog::default_en_gb();
+    // Create en-GB catalog with distinctive sentinel value to prove fallback path
+    let mut en_messages = HashMap::new();
+    en_messages.insert("tool_mode.draw".to_owned(), "Draw".to_owned());
+    en_messages.insert("tool_mode.manipulate".to_owned(), "Manipulate".to_owned());
+    en_messages.insert(
+        "edge_mode.line".to_owned(),
+        "Line via en-GB catalogue".to_owned(),
+    );
+    en_messages.insert(
+        "edge_mode.bezier_auto".to_owned(),
+        "Bezier (auto)".to_owned(),
+    );
+    en_messages.insert(
+        "tool.status.mode_with_edge".to_owned(),
+        "Mode: {tool} ({edge})".to_owned(),
+    );
+    en_messages.insert("tool.status.mode".to_owned(), "Mode: {tool}".to_owned());
+    let en_catalog = Catalog::from_messages(en_messages);
 
     let mut catalogs = HashMap::new();
     catalogs.insert(Locale::fr_fr(), partial_fr_catalog);
@@ -122,10 +138,10 @@ fn fallback_to_default_locale_when_message_missing(cx: &mut TestAppContext) {
         "Expected French 'Dessiner' from partial catalog, got: {status}"
     );
 
-    // Should fall back to English for missing edge mode
+    // Should fall back to en-GB catalogue for missing edge mode with distinctive sentinel
     assert!(
-        status.contains("Line"),
-        "Expected English fallback 'Line' for missing message, got: {status}"
+        status.contains("Line via en-GB catalogue"),
+        "Expected en-GB catalogue fallback 'Line via en-GB catalogue' for missing message, got: {status}"
     );
 }
 

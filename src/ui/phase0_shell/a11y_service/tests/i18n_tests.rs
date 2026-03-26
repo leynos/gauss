@@ -9,9 +9,8 @@ use crate::ui::phase0_shell::a11y_service::{
     tree_builder::{STATUS_NODE_ID, build_node_map},
 };
 
-fn shape_id(raw: u64) -> crate::model::ShapeId {
-    crate::model::ShapeId::from_accesskit_node_id(raw)
-}
+// Import shape_id from parent module
+use super::shape_id;
 
 fn fr_locale_snapshot(localizer: Localizer) -> A11ySnapshot {
     A11ySnapshot {

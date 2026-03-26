@@ -1,4 +1,31 @@
 //! Message identifier types for i18n lookups.
+//!
+//! # Naming Convention
+//!
+//! Message keys use dot-separated hierarchical segments for logical grouping.
+//! This creates a clear namespace structure and makes related keys easy to discover.
+//!
+//! ## Guidelines
+//!
+//! - Use dot-separated segments to represent hierarchy (e.g., `tool_mode.draw`,
+//!   `edge_mode.line`, `tool.status.mode_with_edge`)
+//! - Prefer consistent dot-separated keys over underscores for separation
+//! - Use underscores only for suffixes when needed (e.g., `mode_with_edge`)
+//! - Group related functionality under common prefixes:
+//!   - `tool_mode.*` for tool mode identifiers
+//!   - `edge_mode.*` for edge mode identifiers  
+//!   - `tool.status.*` for status message templates
+//!
+//! ## Examples
+//!
+//! | Function | Key | Purpose |
+//! |----------|-----|---------|
+//! | `tool_mode_draw()` | `tool_mode.draw` | Draw tool mode label |
+//! | `tool_mode_manipulate()` | `tool_mode.manipulate` | Manipulate tool mode label |
+//! | `edge_mode_line()` | `edge_mode.line` | Line edge mode label |
+//! | `edge_mode_bezier_auto()` | `edge_mode.bezier_auto` | Bezier auto edge mode label |
+//! | `tool_status_mode_with_edge()` | `tool.status.mode_with_edge` | Status template with edge |
+//! | `tool_status_mode()` | `tool.status.mode` | Status template without edge |
 
 use std::fmt;
 
