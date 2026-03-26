@@ -1,21 +1,24 @@
 # Widget Capability Audit for Phase 1-2
 
-This document presents the canonical inventory of user interface (UI) controls required by Gauss
-Phase 1 and Phase 2, as defined by roadmap item 0.8.1. The inventory serves as
-the authoritative source for control requirements before implementation begins.
+This document presents the canonical inventory of user interface (UI) controls
+required by Gauss Phase 1 and Phase 2, as defined by roadmap item 0.8.1. The
+inventory serves as the authoritative source for control requirements before
+implementation begins.
 
 ## Purpose
 
-Before broad UI development accelerates, it is necessary to establish which controls the
-application needs, what each control must do, and which accessibility,
-keyboard, and action-routing requirements each one carries. This audit
+Before broad UI development accelerates, it is necessary to establish which
+controls the application needs, what each control must do, and which
+accessibility, keyboard, and action-routing requirements each one carries.
+This audit
 distinguishes between stock `gpui-component` coverage and future custom-control
 pressure, as mandated by architecture section 14.1.
 
 ## Source of Truth
 
-The typed inventory is maintained in `src/ui/widget_audit/` as a Rust module directory.
-This ensures the audit can be validated through automated tests and kept
+The typed inventory is maintained in `src/ui/widget_audit/` as a Rust module
+directory. This ensures the audit can be validated through automated tests and
+kept
 consistent with the roadmap. Each control entry records:
 
 - **Name**: User-facing control identifier
@@ -192,8 +195,8 @@ The control inventory is validated by:
   entries
 - **BDD tests** (`rstest-bdd`) that verify roadmap requirements map to typed
   inventory entries
-- **GPUI (Zed's GPU-accelerated UI framework) tests** that prove shell-seam consistency for controls with current
-  evidence
+- **GPUI (Zed's GPU-accelerated UI framework) tests** that prove shell-seam
+  consistency for controls with current evidence
 
 See `tests/widget_audit_test.rs` and `tests/widget_capability_audit_bdd.rs` for
 test implementation.
