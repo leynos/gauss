@@ -4,12 +4,40 @@ mod common;
 
 use std::collections::HashMap;
 
-use gpui::TestAppContext;
+use gpui::{Entity, TestAppContext};
 
 use gauss::i18n::{Catalog, Locale, Localizer};
 use gauss::ui::phase0_shell::Phase0Shell;
 
 use common::{init_test_app, test_french_catalog};
+
+/// Build a localizer with French and English (en-gb) catalogs.
+///
+/// Returns a Localizer configured with `test_french_catalog()` and
+/// `Catalog::default_en_gb()`, using `Locale::en_gb()` as the default.
+fn setup_localizer() -> Localizer {
+    let mut catalogs = HashMap::new();
+    catalogs.insert(Locale::fr_fr(), test_french_catalog());
+    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
+    Localizer::with_catalogs(catalogs, Locale::en_gb())
+}
+
+/// Create a `Phase0Shell` with the given localizer and locale.
+///
+/// Returns the shell entity for test assertions.
+fn setup_shell_with_localizer(
+    cx: &mut TestAppContext,
+    localizer: Localizer,
+    locale: Locale,
+) -> Entity<Phase0Shell> {
+    let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
+        let mut shell_instance = Phase0Shell::new(view_cx);
+        shell_instance.set_localizer(localizer);
+        shell_instance.set_locale(locale);
+        shell_instance
+    });
+    shell
+}
 
 #[gpui::test]
 fn phase0_shell_status_uses_default_english_catalog(cx: &mut TestAppContext) {
@@ -31,17 +59,8 @@ fn phase0_shell_status_uses_default_english_catalog(cx: &mut TestAppContext) {
 #[gpui::test]
 fn phase0_shell_status_uses_injected_test_catalog(cx: &mut TestAppContext) {
     init_test_app(cx);
-    let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), test_french_catalog());
-    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
-    let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
-
-    let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
-        let mut shell_instance = Phase0Shell::new(view_cx);
-        shell_instance.set_localizer(localizer.clone());
-        shell_instance.set_locale(Locale::fr_fr());
-        shell_instance
-    });
+    let localizer = setup_localizer();
+    let shell = setup_shell_with_localizer(cx, localizer, Locale::fr_fr());
 
     let status = shell.read_with(cx, |s, _cx| s.mode_status_line_for_tests());
 
@@ -58,14 +77,11 @@ fn phase0_shell_status_uses_injected_test_catalog(cx: &mut TestAppContext) {
 #[gpui::test]
 fn locale_switching_updates_status_line(cx: &mut TestAppContext) {
     init_test_app(cx);
-    let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), test_french_catalog());
-    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
-    let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
+    let localizer = setup_localizer();
 
     let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
         let mut shell_instance = Phase0Shell::new(view_cx);
-        shell_instance.set_localizer(localizer.clone());
+        shell_instance.set_localizer(localizer);
         shell_instance
     });
 
@@ -125,12 +141,7 @@ fn fallback_to_default_locale_when_message_missing(cx: &mut TestAppContext) {
     catalogs.insert(Locale::en_gb(), en_catalog);
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
-    let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
-        let mut shell_instance = Phase0Shell::new(view_cx);
-        shell_instance.set_localizer(localizer.clone());
-        shell_instance.set_locale(Locale::fr_fr());
-        shell_instance
-    });
+    let shell = setup_shell_with_localizer(cx, localizer, Locale::fr_fr());
 
     let status = shell.read_with(cx, |s, _cx| s.mode_status_line_for_tests());
 
@@ -152,17 +163,8 @@ fn manipulate_mode_omits_edge_mode_in_status_line(cx: &mut TestAppContext) {
     use gauss::model::ToolMode;
 
     init_test_app(cx);
-    let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), test_french_catalog());
-    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
-    let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
-
-    let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
-        let mut shell_instance = Phase0Shell::new(view_cx);
-        shell_instance.set_localizer(localizer.clone());
-        shell_instance.set_locale(Locale::fr_fr());
-        shell_instance
-    });
+    let localizer = setup_localizer();
+    let shell = setup_shell_with_localizer(cx, localizer, Locale::fr_fr());
 
     // Switch to Manipulate mode
     shell.update(cx, |s, _cx| {
