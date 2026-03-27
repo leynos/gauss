@@ -14,7 +14,7 @@ use std::fmt;
 /// use gauss::i18n::Locale;
 ///
 /// let locale = Locale::en_gb();
-/// assert_eq!(locale.language_tag(), "en-GB");
+/// assert_eq!(locale.language_tag(), "en-gb");
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Locale {

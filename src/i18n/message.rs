@@ -173,6 +173,11 @@ mod tests {
     #[case::tool_mode_manipulate(MessageId::tool_mode_manipulate, "tool_mode.manipulate")]
     #[case::edge_mode_line(MessageId::edge_mode_line, "edge_mode.line")]
     #[case::edge_mode_bezier_auto(MessageId::edge_mode_bezier_auto, "edge_mode.bezier_auto")]
+    #[case::tool_status_mode_with_edge(
+        MessageId::tool_status_mode_with_edge,
+        "tool.status.mode_with_edge"
+    )]
+    #[case::tool_status_mode(MessageId::tool_status_mode, "tool.status.mode")]
     fn message_id_factory_method_is_correct(
         #[case] factory: fn() -> MessageId,
         #[case] expected: &str,
