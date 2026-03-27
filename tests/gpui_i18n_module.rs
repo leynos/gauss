@@ -68,7 +68,12 @@ fn phase0_shell_status_uses_default_english_catalog(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn phase0_shell_status_uses_injected_test_catalog(cx: &mut TestAppContext) {
-    check_status_labels(cx, setup_localizer(), Locale::fr_fr(), &["Dessiner", "Ligne"]);
+    check_status_labels(
+        cx,
+        setup_localizer(),
+        Locale::fr_fr(),
+        &["Dessiner", "Ligne"],
+    );
 }
 
 #[gpui::test]
