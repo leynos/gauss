@@ -2,6 +2,8 @@
 
 use std::collections::{BTreeSet, HashMap};
 
+use rstest::{fixture, rstest};
+
 use crate::i18n::{Catalog, Locale, Localizer};
 use crate::model::{EdgeMode, ToolMode};
 use crate::ui::phase0_shell::a11y_service::{
@@ -12,18 +14,54 @@ use crate::ui::phase0_shell::a11y_service::{
 // Import shape_id from parent module
 use super::shape_id;
 
-fn fr_locale_snapshot(localizer: Localizer) -> A11ySnapshot {
-    A11ySnapshot {
-        tool_mode: ToolMode::Draw,
-        edge_mode: EdgeMode::Line,
-        can_undo: false,
-        can_redo: false,
-        is_maximized: false,
-        selected_shape_ids: BTreeSet::new(),
-        shapes: vec![],
-        localizer,
-        locale: Locale::fr_fr(),
-    }
+/// Creates a French tool mode catalog.
+#[fixture]
+fn fr_tool_mode_catalog() -> Catalog {
+    let mut messages = HashMap::new();
+    messages.insert("tool_mode.draw".to_owned(), "Dessiner".to_owned());
+    Catalog::from_messages(messages)
+}
+
+/// Creates a French edge mode catalog.
+#[fixture]
+fn fr_edge_mode_catalog() -> Catalog {
+    let mut messages = HashMap::new();
+    messages.insert("edge_mode.line".to_owned(), "Ligne".to_owned());
+    Catalog::from_messages(messages)
+}
+
+/// Creates a French manipulate tool mode catalog.
+#[fixture]
+fn fr_manipulate_catalog() -> Catalog {
+    let mut messages = HashMap::new();
+    messages.insert("tool_mode.manipulate".to_owned(), "Manipuler".to_owned());
+    Catalog::from_messages(messages)
+}
+
+/// Creates a localizer with a French catalog and en-GB default.
+#[fixture]
+fn fr_localizer(fr_tool_mode_catalog: Catalog) -> Localizer {
+    let mut catalogs = HashMap::new();
+    catalogs.insert(Locale::fr_fr(), fr_tool_mode_catalog);
+    Localizer::with_catalogs(catalogs, Locale::en_gb())
+}
+
+/// Creates a localizer with partial French catalog and full en-GB fallback.
+#[fixture]
+fn fr_localizer_with_fallback() -> Localizer {
+    // Create partial French catalog (missing tool_mode.draw)
+    let mut fr_messages = HashMap::new();
+    fr_messages.insert("edge_mode.line".to_owned(), "Ligne".to_owned());
+    let partial_fr_catalog = Catalog::from_messages(fr_messages);
+
+    // Create default English catalog for fallback
+    let en_catalog = Catalog::default_en_gb();
+
+    // Build localizer with both catalogs
+    let mut catalogs = HashMap::new();
+    catalogs.insert(Locale::fr_fr(), partial_fr_catalog);
+    catalogs.insert(Locale::en_gb(), en_catalog);
+    Localizer::with_catalogs(catalogs, Locale::en_gb())
 }
 
 /// Parameter object for localised mode state in test snapshots.
@@ -64,6 +102,20 @@ fn snapshot_with_full_state(
     }
 }
 
+fn fr_locale_snapshot(localizer: Localizer) -> A11ySnapshot {
+    A11ySnapshot {
+        tool_mode: ToolMode::Draw,
+        edge_mode: EdgeMode::Line,
+        can_undo: false,
+        can_redo: false,
+        is_maximized: false,
+        selected_shape_ids: BTreeSet::new(),
+        shapes: vec![],
+        localizer,
+        locale: Locale::fr_fr(),
+    }
+}
+
 fn get_status_label(snapshot: &A11ySnapshot) -> String {
     let (nodes, _) = build_node_map(snapshot).expect("node map build should succeed");
     let status_node = nodes
@@ -75,27 +127,20 @@ fn get_status_label(snapshot: &A11ySnapshot) -> String {
         .to_owned()
 }
 
-#[rstest::rstest]
-fn status_node_uses_localized_tool_mode_label() {
-    let mut messages = HashMap::new();
-    messages.insert("tool_mode.draw".to_owned(), "Dessiner".to_owned());
-    let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), Catalog::from_messages(messages));
-    let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
-
-    let label = get_status_label(&fr_locale_snapshot(localizer));
+#[rstest]
+#[case::tool_mode_draw("Dessiner")]
+fn status_node_uses_localized_tool_mode_label(fr_localizer: Localizer, #[case] expected: &str) {
+    let label = get_status_label(&fr_locale_snapshot(fr_localizer));
     assert!(
-        label.contains("Dessiner"),
-        "Expected localized French 'Dessiner', got: {label}"
+        label.contains(expected),
+        "Expected localized French '{expected}', got: {label}"
     );
 }
 
-#[rstest::rstest]
-fn status_node_uses_localized_edge_mode_label() {
-    let mut messages = HashMap::new();
-    messages.insert("edge_mode.line".to_owned(), "Ligne".to_owned());
+#[rstest]
+fn status_node_uses_localized_edge_mode_label(fr_edge_mode_catalog: Catalog) {
     let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), Catalog::from_messages(messages));
+    catalogs.insert(Locale::fr_fr(), fr_edge_mode_catalog);
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
     // Use snapshot_with_full_state to exercise localized_edge_mode_label path
@@ -117,23 +162,11 @@ fn status_node_uses_localized_edge_mode_label() {
     );
 }
 
-#[rstest::rstest]
-fn status_node_falls_back_to_default_locale_when_message_missing() {
-    // Create partial French catalog (missing tool_mode.draw)
-    let mut fr_messages = HashMap::new();
-    fr_messages.insert("edge_mode.line".to_owned(), "Ligne".to_owned());
-    let partial_fr_catalog = Catalog::from_messages(fr_messages);
-
-    // Create default English catalog for fallback
-    let en_catalog = Catalog::default_en_gb();
-
-    // Build localizer with both catalogs
-    let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), partial_fr_catalog);
-    catalogs.insert(Locale::en_gb(), en_catalog);
-    let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
-
-    let label = get_status_label(&fr_locale_snapshot(localizer));
+#[rstest]
+fn status_node_falls_back_to_default_locale_when_message_missing(
+    fr_localizer_with_fallback: Localizer,
+) {
+    let label = get_status_label(&fr_locale_snapshot(fr_localizer_with_fallback));
     assert!(
         label.contains("Draw"),
         "Expected fallback English 'Draw' for missing message, got: {label}"
@@ -144,12 +177,10 @@ fn status_node_falls_back_to_default_locale_when_message_missing() {
     );
 }
 
-#[rstest::rstest]
-fn status_node_omits_edge_mode_for_manipulate_tool() {
-    let mut messages = HashMap::new();
-    messages.insert("tool_mode.manipulate".to_owned(), "Manipuler".to_owned());
+#[rstest]
+fn status_node_omits_edge_mode_for_manipulate_tool(fr_manipulate_catalog: Catalog) {
     let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), Catalog::from_messages(messages));
+    catalogs.insert(Locale::fr_fr(), fr_manipulate_catalog);
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
     // Use snapshot_with_full_state to test Manipulate mode (no edge mode fragment)
