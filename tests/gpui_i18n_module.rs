@@ -42,7 +42,7 @@ fn setup_shell_with_localizer(
 #[gpui::test]
 fn phase0_shell_status_uses_default_english_catalog(cx: &mut TestAppContext) {
     init_test_app(cx);
-    let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
+    let shell = setup_shell_with_localizer(cx, Localizer::new(), Locale::en_gb());
 
     let status = shell.read_with(cx, |s, _cx| s.mode_status_line_for_tests());
 
