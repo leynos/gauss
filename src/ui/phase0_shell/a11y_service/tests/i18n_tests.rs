@@ -43,6 +43,7 @@ fn fr_manipulate_catalog() -> Catalog {
 fn fr_localizer(fr_tool_mode_catalog: Catalog) -> Localizer {
     let mut catalogs = HashMap::new();
     catalogs.insert(Locale::fr_fr(), fr_tool_mode_catalog);
+    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
     Localizer::with_catalogs(catalogs, Locale::en_gb())
 }
 
@@ -141,6 +142,7 @@ fn status_node_uses_localized_tool_mode_label(fr_localizer: Localizer, #[case] e
 fn status_node_uses_localized_edge_mode_label(fr_edge_mode_catalog: Catalog) {
     let mut catalogs = HashMap::new();
     catalogs.insert(Locale::fr_fr(), fr_edge_mode_catalog);
+    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
     // Use snapshot_with_full_state to exercise localized_edge_mode_label path
@@ -181,6 +183,7 @@ fn status_node_falls_back_to_default_locale_when_message_missing(
 fn status_node_omits_edge_mode_for_manipulate_tool(fr_manipulate_catalog: Catalog) {
     let mut catalogs = HashMap::new();
     catalogs.insert(Locale::fr_fr(), fr_manipulate_catalog);
+    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
     // Use snapshot_with_full_state to test Manipulate mode (no edge mode fragment)

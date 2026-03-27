@@ -24,22 +24,30 @@ pub struct Locale {
 impl Locale {
     /// Create a new locale from a BCP 47 language tag.
     ///
+    /// The tag is canonicalised to lowercase for consistent `HashMap` lookups.
+    ///
     /// # Examples
     ///
     /// ```rust
     /// use gauss::i18n::Locale;
     ///
     /// let locale = Locale::from_language_tag("en-GB");
-    /// assert_eq!(locale.language_tag(), "en-GB");
+    /// assert_eq!(locale.language_tag(), "en-gb");
+    ///
+    /// let locale_lower = Locale::from_language_tag("fr-fr");
+    /// let locale_upper = Locale::from_language_tag("fr-FR");
+    /// assert_eq!(locale_lower, locale_upper);
     /// ```
     #[must_use]
     pub fn from_language_tag(tag: &str) -> Self {
         Self {
-            language_tag: tag.to_owned(),
+            language_tag: tag.to_ascii_lowercase(),
         }
     }
 
     /// Return the BCP 47 language tag for this locale.
+    ///
+    /// The returned tag is lowercase (canonicalised).
     ///
     /// # Examples
     ///
@@ -47,7 +55,7 @@ impl Locale {
     /// use gauss::i18n::Locale;
     ///
     /// let locale = Locale::fr_fr();
-    /// assert_eq!(locale.language_tag(), "fr-FR");
+    /// assert_eq!(locale.language_tag(), "fr-fr");
     /// ```
     #[must_use]
     pub fn language_tag(&self) -> &str {
@@ -64,7 +72,7 @@ impl Locale {
     /// use gauss::i18n::Locale;
     ///
     /// let locale = Locale::en_gb();
-    /// assert_eq!(locale.language_tag(), "en-GB");
+    /// assert_eq!(locale.language_tag(), "en-gb");
     /// ```
     #[must_use]
     pub fn en_gb() -> Self {
@@ -81,7 +89,7 @@ impl Locale {
     /// use gauss::i18n::Locale;
     ///
     /// let locale = Locale::fr_fr();
-    /// assert_eq!(locale.language_tag(), "fr-FR");
+    /// assert_eq!(locale.language_tag(), "fr-fr");
     /// ```
     #[must_use]
     pub fn fr_fr() -> Self {
@@ -101,6 +109,18 @@ impl fmt::Display for Locale {
     }
 }
 
+impl From<&str> for Locale {
+    fn from(tag: &str) -> Self {
+        Self::from_language_tag(tag)
+    }
+}
+
+impl AsRef<str> for Locale {
+    fn as_ref(&self) -> &str {
+        &self.language_tag
+    }
+}
+
 #[cfg(test)]
 mod tests {
     //! Unit tests for locale parsing and language tag handling.
@@ -110,37 +130,40 @@ mod tests {
     #[test]
     fn locale_from_language_tag_creates_correctly() {
         let locale = Locale::from_language_tag("de-DE");
-        assert_eq!(locale.language_tag(), "de-DE");
+        assert_eq!(locale.language_tag(), "de-de");
     }
 
     #[test]
     fn locale_en_gb_creates_correctly() {
         let locale = Locale::en_gb();
-        assert_eq!(locale.language_tag(), "en-GB");
+        assert_eq!(locale.language_tag(), "en-gb");
     }
 
     #[test]
     fn locale_fr_fr_creates_correctly() {
         let locale = Locale::fr_fr();
-        assert_eq!(locale.language_tag(), "fr-FR");
+        assert_eq!(locale.language_tag(), "fr-fr");
     }
 
     #[test]
     fn locale_default_is_en_gb() {
         let locale = Locale::default();
-        assert_eq!(locale.language_tag(), "en-GB");
+        assert_eq!(locale.language_tag(), "en-gb");
     }
 
     #[test]
     fn locale_display_shows_language_tag() {
         let locale = Locale::from_language_tag("es-ES");
-        assert_eq!(format!("{locale}"), "es-ES");
+        assert_eq!(format!("{locale}"), "es-es");
     }
 
     #[test]
     fn locale_equality_works() {
         let locale1 = Locale::en_gb();
         let locale2 = Locale::from_language_tag("en-GB");
+        let locale3 = Locale::from_language_tag("en-gb");
         assert_eq!(locale1, locale2);
+        assert_eq!(locale1, locale3);
+        assert_eq!(locale2, locale3);
     }
 }

@@ -128,6 +128,11 @@ pub struct Localizer {
 impl Localizer {
     /// Create a new localizer with the given catalogs and default locale.
     ///
+    /// # Panics
+    ///
+    /// Panics if the `default_locale` is not present in the `catalogs` `HashMap`.
+    /// The default locale must have a corresponding catalog for fallback to work.
+    ///
     /// # Examples
     ///
     /// ```rust
@@ -140,7 +145,11 @@ impl Localizer {
     /// let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
     /// ```
     #[must_use]
-    pub const fn with_catalogs(catalogs: HashMap<Locale, Catalog>, default_locale: Locale) -> Self {
+    pub fn with_catalogs(catalogs: HashMap<Locale, Catalog>, default_locale: Locale) -> Self {
+        assert!(
+            catalogs.contains_key(&default_locale),
+            "default_locale must have a corresponding catalog in catalogs"
+        );
         Self {
             catalogs,
             default_locale,
@@ -324,6 +333,7 @@ mod tests {
     fn fr_test_localizer(fr_test_catalog: Catalog) -> Localizer {
         let mut catalogs = HashMap::new();
         catalogs.insert(Locale::fr_fr(), fr_test_catalog);
+        catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
         Localizer::with_catalogs(catalogs, Locale::en_gb())
     }
 
