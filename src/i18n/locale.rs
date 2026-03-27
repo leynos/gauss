@@ -103,6 +103,8 @@ impl fmt::Display for Locale {
 
 #[cfg(test)]
 mod tests {
+    //! Unit tests for locale parsing and language tag handling.
+
     use super::*;
 
     #[test]

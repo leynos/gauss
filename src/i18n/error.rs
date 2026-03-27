@@ -21,6 +21,8 @@ pub enum I18nError {
 
 #[cfg(test)]
 mod tests {
+    //! Unit tests for i18n error types and display formatting.
+
     use super::*;
 
     #[test]

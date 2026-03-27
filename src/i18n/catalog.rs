@@ -265,6 +265,8 @@ impl Default for Localizer {
 
 #[cfg(test)]
 mod tests {
+    //! Unit tests for i18n catalog and localizer functionality.
+
     use rstest::{fixture, rstest};
 
     use super::*;
