@@ -1,4 +1,4 @@
-# Widget Capability Audit for Phase 1-2
+# Widget capability audit for Phase 1-2
 
 This document presents the canonical inventory of user interface (UI) controls
 required by Gauss Phase 1 and Phase 2, as defined by roadmap item 0.8.1. The
@@ -14,7 +14,7 @@ This audit
 distinguishes between stock `gpui-component` coverage and future custom-control
 pressure, as mandated by architecture section 14.1.
 
-## Source of Truth
+## Source of truth
 
 The typed inventory is maintained in `src/ui/widget_audit/` as a Rust module
 directory. This ensures the audit can be validated through automated tests and
@@ -33,9 +33,9 @@ consistent with the roadmap. Each control entry records:
   references that justify this control
 - **Current Shell Evidence**: Whether the control exists in the Phase 0 shell
 
-## Control Inventory Summary
+## Control inventory summary
 
-### Phase 1 Controls
+### Phase 1 controls
 
 Phase 1 delivers the essential drawing and editing experience. Required
 controls cover:
@@ -53,7 +53,7 @@ controls cover:
 Current shell evidence exists for Selection, Direct Selection, and Pen tools
 via `src/ui/phase0_shell/tool_rail.rs`.
 
-#### Properties Panel (5 fields)
+#### Properties panel (5 fields)
 
 - **X Position Field** — View and edit object X coordinate
 - **Y Position Field** — View and edit object Y coordinate
@@ -64,7 +64,7 @@ via `src/ui/phase0_shell/tool_rail.rs`.
 All properties panel fields must support keyboard input, arrow-key nudging, and
 emit undoable commands on value change.
 
-#### Alignment Panel (8 controls)
+#### Alignment panel (8 controls)
 
 - **Align Left** — Align selected objects to leftmost edge
 - **Align Centre Horizontal** — Align to horizontal centre
@@ -77,7 +77,7 @@ emit undoable commands on value change.
 
 All alignment and distribution operations must be undoable.
 
-#### Style Panel (6 controls)
+#### Style panel (6 controls)
 
 **Stroke Controls:**
 
@@ -94,7 +94,7 @@ All alignment and distribution operations must be undoable.
 Current shell evidence exists for stroke colour, stroke width, stroke opacity,
 and fill colour via `src/ui/phase0_shell/style_controls.rs`.
 
-#### Layers Panel (5 controls)
+#### Layers panel (5 controls)
 
 - **Layer Row** — Represent and select a layer in document hierarchy
 - **Layer Visibility Toggle** — Show or hide a layer
@@ -104,15 +104,15 @@ and fill colour via `src/ui/phase0_shell/style_controls.rs`.
 
 All layer operations must support keyboard-only operation and be undoable.
 
-#### History Panel (1 control, optional for Phase 1)
+#### History panel (1 control, optional for Phase 1)
 
 - **History Entry Row** — Display and select a history state for undo/redo
 
-### Phase 2 Controls
+### Phase 2 controls
 
 Phase 2 adds text editing and advanced styling capabilities.
 
-#### Character Panel (6 controls)
+#### Character panel (6 controls)
 
 - **Font Family Selector** — Select font family for text
 - **Font Size Field** — Set font size in points
@@ -122,31 +122,31 @@ Phase 2 adds text editing and advanced styling capabilities.
 - **Text Colour Picker** — Set colour for text characters (reuses fill/stroke
   color infrastructure per roadmap 2.2)
 
-#### Paragraph Panel (3 controls)
+#### Paragraph panel (3 controls)
 
 - **Paragraph Spacing Field** — Set spacing before/after paragraphs
 - **Line Spacing Field** — Set leading (line height) for text
 - **Indentation Controls** — Set left indent, right indent, first-line indent
 
-#### Canvas Text Editor (1 control)
+#### Canvas text editor (1 control)
 
 - **Inline Text Cursor** — Position cursor within text for editing on canvas
 
 All text controls must support keyboard-only operation and route through the
 Action → Command pipeline for undo/redo.
 
-## Cross-Cutting Requirements
+## Cross-cutting requirements
 
 All controls in this inventory must satisfy the following architectural
 invariants:
 
-### Action/Command Integration
+### Action/command integration
 
 Every control that modifies document state must route through the Action →
 Command pipeline. UI, scripting, and LLM control all invoke the same actions.
 This ensures pervasive scriptability and consistent undo/redo behaviour.
 
-### Keyboard-Only Operation
+### Keyboard-only operation
 
 All controls must support keyboard-only operation. Toolbar tools must be
 activatable via keyboard shortcuts. Panel controls must be navigable and
@@ -170,10 +170,12 @@ All controls that modify document state must emit Commands that support inverse
 generation. This enables full undo/redo coverage as mandated by architecture
 section 7.
 
-## Implementation Status
+## Implementation status
 
 As of roadmap item 0.8.1, the following controls have current shell evidence
 (Phase 0 implementation):
+
+Table: Implementation status for UI controls
 
 | Control               | File Path                               |
 | --------------------- | --------------------------------------- |

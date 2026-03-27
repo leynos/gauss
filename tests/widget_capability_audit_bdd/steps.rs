@@ -193,11 +193,17 @@ pub(crate) fn then_includes_character_panel(world: &AuditWorld) -> TestSupportRe
     Ok(())
 }
 
+fn is_paragraph_or_spacing_or_indentation(name: &str) -> bool {
+    name.contains("Paragraph") || name.contains("Line Spacing") || name.contains("Indentation")
+}
+
 #[then("the inventory includes paragraph panel controls")]
 pub(crate) fn then_includes_paragraph_panel(world: &AuditWorld) -> TestSupportResult<()> {
-    if !world.controls.iter().any(|name| {
-        name.contains("Paragraph") || name.contains("Line Spacing") || name.contains("Indentation")
-    }) {
+    if !world
+        .controls
+        .iter()
+        .any(|name| is_paragraph_or_spacing_or_indentation(name))
+    {
         return Err(test_support::TestSupportError::expectation(
             "Must include paragraph formatting controls",
         ));
