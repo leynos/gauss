@@ -41,7 +41,7 @@
 
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
-use gauss::model::{
+use gauss_core::model::{
     Action, Command, CommandInverse, DeletedShape, Document, EngineState, SelItem, Selection,
     UserError, prepare_command,
 };

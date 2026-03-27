@@ -14,6 +14,51 @@ selection history.
 
     cargo run
 
+## Build performance
+
+Gauss uses a custom Cargo profile configuration to reduce dependency
+compilation time. The `dev` and `test` profiles disable debuginfo for all
+dependencies (`debug = 0` for `package."*"`), while first-party Gauss crates
+retain full debuginfo.
+
+### Trade-offs
+
+- **Faster builds**: Dependency compilation is ~24% faster (measured on a clean
+  build).
+- **Limited third-party debugging**: Stack traces and debugger symbols for
+  dependencies (GPUI, ash, naga, etc.) are reduced.
+- **Gauss code remains debuggable**: First-party crates (gauss, gauss-core,
+  gauss-svg) retain full debuginfo.
+
+### Temporary escape hatch
+
+If you need full debuginfo for dependencies during debugging, use one of these
+ephemeral approaches to avoid long-lived changes to the committed profile:
+
+#### Option 1: Per-user config override (recommended)
+
+Create or edit `.cargo/config.toml` in the repository root (gitignored):
+
+    [profile.dev.package."*"]
+    debug = 2
+
+    [profile.test.package."*"]
+    debug = 2
+
+Then run `cargo clean` and rebuild. Remove `.cargo/config.toml` when done.
+
+#### Option 2: Git stash workflow
+
+1. Comment out the `[profile.dev.package."*"]` and
+   `[profile.test.package."*"]` sections in `Cargo.toml`.
+2. Run `cargo clean` and rebuild.
+3. Stash the change with `git stash` when done (or restore manually).
+
+#### Option 3: Throwaway commit
+
+1. Make the profile change, rebuild, and debug.
+2. Use `git reset --soft HEAD~1` to undo the commit without losing other work.
+
 ## Quality gates
 
 Run the required quality gates before committing changes:

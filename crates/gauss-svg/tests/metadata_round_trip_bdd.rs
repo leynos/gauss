@@ -1,9 +1,9 @@
 //! Behaviour tests for metadata round-trip fidelity.
 
-use gauss::model::{Document, GaussAttribute, ResourceStore, Shape};
-use gauss::svg::export::{CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata};
-use gauss::svg::import::{ImportedSvg, import_svg_with_resources};
+use gauss_core::model::{Document, GaussAttribute, ResourceStore, Shape};
 use gauss_core::test_helpers::shape_id_from_seed;
+use gauss_svg::svg::export::{CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata};
+use gauss_svg::svg::import::{ImportedSvg, import_svg_with_resources};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult, line_shape};
@@ -98,7 +98,7 @@ fn given_plain_svg(world: &mut MetadataWorld) {
 // ---------------------------------------------------------------------------
 
 #[when("I export and re-import the document")]
-fn when_export_and_reimport(world: &mut MetadataWorld) {
+fn when_export_and_reimport(world: &mut MetadataWorld) -> TestSupportResult<()> {
     let svg = export_svg_with_metadata(ExportOptions {
         doc: &world.doc,
         resources: &world.resources,
@@ -107,10 +107,11 @@ fn when_export_and_reimport(world: &mut MetadataWorld) {
         mode: ExportMode::GaussWithMetadata,
     });
     world.export_svg = Some(svg.clone());
-    match import_svg_with_resources(&svg) {
-        Ok(imported) => world.import_result = Some(imported),
-        Err(err) => panic!("re-import should succeed: {err}"),
-    }
+    world.import_result = Some(
+        import_svg_with_resources(&svg)
+            .map_err(|err| TestSupportError::expectation(format!("re-import failed: {err}")))?,
+    );
+    Ok(())
 }
 
 #[when("I import and re-export the SVG")]

@@ -1,6 +1,8 @@
 //! Shared helpers for command editing integration tests.
 
-use gauss::model::{Anchor, Document, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, Vec2};
+use gauss_core::model::{
+    Anchor, Document, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, Vec2,
+};
 
 pub use test_support::shapes::shape_with_handles;
 

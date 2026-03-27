@@ -2,10 +2,10 @@
 //!
 //! These tests validate command apply and inverse behaviour for the Phase 0
 //! migration to Commands.
-use gauss::model::{
+use gauss_core::model::{
     Action, Anchor, AnchorDeletion, AnchorDeletionResult, AnchorMovement, Command, Document,
     EngineState, HandleKind, HandleMovement, PaintStyle, ReorderOp, SegmentChange, SegmentKind,
-    SelItem, ShapeMovement, StyleChange, Vec2, prepare_command,
+    SelItem, Shape, ShapeId, ShapeMovement, StyleChange, Vec2, prepare_command,
 };
 use rstest::rstest;
 use test_support::shapes::shape_id;
@@ -21,7 +21,7 @@ use command_editing_unit_helpers::{
     assert_prepare_command_returns_variant, assert_shape_replacement_applies_and_undoes,
 };
 
-fn doc_with_shapes(shapes: Vec<gauss::model::Shape>) -> Document {
+fn doc_with_shapes(shapes: Vec<Shape>) -> Document {
     let mut doc = Document::new();
     for shape in shapes {
         doc.append_shape(shape);
@@ -329,7 +329,7 @@ fn close_path_replaces_shape_and_undoes() -> Result<(), CommandEditingTestError>
     ExpectedCommand::DeleteAnchors
 )]
 fn prepare_command_returns_expected_variant(
-    #[case] shape_id_value: gauss::model::ShapeId,
+    #[case] shape_id_value: ShapeId,
     #[case] selection_item: SelItem,
     #[case] action: Action,
     #[case] expected: ExpectedCommand,

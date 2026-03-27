@@ -3,7 +3,7 @@
 //! These tests use `rstest-bdd` to validate that commands correctly bridge
 //! Actions to undoable document mutations.
 
-use gauss::model::{
+use gauss_core::model::{
     Action, Command, CommandInverse, Document, EngineState, HistoryError, SelItem, Selection,
     UserError, prepare_command,
 };

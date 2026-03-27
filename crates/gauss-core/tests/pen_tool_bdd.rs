@@ -3,7 +3,7 @@
 //! These scenarios lock draw-mode command-emission parity while Pen behaviour
 //! is routed through the Tool trait boundary.
 
-use gauss::model::{
+use gauss_core::model::{
     Anchor, EdgeMode, PathGeom, PenTool, PenToolActiveShape, PenToolClickInput, SegmentKind, Shape,
     ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolTransition, Vec2,
 };
@@ -198,7 +198,7 @@ fn then_emit_insert_shape(world: &PenToolWorld) -> TestSupportResult<()> {
         |command| {
             matches!(command, ToolCommand::ApplyDocumentCommand(document_command) if matches!(
                 document_command.as_ref(),
-                gauss::model::Command::InsertShape { .. }
+                gauss_core::model::Command::InsertShape { .. }
             ))
         },
         "expected InsertShape command to be emitted",
@@ -212,7 +212,7 @@ fn then_emit_insert_anchor(world: &PenToolWorld) -> TestSupportResult<()> {
         |command| {
             matches!(command, ToolCommand::ApplyDocumentCommand(document_command) if matches!(
                 document_command.as_ref(),
-                gauss::model::Command::InsertAnchor { .. }
+                gauss_core::model::Command::InsertAnchor { .. }
             ))
         },
         "expected InsertAnchor command to be emitted",
@@ -226,7 +226,7 @@ fn then_emit_close_path(world: &PenToolWorld) -> TestSupportResult<()> {
         |command| {
             matches!(command, ToolCommand::ApplyDocumentCommand(document_command) if matches!(
                 document_command.as_ref(),
-                gauss::model::Command::ClosePath { .. }
+                gauss_core::model::Command::ClosePath { .. }
             ))
         },
         "expected ClosePath command to be emitted",

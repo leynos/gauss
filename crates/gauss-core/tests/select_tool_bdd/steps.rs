@@ -5,30 +5,47 @@ use super::helpers::{
     self, PointerDownEventInput, pointer_down_event, resolve_drag_setup, resolve_state,
     resolve_up_position, set_drag_state_from_hit,
 };
-use gauss::model::{
+use gauss_core::model::{
     SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput, SelectShapeHit, SelectTool,
-    SelectToolState, Tool, ToolInputEvent, Vec2,
+    SelectToolState, Selection, Tool, ToolInputEvent, ToolMode, Vec2,
 };
 use rstest_bdd_macros::{given, then, when};
 use test_support::TestSupportResult;
 
 #[given("the select tool mode is Manipulate")]
 fn given_mode_manipulate(world: &mut SelectToolWorld) {
-    world.mode = gauss::model::ToolMode::Manipulate;
+    world.mode = ToolMode::Manipulate;
 }
 
 #[given("the select tool mode is Draw")]
 fn given_mode_draw(world: &mut SelectToolWorld) {
-    world.mode = gauss::model::ToolMode::Draw;
+    world.mode = ToolMode::Draw;
+}
+
+fn pointer_down_on_shape(world: &mut SelectToolWorld, is_shift_held: bool) {
+    world.input_event = Some(pointer_down_event(
+        &world.document,
+        PointerDownEventInput {
+            hit: SelectPointerHit::Shape(SelectShapeHit {
+                shape_index: 0,
+                shape_id: world.shape_id,
+            }),
+            cursor_world: Vec2::new(5.0, 5.0),
+            is_shift_held,
+            previous_selection: Selection::empty(),
+        },
+    ));
 }
 
 #[given("the select tool event is pointer down on shape without shift")]
-#[rustfmt::skip]
-fn given_pointer_down_without_shift(world: &mut SelectToolWorld) { world.input_event = Some(pointer_down_event(&world.document, PointerDownEventInput { hit: SelectPointerHit::Shape(SelectShapeHit { shape_index: 0, shape_id: world.shape_id }), cursor_world: Vec2::new(5.0, 5.0), is_shift_held: false, previous_selection: gauss::model::Selection::empty() })); }
+fn given_pointer_down_without_shift(world: &mut SelectToolWorld) {
+    pointer_down_on_shape(world, false);
+}
 
 #[given("the select tool event is pointer down on shape with shift")]
-#[rustfmt::skip]
-fn given_pointer_down_with_shift(world: &mut SelectToolWorld) { world.input_event = Some(pointer_down_event(&world.document, PointerDownEventInput { hit: SelectPointerHit::Shape(SelectShapeHit { shape_index: 0, shape_id: world.shape_id }), cursor_world: Vec2::new(5.0, 5.0), is_shift_held: true, previous_selection: gauss::model::Selection::empty() })); }
+fn given_pointer_down_with_shift(world: &mut SelectToolWorld) {
+    pointer_down_on_shape(world, true);
+}
 
 #[given("the select tool has an active {drag_kind:word} dragging state")]
 fn given_active_dragging_state(

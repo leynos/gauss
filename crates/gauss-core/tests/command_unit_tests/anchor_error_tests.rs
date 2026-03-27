@@ -3,7 +3,7 @@
 //! These tests verify that anchor commands return appropriate errors when
 //! operating on out-of-range indices.
 
-use gauss::model::{
+use gauss_core::model::{
     AnchorDeletion, AnchorDeletionResult, AnchorRestoration, AnchorRestorationKind, Command,
     CommandInverse, Document, ShapeReplacement,
 };

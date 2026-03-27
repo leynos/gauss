@@ -1,6 +1,6 @@
 //! Tests for insert shape commands.
 
-use gauss::model::{Command, Document, ShapeInsertion};
+use gauss_core::model::{Command, Document, ShapeId, ShapeInsertion};
 use rstest::rstest;
 use test_support::shapes::{sample_shape, shape_id};
 
@@ -15,7 +15,7 @@ fn insert_shape_at_position(
     #[case] mut doc: Document,
     #[case] insert_index: usize,
     #[case] expected_len: usize,
-    #[case] expected_id: gauss::model::ShapeId,
+    #[case] expected_id: ShapeId,
 ) {
     let cmd = Command::InsertShape {
         insertion: ShapeInsertion {

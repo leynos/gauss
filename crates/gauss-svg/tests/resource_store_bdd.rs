@@ -1,12 +1,12 @@
 //! Behaviour tests for resource stores and paint references.
 
-use gauss::model::{
+use gauss_core::model::{
     Anchor, Document, Gradient, GradientKind, GradientStop, LinearGradient, Paint, PaintStyle,
-    PathGeom, PatternResource, ResourceStore, SegmentKind, Shape, Vec2,
+    PathGeom, PatternResource, ResourceStore, Rgba, SegmentKind, Shape, Vec2,
 };
-use gauss::svg::export::{CanvasSize, export_svg_with_resources};
-use gauss::svg::import::{ImportedSvg, SvgImportError, import_svg_with_resources};
-use gauss::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
+use gauss_svg::svg::export::{CanvasSize, export_svg_with_resources};
+use gauss_svg::svg::import::{ImportedSvg, SvgImportError, import_svg_with_resources};
+use gauss_svg::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::shapes::shape_id;
@@ -33,8 +33,8 @@ fn given_document_with_resource_paints(world: &mut ResourceWorld) {
             Vec2::new(0.0, 0.0),
             Vec2::new(1.0, 0.0),
             vec![
-                GradientStop::new(0.0, gauss::model::Rgba::new(255, 0, 0, 255)),
-                GradientStop::new(1.0, gauss::model::Rgba::new(255, 255, 0, 255)),
+                GradientStop::new(0.0, Rgba::new(255, 0, 0, 255)),
+                GradientStop::new(1.0, Rgba::new(255, 255, 0, 255)),
             ],
         )),
     ));

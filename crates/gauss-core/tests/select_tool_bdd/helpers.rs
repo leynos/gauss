@@ -1,10 +1,11 @@
 //! Helper functions for `SelectTool` BDD steps and assertions.
 
 use super::SelectToolWorld;
-use gauss::model::{
-    Command, Document, SelectAnchorHit, SelectDragDocumentSnapshot, SelectHandleHit,
+use gauss_core::model::{
+    Command, Document, SelItem, SelectAnchorHit, SelectDragDocumentSnapshot, SelectHandleHit,
     SelectHandleHitKind, SelectPointerDownInput, SelectPointerHit, SelectShapeHit, SelectTool,
-    SelectToolState, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolTransition, Vec2,
+    SelectToolState, Selection, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode,
+    ToolTransition, Vec2,
 };
 use test_support::{TestSupportError, TestSupportResult};
 
@@ -12,7 +13,7 @@ pub(crate) struct PointerDownEventInput {
     pub(crate) hit: SelectPointerHit,
     pub(crate) cursor_world: Vec2,
     pub(crate) is_shift_held: bool,
-    pub(crate) previous_selection: gauss::model::Selection,
+    pub(crate) previous_selection: Selection,
 }
 
 pub(crate) fn pointer_down_event(
@@ -85,10 +86,10 @@ pub(crate) fn set_drag_state_from_hit(
     cursor_world: Vec2,
 ) -> TestSupportResult<()> {
     let previous_selection = match hit {
-        SelectPointerHit::Shape(SelectShapeHit { shape_id, .. }) => gauss::model::Selection {
-            items: vec![gauss::model::SelItem::Shape(shape_id)],
+        SelectPointerHit::Shape(SelectShapeHit { shape_id, .. }) => Selection {
+            items: vec![SelItem::Shape(shape_id)],
         },
-        _ => gauss::model::Selection::empty(),
+        _ => Selection::empty(),
     };
     let down_event = pointer_down_event(
         &world.document,
@@ -205,7 +206,7 @@ pub(crate) fn then_emits_set_selection(world: &SelectToolWorld) -> TestSupportRe
             matches!(
                 command,
                 ToolCommand::SetSelection(selection)
-                    if selection.contains(&gauss::model::SelItem::Shape(world.shape_id))
+                    if selection.contains(&SelItem::Shape(world.shape_id))
             )
         },
         "SetSelection containing hit shape",

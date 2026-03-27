@@ -1,8 +1,8 @@
 //! Behaviour tests for `SelectTool` command emission.
 
-use gauss::model::{
-    Anchor, Document, EdgeMode, Paint, PaintStyle, PathGeom, SegmentKind, SelectToolState, Shape,
-    ShapeId, ToolInputEvent, ToolMode, ToolTransition, Vec2,
+use gauss_core::model::{
+    Anchor, Document, EdgeMode, Paint, PaintStyle, PathGeom, Rgba, SegmentKind, SelectToolState,
+    Shape, ShapeId, ToolInputEvent, ToolMode, ToolTransition, Vec2,
 };
 use rstest::fixture;
 
@@ -29,7 +29,7 @@ pub(crate) fn square_shape(id: ShapeId) -> Shape {
         id,
         z: 0,
         style: PaintStyle {
-            stroke: Paint::Solid(gauss::model::Rgba::new(16, 32, 64, 255)),
+            stroke: Paint::Solid(Rgba::new(16, 32, 64, 255)),
             stroke_width: 2.0,
             fill: Paint::None,
         },

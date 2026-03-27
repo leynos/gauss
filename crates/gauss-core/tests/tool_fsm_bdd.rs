@@ -3,7 +3,7 @@
 //! These tests validate command-based tool transitions for happy and unhappy
 //! paths using `rstest-bdd` scenarios.
 
-use gauss::model::{
+use gauss_core::model::{
     Command, Document, EdgeMode, EngineState, ShapeId, ShapeMovement, Tool, ToolCommand,
     ToolInputEvent, ToolMode, ToolModeFsm, ToolTransition, Vec2,
 };

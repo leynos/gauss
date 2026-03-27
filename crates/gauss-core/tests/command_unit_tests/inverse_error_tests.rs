@@ -3,7 +3,7 @@
 //! These tests verify that command inverse operations return appropriate errors
 //! when operating on missing shapes or invalid indices.
 
-use gauss::model::{
+use gauss_core::model::{
     CommandInverse, Document, PaintStyle, SegmentChange, SegmentKind, ShapeReplacement, StyleChange,
 };
 use rstest::rstest;

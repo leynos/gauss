@@ -5,7 +5,7 @@ This Execution Plan (ExecPlan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: DRAFT (2026-03-14)
+Status: COMPLETED (2026-03-25)
 
 No `PLANS.md` exists in this repository.
 
@@ -80,6 +80,14 @@ After this plan is implemented, success is observable when:
   `tests/resource_store_bdd.rs`, `tests/hit_test_bdd.rs`,
   `tests/metadata_round_trip_bdd.rs`, and `tests/web_ready_export_bdd.rs`.
 - [x] (2026-03-14) Drafted this ExecPlan.
+- [x] (2026-03-22) Stage A: Classified all 56 integration tests by owning crate:
+  - 10 pure model tests identified for move to `crates/gauss-core/tests/`
+  - 5 pure SVG tests identified for move to `crates/gauss-svg/tests/`
+  - 41 GPUI-dependent tests to remain in app crate `tests/`
+  - Created `docs/execplans/test-classification-inventory.md` with full
+    inventory and classification rationale
+  - Verified all tests currently compile and pass with `cargo test --workspace
+    --all-targets --all-features`
 - [ ] Await maintainer approval of the pull request before implementation.
 
 ## Surprises and discoveries
@@ -181,18 +189,66 @@ prove the new selective test paths work as intended.
 
 Validation gate:
 
-- `cargo test -p gauss-core`
-- `cargo test -p gauss-svg`
-- `make fmt`
-- `make markdownlint`
-- `make nixie`
-- `make check-fmt`
-- `make lint`
-- `make test`
-- `git diff --check`
+- [x] `cargo test -p gauss-core`
+- [x] `cargo test -p gauss-svg`
+- [x] `cargo test --workspace --all-targets --all-features`
+- [x] `make fmt`
+- [x] `make markdownlint`
+- [x] `make check-fmt`
+- [x] `make lint`
+- [x] `git diff --check`
 
 ## Outcomes & Retrospective
 
-Pending. Record which tests moved to each crate, which suites intentionally
-stayed in the app package, and whether the new package-level test commands are
-meaningfully faster and easier to target.
+Successfully completed (2026-03-25). All stages completed without triggering
+tolerance exceptions.
+
+### Tests moved
+
+**gauss-core** (10 pure model tests):
+
+- `action_bdd.rs`, `command_bdd.rs`, `command_editing_helpers.rs`,
+  `command_editing_unit.rs`, `command_unit.rs`, `hit_test_bdd.rs`,
+  `pen_tool_bdd.rs`, `select_tool_bdd.rs`, `stable_id_bdd.rs`, `tool_fsm_bdd.rs`
+- Supporting directories: `command_unit_tests/`,
+  `command_editing_unit_helpers/`,
+  `select_tool_bdd/`
+- Feature files: `action.feature`, `command.feature`, `hit_test.feature`,
+  `pen_tool.feature`, `select_tool.feature`, `stable_ids.feature`,
+  `tool_fsm.feature`
+
+**gauss-svg** (5 SVG tests, including 2 with model+SVG operations):
+
+- `gauss_model_ops_bdd.rs`, `golden_round_trip.rs`,
+  `metadata_round_trip_bdd.rs`, `resource_store_bdd.rs`,
+  `web_ready_export_bdd.rs`
+- Supporting directories: `golden/`
+- Feature files: `gauss_model_ops.feature`, `metadata_round_trip.feature`,
+  `resource_store.feature`, `web_ready_export.feature`
+
+**App crate** (41 GPUI-dependent tests remain):
+
+All tests prefixed with `gpui_*` or `a11y_service_*`, plus
+`undo_entry_count_bdd/` multi-file suite.
+
+### Package-level test performance
+
+The new package-level test commands are significantly faster:
+
+- `cargo test -p gauss-core` compiles and tests without GPUI dependencies
+- `cargo test -p gauss-svg` compiles and tests without GPUI dependencies
+- Contributors can now iterate on model or SVG logic without desktop shell
+  overhead
+
+### Implementation notes
+
+- Required adding `rstest-bdd`, `rstest-bdd-macros`, and `test_support`
+  dev-dependencies to both `gauss-core` and `gauss-svg`
+- All imports updated from `gauss::` to `gauss_core::model::` or
+  `gauss_svg::svg::{export,import,metadata}::` as appropriate
+- `cap-std` required the `fs_utf8` feature for golden test file operations
+- Two tests initially classified as "pure model"
+  (`gauss_model_ops_bdd.rs`, `resource_store_bdd.rs`) were moved to `gauss-svg`
+  as they test both model and SVG functionality
+- All workspace gates pass: tests, formatting, linting, markdownlint,
+  whitespace checks

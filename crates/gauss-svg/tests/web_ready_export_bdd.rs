@@ -1,14 +1,14 @@
 //! Behaviour tests for web-ready SVG export.
 
-use gauss::model::{
+use gauss_core::model::{
     Document, GaussAttribute, Gradient, GradientId, GradientKind, GradientStop, LinearGradient,
     Paint, PaintStyle, PatternId, PatternResource, ResourceStore, Rgba, Shape, Vec2,
 };
-use gauss::svg::export::{
+use gauss_svg::svg::export::{
     CanvasSize, SvgExportError, export_svg_with_resources_web_ready,
     export_svg_with_resources_web_ready_checked,
 };
-use gauss::svg::import::{ImportedSvg, SvgImportError, import_svg_with_resources};
+use gauss_svg::svg::import::{ImportedSvg, SvgImportError, import_svg_with_resources};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult, line_shape};

@@ -3,7 +3,7 @@
 //! These tests verify that commands succeed with valid inputs and that their
 //! inverse operations also succeed.
 
-use gauss::model::{
+use gauss_core::model::{
     Action, Command, CommandInverse, Document, EngineState, PaintStyle, ReorderOp, SegmentChange,
     SegmentKind, SelItem, Shape, ShapeMovement, StyleChange, Vec2, prepare_command,
 };

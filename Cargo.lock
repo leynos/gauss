@@ -2194,8 +2194,12 @@ dependencies = [
 name = "gauss-core"
 version = "0.1.0"
 dependencies = [
+ "gauss-core",
  "rstest",
+ "rstest-bdd",
+ "rstest-bdd-macros",
  "slotmap",
+ "test_support",
  "thiserror 2.0.18",
  "undo_2",
 ]
@@ -2204,10 +2208,15 @@ dependencies = [
 name = "gauss-svg"
 version = "0.1.0"
 dependencies = [
+ "camino",
+ "cap-std 3.4.5",
  "gauss-core",
  "roxmltree 0.21.1",
  "rstest",
+ "rstest-bdd",
+ "rstest-bdd-macros",
  "slotmap",
+ "test_support",
  "thiserror 2.0.18",
 ]
 

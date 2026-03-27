@@ -12,7 +12,9 @@ mod success_tests;
 
 use std::any::Any;
 
-use gauss::model::{Command, CommandInverse, Document, SelItem, Selection, ShapeId, UserError};
+use gauss_core::model::{
+    Command, CommandInverse, Document, SelItem, Selection, ShapeId, UserError,
+};
 use rstest::fixture;
 use test_support::shapes::{sample_shape, shape_id};
 
