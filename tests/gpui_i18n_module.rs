@@ -179,13 +179,10 @@ fn manipulate_mode_omits_edge_mode_in_status_line(cx: &mut TestAppContext) {
         "Expected French 'Manipuler' for Manipulate mode, got: {status}"
     );
 
-    // Should NOT contain edge mode (neither French nor English)
+    // Should NOT contain edge mode wrapper pattern "({edge})" from
+    // tool.status.mode_with_edge template
     assert!(
-        !status.contains("Ligne") && !status.contains("Line"),
-        "Manipulate mode should omit edge mode fragment, got: {status}"
-    );
-    assert!(
-        !status.contains("Bézier") && !status.contains("Bezier"),
-        "Manipulate mode should omit edge mode fragment, got: {status}"
+        !status.contains('(') && !status.contains(')'),
+        "Manipulate mode should omit edge mode fragment entirely (no parentheses), got: {status}"
     );
 }
