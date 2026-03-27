@@ -127,6 +127,12 @@ impl From<&str> for MessageId {
     }
 }
 
+impl AsRef<str> for MessageId {
+    fn as_ref(&self) -> &str {
+        &self.key
+    }
+}
+
 impl fmt::Display for MessageId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.key)
@@ -139,6 +145,8 @@ mod tests {
     //!
     //! Validates `MessageId` construction, conversion, and factory methods
     //! for tool modes, edge modes, and status templates.
+
+    use rstest::rstest;
 
     use super::*;
 
@@ -160,28 +168,17 @@ mod tests {
         assert_eq!(msg_id.as_str(), "test.str");
     }
 
-    #[test]
-    fn message_id_tool_mode_draw_is_correct() {
-        let msg_id = MessageId::tool_mode_draw();
-        assert_eq!(msg_id.as_str(), "tool_mode.draw");
-    }
-
-    #[test]
-    fn message_id_tool_mode_manipulate_is_correct() {
-        let msg_id = MessageId::tool_mode_manipulate();
-        assert_eq!(msg_id.as_str(), "tool_mode.manipulate");
-    }
-
-    #[test]
-    fn message_id_edge_mode_line_is_correct() {
-        let msg_id = MessageId::edge_mode_line();
-        assert_eq!(msg_id.as_str(), "edge_mode.line");
-    }
-
-    #[test]
-    fn message_id_edge_mode_bezier_auto_is_correct() {
-        let msg_id = MessageId::edge_mode_bezier_auto();
-        assert_eq!(msg_id.as_str(), "edge_mode.bezier_auto");
+    #[rstest]
+    #[case::tool_mode_draw(MessageId::tool_mode_draw, "tool_mode.draw")]
+    #[case::tool_mode_manipulate(MessageId::tool_mode_manipulate, "tool_mode.manipulate")]
+    #[case::edge_mode_line(MessageId::edge_mode_line, "edge_mode.line")]
+    #[case::edge_mode_bezier_auto(MessageId::edge_mode_bezier_auto, "edge_mode.bezier_auto")]
+    fn message_id_factory_method_is_correct(
+        #[case] factory: fn() -> MessageId,
+        #[case] expected: &str,
+    ) {
+        let msg_id = factory();
+        assert_eq!(msg_id.as_str(), expected);
     }
 
     #[test]
