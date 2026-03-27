@@ -162,7 +162,7 @@ All controls must expose:
 
 The accessibility tree uses stable node IDs per architecture section 16.
 
-### Undo/Redo
+### Undo/redo
 
 All controls that modify document state must emit Commands that support inverse
 generation. This enables full undo/redo coverage as mandated by architecture
