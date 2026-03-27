@@ -198,8 +198,8 @@ The control inventory is validated by:
 - **GPUI (Zed's GPU-accelerated UI framework) tests** that prove shell-seam
   consistency for controls with current evidence
 
-See `tests/widget_audit_test.rs` and `tests/widget_capability_audit_bdd.rs` for
-test implementation.
+See `tests/widget_audit_test.rs` and `tests/widget_capability_audit_bdd/main.rs`
+for test implementation.
 
 ## Next steps
 
