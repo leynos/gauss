@@ -39,39 +39,36 @@ fn setup_shell_with_localizer(
     shell
 }
 
+/// Assert that the mode status line contains every fragment in `expected`.
+///
+/// Initialises the test app, builds a shell with the given localizer and
+/// locale, reads the status line, and panics with a descriptive message if
+/// any fragment is absent.
+fn check_status_labels(
+    cx: &mut TestAppContext,
+    localizer: Localizer,
+    locale: Locale,
+    expected: &[&str],
+) {
+    init_test_app(cx);
+    let shell = setup_shell_with_localizer(cx, localizer, locale);
+    let status = shell.read_with(cx, |s, _cx| s.mode_status_line_for_tests());
+    for fragment in expected {
+        assert!(
+            status.contains(fragment),
+            "Expected '{fragment}' in status line, got: {status}",
+        );
+    }
+}
+
 #[gpui::test]
 fn phase0_shell_status_uses_default_english_catalog(cx: &mut TestAppContext) {
-    init_test_app(cx);
-    let shell = setup_shell_with_localizer(cx, Localizer::new(), Locale::en_gb());
-
-    let status = shell.read_with(cx, |s, _cx| s.mode_status_line_for_tests());
-
-    assert!(
-        status.contains("Draw"),
-        "Expected English 'Draw' in status line, got: {status}"
-    );
-    assert!(
-        status.contains("Line"),
-        "Expected English 'Line' in status line, got: {status}"
-    );
+    check_status_labels(cx, Localizer::new(), Locale::en_gb(), &["Draw", "Line"]);
 }
 
 #[gpui::test]
 fn phase0_shell_status_uses_injected_test_catalog(cx: &mut TestAppContext) {
-    init_test_app(cx);
-    let localizer = setup_localizer();
-    let shell = setup_shell_with_localizer(cx, localizer, Locale::fr_fr());
-
-    let status = shell.read_with(cx, |s, _cx| s.mode_status_line_for_tests());
-
-    assert!(
-        status.contains("Dessiner"),
-        "Expected French 'Dessiner' in status line, got: {status}"
-    );
-    assert!(
-        status.contains("Ligne"),
-        "Expected French 'Ligne' in status line, got: {status}"
-    );
+    check_status_labels(cx, setup_localizer(), Locale::fr_fr(), &["Dessiner", "Ligne"]);
 }
 
 #[gpui::test]
