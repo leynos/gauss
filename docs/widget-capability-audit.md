@@ -120,7 +120,7 @@ Phase 2 adds text editing and advanced styling capabilities.
 - **Italic Toggle** (`Cmd+I`/`Ctrl+I`) — Apply or remove italic formatting
 - **Text Alignment Buttons** — Set alignment (left, centre, right, justify)
 - **Text Colour Picker** — Set colour for text characters (reuses fill/stroke
-  color infrastructure per roadmap 2.2)
+  colour infrastructure per roadmap 2.2)
 
 #### Paragraph panel (3 controls)
 
@@ -195,8 +195,8 @@ The control inventory is validated by:
 
 - **Unit tests** (`rstest`) that assert completeness and consistency of control
   entries
-- **BDD tests** (`rstest-bdd`) that verify roadmap requirements map to typed
-  inventory entries
+- **Behaviour-Driven Development (BDD) tests** (`rstest-bdd`) that verify roadmap
+  requirements map to typed inventory entries
 - **GPUI (Zed's GPU-accelerated UI framework) tests** that prove shell-seam
   consistency for controls with current evidence
 
@@ -214,7 +214,12 @@ This audit satisfies roadmap item 0.8.1. Subsequent work includes:
 
 ## References
 
-- Roadmap: `docs/roadmap.md` section 0.8
-- Feature Plan: `docs/gauss-feature-plan.md` Phase 1 and Phase 2
-- Architecture: `docs/gauss-architecture-design.md` section 14.1
-- Typed Inventory: `src/ui/widget_audit/`
+- Roadmap[^1]
+- Feature Plan[^2]
+- Architecture[^3]
+- Typed Inventory[^4]
+
+[^1]: `docs/roadmap.md` section 0.8
+[^2]: `docs/gauss-feature-plan.md` Phase 1 and Phase 2
+[^3]: `docs/gauss-architecture-design.md` section 14.1
+[^4]: `src/ui/widget_audit/`
