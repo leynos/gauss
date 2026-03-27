@@ -33,6 +33,7 @@ fn phase0_shell_status_uses_injected_test_catalog(cx: &mut TestAppContext) {
     init_test_app(cx);
     let mut catalogs = HashMap::new();
     catalogs.insert(Locale::fr_fr(), test_french_catalog());
+    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
     let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
@@ -59,6 +60,7 @@ fn locale_switching_updates_status_line(cx: &mut TestAppContext) {
     init_test_app(cx);
     let mut catalogs = HashMap::new();
     catalogs.insert(Locale::fr_fr(), test_french_catalog());
+    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
     let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
@@ -152,6 +154,7 @@ fn manipulate_mode_omits_edge_mode_in_status_line(cx: &mut TestAppContext) {
     init_test_app(cx);
     let mut catalogs = HashMap::new();
     catalogs.insert(Locale::fr_fr(), test_french_catalog());
+    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
 
     let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
