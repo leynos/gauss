@@ -180,10 +180,10 @@ Table: Implementation status for UI controls
 | Selection Tool        | `src/ui/phase0_shell/tool_rail.rs`      |
 | Direct Selection Tool | `src/ui/phase0_shell/tool_rail.rs`      |
 | Pen Tool              | `src/ui/phase0_shell/tool_rail.rs`      |
-| Stroke Color Picker   | `src/ui/phase0_shell/style_controls.rs` |
+| Stroke Colour Picker   | `src/ui/phase0_shell/style_controls.rs` |
 | Stroke Width Field    | `src/ui/phase0_shell/style_controls.rs` |
 | Stroke Opacity Slider | `src/ui/phase0_shell/style_controls.rs` |
-| Fill Color Picker     | `src/ui/phase0_shell/style_controls.rs` |
+| Fill Colour Picker     | `src/ui/phase0_shell/style_controls.rs` |
 
 All other controls are pending implementation in future roadmap items.
 

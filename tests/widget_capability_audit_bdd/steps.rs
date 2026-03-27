@@ -1,7 +1,7 @@
 //! Then step definitions for widget capability audit BDD tests.
 
 use crate::{AuditWorld, assert_each_control, assert_includes, assert_includes_substrings};
-use gauss::ui::widget_audit::{ControlSurface, Phase};
+use gauss::ui::widget_audit::ControlSurface;
 use rstest_bdd_macros::then;
 use test_support::TestSupportResult;
 
@@ -176,39 +176,29 @@ pub(crate) fn then_includes_layer_reorder(world: &AuditWorld) -> TestSupportResu
 
 #[then("the inventory includes character panel controls")]
 pub(crate) fn then_includes_character_panel(world: &AuditWorld) -> TestSupportResult<()> {
-    if !world.controls.iter().any(|name| name.contains("Font")) {
-        return Err(test_support::TestSupportError::expectation(
-            "Must include font controls",
-        ));
-    }
-    if !world
-        .controls
-        .iter()
-        .any(|name| name.contains("Bold") || name.contains("Italic"))
-    {
-        return Err(test_support::TestSupportError::expectation(
-            "Must include text formatting controls",
-        ));
-    }
-    Ok(())
-}
-
-fn is_paragraph_or_spacing_or_indentation(name: &str) -> bool {
-    name.contains("Paragraph") || name.contains("Line Spacing") || name.contains("Indentation")
+    assert_includes_substrings(
+        world,
+        &[
+            ("Font Family", "Must include Font Family Selector"),
+            ("Font Size", "Must include Font Size Field"),
+            ("Bold", "Must include Bold Toggle"),
+            ("Italic", "Must include Italic Toggle"),
+            ("Text Alignment", "Must include Text Alignment Buttons"),
+            ("Text Colour", "Must include Text Colour Picker"),
+        ],
+    )
 }
 
 #[then("the inventory includes paragraph panel controls")]
 pub(crate) fn then_includes_paragraph_panel(world: &AuditWorld) -> TestSupportResult<()> {
-    if !world
-        .controls
-        .iter()
-        .any(|name| is_paragraph_or_spacing_or_indentation(name))
-    {
-        return Err(test_support::TestSupportError::expectation(
-            "Must include paragraph formatting controls",
-        ));
-    }
-    Ok(())
+    assert_includes_substrings(
+        world,
+        &[
+            ("Paragraph Spacing", "Must include Paragraph Spacing Field"),
+            ("Line Spacing", "Must include Line Spacing Field"),
+            ("Indentation", "Must include Indentation Controls"),
+        ],
+    )
 }
 
 #[then("the inventory includes canvas text editing controls")]
@@ -316,19 +306,18 @@ pub(crate) fn then_each_tool_has_shortcut(world: &AuditWorld) -> TestSupportResu
         .as_ref()
         .ok_or_else(|| test_support::TestSupportError::expectation("Inventory must be loaded"))?;
 
-    let phase1_tools: Vec<_> = inventory
+    let tools: Vec<_> = inventory
         .by_surface(ControlSurface::Toolbar)
         .into_iter()
-        .filter(|c| c.phase() == Phase::Phase1)
         .collect();
 
-    if phase1_tools.is_empty() {
+    if tools.is_empty() {
         return Err(test_support::TestSupportError::expectation(
             "Must have toolbar controls",
         ));
     }
 
-    if let Some(missing) = phase1_tools.iter().find(|c| c.keyboard.shortcut.is_none()) {
+    if let Some(missing) = tools.iter().find(|c| c.keyboard.shortcut.is_none()) {
         return Err(test_support::TestSupportError::expectation(format!(
             "Toolbar tool '{}' must have keyboard shortcut",
             missing.name()
