@@ -9,17 +9,15 @@ implementation begins.
 
 Before broad UI development accelerates, it is necessary to establish which
 controls the application needs, what each control must do, and which
-accessibility, keyboard, and action-routing requirements each one carries.
-This audit
-distinguishes between stock `gpui-component` coverage and future custom-control
-pressure, as mandated by architecture section 14.1.
+accessibility, keyboard, and action-routing requirements each one carries. This
+audit distinguishes between stock `gpui-component` coverage and future
+custom-control pressure, as mandated by architecture section 14.1.
 
 ## Source of truth
 
 The typed inventory is maintained in `src/ui/widget_audit/` as a Rust module
 directory. This ensures the audit can be validated through automated tests and
-kept
-consistent with the roadmap. Each control entry records:
+kept consistent with the roadmap. Each control entry records:
 
 - **Name**: User-facing control identifier
 - **Phase**: Phase 1 or Phase 2 roadmap requirement
@@ -160,7 +158,7 @@ All controls must expose:
 - **Role**: ARIA or AccessKit role (Button, TextInput, Slider, etc.)
 - **Label**: Accessible label announcing the control's purpose
 - **States**: Accessible states (focusable, checked, expanded, etc.)
-- **Announcements**: State changes must be announced to screen readers
+- **Announcements**: State changes must be announced to screen readers.
 
 The accessibility tree uses stable node IDs per architecture section 16.
 
@@ -203,7 +201,7 @@ The control inventory is validated by:
 See `tests/widget_audit_test.rs` and `tests/widget_capability_audit_bdd.rs` for
 test implementation.
 
-## Next Steps
+## Next steps
 
 This audit satisfies roadmap item 0.8.1. Subsequent work includes:
 

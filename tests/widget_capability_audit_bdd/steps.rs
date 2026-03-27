@@ -282,7 +282,10 @@ pub(crate) fn then_each_cites_source(world: &AuditWorld) -> TestSupportResult<()
 
 #[then("at least one control has evidence")]
 pub(crate) fn then_at_least_one_evidence(world: &AuditWorld) -> TestSupportResult<()> {
-    if world.controls.is_empty() {
+    let inventory = world.inventory.as_ref().ok_or_else(|| {
+        test_support::TestSupportError::expectation("Inventory not loaded".to_owned())
+    })?;
+    if inventory.with_evidence().is_empty() {
         return Err(test_support::TestSupportError::expectation(
             "At least one control must have shell evidence",
         ));
