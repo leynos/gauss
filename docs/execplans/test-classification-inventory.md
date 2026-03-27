@@ -5,7 +5,7 @@
 This document classifies all current integration tests by their owning crate to
 guide the test move implementation in `build-time-move-model-and-svg-tests.md`.
 
-## Classification Criteria
+## Classification criteria
 
 - **Pure model**: Tests that only exercise `gauss-core` functionality (document,
   commands, tools, history)  without GPUI
@@ -14,9 +14,9 @@ guide the test move implementation in `build-time-move-model-and-svg-tests.md`.
 - **App integration**: Tests that require GPUI, window interaction, or
   cross-crate integration
 
-## Test Inventory
+## Test inventory
 
-### Pure Model Tests → Move to `crates/gauss-core/tests/`
+### Pure model tests → Move to `crates/gauss-core/tests/`
 
 - `tests/action_bdd.rs` - Action dispatch (model layer)
 - `tests/command_bdd.rs` - Command system (model layer)
@@ -35,7 +35,7 @@ Supporting directories:
 - `tests/command_editing_unit_helpers/` - Command editing helpers
 - `tests/features/` - BDD feature files (if model-specific)
 
-### Pure SVG Tests → Move to `crates/gauss-svg/tests/`
+### Pure SVG tests → Move to `crates/gauss-svg/tests/`
 
 - `tests/gauss_model_ops_bdd.rs` - Model operations BDD (tests both model and SVG)
 - `tests/golden_round_trip.rs` - SVG round-trip validation
@@ -47,11 +47,11 @@ Supporting directories:
 
 - `tests/golden/` - Golden test fixtures
 
-### App Integration Tests → Stay in `tests/`
+### App integration tests → Stay in `tests/`
 
 All GPUI-dependent tests stay in the app crate:
 
-#### Accessibility Tests
+#### Accessibility tests
 
 - `tests/a11y_service_bdd.rs` - AccessKit service (requires GPUI)
 - `tests/a11y_service_routing_bdd.rs` - AccessKit routing (requires GPUI)
@@ -61,14 +61,14 @@ Supporting directories:
 
 - `tests/a11y_service_bdd/` - AccessKit BDD fixtures
 
-#### File I/O Tests
+#### File I/O tests
 
 - `tests/gpui_file_io_click_save_button.rs` - Save button interaction
 - `tests/gpui_file_io_metadata_round_trip.rs` - Metadata via file dialogs
 - `tests/gpui_file_io_open_dialog.rs` - Open dialog integration
 - `tests/gpui_file_io_save_dialog.rs` - Save dialog integration
 
-#### History Tests
+#### History tests
 
 - `tests/gpui_history_anchor_edit_undo.rs` - Anchor editing with undo
 - `tests/gpui_history_close_path_undo.rs` - Path closing with undo
@@ -82,7 +82,7 @@ Supporting directories:
 - `tests/gpui_history_reorder_undo.rs` - Shape reordering with undo
 - `tests/gpui_history_selection_history.rs` - Selection history
 
-#### Selection Tests
+#### Selection tests
 
 - `tests/gpui_selection_bbox_drag_requires_selection.rs` - Bbox drag behavior
 - `tests/gpui_selection_clear_selection.rs` - Selection clearing
@@ -91,7 +91,7 @@ Supporting directories:
 - `tests/gpui_selection_select_shape_by_bbox.rs` - Bbox selection
 - `tests/gpui_selection_select_tool_noop_paths.rs` - Select tool edge cases
 
-#### Shell/UI Tests
+#### Shell/UI tests
 
 - `tests/gpui_shell_canvas_layout.rs` - Canvas layout
 - `tests/gpui_shell_chrome_layout.rs` - Chrome layout
@@ -104,7 +104,7 @@ Supporting directories:
 - `tests/gpui_shell_viewport_input.rs` - Viewport input
 - `tests/gpui_shell_window_controls.rs` - Window controls
 
-#### Tooling Tests
+#### Tooling tests
 
 - `tests/gpui_tooling_close_path.rs` - Path closing tool integration
 - `tests/gpui_tooling_draw_bezier_auto.rs` - Bezier auto-drawing
@@ -118,7 +118,7 @@ Supporting directories:
 
 - `tests/common/` - Common test helpers (likely stays)
 
-#### Undo Entry Count Tests
+#### Undo entry count tests
 
 - `tests/undo_entry_count_bdd/` - BDD tests for undo entry counting (multi-file)
 
