@@ -135,6 +135,11 @@ impl fmt::Display for MessageId {
 
 #[cfg(test)]
 mod tests {
+    //! Unit tests for i18n message identifier functionality.
+    //!
+    //! Validates MessageId construction, conversion, and factory methods
+    //! for tool modes, edge modes, and status templates.
+
     use super::*;
 
     #[test]

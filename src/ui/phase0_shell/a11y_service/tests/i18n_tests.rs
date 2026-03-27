@@ -66,12 +66,10 @@ fn snapshot_with_full_state(
 
 fn get_status_label(snapshot: &A11ySnapshot) -> String {
     let (nodes, _) = build_node_map(snapshot).expect("node map build should succeed");
-    let status_node = nodes.get(&STATUS_NODE_ID).unwrap_or_else(|| {
-        panic!(
-            "expected node map to contain status node id {:#x}",
-            STATUS_NODE_ID.0
-        )
-    });
+    let status_node = nodes.get(&STATUS_NODE_ID).expect(&format!(
+        "expected node map to contain status node id {:#x}",
+        STATUS_NODE_ID.0
+    ));
     status_node
         .label()
         .expect("status node should have a label")
