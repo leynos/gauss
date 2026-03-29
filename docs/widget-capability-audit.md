@@ -38,7 +38,7 @@ kept consistent with the roadmap. Each control entry records:
 Phase 1 delivers the essential drawing and editing experience. Required
 controls cover:
 
-#### Toolbar (7 tools)
+#### Toolbar (6 tools)
 
 - **Selection Tool** (`V`) — Select and move entire objects
 - **Direct Selection Tool** (`A`) — Edit individual anchor points and segments
@@ -46,7 +46,6 @@ controls cover:
 - **Rectangle Tool** (`R`) — Create rectangles and squares
 - **Ellipse Tool** (`O`) — Create ellipses and circles
 - **Line Tool** (`\`) — Create straight line segments
-- **Type Tool** (`T`) — Phase 2 only, listed here for completeness
 
 Current shell evidence exists for Selection, Direct Selection, and Pen tools
 via `src/ui/phase0_shell/tool_rail.rs`.
@@ -129,6 +128,10 @@ Phase 2 adds text editing and advanced styling capabilities.
 #### Canvas text editor (1 control)
 
 - **Inline Text Cursor** — Position cursor within text for editing on canvas
+
+#### Type tool (1 control)
+
+- **Type Tool** (`T`) — Phase 2 only, listed here for completeness
 
 All text controls must support keyboard-only operation and route through the
 Action → Command pipeline for undo/redo.
