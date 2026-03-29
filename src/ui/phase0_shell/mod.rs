@@ -14,6 +14,7 @@ mod chrome_palette;
 mod chrome_panels;
 pub(crate) mod draw;
 mod file_dialogs;
+mod i18n_helpers;
 mod icon_button;
 mod input;
 mod manipulate;
@@ -219,6 +220,10 @@ pub struct Phase0Shell {
     /// Test override for maximized state (used to test resize border visibility).
     #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     test_maximized_override: Option<bool>,
+    /// Localizer for internationalized strings.
+    localizer: crate::i18n::Localizer,
+    /// Current locale for UI strings.
+    locale: crate::i18n::Locale,
 }
 
 impl Phase0Shell {
@@ -252,6 +257,8 @@ impl Phase0Shell {
             a11y_service: a11y_service::A11yService::new(),
             #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
             test_maximized_override: None,
+            localizer: crate::i18n::Localizer::default(),
+            locale: crate::i18n::Locale::default(),
         }
     }
 
