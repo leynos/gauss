@@ -24,6 +24,10 @@ fn setup_localizer() -> Localizer {
 
 /// Create a `Phase0Shell` with the given localizer and locale.
 ///
+/// # Preconditions
+///
+/// The caller must call `init_test_app(cx)` before invoking this helper.
+///
 /// Returns the shell entity for test assertions.
 fn setup_shell_with_localizer(
     cx: &mut TestAppContext,
