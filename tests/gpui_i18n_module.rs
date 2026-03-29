@@ -11,7 +11,7 @@ use gauss::ui::phase0_shell::Phase0Shell;
 
 use common::{init_test_app, test_french_catalog};
 
-/// Build a localizer with French and English (en-GB) catalogs.
+/// Build a localizer with French and English (en-GB) catalogues.
 ///
 /// Returns a Localizer configured with `test_french_catalog()` and
 /// `Catalog::default_en_gb()`, using `Locale::en_gb()` as the default.
@@ -118,12 +118,12 @@ fn locale_switching_updates_status_line(cx: &mut TestAppContext) {
 #[gpui::test]
 fn fallback_to_default_locale_when_message_missing(cx: &mut TestAppContext) {
     init_test_app(cx);
-    // Create a French catalog with only one message (missing the edge mode messages)
+    // Create a French catalogue with only one message (missing the edge mode messages)
     let mut fr_messages = HashMap::new();
     fr_messages.insert("tool_mode.draw".to_owned(), "Dessiner".to_owned());
     let partial_fr_catalog = Catalog::from_messages(fr_messages);
 
-    // Create en-GB catalog with distinctive sentinel value to prove fallback path
+    // Create en-GB catalogue with distinctive sentinel value to prove fallback path
     let mut en_messages = HashMap::new();
     en_messages.insert("tool_mode.draw".to_owned(), "Draw".to_owned());
     en_messages.insert("tool_mode.manipulate".to_owned(), "Manipulate".to_owned());
