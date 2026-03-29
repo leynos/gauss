@@ -1,0 +1,194 @@
+//! GPUI tests for i18n integration with Phase 0 shell.
+
+mod common;
+
+use std::collections::HashMap;
+
+use gpui::{Entity, TestAppContext};
+
+use gauss::i18n::{Catalog, Locale, Localizer};
+use gauss::ui::phase0_shell::Phase0Shell;
+
+use common::{init_test_app, test_french_catalog};
+
+/// Build a localizer with French and English (en-GB) catalogues.
+///
+/// Returns a Localizer configured with `test_french_catalog()` and
+/// `Catalog::default_en_gb()`, using `Locale::en_gb()` as the default.
+fn setup_localizer() -> Localizer {
+    let mut catalogs = HashMap::new();
+    catalogs.insert(Locale::fr_fr(), test_french_catalog());
+    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
+    Localizer::with_catalogs(catalogs, Locale::en_gb())
+}
+
+/// Create a `Phase0Shell` with the given localizer and locale.
+///
+/// # Preconditions
+///
+/// The caller must call `init_test_app(cx)` before invoking this helper.
+///
+/// Returns the shell entity for test assertions.
+fn setup_shell_with_localizer(
+    cx: &mut TestAppContext,
+    localizer: Localizer,
+    locale: Locale,
+) -> Entity<Phase0Shell> {
+    let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
+        let mut shell_instance = Phase0Shell::new(view_cx);
+        shell_instance.set_localizer(localizer);
+        shell_instance.set_locale(locale);
+        shell_instance
+    });
+    shell
+}
+
+/// Assert that the mode status line contains every fragment in `expected`.
+///
+/// Initialises the test app, builds a shell with the given localizer and
+/// locale, reads the status line, and panics with a descriptive message if
+/// any fragment is absent.
+fn check_status_labels(
+    cx: &mut TestAppContext,
+    localizer: Localizer,
+    locale: Locale,
+    expected: &[&str],
+) {
+    init_test_app(cx);
+    let shell = setup_shell_with_localizer(cx, localizer, locale);
+    let status = shell.read_with(cx, |s, _cx| s.mode_status_line_for_tests());
+    for fragment in expected {
+        assert!(
+            status.contains(fragment),
+            "Expected '{fragment}' in status line, got: {status}",
+        );
+    }
+}
+
+#[gpui::test]
+fn phase0_shell_status_uses_default_english_catalog(cx: &mut TestAppContext) {
+    check_status_labels(cx, Localizer::new(), Locale::en_gb(), &["Draw", "Line"]);
+}
+
+#[gpui::test]
+fn phase0_shell_status_uses_injected_test_catalog(cx: &mut TestAppContext) {
+    check_status_labels(
+        cx,
+        setup_localizer(),
+        Locale::fr_fr(),
+        &["Dessiner", "Ligne"],
+    );
+}
+
+#[gpui::test]
+fn locale_switching_updates_status_line(cx: &mut TestAppContext) {
+    init_test_app(cx);
+    let localizer = setup_localizer();
+
+    let (shell, _visual_cx) = cx.add_window_view(|_window, view_cx| {
+        let mut shell_instance = Phase0Shell::new(view_cx);
+        shell_instance.set_localizer(localizer);
+        shell_instance
+    });
+
+    // Verify English default
+    let status_en = shell.read_with(cx, |s, _cx| s.mode_status_line_for_tests());
+    assert!(
+        status_en.contains("Draw"),
+        "Expected English 'Draw' before locale switch, got: {status_en}"
+    );
+
+    // Switch to French
+    shell.update(cx, |s, _cx| {
+        s.set_locale(Locale::fr_fr());
+    });
+
+    // Verify French after switch
+    let status_fr = shell.read_with(cx, |s, _cx| s.mode_status_line_for_tests());
+    assert!(
+        status_fr.contains("Dessiner"),
+        "Expected French 'Dessiner' after locale switch, got: {status_fr}"
+    );
+    assert!(
+        status_fr.contains("Ligne"),
+        "Expected French 'Ligne' after locale switch, got: {status_fr}"
+    );
+}
+
+#[gpui::test]
+fn fallback_to_default_locale_when_message_missing(cx: &mut TestAppContext) {
+    init_test_app(cx);
+    // Create a French catalogue with only one message (missing the edge mode messages)
+    let mut fr_messages = HashMap::new();
+    fr_messages.insert("tool_mode.draw".to_owned(), "Dessiner".to_owned());
+    let partial_fr_catalog = Catalog::from_messages(fr_messages);
+
+    // Create en-GB catalogue with distinctive sentinel value to prove fallback path
+    let mut en_messages = HashMap::new();
+    en_messages.insert("tool_mode.draw".to_owned(), "Draw".to_owned());
+    en_messages.insert("tool_mode.manipulate".to_owned(), "Manipulate".to_owned());
+    en_messages.insert(
+        "edge_mode.line".to_owned(),
+        "Line via en-GB catalogue".to_owned(),
+    );
+    en_messages.insert(
+        "edge_mode.bezier_auto".to_owned(),
+        "Bezier (auto)".to_owned(),
+    );
+    en_messages.insert(
+        "tool.status.mode_with_edge".to_owned(),
+        "Mode: {tool} ({edge})".to_owned(),
+    );
+    en_messages.insert("tool.status.mode".to_owned(), "Mode: {tool}".to_owned());
+    let en_catalog = Catalog::from_messages(en_messages);
+
+    let mut catalogs = HashMap::new();
+    catalogs.insert(Locale::fr_fr(), partial_fr_catalog);
+    catalogs.insert(Locale::en_gb(), en_catalog);
+    let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
+
+    let shell = setup_shell_with_localizer(cx, localizer, Locale::fr_fr());
+
+    let status = shell.read_with(cx, |s, _cx| s.mode_status_line_for_tests());
+
+    // Should have French tool mode
+    assert!(
+        status.contains("Dessiner"),
+        "Expected French 'Dessiner' from partial catalog, got: {status}"
+    );
+
+    // Should fall back to en-GB catalogue for missing edge mode with distinctive sentinel
+    assert!(
+        status.contains("Line via en-GB catalogue"),
+        "Expected en-GB catalogue fallback 'Line via en-GB catalogue' for missing message, got: {status}"
+    );
+}
+
+#[gpui::test]
+fn manipulate_mode_omits_edge_mode_in_status_line(cx: &mut TestAppContext) {
+    use gauss::model::ToolMode;
+
+    init_test_app(cx);
+    let localizer = setup_localizer();
+    let shell = setup_shell_with_localizer(cx, localizer, Locale::fr_fr());
+
+    // Switch to Manipulate mode
+    shell.update(cx, |s, _cx| {
+        s.set_tool_mode_for_tests(ToolMode::Manipulate);
+    });
+
+    let status = shell.read_with(cx, |s, _cx| s.mode_status_line_for_tests());
+
+    // Should contain localized tool mode
+    assert!(
+        status.contains("Manipuler"),
+        "Expected French 'Manipuler' for Manipulate mode, got: {status}"
+    );
+
+    // Should NOT contain edge mode wrapper pattern "({edge})" from
+    // tool.status.mode_with_edge template
+    assert!(
+        !status.contains('(') && !status.contains(')'),
+        "Manipulate mode should omit edge mode fragment entirely (no parentheses), got: {status}"
+    );
+}

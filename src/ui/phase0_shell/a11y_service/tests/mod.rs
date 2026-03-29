@@ -4,7 +4,7 @@ use accesskit::{Action, ActionRequest, NodeId, Role, TreeId};
 use rstest::rstest;
 use uuid::Uuid;
 
-use crate::model::{EdgeMode, ShapeId, ToolMode};
+use crate::model::ShapeId;
 use crate::ui::phase0_shell::accessibility;
 
 use super::tree_builder::{CANVAS_NODE_ID, SHAPE_LIST_NODE_ID, build_node_map};
@@ -12,6 +12,10 @@ use super::{
     A11yActionRequestError, A11yRequestedAction, A11yService, A11yServiceError, A11yShapeSnapshot,
     A11ySnapshot, A11yUpdateKind, A11yWindowAction,
 };
+
+// i18n-specific tests are in the i18n_tests submodule
+#[cfg(test)]
+mod i18n_tests;
 
 fn shape_id(raw: u64) -> ShapeId {
     ShapeId::from_accesskit_node_id(raw)
@@ -38,13 +42,15 @@ fn snapshot_with_state(
         .collect::<Vec<_>>();
     let selected_shape_ids = selected_ids.iter().map(|id| shape_id(*id)).collect();
     A11ySnapshot {
-        tool_mode: ToolMode::Draw,
-        edge_mode: EdgeMode::Line,
+        tool_mode: crate::model::ToolMode::Draw,
+        edge_mode: crate::model::EdgeMode::Line,
         can_undo: false,
         can_redo: false,
         is_maximized,
         selected_shape_ids,
         shapes,
+        localizer: crate::i18n::Localizer::default(),
+        locale: crate::i18n::Locale::default(),
     }
 }
 

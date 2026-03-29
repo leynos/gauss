@@ -11,26 +11,38 @@ use super::{
 
 impl Phase0Shell {
     pub(super) fn mode_status_line(&self) -> String {
+        let tool_label = self.localized_tool_mode_label();
+        let edge_label = self.localized_edge_mode_label();
+
         let maximized_indicator = if self.last_maximized_state == Some(true) {
             " [MAX]"
         } else {
             ""
         };
         match self.state.tool_mode {
-            draw::ToolMode::Draw => format!(
-                "Mode: {} ({}){}",
-                self.state.tool_mode.label(),
-                self.state.edge_mode.label(),
-                maximized_indicator
-            ),
+            draw::ToolMode::Draw => {
+                format!("Mode: {tool_label} ({edge_label}){maximized_indicator}")
+            }
             draw::ToolMode::Manipulate => {
-                format!(
-                    "Mode: {}{}",
-                    self.state.tool_mode.label(),
-                    maximized_indicator
-                )
+                format!("Mode: {tool_label}{maximized_indicator}")
             }
         }
+    }
+
+    fn localized_tool_mode_label(&self) -> String {
+        super::i18n_helpers::localized_tool_mode_label(
+            self.state.tool_mode,
+            &self.localizer,
+            &self.locale,
+        )
+    }
+
+    fn localized_edge_mode_label(&self) -> String {
+        super::i18n_helpers::localized_edge_mode_label(
+            self.state.edge_mode,
+            &self.localizer,
+            &self.locale,
+        )
     }
 
     pub(super) fn file_status_line(&self) -> Option<String> {

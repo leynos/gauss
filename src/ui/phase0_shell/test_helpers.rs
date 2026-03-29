@@ -182,6 +182,14 @@ impl Phase0Shell {
         let _ = self.activate_select_tool();
     }
 
+    /// Set the tool mode directly for tests.
+    ///
+    /// This allows tests to verify behavior across different tool modes without
+    /// relying on keyboard dispatch.
+    pub const fn set_tool_mode_for_tests(&mut self, tool_mode: draw::ToolMode) {
+        self.state.tool_mode = tool_mode;
+    }
+
     /// Return the last canvas click position in screen coordinates.
     ///
     /// This is intended for tests and debugging while Phase 0 is still
@@ -368,5 +376,19 @@ impl Phase0Shell {
     #[must_use]
     pub const fn last_history_error_typed_for_tests(&self) -> Option<&HistoryError> {
         self.last_history_error_typed.as_ref()
+    }
+
+    /// Set the localizer for tests.
+    ///
+    /// This allows tests to inject custom catalogs for verifying i18n behaviour.
+    pub fn set_localizer(&mut self, localizer: crate::i18n::Localizer) {
+        self.localizer = localizer;
+    }
+
+    /// Set the current locale for tests.
+    ///
+    /// This allows tests to verify that UI strings respond to locale changes.
+    pub fn set_locale(&mut self, locale: crate::i18n::Locale) {
+        self.locale = locale;
     }
 }

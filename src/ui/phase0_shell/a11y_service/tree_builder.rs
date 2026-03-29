@@ -5,13 +5,14 @@ use std::collections::{BTreeMap, BTreeSet};
 use accesskit::{Action, Node, NodeId, Role};
 
 use crate::ui::phase0_shell::accessibility;
+use crate::ui::phase0_shell::i18n_helpers::localized_status_label;
 
 use super::{A11yServiceError, A11ySnapshot};
 
 pub(super) const ROOT_NODE_ID: NodeId = NodeId(0x1000);
 pub(super) const CANVAS_NODE_ID: NodeId = NodeId(0x1007);
 pub(super) const SHAPE_LIST_NODE_ID: NodeId = NodeId(0x1008);
-const STATUS_NODE_ID: NodeId = NodeId(0x1009);
+pub(super) const STATUS_NODE_ID: NodeId = NodeId(0x1009);
 
 const RESERVED_NODE_IDS: [u64; 10] = [
     ROOT_NODE_ID.0,
@@ -59,11 +60,13 @@ fn insert_canvas_and_status_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: 
     nodes.insert(CANVAS_NODE_ID, canvas);
 
     let mut status = Node::new(Role::Status);
-    status.set_label(format!(
-        "Mode: {} ({})",
-        snapshot.tool_mode.label(),
-        snapshot.edge_mode.label()
-    ));
+    let status_text = localized_status_label(
+        snapshot.tool_mode,
+        snapshot.edge_mode,
+        &snapshot.localizer,
+        &snapshot.locale,
+    );
+    status.set_label(status_text);
     nodes.insert(STATUS_NODE_ID, status);
 }
 

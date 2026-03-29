@@ -31,7 +31,7 @@ pub(crate) fn world() -> A11yWorld {
     }
 }
 
-pub(crate) const fn empty_snapshot() -> A11ySnapshot {
+pub(crate) fn empty_snapshot() -> A11ySnapshot {
     A11ySnapshot {
         tool_mode: ToolMode::Draw,
         edge_mode: EdgeMode::Line,
@@ -40,6 +40,8 @@ pub(crate) const fn empty_snapshot() -> A11ySnapshot {
         is_maximized: false,
         selected_shape_ids: BTreeSet::new(),
         shapes: Vec::new(),
+        localizer: gauss::i18n::Localizer::default(),
+        locale: gauss::i18n::Locale::default(),
     }
 }
 
