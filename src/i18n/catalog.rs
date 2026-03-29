@@ -81,6 +81,10 @@ impl Catalog {
     /// assert_eq!(draw, Some("Draw"));
     /// ```
     #[must_use]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Catalog initialization is inherently verbose"
+    )]
     pub fn default_en_gb() -> Self {
         let mut messages = HashMap::new();
         messages.insert("tool_mode.draw".to_owned(), "Draw".to_owned());
@@ -96,6 +100,93 @@ impl Catalog {
             "Mode: {tool} ({edge})".to_owned(),
         );
         messages.insert("tool.status.mode".to_owned(), "Mode: {tool}".to_owned());
+
+        // Window chrome strings
+        messages.insert("chrome.file.new".to_owned(), "New".to_owned());
+        messages.insert("chrome.file.open".to_owned(), "Open".to_owned());
+        messages.insert("chrome.file.save".to_owned(), "Save".to_owned());
+        messages.insert("chrome.file.export_web".to_owned(), "Export Web".to_owned());
+        messages.insert(
+            "chrome.titlebar.recent".to_owned(),
+            "Open recent project".to_owned(),
+        );
+        messages.insert("chrome.settings".to_owned(), "Settings".to_owned());
+        messages.insert("chrome.edit.undo".to_owned(), "Undo".to_owned());
+        messages.insert("chrome.edit.redo".to_owned(), "Redo".to_owned());
+
+        // Window control strings
+        messages.insert("chrome.window.minimize".to_owned(), "Minimize".to_owned());
+        messages.insert("chrome.window.maximize".to_owned(), "Maximize".to_owned());
+        messages.insert("chrome.window.close".to_owned(), "Close Window".to_owned());
+
+        // Tool tooltip strings
+        messages.insert("tool.tooltip.select".to_owned(), "Select".to_owned());
+        messages.insert("tool.tooltip.draw_path".to_owned(), "Draw Path".to_owned());
+        messages.insert(
+            "tool.tooltip.draw_curve".to_owned(),
+            "Draw Curve".to_owned(),
+        );
+        messages.insert(
+            "tool.tooltip.draw_rectangle".to_owned(),
+            "Draw Rectangle".to_owned(),
+        );
+        messages.insert(
+            "tool.tooltip.draw_circle".to_owned(),
+            "Draw Circle".to_owned(),
+        );
+
+        // Status bar strings
+        messages.insert("status.zoom_out".to_owned(), "Zoom Out".to_owned());
+        messages.insert("status.zoom_in".to_owned(), "Zoom In".to_owned());
+        messages.insert("status.zoom_area".to_owned(), "Zoom to Area".to_owned());
+        messages.insert("status.snap_grid".to_owned(), "Snap to Grid".to_owned());
+
+        // Alignment button strings
+        messages.insert("align.left".to_owned(), "Align Left".to_owned());
+        messages.insert("align.centre".to_owned(), "Align Centre".to_owned());
+        messages.insert("align.right".to_owned(), "Align Right".to_owned());
+        messages.insert("align.top".to_owned(), "Align Top".to_owned());
+        messages.insert("align.middle".to_owned(), "Align Middle".to_owned());
+        messages.insert("align.bottom".to_owned(), "Align Bottom".to_owned());
+
+        // Style control strings
+        messages.insert("style.stroke".to_owned(), "Stroke".to_owned());
+        messages.insert("style.fill".to_owned(), "Fill".to_owned());
+        messages.insert(
+            "style.stroke_loading".to_owned(),
+            "Stroke: (loading)".to_owned(),
+        );
+        messages.insert(
+            "style.fill_loading".to_owned(),
+            "Fill: (loading)".to_owned(),
+        );
+
+        // Document header strings
+        messages.insert("doc.untitled".to_owned(), "untitled".to_owned());
+
+        // Status template strings
+        messages.insert("status.saved".to_owned(), "Saved: {path}".to_owned());
+        messages.insert("status.opened".to_owned(), "Opened: {path}".to_owned());
+        messages.insert(
+            "status.history_error".to_owned(),
+            "History error: {error}".to_owned(),
+        );
+        messages.insert(
+            "status.save_failed".to_owned(),
+            "Save failed: {error}".to_owned(),
+        );
+        messages.insert(
+            "status.open_failed".to_owned(),
+            "Open failed: {error}".to_owned(),
+        );
+        messages.insert("status.maximized".to_owned(), " [MAX]".to_owned());
+
+        // Accessibility strings
+        messages.insert("a11y.canvas".to_owned(), "Drawing canvas".to_owned());
+        messages.insert("a11y.shape_list".to_owned(), "Shapes".to_owned());
+        messages.insert("a11y.shape_item".to_owned(), "Shape {index}".to_owned());
+        messages.insert("a11y.window_title".to_owned(), "Gauss".to_owned());
+
         Self::from_messages(messages)
     }
 }

@@ -188,12 +188,12 @@ phases depend upon. See architecture document §20.
 
 ### 0.7. i18n scaffolding
 
-- [ ] 0.7.1. Create i18n module.
-  - [ ] Define message catalog structure.
-  - [ ] Evaluate Fluent vs simpler keyed system. See architecture §12.
-- [ ] 0.7.2. Extract UI strings.
-  - [ ] Replace inline strings with resource IDs.
-  - [ ] Start with window chrome and tool names.
+- [x] 0.7.1. Create i18n module.
+  - [x] Define message catalog structure.
+  - [x] Evaluate Fluent vs simpler keyed system. See architecture §12.
+- [x] 0.7.2. Extract UI strings.
+  - [x] Replace inline strings with resource IDs.
+  - [x] Start with window chrome and tool names.
 - [ ] 0.7.3. Localise command names.
   - [ ] Command names are user-visible (undo descriptions, scripting).
   - [ ] Ensure locale-aware formatting for numbers.

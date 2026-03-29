@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use accesskit::{Action, Node, NodeId, Role};
 
+use crate::i18n::{Localizer, MessageId};
 use crate::ui::phase0_shell::accessibility;
 use crate::ui::phase0_shell::i18n_helpers::localized_status_label;
 
@@ -34,7 +35,7 @@ pub(super) fn build_node_map(
     insert_chrome_nodes(&mut nodes, snapshot.is_maximized);
     insert_canvas_and_status_nodes(&mut nodes, snapshot);
     insert_shape_list_nodes(&mut nodes, snapshot)?;
-    insert_root_node(&mut nodes);
+    insert_root_node(&mut nodes, snapshot);
     let focus = resolve_focus_node(snapshot, &nodes);
     Ok((nodes, focus))
 }
@@ -56,7 +57,11 @@ fn insert_chrome_nodes(nodes: &mut BTreeMap<NodeId, Node>, is_maximized: bool) {
 
 fn insert_canvas_and_status_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot) {
     let mut canvas = Node::new(Role::Canvas);
-    canvas.set_label("Drawing canvas");
+    let canvas_label = snapshot
+        .localizer
+        .lookup(&snapshot.locale, &MessageId::a11y_canvas())
+        .unwrap_or_else(|_| "Drawing canvas".to_owned());
+    canvas.set_label(canvas_label);
     nodes.insert(CANVAS_NODE_ID, canvas);
 
     let mut status = Node::new(Role::Status);
@@ -80,7 +85,12 @@ fn insert_shape_list_nodes(
         let shape_node_id = NodeId(shape.id.to_accesskit_node_id());
         validate_shape_node_id(shape_node_id, nodes)?;
         let mut shape_node = Node::new(Role::ListItem);
-        shape_node.set_label(shape_label(shape.name.as_deref(), index));
+        shape_node.set_label(shape_label(
+            shape.name.as_deref(),
+            index,
+            &snapshot.localizer,
+            &snapshot.locale,
+        ));
         if shape.locked {
             shape_node.set_disabled();
         }
@@ -94,14 +104,31 @@ fn insert_shape_list_nodes(
         shape_node_ids.push(shape_node_id);
     }
     shape_list.set_children(shape_node_ids);
-    shape_list.set_label("Shapes");
+    let shape_list_label = snapshot
+        .localizer
+        .lookup(&snapshot.locale, &MessageId::a11y_shape_list())
+        .unwrap_or_else(|_| "Shapes".to_owned());
+    shape_list.set_label(shape_list_label);
     shape_list.set_multiselectable();
     nodes.insert(SHAPE_LIST_NODE_ID, shape_list);
     Ok(())
 }
 
-fn shape_label(name: Option<&str>, index: usize) -> String {
-    name.map_or_else(|| format!("Shape {}", index + 1), ToOwned::to_owned)
+fn shape_label(
+    name: Option<&str>,
+    index: usize,
+    localizer: &Localizer,
+    locale: &crate::i18n::Locale,
+) -> String {
+    name.map_or_else(
+        || {
+            let template = localizer
+                .lookup(locale, &MessageId::a11y_shape_item())
+                .unwrap_or_else(|_| "Shape {index}".to_owned());
+            template.replace("{index}", &(index + 1).to_string())
+        },
+        ToOwned::to_owned,
+    )
 }
 
 fn validate_shape_node_id(
@@ -121,9 +148,13 @@ fn validate_shape_node_id(
     Ok(())
 }
 
-fn insert_root_node(nodes: &mut BTreeMap<NodeId, Node>) {
+fn insert_root_node(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot) {
     let mut root = Node::new(Role::Window);
-    root.set_label("Gauss");
+    let window_title = snapshot
+        .localizer
+        .lookup(&snapshot.locale, &MessageId::a11y_window_title())
+        .unwrap_or_else(|_| "Gauss".to_owned());
+    root.set_label(window_title);
     root.set_children([
         NodeId(accessibility::node_ids::TITLEBAR),
         STATUS_NODE_ID,

@@ -25,10 +25,12 @@ use super::{
     chrome_palette::{
         chrome_background, chrome_border, chrome_muted_text, chrome_panel, chrome_text,
     },
-    chrome_panels, file_dialogs,
+    file_dialogs,
     icon_button::{IconButtonState, icon_button},
     resize_border, tool_rail, window_controls,
 };
+
+use crate::i18n::MessageId;
 
 impl Phase0Shell {
     pub(super) fn chrome_view(
@@ -59,10 +61,7 @@ impl Phase0Shell {
                     .child(tool_rail::tool_rail(self, cx))
                     .child(self.editor_panel(cx)),
             )
-            .child(chrome_panels::status_bar(
-                self.mode_status_line(),
-                self.file_status_line(),
-            ))
+            .child(self.status_bar(self.mode_status_line(), self.file_status_line()))
     }
 
     fn top_bar(&mut self, is_maximized: bool, cx: &mut Context<Self>) -> impl gpui::IntoElement {
@@ -107,7 +106,7 @@ impl Phase0Shell {
                 div()
                     .text_sm()
                     .text_color(chrome_muted_text())
-                    .child("Open recent project"),
+                    .child(Self::localized_titlebar_recent()),
             )
             // Double-click to toggle maximize/restore
             .on_click(cx.listener(
@@ -136,19 +135,19 @@ impl Phase0Shell {
             .flex()
             .items_center()
             .gap_2()
-            .child(Self::top_bar_file_actions(cx))
+            .child(self.top_bar_file_actions(cx))
             .child(self.top_bar_edit_actions(cx))
             .child(icon_button(
                 "settings-button",
                 UiIcon::Settings,
                 IconButtonState::Placeholder,
-                Some("Settings"),
+                Some(self.localize(&MessageId::chrome_settings())),
             ))
             .child(self.style_picker_row())
-            .child(Self::window_controls(cx))
+            .child(self.window_controls(cx))
     }
 
-    fn top_bar_file_actions(cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn top_bar_file_actions(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         div()
             .flex()
             .items_center()
@@ -157,14 +156,14 @@ impl Phase0Shell {
                 "file-new-button",
                 UiIcon::FileNew,
                 IconButtonState::Placeholder,
-                Some("New"),
+                Some(self.localize(&MessageId::chrome_file_new())),
             ))
             .child(
                 icon_button(
                     "open-button",
                     UiIcon::FileOpen,
                     IconButtonState::Enabled,
-                    Some("Open"),
+                    Some(self.localize(&MessageId::chrome_file_open())),
                 )
                 .on_click(cx.listener(
                     |shell: &mut Self, _event: &gpui::ClickEvent, click_window, click_cx| {
@@ -177,7 +176,7 @@ impl Phase0Shell {
                     "save-button",
                     UiIcon::FileSave,
                     IconButtonState::Enabled,
-                    Some("Save"),
+                    Some(self.localize(&MessageId::chrome_file_save())),
                 )
                 .on_click(cx.listener(
                     |_shell: &mut Self, _event: &gpui::ClickEvent, click_window, click_cx| {
@@ -190,7 +189,7 @@ impl Phase0Shell {
                     "web-ready-export-button",
                     UiIcon::FileOpen,
                     IconButtonState::Enabled,
-                    Some("Export Web"),
+                    Some(self.localize(&MessageId::chrome_file_export_web())),
                 )
                 .on_click(cx.listener(
                     |_shell: &mut Self, _event: &gpui::ClickEvent, click_window, click_cx| {
@@ -214,8 +213,12 @@ impl Phase0Shell {
             IconButtonState::Disabled
         };
 
-        let mut undo_button =
-            icon_button("undo-button", UiIcon::EditUndo, undo_state, Some("Undo"));
+        let mut undo_button = icon_button(
+            "undo-button",
+            UiIcon::EditUndo,
+            undo_state,
+            Some(self.localize(&MessageId::chrome_edit_undo())),
+        );
         if can_undo {
             undo_button =
                 undo_button.on_click(cx.listener(|shell: &mut Self, _event, _window, view_cx| {
@@ -224,8 +227,12 @@ impl Phase0Shell {
                 }));
         }
 
-        let mut redo_button =
-            icon_button("redo-button", UiIcon::EditRedo, redo_state, Some("Redo"));
+        let mut redo_button = icon_button(
+            "redo-button",
+            UiIcon::EditRedo,
+            redo_state,
+            Some(self.localize(&MessageId::chrome_edit_redo())),
+        );
         if can_redo {
             redo_button =
                 redo_button.on_click(cx.listener(|shell: &mut Self, _event, _window, view_cx| {
@@ -242,7 +249,7 @@ impl Phase0Shell {
             .child(redo_button)
     }
 
-    fn window_controls(cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn window_controls(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         div()
             .flex()
             .items_center()
@@ -252,7 +259,7 @@ impl Phase0Shell {
                     "window-minimize",
                     UiIcon::WindowMinimize,
                     IconButtonState::Enabled,
-                    Some("Minimize (Alt+F9)"),
+                    Some(self.localize(&MessageId::chrome_window_minimize())),
                 )
                 .on_click(cx.listener(|_: &mut Self, _event, window, view_cx| {
                     window_controls::minimize(window);
@@ -264,14 +271,14 @@ impl Phase0Shell {
                     "window-maximize",
                     UiIcon::WindowMaximize,
                     IconButtonState::Enabled,
-                    Some("Maximize (Alt+F10)"),
+                    Some(self.localize(&MessageId::chrome_window_maximize())),
                 )
                 .on_click(cx.listener(|_: &mut Self, _event, window, view_cx| {
                     window_controls::toggle_maximize(window);
                     view_cx.notify();
                 })),
             )
-            .child(Self::quit_button(cx))
+            .child(self.quit_button(cx))
     }
 
     fn editor_panel(&mut self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
@@ -279,20 +286,29 @@ impl Phase0Shell {
             .flex()
             .flex_col()
             .flex_1()
-            .child(chrome_panels::document_header())
+            .child(self.document_header())
             .child(div().flex().flex_1().p_4().child(self.canvas_area(cx)))
     }
 
-    fn quit_button(cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn quit_button(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         icon_button(
             "quit-button",
             UiIcon::WindowClose,
             IconButtonState::Enabled,
-            Some("Close Window"),
+            Some(self.localize(&MessageId::chrome_window_close())),
         )
         .on_click(cx.listener(|shell: &mut Self, _event, _window, click_cx| {
             shell.did_request_quit = true;
             click_cx.quit();
         }))
+    }
+
+    fn localized_titlebar_recent() -> String {
+        // This is called in a static context, so we use the default locale directly
+        let localizer = crate::i18n::Localizer::default();
+        let locale = crate::i18n::Locale::default();
+        localizer
+            .lookup(&locale, &MessageId::chrome_titlebar_recent())
+            .unwrap_or_else(|_| "Open recent project".to_owned())
     }
 }

@@ -59,11 +59,11 @@ pub(super) fn icon_button(
     id: &'static str,
     icon: UiIcon,
     state: IconButtonState,
-    tooltip: Option<&'static str>,
+    tooltip: Option<String>,
 ) -> Stateful<gpui::Div> {
     let mut button = icon_button_base(id, state).child(icon_element(icon, ICON_SIZE));
     if let Some(text) = tooltip {
-        button = button.tooltip(move |window, cx| Tooltip::new(text).build(window, cx));
+        button = button.tooltip(move |window, cx| Tooltip::new(text.clone()).build(window, cx));
     }
     button
 }

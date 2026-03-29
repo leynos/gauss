@@ -2,6 +2,7 @@
 
 use gpui::{Window, div, prelude::*, white};
 
+use crate::i18n::MessageId;
 use crate::ui::action_bridge::context_for_tool_mode;
 
 use super::{
@@ -15,16 +16,27 @@ impl Phase0Shell {
         let edge_label = self.localized_edge_mode_label();
 
         let maximized_indicator = if self.last_maximized_state == Some(true) {
-            " [MAX]"
+            self.localize(&MessageId::status_maximized())
         } else {
-            ""
+            String::new()
         };
         match self.state.tool_mode {
             draw::ToolMode::Draw => {
-                format!("Mode: {tool_label} ({edge_label}){maximized_indicator}")
+                let template = self
+                    .localizer
+                    .lookup(&self.locale, &MessageId::tool_status_mode_with_edge())
+                    .unwrap_or_else(|_| "Mode: {tool} ({edge})".to_owned());
+                template
+                    .replace("{tool}", &tool_label)
+                    .replace("{edge}", &edge_label)
+                    + &maximized_indicator
             }
             draw::ToolMode::Manipulate => {
-                format!("Mode: {tool_label}{maximized_indicator}")
+                let template = self
+                    .localizer
+                    .lookup(&self.locale, &MessageId::tool_status_mode())
+                    .unwrap_or_else(|_| "Mode: {tool}".to_owned());
+                template.replace("{tool}", &tool_label) + &maximized_indicator
             }
         }
     }
@@ -47,7 +59,11 @@ impl Phase0Shell {
 
     pub(super) fn file_status_line(&self) -> Option<String> {
         if let Some(error) = self.last_history_error.as_deref() {
-            return Some(format!("History error: {error}"));
+            let template = self
+                .localizer
+                .lookup(&self.locale, &MessageId::status_history_error())
+                .unwrap_or_else(|_| "History error: {error}".to_owned());
+            return Some(template.replace("{error}", error));
         }
 
         if let Some(error) = self.shell_status_error.as_deref() {
@@ -55,19 +71,35 @@ impl Phase0Shell {
         }
 
         if let Some(error) = self.last_save_error.as_deref() {
-            return Some(format!("Save failed: {error}"));
+            let template = self
+                .localizer
+                .lookup(&self.locale, &MessageId::status_save_failed())
+                .unwrap_or_else(|_| "Save failed: {error}".to_owned());
+            return Some(template.replace("{error}", error));
         }
 
         if let Some(error) = self.last_open_error.as_deref() {
-            return Some(format!("Open failed: {error}"));
+            let template = self
+                .localizer
+                .lookup(&self.locale, &MessageId::status_open_failed())
+                .unwrap_or_else(|_| "Open failed: {error}".to_owned());
+            return Some(template.replace("{error}", error));
         }
 
         if let Some(path) = self.last_saved_path.as_deref() {
-            return Some(format!("Saved: {}", path.display()));
+            let template = self
+                .localizer
+                .lookup(&self.locale, &MessageId::status_saved())
+                .unwrap_or_else(|_| "Saved: {path}".to_owned());
+            return Some(template.replace("{path}", &path.display().to_string()));
         }
 
         if let Some(path) = self.last_opened_path.as_deref() {
-            return Some(format!("Opened: {}", path.display()));
+            let template = self
+                .localizer
+                .lookup(&self.locale, &MessageId::status_opened())
+                .unwrap_or_else(|_| "Opened: {path}".to_owned());
+            return Some(template.replace("{path}", &path.display().to_string()));
         }
 
         None
