@@ -25,7 +25,8 @@ kept consistent with the roadmap. Each control entry records:
 - **User Job**: What the user accomplishes with this control
 - **States**: Required control states (selected, disabled, focused, etc.)
 - **Keyboard Requirements**: Shortcuts and keyboard-only operation support
-- **Accessibility Requirements**: ARIA/AccessKit roles, labels, and states
+- **Accessibility Requirements**: Accessible Rich Internet Applications (ARIA)/
+  AccessKit roles, labels, and states
 - **Action/Command Linkage**: Integration with the Action → Command pipeline
 - **Requirement Sources**: Roadmap items, feature plan sections, or architecture
   references that justify this control
@@ -161,7 +162,7 @@ All controls must expose:
 - **Role**: ARIA or AccessKit role (Button, TextInput, Slider, etc.)
 - **Label**: Accessible label announcing the control's purpose
 - **States**: Accessible states (focusable, checked, expanded, etc.)
-- **Announcements**: State changes must be announced to screen readers.
+- **Announcements**: State changes must be announced to screen readers
 
 The accessibility tree uses stable node IDs per architecture section 16.
 
@@ -196,8 +197,8 @@ The control inventory is validated by:
 
 - **Unit tests** (`rstest`) that assert completeness and consistency of control
   entries
-- **Behaviour-Driven Development (BDD) tests** (`rstest-bdd`) that verify roadmap
-  requirements map to typed inventory entries
+- **Behaviour-Driven Development (BDD) tests** (`rstest-bdd`) that verify
+  roadmap requirements map to typed inventory entries
 - **GPUI (Zed's GPU-accelerated UI framework) tests** that prove shell-seam
   consistency for controls with current evidence
 
