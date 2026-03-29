@@ -11,7 +11,7 @@ use gauss::ui::phase0_shell::Phase0Shell;
 
 use common::{init_test_app, test_french_catalog};
 
-/// Build a localizer with French and English (en-gb) catalogs.
+/// Build a localizer with French and English (en-GB) catalogs.
 ///
 /// Returns a Localizer configured with `test_french_catalog()` and
 /// `Catalog::default_en_gb()`, using `Locale::en_gb()` as the default.
