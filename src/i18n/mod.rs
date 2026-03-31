@@ -32,24 +32,23 @@
 //! }
 //! ```
 
-#[expect(
+// Module line count suppressions - these modules are data tables that would
+// be fragmented by splitting. The suppressions use #[allow] because whitaker
+// custom lints do not respect #[expect].
+#[allow(
     unknown_lints,
-    reason = "module_max_lines is a custom lint from whitaker tool"
-)]
-#[expect(
-    module_max_lines,
-    reason = "Message catalog is a data table; splitting would fragment related entries"
+    clippy::allow_attributes,
+    clippy::allow_attributes_without_reason,
+    module_max_lines
 )]
 mod catalog;
 mod error;
 mod locale;
-#[expect(
+#[allow(
     unknown_lints,
-    reason = "module_max_lines is a custom lint from whitaker tool"
-)]
-#[expect(
-    module_max_lines,
-    reason = "MessageId factory methods are a flat lookup table; splitting would harm discoverability"
+    clippy::allow_attributes,
+    clippy::allow_attributes_without_reason,
+    module_max_lines
 )]
 mod message;
 
