@@ -62,7 +62,7 @@ pub(crate) fn then_includes_selection_tool(world: &AuditWorld) -> TestSupportRes
 }
 
 #[then("the inventory includes a Direct Selection Tool")]
-pub(crate) fn then_includes_direct_selection_tool(world: &AuditWorld) -> TestSupportResult<()> {
+pub(crate) fn then_includes_direct_selection(world: &AuditWorld) -> TestSupportResult<()> {
     assert_includes(world, "Direct Selection Tool")
 }
 
@@ -97,27 +97,27 @@ pub(crate) fn then_includes_y_position(world: &AuditWorld) -> TestSupportResult<
 }
 
 #[then("the inventory includes a Width Field")]
-pub(crate) fn then_includes_width(world: &AuditWorld) -> TestSupportResult<()> {
+pub(crate) fn then_includes_width_field(world: &AuditWorld) -> TestSupportResult<()> {
     assert_includes(world, "Width Field")
 }
 
 #[then("the inventory includes a Height Field")]
-pub(crate) fn then_includes_height(world: &AuditWorld) -> TestSupportResult<()> {
+pub(crate) fn then_includes_height_field(world: &AuditWorld) -> TestSupportResult<()> {
     assert_includes(world, "Height Field")
 }
 
 #[then("the inventory includes a Rotation Field")]
-pub(crate) fn then_includes_rotation(world: &AuditWorld) -> TestSupportResult<()> {
+pub(crate) fn then_includes_rotation_field(world: &AuditWorld) -> TestSupportResult<()> {
     assert_includes(world, "Rotation Field")
 }
 
 #[then("the inventory includes alignment controls for left, centre, and right")]
-pub(crate) fn then_includes_horizontal_alignment(world: &AuditWorld) -> TestSupportResult<()> {
+pub(crate) fn then_includes_horizontal_align(world: &AuditWorld) -> TestSupportResult<()> {
     assert_includes_group(world, InclusionGroup::HorizontalAlignment)
 }
 
 #[then("the inventory includes alignment controls for top, centre, and bottom")]
-pub(crate) fn then_includes_vertical_alignment(world: &AuditWorld) -> TestSupportResult<()> {
+pub(crate) fn then_includes_vertical_align(world: &AuditWorld) -> TestSupportResult<()> {
     assert_includes_group(world, InclusionGroup::VerticalAlignment)
 }
 
@@ -213,6 +213,38 @@ pub(crate) fn then_includes_canvas_text(world: &AuditWorld) -> TestSupportResult
         ));
     }
     Ok(())
+}
+
+#[then("the inventory includes undo and redo controls")]
+pub(crate) fn then_includes_undo_redo(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(
+        world,
+        &[
+            ("Undo", "Must include Undo control"),
+            ("Redo", "Must include Redo control"),
+        ],
+    )
+}
+
+#[then("the inventory includes history clear capability")]
+pub(crate) fn then_includes_history_clear(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(world, &[("Clear History", "Must include History Clear")])
+}
+
+#[then("the inventory includes text insertion capability")]
+pub(crate) fn then_includes_text_insertion(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(
+        world,
+        &[("Text Insertion", "Must include text insertion capability")],
+    )
+}
+
+#[then("the inventory includes text selection capability")]
+pub(crate) fn then_includes_text_selection(world: &AuditWorld) -> TestSupportResult<()> {
+    assert_includes_substrings(
+        world,
+        &[("Text Selection", "Must include text selection capability")],
+    )
 }
 
 #[then("each control has a non-empty name")]

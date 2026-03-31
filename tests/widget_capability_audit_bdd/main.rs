@@ -165,3 +165,13 @@ pub(crate) fn when_query_with_evidence(world: &mut AuditWorld) {
 pub(crate) fn when_query_toolbar_phase1(world: &mut AuditWorld) {
     when_query_phase1_toolbar(world);
 }
+
+#[when("I query controls for Phase 1 history panel")]
+pub(crate) fn when_query_phase1_history(world: &mut AuditWorld) {
+    query_by_phase_and_surface(world, Phase::Phase1, ControlSurface::HistoryPanel);
+}
+
+#[when("I query controls for Phase 2 canvas text editor")]
+pub(crate) fn when_query_phase2_canvas_text(world: &mut AuditWorld) {
+    query_by_phase_and_surface(world, Phase::Phase2, ControlSurface::CanvasTextEditor);
+}

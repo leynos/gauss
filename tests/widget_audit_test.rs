@@ -86,6 +86,7 @@ fn assert_phase2_surface_all_phase2(surface: ControlSurface) {
 #[case(ControlSurface::StylePanel)]
 #[case(ControlSurface::LayersPanel)]
 #[case(ControlSurface::AlignmentPanel)]
+#[case(ControlSurface::HistoryPanel)]
 fn test_required_surfaces_have_controls(#[case] surface: ControlSurface) {
     let inventory = ControlInventory::new();
     let surface_controls = inventory.by_surface(surface);
@@ -268,6 +269,7 @@ fn test_alignment_panel_has_distribution_controls() {
 #[rstest]
 #[case(ControlSurface::CharacterPanel)]
 #[case(ControlSurface::ParagraphPanel)]
+#[case(ControlSurface::CanvasTextEditor)]
 fn test_phase2_panel_controls_are_all_phase2(#[case] surface: ControlSurface) {
     assert_phase2_surface_all_phase2(surface);
 }

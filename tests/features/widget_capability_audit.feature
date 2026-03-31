@@ -48,6 +48,16 @@ Feature: Widget Capability Audit for Phase 1-2
     And the inventory includes paragraph panel controls
     And the inventory includes canvas text editing controls
 
+  Scenario: Phase 1 history panel controls are catalogued
+    When I query controls for Phase 1 history panel
+    Then the inventory includes undo and redo controls
+    And the inventory includes history clear capability
+
+  Scenario: Phase 2 canvas text editor controls are catalogued
+    When I query controls for Phase 2 canvas text editor
+    Then the inventory includes text insertion capability
+    And the inventory includes text selection capability
+
   Scenario: All controls have complete requirement fields
     When I examine all controls in the inventory
     Then each control has a non-empty name
