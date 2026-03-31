@@ -33,7 +33,7 @@ fn make_numeric_field(
         accessibility: AccessibilityRequirements {
             role: "TextInput",
             label: a11y.label,
-            states: vec!["focusable", "editable"],
+            states: vec!["focusable", "editable", "read-only"],
             notes: a11y.notes,
         },
         action_linkage: ActionCommandLinkage {

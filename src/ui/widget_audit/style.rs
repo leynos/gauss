@@ -24,7 +24,16 @@ struct StyleControlSpec {
 }
 
 /// Creates a `RequiredControl` from a `StyleControlSpec`.
+///
+/// # Panics
+///
+/// Panics if `evidence_exists` is true but `evidence_path` is None,
+/// as this violates the evidence invariant.
 fn make_style_control(spec: StyleControlSpec) -> RequiredControl {
+    assert!(
+        !(spec.evidence_exists && spec.evidence_path.is_none()),
+        "Evidence path must be provided when evidence_exists is true"
+    );
     RequiredControl {
         name: spec.name,
         phase: Phase::Phase1,
