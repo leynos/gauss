@@ -24,7 +24,7 @@ fn assert_all_controls_satisfy(label: &str, predicate: fn(&RequiredControl) -> b
     }
 }
 
-#[rstest]
+#[test]
 fn test_inventory_is_not_empty() {
     let inventory = ControlInventory::new();
     assert!(
@@ -56,22 +56,14 @@ fn test_all_controls_satisfy_invariant(
 }
 
 #[rstest]
-fn test_phase1_controls_exist() {
+#[case(Phase::Phase1)]
+#[case(Phase::Phase2)]
+fn test_phase_controls_exist(#[case] phase: Phase) {
     let inventory = ControlInventory::new();
-    let phase1_controls = inventory.by_phase(Phase::Phase1);
+    let phase_controls = inventory.by_phase(phase);
     assert!(
-        !phase1_controls.is_empty(),
-        "Phase 1 must have at least one control"
-    );
-}
-
-#[rstest]
-fn test_phase2_controls_exist() {
-    let inventory = ControlInventory::new();
-    let phase2_controls = inventory.by_phase(Phase::Phase2);
-    assert!(
-        !phase2_controls.is_empty(),
-        "Phase 2 must have at least one control"
+        !phase_controls.is_empty(),
+        "{phase:?} must have at least one control"
     );
 }
 
@@ -81,7 +73,7 @@ fn assert_phase2_surface_all_phase2(surface: ControlSurface) {
 
     assert!(
         !controls.is_empty(),
-        "Phase 2 must define {surface} controls"
+        "Surface {surface} must define controls"
     );
 
     let all_phase2 = controls.iter().all(|c| c.phase() == Phase::Phase2);
@@ -120,7 +112,7 @@ fn test_toolbar_tools_have_keyboard_shortcuts() {
 }
 
 #[rstest]
-fn test_controls_requiring_actions_have_action_names() {
+fn test_controls_requiring_actions_have_linkage_notes() {
     let inventory = ControlInventory::new();
 
     for control in inventory.all() {

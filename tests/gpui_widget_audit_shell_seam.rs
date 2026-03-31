@@ -8,7 +8,7 @@
 //! NOTE: These tests validate the audit inventory structure and metadata,
 //! not the runtime GPUI behavior (which requires the full common test helpers).
 
-use gauss::ui::widget_audit::ControlInventory;
+use gauss::ui::widget_audit::{ControlInventory, ControlSurface};
 use std::path::Path;
 
 #[test]
@@ -140,8 +140,6 @@ fn controls_without_evidence_are_documented() {
 
 #[test]
 fn audit_inventory_is_complete() {
-    use gauss::ui::widget_audit::ControlSurface;
-
     let inventory = ControlInventory::new();
 
     // Verify we have a reasonable number of controls for Phase 1-2
