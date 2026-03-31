@@ -40,7 +40,7 @@
     clippy::allow_attributes,
     reason = "must use allow for cross-tool compatibility"
 )]
-#[expect(
+#[allow(
     module_max_lines,
     reason = "Message catalog is a data table; splitting would fragment related entries"
 )]
@@ -55,7 +55,7 @@ mod locale;
     clippy::allow_attributes,
     reason = "must use allow for cross-tool compatibility"
 )]
-#[expect(
+#[allow(
     module_max_lines,
     reason = "MessageId factory methods are a flat lookup table; splitting would harm discoverability"
 )]
