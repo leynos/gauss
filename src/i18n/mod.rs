@@ -32,24 +32,9 @@
 //! }
 //! ```
 
-// Module line count suppressions - these modules are data tables that would
-// be fragmented by splitting. The suppressions use #[allow] because whitaker
-// custom lints do not respect #[expect].
-#[allow(
-    unknown_lints,
-    clippy::allow_attributes,
-    clippy::allow_attributes_without_reason,
-    module_max_lines
-)]
 mod catalog;
 mod error;
 mod locale;
-#[allow(
-    unknown_lints,
-    clippy::allow_attributes,
-    clippy::allow_attributes_without_reason,
-    module_max_lines
-)]
 mod message;
 
 pub use catalog::{Catalog, Localizer};
