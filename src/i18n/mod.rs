@@ -32,9 +32,33 @@
 //! }
 //! ```
 
+#[allow(
+    unknown_lints,
+    reason = "module_max_lines is a custom lint from whitaker tool"
+)]
+#[allow(
+    clippy::allow_attributes,
+    reason = "must use allow for cross-tool compatibility"
+)]
+#[expect(
+    module_max_lines,
+    reason = "Message catalog is a data table; splitting would fragment related entries"
+)]
 mod catalog;
 mod error;
 mod locale;
+#[allow(
+    unknown_lints,
+    reason = "module_max_lines is a custom lint from whitaker tool"
+)]
+#[allow(
+    clippy::allow_attributes,
+    reason = "must use allow for cross-tool compatibility"
+)]
+#[expect(
+    module_max_lines,
+    reason = "MessageId factory methods are a flat lookup table; splitting would harm discoverability"
+)]
 mod message;
 
 pub use catalog::{Catalog, Localizer};

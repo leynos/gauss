@@ -98,16 +98,20 @@ Known uncertainties that might affect the plan:
 - [x] (2026-03-29) Update `chrome_panels.rs` to use localized strings.
 - [x] (2026-03-29) Update `window_controls.rs` to use localized strings.
 - [x] (2026-03-29) Update `style_controls.rs` to use localized strings.
-- [x] (2026-03-29) Update `a11y_service/tree_builder.rs` to use localized strings.
-- [x] (2026-03-29) Update `view.rs` status line templates to use localized strings.
+- [x] (2026-03-29) Update `a11y_service/tree_builder.rs` to use localized
+      strings.
+- [x] (2026-03-29) Update `view.rs` status line templates to use localized
+      strings.
 - [x] (2026-03-29) Add unit tests for new `MessageId` variants.
 - [x] (2026-03-29) Add BDD scenarios for i18n string extraction.
-- [x] (2026-03-29) Update `docs/users-guide.md` if any user-visible labels change.
+- [x] (2026-03-29) Update `docs/users-guide.md` if any user-visible labels
+      change.
 - [x] (2026-03-29) Mark roadmap item 0.7.2 as complete.
 
 ## Surprises & discoveries
 
-- The `icon_button` tooltip parameter needed to change from `Option<&'static str>`
+- The `icon_button` tooltip parameter needed to change from
+  `Option<&'static str>`
   to `Option<String>` to support localized strings. This was anticipated in the
   risk assessment and required updates to all call sites.
 
@@ -147,7 +151,8 @@ Known uncertainties that might affect the plan:
 - `src/ui/phase0_shell/mod.rs` - Added `localize()` helper method
 - `src/ui/phase0_shell/tool_rail.rs` - Localized tool tooltips
 - `src/ui/phase0_shell/chrome.rs` - Localized button labels
-- `src/ui/phase0_shell/chrome_panels.rs` - Converted to methods, localized strings
+- `src/ui/phase0_shell/chrome_panels.rs` - Converted to methods, localized
+  strings
 - `src/ui/phase0_shell/style_controls.rs` - Localized style labels
 - `src/ui/phase0_shell/view.rs` - Localized status templates
 - `src/ui/phase0_shell/a11y_service/tree_builder.rs` - Localized a11y labels
