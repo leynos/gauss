@@ -88,20 +88,20 @@ fn style_controls_match_audit() {
     );
 
     // Verify stroke and fill controls are present in the evidence
-    let has_stroke_color = style_controls
+    let has_stroke_colour = style_controls
         .iter()
-        .any(|c| c.name().contains("Stroke Color"));
-    let has_fill_color = style_controls
+        .any(|c| c.name().contains("Stroke Colour"));
+    let has_fill_colour = style_controls
         .iter()
-        .any(|c| c.name().contains("Fill Color"));
+        .any(|c| c.name().contains("Fill Colour"));
 
     assert!(
-        has_stroke_color,
-        "Style controls evidence should include stroke color picker"
+        has_stroke_colour,
+        "Style controls evidence should include stroke colour picker"
     );
     assert!(
-        has_fill_color,
-        "Style controls evidence should include fill color picker"
+        has_fill_colour,
+        "Style controls evidence should include fill colour picker"
     );
 }
 

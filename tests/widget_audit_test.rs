@@ -193,18 +193,18 @@ fn test_stroke_and_fill_controls_exist() {
     let inventory = ControlInventory::new();
     let style_controls = inventory.by_surface(ControlSurface::StylePanel);
 
-    let has_stroke_color = style_controls
+    let has_stroke_colour = style_controls
         .iter()
-        .any(|c| c.name().contains("Stroke Color"));
-    let has_fill_color = style_controls
+        .any(|c| c.name().contains("Stroke Colour"));
+    let has_fill_colour = style_controls
         .iter()
-        .any(|c| c.name().contains("Fill Color"));
+        .any(|c| c.name().contains("Fill Colour"));
 
     assert!(
-        has_stroke_color,
-        "Style panel must have stroke color control"
+        has_stroke_colour,
+        "Style panel must have stroke colour control"
     );
-    assert!(has_fill_color, "Style panel must have fill color control");
+    assert!(has_fill_colour, "Style panel must have fill colour control");
 }
 
 #[rstest]
