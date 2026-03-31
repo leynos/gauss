@@ -32,9 +32,25 @@
 //! }
 //! ```
 
+#[expect(
+    unknown_lints,
+    reason = "module_max_lines is a custom lint from whitaker tool"
+)]
+#[expect(
+    module_max_lines,
+    reason = "Message catalog is a data table; splitting would fragment related entries"
+)]
 mod catalog;
 mod error;
 mod locale;
+#[expect(
+    unknown_lints,
+    reason = "module_max_lines is a custom lint from whitaker tool"
+)]
+#[expect(
+    module_max_lines,
+    reason = "MessageId factory methods are a flat lookup table; splitting would harm discoverability"
+)]
 mod message;
 
 pub use catalog::{Catalog, Localizer};

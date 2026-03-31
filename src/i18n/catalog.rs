@@ -1,11 +1,5 @@
 //! Message catalog storage and lookup.
 
-#![allow(
-    unknown_lints,
-    reason = "module_max_lines is a custom lint from whitaker tool"
-)]
-#![allow(module_max_lines, reason = "Message catalog is a data table")]
-
 use std::collections::HashMap;
 
 use super::{I18nError, Locale, MessageId};
