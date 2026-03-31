@@ -78,144 +78,120 @@ pub(super) fn controls() -> Vec<RequiredControl> {
 
 fn stroke_controls() -> Vec<RequiredControl> {
     vec![
-        stroke_color_picker(),
-        stroke_width_field(),
-        stroke_opacity_slider(),
+        make_style_control(StyleControlSpec {
+            name: "Stroke Colour Picker",
+            description: "Select stroke colour for shapes",
+            states: &["enabled", "disabled", "focused", "open", "closed"],
+            role: "ColorPicker",
+            label: "Stroke Colour",
+            a11y_states: &["focusable", "expanded", "collapsed"],
+            a11y_notes: "Must announce current colour value",
+            action_name: "SetStrokeColor",
+            action_notes: "Colour change emits command for undo/redo",
+            sources: &[
+                RequirementSource::Roadmap("1.4.1"),
+                RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
+                RequirementSource::Architecture("14.1"),
+            ],
+            evidence_exists: true,
+            evidence_path: Some("src/ui/phase0_shell/style_controls.rs"),
+            evidence_notes: "Colour picker for stroke exists in current shell",
+        }),
+        make_style_control(StyleControlSpec {
+            name: "Stroke Width Field",
+            description: "Set stroke width in pixels or points",
+            states: &["enabled", "disabled", "focused", "read-only"],
+            role: "TextInput",
+            label: "Stroke Width",
+            a11y_states: &["focusable", "editable"],
+            a11y_notes: "Must announce current value and units",
+            action_name: "SetStrokeWidth",
+            action_notes: "Width change emits command for undo/redo",
+            sources: &[
+                RequirementSource::Roadmap("1.4.1"),
+                RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
+            ],
+            evidence_exists: true,
+            evidence_path: Some("src/ui/phase0_shell/style_controls.rs"),
+            evidence_notes: "Stroke width control exists in current shell",
+        }),
+        make_style_control(StyleControlSpec {
+            name: "Stroke Opacity Slider",
+            description: "Adjust stroke transparency from 0% to 100%",
+            states: &["enabled", "disabled", "focused"],
+            role: "Slider",
+            label: "Stroke Opacity",
+            a11y_states: &["focusable"],
+            a11y_notes: "Must announce current percentage value",
+            action_name: "SetStrokeOpacity",
+            action_notes: "Opacity change emits command for undo/redo",
+            sources: &[
+                RequirementSource::Roadmap("1.4.1"),
+                RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
+            ],
+            evidence_exists: true,
+            evidence_path: Some("src/ui/phase0_shell/style_controls.rs"),
+            evidence_notes: "Stroke opacity control exists in current shell",
+        }),
     ]
-}
-
-fn stroke_color_picker() -> RequiredControl {
-    make_style_control(StyleControlSpec {
-        name: "Stroke Colour Picker",
-        description: "Select stroke colour for shapes",
-        states: &["enabled", "disabled", "focused", "open", "closed"],
-        role: "ColorPicker",
-        label: "Stroke Colour",
-        a11y_states: &["focusable", "expanded", "collapsed"],
-        a11y_notes: "Must announce current colour value",
-        action_name: "SetStrokeColor",
-        action_notes: "Colour change emits command for undo/redo",
-        sources: &[
-            RequirementSource::Roadmap("1.4.1"),
-            RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
-            RequirementSource::Architecture("14.1"),
-        ],
-        evidence_exists: true,
-        evidence_path: Some("src/ui/phase0_shell/style_controls.rs"),
-        evidence_notes: "Colour picker for stroke exists in current shell",
-    })
-}
-
-fn stroke_width_field() -> RequiredControl {
-    make_style_control(StyleControlSpec {
-        name: "Stroke Width Field",
-        description: "Set stroke width in pixels or points",
-        states: &["enabled", "disabled", "focused", "read-only"],
-        role: "TextInput",
-        label: "Stroke Width",
-        a11y_states: &["focusable", "editable"],
-        a11y_notes: "Must announce current value and units",
-        action_name: "SetStrokeWidth",
-        action_notes: "Width change emits command for undo/redo",
-        sources: &[
-            RequirementSource::Roadmap("1.4.1"),
-            RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
-        ],
-        evidence_exists: true,
-        evidence_path: Some("src/ui/phase0_shell/style_controls.rs"),
-        evidence_notes: "Stroke width control exists in current shell",
-    })
-}
-
-fn stroke_opacity_slider() -> RequiredControl {
-    make_style_control(StyleControlSpec {
-        name: "Stroke Opacity Slider",
-        description: "Adjust stroke transparency from 0% to 100%",
-        states: &["enabled", "disabled", "focused"],
-        role: "Slider",
-        label: "Stroke Opacity",
-        a11y_states: &["focusable"],
-        a11y_notes: "Must announce current percentage value",
-        action_name: "SetStrokeOpacity",
-        action_notes: "Opacity change emits command for undo/redo",
-        sources: &[
-            RequirementSource::Roadmap("1.4.1"),
-            RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
-        ],
-        evidence_exists: true,
-        evidence_path: Some("src/ui/phase0_shell/style_controls.rs"),
-        evidence_notes: "Stroke opacity control exists in current shell",
-    })
 }
 
 fn fill_controls() -> Vec<RequiredControl> {
     vec![
-        fill_colour_picker(),
-        fill_opacity_slider(),
-        no_fill_toggle(),
+        make_style_control(StyleControlSpec {
+            name: "Fill Colour Picker",
+            description: "Select fill colour for shapes",
+            states: &["enabled", "disabled", "focused", "open", "closed"],
+            role: "ColorPicker",
+            label: "Fill Colour",
+            a11y_states: &["focusable", "expanded", "collapsed"],
+            a11y_notes: "Must announce current colour value and no-fill state",
+            action_name: "SetFillColor",
+            action_notes: "Colour change emits command for undo/redo",
+            sources: &[
+                RequirementSource::Roadmap("1.4.1"),
+                RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
+                RequirementSource::Architecture("14.1"),
+            ],
+            evidence_exists: true,
+            evidence_path: Some("src/ui/phase0_shell/style_controls.rs"),
+            evidence_notes: "Colour picker for fill exists in current shell",
+        }),
+        make_style_control(StyleControlSpec {
+            name: "Fill Opacity Slider",
+            description: "Adjust fill transparency from 0% to 100%",
+            states: &["enabled", "disabled", "focused"],
+            role: "Slider",
+            label: "Fill Opacity",
+            a11y_states: &["focusable"],
+            a11y_notes: "Must announce current percentage value",
+            action_name: "SetFillOpacity",
+            action_notes: "Opacity change emits command for undo/redo",
+            sources: &[
+                RequirementSource::Roadmap("1.4.1"),
+                RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
+            ],
+            evidence_exists: false,
+            evidence_path: None,
+            evidence_notes: "Not yet implemented separately; may be combined with colour picker",
+        }),
+        make_style_control(StyleControlSpec {
+            name: "No Fill Toggle",
+            description: "Remove fill from shapes",
+            states: &["enabled", "disabled", "focused", "toggled"],
+            role: "ToggleButton",
+            label: "No Fill",
+            a11y_states: &["focusable", "checked", "unchecked"],
+            a11y_notes: "Must announce toggled state",
+            action_name: "ToggleNoFill",
+            action_notes: "Toggle emits command for undo/redo",
+            sources: &[
+                RequirementSource::Roadmap("1.4.1"),
+                RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
+            ],
+            evidence_exists: false,
+            evidence_path: None,
+            evidence_notes: "Not yet implemented as explicit toggle",
+        }),
     ]
-}
-
-fn fill_colour_picker() -> RequiredControl {
-    make_style_control(StyleControlSpec {
-        name: "Fill Colour Picker",
-        description: "Select fill colour for shapes",
-        states: &["enabled", "disabled", "focused", "open", "closed"],
-        role: "ColorPicker",
-        label: "Fill Colour",
-        a11y_states: &["focusable", "expanded", "collapsed"],
-        a11y_notes: "Must announce current colour value and no-fill state",
-        action_name: "SetFillColor",
-        action_notes: "Colour change emits command for undo/redo",
-        sources: &[
-            RequirementSource::Roadmap("1.4.1"),
-            RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
-            RequirementSource::Architecture("14.1"),
-        ],
-        evidence_exists: true,
-        evidence_path: Some("src/ui/phase0_shell/style_controls.rs"),
-        evidence_notes: "Colour picker for fill exists in current shell",
-    })
-}
-
-fn fill_opacity_slider() -> RequiredControl {
-    make_style_control(StyleControlSpec {
-        name: "Fill Opacity Slider",
-        description: "Adjust fill transparency from 0% to 100%",
-        states: &["enabled", "disabled", "focused"],
-        role: "Slider",
-        label: "Fill Opacity",
-        a11y_states: &["focusable"],
-        a11y_notes: "Must announce current percentage value",
-        action_name: "SetFillOpacity",
-        action_notes: "Opacity change emits command for undo/redo",
-        sources: &[
-            RequirementSource::Roadmap("1.4.1"),
-            RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
-        ],
-        evidence_exists: false,
-        evidence_path: None,
-        evidence_notes: "Not yet implemented separately; may be combined with colour picker",
-    })
-}
-
-fn no_fill_toggle() -> RequiredControl {
-    make_style_control(StyleControlSpec {
-        name: "No Fill Toggle",
-        description: "Remove fill from shapes",
-        states: &["enabled", "disabled", "focused", "toggled"],
-        role: "ToggleButton",
-        label: "No Fill",
-        a11y_states: &["focusable", "checked", "unchecked"],
-        a11y_notes: "Must announce toggled state",
-        action_name: "ToggleNoFill",
-        action_notes: "Toggle emits command for undo/redo",
-        sources: &[
-            RequirementSource::Roadmap("1.4.1"),
-            RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
-        ],
-        evidence_exists: false,
-        evidence_path: None,
-        evidence_notes: "Not yet implemented as explicit toggle",
-    })
 }
