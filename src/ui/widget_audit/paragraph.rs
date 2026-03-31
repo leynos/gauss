@@ -5,6 +5,10 @@ use super::types::{
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
 
+/// Returns the paragraph panel control inventory.
+///
+/// Provides controls for paragraph spacing, line spacing, and indentation
+/// settings.
 pub(super) fn controls() -> Vec<RequiredControl> {
     vec![
         paragraph_spacing_field(),

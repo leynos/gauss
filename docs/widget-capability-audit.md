@@ -159,10 +159,10 @@ that keyboard-only users can accomplish all editing tasks.
 
 All controls must expose:
 
-- **Role**: ARIA or AccessKit role (Button, TextInput, Slider, etc.)
-- **Label**: Accessible label announcing the control's purpose
-- **States**: Accessible states (focusable, checked, expanded, etc.)
-- **Announcements**: State changes must be announced to screen readers
+- **Role**: ARIA or AccessKit role (Button, TextInput, Slider, etc.).
+- **Label**: Accessible label announcing the control's purpose.
+- **States**: Accessible states (focusable, checked, expanded, etc.).
+- **Announcements**: State changes must be announced to screen readers.
 
 The accessibility tree uses stable node IDs per architecture section 16.
 

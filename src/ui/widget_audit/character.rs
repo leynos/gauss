@@ -60,6 +60,10 @@ fn make_character_control(spec: CharacterControlSpec) -> RequiredControl {
     }
 }
 
+/// Returns the character panel control inventory.
+///
+/// Combines font property controls (family selector, size field) with text
+/// style controls (bold, italic, alignment, colour picker).
 pub(super) fn controls() -> Vec<RequiredControl> {
     let mut v = font_property_controls();
     v.extend(text_style_controls());

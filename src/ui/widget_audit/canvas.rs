@@ -5,6 +5,10 @@ use super::types::{
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
 
+/// Returns the canvas text editor control inventory.
+///
+/// Provides the inline text cursor control for positioning and editing text
+/// directly on the canvas.
 pub(super) fn controls() -> Vec<RequiredControl> {
     vec![RequiredControl {
         name: "Inline Text Cursor",

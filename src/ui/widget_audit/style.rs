@@ -5,7 +5,62 @@ use super::types::{
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
 
-/// Style panel controls (stroke and fill).
+/// Specification for a style panel control.
+#[derive(Clone, Copy)]
+struct StyleControlSpec {
+    name: &'static str,
+    description: &'static str,
+    states: &'static [&'static str],
+    role: &'static str,
+    label: &'static str,
+    a11y_states: &'static [&'static str],
+    a11y_notes: &'static str,
+    action_name: &'static str,
+    action_notes: &'static str,
+    sources: &'static [RequirementSource],
+    evidence_exists: bool,
+    evidence_path: Option<&'static str>,
+    evidence_notes: &'static str,
+}
+
+/// Creates a `RequiredControl` from a `StyleControlSpec`.
+fn make_style_control(spec: StyleControlSpec) -> RequiredControl {
+    RequiredControl {
+        name: spec.name,
+        phase: Phase::Phase1,
+        surface: ControlSurface::StylePanel,
+        user_job: UserJob {
+            description: spec.description,
+        },
+        states: ControlStates {
+            states: spec.states.to_vec(),
+        },
+        keyboard: KeyboardRequirements {
+            shortcut: None,
+            keyboard_only_operation: true,
+            notes: "Must support keyboard navigation",
+        },
+        accessibility: AccessibilityRequirements {
+            role: spec.role,
+            label: spec.label,
+            states: spec.a11y_states.to_vec(),
+            notes: spec.a11y_notes,
+        },
+        action_linkage: ActionCommandLinkage {
+            requires_action: true,
+            action_name: Some(spec.action_name),
+            notes: spec.action_notes,
+        },
+        sources: spec.sources.to_vec(),
+        current_evidence: CurrentShellEvidence {
+            exists: spec.evidence_exists,
+            file_path: spec.evidence_path,
+            notes: spec.evidence_notes,
+        },
+    }
+}
+
+/// Returns the style panel control inventory (stroke and fill).
 pub(super) fn controls() -> Vec<RequiredControl> {
     let mut v = stroke_controls();
     v.extend(fill_controls());
@@ -21,241 +76,137 @@ fn stroke_controls() -> Vec<RequiredControl> {
 }
 
 fn stroke_color_picker() -> RequiredControl {
-    RequiredControl {
-        name: "Stroke Color Picker",
-        phase: Phase::Phase1,
-        surface: ControlSurface::StylePanel,
-        user_job: UserJob {
-            description: "Select stroke color for shapes",
-        },
-        states: ControlStates {
-            states: vec!["enabled", "disabled", "focused", "open", "closed"],
-        },
-        keyboard: KeyboardRequirements {
-            shortcut: None,
-            keyboard_only_operation: true,
-            notes: "Must support keyboard navigation through color picker UI",
-        },
-        accessibility: AccessibilityRequirements {
-            role: "ColorPicker",
-            label: "Stroke Color",
-            states: vec!["focusable", "expanded", "collapsed"],
-            notes: "Must announce current color value",
-        },
-        action_linkage: ActionCommandLinkage {
-            requires_action: true,
-            action_name: Some("SetStrokeColor"),
-            notes: "Color change emits command for undo/redo",
-        },
-        sources: vec![
+    make_style_control(StyleControlSpec {
+        name: "Stroke Colour Picker",
+        description: "Select stroke colour for shapes",
+        states: &["enabled", "disabled", "focused", "open", "closed"],
+        role: "ColorPicker",
+        label: "Stroke Colour",
+        a11y_states: &["focusable", "expanded", "collapsed"],
+        a11y_notes: "Must announce current colour value",
+        action_name: "SetStrokeColor",
+        action_notes: "Colour change emits command for undo/redo",
+        sources: &[
             RequirementSource::Roadmap("1.4.1"),
             RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
             RequirementSource::Architecture("14.1"),
         ],
-        current_evidence: CurrentShellEvidence {
-            exists: true,
-            file_path: Some("src/ui/phase0_shell/style_controls.rs"),
-            notes: "Color picker for stroke exists in current shell",
-        },
-    }
+        evidence_exists: true,
+        evidence_path: Some("src/ui/phase0_shell/style_controls.rs"),
+        evidence_notes: "Colour picker for stroke exists in current shell",
+    })
 }
 
 fn stroke_width_field() -> RequiredControl {
-    RequiredControl {
+    make_style_control(StyleControlSpec {
         name: "Stroke Width Field",
-        phase: Phase::Phase1,
-        surface: ControlSurface::StylePanel,
-        user_job: UserJob {
-            description: "Set stroke width in pixels or points",
-        },
-        states: ControlStates {
-            states: vec!["enabled", "disabled", "focused", "read-only"],
-        },
-        keyboard: KeyboardRequirements {
-            shortcut: None,
-            keyboard_only_operation: true,
-            notes: "Must support keyboard input, arrow keys for nudge",
-        },
-        accessibility: AccessibilityRequirements {
-            role: "TextInput",
-            label: "Stroke Width",
-            states: vec!["focusable", "editable"],
-            notes: "Must announce current value and units",
-        },
-        action_linkage: ActionCommandLinkage {
-            requires_action: true,
-            action_name: Some("SetStrokeWidth"),
-            notes: "Width change emits command for undo/redo",
-        },
-        sources: vec![
+        description: "Set stroke width in pixels or points",
+        states: &["enabled", "disabled", "focused", "read-only"],
+        role: "TextInput",
+        label: "Stroke Width",
+        a11y_states: &["focusable", "editable"],
+        a11y_notes: "Must announce current value and units",
+        action_name: "SetStrokeWidth",
+        action_notes: "Width change emits command for undo/redo",
+        sources: &[
             RequirementSource::Roadmap("1.4.1"),
             RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
         ],
-        current_evidence: CurrentShellEvidence {
-            exists: true,
-            file_path: Some("src/ui/phase0_shell/style_controls.rs"),
-            notes: "Stroke width control exists in current shell",
-        },
-    }
+        evidence_exists: true,
+        evidence_path: Some("src/ui/phase0_shell/style_controls.rs"),
+        evidence_notes: "Stroke width control exists in current shell",
+    })
 }
 
 fn stroke_opacity_slider() -> RequiredControl {
-    RequiredControl {
+    make_style_control(StyleControlSpec {
         name: "Stroke Opacity Slider",
-        phase: Phase::Phase1,
-        surface: ControlSurface::StylePanel,
-        user_job: UserJob {
-            description: "Adjust stroke transparency from 0% to 100%",
-        },
-        states: ControlStates {
-            states: vec!["enabled", "disabled", "focused"],
-        },
-        keyboard: KeyboardRequirements {
-            shortcut: None,
-            keyboard_only_operation: true,
-            notes: "Must support arrow keys for value adjustment",
-        },
-        accessibility: AccessibilityRequirements {
-            role: "Slider",
-            label: "Stroke Opacity",
-            states: vec!["focusable"],
-            notes: "Must announce current percentage value",
-        },
-        action_linkage: ActionCommandLinkage {
-            requires_action: true,
-            action_name: Some("SetStrokeOpacity"),
-            notes: "Opacity change emits command for undo/redo",
-        },
-        sources: vec![
+        description: "Adjust stroke transparency from 0% to 100%",
+        states: &["enabled", "disabled", "focused"],
+        role: "Slider",
+        label: "Stroke Opacity",
+        a11y_states: &["focusable"],
+        a11y_notes: "Must announce current percentage value",
+        action_name: "SetStrokeOpacity",
+        action_notes: "Opacity change emits command for undo/redo",
+        sources: &[
             RequirementSource::Roadmap("1.4.1"),
             RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
         ],
-        current_evidence: CurrentShellEvidence {
-            exists: true,
-            file_path: Some("src/ui/phase0_shell/style_controls.rs"),
-            notes: "Stroke opacity control exists in current shell",
-        },
-    }
+        evidence_exists: true,
+        evidence_path: Some("src/ui/phase0_shell/style_controls.rs"),
+        evidence_notes: "Stroke opacity control exists in current shell",
+    })
 }
 
 fn fill_controls() -> Vec<RequiredControl> {
-    vec![fill_color_picker(), fill_opacity_slider(), no_fill_toggle()]
+    vec![
+        fill_colour_picker(),
+        fill_opacity_slider(),
+        no_fill_toggle(),
+    ]
 }
 
-fn fill_color_picker() -> RequiredControl {
-    RequiredControl {
-        name: "Fill Color Picker",
-        phase: Phase::Phase1,
-        surface: ControlSurface::StylePanel,
-        user_job: UserJob {
-            description: "Select fill color for shapes",
-        },
-        states: ControlStates {
-            states: vec!["enabled", "disabled", "focused", "open", "closed"],
-        },
-        keyboard: KeyboardRequirements {
-            shortcut: None,
-            keyboard_only_operation: true,
-            notes: "Must support keyboard navigation through color picker UI",
-        },
-        accessibility: AccessibilityRequirements {
-            role: "ColorPicker",
-            label: "Fill Color",
-            states: vec!["focusable", "expanded", "collapsed"],
-            notes: "Must announce current color value and no-fill state",
-        },
-        action_linkage: ActionCommandLinkage {
-            requires_action: true,
-            action_name: Some("SetFillColor"),
-            notes: "Color change emits command for undo/redo",
-        },
-        sources: vec![
+fn fill_colour_picker() -> RequiredControl {
+    make_style_control(StyleControlSpec {
+        name: "Fill Colour Picker",
+        description: "Select fill colour for shapes",
+        states: &["enabled", "disabled", "focused", "open", "closed"],
+        role: "ColorPicker",
+        label: "Fill Colour",
+        a11y_states: &["focusable", "expanded", "collapsed"],
+        a11y_notes: "Must announce current colour value and no-fill state",
+        action_name: "SetFillColor",
+        action_notes: "Colour change emits command for undo/redo",
+        sources: &[
             RequirementSource::Roadmap("1.4.1"),
             RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
             RequirementSource::Architecture("14.1"),
         ],
-        current_evidence: CurrentShellEvidence {
-            exists: true,
-            file_path: Some("src/ui/phase0_shell/style_controls.rs"),
-            notes: "Color picker for fill exists in current shell",
-        },
-    }
+        evidence_exists: true,
+        evidence_path: Some("src/ui/phase0_shell/style_controls.rs"),
+        evidence_notes: "Colour picker for fill exists in current shell",
+    })
 }
 
 fn fill_opacity_slider() -> RequiredControl {
-    RequiredControl {
+    make_style_control(StyleControlSpec {
         name: "Fill Opacity Slider",
-        phase: Phase::Phase1,
-        surface: ControlSurface::StylePanel,
-        user_job: UserJob {
-            description: "Adjust fill transparency from 0% to 100%",
-        },
-        states: ControlStates {
-            states: vec!["enabled", "disabled", "focused"],
-        },
-        keyboard: KeyboardRequirements {
-            shortcut: None,
-            keyboard_only_operation: true,
-            notes: "Must support arrow keys for value adjustment",
-        },
-        accessibility: AccessibilityRequirements {
-            role: "Slider",
-            label: "Fill Opacity",
-            states: vec!["focusable"],
-            notes: "Must announce current percentage value",
-        },
-        action_linkage: ActionCommandLinkage {
-            requires_action: true,
-            action_name: Some("SetFillOpacity"),
-            notes: "Opacity change emits command for undo/redo",
-        },
-        sources: vec![
+        description: "Adjust fill transparency from 0% to 100%",
+        states: &["enabled", "disabled", "focused"],
+        role: "Slider",
+        label: "Fill Opacity",
+        a11y_states: &["focusable"],
+        a11y_notes: "Must announce current percentage value",
+        action_name: "SetFillOpacity",
+        action_notes: "Opacity change emits command for undo/redo",
+        sources: &[
             RequirementSource::Roadmap("1.4.1"),
             RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
         ],
-        current_evidence: CurrentShellEvidence {
-            exists: false,
-            file_path: None,
-            notes: "Not yet implemented separately; may be combined with color picker",
-        },
-    }
+        evidence_exists: false,
+        evidence_path: None,
+        evidence_notes: "Not yet implemented separately; may be combined with colour picker",
+    })
 }
 
 fn no_fill_toggle() -> RequiredControl {
-    RequiredControl {
+    make_style_control(StyleControlSpec {
         name: "No Fill Toggle",
-        phase: Phase::Phase1,
-        surface: ControlSurface::StylePanel,
-        user_job: UserJob {
-            description: "Remove fill from shapes",
-        },
-        states: ControlStates {
-            states: vec!["enabled", "disabled", "focused", "toggled"],
-        },
-        keyboard: KeyboardRequirements {
-            shortcut: None,
-            keyboard_only_operation: true,
-            notes: "Must support Space or Enter to toggle",
-        },
-        accessibility: AccessibilityRequirements {
-            role: "ToggleButton",
-            label: "No Fill",
-            states: vec!["focusable", "checked", "unchecked"],
-            notes: "Must announce toggled state",
-        },
-        action_linkage: ActionCommandLinkage {
-            requires_action: true,
-            action_name: Some("ToggleNoFill"),
-            notes: "Toggle emits command for undo/redo",
-        },
-        sources: vec![
+        description: "Remove fill from shapes",
+        states: &["enabled", "disabled", "focused", "toggled"],
+        role: "ToggleButton",
+        label: "No Fill",
+        a11y_states: &["focusable", "checked", "unchecked"],
+        a11y_notes: "Must announce toggled state",
+        action_name: "ToggleNoFill",
+        action_notes: "Toggle emits command for undo/redo",
+        sources: &[
             RequirementSource::Roadmap("1.4.1"),
             RequirementSource::FeaturePlan("Phase 1: Styling Tools"),
         ],
-        current_evidence: CurrentShellEvidence {
-            exists: false,
-            file_path: None,
-            notes: "Not yet implemented as explicit toggle",
-        },
-    }
+        evidence_exists: false,
+        evidence_path: None,
+        evidence_notes: "Not yet implemented as explicit toggle",
+    })
 }

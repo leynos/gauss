@@ -5,6 +5,10 @@ use super::types::{
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
 
+/// Returns the history panel control inventory.
+///
+/// Provides the history entry row control for displaying and selecting
+/// history states for undo/redo operations.
 pub(super) fn controls() -> Vec<RequiredControl> {
     vec![RequiredControl {
         name: "History Entry Row",

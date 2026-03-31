@@ -53,6 +53,10 @@ fn make_numeric_field(
     }
 }
 
+/// Returns the properties panel control inventory.
+///
+/// Provides numeric field controls for transform properties (position,
+/// dimensions, rotation) of selected objects.
 pub(super) fn controls() -> Vec<RequiredControl> {
     vec![
         make_numeric_field(

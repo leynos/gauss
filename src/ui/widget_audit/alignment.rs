@@ -5,6 +5,10 @@ use super::types::{
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
 
+/// Returns the alignment panel control inventory.
+///
+/// Combines alignment buttons (left, centre horizontal, right, top, centre
+/// vertical, bottom) with distribution buttons (horizontal, vertical).
 pub(super) fn controls() -> Vec<RequiredControl> {
     let mut v = alignment_buttons();
     v.extend(distribution_buttons());
