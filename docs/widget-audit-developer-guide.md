@@ -54,7 +54,8 @@ let style_controls = inventory.by_surface(ControlSurface::StylePanel);
 Available surfaces:
 
 - `ControlSurface::Toolbar` — Tool selection rail
-- `ControlSurface::PropertiesPanel` — Transform properties (x, y, width, height, rotation)
+- `ControlSurface::PropertiesPanel` — Transform properties (x, y, width, height,
+  rotation)
 - `ControlSurface::StylePanel` — Stroke and fill styling
 - `ControlSurface::LayersPanel` — Layer management
 - `ControlSurface::HistoryPanel` — Undo/redo history
