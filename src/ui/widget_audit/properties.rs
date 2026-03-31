@@ -5,16 +5,15 @@ use super::types::{
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
 
-#[derive(Clone, Copy)]
-struct A11ySpec {
-    label: &'static str,
-    notes: &'static str,
-}
-
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Builder function with 5 distinct parameters for clarity"
+)]
 fn make_numeric_field(
     name: &'static str,
     description: &'static str,
-    a11y: A11ySpec,
+    a11y_label: &'static str,
+    a11y_notes: &'static str,
     action_name: &'static str,
 ) -> RequiredControl {
     RequiredControl {
@@ -32,9 +31,9 @@ fn make_numeric_field(
         },
         accessibility: AccessibilityRequirements {
             role: "TextInput",
-            label: a11y.label,
-            states: vec!["focusable", "editable", "read-only"],
-            notes: a11y.notes,
+            label: a11y_label,
+            states: vec!["focusable", "editable"],
+            notes: a11y_notes,
         },
         action_linkage: ActionCommandLinkage {
             requires_action: true,
@@ -62,46 +61,36 @@ pub(super) fn controls() -> Vec<RequiredControl> {
         make_numeric_field(
             "X Position Field",
             "View and edit object X coordinate",
-            A11ySpec {
-                label: "X Position",
-                notes: "Must announce current value and accept numeric input",
-            },
+            "X Position",
+            "Must announce current value and accept numeric input",
             "SetObjectPosition",
         ),
         make_numeric_field(
             "Y Position Field",
             "View and edit object Y coordinate",
-            A11ySpec {
-                label: "Y Position",
-                notes: "Must announce current value and accept numeric input",
-            },
+            "Y Position",
+            "Must announce current value and accept numeric input",
             "SetObjectPosition",
         ),
         make_numeric_field(
             "Width Field",
             "View and edit object width",
-            A11ySpec {
-                label: "Width",
-                notes: "Must announce current value and accept numeric input",
-            },
+            "Width",
+            "Must announce current value and accept numeric input",
             "SetObjectSize",
         ),
         make_numeric_field(
             "Height Field",
             "View and edit object height",
-            A11ySpec {
-                label: "Height",
-                notes: "Must announce current value and accept numeric input",
-            },
+            "Height",
+            "Must announce current value and accept numeric input",
             "SetObjectSize",
         ),
         make_numeric_field(
             "Rotation Field",
             "View and edit object rotation angle",
-            A11ySpec {
-                label: "Rotation",
-                notes: "Must announce current value in degrees and accept numeric input",
-            },
+            "Rotation",
+            "Must announce current value in degrees and accept numeric input",
             "SetObjectRotation",
         ),
     ]
