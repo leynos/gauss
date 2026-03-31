@@ -8,7 +8,7 @@
 //! NOTE: These tests validate the audit inventory structure and metadata,
 //! not the runtime GPUI behavior (which requires the full common test helpers).
 
-use gauss::ui::widget_audit::{ControlInventory, ControlSurface};
+use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase};
 use std::path::Path;
 
 #[test]
@@ -30,7 +30,7 @@ fn controls_with_evidence_have_valid_paths() {
 
         // Verify the file path exists (catches typos like "stlye_controls.rs")
         assert!(
-            Path::new(&file_path).exists(),
+            Path::new(file_path).exists(),
             "Control '{}' claims evidence in '{}' but that path does not exist",
             control.name(),
             file_path
@@ -151,15 +151,11 @@ fn audit_inventory_is_complete() {
 
     // Verify we have both phases represented
     assert!(
-        !inventory
-            .by_phase(gauss::ui::widget_audit::Phase::Phase1)
-            .is_empty(),
+        !inventory.by_phase(Phase::Phase1).is_empty(),
         "Must have Phase 1 controls"
     );
     assert!(
-        !inventory
-            .by_phase(gauss::ui::widget_audit::Phase::Phase2)
-            .is_empty(),
+        !inventory.by_phase(Phase::Phase2).is_empty(),
         "Must have Phase 2 controls"
     );
 

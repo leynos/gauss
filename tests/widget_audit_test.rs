@@ -96,12 +96,14 @@ fn test_required_surfaces_have_controls(#[case] surface: ControlSurface) {
     );
 }
 
-#[rstest]
+#[test]
 fn test_toolbar_tools_have_keyboard_shortcuts() {
     let inventory = ControlInventory::new();
     let toolbar_controls = inventory.by_surface(ControlSurface::Toolbar);
 
     for control in toolbar_controls {
+        // Type Tool is a Phase2 control but still requires a keyboard shortcut
+        // for UX/compatibility alongside Phase1 toolbar tools.
         if control.phase() == Phase::Phase1 || control.name() == "Type Tool" {
             assert!(
                 control.keyboard.shortcut.is_some(),
@@ -129,7 +131,7 @@ fn test_controls_requiring_actions_have_linkage_notes() {
     }
 }
 
-#[rstest]
+#[test]
 fn test_current_shell_evidence_accuracy() {
     let inventory = ControlInventory::new();
     let with_evidence = inventory.with_evidence();
@@ -150,7 +152,7 @@ fn test_current_shell_evidence_accuracy() {
     }
 }
 
-#[rstest]
+#[test]
 fn test_controls_without_evidence_have_notes() {
     let inventory = ControlInventory::new();
     let without_evidence = inventory.without_evidence();
@@ -164,7 +166,7 @@ fn test_controls_without_evidence_have_notes() {
     }
 }
 
-#[rstest]
+#[test]
 fn test_phase1_has_expected_tool_count() {
     let inventory = ControlInventory::new();
     let toolbar_controls = inventory.by_surface(ControlSurface::Toolbar);
@@ -181,7 +183,7 @@ fn test_phase1_has_expected_tool_count() {
     );
 }
 
-#[rstest]
+#[test]
 fn test_stroke_and_fill_controls_exist() {
     let inventory = ControlInventory::new();
     let style_controls = inventory.by_surface(ControlSurface::StylePanel);
@@ -200,7 +202,7 @@ fn test_stroke_and_fill_controls_exist() {
     assert!(has_fill_colour, "Style panel must have fill colour control");
 }
 
-#[rstest]
+#[test]
 fn test_layer_panel_has_core_controls() {
     let inventory = ControlInventory::new();
     let layer_controls = inventory.by_surface(ControlSurface::LayersPanel);
@@ -216,7 +218,7 @@ fn test_layer_panel_has_core_controls() {
     assert!(has_rename, "Layers panel must have rename capability");
 }
 
-#[rstest]
+#[test]
 fn test_properties_panel_has_transform_fields() {
     let inventory = ControlInventory::new();
     let properties_controls = inventory.by_surface(ControlSurface::PropertiesPanel);
@@ -244,7 +246,7 @@ fn test_properties_panel_has_transform_fields() {
     assert!(has_rotation, "Properties panel must have rotation field");
 }
 
-#[rstest]
+#[test]
 fn test_alignment_panel_has_distribution_controls() {
     let inventory = ControlInventory::new();
     let alignment_controls = inventory.by_surface(ControlSurface::AlignmentPanel);
