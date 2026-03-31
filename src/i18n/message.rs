@@ -4,6 +4,15 @@
 //!
 //! Message keys use dot-separated hierarchical segments for logical grouping.
 //! This creates a clear namespace structure and makes related keys easy to discover.
+
+#![allow(
+    unknown_lints,
+    reason = "module_max_lines is a custom lint from whitaker tool"
+)]
+#![allow(
+    module_max_lines,
+    reason = "MessageId factory methods are a flat lookup table"
+)]
 //!
 //! ## Guidelines
 //!
