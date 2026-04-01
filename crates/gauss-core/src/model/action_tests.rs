@@ -21,6 +21,7 @@ use super::{Action, ActionKind};
 #[case(Action::DeselectAll, ActionKind::Editor)]
 #[case(Action::ActivatePenTool, ActionKind::Editor)]
 #[case(Action::ActivateSelectTool, ActionKind::Editor)]
+#[case(Action::ActivateMyNewTool, ActionKind::Editor)]
 #[case(Action::Undo, ActionKind::Editor)]
 #[case(Action::Redo, ActionKind::Editor)]
 #[case(Action::SelectionUndo, ActionKind::Editor)]
@@ -40,6 +41,7 @@ fn action_kind_is_correct(#[case] action: Action, #[case] expected: ActionKind) 
 #[case(Action::DeselectAll, "Deselect All")]
 #[case(Action::ActivatePenTool, "Pen Tool")]
 #[case(Action::ActivateSelectTool, "Select Tool")]
+#[case(Action::ActivateMyNewTool, "My New Tool")]
 #[case(Action::Undo, "Undo")]
 #[case(Action::Redo, "Redo")]
 #[case(Action::SelectionUndo, "Selection Undo")]
@@ -65,6 +67,7 @@ fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {
 #[case(Action::DeselectAll)]
 #[case(Action::ActivatePenTool)]
 #[case(Action::ActivateSelectTool)]
+#[case(Action::ActivateMyNewTool)]
 #[case(Action::Undo)]
 #[case(Action::Redo)]
 #[case(Action::SelectionUndo)]
@@ -101,6 +104,7 @@ fn document_actions_require_selection(#[case] action: Action) {
 #[case(Action::DeselectAll)]
 #[case(Action::ActivatePenTool)]
 #[case(Action::ActivateSelectTool)]
+#[case(Action::ActivateMyNewTool)]
 #[case(Action::Undo)]
 #[case(Action::Redo)]
 #[case(Action::SelectionUndo)]
@@ -135,6 +139,7 @@ fn document_actions_are_all_accounted_for() {
         Action::DeselectAll,
         Action::ActivatePenTool,
         Action::ActivateSelectTool,
+        Action::ActivateMyNewTool,
         Action::Undo,
         Action::Redo,
         Action::SelectionUndo,
@@ -163,6 +168,7 @@ fn document_actions_are_all_accounted_for() {
 #[case(Action::DeselectAll, "DeselectAll")]
 #[case(Action::ActivatePenTool, "ActivatePenTool")]
 #[case(Action::ActivateSelectTool, "ActivateSelectTool")]
+#[case(Action::ActivateMyNewTool, "ActivateMyNewTool")]
 #[case(Action::Undo, "Undo")]
 #[case(Action::Redo, "Redo")]
 #[case(Action::SelectionUndo, "SelectionUndo")]

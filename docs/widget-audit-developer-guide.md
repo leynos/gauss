@@ -139,6 +139,12 @@ To add a new control to the inventory:
 
 ### Example: adding a new toolbar tool
 
+Before referencing an action in `action_linkage`, add the corresponding
+variant to
+[`gauss_core::model::Action`](https://github.com/leynos/gauss/blob/main/crates/gauss-core/src/model/action.rs)
+and implement `kind()`, `name()`, `identifier()`, and
+`requires_selection()` for it.
+
 ```rust
 // In src/ui/widget_audit/toolbar.rs
 

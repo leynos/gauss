@@ -87,6 +87,7 @@ pub fn prepare_command(action: Action, state: &EngineState) -> Result<Command, U
         | Action::DeselectAll
         | Action::ActivatePenTool
         | Action::ActivateSelectTool
+        | Action::ActivateMyNewTool
         | Action::Undo
         | Action::Redo
         | Action::SelectionUndo

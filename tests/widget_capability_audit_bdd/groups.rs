@@ -39,6 +39,7 @@ const STROKE: &[(&str, &str)] = &[
 const FILL: &[(&str, &str)] = &[
     ("Fill Colour", "Must include Fill Colour Picker"),
     ("Fill Opacity", "Must include Fill Opacity Slider"),
+    ("No Fill Toggle", "Must include No Fill Toggle"),
 ];
 
 const fn group_checks(group: InclusionGroup) -> &'static [(&'static str, &'static str)] {

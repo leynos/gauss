@@ -116,8 +116,11 @@ fn test_controls_requiring_actions_have_linkage_notes() {
 
     for control in inventory.all() {
         if control.action_linkage.requires_action {
-            // Action name should be present for most controls; some may use placeholder
-            // during planning phase, so we just check that the field is documented
+            assert!(
+                control.action_linkage.action_name.is_some(),
+                "Control '{}' requires action but has no action name",
+                control.name()
+            );
             assert!(
                 !control.action_linkage.notes.is_empty(),
                 "Control '{}' requires action but has no linkage notes",

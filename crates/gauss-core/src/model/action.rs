@@ -154,6 +154,12 @@ pub enum Action {
     /// be selected and moved.
     ActivateSelectTool,
 
+    /// Activate a hypothetical new tool for examples and future expansion.
+    ///
+    /// This variant exists primarily for documentation examples and to
+    /// validate the action linkage pattern for new toolbar tools.
+    ActivateMyNewTool,
+
     // === History ===
     /// Undo the last document change.
     ///
@@ -242,6 +248,7 @@ impl Action {
             | Self::DeselectAll
             | Self::ActivatePenTool
             | Self::ActivateSelectTool
+            | Self::ActivateMyNewTool
             | Self::Undo
             | Self::Redo
             | Self::SelectionUndo
@@ -286,6 +293,7 @@ impl Action {
             Self::DeselectAll => "Deselect All",
             Self::ActivatePenTool => "Pen Tool",
             Self::ActivateSelectTool => "Select Tool",
+            Self::ActivateMyNewTool => "My New Tool",
             Self::Undo => "Undo",
             Self::Redo => "Redo",
             Self::SelectionUndo => "Selection Undo",
@@ -332,6 +340,7 @@ impl Action {
             Self::DeselectAll => "DeselectAll",
             Self::ActivatePenTool => "ActivatePenTool",
             Self::ActivateSelectTool => "ActivateSelectTool",
+            Self::ActivateMyNewTool => "ActivateMyNewTool",
             Self::Undo => "Undo",
             Self::Redo => "Redo",
             Self::SelectionUndo => "SelectionUndo",
