@@ -322,13 +322,10 @@ pub(crate) fn then_evidence_has_path(world: &AuditWorld) -> TestSupportResult<()
     })?;
     for control in inventory.with_evidence() {
         if control.current_evidence.file_path.is_none() {
-            return Err(test_support::TestSupportError::expectation(
-                format!(
-                    "Control '{}' claims evidence but has no file path",
-                    control.name()
-                )
-                .to_owned(),
-            ));
+            return Err(test_support::TestSupportError::expectation(format!(
+                "Control '{}' claims evidence but has no file path",
+                control.name()
+            )));
         }
     }
     Ok(())
@@ -348,7 +345,7 @@ pub(crate) fn then_each_tool_has_shortcut(world: &AuditWorld) -> TestSupportResu
 
     if tools.is_empty() {
         return Err(test_support::TestSupportError::expectation(
-            "Must have toolbar controls",
+            "Must have toolbar controls".to_owned(),
         ));
     }
 

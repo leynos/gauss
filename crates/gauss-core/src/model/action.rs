@@ -290,10 +290,10 @@ impl Action {
             Self::Redo => "Redo",
             Self::SelectionUndo => "Selection Undo",
             Self::SelectionRedo => "Selection Redo",
-            Self::SetStrokeColor => "Set Stroke Color",
+            Self::SetStrokeColor => "Set Stroke Colour",
             Self::SetStrokeWidth => "Set Stroke Width",
             Self::SetStrokeOpacity => "Set Stroke Opacity",
-            Self::SetFillColor => "Set Fill Color",
+            Self::SetFillColor => "Set Fill Colour",
             Self::SetFillOpacity => "Set Fill Opacity",
             Self::ToggleNoFill => "Toggle No Fill",
         }

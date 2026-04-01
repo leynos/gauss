@@ -44,10 +44,10 @@ fn action_kind_is_correct(#[case] action: Action, #[case] expected: ActionKind) 
 #[case(Action::Redo, "Redo")]
 #[case(Action::SelectionUndo, "Selection Undo")]
 #[case(Action::SelectionRedo, "Selection Redo")]
-#[case(Action::SetStrokeColor, "Set Stroke Color")]
+#[case(Action::SetStrokeColor, "Set Stroke Colour")]
 #[case(Action::SetStrokeWidth, "Set Stroke Width")]
 #[case(Action::SetStrokeOpacity, "Set Stroke Opacity")]
-#[case(Action::SetFillColor, "Set Fill Color")]
+#[case(Action::SetFillColor, "Set Fill Colour")]
 #[case(Action::SetFillOpacity, "Set Fill Opacity")]
 #[case(Action::ToggleNoFill, "Toggle No Fill")]
 fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {

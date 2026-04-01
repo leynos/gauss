@@ -176,11 +176,28 @@ fn test_phase1_has_expected_tool_count() {
         .collect();
 
     // Phase 1 should have: Selection, Direct Selection, Pen, Rectangle, Ellipse, Line
+    let expected_phase1_tools = [
+        "Selection Tool",
+        "Direct Selection Tool",
+        "Pen Tool",
+        "Rectangle Tool",
+        "Ellipse Tool",
+        "Line Tool",
+    ];
+
     assert_eq!(
         phase1_tools.len(),
-        6,
-        "Phase 1 should have exactly 6 toolbar tools"
+        expected_phase1_tools.len(),
+        "Phase 1 should have exactly {} toolbar tools",
+        expected_phase1_tools.len()
     );
+
+    for tool_name in expected_phase1_tools {
+        assert!(
+            phase1_tools.iter().any(|c| c.name() == tool_name),
+            "Phase 1 toolbar must include {tool_name}"
+        );
+    }
 }
 
 #[test]

@@ -139,6 +139,8 @@ To add a new control to the inventory:
 ```rust
 // In src/ui/widget_audit/toolbar.rs
 
+use gauss_core::model::Action;
+
 fn my_new_tool() -> RequiredControl {
     RequiredControl {
         name: "My New Tool",
@@ -163,7 +165,7 @@ fn my_new_tool() -> RequiredControl {
         },
         action_linkage: ActionCommandLinkage {
             requires_action: true,
-            action_name: Some("ActivateMyNewTool"),
+            action_name: Some(Action::ActivateMyNewTool.name()),
             notes: "Activates the new tool mode",
         },
         sources: vec![
