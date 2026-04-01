@@ -32,22 +32,21 @@ impl Action {
             | Self::RaiseSelection
             | Self::LowerSelection
             | Self::ToggleSegmentKind
-            | Self::SetStrokeColor
-            | Self::SetStrokeWidth
-            | Self::SetStrokeOpacity
-            | Self::SetFillColor
-            | Self::SetFillOpacity
+            | Self::SetStrokeColor(_)
+            | Self::SetStrokeWidth(_)
+            | Self::SetStrokeOpacity(_)
+            | Self::SetFillColor(_)
+            | Self::SetFillOpacity(_)
             | Self::ToggleNoFill
-            | Self::SetObjectPosition
-            | Self::SetObjectSize
-            | Self::SetObjectRotation => ActionKind::Document,
+            | Self::SetObjectPosition(_)
+            | Self::SetObjectSize(_)
+            | Self::SetObjectRotation(_) => ActionKind::Document,
 
             // Editor state changes (selection, tools, history navigation)
             Self::SelectAll
             | Self::DeselectAll
             | Self::ActivatePenTool
             | Self::ActivateSelectTool
-            | Self::ActivateMyNewTool
             | Self::Undo
             | Self::Redo
             | Self::SelectionUndo
@@ -92,20 +91,19 @@ impl Action {
             Self::DeselectAll => "Deselect All",
             Self::ActivatePenTool => "Pen Tool",
             Self::ActivateSelectTool => "Select Tool",
-            Self::ActivateMyNewTool => "My New Tool",
             Self::Undo => "Undo",
             Self::Redo => "Redo",
             Self::SelectionUndo => "Selection Undo",
             Self::SelectionRedo => "Selection Redo",
-            Self::SetStrokeColor => "Set Stroke Colour",
-            Self::SetStrokeWidth => "Set Stroke Width",
-            Self::SetStrokeOpacity => "Set Stroke Opacity",
-            Self::SetFillColor => "Set Fill Colour",
-            Self::SetFillOpacity => "Set Fill Opacity",
+            Self::SetStrokeColor(_) => "Set Stroke Colour",
+            Self::SetStrokeWidth(_) => "Set Stroke Width",
+            Self::SetStrokeOpacity(_) => "Set Stroke Opacity",
+            Self::SetFillColor(_) => "Set Fill Colour",
+            Self::SetFillOpacity(_) => "Set Fill Opacity",
             Self::ToggleNoFill => "Toggle No Fill",
-            Self::SetObjectPosition => "Set Position",
-            Self::SetObjectSize => "Set Size",
-            Self::SetObjectRotation => "Set Rotation",
+            Self::SetObjectPosition(_) => "Set Position",
+            Self::SetObjectSize(_) => "Set Size",
+            Self::SetObjectRotation(_) => "Set Rotation",
         }
     }
 
@@ -142,20 +140,19 @@ impl Action {
             Self::DeselectAll => "DeselectAll",
             Self::ActivatePenTool => "ActivatePenTool",
             Self::ActivateSelectTool => "ActivateSelectTool",
-            Self::ActivateMyNewTool => "ActivateMyNewTool",
             Self::Undo => "Undo",
             Self::Redo => "Redo",
             Self::SelectionUndo => "SelectionUndo",
             Self::SelectionRedo => "SelectionRedo",
-            Self::SetStrokeColor => "SetStrokeColor",
-            Self::SetStrokeWidth => "SetStrokeWidth",
-            Self::SetStrokeOpacity => "SetStrokeOpacity",
-            Self::SetFillColor => "SetFillColor",
-            Self::SetFillOpacity => "SetFillOpacity",
+            Self::SetStrokeColor(_) => "SetStrokeColor",
+            Self::SetStrokeWidth(_) => "SetStrokeWidth",
+            Self::SetStrokeOpacity(_) => "SetStrokeOpacity",
+            Self::SetFillColor(_) => "SetFillColor",
+            Self::SetFillOpacity(_) => "SetFillOpacity",
             Self::ToggleNoFill => "ToggleNoFill",
-            Self::SetObjectPosition => "SetObjectPosition",
-            Self::SetObjectSize => "SetObjectSize",
-            Self::SetObjectRotation => "SetObjectRotation",
+            Self::SetObjectPosition(_) => "SetObjectPosition",
+            Self::SetObjectSize(_) => "SetObjectSize",
+            Self::SetObjectRotation(_) => "SetObjectRotation",
         }
     }
 
@@ -187,15 +184,15 @@ impl Action {
                 | Self::RaiseSelection
                 | Self::LowerSelection
                 | Self::ToggleSegmentKind
-                | Self::SetStrokeColor
-                | Self::SetStrokeWidth
-                | Self::SetStrokeOpacity
-                | Self::SetFillColor
-                | Self::SetFillOpacity
+                | Self::SetStrokeColor(_)
+                | Self::SetStrokeWidth(_)
+                | Self::SetStrokeOpacity(_)
+                | Self::SetFillColor(_)
+                | Self::SetFillOpacity(_)
                 | Self::ToggleNoFill
-                | Self::SetObjectPosition
-                | Self::SetObjectSize
-                | Self::SetObjectRotation
+                | Self::SetObjectPosition(_)
+                | Self::SetObjectSize(_)
+                | Self::SetObjectRotation(_)
         )
     }
 }

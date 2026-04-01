@@ -2,7 +2,7 @@
 
 use rstest::rstest;
 
-use super::{Action, ActionKind};
+use super::{Action, ActionKind, Color, Opacity, Position, Rotation, Size, StrokeWidth};
 
 #[rstest]
 #[case(Action::DeleteSelection, ActionKind::Document)]
@@ -11,20 +11,19 @@ use super::{Action, ActionKind};
 #[case(Action::RaiseSelection, ActionKind::Document)]
 #[case(Action::LowerSelection, ActionKind::Document)]
 #[case(Action::ToggleSegmentKind, ActionKind::Document)]
-#[case(Action::SetStrokeColor, ActionKind::Document)]
-#[case(Action::SetStrokeWidth, ActionKind::Document)]
-#[case(Action::SetStrokeOpacity, ActionKind::Document)]
-#[case(Action::SetFillColor, ActionKind::Document)]
-#[case(Action::SetFillOpacity, ActionKind::Document)]
+#[case(Action::SetStrokeColor(Color::new(0, 0, 0)), ActionKind::Document)]
+#[case(Action::SetStrokeWidth(StrokeWidth::new(1.0)), ActionKind::Document)]
+#[case(Action::SetStrokeOpacity(Opacity::new(1.0)), ActionKind::Document)]
+#[case(Action::SetFillColor(Color::new(255, 255, 255)), ActionKind::Document)]
+#[case(Action::SetFillOpacity(Opacity::new(1.0)), ActionKind::Document)]
 #[case(Action::ToggleNoFill, ActionKind::Document)]
-#[case(Action::SetObjectPosition, ActionKind::Document)]
-#[case(Action::SetObjectSize, ActionKind::Document)]
-#[case(Action::SetObjectRotation, ActionKind::Document)]
+#[case(Action::SetObjectPosition(Position::new(0.0, 0.0)), ActionKind::Document)]
+#[case(Action::SetObjectSize(Size::new(100.0, 100.0)), ActionKind::Document)]
+#[case(Action::SetObjectRotation(Rotation::new(0.0)), ActionKind::Document)]
 #[case(Action::SelectAll, ActionKind::Editor)]
 #[case(Action::DeselectAll, ActionKind::Editor)]
 #[case(Action::ActivatePenTool, ActionKind::Editor)]
 #[case(Action::ActivateSelectTool, ActionKind::Editor)]
-#[case(Action::ActivateMyNewTool, ActionKind::Editor)]
 #[case(Action::Undo, ActionKind::Editor)]
 #[case(Action::Redo, ActionKind::Editor)]
 #[case(Action::SelectionUndo, ActionKind::Editor)]
@@ -44,20 +43,19 @@ fn action_kind_is_correct(#[case] action: Action, #[case] expected: ActionKind) 
 #[case(Action::DeselectAll, "Deselect All")]
 #[case(Action::ActivatePenTool, "Pen Tool")]
 #[case(Action::ActivateSelectTool, "Select Tool")]
-#[case(Action::ActivateMyNewTool, "My New Tool")]
 #[case(Action::Undo, "Undo")]
 #[case(Action::Redo, "Redo")]
 #[case(Action::SelectionUndo, "Selection Undo")]
 #[case(Action::SelectionRedo, "Selection Redo")]
-#[case(Action::SetStrokeColor, "Set Stroke Colour")]
-#[case(Action::SetStrokeWidth, "Set Stroke Width")]
-#[case(Action::SetStrokeOpacity, "Set Stroke Opacity")]
-#[case(Action::SetFillColor, "Set Fill Colour")]
-#[case(Action::SetFillOpacity, "Set Fill Opacity")]
+#[case(Action::SetStrokeColor(Color::new(0, 0, 0)), "Set Stroke Colour")]
+#[case(Action::SetStrokeWidth(StrokeWidth::new(1.0)), "Set Stroke Width")]
+#[case(Action::SetStrokeOpacity(Opacity::new(1.0)), "Set Stroke Opacity")]
+#[case(Action::SetFillColor(Color::new(255, 255, 255)), "Set Fill Colour")]
+#[case(Action::SetFillOpacity(Opacity::new(1.0)), "Set Fill Opacity")]
 #[case(Action::ToggleNoFill, "Toggle No Fill")]
-#[case(Action::SetObjectPosition, "Set Position")]
-#[case(Action::SetObjectSize, "Set Size")]
-#[case(Action::SetObjectRotation, "Set Rotation")]
+#[case(Action::SetObjectPosition(Position::new(0.0, 0.0)), "Set Position")]
+#[case(Action::SetObjectSize(Size::new(100.0, 100.0)), "Set Size")]
+#[case(Action::SetObjectRotation(Rotation::new(0.0)), "Set Rotation")]
 fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {
     assert_eq!(action.name(), expected);
 }
@@ -73,20 +71,19 @@ fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {
 #[case(Action::DeselectAll)]
 #[case(Action::ActivatePenTool)]
 #[case(Action::ActivateSelectTool)]
-#[case(Action::ActivateMyNewTool)]
 #[case(Action::Undo)]
 #[case(Action::Redo)]
 #[case(Action::SelectionUndo)]
 #[case(Action::SelectionRedo)]
-#[case(Action::SetStrokeColor)]
-#[case(Action::SetStrokeWidth)]
-#[case(Action::SetStrokeOpacity)]
-#[case(Action::SetFillColor)]
-#[case(Action::SetFillOpacity)]
+#[case(Action::SetStrokeColor(Color::new(0, 0, 0)))]
+#[case(Action::SetStrokeWidth(StrokeWidth::new(1.0)))]
+#[case(Action::SetStrokeOpacity(Opacity::new(1.0)))]
+#[case(Action::SetFillColor(Color::new(255, 255, 255)))]
+#[case(Action::SetFillOpacity(Opacity::new(1.0)))]
 #[case(Action::ToggleNoFill)]
-#[case(Action::SetObjectPosition)]
-#[case(Action::SetObjectSize)]
-#[case(Action::SetObjectRotation)]
+#[case(Action::SetObjectPosition(Position::new(0.0, 0.0)))]
+#[case(Action::SetObjectSize(Size::new(100.0, 100.0)))]
+#[case(Action::SetObjectRotation(Rotation::new(0.0)))]
 fn actions_have_nonempty_names(#[case] action: Action) {
     assert!(!action.name().is_empty());
 }
@@ -98,15 +95,15 @@ fn actions_have_nonempty_names(#[case] action: Action) {
 #[case(Action::RaiseSelection)]
 #[case(Action::LowerSelection)]
 #[case(Action::ToggleSegmentKind)]
-#[case(Action::SetStrokeColor)]
-#[case(Action::SetStrokeWidth)]
-#[case(Action::SetStrokeOpacity)]
-#[case(Action::SetFillColor)]
-#[case(Action::SetFillOpacity)]
+#[case(Action::SetStrokeColor(Color::new(0, 0, 0)))]
+#[case(Action::SetStrokeWidth(StrokeWidth::new(1.0)))]
+#[case(Action::SetStrokeOpacity(Opacity::new(1.0)))]
+#[case(Action::SetFillColor(Color::new(255, 255, 255)))]
+#[case(Action::SetFillOpacity(Opacity::new(1.0)))]
 #[case(Action::ToggleNoFill)]
-#[case(Action::SetObjectPosition)]
-#[case(Action::SetObjectSize)]
-#[case(Action::SetObjectRotation)]
+#[case(Action::SetObjectPosition(Position::new(0.0, 0.0)))]
+#[case(Action::SetObjectSize(Size::new(100.0, 100.0)))]
+#[case(Action::SetObjectRotation(Rotation::new(0.0)))]
 fn document_actions_require_selection(#[case] action: Action) {
     assert!(action.requires_selection());
 }
@@ -116,7 +113,6 @@ fn document_actions_require_selection(#[case] action: Action) {
 #[case(Action::DeselectAll)]
 #[case(Action::ActivatePenTool)]
 #[case(Action::ActivateSelectTool)]
-#[case(Action::ActivateMyNewTool)]
 #[case(Action::Undo)]
 #[case(Action::Redo)]
 #[case(Action::SelectionUndo)]
@@ -141,20 +137,19 @@ fn document_actions_are_all_accounted_for() {
         Action::RaiseSelection,
         Action::LowerSelection,
         Action::ToggleSegmentKind,
-        Action::SetStrokeColor,
-        Action::SetStrokeWidth,
-        Action::SetStrokeOpacity,
-        Action::SetFillColor,
-        Action::SetFillOpacity,
+        Action::SetStrokeColor(Color::new(0, 0, 0)),
+        Action::SetStrokeWidth(StrokeWidth::new(1.0)),
+        Action::SetStrokeOpacity(Opacity::new(1.0)),
+        Action::SetFillColor(Color::new(255, 255, 255)),
+        Action::SetFillOpacity(Opacity::new(1.0)),
         Action::ToggleNoFill,
-        Action::SetObjectPosition,
-        Action::SetObjectSize,
-        Action::SetObjectRotation,
+        Action::SetObjectPosition(Position::new(0.0, 0.0)),
+        Action::SetObjectSize(Size::new(100.0, 100.0)),
+        Action::SetObjectRotation(Rotation::new(0.0)),
         Action::SelectAll,
         Action::DeselectAll,
         Action::ActivatePenTool,
         Action::ActivateSelectTool,
-        Action::ActivateMyNewTool,
         Action::Undo,
         Action::Redo,
         Action::SelectionUndo,
@@ -183,20 +178,19 @@ fn document_actions_are_all_accounted_for() {
 #[case(Action::DeselectAll, "DeselectAll")]
 #[case(Action::ActivatePenTool, "ActivatePenTool")]
 #[case(Action::ActivateSelectTool, "ActivateSelectTool")]
-#[case(Action::ActivateMyNewTool, "ActivateMyNewTool")]
 #[case(Action::Undo, "Undo")]
 #[case(Action::Redo, "Redo")]
 #[case(Action::SelectionUndo, "SelectionUndo")]
 #[case(Action::SelectionRedo, "SelectionRedo")]
-#[case(Action::SetStrokeColor, "SetStrokeColor")]
-#[case(Action::SetStrokeWidth, "SetStrokeWidth")]
-#[case(Action::SetStrokeOpacity, "SetStrokeOpacity")]
-#[case(Action::SetFillColor, "SetFillColor")]
-#[case(Action::SetFillOpacity, "SetFillOpacity")]
+#[case(Action::SetStrokeColor(Color::new(0, 0, 0)), "SetStrokeColor")]
+#[case(Action::SetStrokeWidth(StrokeWidth::new(1.0)), "SetStrokeWidth")]
+#[case(Action::SetStrokeOpacity(Opacity::new(1.0)), "SetStrokeOpacity")]
+#[case(Action::SetFillColor(Color::new(255, 255, 255)), "SetFillColor")]
+#[case(Action::SetFillOpacity(Opacity::new(1.0)), "SetFillOpacity")]
 #[case(Action::ToggleNoFill, "ToggleNoFill")]
-#[case(Action::SetObjectPosition, "SetObjectPosition")]
-#[case(Action::SetObjectSize, "SetObjectSize")]
-#[case(Action::SetObjectRotation, "SetObjectRotation")]
+#[case(Action::SetObjectPosition(Position::new(0.0, 0.0)), "SetObjectPosition")]
+#[case(Action::SetObjectSize(Size::new(100.0, 100.0)), "SetObjectSize")]
+#[case(Action::SetObjectRotation(Rotation::new(0.0)), "SetObjectRotation")]
 fn action_identifier_is_correct(#[case] action: Action, #[case] expected: &str) {
     assert_eq!(action.identifier(), expected);
 }

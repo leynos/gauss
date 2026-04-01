@@ -86,7 +86,149 @@ pub enum ActionKind {
 /// let name = action.name();
 /// assert_eq!(name, "Undo");
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+/// RGB colour value for action payloads.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Color {
+    /// Red channel.
+    pub r: u8,
+    /// Green channel.
+    pub g: u8,
+    /// Blue channel.
+    pub b: u8,
+}
+
+impl Color {
+    /// Construct a new colour.
+    #[must_use]
+    pub const fn new(r: u8, g: u8, b: u8) -> Self {
+        Self { r, g, b }
+    }
+}
+
+/// Stroke width in document units.
+#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+pub struct StrokeWidth(pub f32);
+
+impl StrokeWidth {
+    /// Construct a new stroke width.
+    #[must_use]
+    pub const fn new(value: f32) -> Self {
+        Self(value)
+    }
+}
+
+impl std::hash::Hash for StrokeWidth {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.to_bits().hash(state);
+    }
+}
+
+/// Opacity value (0.0..=1.0).
+#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+pub struct Opacity(pub f32);
+
+impl Opacity {
+    /// Construct a new opacity.
+    #[must_use]
+    pub const fn new(value: f32) -> Self {
+        Self(value)
+    }
+}
+
+impl std::hash::Hash for Opacity {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.to_bits().hash(state);
+    }
+}
+
+/// 2D position in document coordinates.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Position {
+    /// X coordinate.
+    pub x: f32,
+    /// Y coordinate.
+    pub y: f32,
+}
+
+impl Position {
+    /// Construct a new position.
+    #[must_use]
+    pub const fn new(x: f32, y: f32) -> Self {
+        Self { x, y }
+    }
+}
+
+impl std::hash::Hash for Position {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.x.to_bits().hash(state);
+        self.y.to_bits().hash(state);
+    }
+}
+
+/// 2D size in document units.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Size {
+    /// Width.
+    pub width: f32,
+    /// Height.
+    pub height: f32,
+}
+
+impl Size {
+    /// Construct a new size.
+    #[must_use]
+    pub const fn new(width: f32, height: f32) -> Self {
+        Self { width, height }
+    }
+}
+
+impl std::hash::Hash for Size {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.width.to_bits().hash(state);
+        self.height.to_bits().hash(state);
+    }
+}
+
+/// Rotation angle in degrees.
+#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+pub struct Rotation(pub f32);
+
+impl Rotation {
+    /// Construct a new rotation.
+    #[must_use]
+    pub const fn new(value: f32) -> Self {
+        Self(value)
+    }
+}
+
+impl std::hash::Hash for Rotation {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.to_bits().hash(state);
+    }
+}
+
+/// User intent representation.
+///
+/// Actions are the unit of user-visible behaviour. Every feature must be
+/// expressible as an Action to satisfy the guiding principle "Everything is
+/// an Action (and therefore scriptable)".
+///
+/// # Variants
+///
+/// This enum uses `#[non_exhaustive]` to allow adding new action variants
+/// in future versions without breaking downstream code.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use gauss_core::model::Action;
+///
+/// // Actions can be matched exhaustively within this crate
+/// let action = Action::Undo;
+/// let name = action.name();
+/// assert_eq!(name, "Undo");
+/// ```
+#[derive(Clone, Copy, Debug, PartialEq, Hash)]
 #[non_exhaustive]
 pub enum Action {
     // === Document mutations ===
@@ -154,12 +296,6 @@ pub enum Action {
     /// be selected and moved.
     ActivateSelectTool,
 
-    /// Activate a hypothetical new tool for examples and future expansion.
-    ///
-    /// This variant exists primarily for documentation examples and to
-    /// validate the action linkage pattern for new toolbar tools.
-    ActivateMyNewTool,
-
     // === History ===
     /// Undo the last document change.
     ///
@@ -188,32 +324,32 @@ pub enum Action {
 
     // === Style mutations ===
     /// Set the stroke colour of the selected shapes.
-    SetStrokeColor,
+    SetStrokeColor(Color),
 
     /// Set the stroke width of the selected shapes.
-    SetStrokeWidth,
+    SetStrokeWidth(StrokeWidth),
 
     /// Set the stroke opacity of the selected shapes.
-    SetStrokeOpacity,
+    SetStrokeOpacity(Opacity),
 
     /// Set the fill colour of the selected shapes.
-    SetFillColor,
+    SetFillColor(Color),
 
     /// Set the fill opacity of the selected shapes.
-    SetFillOpacity,
+    SetFillOpacity(Opacity),
 
     /// Toggle whether the selected shapes have no fill.
     ToggleNoFill,
 
     // === Transform mutations ===
     /// Set the position of the selected shapes.
-    SetObjectPosition,
+    SetObjectPosition(Position),
 
     /// Set the size of the selected shapes.
-    SetObjectSize,
+    SetObjectSize(Size),
 
     /// Set the rotation of the selected shapes.
-    SetObjectRotation,
+    SetObjectRotation(Rotation),
 }
 
 #[cfg(test)]

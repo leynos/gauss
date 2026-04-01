@@ -141,45 +141,44 @@ To add a new control to the inventory:
 
 Before referencing an action in `action_linkage`, add the corresponding
 variant to
-[`gauss_core::model::Action`](https://github.com/leynos/gauss/blob/main/crates/gauss-core/src/model/action.rs)
-and implement `kind()`, `name()`, `identifier()`, and
-`requires_selection()` for it.
+[`AuditAction`](https://github.com/leynos/gauss/blob/main/src/ui/widget_audit/action.rs)
+so the linkage can be expressed without needing a runtime payload.
 
 ```rust
 // In src/ui/widget_audit/toolbar.rs
 
-use gauss_core::model::Action;
+use super::{ActionCommandLinkage, AuditAction, ControlSurface, CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob};
 
-fn my_new_tool() -> RequiredControl {
+fn pen_tool() -> RequiredControl {
     RequiredControl {
-        name: "My New Tool",
+        name: "Pen Tool",
         phase: Phase::Phase1,
         surface: ControlSurface::Toolbar,
         user_job: UserJob {
-            description: "Description of what this tool does",
+            description: "Draw vector paths by placing anchors",
         },
         states: ControlStates {
             states: vec!["enabled", "disabled", "active"],
         },
         keyboard: KeyboardRequirements {
-            shortcut: Some("cmd-shift-n"),
+            shortcut: Some("p"),
             keyboard_only_operation: true,
             notes: "Must be accessible via keyboard",
         },
         accessibility: AccessibilityRequirements {
             role: "Button",
-            label: "My New Tool",
+            label: "Pen Tool",
             states: vec!["focusable", "pressed"],
             notes: "Must announce active state",
         },
         action_linkage: ActionCommandLinkage {
             requires_action: true,
-            action_name: Some(Action::ActivateMyNewTool.identifier()),
-            notes: "Activates the new tool mode",
+            action_name: Some(AuditAction::ActivatePenTool.identifier()),
+            notes: "Activates pen draw mode",
         },
         sources: vec![
-            RequirementSource::Roadmap("1.5.1"),
-            RequirementSource::FeaturePlan("Phase 1: New Features"),
+            RequirementSource::Roadmap("1.1.1"),
+            RequirementSource::FeaturePlan("Phase 1: Drawing Tools"),
         ],
         current_evidence: CurrentShellEvidence {
             exists: false,
@@ -197,7 +196,7 @@ pub(super) fn controls() -> Vec<RequiredControl> {
     vec![
         selection_tool(),
         // ... existing tools
-        my_new_tool(), // Add here
+        pen_tool(), // Add here
     ]
 }
 ```

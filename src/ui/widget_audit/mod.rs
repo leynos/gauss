@@ -16,6 +16,7 @@
 //! This module is public to enable integration testing and external validation
 //! of the control inventory against roadmap requirements.
 
+mod action;
 mod alignment;
 mod canvas;
 mod character;
@@ -27,6 +28,7 @@ mod style;
 mod toolbar;
 mod types;
 
+pub use action::AuditAction;
 pub use types::{
     AccessibilityRequirements, ActionCommandLinkage, ControlStates, ControlSurface,
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,

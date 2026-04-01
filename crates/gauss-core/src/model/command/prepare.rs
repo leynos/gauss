@@ -73,15 +73,15 @@ pub fn prepare_command(action: Action, state: &EngineState) -> Result<Command, U
         Action::LowerSelection => prepare_lower_selection(state),
         Action::ToggleSegmentKind => prepare_toggle_segment_kind(state),
         // Style actions are not yet implemented in the command system.
-        Action::SetStrokeColor
-        | Action::SetStrokeWidth
-        | Action::SetStrokeOpacity
-        | Action::SetFillColor
-        | Action::SetFillOpacity
+        Action::SetStrokeColor(_)
+        | Action::SetStrokeWidth(_)
+        | Action::SetStrokeOpacity(_)
+        | Action::SetFillColor(_)
+        | Action::SetFillOpacity(_)
         | Action::ToggleNoFill
-        | Action::SetObjectPosition
-        | Action::SetObjectSize
-        | Action::SetObjectRotation => Err(UserError::InvalidOperation(format!(
+        | Action::SetObjectPosition(_)
+        | Action::SetObjectSize(_)
+        | Action::SetObjectRotation(_) => Err(UserError::InvalidOperation(format!(
             "{action:?} command not yet implemented"
         ))),
         // Editor actions do not produce commands; this is a dispatcher bug.
@@ -90,10 +90,9 @@ pub fn prepare_command(action: Action, state: &EngineState) -> Result<Command, U
         | Action::DeselectAll
         | Action::ActivatePenTool
         | Action::ActivateSelectTool
-        | Action::ActivateMyNewTool
         | Action::Undo
         | Action::Redo
         | Action::SelectionUndo
-        | Action::SelectionRedo => panic!("{DISPATCHER_BUG_MSG} (got {action:?})"),
+        | Action::SelectionRedo => panic!("{DISPATCHER_BUG_MSG} (got {action:?}"),
     }
 }
