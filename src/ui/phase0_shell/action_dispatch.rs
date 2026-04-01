@@ -35,11 +35,7 @@ macro_rules! bind_gpui_model_actions {
 
 impl Phase0Shell {
     /// Execute an action that may change selection state.
-    fn execute_selection_action(
-        &mut self,
-        action: GaussAction,
-        cx: &mut gpui::Context<Self>,
-    ) {
+    fn execute_selection_action(&mut self, action: GaussAction, cx: &mut gpui::Context<Self>) {
         let changed = match action {
             GaussAction::InsertAnchorOnSegment => self.insert_anchor_on_selected_segment(),
             GaussAction::DeleteSelectedAnchors => self.delete_selected_anchors(),
