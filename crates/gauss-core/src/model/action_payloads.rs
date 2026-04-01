@@ -134,11 +134,13 @@ impl Opacity {
     #[must_use]
     pub const fn new(value: UnitF32) -> Option<Self> {
         // UnitF32 already validates the range, but we double-check for const fn
-        if value.0.is_finite() && value.0 >= 0.0 && value.0 <= 1.0 {
-            Some(Self(normalize_float(value.0)))
-        } else {
-            None
+        if !value.0.is_finite() {
+            return None;
         }
+        if value.0 < 0.0 || value.0 > 1.0 {
+            return None;
+        }
+        Some(Self(normalize_float(value.0)))
     }
 
     /// Return the opacity value.
