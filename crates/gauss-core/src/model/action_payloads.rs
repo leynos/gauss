@@ -42,11 +42,7 @@ impl Color {
 /// Maps -0.0 to 0.0. NaN values should be rejected before calling this.
 #[inline]
 pub const fn normalize_float(value: f32) -> f32 {
-    if value == 0.0 {
-        0.0
-    } else {
-        value
-    }
+    if value == 0.0 { 0.0 } else { value }
 }
 
 /// Helper to validate and normalize a pair of finite f32 values.

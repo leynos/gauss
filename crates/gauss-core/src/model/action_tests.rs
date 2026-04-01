@@ -171,14 +171,36 @@ fn document_actions_are_all_accounted_for() {
         Action::LowerSelection,
         Action::ToggleSegmentKind,
         Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })),
-        Action::SetStrokeWidth(StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth")),
-        Action::SetStrokeOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")),
-        Action::SetFillColor(Color::new(Rgb8 { r: 255, g: 255, b: 255 })),
-        Action::SetFillOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")),
+        Action::SetStrokeWidth(
+            StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth"),
+        ),
+        Action::SetStrokeOpacity(
+            Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32"))
+                .expect("failed to construct Opacity"),
+        ),
+        Action::SetFillColor(Color::new(Rgb8 {
+            r: 255,
+            g: 255,
+            b: 255,
+        })),
+        Action::SetFillOpacity(
+            Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32"))
+                .expect("failed to construct Opacity"),
+        ),
         Action::ToggleNoFill,
-        Action::SetObjectPosition(Position::new(Point { x: 0.0, y: 0.0 }).expect("failed to construct Position")),
-        Action::SetObjectSize(Size::new(Dimensions { width: 100.0, height: 100.0 }).expect("failed to construct Size")),
-        Action::SetObjectRotation(Rotation::new(Degrees(0.0)).expect("failed to construct Rotation")),
+        Action::SetObjectPosition(
+            Position::new(Point { x: 0.0, y: 0.0 }).expect("failed to construct Position"),
+        ),
+        Action::SetObjectSize(
+            Size::new(Dimensions {
+                width: 100.0,
+                height: 100.0,
+            })
+            .expect("failed to construct Size"),
+        ),
+        Action::SetObjectRotation(
+            Rotation::new(Degrees(0.0)).expect("failed to construct Rotation"),
+        ),
         Action::SelectAll,
         Action::DeselectAll,
         Action::ActivatePenTool,
