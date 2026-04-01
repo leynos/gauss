@@ -80,18 +80,20 @@ impl ControlInventory {
     /// Returns controls that have current shell evidence.
     #[must_use]
     pub fn with_evidence(&self) -> Vec<&RequiredControl> {
-        self.controls
-            .iter()
-            .filter(|c| c.current_evidence.exists)
-            .collect()
+        self.filter_by_evidence(true)
     }
 
     /// Returns controls without current shell evidence.
     #[must_use]
     pub fn without_evidence(&self) -> Vec<&RequiredControl> {
+        self.filter_by_evidence(false)
+    }
+
+    /// Filter controls by evidence existence.
+    fn filter_by_evidence(&self, exists: bool) -> Vec<&RequiredControl> {
         self.controls
             .iter()
-            .filter(|c| !c.current_evidence.exists)
+            .filter(|c| c.current_evidence.exists == exists)
             .collect()
     }
 }

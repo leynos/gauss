@@ -105,15 +105,38 @@ impl Color {
     }
 }
 
+/// Normalize a float for consistent hashing and equality.
+///
+/// Maps -0.0 to 0.0. NaN values should be rejected before calling this.
+const fn normalize_float(value: f32) -> f32 {
+    if value == 0.0 {
+        0.0
+    } else {
+        value
+    }
+}
+
 /// Stroke width in document units.
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
-pub struct StrokeWidth(pub f32);
+pub struct StrokeWidth(f32);
 
 impl StrokeWidth {
     /// Construct a new stroke width.
+    ///
+    /// Returns `None` if the value is negative or non-finite.
     #[must_use]
-    pub const fn new(value: f32) -> Self {
-        Self(value)
+    pub fn new(value: f32) -> Option<Self> {
+        if value.is_finite() && value >= 0.0 {
+            Some(Self(normalize_float(value)))
+        } else {
+            None
+        }
+    }
+
+    /// Return the stroke width value.
+    #[must_use]
+    pub fn value(&self) -> f32 {
+        self.0
     }
 }
 
@@ -125,13 +148,25 @@ impl std::hash::Hash for StrokeWidth {
 
 /// Opacity value (0.0..=1.0).
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
-pub struct Opacity(pub f32);
+pub struct Opacity(f32);
 
 impl Opacity {
     /// Construct a new opacity.
+    ///
+    /// Returns `None` if the value is not in the range [0.0, 1.0].
     #[must_use]
-    pub const fn new(value: f32) -> Self {
-        Self(value)
+    pub fn new(value: f32) -> Option<Self> {
+        if value.is_finite() && (0.0..=1.0).contains(&value) {
+            Some(Self(normalize_float(value)))
+        } else {
+            None
+        }
+    }
+
+    /// Return the opacity value.
+    #[must_use]
+    pub fn value(&self) -> f32 {
+        self.0
     }
 }
 
@@ -144,17 +179,36 @@ impl std::hash::Hash for Opacity {
 /// 2D position in document coordinates.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Position {
-    /// X coordinate.
-    pub x: f32,
-    /// Y coordinate.
-    pub y: f32,
+    x: f32,
+    y: f32,
 }
 
 impl Position {
     /// Construct a new position.
+    ///
+    /// Returns `None` if either coordinate is not finite.
     #[must_use]
-    pub const fn new(x: f32, y: f32) -> Self {
-        Self { x, y }
+    pub fn new(x: f32, y: f32) -> Option<Self> {
+        if x.is_finite() && y.is_finite() {
+            Some(Self {
+                x: normalize_float(x),
+                y: normalize_float(y),
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Return the x coordinate.
+    #[must_use]
+    pub fn x(&self) -> f32 {
+        self.x
+    }
+
+    /// Return the y coordinate.
+    #[must_use]
+    pub fn y(&self) -> f32 {
+        self.y
     }
 }
 
@@ -168,17 +222,36 @@ impl std::hash::Hash for Position {
 /// 2D size in document units.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Size {
-    /// Width.
-    pub width: f32,
-    /// Height.
-    pub height: f32,
+    width: f32,
+    height: f32,
 }
 
 impl Size {
     /// Construct a new size.
+    ///
+    /// Returns `None` if either dimension is not finite.
     #[must_use]
-    pub const fn new(width: f32, height: f32) -> Self {
-        Self { width, height }
+    pub fn new(width: f32, height: f32) -> Option<Self> {
+        if width.is_finite() && height.is_finite() {
+            Some(Self {
+                width: normalize_float(width),
+                height: normalize_float(height),
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Return the width.
+    #[must_use]
+    pub fn width(&self) -> f32 {
+        self.width
+    }
+
+    /// Return the height.
+    #[must_use]
+    pub fn height(&self) -> f32 {
+        self.height
     }
 }
 
@@ -191,13 +264,25 @@ impl std::hash::Hash for Size {
 
 /// Rotation angle in degrees.
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
-pub struct Rotation(pub f32);
+pub struct Rotation(f32);
 
 impl Rotation {
     /// Construct a new rotation.
+    ///
+    /// Returns `None` if the value is not finite.
     #[must_use]
-    pub const fn new(value: f32) -> Self {
-        Self(value)
+    pub fn new(value: f32) -> Option<Self> {
+        if value.is_finite() {
+            Some(Self(normalize_float(value)))
+        } else {
+            None
+        }
+    }
+
+    /// Return the rotation value in degrees.
+    #[must_use]
+    pub fn value(&self) -> f32 {
+        self.0
     }
 }
 

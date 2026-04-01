@@ -103,7 +103,7 @@ fn stroke_controls() -> Vec<RequiredControl> {
             states: &["enabled", "disabled", "focused", "read-only"],
             control_type: "TextInput",
             label: "Stroke Width",
-            a11y_states: &["focusable", "editable"],
+            a11y_states: &["focusable", "editable", "read-only"],
             a11y_notes: "Must announce current value and units",
             action_name: AuditAction::SetStrokeWidth,
             action_notes: "Width change emits command for undo/redo",

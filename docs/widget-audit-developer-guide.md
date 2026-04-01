@@ -139,17 +139,20 @@ To add a new control to the inventory:
 
 ### Example: adding a new toolbar tool
 
-Before referencing an action in `action_linkage`, add the corresponding
-variant to
-[`AuditAction`](https://github.com/leynos/gauss/blob/main/src/ui/widget_audit/action.rs)
-so the linkage can be expressed without needing a runtime payload.
+Before referencing an action in `action_linkage`, create or reuse the
+corresponding core Action in `gauss_core::model::Action` (implement its
+`identifier()` entry) so the runtime can dispatch it. Then mirror that core
+Action in `src/ui/widget_audit/action.rs::AuditAction` so the linkage can be
+expressed without needing a runtime payload. Update tests to cover both the
+core Action `identifier()` and the AuditAction mapping.
 
 ```rust
 // In src/ui/widget_audit/toolbar.rs
 
 use super::{
-    ActionCommandLinkage, AuditAction, ControlSurface, CurrentShellEvidence,
-    KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
+    AccessibilityRequirements, ActionCommandLinkage, AuditAction, ControlStates,
+    ControlSurface, CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl,
+    RequirementSource, UserJob,
 };
 
 fn pen_tool() -> RequiredControl {
@@ -212,11 +215,11 @@ pub(super) fn controls() -> Vec<RequiredControl> {
 use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase};
 
 #[test]
-fn test_my_surface_has_controls() {
+fn test_toolbar_has_controls() {
     let inventory = ControlInventory::new();
-    let controls = inventory.by_surface(ControlSurface::MySurface);
+    let controls = inventory.by_surface(ControlSurface::Toolbar);
 
-    assert!(!controls.is_empty(), "MySurface must have controls");
+    assert!(!controls.is_empty(), "Toolbar must have controls");
 }
 ```
 
