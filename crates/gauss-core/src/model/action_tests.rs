@@ -17,7 +17,10 @@ use super::{Action, ActionKind, Color, Opacity, Position, Rotation, Size, Stroke
 #[case(Action::SetFillColor(Color::new(255, 255, 255)), ActionKind::Document)]
 #[case(Action::SetFillOpacity(Opacity::new(1.0)), ActionKind::Document)]
 #[case(Action::ToggleNoFill, ActionKind::Document)]
-#[case(Action::SetObjectPosition(Position::new(0.0, 0.0)), ActionKind::Document)]
+#[case(
+    Action::SetObjectPosition(Position::new(0.0, 0.0)),
+    ActionKind::Document
+)]
 #[case(Action::SetObjectSize(Size::new(100.0, 100.0)), ActionKind::Document)]
 #[case(Action::SetObjectRotation(Rotation::new(0.0)), ActionKind::Document)]
 #[case(Action::SelectAll, ActionKind::Editor)]
@@ -188,7 +191,10 @@ fn document_actions_are_all_accounted_for() {
 #[case(Action::SetFillColor(Color::new(255, 255, 255)), "SetFillColor")]
 #[case(Action::SetFillOpacity(Opacity::new(1.0)), "SetFillOpacity")]
 #[case(Action::ToggleNoFill, "ToggleNoFill")]
-#[case(Action::SetObjectPosition(Position::new(0.0, 0.0)), "SetObjectPosition")]
+#[case(
+    Action::SetObjectPosition(Position::new(0.0, 0.0)),
+    "SetObjectPosition"
+)]
 #[case(Action::SetObjectSize(Size::new(100.0, 100.0)), "SetObjectSize")]
 #[case(Action::SetObjectRotation(Rotation::new(0.0)), "SetObjectRotation")]
 fn action_identifier_is_correct(#[case] action: Action, #[case] expected: &str) {

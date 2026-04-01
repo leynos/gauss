@@ -147,7 +147,10 @@ so the linkage can be expressed without needing a runtime payload.
 ```rust
 // In src/ui/widget_audit/toolbar.rs
 
-use super::{ActionCommandLinkage, AuditAction, ControlSurface, CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob};
+use super::{
+    ActionCommandLinkage, AuditAction, ControlSurface, CurrentShellEvidence,
+    KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
+};
 
 fn pen_tool() -> RequiredControl {
     RequiredControl {
