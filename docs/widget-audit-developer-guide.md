@@ -2,14 +2,14 @@
 
 This guide provides concrete examples for working with the
 [`ControlInventory`](https://github.com/leynos/gauss/blob/main/src/ui/widget_audit/mod.rs)
-API when adding new controls, writing tests, or querying the inventory
+ API when adding new controls, writing tests, or querying the inventory
 programmatically.
 
 ## Overview
 
-The widget capability audit is a typed inventory of all UI controls
-required for Phase 1 and Phase 2 of the Gauss roadmap. It serves as the
-canonical source of truth for:
+The widget capability audit is a typed inventory of all UI controls required
+for Phase 1 and Phase 2 of the Gauss roadmap. It serves as the canonical source
+of truth for:
 
 - Which controls are required and when (phase)
 - Where controls appear in the UI (surface)
@@ -80,7 +80,7 @@ let planned = inventory.without_evidence();
 
 Each
 [`RequiredControl`](https://github.com/leynos/gauss/blob/main/src/ui/widget_audit/types.rs)
-provides comprehensive metadata:
+ provides comprehensive metadata:
 
 ```rust
 use gauss::ui::widget_audit::RequiredControl;

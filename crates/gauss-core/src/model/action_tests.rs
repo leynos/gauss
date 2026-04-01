@@ -1,5 +1,7 @@
 //! Unit tests for the action module.
 
+#![expect(clippy::unwrap_used, reason = "Unwrap is acceptable in tests")]
+
 use rstest::rstest;
 
 use super::{Action, ActionKind, Color, Opacity, Position, Rotation, Size, StrokeWidth};

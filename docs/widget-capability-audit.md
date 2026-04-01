@@ -184,10 +184,10 @@ Table: Implementation status for UI controls
 | Selection Tool        | `src/ui/phase0_shell/tool_rail.rs`      |
 | Direct Selection Tool | `src/ui/phase0_shell/tool_rail.rs`      |
 | Pen Tool              | `src/ui/phase0_shell/tool_rail.rs`      |
-| Stroke Colour Picker   | `src/ui/phase0_shell/style_controls.rs` |
+| Stroke Colour Picker  | `src/ui/phase0_shell/style_controls.rs` |
 | Stroke Width Field    | `src/ui/phase0_shell/style_controls.rs` |
 | Stroke Opacity Slider | `src/ui/phase0_shell/style_controls.rs` |
-| Fill Colour Picker     | `src/ui/phase0_shell/style_controls.rs` |
+| Fill Colour Picker    | `src/ui/phase0_shell/style_controls.rs` |
 
 All other controls are pending implementation in future roadmap items.
 
@@ -202,8 +202,8 @@ The control inventory is validated by:
 - **GPUI (Zed's GPU-accelerated UI framework) tests** that prove shell-seam
   consistency for controls with current evidence
 
-See `tests/widget_audit_test.rs` and `tests/widget_capability_audit_bdd/main.rs`
-for test implementation.
+See `tests/widget_audit_test.rs` and
+`tests/widget_capability_audit_bdd/main.rs` for test implementation.
 
 ## Next steps
 

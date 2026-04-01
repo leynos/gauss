@@ -109,11 +109,7 @@ impl Color {
 ///
 /// Maps -0.0 to 0.0. NaN values should be rejected before calling this.
 const fn normalize_float(value: f32) -> f32 {
-    if value == 0.0 {
-        0.0
-    } else {
-        value
-    }
+    if value == 0.0 { 0.0 } else { value }
 }
 
 /// Stroke width in document units.
@@ -125,7 +121,7 @@ impl StrokeWidth {
     ///
     /// Returns `None` if the value is negative or non-finite.
     #[must_use]
-    pub fn new(value: f32) -> Option<Self> {
+    pub const fn new(value: f32) -> Option<Self> {
         if value.is_finite() && value >= 0.0 {
             Some(Self(normalize_float(value)))
         } else {
@@ -135,7 +131,7 @@ impl StrokeWidth {
 
     /// Return the stroke width value.
     #[must_use]
-    pub fn value(&self) -> f32 {
+    pub const fn value(&self) -> f32 {
         self.0
     }
 }
@@ -155,8 +151,8 @@ impl Opacity {
     ///
     /// Returns `None` if the value is not in the range [0.0, 1.0].
     #[must_use]
-    pub fn new(value: f32) -> Option<Self> {
-        if value.is_finite() && (0.0..=1.0).contains(&value) {
+    pub const fn new(value: f32) -> Option<Self> {
+        if value.is_finite() && value >= 0.0 && value <= 1.0 {
             Some(Self(normalize_float(value)))
         } else {
             None
@@ -165,7 +161,7 @@ impl Opacity {
 
     /// Return the opacity value.
     #[must_use]
-    pub fn value(&self) -> f32 {
+    pub const fn value(&self) -> f32 {
         self.0
     }
 }
@@ -188,7 +184,7 @@ impl Position {
     ///
     /// Returns `None` if either coordinate is not finite.
     #[must_use]
-    pub fn new(x: f32, y: f32) -> Option<Self> {
+    pub const fn new(x: f32, y: f32) -> Option<Self> {
         if x.is_finite() && y.is_finite() {
             Some(Self {
                 x: normalize_float(x),
@@ -201,13 +197,13 @@ impl Position {
 
     /// Return the x coordinate.
     #[must_use]
-    pub fn x(&self) -> f32 {
+    pub const fn x(&self) -> f32 {
         self.x
     }
 
     /// Return the y coordinate.
     #[must_use]
-    pub fn y(&self) -> f32 {
+    pub const fn y(&self) -> f32 {
         self.y
     }
 }
@@ -231,7 +227,7 @@ impl Size {
     ///
     /// Returns `None` if either dimension is not finite.
     #[must_use]
-    pub fn new(width: f32, height: f32) -> Option<Self> {
+    pub const fn new(width: f32, height: f32) -> Option<Self> {
         if width.is_finite() && height.is_finite() {
             Some(Self {
                 width: normalize_float(width),
@@ -244,13 +240,13 @@ impl Size {
 
     /// Return the width.
     #[must_use]
-    pub fn width(&self) -> f32 {
+    pub const fn width(&self) -> f32 {
         self.width
     }
 
     /// Return the height.
     #[must_use]
-    pub fn height(&self) -> f32 {
+    pub const fn height(&self) -> f32 {
         self.height
     }
 }
@@ -271,7 +267,7 @@ impl Rotation {
     ///
     /// Returns `None` if the value is not finite.
     #[must_use]
-    pub fn new(value: f32) -> Option<Self> {
+    pub const fn new(value: f32) -> Option<Self> {
         if value.is_finite() {
             Some(Self(normalize_float(value)))
         } else {
@@ -281,7 +277,7 @@ impl Rotation {
 
     /// Return the rotation value in degrees.
     #[must_use]
-    pub fn value(&self) -> f32 {
+    pub const fn value(&self) -> f32 {
         self.0
     }
 }

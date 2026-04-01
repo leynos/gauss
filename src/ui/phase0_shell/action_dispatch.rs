@@ -39,6 +39,10 @@ impl Phase0Shell {
         action: GaussAction,
         cx: &mut gpui::Context<Self>,
     ) {
+        #[expect(
+            clippy::match_same_arms,
+            reason = "Wildcard arm needed for non_exhaustive enum; specific arms document future work"
+        )]
         match action {
             // Selection actions
             GaussAction::SelectAll => self.select_all(cx),
@@ -78,21 +82,17 @@ impl Phase0Shell {
             | GaussAction::Redo
             | GaussAction::SelectionUndo
             | GaussAction::SelectionRedo => self.execute_history_action(action, cx),
-            // Style actions - not yet implemented, treat as no-ops
+            // Style and Transform actions - not yet implemented, treat as no-ops
             GaussAction::SetStrokeColor(_)
             | GaussAction::SetStrokeWidth(_)
             | GaussAction::SetStrokeOpacity(_)
             | GaussAction::SetFillColor(_)
             | GaussAction::SetFillOpacity(_)
-            | GaussAction::ToggleNoFill => {
-                // TODO: Implement style actions when command system supports them
-                // For now, these are audit-only no-ops until execution exists
-            }
-            // Transform actions - not yet implemented, treat as no-ops
-            GaussAction::SetObjectPosition(_)
+            | GaussAction::ToggleNoFill
+            | GaussAction::SetObjectPosition(_)
             | GaussAction::SetObjectSize(_)
             | GaussAction::SetObjectRotation(_) => {
-                // TODO: Implement transform actions when command system supports them
+                // TODO: Implement style/transform actions when command system supports them
                 // For now, these are audit-only no-ops until execution exists
             }
             // Wildcard arm for future non_exhaustive variants
