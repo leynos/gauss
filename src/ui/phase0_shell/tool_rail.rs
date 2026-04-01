@@ -44,19 +44,21 @@ fn tool_rail_buttons(
         .gap_2()
         .child(tool_select_button(shell_state, cx));
 
-    for spec in draw_button_specs(shell_state) {
-        rail = rail.child(tool_draw_button(shell_state, cx, &spec));
+    for spec in DRAW_BUTTON_SPECS {
+        rail = rail.child(tool_draw_button(shell_state, cx, spec));
     }
 
     rail.child(tool_placeholder_button(
+        shell_state,
         "tool-draw-square",
         UiIcon::DrawSquare,
-        shell_state.localize(&MessageId::tool_tooltip_draw_rectangle()),
+        "tool.tooltip.draw_rectangle",
     ))
     .child(tool_placeholder_button(
+        shell_state,
         "tool-draw-circle",
         UiIcon::DrawCircle,
-        shell_state.localize(&MessageId::tool_tooltip_draw_circle()),
+        "tool.tooltip.draw_circle",
     ))
 }
 
@@ -68,30 +70,27 @@ struct ToolModeButtonSpec<F, S> {
     on_click: F,
 }
 
-#[derive(Clone)]
 struct ToolDrawButtonSpec {
     id: &'static str,
     icon: UiIcon,
-    tooltip: String,
+    message_key: &'static str,
     edge_mode: DrawEdgeMode,
 }
 
-fn draw_button_specs(shell_state: &Phase0Shell) -> [ToolDrawButtonSpec; 2] {
-    [
-        ToolDrawButtonSpec {
-            id: "tool-draw-line",
-            icon: UiIcon::DrawPath,
-            tooltip: shell_state.localize(&MessageId::tool_tooltip_draw_path()),
-            edge_mode: DrawEdgeMode::Line,
-        },
-        ToolDrawButtonSpec {
-            id: "tool-draw-curve",
-            icon: UiIcon::DrawCurve,
-            tooltip: shell_state.localize(&MessageId::tool_tooltip_draw_curve()),
-            edge_mode: DrawEdgeMode::BezierAuto,
-        },
-    ]
-}
+const DRAW_BUTTON_SPECS: &[ToolDrawButtonSpec] = &[
+    ToolDrawButtonSpec {
+        id: "tool-draw-line",
+        icon: UiIcon::DrawPath,
+        message_key: "tool.tooltip.draw_path",
+        edge_mode: DrawEdgeMode::Line,
+    },
+    ToolDrawButtonSpec {
+        id: "tool-draw-curve",
+        icon: UiIcon::DrawCurve,
+        message_key: "tool.tooltip.draw_curve",
+        edge_mode: DrawEdgeMode::BezierAuto,
+    },
+];
 
 /// Shared builder for tool-mode buttons to keep wiring consistent.
 fn tool_mode_button<F, S>(
@@ -124,16 +123,14 @@ fn tool_draw_button(
     cx: &mut Context<Phase0Shell>,
     spec: &ToolDrawButtonSpec,
 ) -> impl gpui::IntoElement {
-    let id = spec.id;
-    let icon = spec.icon;
-    let tooltip = spec.tooltip.clone();
+    let tooltip = shell_state.localize(&MessageId::from(spec.message_key));
     let edge_mode = spec.edge_mode;
     tool_mode_button(
         shell_state,
         cx,
         ToolModeButtonSpec {
-            id,
-            icon,
+            id: spec.id,
+            icon: spec.icon,
             tooltip,
             state_fn: move |shell: &Phase0Shell| {
                 draw_button_state(shell.state.tool_mode, shell.state.edge_mode, edge_mode)
@@ -166,10 +163,12 @@ fn tool_select_button(
 }
 
 fn tool_placeholder_button(
+    shell_state: &Phase0Shell,
     id: &'static str,
     icon: UiIcon,
-    tooltip: String,
+    message_key: &'static str,
 ) -> impl gpui::IntoElement {
+    let tooltip = shell_state.localize(&MessageId::from(message_key));
     icon_button(id, icon, IconButtonState::Placeholder, Some(tooltip))
 }
 

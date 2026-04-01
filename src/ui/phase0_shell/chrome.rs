@@ -83,7 +83,7 @@ impl Phase0Shell {
             .border_b_1()
             .border_color(chrome_border())
             .text_color(chrome_text())
-            .child(Self::top_bar_left(is_maximized, cx))
+            .child(self.top_bar_left(is_maximized, cx))
             .child(self.top_bar_right(cx))
     }
 
@@ -94,7 +94,11 @@ impl Phase0Shell {
     /// the right side to avoid interfering with button clicks. The drag
     /// region is disabled when maximized since window movement is not
     /// possible in that state.
-    fn top_bar_left(is_maximized: bool, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+    fn top_bar_left(
+        &mut self,
+        is_maximized: bool,
+        cx: &mut Context<Self>,
+    ) -> impl gpui::IntoElement {
         let mut el = div()
             .id("titlebar-drag-region")
             .debug_selector(|| "#titlebar-drag-region".to_owned())
@@ -106,7 +110,7 @@ impl Phase0Shell {
                 div()
                     .text_sm()
                     .text_color(chrome_muted_text())
-                    .child(Self::localized_titlebar_recent()),
+                    .child(self.localized_titlebar_recent()),
             )
             // Double-click to toggle maximize/restore
             .on_click(cx.listener(
@@ -303,12 +307,7 @@ impl Phase0Shell {
         }))
     }
 
-    fn localized_titlebar_recent() -> String {
-        // This is called in a static context, so we use the default locale directly
-        let localizer = crate::i18n::Localizer::default();
-        let locale = crate::i18n::Locale::default();
-        localizer
-            .lookup(&locale, &MessageId::chrome_titlebar_recent())
-            .unwrap_or_else(|_| "Open recent project".to_owned())
+    fn localized_titlebar_recent(&self) -> String {
+        self.localize(&MessageId::chrome_titlebar_recent())
     }
 }

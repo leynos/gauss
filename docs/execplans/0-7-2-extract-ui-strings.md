@@ -1,4 +1,4 @@
-# ExecPlan: Extract UI Strings for i18n (0.7.2)
+# ExecPlan: Extract UI Strings for Internationalisation (i18n) (0.7.2)
 
 This ExecPlan (execution plan) is a living document. The sections
 `Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
@@ -36,7 +36,7 @@ Hard invariants that must hold throughout implementation:
   (`tool_mode_draw()`, `edge_mode_line()`, etc.).
 - No changes to public API signatures of `Localizer`, `Catalog`, `Locale`, or
   `MessageId` that would break existing consumers.
-- GPUI version remains pinned at 0.2.2; do not introduce new GPUI APIs.
+- GPUI (GPU-accelerated User Interface) version remains pinned at 0.2.2; do not introduce new GPUI APIs.
 - All new dependencies must be workspace-internal (no new external crates).
 
 If satisfying the objective requires violating a constraint, do not proceed.
@@ -103,7 +103,7 @@ Known uncertainties that might affect the plan:
 - [x] (2026-03-29) Update `view.rs` status line templates to use localized
       strings.
 - [x] (2026-03-29) Add unit tests for new `MessageId` variants.
-- [x] (2026-03-29) Add BDD scenarios for i18n string extraction.
+- [x] (2026-03-29) Add BDD (Behaviour-Driven Development) scenarios for i18n string extraction.
 - [x] (2026-03-29) Update `docs/users-guide.md` if any user-visible labels
       change.
 - [x] (2026-03-29) Mark roadmap item 0.7.2 as complete.

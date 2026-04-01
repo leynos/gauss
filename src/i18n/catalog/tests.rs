@@ -104,3 +104,65 @@ fn localizer_add_catalog_works(fr_test_catalog: Catalog) {
     assert!(result.is_ok());
     assert_eq!(result.expect("Should have found message"), "test_fr");
 }
+
+#[test]
+fn catalog_default_en_gb_contains_representative_new_messages() {
+    let catalog = Catalog::default_en_gb();
+
+    // chrome.*
+    assert_eq!(catalog.get(&MessageId::chrome_file_new()), Some("New"));
+
+    // tool.tooltip.*
+    assert_eq!(
+        catalog.get(&MessageId::tool_tooltip_draw_path()),
+        Some("Draw Path")
+    );
+
+    // status.*
+    assert_eq!(
+        catalog.get(&MessageId::status_saved()),
+        Some("Saved: {path}")
+    );
+
+    // align.*
+    assert_eq!(catalog.get(&MessageId::align_left()), Some("Align Left"));
+
+    // style.*
+    assert_eq!(catalog.get(&MessageId::style_stroke()), Some("Stroke"));
+
+    // doc.*
+    assert_eq!(catalog.get(&MessageId::doc_untitled()), Some("untitled"));
+
+    // a11y.*
+    assert_eq!(
+        catalog.get(&MessageId::a11y_canvas()),
+        Some("Drawing canvas")
+    );
+    assert_eq!(
+        catalog.get(&MessageId::a11y_shape_item()),
+        Some("Shape {index}")
+    );
+}
+
+#[test]
+fn catalog_default_en_gb_preserves_template_placeholders() {
+    let catalog = Catalog::default_en_gb();
+
+    let status_saved = catalog
+        .get(&MessageId::status_saved())
+        .expect("status_saved should be present in default_en_gb");
+    assert_eq!(status_saved, "Saved: {path}");
+    assert!(
+        status_saved.contains("{path}"),
+        "status_saved template should contain {{path}} placeholder"
+    );
+
+    let a11y_shape_item = catalog
+        .get(&MessageId::a11y_shape_item())
+        .expect("a11y_shape_item should be present in default_en_gb");
+    assert_eq!(a11y_shape_item, "Shape {index}");
+    assert!(
+        a11y_shape_item.contains("{index}"),
+        "a11y_shape_item template should contain {{index}} placeholder"
+    );
+}
