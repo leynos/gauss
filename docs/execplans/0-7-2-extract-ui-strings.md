@@ -1,4 +1,4 @@
-# ExecPlan: Extract UI Strings for Internationalisation (i18n) (0.7.2)
+# ExecPlan: Extract UI Strings for Internationalization (i18n) (0.7.2)
 
 This ExecPlan (execution plan) is a living document. The sections
 `Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
@@ -9,13 +9,13 @@ Status: COMPLETE
 
 ## Purpose / big picture
 
-Replace inline UI strings with resource IDs to enable localisation of the Gauss
+Replace inline UI strings with resource IDs to enable localization of the Gauss
 user interface. This work implements roadmap item **0.7.2: Extract UI
 strings**, building on the i18n scaffolding from 0.7.1.
 
 After this change:
 
-- All user-visible strings in window chrome and tool names are externalised in
+- All user-visible strings in window chrome and tool names are externalized in
   the message catalog (`src/i18n/catalog.rs`).
 - UI code retrieves strings via `MessageId` constants rather than hardcoded
   literals.
@@ -75,7 +75,7 @@ Known uncertainties that might affect the plan:
     `&str` via `Into<SharedString>`; verify no lifetime issues.
 
 - **Risk**: Status bar formatting strings (e.g., "Saved: {}") may need template
-  support for proper localisation.
+  support for proper localization.
   - Severity: low
   - Likelihood: medium
   - Mitigation: Use simple placeholder replacement for now; document need for
@@ -125,7 +125,7 @@ Known uncertainties that might affect the plan:
 
 - **Decision**: Use `&MessageId` instead of `MessageId` for `localize()` to
   avoid unnecessary cloning.
-  - Rationale: `MessageId` is a small struct but references are more efficient
+  - Rationale: `MessageId` is a small struct, but references are more efficient
     for read-only lookups.
   - Date/Author: 2026-03-29
 
@@ -194,7 +194,7 @@ The i18n system lives in `src/i18n/` and consists of:
 
 ### UI Structure
 
-The Phase 0 shell UI is organised in `src/ui/phase0_shell/`:
+The Phase 0 shell UI is organized in `src/ui/phase0_shell/`:
 
 - **`view.rs`**: Main view rendering, status lines, canvas area.
 - **`chrome.rs`**: Top bar with file actions, edit actions, window controls.
@@ -327,13 +327,13 @@ Update order (each validates with existing tests before proceeding):
 2. **BDD scenarios** (`tests/features/i18n_extraction.feature`):
 
    ```gherkin
-   Feature: UI String Localisation
+   Feature: UI String Localization
      Scenario: All window chrome strings are externalized
        Given the default en-GB catalog is loaded
        Then all chrome message IDs should resolve to non-empty strings
 
-     Scenario: Tool tooltips are localised
-       Given the localizer is initialised with en-GB
+     Scenario: Tool tooltips are localized
+       Given the localizer is initialized with en-GB
        When looking up the select tool tooltip
        Then the result should be "Select"
    ```
@@ -539,7 +539,7 @@ pub fn icon_button(
     id: &'static str,
     icon: UiIcon,
     state: IconButtonState,
-    tooltip: Option<impl Into<SharedString>>, // Changed from Option<&'static str>
+    tooltip: Option<String>, // Changed from Option<&'static str>
 ) -> impl IntoElement;
 ```
 

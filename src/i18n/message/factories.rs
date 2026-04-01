@@ -207,6 +207,12 @@ impl MessageId {
     pub fn status_maximized() -> Self {
         Self::new("status.maximized")
     }
+
+    /// Message identifier for "Plain Text" status label.
+    #[must_use]
+    pub fn status_plain_text() -> Self {
+        Self::new("status.plain_text")
+    }
 }
 
 /// Alignment message identifiers.

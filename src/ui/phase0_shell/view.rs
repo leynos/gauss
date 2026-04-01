@@ -10,6 +10,70 @@ use super::{
     chrome_palette::chrome_border, draw, file_dialogs,
 };
 
+/// File status variants for status line display.
+///
+/// These variants represent the possible file-related status messages
+/// in order of precedence (highest to lowest).
+#[derive(Debug, Clone, PartialEq)]
+pub(super) enum FileStatus {
+    /// History operation error (highest priority).
+    HistoryError { error: String },
+    /// Generic shell operation error.
+    ShellError { error: String },
+    /// Save operation failed.
+    SaveFailed { error: String },
+    /// Open operation failed.
+    OpenFailed { error: String },
+    /// File was saved successfully.
+    Saved { path: std::path::PathBuf },
+    /// File was opened successfully.
+    Opened { path: std::path::PathBuf },
+}
+
+impl FileStatus {
+    /// Convert the file status to a display string using localization.
+    fn to_display_string(&self, shell: &Phase0Shell) -> String {
+        match self {
+            Self::HistoryError { error } => {
+                let template = shell
+                    .localizer
+                    .lookup(&shell.locale, &MessageId::status_history_error())
+                    .unwrap_or_else(|_| "History error: {error}".to_owned());
+                template.replace("{error}", error)
+            }
+            Self::ShellError { error } => format!("Shell error: {error}"),
+            Self::SaveFailed { error } => {
+                let template = shell
+                    .localizer
+                    .lookup(&shell.locale, &MessageId::status_save_failed())
+                    .unwrap_or_else(|_| "Save failed: {error}".to_owned());
+                template.replace("{error}", error)
+            }
+            Self::OpenFailed { error } => {
+                let template = shell
+                    .localizer
+                    .lookup(&shell.locale, &MessageId::status_open_failed())
+                    .unwrap_or_else(|_| "Open failed: {error}".to_owned());
+                template.replace("{error}", error)
+            }
+            Self::Saved { path } => {
+                let template = shell
+                    .localizer
+                    .lookup(&shell.locale, &MessageId::status_saved())
+                    .unwrap_or_else(|_| "Saved: {path}".to_owned());
+                template.replace("{path}", &path.display().to_string())
+            }
+            Self::Opened { path } => {
+                let template = shell
+                    .localizer
+                    .lookup(&shell.locale, &MessageId::status_opened())
+                    .unwrap_or_else(|_| "Opened: {path}".to_owned());
+                template.replace("{path}", &path.display().to_string())
+            }
+        }
+    }
+}
+
 impl Phase0Shell {
     pub(super) fn mode_status_line(&self) -> String {
         let tool_label = self.localized_tool_mode_label();
@@ -57,52 +121,41 @@ impl Phase0Shell {
         )
     }
 
-    pub(super) fn file_status_line(&self) -> Option<String> {
-        if let Some(error) = self.last_history_error.as_deref() {
-            let template = self
-                .localizer
-                .lookup(&self.locale, &MessageId::status_history_error())
-                .unwrap_or_else(|_| "History error: {error}".to_owned());
-            return Some(template.replace("{error}", error));
+    /// Determine the current file status based on shell state.
+    ///
+    /// Returns the highest-priority file status variant if any status
+    /// condition is present, or `None` if there is no status to display.
+    pub(super) fn current_file_status(&self) -> Option<FileStatus> {
+        if let Some(error) = self.last_history_error.clone() {
+            return Some(FileStatus::HistoryError { error });
         }
 
-        if let Some(error) = self.shell_status_error.as_deref() {
-            return Some(format!("Shell error: {error}"));
+        if let Some(error) = self.shell_status_error.clone() {
+            return Some(FileStatus::ShellError { error });
         }
 
-        if let Some(error) = self.last_save_error.as_deref() {
-            let template = self
-                .localizer
-                .lookup(&self.locale, &MessageId::status_save_failed())
-                .unwrap_or_else(|_| "Save failed: {error}".to_owned());
-            return Some(template.replace("{error}", error));
+        if let Some(error) = self.last_save_error.clone() {
+            return Some(FileStatus::SaveFailed { error });
         }
 
-        if let Some(error) = self.last_open_error.as_deref() {
-            let template = self
-                .localizer
-                .lookup(&self.locale, &MessageId::status_open_failed())
-                .unwrap_or_else(|_| "Open failed: {error}".to_owned());
-            return Some(template.replace("{error}", error));
+        if let Some(error) = self.last_open_error.clone() {
+            return Some(FileStatus::OpenFailed { error });
         }
 
-        if let Some(path) = self.last_saved_path.as_deref() {
-            let template = self
-                .localizer
-                .lookup(&self.locale, &MessageId::status_saved())
-                .unwrap_or_else(|_| "Saved: {path}".to_owned());
-            return Some(template.replace("{path}", &path.display().to_string()));
+        if let Some(path) = self.last_saved_path.clone() {
+            return Some(FileStatus::Saved { path });
         }
 
-        if let Some(path) = self.last_opened_path.as_deref() {
-            let template = self
-                .localizer
-                .lookup(&self.locale, &MessageId::status_opened())
-                .unwrap_or_else(|_| "Opened: {path}".to_owned());
-            return Some(template.replace("{path}", &path.display().to_string()));
+        if let Some(path) = self.last_opened_path.clone() {
+            return Some(FileStatus::Opened { path });
         }
 
         None
+    }
+
+    pub(super) fn file_status_line(&self) -> Option<String> {
+        self.current_file_status()
+            .map(|status| status.to_display_string(self))
     }
 
     pub(super) fn canvas_area(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {

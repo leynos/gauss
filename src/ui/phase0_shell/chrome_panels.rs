@@ -77,7 +77,9 @@ impl Phase0Shell {
             right = right.child(status);
         }
 
-        right = right.child("1:1").child("Plain Text");
+        right = right
+            .child("1:1")
+            .child(self.localize(&MessageId::status_plain_text()));
 
         div()
             .id("status-bar")

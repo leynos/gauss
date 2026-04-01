@@ -171,6 +171,7 @@ impl Catalog {
             "Open failed: {error}".to_owned(),
         );
         messages.insert("status.maximized".to_owned(), " [MAX]".to_owned());
+        messages.insert("status.plain_text".to_owned(), "Plain Text".to_owned());
     }
 
     fn insert_align_messages(messages: &mut HashMap<String, String>) {
