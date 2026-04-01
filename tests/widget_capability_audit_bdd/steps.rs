@@ -1,60 +1,10 @@
 //! Then step definitions for widget capability audit BDD tests.
 
+use crate::groups::{InclusionGroup, assert_includes_group};
 use crate::{AuditWorld, assert_each_control, assert_includes, assert_includes_substrings};
 use gauss::ui::widget_audit::ControlSurface;
 use rstest_bdd_macros::then;
 use test_support::TestSupportResult;
-
-/// Inclusion groups for control assertions.
-#[derive(Clone, Copy)]
-enum InclusionGroup {
-    HorizontalAlignment,
-    VerticalAlignment,
-    StrokeControls,
-    FillControls,
-}
-
-const H_ALIGN: &[(&str, &str)] = &[
-    ("Align Left", "Must include Align Left"),
-    (
-        "Align Centre Horizontal",
-        "Must include Align Centre Horizontal",
-    ),
-    ("Align Right", "Must include Align Right"),
-];
-
-const V_ALIGN: &[(&str, &str)] = &[
-    ("Align Top", "Must include Align Top"),
-    (
-        "Align Centre Vertical",
-        "Must include Align Centre Vertical",
-    ),
-    ("Align Bottom", "Must include Align Bottom"),
-];
-
-const STROKE: &[(&str, &str)] = &[
-    ("Stroke Colour", "Must include Stroke Colour Picker"),
-    ("Stroke Width", "Must include Stroke Width Field"),
-    ("Stroke Opacity", "Must include Stroke Opacity Slider"),
-];
-
-const FILL: &[(&str, &str)] = &[
-    ("Fill Colour", "Must include Fill Colour Picker"),
-    ("Fill Opacity", "Must include Fill Opacity Slider"),
-];
-
-const fn group_checks(group: InclusionGroup) -> &'static [(&'static str, &'static str)] {
-    match group {
-        InclusionGroup::HorizontalAlignment => H_ALIGN,
-        InclusionGroup::VerticalAlignment => V_ALIGN,
-        InclusionGroup::StrokeControls => STROKE,
-        InclusionGroup::FillControls => FILL,
-    }
-}
-
-fn assert_includes_group(world: &AuditWorld, group: InclusionGroup) -> TestSupportResult<()> {
-    assert_includes_substrings(world, group_checks(group))
-}
 
 #[then("the inventory includes a Selection Tool")]
 pub(crate) fn then_includes_selection_tool(world: &AuditWorld) -> TestSupportResult<()> {
@@ -249,9 +199,13 @@ pub(crate) fn then_includes_text_selection(world: &AuditWorld) -> TestSupportRes
 
 #[then("each control has a non-empty name")]
 pub(crate) fn then_each_has_name(world: &AuditWorld) -> TestSupportResult<()> {
-    if world.count == 0 {
+    let has_controls = world
+        .inventory
+        .as_ref()
+        .is_some_and(|i| !i.all().is_empty());
+    if !has_controls {
         return Err(test_support::TestSupportError::expectation(
-            "Inventory must have controls",
+            "Inventory must have controls".to_owned(),
         ));
     }
     assert_each_control(

@@ -1,8 +1,9 @@
-# Widget Capability Audit Developer Guide
+# Widget capability audit developer guide
 
 This guide provides concrete examples for working with the
-[`ControlInventory`] API when adding new controls, writing tests, or
-querying the inventory programmatically.
+[`ControlInventory`](https://github.com/leynos/gauss/blob/main/src/ui/widget_audit/mod.rs)
+API when adding new controls, writing tests, or querying the inventory
+programmatically.
 
 ## Overview
 
@@ -16,9 +17,9 @@ canonical source of truth for:
 - Accessibility and keyboard requirements
 - Implementation status and evidence
 
-## Querying the Inventory
+## Querying the inventory
 
-### Creating an Inventory Instance
+### Creating an inventory instance
 
 ```rust
 use gauss::ui::widget_audit::ControlInventory;
@@ -26,14 +27,14 @@ use gauss::ui::widget_audit::ControlInventory;
 let inventory = ControlInventory::new();
 ```
 
-### Listing All Controls
+### Listing all controls
 
 ```rust
 let all_controls = inventory.all();
 println!("Total controls: {}", all_controls.len());
 ```
 
-### Querying by Phase
+### Querying by phase
 
 ```rust
 use gauss::ui::widget_audit::Phase;
@@ -42,7 +43,7 @@ let phase1_controls = inventory.by_phase(Phase::Phase1);
 let phase2_controls = inventory.by_phase(Phase::Phase2);
 ```
 
-### Querying by Surface
+### Querying by surface
 
 ```rust
 use gauss::ui::widget_audit::ControlSurface;
@@ -65,7 +66,7 @@ Available surfaces:
 - `ControlSurface::CanvasTextEditor` — On-canvas text editing (Phase 2)
 - `ControlSurface::Popover` — Contextual popovers
 
-### Filtering by Evidence Status
+### Filtering by evidence status
 
 ```rust
 // Controls with current shell evidence
@@ -75,9 +76,11 @@ let implemented = inventory.with_evidence();
 let planned = inventory.without_evidence();
 ```
 
-## Accessing Control Metadata
+## Accessing control metadata
 
-Each [`RequiredControl`] provides comprehensive metadata:
+Each
+[`RequiredControl`](https://github.com/leynos/gauss/blob/main/src/ui/widget_audit/types.rs)
+provides comprehensive metadata:
 
 ```rust
 use gauss::ui::widget_audit::RequiredControl;
@@ -125,7 +128,7 @@ fn analyse_control(control: &RequiredControl) {
 }
 ```
 
-## Adding New Controls
+## Adding new controls
 
 To add a new control to the inventory:
 
@@ -134,7 +137,7 @@ To add a new control to the inventory:
 3. Include it in the surface's `controls()` function
 4. Update tests to verify the new control
 
-### Example: Adding a New Toolbar Tool
+### Example: adding a new toolbar tool
 
 ```rust
 // In src/ui/widget_audit/toolbar.rs
@@ -165,7 +168,7 @@ fn my_new_tool() -> RequiredControl {
         },
         action_linkage: ActionCommandLinkage {
             requires_action: true,
-            action_name: Some(Action::ActivateMyNewTool.name()),
+            action_name: Some(Action::ActivateMyNewTool.identifier()),
             notes: "Activates the new tool mode",
         },
         sources: vec![
@@ -193,9 +196,9 @@ pub(super) fn controls() -> Vec<RequiredControl> {
 }
 ```
 
-## Writing Tests
+## Writing tests
 
-### Basic Test Pattern
+### Basic test pattern
 
 ```rust
 use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase};
@@ -209,7 +212,7 @@ fn test_my_surface_has_controls() {
 }
 ```
 
-### Testing Specific Controls
+### Testing specific controls
 
 ```rust
 #[test]
@@ -222,7 +225,7 @@ fn test_toolbar_has_specific_tools() {
 }
 ```
 
-### Testing Phase Categorization
+### Testing phase categorization
 
 ```rust
 #[rstest]
@@ -238,9 +241,9 @@ fn test_phase2_surfaces(#[case] surface: ControlSurface) {
 }
 ```
 
-## Common Patterns
+## Common patterns
 
-### Checking Implementation Status
+### Checking implementation status
 
 ```rust
 fn check_implementation_status(inventory: &ControlInventory) {
@@ -256,7 +259,7 @@ fn check_implementation_status(inventory: &ControlInventory) {
 }
 ```
 
-### Validating Requirements
+### Validating requirements
 
 ```rust
 fn validate_requirements(inventory: &ControlInventory) -> Vec<String> {
@@ -289,7 +292,7 @@ fn validate_requirements(inventory: &ControlInventory) -> Vec<String> {
 }
 ```
 
-## Best Practices
+## Best practices
 
 1. **Always use the inventory for control metadata** — Do not hardcode control
    names or requirements in tests; query the inventory instead.
@@ -306,13 +309,10 @@ fn validate_requirements(inventory: &ControlInventory) -> Vec<String> {
 5. **Use parameterized tests** — When testing multiple similar surfaces or
    phases, use `#[rstest]` with `#[case]` parameters.
 
-## Related Documentation
+## Related documentation
 
 - [`widget-capability-audit.md`](widget-capability-audit.md) — High-level
   inventory documentation
 - [`gauss-architecture-design.md`](gauss-architecture-design.md) — System
   architecture and design decisions
 - [`roadmap.md`](roadmap.md) — Roadmap items referenced by requirement sources
-
-[`ControlInventory`]: crate::ui::widget_audit::ControlInventory
-[`RequiredControl`]: crate::ui::widget_audit::RequiredControl

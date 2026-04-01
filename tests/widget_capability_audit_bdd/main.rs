@@ -4,6 +4,7 @@
 //! control inventory satisfies roadmap requirements expressed in Gherkin
 //! scenarios.
 
+mod groups;
 mod steps;
 
 use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase, RequiredControl};

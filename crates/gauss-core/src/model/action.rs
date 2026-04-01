@@ -299,6 +299,52 @@ impl Action {
         }
     }
 
+    /// Return the internal identifier for this action.
+    ///
+    /// The identifier is the enum variant name and is suitable for:
+    ///
+    /// - Command linkage metadata
+    /// - Serialization and dispatch tables
+    /// - Log and telemetry labels
+    ///
+    /// # Returns
+    ///
+    /// A static string containing the internal action identifier.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use gauss_core::model::Action;
+    ///
+    /// assert_eq!(Action::DeleteSelection.identifier(), "DeleteSelection");
+    /// assert_eq!(Action::Undo.identifier(), "Undo");
+    /// ```
+    #[must_use]
+    pub const fn identifier(&self) -> &'static str {
+        match self {
+            Self::DeleteSelection => "DeleteSelection",
+            Self::InsertAnchorOnSegment => "InsertAnchorOnSegment",
+            Self::DeleteSelectedAnchors => "DeleteSelectedAnchors",
+            Self::RaiseSelection => "RaiseSelection",
+            Self::LowerSelection => "LowerSelection",
+            Self::ToggleSegmentKind => "ToggleSegmentKind",
+            Self::SelectAll => "SelectAll",
+            Self::DeselectAll => "DeselectAll",
+            Self::ActivatePenTool => "ActivatePenTool",
+            Self::ActivateSelectTool => "ActivateSelectTool",
+            Self::Undo => "Undo",
+            Self::Redo => "Redo",
+            Self::SelectionUndo => "SelectionUndo",
+            Self::SelectionRedo => "SelectionRedo",
+            Self::SetStrokeColor => "SetStrokeColor",
+            Self::SetStrokeWidth => "SetStrokeWidth",
+            Self::SetStrokeOpacity => "SetStrokeOpacity",
+            Self::SetFillColor => "SetFillColor",
+            Self::SetFillOpacity => "SetFillOpacity",
+            Self::ToggleNoFill => "ToggleNoFill",
+        }
+    }
+
     /// Return whether this action requires a non-empty selection to be valid.
     ///
     /// Actions that require selection should be disabled in the UI when

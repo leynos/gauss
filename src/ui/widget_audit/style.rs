@@ -58,7 +58,7 @@ fn make_style_control(spec: StyleControlSpec) -> RequiredControl {
         },
         action_linkage: ActionCommandLinkage {
             requires_action: true,
-            action_name: Some(spec.action_name.name()),
+            action_name: Some(spec.action_name.identifier()),
             notes: spec.action_notes,
         },
         sources: spec.sources.to_vec(),

@@ -102,15 +102,11 @@ fn test_toolbar_tools_have_keyboard_shortcuts() {
     let toolbar_controls = inventory.by_surface(ControlSurface::Toolbar);
 
     for control in toolbar_controls {
-        // Type Tool is a Phase2 control but still requires a keyboard shortcut
-        // for UX/compatibility alongside Phase1 toolbar tools.
-        if control.phase() == Phase::Phase1 || control.name() == "Type Tool" {
-            assert!(
-                control.keyboard.shortcut.is_some(),
-                "Toolbar tool '{}' must have a keyboard shortcut",
-                control.name()
-            );
-        }
+        assert!(
+            control.keyboard.shortcut.is_some(),
+            "Toolbar tool '{}' must have a keyboard shortcut",
+            control.name()
+        );
     }
 }
 

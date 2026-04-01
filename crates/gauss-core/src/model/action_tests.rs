@@ -152,6 +152,31 @@ fn document_actions_are_all_accounted_for() {
     }
 }
 
+#[rstest]
+#[case(Action::DeleteSelection, "DeleteSelection")]
+#[case(Action::InsertAnchorOnSegment, "InsertAnchorOnSegment")]
+#[case(Action::DeleteSelectedAnchors, "DeleteSelectedAnchors")]
+#[case(Action::RaiseSelection, "RaiseSelection")]
+#[case(Action::LowerSelection, "LowerSelection")]
+#[case(Action::ToggleSegmentKind, "ToggleSegmentKind")]
+#[case(Action::SelectAll, "SelectAll")]
+#[case(Action::DeselectAll, "DeselectAll")]
+#[case(Action::ActivatePenTool, "ActivatePenTool")]
+#[case(Action::ActivateSelectTool, "ActivateSelectTool")]
+#[case(Action::Undo, "Undo")]
+#[case(Action::Redo, "Redo")]
+#[case(Action::SelectionUndo, "SelectionUndo")]
+#[case(Action::SelectionRedo, "SelectionRedo")]
+#[case(Action::SetStrokeColor, "SetStrokeColor")]
+#[case(Action::SetStrokeWidth, "SetStrokeWidth")]
+#[case(Action::SetStrokeOpacity, "SetStrokeOpacity")]
+#[case(Action::SetFillColor, "SetFillColor")]
+#[case(Action::SetFillOpacity, "SetFillOpacity")]
+#[case(Action::ToggleNoFill, "ToggleNoFill")]
+fn action_identifier_is_correct(#[case] action: Action, #[case] expected: &str) {
+    assert_eq!(action.identifier(), expected);
+}
+
 #[test]
 fn action_is_copy() {
     // Verify Action implements Copy (important for ergonomics)
