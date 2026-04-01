@@ -98,6 +98,10 @@ impl Phase0Shell {
             // Wildcard arm for future non_exhaustive variants
             _ => {
                 // New action variants are handled here until explicitly implemented
+                debug_assert!(false, "unhandled action variant: {action:?}");
+                log::warn!("unhandled action variant: {:?}", action);
+                // Error is propagated via shell state for observable handling
+                self.report_error(format!("unhandled action variant: {action:?}"));
             }
         }
     }

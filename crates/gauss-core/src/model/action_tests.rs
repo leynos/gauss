@@ -1,10 +1,11 @@
 //! Unit tests for the action module.
 
-#![expect(clippy::unwrap_used, reason = "Unwrap is acceptable in tests")]
-
 use rstest::rstest;
 
-use super::{Action, ActionKind, Color, Opacity, Position, Rotation, Size, StrokeWidth};
+use super::{
+    Action, ActionKind, Color, Degrees, Dimensions, Opacity, Point, Points, Position, Rgb8,
+    Rotation, Size, StrokeWidth, UnitF32,
+};
 
 #[rstest]
 #[case(Action::DeleteSelection, ActionKind::Document)]
@@ -13,18 +14,30 @@ use super::{Action, ActionKind, Color, Opacity, Position, Rotation, Size, Stroke
 #[case(Action::RaiseSelection, ActionKind::Document)]
 #[case(Action::LowerSelection, ActionKind::Document)]
 #[case(Action::ToggleSegmentKind, ActionKind::Document)]
-#[case(Action::SetStrokeColor(Color::new(0, 0, 0)), ActionKind::Document)]
-#[case(Action::SetStrokeWidth(StrokeWidth::new(1.0).unwrap()), ActionKind::Document)]
-#[case(Action::SetStrokeOpacity(Opacity::new(1.0).unwrap()), ActionKind::Document)]
-#[case(Action::SetFillColor(Color::new(255, 255, 255)), ActionKind::Document)]
-#[case(Action::SetFillOpacity(Opacity::new(1.0).unwrap()), ActionKind::Document)]
+#[case(Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })), ActionKind::Document)]
+#[case(Action::SetStrokeWidth(StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth")), ActionKind::Document)]
+#[case(Action::SetStrokeOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")), ActionKind::Document)]
+#[case(Action::SetFillColor(Color::new(Rgb8 { r: 255, g: 255, b: 255 })), ActionKind::Document)]
+#[case(Action::SetFillOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")), ActionKind::Document)]
 #[case(Action::ToggleNoFill, ActionKind::Document)]
 #[case(
-    Action::SetObjectPosition(Position::new(0.0, 0.0).unwrap()),
+    Action::SetObjectPosition(
+        Position::new(Point { x: 0.0, y: 0.0 }).expect("failed to construct Position")
+    ),
     ActionKind::Document
 )]
-#[case(Action::SetObjectSize(Size::new(100.0, 100.0).unwrap()), ActionKind::Document)]
-#[case(Action::SetObjectRotation(Rotation::new(0.0).unwrap()), ActionKind::Document)]
+#[case(
+    Action::SetObjectSize(
+        Size::new(Dimensions { width: 100.0, height: 100.0 }).expect("failed to construct Size")
+    ),
+    ActionKind::Document
+)]
+#[case(
+    Action::SetObjectRotation(
+        Rotation::new(Degrees(0.0)).expect("failed to construct Rotation")
+    ),
+    ActionKind::Document
+)]
 #[case(Action::SelectAll, ActionKind::Editor)]
 #[case(Action::DeselectAll, ActionKind::Editor)]
 #[case(Action::ActivatePenTool, ActionKind::Editor)]
@@ -52,15 +65,30 @@ fn action_kind_is_correct(#[case] action: Action, #[case] expected: ActionKind) 
 #[case(Action::Redo, "Redo")]
 #[case(Action::SelectionUndo, "Selection Undo")]
 #[case(Action::SelectionRedo, "Selection Redo")]
-#[case(Action::SetStrokeColor(Color::new(0, 0, 0)), "Set Stroke Colour")]
-#[case(Action::SetStrokeWidth(StrokeWidth::new(1.0).unwrap()), "Set Stroke Width")]
-#[case(Action::SetStrokeOpacity(Opacity::new(1.0).unwrap()), "Set Stroke Opacity")]
-#[case(Action::SetFillColor(Color::new(255, 255, 255)), "Set Fill Colour")]
-#[case(Action::SetFillOpacity(Opacity::new(1.0).unwrap()), "Set Fill Opacity")]
+#[case(Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })), "Set Stroke Colour")]
+#[case(Action::SetStrokeWidth(StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth")), "Set Stroke Width")]
+#[case(Action::SetStrokeOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")), "Set Stroke Opacity")]
+#[case(Action::SetFillColor(Color::new(Rgb8 { r: 255, g: 255, b: 255 })), "Set Fill Colour")]
+#[case(Action::SetFillOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")), "Set Fill Opacity")]
 #[case(Action::ToggleNoFill, "Toggle No Fill")]
-#[case(Action::SetObjectPosition(Position::new(0.0, 0.0).unwrap()), "Set Position")]
-#[case(Action::SetObjectSize(Size::new(100.0, 100.0).unwrap()), "Set Size")]
-#[case(Action::SetObjectRotation(Rotation::new(0.0).unwrap()), "Set Rotation")]
+#[case(
+    Action::SetObjectPosition(
+        Position::new(Point { x: 0.0, y: 0.0 }).expect("failed to construct Position")
+    ),
+    "Set Position"
+)]
+#[case(
+    Action::SetObjectSize(
+        Size::new(Dimensions { width: 100.0, height: 100.0 }).expect("failed to construct Size")
+    ),
+    "Set Size"
+)]
+#[case(
+    Action::SetObjectRotation(
+        Rotation::new(Degrees(0.0)).expect("failed to construct Rotation")
+    ),
+    "Set Rotation"
+)]
 fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {
     assert_eq!(action.name(), expected);
 }
@@ -80,15 +108,15 @@ fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {
 #[case(Action::Redo)]
 #[case(Action::SelectionUndo)]
 #[case(Action::SelectionRedo)]
-#[case(Action::SetStrokeColor(Color::new(0, 0, 0)))]
-#[case(Action::SetStrokeWidth(StrokeWidth::new(1.0).unwrap()))]
-#[case(Action::SetStrokeOpacity(Opacity::new(1.0).unwrap()))]
-#[case(Action::SetFillColor(Color::new(255, 255, 255)))]
-#[case(Action::SetFillOpacity(Opacity::new(1.0).unwrap()))]
+#[case(Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })))]
+#[case(Action::SetStrokeWidth(StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth")))]
+#[case(Action::SetStrokeOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")))]
+#[case(Action::SetFillColor(Color::new(Rgb8 { r: 255, g: 255, b: 255 })))]
+#[case(Action::SetFillOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")))]
 #[case(Action::ToggleNoFill)]
-#[case(Action::SetObjectPosition(Position::new(0.0, 0.0).unwrap()))]
-#[case(Action::SetObjectSize(Size::new(100.0, 100.0).unwrap()))]
-#[case(Action::SetObjectRotation(Rotation::new(0.0).unwrap()))]
+#[case(Action::SetObjectPosition(Position::new(Point { x: 0.0, y: 0.0 }).expect("failed to construct Position")))]
+#[case(Action::SetObjectSize(Size::new(Dimensions { width: 100.0, height: 100.0 }).expect("failed to construct Size")))]
+#[case(Action::SetObjectRotation(Rotation::new(Degrees(0.0)).expect("failed to construct Rotation")))]
 fn actions_have_nonempty_names(#[case] action: Action) {
     assert!(!action.name().is_empty());
 }
@@ -100,15 +128,15 @@ fn actions_have_nonempty_names(#[case] action: Action) {
 #[case(Action::RaiseSelection)]
 #[case(Action::LowerSelection)]
 #[case(Action::ToggleSegmentKind)]
-#[case(Action::SetStrokeColor(Color::new(0, 0, 0)))]
-#[case(Action::SetStrokeWidth(StrokeWidth::new(1.0).unwrap()))]
-#[case(Action::SetStrokeOpacity(Opacity::new(1.0).unwrap()))]
-#[case(Action::SetFillColor(Color::new(255, 255, 255)))]
-#[case(Action::SetFillOpacity(Opacity::new(1.0).unwrap()))]
+#[case(Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })))]
+#[case(Action::SetStrokeWidth(StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth")))]
+#[case(Action::SetStrokeOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")))]
+#[case(Action::SetFillColor(Color::new(Rgb8 { r: 255, g: 255, b: 255 })))]
+#[case(Action::SetFillOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")))]
 #[case(Action::ToggleNoFill)]
-#[case(Action::SetObjectPosition(Position::new(0.0, 0.0).unwrap()))]
-#[case(Action::SetObjectSize(Size::new(100.0, 100.0).unwrap()))]
-#[case(Action::SetObjectRotation(Rotation::new(0.0).unwrap()))]
+#[case(Action::SetObjectPosition(Position::new(Point { x: 0.0, y: 0.0 }).expect("failed to construct Position")))]
+#[case(Action::SetObjectSize(Size::new(Dimensions { width: 100.0, height: 100.0 }).expect("failed to construct Size")))]
+#[case(Action::SetObjectRotation(Rotation::new(Degrees(0.0)).expect("failed to construct Rotation")))]
 fn document_actions_require_selection(#[case] action: Action) {
     assert!(action.requires_selection());
 }
@@ -142,15 +170,15 @@ fn document_actions_are_all_accounted_for() {
         Action::RaiseSelection,
         Action::LowerSelection,
         Action::ToggleSegmentKind,
-        Action::SetStrokeColor(Color::new(0, 0, 0)),
-        Action::SetStrokeWidth(StrokeWidth::new(1.0).unwrap()),
-        Action::SetStrokeOpacity(Opacity::new(1.0).unwrap()),
-        Action::SetFillColor(Color::new(255, 255, 255)),
-        Action::SetFillOpacity(Opacity::new(1.0).unwrap()),
+        Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })),
+        Action::SetStrokeWidth(StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth")),
+        Action::SetStrokeOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")),
+        Action::SetFillColor(Color::new(Rgb8 { r: 255, g: 255, b: 255 })),
+        Action::SetFillOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")),
         Action::ToggleNoFill,
-        Action::SetObjectPosition(Position::new(0.0, 0.0).unwrap()),
-        Action::SetObjectSize(Size::new(100.0, 100.0).unwrap()),
-        Action::SetObjectRotation(Rotation::new(0.0).unwrap()),
+        Action::SetObjectPosition(Position::new(Point { x: 0.0, y: 0.0 }).expect("failed to construct Position")),
+        Action::SetObjectSize(Size::new(Dimensions { width: 100.0, height: 100.0 }).expect("failed to construct Size")),
+        Action::SetObjectRotation(Rotation::new(Degrees(0.0)).expect("failed to construct Rotation")),
         Action::SelectAll,
         Action::DeselectAll,
         Action::ActivatePenTool,
@@ -187,18 +215,30 @@ fn document_actions_are_all_accounted_for() {
 #[case(Action::Redo, "Redo")]
 #[case(Action::SelectionUndo, "SelectionUndo")]
 #[case(Action::SelectionRedo, "SelectionRedo")]
-#[case(Action::SetStrokeColor(Color::new(0, 0, 0)), "SetStrokeColor")]
-#[case(Action::SetStrokeWidth(StrokeWidth::new(1.0).unwrap()), "SetStrokeWidth")]
-#[case(Action::SetStrokeOpacity(Opacity::new(1.0).unwrap()), "SetStrokeOpacity")]
-#[case(Action::SetFillColor(Color::new(255, 255, 255)), "SetFillColor")]
-#[case(Action::SetFillOpacity(Opacity::new(1.0).unwrap()), "SetFillOpacity")]
+#[case(Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })), "SetStrokeColor")]
+#[case(Action::SetStrokeWidth(StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth")), "SetStrokeWidth")]
+#[case(Action::SetStrokeOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")), "SetStrokeOpacity")]
+#[case(Action::SetFillColor(Color::new(Rgb8 { r: 255, g: 255, b: 255 })), "SetFillColor")]
+#[case(Action::SetFillOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")), "SetFillOpacity")]
 #[case(Action::ToggleNoFill, "ToggleNoFill")]
 #[case(
-    Action::SetObjectPosition(Position::new(0.0, 0.0).unwrap()),
+    Action::SetObjectPosition(
+        Position::new(Point { x: 0.0, y: 0.0 }).expect("failed to construct Position")
+    ),
     "SetObjectPosition"
 )]
-#[case(Action::SetObjectSize(Size::new(100.0, 100.0).unwrap()), "SetObjectSize")]
-#[case(Action::SetObjectRotation(Rotation::new(0.0).unwrap()), "SetObjectRotation")]
+#[case(
+    Action::SetObjectSize(
+        Size::new(Dimensions { width: 100.0, height: 100.0 }).expect("failed to construct Size")
+    ),
+    "SetObjectSize"
+)]
+#[case(
+    Action::SetObjectRotation(
+        Rotation::new(Degrees(0.0)).expect("failed to construct Rotation")
+    ),
+    "SetObjectRotation"
+)]
 fn action_identifier_is_correct(#[case] action: Action, #[case] expected: &str) {
     assert_eq!(action.identifier(), expected);
 }
@@ -217,4 +257,15 @@ fn action_kind_is_copy() {
     fn assert_copy<T: Copy>(_: T) {}
 
     assert_copy(ActionKind::Document);
+}
+
+#[test]
+fn action_is_eq_and_hash() {
+    // Verify Action implements Eq and Hash (for use as HashMap keys)
+    fn assert_eq<T: Eq>(_: T) {}
+    fn assert_hash<T: std::hash::Hash>(_: T) {}
+
+    let action = Action::Undo;
+    assert_eq(action);
+    assert_hash(action);
 }

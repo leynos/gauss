@@ -227,6 +227,12 @@ pub struct Phase0Shell {
 }
 
 impl Phase0Shell {
+    /// Report an error by logging it and storing it in `last_history_error`.
+    pub(super) fn report_error(&mut self, error: String) {
+        log::error!("{error}");
+        self.last_history_error = Some(error);
+    }
+
     /// Construct a new shell.
     #[must_use]
     pub fn new(cx: &mut Context<Self>) -> Self {
