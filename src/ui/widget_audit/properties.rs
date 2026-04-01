@@ -4,6 +4,7 @@ use super::types::{
     AccessibilityRequirements, ActionCommandLinkage, ControlStates, ControlSurface,
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
+use gauss_core::model::Action;
 
 #[derive(Clone, Copy)]
 struct A11ySpec {
@@ -15,7 +16,7 @@ fn make_numeric_field(
     name: &'static str,
     description: &'static str,
     a11y: A11ySpec,
-    action_name: &'static str,
+    action_name: Action,
 ) -> RequiredControl {
     RequiredControl {
         name,
@@ -38,7 +39,7 @@ fn make_numeric_field(
         },
         action_linkage: ActionCommandLinkage {
             requires_action: true,
-            action_name: Some(action_name),
+            action_name: Some(action_name.identifier()),
             notes: "Value change emits command for undo/redo",
         },
         sources: vec![
@@ -66,7 +67,7 @@ pub(super) fn controls() -> Vec<RequiredControl> {
                 label: "X Position",
                 notes: "Must announce current value and accept numeric input",
             },
-            "SetObjectPosition",
+            Action::SetObjectPosition,
         ),
         make_numeric_field(
             "Y Position Field",
@@ -75,7 +76,7 @@ pub(super) fn controls() -> Vec<RequiredControl> {
                 label: "Y Position",
                 notes: "Must announce current value and accept numeric input",
             },
-            "SetObjectPosition",
+            Action::SetObjectPosition,
         ),
         make_numeric_field(
             "Width Field",
@@ -84,7 +85,7 @@ pub(super) fn controls() -> Vec<RequiredControl> {
                 label: "Width",
                 notes: "Must announce current value and accept numeric input",
             },
-            "SetObjectSize",
+            Action::SetObjectSize,
         ),
         make_numeric_field(
             "Height Field",
@@ -93,7 +94,7 @@ pub(super) fn controls() -> Vec<RequiredControl> {
                 label: "Height",
                 notes: "Must announce current value and accept numeric input",
             },
-            "SetObjectSize",
+            Action::SetObjectSize,
         ),
         make_numeric_field(
             "Rotation Field",
@@ -102,7 +103,7 @@ pub(super) fn controls() -> Vec<RequiredControl> {
                 label: "Rotation",
                 notes: "Must announce current value in degrees and accept numeric input",
             },
-            "SetObjectRotation",
+            Action::SetObjectRotation,
         ),
     ]
 }

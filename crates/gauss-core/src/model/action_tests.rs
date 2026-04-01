@@ -17,6 +17,9 @@ use super::{Action, ActionKind};
 #[case(Action::SetFillColor, ActionKind::Document)]
 #[case(Action::SetFillOpacity, ActionKind::Document)]
 #[case(Action::ToggleNoFill, ActionKind::Document)]
+#[case(Action::SetObjectPosition, ActionKind::Document)]
+#[case(Action::SetObjectSize, ActionKind::Document)]
+#[case(Action::SetObjectRotation, ActionKind::Document)]
 #[case(Action::SelectAll, ActionKind::Editor)]
 #[case(Action::DeselectAll, ActionKind::Editor)]
 #[case(Action::ActivatePenTool, ActionKind::Editor)]
@@ -52,6 +55,9 @@ fn action_kind_is_correct(#[case] action: Action, #[case] expected: ActionKind) 
 #[case(Action::SetFillColor, "Set Fill Colour")]
 #[case(Action::SetFillOpacity, "Set Fill Opacity")]
 #[case(Action::ToggleNoFill, "Toggle No Fill")]
+#[case(Action::SetObjectPosition, "Set Position")]
+#[case(Action::SetObjectSize, "Set Size")]
+#[case(Action::SetObjectRotation, "Set Rotation")]
 fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {
     assert_eq!(action.name(), expected);
 }
@@ -78,6 +84,9 @@ fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {
 #[case(Action::SetFillColor)]
 #[case(Action::SetFillOpacity)]
 #[case(Action::ToggleNoFill)]
+#[case(Action::SetObjectPosition)]
+#[case(Action::SetObjectSize)]
+#[case(Action::SetObjectRotation)]
 fn actions_have_nonempty_names(#[case] action: Action) {
     assert!(!action.name().is_empty());
 }
@@ -95,6 +104,9 @@ fn actions_have_nonempty_names(#[case] action: Action) {
 #[case(Action::SetFillColor)]
 #[case(Action::SetFillOpacity)]
 #[case(Action::ToggleNoFill)]
+#[case(Action::SetObjectPosition)]
+#[case(Action::SetObjectSize)]
+#[case(Action::SetObjectRotation)]
 fn document_actions_require_selection(#[case] action: Action) {
     assert!(action.requires_selection());
 }
@@ -135,6 +147,9 @@ fn document_actions_are_all_accounted_for() {
         Action::SetFillColor,
         Action::SetFillOpacity,
         Action::ToggleNoFill,
+        Action::SetObjectPosition,
+        Action::SetObjectSize,
+        Action::SetObjectRotation,
         Action::SelectAll,
         Action::DeselectAll,
         Action::ActivatePenTool,
@@ -179,6 +194,9 @@ fn document_actions_are_all_accounted_for() {
 #[case(Action::SetFillColor, "SetFillColor")]
 #[case(Action::SetFillOpacity, "SetFillOpacity")]
 #[case(Action::ToggleNoFill, "ToggleNoFill")]
+#[case(Action::SetObjectPosition, "SetObjectPosition")]
+#[case(Action::SetObjectSize, "SetObjectSize")]
+#[case(Action::SetObjectRotation, "SetObjectRotation")]
 fn action_identifier_is_correct(#[case] action: Action, #[case] expected: &str) {
     assert_eq!(action.identifier(), expected);
 }

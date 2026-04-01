@@ -78,7 +78,10 @@ pub fn prepare_command(action: Action, state: &EngineState) -> Result<Command, U
         | Action::SetStrokeOpacity
         | Action::SetFillColor
         | Action::SetFillOpacity
-        | Action::ToggleNoFill => Err(UserError::InvalidOperation(format!(
+        | Action::ToggleNoFill
+        | Action::SetObjectPosition
+        | Action::SetObjectSize
+        | Action::SetObjectRotation => Err(UserError::InvalidOperation(format!(
             "{action:?} command not yet implemented"
         ))),
         // Editor actions do not produce commands; this is a dispatcher bug.

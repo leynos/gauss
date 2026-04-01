@@ -8,6 +8,7 @@
 //! by alternative frontends.
 
 pub mod action;
+mod action_impl;
 pub(crate) mod colour;
 pub mod command;
 pub mod document;
