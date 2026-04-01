@@ -4,6 +4,7 @@ use super::types::{
     AccessibilityRequirements, ActionCommandLinkage, ControlStates, ControlSurface,
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
+use gauss_core::model::Action;
 
 /// Specification for a style panel control.
 #[derive(Clone, Copy)]
@@ -15,7 +16,7 @@ struct StyleControlSpec {
     label: &'static str,
     a11y_states: &'static [&'static str],
     a11y_notes: &'static str,
-    action_name: &'static str,
+    action_name: Action,
     action_notes: &'static str,
     sources: &'static [RequirementSource],
     evidence_exists: bool,
@@ -57,7 +58,7 @@ fn make_style_control(spec: StyleControlSpec) -> RequiredControl {
         },
         action_linkage: ActionCommandLinkage {
             requires_action: true,
-            action_name: Some(spec.action_name),
+            action_name: Some(spec.action_name.name()),
             notes: spec.action_notes,
         },
         sources: spec.sources.to_vec(),
@@ -86,7 +87,7 @@ fn stroke_controls() -> Vec<RequiredControl> {
             label: "Stroke Colour",
             a11y_states: &["focusable", "expanded", "collapsed"],
             a11y_notes: "Must announce current colour value",
-            action_name: "SetStrokeColor",
+            action_name: Action::SetStrokeColor,
             action_notes: "Colour change emits command for undo/redo",
             sources: &[
                 RequirementSource::Roadmap("1.4.1"),
@@ -105,7 +106,7 @@ fn stroke_controls() -> Vec<RequiredControl> {
             label: "Stroke Width",
             a11y_states: &["focusable", "editable"],
             a11y_notes: "Must announce current value and units",
-            action_name: "SetStrokeWidth",
+            action_name: Action::SetStrokeWidth,
             action_notes: "Width change emits command for undo/redo",
             sources: &[
                 RequirementSource::Roadmap("1.4.1"),
@@ -123,7 +124,7 @@ fn stroke_controls() -> Vec<RequiredControl> {
             label: "Stroke Opacity",
             a11y_states: &["focusable"],
             a11y_notes: "Must announce current percentage value",
-            action_name: "SetStrokeOpacity",
+            action_name: Action::SetStrokeOpacity,
             action_notes: "Opacity change emits command for undo/redo",
             sources: &[
                 RequirementSource::Roadmap("1.4.1"),
@@ -146,7 +147,7 @@ fn fill_controls() -> Vec<RequiredControl> {
             label: "Fill Colour",
             a11y_states: &["focusable", "expanded", "collapsed"],
             a11y_notes: "Must announce current colour value and no-fill state",
-            action_name: "SetFillColor",
+            action_name: Action::SetFillColor,
             action_notes: "Colour change emits command for undo/redo",
             sources: &[
                 RequirementSource::Roadmap("1.4.1"),
@@ -165,7 +166,7 @@ fn fill_controls() -> Vec<RequiredControl> {
             label: "Fill Opacity",
             a11y_states: &["focusable"],
             a11y_notes: "Must announce current percentage value",
-            action_name: "SetFillOpacity",
+            action_name: Action::SetFillOpacity,
             action_notes: "Opacity change emits command for undo/redo",
             sources: &[
                 RequirementSource::Roadmap("1.4.1"),
@@ -183,7 +184,7 @@ fn fill_controls() -> Vec<RequiredControl> {
             label: "No Fill",
             a11y_states: &["focusable", "checked", "unchecked"],
             a11y_notes: "Must announce toggled state",
-            action_name: "ToggleNoFill",
+            action_name: Action::ToggleNoFill,
             action_notes: "Toggle emits command for undo/redo",
             sources: &[
                 RequirementSource::Roadmap("1.4.1"),

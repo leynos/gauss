@@ -322,10 +322,13 @@ pub(crate) fn then_evidence_has_path(world: &AuditWorld) -> TestSupportResult<()
     })?;
     for control in inventory.with_evidence() {
         if control.current_evidence.file_path.is_none() {
-            return Err(test_support::TestSupportError::expectation(format!(
-                "Control '{}' claims evidence but has no file path",
-                control.name()
-            )));
+            return Err(test_support::TestSupportError::expectation(
+                format!(
+                    "Control '{}' claims evidence but has no file path",
+                    control.name()
+                )
+                .to_owned(),
+            ));
         }
     }
     Ok(())

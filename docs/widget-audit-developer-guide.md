@@ -220,7 +220,7 @@ fn test_toolbar_has_specific_tools() {
 }
 ```
 
-### Testing Phase Categorisation
+### Testing Phase Categorization
 
 ```rust
 #[rstest]

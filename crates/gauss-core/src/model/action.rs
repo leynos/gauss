@@ -179,6 +179,25 @@ pub enum Action {
     /// Re-applies the most recently undone selection change from the selection
     /// redo stack.
     SelectionRedo,
+
+    // === Style mutations ===
+    /// Set the stroke colour of the selected shapes.
+    SetStrokeColor,
+
+    /// Set the stroke width of the selected shapes.
+    SetStrokeWidth,
+
+    /// Set the stroke opacity of the selected shapes.
+    SetStrokeOpacity,
+
+    /// Set the fill colour of the selected shapes.
+    SetFillColor,
+
+    /// Set the fill opacity of the selected shapes.
+    SetFillOpacity,
+
+    /// Toggle whether the selected shapes have no fill.
+    ToggleNoFill,
 }
 
 impl Action {
@@ -210,7 +229,13 @@ impl Action {
             | Self::DeleteSelectedAnchors
             | Self::RaiseSelection
             | Self::LowerSelection
-            | Self::ToggleSegmentKind => ActionKind::Document,
+            | Self::ToggleSegmentKind
+            | Self::SetStrokeColor
+            | Self::SetStrokeWidth
+            | Self::SetStrokeOpacity
+            | Self::SetFillColor
+            | Self::SetFillOpacity
+            | Self::ToggleNoFill => ActionKind::Document,
 
             // Editor state changes (selection, tools, history navigation)
             Self::SelectAll
@@ -265,6 +290,12 @@ impl Action {
             Self::Redo => "Redo",
             Self::SelectionUndo => "Selection Undo",
             Self::SelectionRedo => "Selection Redo",
+            Self::SetStrokeColor => "Set Stroke Color",
+            Self::SetStrokeWidth => "Set Stroke Width",
+            Self::SetStrokeOpacity => "Set Stroke Opacity",
+            Self::SetFillColor => "Set Fill Color",
+            Self::SetFillOpacity => "Set Fill Opacity",
+            Self::ToggleNoFill => "Toggle No Fill",
         }
     }
 
@@ -296,6 +327,12 @@ impl Action {
                 | Self::RaiseSelection
                 | Self::LowerSelection
                 | Self::ToggleSegmentKind
+                | Self::SetStrokeColor
+                | Self::SetStrokeWidth
+                | Self::SetStrokeOpacity
+                | Self::SetFillColor
+                | Self::SetFillOpacity
+                | Self::ToggleNoFill
         )
     }
 }

@@ -114,7 +114,7 @@ fn test_toolbar_tools_have_keyboard_shortcuts() {
     }
 }
 
-#[rstest]
+#[test]
 fn test_controls_requiring_actions_have_linkage_notes() {
     let inventory = ControlInventory::new();
 

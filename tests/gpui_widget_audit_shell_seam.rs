@@ -105,6 +105,13 @@ fn style_controls_match_audit() {
     );
 }
 
+fn notes_explain_status(notes: &str) -> bool {
+    let lowered = notes.to_lowercase();
+    lowered.contains("not yet implemented")
+        || lowered.contains("phase 2")
+        || lowered.contains("pending")
+}
+
 #[test]
 fn controls_without_evidence_are_documented() {
     let inventory = ControlInventory::new();
@@ -123,14 +130,8 @@ fn controls_without_evidence_are_documented() {
             control.name()
         );
 
-        // Verify the notes explain the status
-        let notes = control.current_evidence.notes.to_lowercase();
-        let has_explanation = notes.contains("not yet implemented")
-            || notes.contains("phase 2")
-            || notes.contains("pending");
-
         assert!(
-            has_explanation,
+            notes_explain_status(control.current_evidence.notes),
             "Control '{}' has notes '{}' which should explain implementation status",
             control.name(),
             control.current_evidence.notes

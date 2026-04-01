@@ -11,6 +11,12 @@ use super::{Action, ActionKind};
 #[case(Action::RaiseSelection, ActionKind::Document)]
 #[case(Action::LowerSelection, ActionKind::Document)]
 #[case(Action::ToggleSegmentKind, ActionKind::Document)]
+#[case(Action::SetStrokeColor, ActionKind::Document)]
+#[case(Action::SetStrokeWidth, ActionKind::Document)]
+#[case(Action::SetStrokeOpacity, ActionKind::Document)]
+#[case(Action::SetFillColor, ActionKind::Document)]
+#[case(Action::SetFillOpacity, ActionKind::Document)]
+#[case(Action::ToggleNoFill, ActionKind::Document)]
 #[case(Action::SelectAll, ActionKind::Editor)]
 #[case(Action::DeselectAll, ActionKind::Editor)]
 #[case(Action::ActivatePenTool, ActionKind::Editor)]
@@ -38,6 +44,12 @@ fn action_kind_is_correct(#[case] action: Action, #[case] expected: ActionKind) 
 #[case(Action::Redo, "Redo")]
 #[case(Action::SelectionUndo, "Selection Undo")]
 #[case(Action::SelectionRedo, "Selection Redo")]
+#[case(Action::SetStrokeColor, "Set Stroke Color")]
+#[case(Action::SetStrokeWidth, "Set Stroke Width")]
+#[case(Action::SetStrokeOpacity, "Set Stroke Opacity")]
+#[case(Action::SetFillColor, "Set Fill Color")]
+#[case(Action::SetFillOpacity, "Set Fill Opacity")]
+#[case(Action::ToggleNoFill, "Toggle No Fill")]
 fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {
     assert_eq!(action.name(), expected);
 }
@@ -57,6 +69,12 @@ fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {
 #[case(Action::Redo)]
 #[case(Action::SelectionUndo)]
 #[case(Action::SelectionRedo)]
+#[case(Action::SetStrokeColor)]
+#[case(Action::SetStrokeWidth)]
+#[case(Action::SetStrokeOpacity)]
+#[case(Action::SetFillColor)]
+#[case(Action::SetFillOpacity)]
+#[case(Action::ToggleNoFill)]
 fn actions_have_nonempty_names(#[case] action: Action) {
     assert!(!action.name().is_empty());
 }
@@ -68,6 +86,12 @@ fn actions_have_nonempty_names(#[case] action: Action) {
 #[case(Action::RaiseSelection)]
 #[case(Action::LowerSelection)]
 #[case(Action::ToggleSegmentKind)]
+#[case(Action::SetStrokeColor)]
+#[case(Action::SetStrokeWidth)]
+#[case(Action::SetStrokeOpacity)]
+#[case(Action::SetFillColor)]
+#[case(Action::SetFillOpacity)]
+#[case(Action::ToggleNoFill)]
 fn document_actions_require_selection(#[case] action: Action) {
     assert!(action.requires_selection());
 }
@@ -101,6 +125,12 @@ fn document_actions_are_all_accounted_for() {
         Action::RaiseSelection,
         Action::LowerSelection,
         Action::ToggleSegmentKind,
+        Action::SetStrokeColor,
+        Action::SetStrokeWidth,
+        Action::SetStrokeOpacity,
+        Action::SetFillColor,
+        Action::SetFillOpacity,
+        Action::ToggleNoFill,
         Action::SelectAll,
         Action::DeselectAll,
         Action::ActivatePenTool,

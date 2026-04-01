@@ -72,6 +72,15 @@ pub fn prepare_command(action: Action, state: &EngineState) -> Result<Command, U
         Action::RaiseSelection => prepare_raise_selection(state),
         Action::LowerSelection => prepare_lower_selection(state),
         Action::ToggleSegmentKind => prepare_toggle_segment_kind(state),
+        // Style actions are not yet implemented in the command system.
+        Action::SetStrokeColor
+        | Action::SetStrokeWidth
+        | Action::SetStrokeOpacity
+        | Action::SetFillColor
+        | Action::SetFillOpacity
+        | Action::ToggleNoFill => Err(UserError::InvalidOperation(format!(
+            "{action:?} command not yet implemented"
+        ))),
         // Editor actions do not produce commands; this is a dispatcher bug.
         // We panic unconditionally; the match arm is never reached in correct code.
         Action::SelectAll
