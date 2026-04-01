@@ -56,10 +56,7 @@ fn message_id_from_str_creates_correctly() {
     MessageId::tool_tooltip_draw_rectangle,
     "tool.tooltip.draw_rectangle"
 )]
-#[case::tool_tooltip_draw_circle(
-    MessageId::tool_tooltip_draw_circle,
-    "tool.tooltip.draw_circle"
-)]
+#[case::tool_tooltip_draw_circle(MessageId::tool_tooltip_draw_circle, "tool.tooltip.draw_circle")]
 // Status bar
 #[case::status_zoom_out(MessageId::status_zoom_out, "status.zoom_out")]
 #[case::status_zoom_in(MessageId::status_zoom_in, "status.zoom_in")]
