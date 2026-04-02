@@ -106,6 +106,10 @@ fn localizer_add_catalog_works(fr_test_catalog: Catalog) {
 }
 
 #[test]
+#[expect(
+    clippy::cognitive_complexity,
+    reason = "Cohesive catalog verification test; splitting would reduce readability"
+)]
 fn catalog_default_en_gb_contains_representative_new_messages() {
     let catalog = Catalog::default_en_gb();
 
