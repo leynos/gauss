@@ -73,8 +73,8 @@ impl Phase0Shell {
             | GaussAction::Redo
             | GaussAction::SelectionUndo
             | GaussAction::SelectionRedo => self.execute_history_action(action, cx),
-            // Style and Transform actions - not yet implemented, treat as no-ops
-            GaussAction::SetStrokeColor(_)
+            // Style and Transform actions - not yet implemented, report as unsupported
+            unsupported_action @ (GaussAction::SetStrokeColor(_)
             | GaussAction::SetStrokeWidth(_)
             | GaussAction::SetStrokeOpacity(_)
             | GaussAction::SetFillColor(_)
@@ -82,9 +82,11 @@ impl Phase0Shell {
             | GaussAction::ToggleNoFill
             | GaussAction::SetObjectPosition(_)
             | GaussAction::SetObjectSize(_)
-            | GaussAction::SetObjectRotation(_) => {
+            | GaussAction::SetObjectRotation(_)) => {
                 // TODO: Implement style/transform actions when command system supports them
-                // For now, these are audit-only no-ops until execution exists
+                // For now, report as unsupported so callers receive an error
+                self.report_error(format!("unsupported action: {unsupported_action:?}"));
+                cx.notify();
             }
             // Wildcard arm for future non_exhaustive variants
             _ => {
@@ -93,6 +95,7 @@ impl Phase0Shell {
                 log::warn!("unhandled action variant: {action:?}");
                 // Error is propagated via shell state for observable handling
                 self.report_error(format!("unhandled action variant: {action:?}"));
+                cx.notify();
             }
         }
     }

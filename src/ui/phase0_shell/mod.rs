@@ -205,6 +205,9 @@ pub struct Phase0Shell {
     last_history_error: Option<String>,
     last_history_error_typed: Option<HistoryError>,
 
+    /// Generic shell status errors (not history-related).
+    shell_status_error: Option<String>,
+
     // Style picker entities (GPUI-dependent)
     stroke_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
     fill_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
@@ -227,10 +230,10 @@ pub struct Phase0Shell {
 }
 
 impl Phase0Shell {
-    /// Report an error by logging it and storing it in `last_history_error`.
+    /// Report an error by logging it and storing it in `shell_status_error`.
     pub(super) fn report_error(&mut self, error: String) {
         log::error!("{error}");
-        self.last_history_error = Some(error);
+        self.shell_status_error = Some(error);
     }
 
     /// Construct a new shell.
@@ -253,6 +256,7 @@ impl Phase0Shell {
             last_opened_path: None,
             last_open_error: None,
             last_history_error: None,
+            shell_status_error: None,
             last_history_error_typed: None,
             stroke_picker: None,
             fill_picker: None,

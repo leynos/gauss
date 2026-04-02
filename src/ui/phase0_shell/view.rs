@@ -50,6 +50,10 @@ impl Phase0Shell {
             return Some(format!("History error: {error}"));
         }
 
+        if let Some(error) = self.shell_status_error.as_deref() {
+            return Some(format!("Shell error: {error}"));
+        }
+
         if let Some(error) = self.last_save_error.as_deref() {
             return Some(format!("Save failed: {error}"));
         }
