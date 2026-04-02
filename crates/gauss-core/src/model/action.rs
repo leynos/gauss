@@ -44,7 +44,7 @@
 //! assert!(action.requires_selection());
 //! ```
 
-#[path = "action_payloads.rs"]
+#[path = "action_payloads/mod.rs"]
 mod action_payloads;
 
 pub use action_payloads::{
