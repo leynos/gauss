@@ -172,6 +172,7 @@ impl Catalog {
         );
         messages.insert("status.maximized".to_owned(), " [MAX]".to_owned());
         messages.insert("status.plain_text".to_owned(), "Plain Text".to_owned());
+        messages.insert("status.zoom_ratio_1_1".to_owned(), "1:1".to_owned());
     }
 
     fn insert_align_messages(messages: &mut HashMap<String, String>) {

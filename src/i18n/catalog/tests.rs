@@ -142,6 +142,12 @@ fn catalog_default_en_gb_contains_representative_new_messages() {
         catalog.get(&MessageId::a11y_shape_item()),
         Some("Shape {index}")
     );
+
+    // status.zoom_ratio_1_1
+    assert_eq!(
+        catalog.get(&MessageId::status_zoom_ratio_1_1()),
+        Some("1:1")
+    );
 }
 
 #[test]

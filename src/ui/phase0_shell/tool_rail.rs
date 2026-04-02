@@ -52,13 +52,13 @@ fn tool_rail_buttons(
         shell_state,
         "tool-draw-square",
         UiIcon::DrawSquare,
-        "tool.tooltip.draw_rectangle",
+        MessageId::tool_tooltip_draw_rectangle,
     ))
     .child(tool_placeholder_button(
         shell_state,
         "tool-draw-circle",
         UiIcon::DrawCircle,
-        "tool.tooltip.draw_circle",
+        MessageId::tool_tooltip_draw_circle,
     ))
 }
 
@@ -73,7 +73,7 @@ struct ToolModeButtonSpec<F, S> {
 struct ToolDrawButtonSpec {
     id: &'static str,
     icon: UiIcon,
-    message_key: &'static str,
+    message_id: fn() -> MessageId,
     edge_mode: DrawEdgeMode,
 }
 
@@ -81,13 +81,13 @@ const DRAW_BUTTON_SPECS: &[ToolDrawButtonSpec] = &[
     ToolDrawButtonSpec {
         id: "tool-draw-line",
         icon: UiIcon::DrawPath,
-        message_key: "tool.tooltip.draw_path",
+        message_id: MessageId::tool_tooltip_draw_path,
         edge_mode: DrawEdgeMode::Line,
     },
     ToolDrawButtonSpec {
         id: "tool-draw-curve",
         icon: UiIcon::DrawCurve,
-        message_key: "tool.tooltip.draw_curve",
+        message_id: MessageId::tool_tooltip_draw_curve,
         edge_mode: DrawEdgeMode::BezierAuto,
     },
 ];
@@ -123,7 +123,7 @@ fn tool_draw_button(
     cx: &mut Context<Phase0Shell>,
     spec: &ToolDrawButtonSpec,
 ) -> impl gpui::IntoElement {
-    let tooltip = shell_state.localize(&MessageId::from(spec.message_key));
+    let tooltip = shell_state.localize(&(spec.message_id)());
     let edge_mode = spec.edge_mode;
     tool_mode_button(
         shell_state,
@@ -166,9 +166,9 @@ fn tool_placeholder_button(
     shell_state: &Phase0Shell,
     id: &'static str,
     icon: UiIcon,
-    message_key: &'static str,
+    message_id: fn() -> MessageId,
 ) -> impl gpui::IntoElement {
-    let tooltip = shell_state.localize(&MessageId::from(message_key));
+    let tooltip = shell_state.localize(&message_id());
     icon_button(id, icon, IconButtonState::Placeholder, Some(tooltip))
 }
 

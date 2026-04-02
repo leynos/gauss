@@ -213,6 +213,12 @@ impl MessageId {
     pub fn status_plain_text() -> Self {
         Self::new("status.plain_text")
     }
+
+    /// Returns the [`MessageId`] for the 1:1 zoom ratio indicator.
+    #[must_use]
+    pub fn status_zoom_ratio_1_1() -> Self {
+        Self::new("status.zoom_ratio_1_1")
+    }
 }
 
 /// Alignment message identifiers.

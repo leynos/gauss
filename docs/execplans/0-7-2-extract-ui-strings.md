@@ -292,16 +292,16 @@ For each module, the pattern is:
 .child("Open")
 
 // After:
-.child(self.localize(MessageId::chrome_file_open()))
+.child(self.localize(&MessageId::chrome_file_open()))
 ```
 
 The `Phase0Shell` struct already holds a `Localizer` and `Locale`, accessible
 via `self.localizer` and `self.locale`. Add a helper method if needed:
 
 ```rust
-fn localize(&self, message_id: MessageId) -> String {
+fn localize(&self, message_id: &MessageId) -> String {
     self.localizer
-        .lookup(&self.locale, &message_id)
+        .lookup(&self.locale, message_id)
         .unwrap_or_else(|_| message_id.as_str().to_owned())
 }
 ```
@@ -410,7 +410,7 @@ Replace tooltip literals with lookups:
 tooltip: "Select",
 
 // After:
-tooltip: shell_state.localize(MessageId::tool_tooltip_select()),
+tooltip: shell_state.localize(&MessageId::tool_tooltip_select()),
 ```
 
 Note: This requires changing `ToolModeButtonSpec` to hold `String` or
@@ -434,7 +434,7 @@ Edit `a11y_service/tree_builder.rs`:
 canvas.set_label("Drawing canvas");
 
 // After:
-let canvas_label = snapshot.localize(MessageId::a11y_canvas());
+let canvas_label = snapshot.localize(&MessageId::a11y_canvas());
 canvas.set_label(&canvas_label);
 ```
 

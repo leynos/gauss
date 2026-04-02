@@ -83,6 +83,7 @@ fn message_id_from_str_creates_correctly() {
 #[case::status_save_failed(MessageId::status_save_failed, "status.save_failed")]
 #[case::status_open_failed(MessageId::status_open_failed, "status.open_failed")]
 #[case::status_maximized(MessageId::status_maximized, "status.maximized")]
+#[case::status_zoom_ratio_1_1(MessageId::status_zoom_ratio_1_1, "status.zoom_ratio_1_1")]
 // Accessibility
 #[case::a11y_canvas(MessageId::a11y_canvas, "a11y.canvas")]
 #[case::a11y_shape_list(MessageId::a11y_shape_list, "a11y.shape_list")]
