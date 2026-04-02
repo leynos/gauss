@@ -66,8 +66,12 @@ fn unit_f32_accepts_valid_values() {
 
 #[test]
 fn opacity_rejects_non_finite() {
-    // Opacity::new takes UnitF32, which already validates
-    // But we test the constructor path
+    // UnitF32::try_from rejects non-finite values
+    assert!(UnitF32::try_from(f32::NAN).is_err());
+    assert!(UnitF32::try_from(f32::INFINITY).is_err());
+    assert!(UnitF32::try_from(f32::NEG_INFINITY).is_err());
+
+    // Valid values should be accepted through the full chain
     assert!(Opacity::new(UnitF32::try_from(0.5).unwrap()).is_some());
 }
 

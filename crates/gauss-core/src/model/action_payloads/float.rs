@@ -19,6 +19,10 @@ pub(crate) const fn new_pair(x: f32, y: f32) -> Option<(f32, f32)> {
 }
 
 /// Generic length unit in document points.
+///
+/// This is an input type that does not validate its contents.
+/// Use [`StrokeWidth`](super::StrokeWidth) for a validated length with
+/// construction that rejects non-finite or negative values.
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
 pub struct Points(pub f32);
 
@@ -90,6 +94,10 @@ impl std::hash::Hash for Opacity {
 impl Eq for Opacity {}
 
 /// Angle in degrees.
+///
+/// This is an input type that does not validate its contents.
+/// Use [`Rotation`](super::Rotation) for a validated angle with construction
+/// that rejects non-finite values.
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
 pub struct Degrees(pub f32);
 

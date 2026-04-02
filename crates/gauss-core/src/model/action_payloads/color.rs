@@ -11,7 +11,11 @@ pub struct Color {
     pub b: u8,
 }
 
-/// RGB colour components for constructing a [`Color`].
+/// Construction helper for [`Color`].
+///
+/// `Rgb8` provides named fields for constructing a `Color` via `.into()`
+/// or `Color::from`. It exists solely to make colour construction more
+/// explicit at call sites.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Rgb8 {
     /// Red channel (0-255).
@@ -20,6 +24,16 @@ pub struct Rgb8 {
     pub g: u8,
     /// Blue channel (0-255).
     pub b: u8,
+}
+
+impl From<Rgb8> for Color {
+    fn from(rgb: Rgb8) -> Self {
+        Self {
+            r: rgb.r,
+            g: rgb.g,
+            b: rgb.b,
+        }
+    }
 }
 
 impl Color {

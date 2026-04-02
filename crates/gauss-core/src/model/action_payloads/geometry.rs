@@ -24,10 +24,10 @@ impl Position {
     /// Returns `None` if either coordinate is not finite.
     #[must_use]
     pub const fn new(p: Point) -> Option<Self> {
-        match super::float::new_pair(p.x, p.y) {
-            Some((nx, ny)) => Some(Self { x: nx, y: ny }),
-            None => None,
-        }
+        let Some((nx, ny)) = super::float::new_pair(p.x, p.y) else {
+            return None;
+        };
+        Some(Self { x: nx, y: ny })
     }
 
     /// Return the x coordinate.
