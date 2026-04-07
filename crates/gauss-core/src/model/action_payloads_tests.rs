@@ -12,21 +12,78 @@ use std::hash::{Hash, Hasher};
 
 use super::*;
 
+/// Helper for asserting that `normalize_float` produces the expected result.
+fn assert_normalizes(input: f32, expected: f32) {
+    assert_eq!(
+        normalize_float(input),
+        expected,
+        "normalize_float({input}) must be {expected}"
+    );
+}
+
+/// Helper for asserting that `StrokeWidth::new` rejects invalid values.
+fn assert_stroke_width_rejected(points: f32) {
+    assert!(
+        StrokeWidth::new(Points(points)).is_none(),
+        "StrokeWidth::new(Points({points})) must be rejected"
+    );
+}
+
+/// Helper for asserting that `StrokeWidth::new` accepts valid values.
+fn assert_stroke_width_accepted(points: f32) {
+    assert!(
+        StrokeWidth::new(Points(points)).is_some(),
+        "StrokeWidth::new(Points({points})) must be accepted"
+    );
+}
+
+/// Helper for asserting that `Position::new` rejects invalid points.
+fn assert_position_rejected(x: f32, y: f32) {
+    assert!(
+        Position::new(Point { x, y }).is_none(),
+        "Position::new(Point {{ x: {x}, y: {y} }}) must be rejected"
+    );
+}
+
+/// Helper for asserting that `Position::new` accepts valid points.
+fn assert_position_accepted(x: f32, y: f32) {
+    assert!(
+        Position::new(Point { x, y }).is_some(),
+        "Position::new(Point {{ x: {x}, y: {y} }}) must be accepted"
+    );
+}
+
+/// Helper for asserting that `Size::new` rejects invalid dimensions.
+fn assert_size_rejected(width: f32, height: f32) {
+    assert!(
+        Size::new(Dimensions { width, height }).is_none(),
+        "Size::new(Dimensions {{ width: {width}, height: {height} }}) must be rejected"
+    );
+}
+
+/// Helper for asserting that `Size::new` accepts valid dimensions.
+fn assert_size_accepted(width: f32, height: f32) {
+    assert!(
+        Size::new(Dimensions { width, height }).is_some(),
+        "Size::new(Dimensions {{ width: {width}, height: {height} }}) must be accepted"
+    );
+}
+
 #[test]
 fn stroke_width_rejects_negative_and_non_finite() {
     // Negative should be rejected
-    assert!(StrokeWidth::new(Points(-1.0)).is_none());
-    assert!(StrokeWidth::new(Points(-0.1)).is_none());
+    assert_stroke_width_rejected(-1.0);
+    assert_stroke_width_rejected(-0.1);
 
     // Non-finite should be rejected
-    assert!(StrokeWidth::new(Points(f32::NAN)).is_none());
-    assert!(StrokeWidth::new(Points(f32::INFINITY)).is_none());
-    assert!(StrokeWidth::new(Points(f32::NEG_INFINITY)).is_none());
+    assert_stroke_width_rejected(f32::NAN);
+    assert_stroke_width_rejected(f32::INFINITY);
+    assert_stroke_width_rejected(f32::NEG_INFINITY);
 
     // Valid values should be accepted
-    assert!(StrokeWidth::new(Points(0.0)).is_some());
-    assert!(StrokeWidth::new(Points(1.0)).is_some());
-    assert!(StrokeWidth::new(Points(2.5)).is_some());
+    assert_stroke_width_accepted(0.0);
+    assert_stroke_width_accepted(1.0);
+    assert_stroke_width_accepted(2.5);
 }
 
 #[test]
@@ -92,38 +149,14 @@ fn opacity_normalizes_negative_zero() {
 #[test]
 fn position_rejects_non_finite() {
     // Non-finite should be rejected
-    assert!(
-        Position::new(Point {
-            x: f32::NAN,
-            y: 0.0
-        })
-        .is_none()
-    );
-    assert!(
-        Position::new(Point {
-            x: 0.0,
-            y: f32::NAN
-        })
-        .is_none()
-    );
-    assert!(
-        Position::new(Point {
-            x: f32::INFINITY,
-            y: 0.0
-        })
-        .is_none()
-    );
-    assert!(
-        Position::new(Point {
-            x: 0.0,
-            y: f32::NEG_INFINITY
-        })
-        .is_none()
-    );
+    assert_position_rejected(f32::NAN, 0.0);
+    assert_position_rejected(0.0, f32::NAN);
+    assert_position_rejected(f32::INFINITY, 0.0);
+    assert_position_rejected(0.0, f32::NEG_INFINITY);
 
     // Valid values should be accepted
-    assert!(Position::new(Point { x: 0.0, y: 0.0 }).is_some());
-    assert!(Position::new(Point { x: 1.0, y: 2.0 }).is_some());
+    assert_position_accepted(0.0, 0.0);
+    assert_position_accepted(1.0, 2.0);
 }
 
 #[test]
@@ -143,66 +176,18 @@ fn position_normalizes_negative_zero() {
 #[test]
 fn size_rejects_negative_and_non_finite() {
     // Negative dimensions should be rejected
-    assert!(
-        Size::new(Dimensions {
-            width: -1.0,
-            height: 1.0
-        })
-        .is_none()
-    );
-    assert!(
-        Size::new(Dimensions {
-            width: 1.0,
-            height: -1.0
-        })
-        .is_none()
-    );
-    assert!(
-        Size::new(Dimensions {
-            width: -0.1,
-            height: -0.1
-        })
-        .is_none()
-    );
+    assert_size_rejected(-1.0, 1.0);
+    assert_size_rejected(1.0, -1.0);
+    assert_size_rejected(-0.1, -0.1);
 
     // Non-finite should be rejected
-    assert!(
-        Size::new(Dimensions {
-            width: f32::NAN,
-            height: 1.0
-        })
-        .is_none()
-    );
-    assert!(
-        Size::new(Dimensions {
-            width: 1.0,
-            height: f32::INFINITY
-        })
-        .is_none()
-    );
-    assert!(
-        Size::new(Dimensions {
-            width: f32::NEG_INFINITY,
-            height: 1.0
-        })
-        .is_none()
-    );
+    assert_size_rejected(f32::NAN, 1.0);
+    assert_size_rejected(1.0, f32::INFINITY);
+    assert_size_rejected(f32::NEG_INFINITY, 1.0);
 
     // Valid values should be accepted
-    assert!(
-        Size::new(Dimensions {
-            width: 0.0,
-            height: 0.0
-        })
-        .is_some()
-    );
-    assert!(
-        Size::new(Dimensions {
-            width: 100.0,
-            height: 200.0
-        })
-        .is_some()
-    );
+    assert_size_accepted(0.0, 0.0);
+    assert_size_accepted(100.0, 200.0);
 }
 
 #[test]
@@ -256,8 +241,8 @@ fn rotation_normalizes_negative_zero() {
 
 #[test]
 fn normalize_float_converts_negative_zero() {
-    assert_eq!(normalize_float(-0.0), 0.0);
-    assert_eq!(normalize_float(0.0), 0.0);
-    assert_eq!(normalize_float(1.0), 1.0);
-    assert_eq!(normalize_float(-1.0), -1.0);
+    assert_normalizes(-0.0, 0.0);
+    assert_normalizes(0.0, 0.0);
+    assert_normalizes(1.0, 1.0);
+    assert_normalizes(-1.0, -1.0);
 }
