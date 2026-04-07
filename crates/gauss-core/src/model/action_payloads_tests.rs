@@ -1,18 +1,14 @@
 //! Tests for `action_payloads` module.
-#![expect(
-    clippy::unwrap_used,
-    reason = "unwrap is appropriate in tests for concise assertions"
-)]
-#![expect(
-    clippy::float_cmp,
-    reason = "exact float equality is intentional in tests for -0.0 normalization"
-)]
 
 use std::hash::{Hash, Hasher};
 
 use super::*;
 
 /// Helper for asserting that `normalize_float` produces the expected result.
+#[expect(
+    clippy::float_cmp,
+    reason = "exact float equality is intentional in tests for -0.0 normalization"
+)]
 fn assert_normalizes(input: f32, expected: f32) {
     assert_eq!(
         normalize_float(input),
@@ -88,8 +84,8 @@ fn stroke_width_rejects_negative_and_non_finite() {
 
 #[test]
 fn stroke_width_normalizes_negative_zero() {
-    let sw_neg = StrokeWidth::new(Points(-0.0)).unwrap();
-    let sw_pos = StrokeWidth::new(Points(0.0)).unwrap();
+    let sw_neg = StrokeWidth::new(Points(-0.0)).expect("StrokeWidth::new should accept -0.0");
+    let sw_pos = StrokeWidth::new(Points(0.0)).expect("StrokeWidth::new should accept 0.0");
     // Both should hash to the same value
     let mut hasher_neg = std::collections::hash_map::DefaultHasher::new();
     let mut hasher_pos = std::collections::hash_map::DefaultHasher::new();
@@ -129,13 +125,19 @@ fn opacity_rejects_non_finite() {
     assert!(UnitF32::try_from(f32::NEG_INFINITY).is_err());
 
     // Valid values should be accepted through the full chain
-    assert!(Opacity::new(UnitF32::try_from(0.5).unwrap()).is_some());
+    assert!(
+        Opacity::new(UnitF32::try_from(0.5).expect("UnitF32::try_from should accept 0.5"))
+            .is_some()
+    );
 }
 
 #[test]
 fn opacity_normalizes_negative_zero() {
-    let op_neg = Opacity::new(UnitF32::try_from(-0.0).unwrap()).unwrap();
-    let op_pos = Opacity::new(UnitF32::try_from(0.0).unwrap()).unwrap();
+    let op_neg =
+        Opacity::new(UnitF32::try_from(-0.0).expect("UnitF32::try_from should accept -0.0"))
+            .expect("Opacity::new should accept valid UnitF32");
+    let op_pos = Opacity::new(UnitF32::try_from(0.0).expect("UnitF32::try_from should accept 0.0"))
+        .expect("Opacity::new should accept valid UnitF32");
     // Both should hash to the same value
     let mut hasher_neg = std::collections::hash_map::DefaultHasher::new();
     let mut hasher_pos = std::collections::hash_map::DefaultHasher::new();
@@ -161,8 +163,10 @@ fn position_rejects_non_finite() {
 
 #[test]
 fn position_normalizes_negative_zero() {
-    let pos_neg = Position::new(Point { x: -0.0, y: -0.0 }).unwrap();
-    let pos_pos = Position::new(Point { x: 0.0, y: 0.0 }).unwrap();
+    let pos_neg = Position::new(Point { x: -0.0, y: -0.0 })
+        .expect("Position::new should accept negative zero coordinates");
+    let pos_pos = Position::new(Point { x: 0.0, y: 0.0 })
+        .expect("Position::new should accept zero coordinates");
     // Both should hash to the same value
     let mut hasher_neg = std::collections::hash_map::DefaultHasher::new();
     let mut hasher_pos = std::collections::hash_map::DefaultHasher::new();
@@ -196,12 +200,12 @@ fn size_normalizes_negative_zero() {
         width: -0.0,
         height: -0.0,
     })
-    .unwrap();
+    .expect("Size::new should accept negative zero dimensions");
     let size_pos = Size::new(Dimensions {
         width: 0.0,
         height: 0.0,
     })
-    .unwrap();
+    .expect("Size::new should accept zero dimensions");
     // Both should hash to the same value
     let mut hasher_neg = std::collections::hash_map::DefaultHasher::new();
     let mut hasher_pos = std::collections::hash_map::DefaultHasher::new();
@@ -227,8 +231,8 @@ fn rotation_rejects_non_finite() {
 
 #[test]
 fn rotation_normalizes_negative_zero() {
-    let rot_neg = Rotation::new(Degrees(-0.0)).unwrap();
-    let rot_pos = Rotation::new(Degrees(0.0)).unwrap();
+    let rot_neg = Rotation::new(Degrees(-0.0)).expect("Rotation::new should accept -0.0 degrees");
+    let rot_pos = Rotation::new(Degrees(0.0)).expect("Rotation::new should accept 0.0 degrees");
     // Both should hash to the same value
     let mut hasher_neg = std::collections::hash_map::DefaultHasher::new();
     let mut hasher_pos = std::collections::hash_map::DefaultHasher::new();
