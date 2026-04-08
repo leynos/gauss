@@ -203,6 +203,11 @@ fn position_normalizes_negative_zero() {
         Position::new(Point { x: 0.0, y: 5.0 }).expect("Position::new should accept 0.0"),
         "Position(x)"
     );
+    assert_neg_zero_equal!(
+        Position::new(Point { x: 5.0, y: -0.0 }).expect("Position::new should accept -0.0"),
+        Position::new(Point { x: 5.0, y: 0.0 }).expect("Position::new should accept 0.0"),
+        "Position(y)"
+    );
 }
 
 #[test]
@@ -260,6 +265,19 @@ fn size_normalizes_negative_zero() {
         })
         .expect("Size::new should accept 0.0"),
         "Size(width)"
+    );
+    assert_neg_zero_equal!(
+        Size::new(Dimensions {
+            width: 10.0,
+            height: -0.0
+        })
+        .expect("Size::new should accept -0.0"),
+        Size::new(Dimensions {
+            width: 10.0,
+            height: 0.0
+        })
+        .expect("Size::new should accept 0.0"),
+        "Size(height)"
     );
 }
 
