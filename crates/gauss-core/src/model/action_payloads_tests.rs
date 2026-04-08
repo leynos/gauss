@@ -162,19 +162,13 @@ fn opacity_rejects_non_finite() {
 
 #[test]
 fn opacity_normalizes_negative_zero() {
-    let op_neg =
+    assert_neg_zero_equal!(
         Opacity::new(UnitF32::try_from(-0.0).expect("UnitF32::try_from should accept -0.0"))
-            .expect("Opacity::new should accept valid UnitF32");
-    let op_pos = Opacity::new(UnitF32::try_from(0.0).expect("UnitF32::try_from should accept 0.0"))
-        .expect("Opacity::new should accept valid UnitF32");
-    // Both should hash to the same value
-    let mut hasher_neg = std::collections::hash_map::DefaultHasher::new();
-    let mut hasher_pos = std::collections::hash_map::DefaultHasher::new();
-    op_neg.hash(&mut hasher_neg);
-    op_pos.hash(&mut hasher_pos);
-    assert_eq!(hasher_neg.finish(), hasher_pos.finish());
-    // And be equal
-    assert_eq!(op_neg, op_pos);
+            .expect("Opacity::new should accept valid UnitF32"),
+        Opacity::new(UnitF32::try_from(0.0).expect("UnitF32::try_from should accept 0.0"))
+            .expect("Opacity::new should accept valid UnitF32"),
+        "Opacity"
+    );
 }
 
 #[test]
