@@ -16,7 +16,7 @@ strings**, building on the i18n scaffolding from 0.7.1.
 After this change:
 
 - All user-visible strings in window chrome and tool names are externalized in
-  the message catalog (`src/i18n/catalog.rs`).
+  the message catalog (`src/i18n/catalog/mod.rs`).
 - UI code retrieves strings via `MessageId` constants rather than hardcoded
   literals.
 - The accessibility tree uses the same localized strings as the visual UI.
@@ -148,8 +148,8 @@ Known uncertainties that might affect the plan:
 
 **Files modified:**
 
-- `src/i18n/message.rs` - 43 new `MessageId` factory methods
-- `src/i18n/catalog.rs` - 47 new message entries
+- `src/i18n/message/mod.rs` - 43 new `MessageId` factory methods (in `factories.rs`)
+- `src/i18n/catalog/mod.rs` - 47 new message entries
 - `src/ui/phase0_shell/mod.rs` - Added `localize()` helper method
 - `src/ui/phase0_shell/tool_rail.rs` - Localized tool tooltips
 - `src/ui/phase0_shell/chrome.rs` - Localized button labels
@@ -179,14 +179,14 @@ Known uncertainties that might affect the plan:
 
 The i18n system lives in `src/i18n/` and consists of:
 
-1. **`MessageId`** (`src/i18n/message.rs`): Typed message identifiers with
+1. **`MessageId`** (`src/i18n/message/mod.rs`): Typed message identifiers with
    factory methods like `tool_mode_draw()`, `edge_mode_line()`. Keys use
    dot-notation (e.g., `"tool_mode.draw"`).
 
-2. **`Catalog`** (`src/i18n/catalog.rs`): Storage for locale-specific strings.
+2. **`Catalog`** (`src/i18n/catalog/mod.rs`): Storage for locale-specific strings.
    The `default_en_gb()` method contains all current translations.
 
-3. **`Localizer`** (`src/i18n/catalog.rs`): Service that looks up messages with
+3. **`Localizer`** (`src/i18n/catalog/mod.rs`): Service that looks up messages with
    automatic fallback to en-GB.
 
 4. **`i18n_helpers`** (`src/ui/phase0_shell/i18n_helpers.rs`): Helper functions
@@ -260,7 +260,7 @@ From `a11y_service/tree_builder.rs`:
 
 **Goal**: Define all new message identifiers and add them to the catalog.
 
-1. **Extend `MessageId`** (`src/i18n/message.rs`):
+1. **Extend `MessageId`** (`src/i18n/message/mod.rs`):
    - Add factory methods for window chrome strings.
    - Add factory methods for tool tooltips.
    - Add factory methods for status bar strings.
@@ -273,7 +273,7 @@ From `a11y_service/tree_builder.rs`:
    - `status.*` for status messages (e.g., `status.saved`)
    - `a11y.*` for accessibility labels (e.g., `a11y.canvas`)
 
-2. **Extend `Catalog::default_en_gb()`** (`src/i18n/catalog.rs`):
+2. **Extend `Catalog::default_en_gb()`** (`src/i18n/catalog/mod.rs`):
    - Add all new message keys with their English values.
    - Group related messages for readability.
 
@@ -320,7 +320,7 @@ Update order (each validates with existing tests before proceeding):
 
 **Goal**: Ensure all strings are properly externalized and retrievable.
 
-1. **Unit tests** (`src/i18n/catalog.rs`):
+1. **Unit tests** (`src/i18n/catalog/mod.rs`):
    - Add test for each new `MessageId` factory method.
    - Verify all messages exist in default catalog.
 
@@ -360,7 +360,7 @@ Update order (each validates with existing tests before proceeding):
 
 ### Step 1: Extend MessageId
 
-Edit `src/i18n/message.rs`:
+Edit `src/i18n/message/mod.rs`:
 
 ```rust
 // Window chrome
@@ -388,7 +388,7 @@ pub fn a11y_canvas() -> Self { Self::new("a11y.canvas") }
 
 ### Step 2: Add catalog entries
 
-Edit `src/i18n/catalog.rs` in `default_en_gb()`:
+Edit `src/i18n/catalog/mod.rs` in `default_en_gb()`:
 
 ```rust
 // Window chrome
@@ -511,7 +511,7 @@ Recovery:
 
 ### Modified types
 
-In `src/i18n/message.rs`:
+In `src/i18n/message/mod.rs`:
 
 ```rust
 impl MessageId {
@@ -522,7 +522,7 @@ impl MessageId {
 }
 ```
 
-In `src/i18n/catalog.rs`:
+In `src/i18n/catalog/mod.rs`:
 
 ```rust
 impl Catalog {
@@ -552,12 +552,13 @@ No new external dependencies. All work uses existing workspace crates:
 
 ## Artifacts and notes
 
-Key files to modify:
+Table: Key files modified for UI string extraction.
 
 | File                                               | Lines | Purpose                       |
 | -------------------------------------------------- | ----- | ----------------------------- |
-| `src/i18n/message.rs`                              | +50   | New MessageId factory methods |
-| `src/i18n/catalog.rs`                              | +40   | New catalog entries           |
+| `src/i18n/message/mod.rs`                          | +50   | New MessageId factory methods |
+| `src/i18n/message/factories.rs`                    | +50   | MessageId factory implementations |
+| `src/i18n/catalog/mod.rs`                          | +40   | New catalog entries           |
 | `src/ui/phase0_shell/tool_rail.rs`                 | ~20   | Localized tooltips            |
 | `src/ui/phase0_shell/chrome.rs`                    | ~30   | Localized button labels       |
 | `src/ui/phase0_shell/chrome_panels.rs`             | ~25   | Localized status bar          |

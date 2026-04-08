@@ -105,49 +105,73 @@ fn localizer_add_catalog_works(fr_test_catalog: Catalog) {
     assert_eq!(result.expect("Should have found message"), "test_fr");
 }
 
+fn default_catalog() -> Catalog {
+    Catalog::default_en_gb()
+}
+
 #[test]
-#[expect(
-    clippy::cognitive_complexity,
-    reason = "Cohesive catalog verification test; splitting would reduce readability"
-)]
-fn catalog_default_en_gb_contains_representative_new_messages() {
-    let catalog = Catalog::default_en_gb();
-
-    // chrome.*
+fn catalog_default_en_gb_contains_chrome_messages() {
+    let catalog = default_catalog();
     assert_eq!(catalog.get(&MessageId::chrome_file_new()), Some("New"));
+}
 
-    // tool.tooltip.*
+#[test]
+fn catalog_default_en_gb_contains_tool_tooltip_messages() {
+    let catalog = default_catalog();
     assert_eq!(
         catalog.get(&MessageId::tool_tooltip_draw_path()),
         Some("Draw Path")
     );
+}
 
-    // status.*
+#[test]
+fn catalog_default_en_gb_contains_status_messages() {
+    let catalog = default_catalog();
     assert_eq!(
         catalog.get(&MessageId::status_saved()),
         Some("Saved: {path}")
     );
+}
 
-    // align.*
+#[test]
+fn catalog_default_en_gb_contains_align_messages() {
+    let catalog = default_catalog();
     assert_eq!(catalog.get(&MessageId::align_left()), Some("Align Left"));
+}
 
-    // style.*
+#[test]
+fn catalog_default_en_gb_contains_style_messages() {
+    let catalog = default_catalog();
     assert_eq!(catalog.get(&MessageId::style_stroke()), Some("Stroke"));
+}
 
-    // doc.*
+#[test]
+fn catalog_default_en_gb_contains_doc_messages() {
+    let catalog = default_catalog();
     assert_eq!(catalog.get(&MessageId::doc_untitled()), Some("untitled"));
+}
 
-    // a11y.*
+#[test]
+fn catalog_default_en_gb_contains_a11y_canvas_message() {
+    let catalog = default_catalog();
     assert_eq!(
         catalog.get(&MessageId::a11y_canvas()),
         Some("Drawing canvas")
     );
+}
+
+#[test]
+fn catalog_default_en_gb_contains_a11y_shape_item_message() {
+    let catalog = default_catalog();
     assert_eq!(
         catalog.get(&MessageId::a11y_shape_item()),
         Some("Shape {index}")
     );
+}
 
-    // status.zoom_ratio_1_1
+#[test]
+fn catalog_default_en_gb_contains_zoom_ratio_message() {
+    let catalog = default_catalog();
     assert_eq!(
         catalog.get(&MessageId::status_zoom_ratio_1_1()),
         Some("1:1")
