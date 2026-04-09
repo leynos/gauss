@@ -17,5 +17,4 @@ pub use stroke::{Rotation, StrokeWidth};
 pub use float::normalize_float;
 
 #[cfg(test)]
-#[path = "../action_payloads_tests.rs"]
 mod tests;
