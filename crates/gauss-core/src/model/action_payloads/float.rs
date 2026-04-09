@@ -1,5 +1,7 @@
 //! Float normalization and validation utilities.
 
+use thiserror::Error;
+
 /// Normalize a float for consistent hashing and equality.
 ///
 /// Maps -0.0 to 0.0. NaN values should be rejected before calling this.
@@ -35,21 +37,14 @@ impl Points {
 }
 
 /// Error returned when constructing a [`UnitF32`] from an `f32` fails.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Error, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnitF32Error {
     /// The supplied value was non-finite (NaN or infinity).
+    #[error("value must be finite")]
     NonFinite,
     /// The supplied value was finite but outside the range `0.0..=1.0`.
+    #[error("value out of range, expected 0.0..=1.0")]
     OutOfRange,
-}
-
-impl core::fmt::Display for UnitF32Error {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::NonFinite => f.write_str("value must be finite"),
-            Self::OutOfRange => f.write_str("value out of range, expected 0.0..=1.0"),
-        }
-    }
 }
 
 /// Unit float in the range [0.0, 1.0].
