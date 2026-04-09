@@ -2,6 +2,8 @@
 
 use std::hash::{Hash, Hasher};
 
+use rstest::rstest;
+
 use super::*;
 
 /// Macro for asserting that `normalize_float` produces the expected result.
@@ -17,289 +19,233 @@ macro_rules! assert_normalizes {
     };
 }
 
-/// Macro for asserting hash and value equality of two constructed instances.
-macro_rules! assert_neg_zero_equal {
-    ($neg_expr:expr, $pos_expr:expr $(, $ctx:expr)?) => {{
-        let a = $neg_expr;
-        let b = $pos_expr;
-        let mut h1 = std::collections::hash_map::DefaultHasher::new();
-        let mut h2 = std::collections::hash_map::DefaultHasher::new();
-        a.hash(&mut h1);
-        b.hash(&mut h2);
-        assert_eq!(
-            h1.finish(),
-            h2.finish(),
-            "hash must be equal for -0.0 vs +0.0{}",
-            concat!($(", ", $ctx)?)
-        );
-        assert_eq!(
-            a,
-            b,
-            "value must be equal for -0.0 vs +0.0{}",
-            concat!($(", ", $ctx)?)
-        );
-    }};
+/// Asserts hash and value equality of two constructed instances.
+fn assert_neg_zero_equal<T: Hash + Eq + std::fmt::Debug>(a: &T, b: &T, ctx: &str) {
+    let mut h1 = std::collections::hash_map::DefaultHasher::new();
+    let mut h2 = std::collections::hash_map::DefaultHasher::new();
+    a.hash(&mut h1);
+    b.hash(&mut h2);
+    assert_eq!(
+        h1.finish(),
+        h2.finish(),
+        "hash must be equal for -0.0 vs +0.0 ({ctx})"
+    );
+    assert_eq!(a, b, "value must be equal for -0.0 vs +0.0 ({ctx})");
 }
 
-/// Helper for asserting that `StrokeWidth::new` rejects invalid values.
-fn assert_stroke_width_rejected(points: Points) {
+#[rstest]
+#[case(-1.0)]
+#[case(-0.1)]
+#[case(f32::NAN)]
+#[case(f32::INFINITY)]
+#[case(f32::NEG_INFINITY)]
+fn stroke_width_rejects_invalid(#[case] value: f32) {
     assert!(
-        StrokeWidth::new(points).is_none(),
-        "StrokeWidth::new(Points({})) must be rejected",
-        points.0
+        StrokeWidth::new(Points(value)).is_none(),
+        "StrokeWidth::new(Points({value})) must be rejected"
     );
 }
 
-/// Helper for asserting that `StrokeWidth::new` accepts valid values.
-fn assert_stroke_width_accepted(points: Points) {
+#[rstest]
+#[case(0.0)]
+#[case(1.0)]
+#[case(2.5)]
+fn stroke_width_accepts_valid(#[case] value: f32) {
     assert!(
-        StrokeWidth::new(points).is_some(),
-        "StrokeWidth::new(Points({})) must be accepted",
-        points.0
+        StrokeWidth::new(Points(value)).is_some(),
+        "StrokeWidth::new(Points({value})) must be accepted"
     );
-}
-
-/// Helper for asserting that `Position::new` rejects invalid points.
-fn assert_position_rejected(p: Point) {
-    assert!(
-        Position::new(p).is_none(),
-        "Position::new(Point {{ x: {}, y: {} }}) must be rejected",
-        p.x,
-        p.y
-    );
-}
-
-/// Helper for asserting that `Position::new` accepts valid points.
-fn assert_position_accepted(p: Point) {
-    assert!(
-        Position::new(p).is_some(),
-        "Position::new(Point {{ x: {}, y: {} }}) must be accepted",
-        p.x,
-        p.y
-    );
-}
-
-/// Helper for asserting that `Size::new` rejects invalid dimensions.
-fn assert_size_rejected(d: Dimensions) {
-    assert!(
-        Size::new(d).is_none(),
-        "Size::new(Dimensions {{ width: {}, height: {} }}) must be rejected",
-        d.width,
-        d.height
-    );
-}
-
-/// Helper for asserting that `Size::new` accepts valid dimensions.
-fn assert_size_accepted(d: Dimensions) {
-    assert!(
-        Size::new(d).is_some(),
-        "Size::new(Dimensions {{ width: {}, height: {} }}) must be accepted",
-        d.width,
-        d.height
-    );
-}
-
-#[test]
-fn stroke_width_rejects_negative_and_non_finite() {
-    // Negative should be rejected
-    assert_stroke_width_rejected(Points(-1.0));
-    assert_stroke_width_rejected(Points(-0.1));
-
-    // Non-finite should be rejected
-    assert_stroke_width_rejected(Points(f32::NAN));
-    assert_stroke_width_rejected(Points(f32::INFINITY));
-    assert_stroke_width_rejected(Points(f32::NEG_INFINITY));
-
-    // Valid values should be accepted
-    assert_stroke_width_accepted(Points(0.0));
-    assert_stroke_width_accepted(Points(1.0));
-    assert_stroke_width_accepted(Points(2.5));
 }
 
 #[test]
 fn stroke_width_normalizes_negative_zero() {
-    assert_neg_zero_equal!(
-        StrokeWidth::new(Points(-0.0)).expect("StrokeWidth::new should accept -0.0"),
-        StrokeWidth::new(Points(0.0)).expect("StrokeWidth::new should accept 0.0"),
-        "StrokeWidth"
+    assert_neg_zero_equal(
+        &StrokeWidth::new(Points(-0.0)).expect("StrokeWidth::new should accept -0.0"),
+        &StrokeWidth::new(Points(0.0)).expect("StrokeWidth::new should accept 0.0"),
+        "StrokeWidth",
+    );
+}
+
+#[rstest]
+#[case(-0.1)]
+#[case(1.1)]
+#[case(2.0)]
+#[case(f32::NAN)]
+#[case(f32::INFINITY)]
+#[case(f32::NEG_INFINITY)]
+fn unit_f32_rejects_invalid(#[case] value: f32) {
+    assert!(
+        UnitF32::try_from(value).is_err(),
+        "UnitF32::try_from({value}) must fail"
+    );
+}
+
+#[rstest]
+#[case(0.0)]
+#[case(1.0)]
+#[case(0.5)]
+fn unit_f32_accepts_valid(#[case] value: f32) {
+    assert!(
+        UnitF32::try_from(value).is_ok(),
+        "UnitF32::try_from({value}) must succeed"
+    );
+}
+
+#[rstest]
+#[case(f32::NAN)]
+#[case(f32::INFINITY)]
+#[case(f32::NEG_INFINITY)]
+fn opacity_rejects_non_finite(#[case] value: f32) {
+    assert!(
+        UnitF32::try_from(value).is_err(),
+        "UnitF32::try_from({value}) must fail"
     );
 }
 
 #[test]
-fn unit_f32_rejects_out_of_range() {
-    assert!(UnitF32::try_from(-0.1).is_err());
-    assert!(UnitF32::try_from(1.1).is_err());
-    assert!(UnitF32::try_from(2.0).is_err());
-}
-
-#[test]
-fn unit_f32_rejects_non_finite() {
-    assert!(UnitF32::try_from(f32::NAN).is_err());
-    assert!(UnitF32::try_from(f32::INFINITY).is_err());
-    assert!(UnitF32::try_from(f32::NEG_INFINITY).is_err());
-}
-
-#[test]
-fn unit_f32_accepts_valid_values() {
-    assert!(UnitF32::try_from(0.0).is_ok());
-    assert!(UnitF32::try_from(1.0).is_ok());
-    assert!(UnitF32::try_from(0.5).is_ok());
-}
-
-#[test]
-fn opacity_rejects_non_finite() {
-    // UnitF32::try_from rejects non-finite values
-    assert!(UnitF32::try_from(f32::NAN).is_err());
-    assert!(UnitF32::try_from(f32::INFINITY).is_err());
-    assert!(UnitF32::try_from(f32::NEG_INFINITY).is_err());
-
-    // Valid values should be accepted through the full chain
+fn opacity_accepts_valid() {
+    let unit = UnitF32::try_from(0.5).expect("UnitF32::try_from should accept 0.5");
     assert!(
-        Opacity::new(UnitF32::try_from(0.5).expect("UnitF32::try_from should accept 0.5"))
-            .is_some()
+        Opacity::new(unit).is_some(),
+        "Opacity::new should accept valid UnitF32"
     );
 }
 
 #[test]
 fn opacity_normalizes_negative_zero() {
-    assert_neg_zero_equal!(
-        Opacity::new(UnitF32::try_from(-0.0).expect("UnitF32::try_from should accept -0.0"))
-            .expect("Opacity::new should accept valid UnitF32"),
-        Opacity::new(UnitF32::try_from(0.0).expect("UnitF32::try_from should accept 0.0"))
-            .expect("Opacity::new should accept valid UnitF32"),
-        "Opacity"
+    let neg = Opacity::new(UnitF32::try_from(-0.0).expect("valid"))
+        .expect("Opacity::new should accept valid UnitF32");
+    let pos = Opacity::new(UnitF32::try_from(0.0).expect("valid"))
+        .expect("Opacity::new should accept valid UnitF32");
+    assert_neg_zero_equal(&neg, &pos, "Opacity");
+}
+
+#[rstest]
+#[case(f32::NAN, 0.0)]
+#[case(0.0, f32::NAN)]
+#[case(f32::INFINITY, 0.0)]
+#[case(0.0, f32::NEG_INFINITY)]
+fn position_rejects_non_finite(#[case] x: f32, #[case] y: f32) {
+    assert!(
+        Position::new(Point { x, y }).is_none(),
+        "Position::new(Point {{ x: {x}, y: {y} }}) must be rejected"
+    );
+}
+
+#[rstest]
+#[case(0.0, 0.0)]
+#[case(1.0, 2.0)]
+fn position_accepts_valid(#[case] x: f32, #[case] y: f32) {
+    assert!(
+        Position::new(Point { x, y }).is_some(),
+        "Position::new(Point {{ x: {x}, y: {y} }}) must be accepted"
     );
 }
 
 #[test]
-fn position_rejects_non_finite() {
-    // Non-finite should be rejected
-    assert_position_rejected(Point {
-        x: f32::NAN,
-        y: 0.0,
-    });
-    assert_position_rejected(Point {
-        x: 0.0,
-        y: f32::NAN,
-    });
-    assert_position_rejected(Point {
-        x: f32::INFINITY,
-        y: 0.0,
-    });
-    assert_position_rejected(Point {
-        x: 0.0,
-        y: f32::NEG_INFINITY,
-    });
-
-    // Valid values should be accepted
-    assert_position_accepted(Point { x: 0.0, y: 0.0 });
-    assert_position_accepted(Point { x: 1.0, y: 2.0 });
-}
-
-#[test]
-fn position_normalizes_negative_zero() {
-    assert_neg_zero_equal!(
-        Position::new(Point { x: -0.0, y: 5.0 }).expect("Position::new should accept -0.0"),
-        Position::new(Point { x: 0.0, y: 5.0 }).expect("Position::new should accept 0.0"),
-        "Position(x)"
-    );
-    assert_neg_zero_equal!(
-        Position::new(Point { x: 5.0, y: -0.0 }).expect("Position::new should accept -0.0"),
-        Position::new(Point { x: 5.0, y: 0.0 }).expect("Position::new should accept 0.0"),
-        "Position(y)"
+fn position_normalizes_negative_zero_x() {
+    assert_neg_zero_equal(
+        &Position::new(Point { x: -0.0, y: 5.0 }).expect("Position::new should accept -0.0"),
+        &Position::new(Point { x: 0.0, y: 5.0 }).expect("Position::new should accept 0.0"),
+        "Position(x)",
     );
 }
 
 #[test]
-fn size_rejects_negative_and_non_finite() {
-    // Negative dimensions should be rejected
-    assert_size_rejected(Dimensions {
-        width: -1.0,
-        height: 1.0,
-    });
-    assert_size_rejected(Dimensions {
-        width: 1.0,
-        height: -1.0,
-    });
-    assert_size_rejected(Dimensions {
-        width: -0.1,
-        height: -0.1,
-    });
+fn position_normalizes_negative_zero_y() {
+    assert_neg_zero_equal(
+        &Position::new(Point { x: 5.0, y: -0.0 }).expect("Position::new should accept -0.0"),
+        &Position::new(Point { x: 5.0, y: 0.0 }).expect("Position::new should accept 0.0"),
+        "Position(y)",
+    );
+}
 
-    // Non-finite should be rejected
-    assert_size_rejected(Dimensions {
-        width: f32::NAN,
-        height: 1.0,
-    });
-    assert_size_rejected(Dimensions {
-        width: 1.0,
-        height: f32::INFINITY,
-    });
-    assert_size_rejected(Dimensions {
-        width: f32::NEG_INFINITY,
-        height: 1.0,
-    });
+#[rstest]
+#[case(-1.0, 1.0)]
+#[case(1.0, -1.0)]
+#[case(-0.1, -0.1)]
+#[case(f32::NAN, 1.0)]
+#[case(1.0, f32::INFINITY)]
+#[case(f32::NEG_INFINITY, 1.0)]
+fn size_rejects_invalid(#[case] width: f32, #[case] height: f32) {
+    assert!(
+        Size::new(Dimensions { width, height }).is_none(),
+        "Size::new(Dimensions {{ width: {width}, height: {height} }}) must be rejected"
+    );
+}
 
-    // Valid values should be accepted
-    assert_size_accepted(Dimensions {
-        width: 0.0,
-        height: 0.0,
-    });
-    assert_size_accepted(Dimensions {
-        width: 100.0,
-        height: 200.0,
-    });
+#[rstest]
+#[case(0.0, 0.0)]
+#[case(100.0, 200.0)]
+fn size_accepts_valid(#[case] width: f32, #[case] height: f32) {
+    assert!(
+        Size::new(Dimensions { width, height }).is_some(),
+        "Size::new(Dimensions {{ width: {width}, height: {height} }}) must be accepted"
+    );
 }
 
 #[test]
-fn size_normalizes_negative_zero() {
-    assert_neg_zero_equal!(
-        Size::new(Dimensions {
+fn size_normalizes_negative_zero_width() {
+    assert_neg_zero_equal(
+        &Size::new(Dimensions {
             width: -0.0,
-            height: 10.0
+            height: 10.0,
         })
         .expect("Size::new should accept -0.0"),
-        Size::new(Dimensions {
+        &Size::new(Dimensions {
             width: 0.0,
-            height: 10.0
+            height: 10.0,
         })
         .expect("Size::new should accept 0.0"),
-        "Size(width)"
-    );
-    assert_neg_zero_equal!(
-        Size::new(Dimensions {
-            width: 10.0,
-            height: -0.0
-        })
-        .expect("Size::new should accept -0.0"),
-        Size::new(Dimensions {
-            width: 10.0,
-            height: 0.0
-        })
-        .expect("Size::new should accept 0.0"),
-        "Size(height)"
+        "Size(width)",
     );
 }
 
 #[test]
-fn rotation_rejects_non_finite() {
-    // Non-finite should be rejected
-    assert!(Rotation::new(Degrees(f32::NAN)).is_none());
-    assert!(Rotation::new(Degrees(f32::INFINITY)).is_none());
-    assert!(Rotation::new(Degrees(f32::NEG_INFINITY)).is_none());
+fn size_normalizes_negative_zero_height() {
+    assert_neg_zero_equal(
+        &Size::new(Dimensions {
+            width: 10.0,
+            height: -0.0,
+        })
+        .expect("Size::new should accept -0.0"),
+        &Size::new(Dimensions {
+            width: 10.0,
+            height: 0.0,
+        })
+        .expect("Size::new should accept 0.0"),
+        "Size(height)",
+    );
+}
 
-    // Valid values should be accepted
-    assert!(Rotation::new(Degrees(0.0)).is_some());
-    assert!(Rotation::new(Degrees(45.0)).is_some());
-    assert!(Rotation::new(Degrees(-90.0)).is_some());
+#[rstest]
+#[case(f32::NAN)]
+#[case(f32::INFINITY)]
+#[case(f32::NEG_INFINITY)]
+fn rotation_rejects_non_finite(#[case] value: f32) {
+    assert!(
+        Rotation::new(Degrees(value)).is_none(),
+        "Rotation::new(Degrees({value})) must be rejected"
+    );
+}
+
+#[rstest]
+#[case(0.0)]
+#[case(45.0)]
+#[case(-90.0)]
+fn rotation_accepts_valid(#[case] value: f32) {
+    assert!(
+        Rotation::new(Degrees(value)).is_some(),
+        "Rotation::new(Degrees({value})) must be accepted"
+    );
 }
 
 #[test]
 fn rotation_normalizes_negative_zero() {
-    assert_neg_zero_equal!(
-        Rotation::new(Degrees(-0.0)).expect("Rotation::new should accept -0.0"),
-        Rotation::new(Degrees(0.0)).expect("Rotation::new should accept 0.0"),
-        "Rotation"
+    assert_neg_zero_equal(
+        &Rotation::new(Degrees(-0.0)).expect("Rotation::new should accept -0.0"),
+        &Rotation::new(Degrees(0.0)).expect("Rotation::new should accept 0.0"),
+        "Rotation",
     );
 }
 
