@@ -34,6 +34,24 @@ impl Points {
     }
 }
 
+/// Error returned when constructing a [`UnitF32`] from an `f32` fails.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnitF32Error {
+    /// The supplied value was non-finite (NaN or infinity).
+    NonFinite,
+    /// The supplied value was finite but outside the range `0.0..=1.0`.
+    OutOfRange,
+}
+
+impl core::fmt::Display for UnitF32Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::NonFinite => f.write_str("value must be finite"),
+            Self::OutOfRange => f.write_str("value out of range, expected 0.0..=1.0"),
+        }
+    }
+}
+
 /// Unit float in the range [0.0, 1.0].
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
 pub struct UnitF32(f32);
@@ -47,14 +65,16 @@ impl UnitF32 {
 }
 
 impl TryFrom<f32> for UnitF32 {
-    type Error = &'static str;
+    type Error = UnitF32Error;
 
     fn try_from(v: f32) -> Result<Self, Self::Error> {
-        if v.is_finite() && (0.0..=1.0).contains(&v) {
-            Ok(Self(v))
-        } else {
-            Err("value out of range, expected 0.0..=1.0")
+        if !v.is_finite() {
+            return Err(UnitF32Error::NonFinite);
         }
+        if !(0.0..=1.0).contains(&v) {
+            return Err(UnitF32Error::OutOfRange);
+        }
+        Ok(Self(v))
     }
 }
 

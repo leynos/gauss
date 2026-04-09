@@ -9,7 +9,7 @@ mod geometry;
 mod stroke;
 
 pub use color::{Color, Rgb8};
-pub use float::{Degrees, Opacity, Points, UnitF32};
+pub use float::{Degrees, Opacity, Points, UnitF32, UnitF32Error};
 pub use geometry::{Dimensions, Point, Position, Size};
 pub use stroke::{Rotation, StrokeWidth};
 

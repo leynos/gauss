@@ -49,7 +49,7 @@ mod action_payloads;
 
 pub use action_payloads::{
     Color, Degrees, Dimensions, Opacity, Point, Points, Position, Rgb8, Rotation, Size,
-    StrokeWidth, UnitF32,
+    StrokeWidth, UnitF32, UnitF32Error,
 };
 
 /// Categorization of actions for dispatch routing.
