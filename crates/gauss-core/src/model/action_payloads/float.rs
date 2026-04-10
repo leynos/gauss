@@ -80,7 +80,7 @@ pub struct Opacity(f32);
 impl Opacity {
     /// Construct a new opacity.
     ///
-    /// Returns `Some(Opacity)` containing the normalised value. The `UnitF32`
+    /// Returns `Some(Opacity)` containing the normalized value. The `UnitF32`
     /// type already guarantees the value is finite and within [0.0, 1.0], so
     /// this constructor always succeeds. Returns `Option` for API consistency
     /// with other payload constructors.
