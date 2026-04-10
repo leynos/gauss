@@ -142,21 +142,14 @@ fn position_accepts_valid(#[case] x: f32, #[case] y: f32) {
     );
 }
 
-#[test]
-fn position_normalizes_negative_zero_x() {
+#[rstest]
+#[case("x", Point { x: -0.0, y: 5.0 }, Point { x: 0.0, y: 5.0 })]
+#[case("y", Point { x: 5.0, y: -0.0 }, Point { x: 5.0, y: 0.0 })]
+fn position_normalizes_negative_zero(#[case] axis: &str, #[case] neg: Point, #[case] pos: Point) {
     assert_neg_zero_equal(
-        &Position::new(Point { x: -0.0, y: 5.0 }).expect("Position::new should accept -0.0"),
-        &Position::new(Point { x: 0.0, y: 5.0 }).expect("Position::new should accept 0.0"),
-        "Position(x)",
-    );
-}
-
-#[test]
-fn position_normalizes_negative_zero_y() {
-    assert_neg_zero_equal(
-        &Position::new(Point { x: 5.0, y: -0.0 }).expect("Position::new should accept -0.0"),
-        &Position::new(Point { x: 5.0, y: 0.0 }).expect("Position::new should accept 0.0"),
-        "Position(y)",
+        &Position::new(neg).expect("Position::new should accept -0.0"),
+        &Position::new(pos).expect("Position::new should accept 0.0"),
+        &format!("Position({axis})"),
     );
 }
 
@@ -184,37 +177,38 @@ fn size_accepts_valid(#[case] width: f32, #[case] height: f32) {
     );
 }
 
-#[test]
-fn size_normalizes_negative_zero_width() {
+#[rstest]
+#[case(
+    "width",
+    Dimensions {
+        width: -0.0,
+        height: 10.0,
+    },
+    Dimensions {
+        width: 0.0,
+        height: 10.0,
+    }
+)]
+#[case(
+    "height",
+    Dimensions {
+        width: 10.0,
+        height: -0.0,
+    },
+    Dimensions {
+        width: 10.0,
+        height: 0.0,
+    }
+)]
+fn size_normalizes_negative_zero(
+    #[case] axis: &str,
+    #[case] neg: Dimensions,
+    #[case] pos: Dimensions,
+) {
     assert_neg_zero_equal(
-        &Size::new(Dimensions {
-            width: -0.0,
-            height: 10.0,
-        })
-        .expect("Size::new should accept -0.0"),
-        &Size::new(Dimensions {
-            width: 0.0,
-            height: 10.0,
-        })
-        .expect("Size::new should accept 0.0"),
-        "Size(width)",
-    );
-}
-
-#[test]
-fn size_normalizes_negative_zero_height() {
-    assert_neg_zero_equal(
-        &Size::new(Dimensions {
-            width: 10.0,
-            height: -0.0,
-        })
-        .expect("Size::new should accept -0.0"),
-        &Size::new(Dimensions {
-            width: 10.0,
-            height: 0.0,
-        })
-        .expect("Size::new should accept 0.0"),
-        "Size(height)",
+        &Size::new(neg).expect("Size::new should accept -0.0"),
+        &Size::new(pos).expect("Size::new should accept 0.0"),
+        &format!("Size({axis})"),
     );
 }
 

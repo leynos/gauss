@@ -80,16 +80,12 @@ pub struct Opacity(f32);
 impl Opacity {
     /// Construct a new opacity.
     ///
-    /// Returns `None` if the value is not in the range [0.0, 1.0].
+    /// Returns `Some(Opacity)` containing the normalised value. The `UnitF32`
+    /// type already guarantees the value is finite and within [0.0, 1.0], so
+    /// this constructor always succeeds. Returns `Option` for API consistency
+    /// with other payload constructors.
     #[must_use]
     pub const fn new(value: UnitF32) -> Option<Self> {
-        // UnitF32 already validates the range, but we double-check for const fn
-        if !value.0.is_finite() {
-            return None;
-        }
-        if value.0 < 0.0 || value.0 > 1.0 {
-            return None;
-        }
         Some(Self(normalize_float(value.0)))
     }
 
