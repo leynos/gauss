@@ -69,7 +69,7 @@ impl TryFrom<f32> for UnitF32 {
         if !(0.0..=1.0).contains(&v) {
             return Err(UnitF32Error::OutOfRange);
         }
-        Ok(Self(v))
+        Ok(Self(normalize_float(v)))
     }
 }
 
