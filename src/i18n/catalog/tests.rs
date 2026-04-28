@@ -199,4 +199,28 @@ fn catalog_default_en_gb_preserves_template_placeholders() {
         a11y_shape_item.contains("{index}"),
         "a11y_shape_item template should contain {{index}} placeholder"
     );
+
+    let status_history_error = catalog
+        .get(&MessageId::status_history_error())
+        .expect("status_history_error should be present in default_en_gb");
+    assert!(
+        status_history_error.contains("{error}"),
+        "status_history_error template should contain {{error}} placeholder"
+    );
+
+    let status_save_failed = catalog
+        .get(&MessageId::status_save_failed())
+        .expect("status_save_failed should be present in default_en_gb");
+    assert!(
+        status_save_failed.contains("{error}"),
+        "status_save_failed template should contain {{error}} placeholder"
+    );
+
+    let status_open_failed = catalog
+        .get(&MessageId::status_open_failed())
+        .expect("status_open_failed should be present in default_en_gb");
+    assert!(
+        status_open_failed.contains("{error}"),
+        "status_open_failed template should contain {{error}} placeholder"
+    );
 }

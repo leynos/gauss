@@ -113,9 +113,8 @@ Known uncertainties that might affect the plan:
 ## Surprises & discoveries
 
 - The `icon_button` tooltip parameter needed to change from
-  `Option<&'static str>`
-  to `Option<String>` to support localized strings. This was anticipated in the
-  risk assessment and required updates to all call sites.
+  `Option<&'static str>` to `Option<String>` to support localized strings. This
+  was anticipated in the risk assessment and required updates to all call sites.
 
 - The `chrome_panels.rs` functions were standalone and needed to be converted
   to `Phase0Shell` methods to access the localizer instance. This simplified
@@ -148,7 +147,8 @@ Known uncertainties that might affect the plan:
 
 **Files modified:**
 
-- `src/i18n/message/mod.rs` - 43 new `MessageId` factory methods (in `factories.rs`)
+- `src/i18n/message/mod.rs` - 43 new `MessageId` factory methods (in
+  `factories.rs`)
 - `src/i18n/catalog/mod.rs` - 47 new message entries
 - `src/ui/phase0_shell/mod.rs` - Added `localize()` helper method
 - `src/ui/phase0_shell/tool_rail.rs` - Localized tool tooltips
@@ -183,11 +183,11 @@ The i18n system lives in `src/i18n/` and consists of:
    factory methods like `tool_mode_draw()`, `edge_mode_line()`. Keys use
    dot-notation (e.g., `"tool_mode.draw"`).
 
-2. **`Catalog`** (`src/i18n/catalog/mod.rs`): Storage for locale-specific strings.
-   The `default_en_gb()` method contains all current translations.
+2. **`Catalog`** (`src/i18n/catalog/mod.rs`): Storage for locale-specific
+   strings. The `default_en_gb()` method contains all current translations.
 
-3. **`Localizer`** (`src/i18n/catalog/mod.rs`): Service that looks up messages with
-   automatic fallback to en-GB.
+3. **`Localizer`** (`src/i18n/catalog/mod.rs`): Service that looks up messages
+   with automatic fallback to en-GB.
 
 4. **`i18n_helpers`** (`src/ui/phase0_shell/i18n_helpers.rs`): Helper functions
    to localize `ToolMode` and `EdgeMode` enums.
@@ -237,22 +237,32 @@ From `style_controls.rs`:
 
 From `view.rs`:
 
-- "Mode: {tool} ({edge})" → already externalized via
-  `tool.status.mode_with_edge`
-- "Mode: {tool}" → already externalized via `tool.status.mode`
-- "History error: {error}" → needs extraction
-- "Save failed: {error}" → needs extraction
-- "Open failed: {error}" → needs extraction
-- "Saved: {path}" → needs extraction
-- "Opened: {path}" → needs extraction
-- " [MAX]" (maximized indicator) → needs extraction
+- `view.rs` `MessageId::tool_status_mode_with_edge()` →
+  `tool.status.mode_with_edge` → "Mode: {tool} ({edge})"
+- `view.rs` `MessageId::tool_status_mode()` → `tool.status.mode` →
+  "Mode: {tool}"
+- `view.rs` `FileStatus::HistoryError { error }` →
+  `status.history_error` →
+  "History error: {error}"
+- `view.rs` `FileStatus::SaveFailed { error }` → `status.save_failed` →
+  "Save failed: {error}"
+- `view.rs` `FileStatus::OpenFailed { error }` → `status.open_failed` →
+  "Open failed: {error}"
+- `view.rs` `last_saved_path` → `status.saved` → "Saved: {path}"
+- `view.rs` `last_opened_path` → `status.opened` → "Opened: {path}"
+- `view.rs` `maximized_indicator` → `status.maximized` → " [MAX]"
 
 From `a11y_service/tree_builder.rs`:
 
-- "Drawing canvas" (canvas label)
-- "Shapes" (shape list label)
-- "Shape {N}" (default shape name) → needs extraction
-- "Gauss" (window title) → needs extraction
+- `a11y_service::tree_builder` `canvas_label` → `a11y.canvas` →
+  "Drawing canvas"
+- `a11y_service::tree_builder` `shape_list_label` → `a11y.shape_list` →
+  "Shapes"
+- `a11y_service::tree_builder` `shape_label` default template →
+  `a11y.shape_item` →
+  "Shape {index}"
+- `a11y_service::tree_builder` `window_title` →
+  `a11y.window_title` → "Gauss"
 
 ## Plan of work
 
@@ -320,7 +330,7 @@ Update order (each validates with existing tests before proceeding):
 
 **Goal**: Ensure all strings are properly externalized and retrievable.
 
-1. **Unit tests** (`src/i18n/catalog/mod.rs`):
+1. **Unit tests** (`src/i18n/catalog/tests.rs`):
    - Add test for each new `MessageId` factory method.
    - Verify all messages exist in default catalog.
 
@@ -552,19 +562,20 @@ No new external dependencies. All work uses existing workspace crates:
 
 ## Artifacts and notes
 
-Table: Key files modified for UI string extraction.
+Key files modified for UI string extraction:
 
-| File                                               | Lines | Purpose                       |
-| -------------------------------------------------- | ----- | ----------------------------- |
-| `src/i18n/message/mod.rs`                          | +50   | New MessageId factory methods |
-| `src/i18n/message/factories.rs`                    | +50   | MessageId factory implementations |
-| `src/i18n/catalog/mod.rs`                          | +40   | New catalog entries           |
-| `src/ui/phase0_shell/tool_rail.rs`                 | ~20   | Localized tooltips            |
-| `src/ui/phase0_shell/chrome.rs`                    | ~30   | Localized button labels       |
-| `src/ui/phase0_shell/chrome_panels.rs`             | ~25   | Localized status bar          |
-| `src/ui/phase0_shell/style_controls.rs`            | ~10   | Localized color picker labels |
-| `src/ui/phase0_shell/view.rs`                      | ~20   | Localized status templates    |
-| `src/ui/phase0_shell/a11y_service/tree_builder.rs` | ~15   | Localized a11y labels         |
+- `src/i18n/message/mod.rs` (+50): new `MessageId` factory methods.
+- `src/i18n/message/factories.rs` (+50): `MessageId` factory
+  implementations.
+- `src/i18n/catalog/mod.rs` (+40): new catalog entries.
+- `src/ui/phase0_shell/tool_rail.rs` (~20): localized tooltips.
+- `src/ui/phase0_shell/chrome.rs` (~30): localized button labels.
+- `src/ui/phase0_shell/chrome_panels.rs` (~25): localized status bar.
+- `src/ui/phase0_shell/style_controls.rs` (~10): localized color picker
+  labels.
+- `src/ui/phase0_shell/view.rs` (~20): localized status templates.
+- `src/ui/phase0_shell/a11y_service/tree_builder.rs` (~15): localized a11y
+  labels.
 
 ## Revision note
 

@@ -252,8 +252,7 @@ fn assert_history_op_fails_with_error(
     });
 
     // Verify error is surfaced with operation type and error description.
-    let error = read_last_history_error(visual_cx, view);
-    let Some(error_msg) = error else {
+    let Some(error_msg) = read_last_history_error(visual_cx, view) else {
         panic!("expected last_history_error to be set");
     };
     let expected_prefix = match op {

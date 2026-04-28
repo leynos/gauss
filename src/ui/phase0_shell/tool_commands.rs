@@ -80,7 +80,7 @@ impl Phase0Shell {
             ToolCommand::SetActivePath(path) => self.set_active_path_if_changed(path),
             ToolCommand::SetSelection(selection) => self.set_selection_if_changed(selection),
             ToolCommand::RecordSelectionChange { from, to } => {
-                self.record_selection_change_if_changed(from, to)
+                self.record_selection_change_if_needed(from, to)
             }
             ToolCommand::SetSelectToolState(state) => self.set_select_tool_state_if_changed(state),
             ToolCommand::PreviewSelectDrag { cursor_world } => {
@@ -143,20 +143,10 @@ impl Phase0Shell {
         did_change
     }
 
-    fn set_select_tool_state_if_changed(&mut self, state: SelectToolState) -> bool {
-        if self.select_tool_state == state {
-            return false;
-        }
-
-        self.select_tool_state = state;
-        true
-    }
-
     fn set_edge_mode_if_changed(&mut self, mode: DrawEdgeMode) -> bool {
         if self.state.edge_mode == mode {
             return false;
         }
-
         self.state.edge_mode = mode;
         true
     }
@@ -165,7 +155,6 @@ impl Phase0Shell {
         if self.state.active_path == path {
             return false;
         }
-
         self.state.active_path = path;
         true
     }
@@ -174,17 +163,24 @@ impl Phase0Shell {
         if self.state.selection == selection {
             return false;
         }
-
         self.state.selection = selection;
         true
     }
 
-    fn record_selection_change_if_changed(&mut self, from: Selection, to: Selection) -> bool {
+    fn record_selection_change_if_needed(&mut self, from: Selection, to: Selection) -> bool {
         if from == to {
             return false;
         }
-
         self.record_selection_change(from, to);
+        true
+    }
+
+    fn set_select_tool_state_if_changed(&mut self, state: SelectToolState) -> bool {
+        if self.select_tool_state == state {
+            return false;
+        }
+
+        self.select_tool_state = state;
         true
     }
 }

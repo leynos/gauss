@@ -18,11 +18,24 @@ use crate::model::select_tool::{
     SelectPointerDownInput, SelectPointerMoveInput, SelectPointerUpInput, SelectToolState,
 };
 
+mod mode_fsm;
+
+pub use mode_fsm::ToolModeFsm;
+
 /// The active tool in the editor.
 ///
 /// Tool mode determines how user input is interpreted. In Draw mode, clicks
 /// place anchors to create paths. In Manipulate mode, clicks select and move
 /// existing shapes.
+///
+/// # Examples
+///
+/// ```rust
+/// use gauss_core::model::ToolMode;
+///
+/// let mode = ToolMode::Draw;
+/// assert_eq!(mode.label(), "Draw");
+/// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ToolMode {
     /// Draw mode: clicks place anchors to create new paths.
@@ -50,6 +63,16 @@ impl ToolMode {
 /// Edge mode determines how new segments are connected when drawing paths.
 /// Line mode creates straight segments. Bezier (auto) mode creates smooth
 /// curves with automatically calculated handles.
+///
+/// # Examples
+///
+/// ```rust
+/// use gauss_core::model::EdgeMode;
+///
+/// let mode = EdgeMode::Line;
+/// assert_eq!(mode.label(), "Line");
+/// assert_eq!(mode.toggle(), EdgeMode::BezierAuto);
+/// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum EdgeMode {
     /// Straight line segments between anchors.
@@ -316,82 +339,4 @@ pub trait Tool {
         current_edge_mode: EdgeMode,
         event: ToolInputEvent,
     ) -> ToolTransition;
-}
-
-/// FSM for draw/manipulate mode transitions.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct ToolModeFsm;
-
-impl ToolModeFsm {
-    fn handle_activate_draw(
-        current_mode: ToolMode,
-        current_edge_mode: EdgeMode,
-        requested: Option<EdgeMode>,
-    ) -> ToolTransition {
-        let mut commands = Vec::new();
-        if current_mode != ToolMode::Draw {
-            commands.push(ToolCommand::SetToolMode(ToolMode::Draw));
-        }
-        if let Some(next) = Self::compute_next_edge_mode(current_edge_mode, requested) {
-            Self::push_edge_mode_command(&mut commands, next);
-        }
-        ToolTransition::with_commands(commands)
-    }
-
-    fn compute_next_edge_mode(current: EdgeMode, requested: Option<EdgeMode>) -> Option<EdgeMode> {
-        requested.filter(|&next| next != current)
-    }
-
-    fn push_edge_mode_command(out: &mut Vec<ToolCommand>, next: EdgeMode) {
-        out.push(ToolCommand::SetEdgeMode(next));
-    }
-}
-
-impl Tool for ToolModeFsm {
-    fn transition(
-        &self,
-        current_mode: ToolMode,
-        current_edge_mode: EdgeMode,
-        event: ToolInputEvent,
-    ) -> ToolTransition {
-        match event {
-            ToolInputEvent::ActivateDraw { edge_mode } => {
-                Self::handle_activate_draw(current_mode, current_edge_mode, edge_mode)
-            }
-            ToolInputEvent::ActivateManipulate => ToolTransition::with_commands([
-                ToolCommand::SetToolMode(ToolMode::Manipulate),
-                ToolCommand::SetActivePath(None),
-            ]),
-            ToolInputEvent::EscapePressed => match current_mode {
-                ToolMode::Draw => ToolTransition::with_commands([
-                    ToolCommand::SetToolMode(ToolMode::Manipulate),
-                    ToolCommand::SetActivePath(None),
-                ]),
-                ToolMode::Manipulate => {
-                    ToolTransition::with_commands([ToolCommand::SetToolMode(ToolMode::Draw)])
-                }
-            },
-            ToolInputEvent::ToggleEdgeMode => {
-                if current_mode != ToolMode::Draw {
-                    return ToolTransition::default();
-                }
-                ToolTransition::with_commands([ToolCommand::SetEdgeMode(
-                    current_edge_mode.toggle(),
-                )])
-            }
-            ToolInputEvent::ClosePathCommitted => {
-                if current_mode != ToolMode::Draw {
-                    return ToolTransition::default();
-                }
-                ToolTransition::with_commands([
-                    ToolCommand::SetToolMode(ToolMode::Manipulate),
-                    ToolCommand::SetActivePath(None),
-                ])
-            }
-            ToolInputEvent::PenCanvasClicked { .. }
-            | ToolInputEvent::SelectPointerDown { .. }
-            | ToolInputEvent::SelectPointerMove { .. }
-            | ToolInputEvent::SelectPointerUp { .. } => ToolTransition::default(),
-        }
-    }
 }
