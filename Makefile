@@ -3,6 +3,8 @@
 
 TARGET ?= libgauss.rlib
 
+export PATH := $(HOME)/.cargo/bin:$(HOME)/.local/bin:$(HOME)/.bun/bin:$(PATH)
+
 CARGO ?= $(or $(wildcard $(HOME)/.cargo/bin/cargo),cargo)
 BUILD_JOBS ?=
 RUST_FLAGS ?=
