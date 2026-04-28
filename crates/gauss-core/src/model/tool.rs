@@ -23,15 +23,6 @@ use crate::model::select_tool::{
 /// Tool mode determines how user input is interpreted. In Draw mode, clicks
 /// place anchors to create paths. In Manipulate mode, clicks select and move
 /// existing shapes.
-///
-/// # Examples
-///
-/// ```rust
-/// use gauss_core::model::ToolMode;
-///
-/// let mode = ToolMode::Draw;
-/// assert_eq!(mode.label(), "Draw");
-/// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ToolMode {
     /// Draw mode: clicks place anchors to create new paths.
@@ -59,16 +50,6 @@ impl ToolMode {
 /// Edge mode determines how new segments are connected when drawing paths.
 /// Line mode creates straight segments. Bezier (auto) mode creates smooth
 /// curves with automatically calculated handles.
-///
-/// # Examples
-///
-/// ```rust
-/// use gauss_core::model::EdgeMode;
-///
-/// let mode = EdgeMode::Line;
-/// assert_eq!(mode.label(), "Line");
-/// assert_eq!(mode.toggle(), EdgeMode::BezierAuto);
-/// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum EdgeMode {
     /// Straight line segments between anchors.
@@ -341,6 +322,31 @@ pub trait Tool {
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ToolModeFsm;
 
+impl ToolModeFsm {
+    fn handle_activate_draw(
+        current_mode: ToolMode,
+        current_edge_mode: EdgeMode,
+        requested: Option<EdgeMode>,
+    ) -> ToolTransition {
+        let mut commands = Vec::new();
+        if current_mode != ToolMode::Draw {
+            commands.push(ToolCommand::SetToolMode(ToolMode::Draw));
+        }
+        if let Some(next) = Self::compute_next_edge_mode(current_edge_mode, requested) {
+            Self::push_edge_mode_command(&mut commands, next);
+        }
+        ToolTransition::with_commands(commands)
+    }
+
+    fn compute_next_edge_mode(current: EdgeMode, requested: Option<EdgeMode>) -> Option<EdgeMode> {
+        requested.filter(|&next| next != current)
+    }
+
+    fn push_edge_mode_command(out: &mut Vec<ToolCommand>, next: EdgeMode) {
+        out.push(ToolCommand::SetEdgeMode(next));
+    }
+}
+
 impl Tool for ToolModeFsm {
     fn transition(
         &self,
@@ -350,16 +356,7 @@ impl Tool for ToolModeFsm {
     ) -> ToolTransition {
         match event {
             ToolInputEvent::ActivateDraw { edge_mode } => {
-                let mut commands = Vec::new();
-                if current_mode != ToolMode::Draw {
-                    commands.push(ToolCommand::SetToolMode(ToolMode::Draw));
-                }
-                if let Some(next_edge_mode) = edge_mode
-                    && next_edge_mode != current_edge_mode
-                {
-                    commands.push(ToolCommand::SetEdgeMode(next_edge_mode));
-                }
-                ToolTransition::with_commands(commands)
+                Self::handle_activate_draw(current_mode, current_edge_mode, edge_mode)
             }
             ToolInputEvent::ActivateManipulate => ToolTransition::with_commands([
                 ToolCommand::SetToolMode(ToolMode::Manipulate),

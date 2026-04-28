@@ -4,8 +4,9 @@
 //! chrome layout module so each module remains small and focused.
 
 use crate::model::{
-    Command, SelectPointerHit, SelectToolState, Tool, ToolCommand, ToolInputEvent, ToolMode,
-    ToolModeFsm, UserError, apply_select_drag_preview, restore_select_drag_preview,
+    Command, SelectPointerHit, SelectToolState, Selection, ShapeId, Tool, ToolCommand,
+    ToolInputEvent, ToolMode, ToolModeFsm, UserError, apply_select_drag_preview,
+    restore_select_drag_preview,
 };
 
 use super::{Phase0Shell, draw::DrawEdgeMode};
@@ -75,37 +76,11 @@ impl Phase0Shell {
                 self.apply_document_tool_command(*document_command)?
             }
             ToolCommand::SetToolMode(mode) => self.set_tool_mode_if_changed(mode),
-            ToolCommand::SetEdgeMode(mode) => {
-                if self.state.edge_mode == mode {
-                    false
-                } else {
-                    self.state.edge_mode = mode;
-                    true
-                }
-            }
-            ToolCommand::SetActivePath(path) => {
-                if self.state.active_path == path {
-                    false
-                } else {
-                    self.state.active_path = path;
-                    true
-                }
-            }
-            ToolCommand::SetSelection(selection) => {
-                if self.state.selection == selection {
-                    false
-                } else {
-                    self.state.selection = selection;
-                    true
-                }
-            }
+            ToolCommand::SetEdgeMode(mode) => self.set_edge_mode_if_changed(mode),
+            ToolCommand::SetActivePath(path) => self.set_active_path_if_changed(path),
+            ToolCommand::SetSelection(selection) => self.set_selection_if_changed(selection),
             ToolCommand::RecordSelectionChange { from, to } => {
-                if from == to {
-                    false
-                } else {
-                    self.record_selection_change(from, to);
-                    true
-                }
+                self.record_selection_change_if_changed(from, to)
             }
             ToolCommand::SetSelectToolState(state) => self.set_select_tool_state_if_changed(state),
             ToolCommand::PreviewSelectDrag { cursor_world } => {
@@ -174,6 +149,42 @@ impl Phase0Shell {
         }
 
         self.select_tool_state = state;
+        true
+    }
+
+    fn set_edge_mode_if_changed(&mut self, mode: DrawEdgeMode) -> bool {
+        if self.state.edge_mode == mode {
+            return false;
+        }
+
+        self.state.edge_mode = mode;
+        true
+    }
+
+    fn set_active_path_if_changed(&mut self, path: Option<ShapeId>) -> bool {
+        if self.state.active_path == path {
+            return false;
+        }
+
+        self.state.active_path = path;
+        true
+    }
+
+    fn set_selection_if_changed(&mut self, selection: Selection) -> bool {
+        if self.state.selection == selection {
+            return false;
+        }
+
+        self.state.selection = selection;
+        true
+    }
+
+    fn record_selection_change_if_changed(&mut self, from: Selection, to: Selection) -> bool {
+        if from == to {
+            return false;
+        }
+
+        self.record_selection_change(from, to);
         true
     }
 }

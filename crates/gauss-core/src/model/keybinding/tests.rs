@@ -59,7 +59,9 @@ fn assert_action_has_single_binding_with_modifiers(
 ) {
     let bindings = bindings_for_action(action);
     assert_eq!(bindings.len(), 1);
-    let binding = bindings.first().expect("should have at least one binding");
+    let [binding] = bindings.as_slice() else {
+        panic!("expected exactly one binding for {action:?}");
+    };
     assert_keystroke_eq(&binding.keystroke, expected_key, expected_modifiers);
 }
 
