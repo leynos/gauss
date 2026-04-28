@@ -3,14 +3,14 @@
 
 TARGET ?= libgauss.rlib
 
-CARGO ?= cargo
+CARGO ?= $(or $(wildcard $(HOME)/.cargo/bin/cargo),cargo)
 BUILD_JOBS ?=
 RUST_FLAGS ?=
 RUST_FLAGS := -D warnings $(RUST_FLAGS)
 CARGO_FLAGS ?= --workspace --all-targets --all-features
 CLIPPY_FLAGS ?= $(CARGO_FLAGS) -- $(RUST_FLAGS)
 TEST_FLAGS ?= $(CARGO_FLAGS)
-MDLINT ?= markdownlint-cli2
+MDLINT ?= $(or $(wildcard $(HOME)/.bun/bin/markdownlint-cli2),markdownlint-cli2)
 NIXIE ?= nixie
 
 build: target/debug/$(TARGET) ## Build debug binary
