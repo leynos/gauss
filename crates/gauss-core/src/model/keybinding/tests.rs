@@ -58,7 +58,6 @@ fn assert_action_has_single_binding_with_modifiers(
     expected_modifiers: Modifiers,
 ) {
     let bindings = bindings_for_action(action);
-    assert_eq!(bindings.len(), 1);
     let [binding] = bindings.as_slice() else {
         panic!("expected exactly one binding for {action:?}");
     };
