@@ -202,7 +202,7 @@ The Phase 0 shell UI is organized in `src/ui/phase0_shell/`:
 - **`chrome_panels.rs`**: Document header, status bar, alignment buttons.
 - **`window_controls.rs`**: Window management actions (minimize, maximize,
   etc.).
-- **`style_controls.rs`**: Stroke/fill color pickers.
+- **`style_controls.rs`**: Stroke/fill colour pickers.
 - **`a11y_service/tree_builder.rs`**: AccessKit tree construction with labels.
 - **`accessibility.rs`**: Accessibility constants for names and shortcuts.
 
@@ -232,7 +232,7 @@ From `chrome_panels.rs`:
 
 From `style_controls.rs`:
 
-- "Stroke", "Fill" (color picker labels)
+- "Stroke", "Fill" (colour picker labels)
 - "Stroke: (loading)", "Fill: (loading)" (loading states)
 
 From `view.rs`:
@@ -321,7 +321,7 @@ Update order (each validates with existing tests before proceeding):
 1. **`tool_rail.rs`**: Tool button tooltips.
 2. **`chrome.rs`**: File/edit actions, window controls.
 3. **`chrome_panels.rs`**: Status bar buttons, alignment buttons.
-4. **`style_controls.rs`**: Color picker labels (may need `SharedString`
+4. **`style_controls.rs`**: Colour picker labels (may need `SharedString`
    conversion).
 5. **`view.rs`**: Status line templates.
 6. **`a11y_service/tree_builder.rs`**: Accessibility labels.
@@ -571,7 +571,7 @@ Key files modified for UI string extraction:
 - `src/ui/phase0_shell/tool_rail.rs` (~20): localized tooltips.
 - `src/ui/phase0_shell/chrome.rs` (~30): localized button labels.
 - `src/ui/phase0_shell/chrome_panels.rs` (~25): localized status bar.
-- `src/ui/phase0_shell/style_controls.rs` (~10): localized color picker
+- `src/ui/phase0_shell/style_controls.rs` (~10): localized colour picker
   labels.
 - `src/ui/phase0_shell/view.rs` (~20): localized status templates.
 - `src/ui/phase0_shell/a11y_service/tree_builder.rs` (~15): localized a11y
