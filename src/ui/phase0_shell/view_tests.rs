@@ -212,7 +212,7 @@ enum HistoryOp {
 /// and applies it via `apply_command_for_tests`.
 fn apply_move_to_first_shape(shell: &mut Phase0Shell) {
     let Some(shape) = shell.document().shape_at(0) else {
-        panic!("demo document has at least one shape");
+        panic!("expected demo document to have at least one shape");
     };
     let id = shape.id;
     let command = Command::MoveShapes {
