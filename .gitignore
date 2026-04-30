@@ -2,3 +2,5 @@ target/
 **/*.rs.bk
 /docs/rustdoc-*/
 .grepai/
+*.backup/
+*~

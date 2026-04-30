@@ -205,6 +205,9 @@ pub struct Phase0Shell {
     last_history_error: Option<String>,
     last_history_error_typed: Option<HistoryError>,
 
+    /// Generic shell status errors (not history-related).
+    shell_status_error: Option<String>,
+
     // Style picker entities (GPUI-dependent)
     stroke_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
     fill_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
@@ -227,6 +230,12 @@ pub struct Phase0Shell {
 }
 
 impl Phase0Shell {
+    /// Report an error by logging it and storing it in `shell_status_error`.
+    pub(super) fn report_error(&mut self, error: String) {
+        log::error!("{error}");
+        self.shell_status_error = Some(error);
+    }
+
     /// Construct a new shell.
     #[must_use]
     pub fn new(cx: &mut Context<Self>) -> Self {
@@ -247,6 +256,7 @@ impl Phase0Shell {
             last_opened_path: None,
             last_open_error: None,
             last_history_error: None,
+            shell_status_error: None,
             last_history_error_typed: None,
             stroke_picker: None,
             fill_picker: None,
@@ -285,25 +295,17 @@ impl Phase0Shell {
     ///
     /// In test mode, this can be overridden via [`Self::set_maximized_for_tests`].
     /// In production, this queries the actual window state.
-    #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     pub(super) fn is_maximized_for_resize_borders(&self, window: &gpui::Window) -> bool {
-        if let Some(override_value) = self.test_maximized_override {
-            return override_value;
+        #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+        {
+            if let Some(override_value) = self.test_maximized_override {
+                return override_value;
+            }
         }
 
-        window.is_maximized()
-    }
-
-    /// Check if the window should be treated as maximized for resize border visibility.
-    ///
-    /// Production version: queries the actual window state without accessing test fields.
-    /// The `self` parameter is required for API consistency with the test version.
-    #[cfg(not(any(test, feature = "test-support", coverage, coverage_nightly)))]
-    #[expect(
-        clippy::unused_self,
-        reason = "API consistency: test version needs &self for test_maximized_override"
-    )]
-    pub(super) fn is_maximized_for_resize_borders(&self, window: &gpui::Window) -> bool {
+        // In production builds, self is not used, but we keep the method signature
+        // consistent for test/production symmetry
+        let _ = self;
         window.is_maximized()
     }
 

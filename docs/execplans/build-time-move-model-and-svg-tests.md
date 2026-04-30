@@ -211,8 +211,7 @@ tolerance exceptions.
   `command_editing_unit.rs`, `command_unit.rs`, `hit_test_bdd.rs`,
   `pen_tool_bdd.rs`, `select_tool_bdd.rs`, `stable_id_bdd.rs`, `tool_fsm_bdd.rs`
 - Supporting directories: `command_unit_tests/`,
-  `command_editing_unit_helpers/`,
-  `select_tool_bdd/`
+  `command_editing_unit_helpers/`, `select_tool_bdd/`
 - Feature files: `action.feature`, `command.feature`, `hit_test.feature`,
   `pen_tool.feature`, `select_tool.feature`, `stable_ids.feature`,
   `tool_fsm.feature`

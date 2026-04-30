@@ -37,7 +37,8 @@ Supporting directories:
 
 ### Pure SVG tests → Move to `crates/gauss-svg/tests/`
 
-- `tests/gauss_model_ops_bdd.rs` - Model operations BDD (tests both model and SVG)
+- `tests/gauss_model_ops_bdd.rs` - Model operations BDD (tests both model and
+  SVG)
 - `tests/golden_round_trip.rs` - SVG round-trip validation
 - `tests/metadata_round_trip_bdd.rs` - Metadata preservation in SVG
 - `tests/resource_store_bdd.rs` - Resource store (tests both model and SVG)

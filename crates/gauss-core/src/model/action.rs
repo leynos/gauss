@@ -44,6 +44,14 @@
 //! assert!(action.requires_selection());
 //! ```
 
+#[path = "action_payloads/mod.rs"]
+mod action_payloads;
+
+pub use action_payloads::{
+    Color, Degrees, Dimensions, Opacity, Point, Points, Position, Rgb8, Rotation, Size,
+    StrokeWidth, UnitF32, UnitF32Error,
+};
+
 /// Categorization of actions for dispatch routing.
 ///
 /// Actions are grouped by the type of state they affect, which determines
@@ -179,125 +187,35 @@ pub enum Action {
     /// Re-applies the most recently undone selection change from the selection
     /// redo stack.
     SelectionRedo,
-}
 
-impl Action {
-    /// Return the kind of this action for dispatch routing.
-    ///
-    /// The kind determines how the action is processed:
-    ///
-    /// - [`ActionKind::Document`]: Requires command dispatch, produces undo entry
-    /// - [`ActionKind::Editor`]: May update editor state directly
-    ///
-    /// # Returns
-    ///
-    /// The [`ActionKind`] categorizing this action for dispatch routing.
-    ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// use gauss_core::model::{Action, ActionKind};
-    ///
-    /// assert_eq!(Action::DeleteSelection.kind(), ActionKind::Document);
-    /// assert_eq!(Action::SelectAll.kind(), ActionKind::Editor);
-    /// ```
-    #[must_use]
-    pub const fn kind(&self) -> ActionKind {
-        match self {
-            // Document mutations require command dispatch
-            Self::DeleteSelection
-            | Self::InsertAnchorOnSegment
-            | Self::DeleteSelectedAnchors
-            | Self::RaiseSelection
-            | Self::LowerSelection
-            | Self::ToggleSegmentKind => ActionKind::Document,
+    // === Style mutations ===
+    /// Set the stroke colour of the selected shapes.
+    SetStrokeColor(Color),
 
-            // Editor state changes (selection, tools, history navigation)
-            Self::SelectAll
-            | Self::DeselectAll
-            | Self::ActivatePenTool
-            | Self::ActivateSelectTool
-            | Self::Undo
-            | Self::Redo
-            | Self::SelectionUndo
-            | Self::SelectionRedo => ActionKind::Editor,
-        }
-    }
+    /// Set the stroke width of the selected shapes.
+    SetStrokeWidth(StrokeWidth),
 
-    /// Return a human-readable name for this action.
-    ///
-    /// This name is suitable for:
-    ///
-    /// - Undo/redo menu descriptions ("Undo Delete Selection")
-    /// - Accessibility labels
-    /// - Scripting API documentation
-    /// - Command palette display
-    ///
-    /// Note: These names will be replaced with localized strings when the
-    /// i18n scaffolding (task 0.7) is implemented.
-    ///
-    /// # Returns
-    ///
-    /// A static string containing the human-readable action name.
-    ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// use gauss_core::model::Action;
-    ///
-    /// assert_eq!(Action::DeleteSelection.name(), "Delete Selection");
-    /// assert_eq!(Action::Undo.name(), "Undo");
-    /// ```
-    #[must_use]
-    pub const fn name(&self) -> &'static str {
-        match self {
-            Self::DeleteSelection => "Delete Selection",
-            Self::InsertAnchorOnSegment => "Insert Anchor",
-            Self::DeleteSelectedAnchors => "Delete Anchors",
-            Self::RaiseSelection => "Raise",
-            Self::LowerSelection => "Lower",
-            Self::ToggleSegmentKind => "Toggle Segment",
-            Self::SelectAll => "Select All",
-            Self::DeselectAll => "Deselect All",
-            Self::ActivatePenTool => "Pen Tool",
-            Self::ActivateSelectTool => "Select Tool",
-            Self::Undo => "Undo",
-            Self::Redo => "Redo",
-            Self::SelectionUndo => "Selection Undo",
-            Self::SelectionRedo => "Selection Redo",
-        }
-    }
+    /// Set the stroke opacity of the selected shapes.
+    SetStrokeOpacity(Opacity),
 
-    /// Return whether this action requires a non-empty selection to be valid.
-    ///
-    /// Actions that require selection should be disabled in the UI when
-    /// nothing is selected, and should be rejected by the command dispatcher
-    /// with an appropriate error.
-    ///
-    /// # Returns
-    ///
-    /// `true` if this action requires a non-empty selection, `false` otherwise.
-    ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// use gauss_core::model::Action;
-    ///
-    /// assert!(Action::DeleteSelection.requires_selection());
-    /// assert!(!Action::SelectAll.requires_selection());
-    /// ```
-    #[must_use]
-    pub const fn requires_selection(&self) -> bool {
-        matches!(
-            self,
-            Self::DeleteSelection
-                | Self::InsertAnchorOnSegment
-                | Self::DeleteSelectedAnchors
-                | Self::RaiseSelection
-                | Self::LowerSelection
-                | Self::ToggleSegmentKind
-        )
-    }
+    /// Set the fill colour of the selected shapes.
+    SetFillColor(Color),
+
+    /// Set the fill opacity of the selected shapes.
+    SetFillOpacity(Opacity),
+
+    /// Toggle whether the selected shapes have no fill.
+    ToggleNoFill,
+
+    // === Transform mutations ===
+    /// Set the position of the selected shapes.
+    SetObjectPosition(Position),
+
+    /// Set the size of the selected shapes.
+    SetObjectSize(Size),
+
+    /// Set the rotation of the selected shapes.
+    SetObjectRotation(Rotation),
 }
 
 #[cfg(test)]

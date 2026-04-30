@@ -211,20 +211,19 @@ enum HistoryOp {
 /// Gets the first shape ID, builds a move command with delta (10.0, 10.0),
 /// and applies it via `apply_command_for_tests`.
 fn apply_move_to_first_shape(shell: &mut Phase0Shell) {
-    let id = shell
-        .document()
-        .shape_at(0)
-        .expect("demo document has at least one shape")
-        .id;
+    let Some(shape) = shell.document().shape_at(0) else {
+        panic!("demo document has at least one shape");
+    };
+    let id = shape.id;
     let command = Command::MoveShapes {
         movements: vec![ShapeMovement {
             shape_id: id,
             delta: Vec2::new(10.0, 10.0),
         }],
     };
-    shell
-        .apply_command_for_tests(command)
-        .expect("command should apply");
+    if let Err(error) = shell.apply_command_for_tests(command) {
+        panic!("command should apply: {error}");
+    }
 }
 
 /// Assert that a history operation fails with the expected error message.
@@ -254,8 +253,9 @@ fn assert_history_op_fails_with_error(
 
     // Verify error is surfaced with operation type and error description.
     let error = read_last_history_error(visual_cx, view);
-    assert!(error.is_some(), "expected last_history_error to be set");
-    let error_msg = error.expect("checked above");
+    let Some(error_msg) = error else {
+        panic!("expected last_history_error to be set");
+    };
     let expected_prefix = match op {
         HistoryOp::Undo => "Undo failed",
         HistoryOp::Redo => "Redo failed",

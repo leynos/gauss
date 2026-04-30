@@ -34,6 +34,21 @@ macro_rules! bind_gpui_model_actions {
 }
 
 impl Phase0Shell {
+    /// Execute an action that may change selection state.
+    fn execute_selection_action(&mut self, action: GaussAction, cx: &mut gpui::Context<Self>) {
+        let changed = match action {
+            GaussAction::InsertAnchorOnSegment => self.insert_anchor_on_selected_segment(),
+            GaussAction::DeleteSelectedAnchors => self.delete_selected_anchors(),
+            GaussAction::RaiseSelection => self.raise_selected_shapes(),
+            GaussAction::LowerSelection => self.lower_selected_shapes(),
+            GaussAction::ToggleSegmentKind => self.toggle_selected_segments_kind(),
+            _ => false,
+        };
+        if changed {
+            cx.notify();
+        }
+    }
+
     pub(super) fn execute_model_action(
         &mut self,
         action: GaussAction,
@@ -44,31 +59,11 @@ impl Phase0Shell {
             GaussAction::SelectAll => self.select_all(cx),
             GaussAction::DeselectAll => self.deselect_all(cx),
             GaussAction::DeleteSelection => self.execute_delete_selection(cx),
-            GaussAction::InsertAnchorOnSegment => {
-                if self.insert_anchor_on_selected_segment() {
-                    cx.notify();
-                }
-            }
-            GaussAction::DeleteSelectedAnchors => {
-                if self.delete_selected_anchors() {
-                    cx.notify();
-                }
-            }
-            GaussAction::RaiseSelection => {
-                if self.raise_selected_shapes() {
-                    cx.notify();
-                }
-            }
-            GaussAction::LowerSelection => {
-                if self.lower_selected_shapes() {
-                    cx.notify();
-                }
-            }
-            GaussAction::ToggleSegmentKind => {
-                if self.toggle_selected_segments_kind() {
-                    cx.notify();
-                }
-            }
+            GaussAction::InsertAnchorOnSegment
+            | GaussAction::DeleteSelectedAnchors
+            | GaussAction::RaiseSelection
+            | GaussAction::LowerSelection
+            | GaussAction::ToggleSegmentKind => self.execute_selection_action(action, cx),
             // Tool actions
             GaussAction::ActivatePenTool | GaussAction::ActivateSelectTool => {
                 self.execute_tool_action(action, cx);
@@ -78,12 +73,29 @@ impl Phase0Shell {
             | GaussAction::Redo
             | GaussAction::SelectionUndo
             | GaussAction::SelectionRedo => self.execute_history_action(action, cx),
-            #[expect(
-                clippy::unreachable,
-                reason = "wildcard arm must panic in all builds when a new Action variant is unhandled"
-            )]
+            // Style and Transform actions - not yet implemented, report as unsupported
+            unsupported_action @ (GaussAction::SetStrokeColor(_)
+            | GaussAction::SetStrokeWidth(_)
+            | GaussAction::SetStrokeOpacity(_)
+            | GaussAction::SetFillColor(_)
+            | GaussAction::SetFillOpacity(_)
+            | GaussAction::ToggleNoFill
+            | GaussAction::SetObjectPosition(_)
+            | GaussAction::SetObjectSize(_)
+            | GaussAction::SetObjectRotation(_)) => {
+                // TODO: Implement style/transform actions when command system supports them
+                // For now, report as unsupported so callers receive an error
+                self.report_error(format!("unsupported action: {unsupported_action:?}"));
+                cx.notify();
+            }
+            // Wildcard arm for future non_exhaustive variants
             _ => {
-                unreachable!("unsupported future model action: {action:?}");
+                // New action variants are handled here until explicitly implemented
+                debug_assert!(false, "unhandled action variant: {action:?}");
+                log::warn!("unhandled action variant: {action:?}");
+                // Error is propagated via shell state for observable handling
+                self.report_error(format!("unhandled action variant: {action:?}"));
+                cx.notify();
             }
         }
     }

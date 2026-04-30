@@ -3,14 +3,17 @@
 
 TARGET ?= libgauss.rlib
 
-CARGO ?= cargo
+export PATH := $(HOME)/.cargo/bin:$(HOME)/.local/bin:$(HOME)/.bun/bin:$(PATH)
+
+CARGO ?= $(or $(wildcard $(HOME)/.cargo/bin/cargo),cargo)
 BUILD_JOBS ?=
 RUST_FLAGS ?=
 RUST_FLAGS := -D warnings $(RUST_FLAGS)
 CARGO_FLAGS ?= --workspace --all-targets --all-features
 CLIPPY_FLAGS ?= $(CARGO_FLAGS) -- $(RUST_FLAGS)
 TEST_FLAGS ?= $(CARGO_FLAGS)
-MDLINT ?= markdownlint-cli2
+MDLINT ?= $(or $(wildcard $(HOME)/.bun/bin/markdownlint-cli2),markdownlint-cli2)
+WHITAKER ?= $(or $(wildcard $(HOME)/.local/bin/whitaker),whitaker)
 NIXIE ?= nixie
 
 build: target/debug/$(TARGET) ## Build debug binary
@@ -41,7 +44,7 @@ target/%/$(TARGET): ## Build binary in debug or release mode
 lint: ## Run Clippy with warnings denied
 	RUSTDOCFLAGS="$(RUSTDOC_FLAGS)" $(CARGO) doc --workspace --no-deps
 	$(CARGO) clippy $(CLIPPY_FLAGS)
-	RUSTFLAGS="$(RUST_FLAGS)" whitaker --all -- $(CARGO_FLAGS)
+	RUSTFLAGS="$(RUST_FLAGS)" $(WHITAKER) --all -- $(CARGO_FLAGS)
 
 typecheck:
 	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) check $(CARGO_FLAGS)

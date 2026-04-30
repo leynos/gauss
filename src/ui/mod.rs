@@ -13,6 +13,7 @@ mod phase0_support;
 mod selection_overlays;
 mod selection_utils;
 mod viewport_input;
+pub mod widget_audit;
 
 pub use action_bridge::{
     GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeleteSelection, GpuiDeselectAll, GpuiRedo,

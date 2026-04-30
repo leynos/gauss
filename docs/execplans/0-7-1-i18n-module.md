@@ -327,8 +327,8 @@ Completion evidence is:
   `src/ui/phase0_shell/a11y_service/tree_builder.rs` both build English status
   strings from `ToolMode::label()` and `EdgeMode::label()`.
 - `A11yService` (accessibility service) currently hard-codes additional English
-  strings such as `"Drawing canvas"`, `"Shapes"`, `"Shape {n}"`, and
-  `"Gauss"`, which confirms there is plenty of follow-on work for `0.7.2`.
+  strings such as `"Drawing canvas"`, `"Shapes"`, `"Shape {n}"`, and `"Gauss"`,
+  which confirms there is plenty of follow-on work for `0.7.2`.
 - Gauss has no direct localization dependency in `Cargo.toml` today. Fluent and
   related crates only appear transitively in `Cargo.lock`.
 - Existing test seams are already strong enough for this work: model-layer

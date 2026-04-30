@@ -11,7 +11,7 @@ use crate::model::Action;
 use super::A11yService;
 
 /// Routed action target for a supported accessibility request.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum A11yRequestedAction {
     /// Route the request through an existing model-layer action path.
     Model(Action),

@@ -1441,61 +1441,12 @@ Localizability must be designed in from day one:
 - Number/date formatting uses locale-aware formatting
 - UI layout must tolerate string expansion (German, Finnish, etc.)
 
-### 12.1 Implementation Decision (Roadmap 0.7.1)
+Suggested approach:
 
-As of roadmap item 0.7.1, Gauss uses a simple keyed message catalog system for
-localization. The implementation provides:
-
-- A top-level `i18n` module independent of GPUI
-- Stable message identifiers (e.g., `tool_mode.draw`, `edge_mode.line`)
-- A `Localizer` service that performs lookup with automatic fallback to en-GB
-- Typed errors for missing messages or unsupported locales
-- One shipped locale (en-GB) plus test-only alternate catalogs
-
-**Rationale for choosing a keyed catalog over Fluent (0.7.1):**
-
-The current milestone needed a stable module boundary and observable behaviour,
-not translator-facing grammar machinery. Gauss currently has only short labels,
-status fragments, and accessibility descriptions. The repository has no direct
-localization dependency today, and introducing full Fluent machinery now would
-create more moving parts than the current milestone needs.
-
-The `i18n` module API hides the catalog backend, so a future migration to
-Fluent (or another system) can occur without breaking client code.
-
-**Re-evaluation triggers for migrating to Fluent:**
-
-If any of the following conditions are met, the project should revisit Fluent
-in roadmap items 0.7.2, 0.7.3, or 2.5.1:
-
-- The first shipped non-English locale is added
-- Pluralization or grammatical selection requirements emerge
-- Translator-authored resource workflows become necessary
-- Text that can no longer be handled safely by keyed substitution appears
-
-**Current integration scope (0.7.1):**
-
-The proving integration slice covers mode/status text shared between the Phase
-0 shell status line (`src/ui/phase0_shell/view.rs`) and the accessibility
-status node (`src/ui/phase0_shell/a11y_service/tree_builder.rs`). Both use the
-same localized message identifiers derived from `ToolMode` and `EdgeMode` enum
-values.
-
-Broader string extraction belongs to roadmap item 0.7.2, and localized command
-names belong to 0.7.3.
-
-### 12.2 Architecture
-
-The `i18n` module consists of four main components:
-
-- `Locale`: Represents a locale identifier using Best Current Practice 47
-  (BCP 47) language tags
-- `MessageId`: Stable message identifiers for catalog lookups
-- `Catalog`: Storage for locale-specific message translations
-- `Localizer`: Service that provides lookup with automatic fallback
-
-The module is GPUI-independent. Views consume localized strings by calling the
-`Localizer::lookup` method with the current locale and message identifier.
+- `i18n` module with a message catalog (e.g., Fluent, ICU-based, or a simple
+  keyed system)
+- Keep i18n independent of GPUI; views request localized strings from the
+  service
 
 ______________________________________________________________________
 
@@ -1549,13 +1500,41 @@ for:
 Early in Phase 1, do a focused audit:
 
 1. List required UI controls for Phase 1–2 (toolbars, layers, properties, color)
-2. Map each to an existing GPUI Component widget or “needs custom”
+2. Map each to an existing GPUI Component widget or "needs custom"
 3. Define a tiny internal widget library for missing pieces (consistent
    focus/keyboard/a11y)
 
 **Best estimate:** GPUI Component will cover most *chrome*, but **custom
 canvas-adjacent controls will be required early**, because path editing and
 gradient editing are core illustration workflows.
+
+#### Design Decision: Typed Audit Catalogue (2026-03-22)
+
+**Status**: Implemented (roadmap item 0.8.1)
+
+**Decision**: The Phase 1-2 control requirements are maintained as a typed Rust
+inventory in `src/ui/widget_audit/` rather than as prose-only documentation.
+
+**Rationale**: A typed inventory enables automated validation through unit
+tests, BDD tests, and GPUI tests. This prevents the audit from drifting out of
+sync with the roadmap and ensures completeness checks can be automated. Each
+control entry captures phase, surface, user job, states, keyboard requirements,
+accessibility requirements, action-command linkage, requirement sources, and
+current shell evidence in a structured format.
+
+**Implementation**: The `ControlInventory` struct in `src/ui/widget_audit/`
+provides query methods for filtering controls by phase, surface, and evidence
+status. Human-readable documentation is derived from the typed inventory and
+published in `docs/widget-capability-audit.md`. Tests in
+`tests/widget_audit_test.rs` and `tests/widget_capability_audit_bdd.rs`
+validate inventory completeness and consistency.
+
+**Alternatives Considered**: Prose-only documentation was rejected because it
+cannot be validated automatically and is prone to drift. A runtime UI viewer
+was rejected as unnecessary ceremony for a planning artefact.
+
+**Validation**: Roadmap item 0.8.1 is complete when the inventory exists,
+documentation is published, and all tests pass.
 
 ______________________________________________________________________
 

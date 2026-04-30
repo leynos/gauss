@@ -14,6 +14,7 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
       BUILD_PROFILE: debug
+      WHITAKER_INSTALLER_REV: f768c2e53c47df13658af1168a67851d388750bf
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Setup mold linker
@@ -39,14 +40,11 @@ jobs:
             !**/dist/**
       - name: Install Whitaker
         run: |
-          if ! command -v cargo-binstall >/dev/null; then
-            cargo install cargo-binstall
-          fi
-          cargo binstall --no-confirm whitaker-installer
-          rustup toolchain install \
-            --component rustc-dev,llvm-tools-preview,rust-src \
-            nightly-2025-09-18
-          whitaker-installer --experimental
+          cargo install --locked \
+            --git https://github.com/leynos/whitaker \
+            --rev "${WHITAKER_INSTALLER_REV}" \
+            whitaker-installer
+          whitaker-installer
       - name: Lint
         run: make lint
       - name: Test and Measure Coverage
