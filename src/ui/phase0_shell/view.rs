@@ -94,7 +94,7 @@ impl Phase0Shell {
         let edge_label = self.localized_edge_mode_label();
 
         let maximized_indicator = if self.last_maximized_state == Some(true) {
-            self.localize(&MessageId::status_maximized())
+            lookup_template(self, &MessageId::status_maximized(), " [MAX]")
         } else {
             String::new()
         };
