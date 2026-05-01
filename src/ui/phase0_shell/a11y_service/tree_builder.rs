@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use accesskit::{Action, Node, NodeId, Role};
 
+use crate::i18n::MessageId;
 use crate::ui::phase0_shell::accessibility;
 use crate::ui::phase0_shell::i18n_helpers::localized_status_label;
 
@@ -27,36 +28,58 @@ const RESERVED_NODE_IDS: [u64; 10] = [
     STATUS_NODE_ID.0,
 ];
 
+/// Construct the full AccessKit node map and focus node for a snapshot.
+///
+/// The returned map contains window chrome, canvas, status, and shape-list
+/// nodes. The focus node is selected from the current shape selection when
+/// possible, falling back to the canvas node.
 pub(super) fn build_node_map(
     snapshot: &A11ySnapshot,
 ) -> Result<(BTreeMap<NodeId, Node>, NodeId), A11yServiceError> {
     let mut nodes = BTreeMap::new();
-    insert_chrome_nodes(&mut nodes, snapshot.is_maximized);
+    insert_chrome_nodes(&mut nodes, snapshot);
     insert_canvas_and_status_nodes(&mut nodes, snapshot);
     insert_shape_list_nodes(&mut nodes, snapshot)?;
-    insert_root_node(&mut nodes);
+    insert_root_node(&mut nodes, snapshot);
     let focus = resolve_focus_node(snapshot, &nodes);
     Ok((nodes, focus))
 }
 
-fn insert_chrome_nodes(nodes: &mut BTreeMap<NodeId, Node>, is_maximized: bool) {
-    let chrome_buttons = accessibility::chrome_button_semantics(is_maximized);
+fn insert_chrome_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot) {
+    let chrome_buttons = accessibility::chrome_button_semantics(snapshot.is_maximized);
     let mut titlebar = Node::new(Role::TitleBar);
-    titlebar.set_label(accessibility::accessible_names::TITLEBAR);
+    titlebar.set_label(localized_a11y_label(
+        snapshot,
+        &MessageId::a11y_titlebar(),
+        accessibility::accessible_names::TITLEBAR,
+    ));
     titlebar.set_children(chrome_buttons.map(|button| NodeId(button.node_id)));
     nodes.insert(NodeId(accessibility::node_ids::TITLEBAR), titlebar);
 
     for chrome_button in chrome_buttons {
         nodes.insert(
             NodeId(chrome_button.node_id),
-            chrome_button_node(chrome_button.label, chrome_button.shortcut_hint),
+            chrome_button_node(
+                localized_chrome_button_label(snapshot, chrome_button),
+                chrome_button.shortcut_hint,
+            ),
         );
     }
 }
 
 fn insert_canvas_and_status_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot) {
     let mut canvas = Node::new(Role::Canvas);
-    canvas.set_label("Drawing canvas");
+    let canvas_label = snapshot
+        .localizer
+        .lookup(&snapshot.locale, &MessageId::a11y_canvas())
+        .unwrap_or_else(|err| {
+            log::warn!(
+                "a11y i18n lookup failed for {:?}: {err}",
+                MessageId::a11y_canvas().as_str()
+            );
+            "Drawing canvas".to_owned()
+        });
+    canvas.set_label(canvas_label);
     nodes.insert(CANVAS_NODE_ID, canvas);
 
     let mut status = Node::new(Role::Status);
@@ -76,11 +99,17 @@ fn insert_shape_list_nodes(
 ) -> Result<(), A11yServiceError> {
     let mut shape_list = Node::new(Role::List);
     let mut shape_node_ids = Vec::with_capacity(snapshot.shapes.len());
+    let unnamed_shape_template =
+        localized_a11y_label(snapshot, &MessageId::a11y_shape_item(), "Shape {index}");
     for (index, shape) in snapshot.shapes.iter().enumerate() {
         let shape_node_id = NodeId(shape.id.to_accesskit_node_id());
         validate_shape_node_id(shape_node_id, nodes)?;
         let mut shape_node = Node::new(Role::ListItem);
-        shape_node.set_label(shape_label(shape.name.as_deref(), index));
+        shape_node.set_label(shape_label(
+            shape.name.as_deref(),
+            index,
+            &unnamed_shape_template,
+        ));
         if shape.locked {
             shape_node.set_disabled();
         }
@@ -94,14 +123,27 @@ fn insert_shape_list_nodes(
         shape_node_ids.push(shape_node_id);
     }
     shape_list.set_children(shape_node_ids);
-    shape_list.set_label("Shapes");
+    let shape_list_label = snapshot
+        .localizer
+        .lookup(&snapshot.locale, &MessageId::a11y_shape_list())
+        .unwrap_or_else(|err| {
+            log::warn!(
+                "a11y i18n lookup failed for {:?}: {err}",
+                MessageId::a11y_shape_list().as_str()
+            );
+            "Shapes".to_owned()
+        });
+    shape_list.set_label(shape_list_label);
     shape_list.set_multiselectable();
     nodes.insert(SHAPE_LIST_NODE_ID, shape_list);
     Ok(())
 }
 
-fn shape_label(name: Option<&str>, index: usize) -> String {
-    name.map_or_else(|| format!("Shape {}", index + 1), ToOwned::to_owned)
+fn shape_label(name: Option<&str>, index: usize, unnamed_shape_template: &str) -> String {
+    name.map_or_else(
+        || unnamed_shape_template.replace("{index}", &(index + 1).to_string()),
+        ToOwned::to_owned,
+    )
 }
 
 fn validate_shape_node_id(
@@ -121,9 +163,19 @@ fn validate_shape_node_id(
     Ok(())
 }
 
-fn insert_root_node(nodes: &mut BTreeMap<NodeId, Node>) {
+fn insert_root_node(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot) {
     let mut root = Node::new(Role::Window);
-    root.set_label("Gauss");
+    let window_title = snapshot
+        .localizer
+        .lookup(&snapshot.locale, &MessageId::a11y_window_title())
+        .unwrap_or_else(|err| {
+            log::warn!(
+                "a11y i18n lookup failed for {:?}: {err}",
+                MessageId::a11y_window_title().as_str()
+            );
+            "Gauss".to_owned()
+        });
+    root.set_label(window_title);
     root.set_children([
         NodeId(accessibility::node_ids::TITLEBAR),
         STATUS_NODE_ID,
@@ -147,11 +199,59 @@ fn resolve_focus_node(snapshot: &A11ySnapshot, nodes: &BTreeMap<NodeId, Node>) -
         .unwrap_or(CANVAS_NODE_ID)
 }
 
-fn chrome_button_node(label: &'static str, shortcut_hint: &'static str) -> Node {
+fn chrome_button_node(label: String, shortcut_hint: &'static str) -> Node {
     let mut node = Node::new(Role::Button);
     node.set_label(label);
     node.set_description(shortcut_hint);
     node.set_keyboard_shortcut(shortcut_hint);
     node.add_action(Action::Click);
     node
+}
+
+fn localized_chrome_button_label(
+    snapshot: &A11ySnapshot,
+    chrome_button: accessibility::ChromeButtonSemantics,
+) -> String {
+    let (message_id, fallback) = match chrome_button.node_id {
+        accessibility::node_ids::WINDOW_MENU => (
+            MessageId::a11y_window_menu(),
+            accessibility::accessible_names::WINDOW_MENU,
+        ),
+        accessibility::node_ids::MINIMIZE_BUTTON => (
+            MessageId::a11y_window_minimize(),
+            accessibility::accessible_names::MINIMIZE,
+        ),
+        accessibility::node_ids::MAXIMIZE_BUTTON if snapshot.is_maximized => (
+            MessageId::a11y_window_restore(),
+            accessibility::accessible_names::RESTORE,
+        ),
+        accessibility::node_ids::MAXIMIZE_BUTTON => (
+            MessageId::a11y_window_maximize(),
+            accessibility::accessible_names::MAXIMIZE,
+        ),
+        accessibility::node_ids::FULLSCREEN_BUTTON => (
+            MessageId::a11y_window_fullscreen(),
+            accessibility::accessible_names::FULLSCREEN,
+        ),
+        accessibility::node_ids::CLOSE_BUTTON => (
+            MessageId::a11y_window_close(),
+            accessibility::accessible_names::CLOSE,
+        ),
+        _ => return chrome_button.label.to_owned(),
+    };
+    localized_a11y_label(snapshot, &message_id, fallback)
+}
+
+fn localized_a11y_label(snapshot: &A11ySnapshot, id: &MessageId, fallback: &str) -> String {
+    snapshot
+        .localizer
+        .lookup(&snapshot.locale, id)
+        .unwrap_or_else(|err| {
+            log::warn!(
+                "a11y i18n lookup failed for {:?} in locale {:?}: {err}",
+                id.as_str(),
+                snapshot.locale,
+            );
+            fallback.to_owned()
+        })
 }

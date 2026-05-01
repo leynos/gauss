@@ -83,6 +83,18 @@ impl Catalog {
     #[must_use]
     pub fn default_en_gb() -> Self {
         let mut messages = HashMap::new();
+        Self::insert_tool_mode_messages(&mut messages);
+        Self::insert_chrome_messages(&mut messages);
+        Self::insert_tool_tooltip_messages(&mut messages);
+        Self::insert_status_messages(&mut messages);
+        Self::insert_align_messages(&mut messages);
+        Self::insert_style_messages(&mut messages);
+        Self::insert_doc_messages(&mut messages);
+        Self::insert_a11y_messages(&mut messages);
+        Self::from_messages(messages)
+    }
+
+    fn insert_tool_mode_messages(messages: &mut HashMap<String, String>) {
         messages.insert("tool_mode.draw".to_owned(), "Draw".to_owned());
         messages.insert("tool_mode.manipulate".to_owned(), "Manipulate".to_owned());
         messages.insert("edge_mode.line".to_owned(), "Line".to_owned());
@@ -90,13 +102,125 @@ impl Catalog {
             "edge_mode.bezier_auto".to_owned(),
             "Bezier (auto)".to_owned(),
         );
-        // Status templates for accessibility tree labels
         messages.insert(
             "tool.status.mode_with_edge".to_owned(),
             "Mode: {tool} ({edge})".to_owned(),
         );
         messages.insert("tool.status.mode".to_owned(), "Mode: {tool}".to_owned());
-        Self::from_messages(messages)
+    }
+
+    fn insert_chrome_messages(messages: &mut HashMap<String, String>) {
+        messages.insert("chrome.file.new".to_owned(), "New".to_owned());
+        messages.insert("chrome.file.open".to_owned(), "Open".to_owned());
+        messages.insert("chrome.file.save".to_owned(), "Save".to_owned());
+        messages.insert("chrome.file.export_web".to_owned(), "Export Web".to_owned());
+        messages.insert(
+            "chrome.titlebar.recent".to_owned(),
+            "Open recent project".to_owned(),
+        );
+        messages.insert("chrome.settings".to_owned(), "Settings".to_owned());
+        messages.insert("chrome.edit.undo".to_owned(), "Undo".to_owned());
+        messages.insert("chrome.edit.redo".to_owned(), "Redo".to_owned());
+
+        messages.insert("chrome.window.minimize".to_owned(), "Minimize".to_owned());
+        messages.insert("chrome.window.maximize".to_owned(), "Maximize".to_owned());
+        messages.insert("chrome.window.close".to_owned(), "Close Window".to_owned());
+    }
+
+    fn insert_tool_tooltip_messages(messages: &mut HashMap<String, String>) {
+        // Tool tooltip strings
+        messages.insert("tool.tooltip.select".to_owned(), "Select".to_owned());
+        messages.insert("tool.tooltip.draw_path".to_owned(), "Draw Path".to_owned());
+        messages.insert(
+            "tool.tooltip.draw_curve".to_owned(),
+            "Draw Curve".to_owned(),
+        );
+        messages.insert(
+            "tool.tooltip.draw_rectangle".to_owned(),
+            "Draw Rectangle".to_owned(),
+        );
+        messages.insert(
+            "tool.tooltip.draw_circle".to_owned(),
+            "Draw Circle".to_owned(),
+        );
+    }
+
+    fn insert_status_messages(messages: &mut HashMap<String, String>) {
+        // Status bar strings
+        messages.insert("status.zoom_out".to_owned(), "Zoom Out".to_owned());
+        messages.insert("status.zoom_in".to_owned(), "Zoom In".to_owned());
+        messages.insert("status.zoom_area".to_owned(), "Zoom to Area".to_owned());
+        messages.insert("status.snap_grid".to_owned(), "Snap to Grid".to_owned());
+
+        // Status template strings
+        messages.insert("status.saved".to_owned(), "Saved: {path}".to_owned());
+        messages.insert("status.opened".to_owned(), "Opened: {path}".to_owned());
+        messages.insert(
+            "status.history_error".to_owned(),
+            "History error: {error}".to_owned(),
+        );
+        messages.insert(
+            "status.shell_error".to_owned(),
+            "Shell error: {error}".to_owned(),
+        );
+        messages.insert(
+            "status.save_failed".to_owned(),
+            "Save failed: {error}".to_owned(),
+        );
+        messages.insert(
+            "status.open_failed".to_owned(),
+            "Open failed: {error}".to_owned(),
+        );
+        messages.insert("status.maximized".to_owned(), " [MAX]".to_owned());
+        messages.insert("status.plain_text".to_owned(), "Plain Text".to_owned());
+        messages.insert("status.zoom_ratio_1_1".to_owned(), "1:1".to_owned());
+    }
+
+    fn insert_align_messages(messages: &mut HashMap<String, String>) {
+        // Alignment button strings
+        messages.insert("align.left".to_owned(), "Align Left".to_owned());
+        messages.insert("align.centre".to_owned(), "Align Centre".to_owned());
+        messages.insert("align.right".to_owned(), "Align Right".to_owned());
+        messages.insert("align.top".to_owned(), "Align Top".to_owned());
+        messages.insert("align.middle".to_owned(), "Align Middle".to_owned());
+        messages.insert("align.bottom".to_owned(), "Align Bottom".to_owned());
+    }
+
+    fn insert_style_messages(messages: &mut HashMap<String, String>) {
+        // Style control strings
+        messages.insert("style.stroke".to_owned(), "Stroke".to_owned());
+        messages.insert("style.fill".to_owned(), "Fill".to_owned());
+        messages.insert(
+            "style.stroke_loading".to_owned(),
+            "Stroke: (loading)".to_owned(),
+        );
+        messages.insert(
+            "style.fill_loading".to_owned(),
+            "Fill: (loading)".to_owned(),
+        );
+    }
+
+    fn insert_doc_messages(messages: &mut HashMap<String, String>) {
+        // Document header strings
+        messages.insert("doc.untitled".to_owned(), "untitled".to_owned());
+    }
+
+    fn insert_a11y_messages(messages: &mut HashMap<String, String>) {
+        for (key, value) in [
+            ("a11y.canvas", "Drawing canvas"),
+            ("a11y.shape_list", "Shapes"),
+            ("a11y.shape_item", "Shape {index}"),
+            ("a11y.titlebar", "Window title bar"),
+            ("a11y.window_menu", "Window menu"),
+            ("a11y.window_minimize", "Minimize window"),
+            ("a11y.window_maximize", "Maximize window"),
+            ("a11y.window_restore", "Restore window"),
+            ("a11y.window_fullscreen", "Toggle fullscreen"),
+            ("a11y.window_close", "Close window"),
+            ("a11y.window_title", "Gauss"),
+        ] {
+            messages.insert(key.to_owned(), value.to_owned());
+        }
     }
 }
 
@@ -273,109 +397,4 @@ impl Default for Localizer {
 }
 
 #[cfg(test)]
-mod tests {
-    //! Unit tests for i18n catalog and localizer functionality.
-
-    use rstest::{fixture, rstest};
-
-    use super::*;
-
-    #[test]
-    fn catalog_from_messages_creates_correctly() {
-        let mut messages = HashMap::new();
-        messages.insert("test".to_owned(), "value".to_owned());
-        let catalog = Catalog::from_messages(messages);
-        assert_eq!(catalog.get(&MessageId::from("test")), Some("value"));
-    }
-
-    #[test]
-    fn catalog_get_returns_none_for_missing_key() {
-        let catalog = Catalog::from_messages(HashMap::new());
-        assert_eq!(catalog.get(&MessageId::from("missing")), None);
-    }
-
-    #[test]
-    fn catalog_default_en_gb_contains_tool_modes() {
-        let catalog = Catalog::default_en_gb();
-        assert_eq!(catalog.get(&MessageId::tool_mode_draw()), Some("Draw"));
-        assert_eq!(
-            catalog.get(&MessageId::tool_mode_manipulate()),
-            Some("Manipulate")
-        );
-    }
-
-    #[test]
-    fn catalog_default_en_gb_contains_edge_modes() {
-        let catalog = Catalog::default_en_gb();
-        assert_eq!(catalog.get(&MessageId::edge_mode_line()), Some("Line"));
-        assert_eq!(
-            catalog.get(&MessageId::edge_mode_bezier_auto()),
-            Some("Bezier (auto)")
-        );
-    }
-
-    #[test]
-    fn localizer_new_creates_with_default_catalog() {
-        let localizer = Localizer::new();
-        let result = localizer.lookup(&Locale::en_gb(), &MessageId::tool_mode_draw());
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Should have found message"), "Draw");
-    }
-
-    #[fixture]
-    fn fr_test_catalog() -> Catalog {
-        let mut messages = HashMap::new();
-        messages.insert("test".to_owned(), "test_fr".to_owned());
-        Catalog::from_messages(messages)
-    }
-
-    #[fixture]
-    fn fr_test_localizer(fr_test_catalog: Catalog) -> Localizer {
-        let mut catalogs = HashMap::new();
-        catalogs.insert(Locale::fr_fr(), fr_test_catalog);
-        catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
-        Localizer::with_catalogs(catalogs, Locale::en_gb())
-    }
-
-    #[rstest]
-    fn localizer_lookup_succeeds_for_available_locale(fr_test_localizer: Localizer) {
-        let result = fr_test_localizer.lookup(&Locale::fr_fr(), &MessageId::from("test"));
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Should have found message"), "test_fr");
-    }
-
-    #[test]
-    fn localizer_lookup_falls_back_to_default_locale() {
-        let mut catalogs = HashMap::new();
-        catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
-
-        let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
-        let result = localizer.lookup(&Locale::fr_fr(), &MessageId::tool_mode_draw());
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Should have found message"), "Draw");
-    }
-
-    #[test]
-    fn localizer_lookup_returns_error_for_missing_message() {
-        let localizer = Localizer::new();
-        let result = localizer.lookup(&Locale::en_gb(), &MessageId::from("nonexistent"));
-        assert!(result.is_err());
-        match result.expect_err("Should have returned error") {
-            I18nError::MessageNotFound { message_id, .. } => {
-                assert_eq!(message_id, "nonexistent");
-            }
-            I18nError::UnsupportedLocale { .. } => {
-                panic!("Expected MessageNotFound error")
-            }
-        }
-    }
-
-    #[rstest]
-    fn localizer_add_catalog_works(fr_test_catalog: Catalog) {
-        let mut localizer = Localizer::new();
-        localizer.add_catalog(Locale::fr_fr(), fr_test_catalog);
-        let result = localizer.lookup(&Locale::fr_fr(), &MessageId::from("test"));
-        assert!(result.is_ok());
-        assert_eq!(result.expect("Should have found message"), "test_fr");
-    }
-}
+mod tests;

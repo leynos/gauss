@@ -2,6 +2,7 @@
 
 use gpui::{div, prelude::*};
 
+use crate::i18n::MessageId;
 use crate::ui::UiIcon;
 
 use super::{
@@ -44,48 +45,49 @@ fn tool_rail_buttons(
         .child(tool_select_button(shell_state, cx));
 
     for spec in DRAW_BUTTON_SPECS {
-        rail = rail.child(tool_draw_button(shell_state, cx, &spec));
+        rail = rail.child(tool_draw_button(shell_state, cx, spec));
     }
 
     rail.child(tool_placeholder_button(
+        shell_state,
         "tool-draw-square",
         UiIcon::DrawSquare,
-        "Draw Rectangle",
+        MessageId::tool_tooltip_draw_rectangle,
     ))
     .child(tool_placeholder_button(
+        shell_state,
         "tool-draw-circle",
         UiIcon::DrawCircle,
-        "Draw Circle",
+        MessageId::tool_tooltip_draw_circle,
     ))
 }
 
 struct ToolModeButtonSpec<F, S> {
     id: &'static str,
     icon: UiIcon,
-    tooltip: &'static str,
+    tooltip: String,
     state_fn: S,
     on_click: F,
 }
 
-#[derive(Clone, Copy)]
 struct ToolDrawButtonSpec {
     id: &'static str,
     icon: UiIcon,
-    tooltip: &'static str,
+    message_id: fn() -> MessageId,
     edge_mode: DrawEdgeMode,
 }
 
-const DRAW_BUTTON_SPECS: [ToolDrawButtonSpec; 2] = [
+const DRAW_BUTTON_SPECS: &[ToolDrawButtonSpec] = &[
     ToolDrawButtonSpec {
         id: "tool-draw-line",
         icon: UiIcon::DrawPath,
-        tooltip: "Draw Path",
+        message_id: MessageId::tool_tooltip_draw_path,
         edge_mode: DrawEdgeMode::Line,
     },
     ToolDrawButtonSpec {
         id: "tool-draw-curve",
         icon: UiIcon::DrawCurve,
-        tooltip: "Draw Curve",
+        message_id: MessageId::tool_tooltip_draw_curve,
         edge_mode: DrawEdgeMode::BezierAuto,
     },
 ];
@@ -121,16 +123,14 @@ fn tool_draw_button(
     cx: &mut Context<Phase0Shell>,
     spec: &ToolDrawButtonSpec,
 ) -> impl gpui::IntoElement {
-    let id = spec.id;
-    let icon = spec.icon;
-    let tooltip = spec.tooltip;
+    let tooltip = shell_state.localize(&(spec.message_id)());
     let edge_mode = spec.edge_mode;
     tool_mode_button(
         shell_state,
         cx,
         ToolModeButtonSpec {
-            id,
-            icon,
+            id: spec.id,
+            icon: spec.icon,
             tooltip,
             state_fn: move |shell: &Phase0Shell| {
                 draw_button_state(shell.state.tool_mode, shell.state.edge_mode, edge_mode)
@@ -146,13 +146,14 @@ fn tool_select_button(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
 ) -> impl gpui::IntoElement {
+    let tooltip = shell_state.localize(&MessageId::tool_tooltip_select());
     tool_mode_button(
         shell_state,
         cx,
         ToolModeButtonSpec {
             id: "tool-select",
             icon: UiIcon::Select,
-            tooltip: "Select",
+            tooltip,
             state_fn: |shell: &Phase0Shell| select_button_state(shell.state.tool_mode),
             on_click: |shell: &mut Phase0Shell| {
                 let _ = shell.activate_select_tool();
@@ -162,10 +163,12 @@ fn tool_select_button(
 }
 
 fn tool_placeholder_button(
+    shell_state: &Phase0Shell,
     id: &'static str,
     icon: UiIcon,
-    tooltip: &'static str,
+    message_id: fn() -> MessageId,
 ) -> impl gpui::IntoElement {
+    let tooltip = shell_state.localize(&message_id());
     icon_button(id, icon, IconButtonState::Placeholder, Some(tooltip))
 }
 

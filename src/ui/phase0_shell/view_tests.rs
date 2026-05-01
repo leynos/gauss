@@ -212,7 +212,7 @@ enum HistoryOp {
 /// and applies it via `apply_command_for_tests`.
 fn apply_move_to_first_shape(shell: &mut Phase0Shell) {
     let Some(shape) = shell.document().shape_at(0) else {
-        panic!("demo document has at least one shape");
+        panic!("expected demo document to have at least one shape");
     };
     let id = shape.id;
     let command = Command::MoveShapes {
@@ -252,8 +252,7 @@ fn assert_history_op_fails_with_error(
     });
 
     // Verify error is surfaced with operation type and error description.
-    let error = read_last_history_error(visual_cx, view);
-    let Some(error_msg) = error else {
+    let Some(error_msg) = read_last_history_error(visual_cx, view) else {
         panic!("expected last_history_error to be set");
     };
     let expected_prefix = match op {

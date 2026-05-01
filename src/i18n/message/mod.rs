@@ -13,7 +13,7 @@
 //! - Use underscores only for suffixes when needed (e.g., `mode_with_edge`)
 //! - Group related functionality under common prefixes:
 //!   - `tool_mode.*` for tool mode identifiers
-//!   - `edge_mode.*` for edge mode identifiers  
+//!   - `edge_mode.*` for edge mode identifiers
 //!   - `tool.status.*` for status message templates
 //!
 //! ## Examples
@@ -77,42 +77,6 @@ impl MessageId {
     pub fn as_str(&self) -> &str {
         &self.key
     }
-
-    /// Message identifier for draw tool mode.
-    #[must_use]
-    pub fn tool_mode_draw() -> Self {
-        Self::new("tool_mode.draw")
-    }
-
-    /// Message identifier for manipulate tool mode.
-    #[must_use]
-    pub fn tool_mode_manipulate() -> Self {
-        Self::new("tool_mode.manipulate")
-    }
-
-    /// Message identifier for line edge mode.
-    #[must_use]
-    pub fn edge_mode_line() -> Self {
-        Self::new("edge_mode.line")
-    }
-
-    /// Message identifier for bezier auto edge mode.
-    #[must_use]
-    pub fn edge_mode_bezier_auto() -> Self {
-        Self::new("edge_mode.bezier_auto")
-    }
-
-    /// Message identifier for status template with edge mode.
-    #[must_use]
-    pub fn tool_status_mode_with_edge() -> Self {
-        Self::new("tool.status.mode_with_edge")
-    }
-
-    /// Message identifier for status template without edge mode.
-    #[must_use]
-    pub fn tool_status_mode() -> Self {
-        Self::new("tool.status.mode")
-    }
 }
 
 impl From<String> for MessageId {
@@ -139,63 +103,8 @@ impl fmt::Display for MessageId {
     }
 }
 
+// Include factory methods module
+mod factories;
+
 #[cfg(test)]
-mod tests {
-    //! Unit tests for i18n message identifier functionality.
-    //!
-    //! Validates `MessageId` construction, conversion, and factory methods
-    //! for tool modes, edge modes, and status templates.
-
-    use rstest::rstest;
-
-    use super::*;
-
-    #[test]
-    fn message_id_new_creates_correctly() {
-        let msg_id = MessageId::new("test.message");
-        assert_eq!(msg_id.as_str(), "test.message");
-    }
-
-    #[test]
-    fn message_id_from_string_creates_correctly() {
-        let msg_id = MessageId::from("test.key".to_owned());
-        assert_eq!(msg_id.as_str(), "test.key");
-    }
-
-    #[test]
-    fn message_id_from_str_creates_correctly() {
-        let msg_id = MessageId::from("test.str");
-        assert_eq!(msg_id.as_str(), "test.str");
-    }
-
-    #[rstest]
-    #[case::tool_mode_draw(MessageId::tool_mode_draw, "tool_mode.draw")]
-    #[case::tool_mode_manipulate(MessageId::tool_mode_manipulate, "tool_mode.manipulate")]
-    #[case::edge_mode_line(MessageId::edge_mode_line, "edge_mode.line")]
-    #[case::edge_mode_bezier_auto(MessageId::edge_mode_bezier_auto, "edge_mode.bezier_auto")]
-    #[case::tool_status_mode_with_edge(
-        MessageId::tool_status_mode_with_edge,
-        "tool.status.mode_with_edge"
-    )]
-    #[case::tool_status_mode(MessageId::tool_status_mode, "tool.status.mode")]
-    fn message_id_factory_method_is_correct(
-        #[case] factory: fn() -> MessageId,
-        #[case] expected: &str,
-    ) {
-        let msg_id = factory();
-        assert_eq!(msg_id.as_str(), expected);
-    }
-
-    #[test]
-    fn message_id_display_shows_key() {
-        let msg_id = MessageId::new("display.test");
-        assert_eq!(format!("{msg_id}"), "display.test");
-    }
-
-    #[test]
-    fn message_id_equality_works() {
-        let msg1 = MessageId::tool_mode_draw();
-        let msg2 = MessageId::from("tool_mode.draw");
-        assert_eq!(msg1, msg2);
-    }
-}
+mod tests;

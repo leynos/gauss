@@ -1,7 +1,10 @@
 //! Layout and rendering for the Phase 0 shell.
 
+use std::path::Path;
+
 use gpui::{Window, div, prelude::*, white};
 
+use crate::i18n::MessageId;
 use crate::ui::action_bridge::context_for_tool_mode;
 
 use super::{
@@ -9,22 +12,120 @@ use super::{
     chrome_palette::chrome_border, draw, file_dialogs,
 };
 
+/// File status variants for status line display.
+///
+/// These variants represent the possible file-related status messages
+/// in order of precedence (highest to lowest).
+#[derive(Debug, Clone, PartialEq)]
+pub(super) enum FileStatus<'a> {
+    /// History operation error (highest priority).
+    HistoryError { error: &'a str },
+    /// Generic shell operation error.
+    ShellError { error: &'a str },
+    /// Save operation failed.
+    SaveFailed { error: &'a str },
+    /// Open operation failed.
+    OpenFailed { error: &'a str },
+    /// File was saved successfully.
+    Saved { path: &'a Path },
+    /// File was opened successfully.
+    Opened { path: &'a Path },
+}
+
+impl FileStatus<'_> {
+    /// Convert the file status to a display string using localization.
+    fn to_display_string(&self, shell: &Phase0Shell) -> String {
+        match self {
+            Self::HistoryError { error } => {
+                let template = lookup_template(
+                    shell,
+                    &MessageId::status_history_error(),
+                    "History error: {error}",
+                );
+                template.replace("{error}", error)
+            }
+            Self::ShellError { error } => {
+                let template = lookup_template(
+                    shell,
+                    &MessageId::status_shell_error(),
+                    "Shell error: {error}",
+                );
+                template.replace("{error}", error)
+            }
+            Self::SaveFailed { error } => {
+                let template = lookup_template(
+                    shell,
+                    &MessageId::status_save_failed(),
+                    "Save failed: {error}",
+                );
+                template.replace("{error}", error)
+            }
+            Self::OpenFailed { error } => {
+                let template = lookup_template(
+                    shell,
+                    &MessageId::status_open_failed(),
+                    "Open failed: {error}",
+                );
+                template.replace("{error}", error)
+            }
+            Self::Saved { path } => {
+                let template = lookup_template(shell, &MessageId::status_saved(), "Saved: {path}");
+                template.replace("{path}", &path.display().to_string())
+            }
+            Self::Opened { path } => {
+                let template =
+                    lookup_template(shell, &MessageId::status_opened(), "Opened: {path}");
+                template.replace("{path}", &path.display().to_string())
+            }
+        }
+    }
+}
+
+fn lookup_template(shell: &Phase0Shell, id: &MessageId, fallback: &str) -> String {
+    shell
+        .localizer
+        .lookup(&shell.locale, id)
+        .unwrap_or_else(|err| {
+            log::warn!(
+                "i18n template lookup failed for {:?} in locale {:?}: {err}",
+                id.as_str(),
+                shell.locale,
+            );
+            fallback.to_owned()
+        })
+}
+
 impl Phase0Shell {
+    /// Return a localised mode status string for the current tool state.
+    ///
+    /// The string includes the active tool mode, the edge mode when drawing,
+    /// and the maximised-window indicator when the shell last observed a
+    /// maximised window state.
     pub(super) fn mode_status_line(&self) -> String {
         let tool_label = self.localized_tool_mode_label();
         let edge_label = self.localized_edge_mode_label();
 
         let maximized_indicator = if self.last_maximized_state == Some(true) {
-            " [MAX]"
+            lookup_template(self, &MessageId::status_maximized(), " [MAX]")
         } else {
-            ""
+            String::new()
         };
         match self.state.tool_mode {
             draw::ToolMode::Draw => {
-                format!("Mode: {tool_label} ({edge_label}){maximized_indicator}")
+                let template = lookup_template(
+                    self,
+                    &MessageId::tool_status_mode_with_edge(),
+                    "Mode: {tool} ({edge})",
+                );
+                template
+                    .replace("{tool}", &tool_label)
+                    .replace("{edge}", &edge_label)
+                    + &maximized_indicator
             }
             draw::ToolMode::Manipulate => {
-                format!("Mode: {tool_label}{maximized_indicator}")
+                let template =
+                    lookup_template(self, &MessageId::tool_status_mode(), "Mode: {tool}");
+                template.replace("{tool}", &tool_label) + &maximized_indicator
             }
         }
     }
@@ -45,34 +146,51 @@ impl Phase0Shell {
         )
     }
 
-    pub(super) fn file_status_line(&self) -> Option<String> {
+    /// Determine the current file status based on shell state.
+    ///
+    /// Returns the highest-priority file status variant if any status
+    /// condition is present, or `None` if there is no status to display.
+    pub(super) fn current_file_status(&self) -> Option<FileStatus<'_>> {
         if let Some(error) = self.last_history_error.as_deref() {
-            return Some(format!("History error: {error}"));
+            return Some(FileStatus::HistoryError { error });
         }
 
         if let Some(error) = self.shell_status_error.as_deref() {
-            return Some(format!("Shell error: {error}"));
+            return Some(FileStatus::ShellError { error });
         }
 
         if let Some(error) = self.last_save_error.as_deref() {
-            return Some(format!("Save failed: {error}"));
+            return Some(FileStatus::SaveFailed { error });
         }
 
         if let Some(error) = self.last_open_error.as_deref() {
-            return Some(format!("Open failed: {error}"));
+            return Some(FileStatus::OpenFailed { error });
         }
 
         if let Some(path) = self.last_saved_path.as_deref() {
-            return Some(format!("Saved: {}", path.display()));
+            return Some(FileStatus::Saved { path });
         }
 
         if let Some(path) = self.last_opened_path.as_deref() {
-            return Some(format!("Opened: {}", path.display()));
+            return Some(FileStatus::Opened { path });
         }
 
         None
     }
 
+    /// Return the highest-priority localised file status string, if active.
+    ///
+    /// Returns `None` when there is no history, shell, save, open, or recent
+    /// file operation status to display.
+    pub(super) fn file_status_line(&self) -> Option<String> {
+        self.current_file_status()
+            .map(|status| status.to_display_string(self))
+    }
+
+    /// Build the interactive canvas area for document rendering and input.
+    ///
+    /// The returned element owns the canvas event handlers for pointer,
+    /// navigation, click, and scroll interactions.
     pub(super) fn canvas_area(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         div()
             .id("phase0-canvas")
