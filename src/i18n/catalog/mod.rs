@@ -102,7 +102,6 @@ impl Catalog {
             "edge_mode.bezier_auto".to_owned(),
             "Bezier (auto)".to_owned(),
         );
-        // Status templates for accessibility tree labels
         messages.insert(
             "tool.status.mode_with_edge".to_owned(),
             "Mode: {tool} ({edge})".to_owned(),
@@ -111,7 +110,6 @@ impl Catalog {
     }
 
     fn insert_chrome_messages(messages: &mut HashMap<String, String>) {
-        // Window chrome strings
         messages.insert("chrome.file.new".to_owned(), "New".to_owned());
         messages.insert("chrome.file.open".to_owned(), "Open".to_owned());
         messages.insert("chrome.file.save".to_owned(), "Save".to_owned());
@@ -124,7 +122,6 @@ impl Catalog {
         messages.insert("chrome.edit.undo".to_owned(), "Undo".to_owned());
         messages.insert("chrome.edit.redo".to_owned(), "Redo".to_owned());
 
-        // Window control strings
         messages.insert("chrome.window.minimize".to_owned(), "Minimize".to_owned());
         messages.insert("chrome.window.maximize".to_owned(), "Maximize".to_owned());
         messages.insert("chrome.window.close".to_owned(), "Close Window".to_owned());
@@ -209,11 +206,21 @@ impl Catalog {
     }
 
     fn insert_a11y_messages(messages: &mut HashMap<String, String>) {
-        // Accessibility strings
-        messages.insert("a11y.canvas".to_owned(), "Drawing canvas".to_owned());
-        messages.insert("a11y.shape_list".to_owned(), "Shapes".to_owned());
-        messages.insert("a11y.shape_item".to_owned(), "Shape {index}".to_owned());
-        messages.insert("a11y.window_title".to_owned(), "Gauss".to_owned());
+        for (key, value) in [
+            ("a11y.canvas", "Drawing canvas"),
+            ("a11y.shape_list", "Shapes"),
+            ("a11y.shape_item", "Shape {index}"),
+            ("a11y.titlebar", "Window title bar"),
+            ("a11y.window_menu", "Window menu"),
+            ("a11y.window_minimize", "Minimize window"),
+            ("a11y.window_maximize", "Maximize window"),
+            ("a11y.window_restore", "Restore window"),
+            ("a11y.window_fullscreen", "Toggle fullscreen"),
+            ("a11y.window_close", "Close window"),
+            ("a11y.window_title", "Gauss"),
+        ] {
+            messages.insert(key.to_owned(), value.to_owned());
+        }
     }
 }
 

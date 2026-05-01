@@ -322,6 +322,48 @@ impl MessageId {
         Self::new("a11y.shape_item")
     }
 
+    /// Message identifier for the titlebar accessibility label.
+    #[must_use]
+    pub fn a11y_titlebar() -> Self {
+        Self::new("a11y.titlebar")
+    }
+
+    /// Message identifier for the window menu accessibility label.
+    #[must_use]
+    pub fn a11y_window_menu() -> Self {
+        Self::new("a11y.window_menu")
+    }
+
+    /// Message identifier for the minimize button accessibility label.
+    #[must_use]
+    pub fn a11y_window_minimize() -> Self {
+        Self::new("a11y.window_minimize")
+    }
+
+    /// Message identifier for the maximize button accessibility label.
+    #[must_use]
+    pub fn a11y_window_maximize() -> Self {
+        Self::new("a11y.window_maximize")
+    }
+
+    /// Message identifier for the restore button accessibility label.
+    #[must_use]
+    pub fn a11y_window_restore() -> Self {
+        Self::new("a11y.window_restore")
+    }
+
+    /// Message identifier for the fullscreen button accessibility label.
+    #[must_use]
+    pub fn a11y_window_fullscreen() -> Self {
+        Self::new("a11y.window_fullscreen")
+    }
+
+    /// Message identifier for the close button accessibility label.
+    #[must_use]
+    pub fn a11y_window_close() -> Self {
+        Self::new("a11y.window_close")
+    }
+
     /// Message identifier for window title.
     #[must_use]
     pub fn a11y_window_title() -> Self {

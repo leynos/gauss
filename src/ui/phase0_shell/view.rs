@@ -85,7 +85,14 @@ fn lookup_template(shell: &Phase0Shell, id: &MessageId, fallback: &str) -> Strin
     shell
         .localizer
         .lookup(&shell.locale, id)
-        .unwrap_or_else(|_| fallback.to_owned())
+        .unwrap_or_else(|err| {
+            log::warn!(
+                "i18n template lookup failed for {:?} in locale {:?}: {err}",
+                id.as_str(),
+                shell.locale,
+            );
+            fallback.to_owned()
+        })
 }
 
 impl Phase0Shell {

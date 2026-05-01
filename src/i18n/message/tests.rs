@@ -90,6 +90,13 @@ fn message_id_from_str_creates_correctly() {
 #[case::a11y_canvas(MessageId::a11y_canvas, "a11y.canvas")]
 #[case::a11y_shape_list(MessageId::a11y_shape_list, "a11y.shape_list")]
 #[case::a11y_shape_item(MessageId::a11y_shape_item, "a11y.shape_item")]
+#[case::a11y_titlebar(MessageId::a11y_titlebar, "a11y.titlebar")]
+#[case::a11y_window_menu(MessageId::a11y_window_menu, "a11y.window_menu")]
+#[case::a11y_window_minimize(MessageId::a11y_window_minimize, "a11y.window_minimize")]
+#[case::a11y_window_maximize(MessageId::a11y_window_maximize, "a11y.window_maximize")]
+#[case::a11y_window_restore(MessageId::a11y_window_restore, "a11y.window_restore")]
+#[case::a11y_window_fullscreen(MessageId::a11y_window_fullscreen, "a11y.window_fullscreen")]
+#[case::a11y_window_close(MessageId::a11y_window_close, "a11y.window_close")]
 #[case::a11y_window_title(MessageId::a11y_window_title, "a11y.window_title")]
 fn message_id_factory_method_is_correct(
     #[case] factory: fn() -> MessageId,

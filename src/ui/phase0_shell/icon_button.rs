@@ -1,6 +1,6 @@
 //! Icon button helpers for the Phase 1 chrome layout.
 
-use gpui::{Stateful, div, prelude::*, px};
+use gpui::{SharedString, Stateful, div, prelude::*, px};
 use gpui_component::tooltip::Tooltip;
 
 use crate::ui::{UiIcon, icon_element};
@@ -69,15 +69,20 @@ pub(super) fn icon_button_base(id: &'static str, state: IconButtonState) -> Stat
 /// Wraps [`icon_button_base`], adds the supplied `icon`, and attaches a tooltip
 /// builder when `tooltip` is present. The returned div is ready for callers to
 /// attach click handlers or other GPUI behaviours.
-pub(super) fn icon_button(
+pub(super) fn icon_button<T>(
     id: &'static str,
     icon: UiIcon,
     state: IconButtonState,
-    tooltip: Option<String>,
-) -> Stateful<gpui::Div> {
+    tooltip: Option<T>,
+) -> Stateful<gpui::Div>
+where
+    T: Into<SharedString> + 'static,
+{
     let mut button = icon_button_base(id, state).child(icon_element(icon, ICON_SIZE));
     if let Some(text) = tooltip {
-        button = button.tooltip(move |window, cx| Tooltip::new(text.clone()).build(window, cx));
+        let tooltip_text = text.into();
+        button =
+            button.tooltip(move |window, cx| Tooltip::new(tooltip_text.clone()).build(window, cx));
     }
     button
 }
