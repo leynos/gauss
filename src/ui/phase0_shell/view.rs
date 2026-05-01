@@ -37,49 +37,55 @@ impl FileStatus<'_> {
     fn to_display_string(&self, shell: &Phase0Shell) -> String {
         match self {
             Self::HistoryError { error } => {
-                let template = shell
-                    .localizer
-                    .lookup(&shell.locale, &MessageId::status_history_error())
-                    .unwrap_or_else(|_| "History error: {error}".to_owned());
+                let template = lookup_template(
+                    shell,
+                    &MessageId::status_history_error(),
+                    "History error: {error}",
+                );
                 template.replace("{error}", error)
             }
             Self::ShellError { error } => {
-                let template = shell
-                    .localizer
-                    .lookup(&shell.locale, &MessageId::status_shell_error())
-                    .unwrap_or_else(|_| "Shell error: {error}".to_owned());
+                let template = lookup_template(
+                    shell,
+                    &MessageId::status_shell_error(),
+                    "Shell error: {error}",
+                );
                 template.replace("{error}", error)
             }
             Self::SaveFailed { error } => {
-                let template = shell
-                    .localizer
-                    .lookup(&shell.locale, &MessageId::status_save_failed())
-                    .unwrap_or_else(|_| "Save failed: {error}".to_owned());
+                let template = lookup_template(
+                    shell,
+                    &MessageId::status_save_failed(),
+                    "Save failed: {error}",
+                );
                 template.replace("{error}", error)
             }
             Self::OpenFailed { error } => {
-                let template = shell
-                    .localizer
-                    .lookup(&shell.locale, &MessageId::status_open_failed())
-                    .unwrap_or_else(|_| "Open failed: {error}".to_owned());
+                let template = lookup_template(
+                    shell,
+                    &MessageId::status_open_failed(),
+                    "Open failed: {error}",
+                );
                 template.replace("{error}", error)
             }
             Self::Saved { path } => {
-                let template = shell
-                    .localizer
-                    .lookup(&shell.locale, &MessageId::status_saved())
-                    .unwrap_or_else(|_| "Saved: {path}".to_owned());
+                let template = lookup_template(shell, &MessageId::status_saved(), "Saved: {path}");
                 template.replace("{path}", &path.display().to_string())
             }
             Self::Opened { path } => {
-                let template = shell
-                    .localizer
-                    .lookup(&shell.locale, &MessageId::status_opened())
-                    .unwrap_or_else(|_| "Opened: {path}".to_owned());
+                let template =
+                    lookup_template(shell, &MessageId::status_opened(), "Opened: {path}");
                 template.replace("{path}", &path.display().to_string())
             }
         }
     }
+}
+
+fn lookup_template(shell: &Phase0Shell, id: &MessageId, fallback: &str) -> String {
+    shell
+        .localizer
+        .lookup(&shell.locale, id)
+        .unwrap_or_else(|_| fallback.to_owned())
 }
 
 impl Phase0Shell {
