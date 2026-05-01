@@ -13,6 +13,11 @@ use crate::model::{Command, Paint, PaintStyle, Rgba, SelItem, ShapeId, StyleChan
 use super::Phase0Shell;
 
 impl Phase0Shell {
+    /// Lazily initialise stroke and fill colour picker state.
+    ///
+    /// Uses the current style as each picker default and subscribes to picker
+    /// change events exactly once. `window` and `cx` are passed to GPUI and
+    /// `gpui-component` constructors that require active UI context.
     pub(super) fn ensure_style_pickers(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.stroke_picker.is_some() && self.fill_picker.is_some() {
             return;
@@ -72,6 +77,10 @@ impl Phase0Shell {
         self.style_picker_subscriptions.push(fill_sub);
     }
 
+    /// Build the stroke/fill colour picker row.
+    ///
+    /// Returns loading text for either picker that has not yet been
+    /// initialised by [`Self::ensure_style_pickers`].
     pub(super) fn style_picker_row(&self) -> impl gpui::IntoElement {
         let stroke_label = self.localize(&MessageId::style_stroke());
         let fill_label = self.localize(&MessageId::style_fill());

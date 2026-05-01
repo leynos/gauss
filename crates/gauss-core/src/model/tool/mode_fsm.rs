@@ -3,6 +3,10 @@
 use super::{EdgeMode, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolTransition};
 
 /// FSM for draw/manipulate mode transitions.
+///
+/// Maps high-level tool input events to [`ToolTransition`] values. Pointer and
+/// selection events are handled by the concrete tool FSMs, so this mode FSM
+/// treats them as no-ops.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ToolModeFsm;
 
@@ -36,6 +40,11 @@ fn escape_transition(current_mode: ToolMode) -> ToolTransition {
 }
 
 impl Tool for ToolModeFsm {
+    /// Map one [`ToolInputEvent`] to commands for the draw/manipulate FSM.
+    ///
+    /// `current_mode` and `current_edge_mode` describe the shell state before
+    /// the event. Pointer and selection events return an empty transition
+    /// because they are handled by pen/select tool logic.
     fn transition(
         &self,
         current_mode: ToolMode,

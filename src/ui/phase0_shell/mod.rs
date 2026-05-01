@@ -336,6 +336,13 @@ impl Phase0Shell {
     pub(super) fn localize(&self, message_id: &crate::i18n::MessageId) -> String {
         self.localizer
             .lookup(&self.locale, message_id)
-            .unwrap_or_else(|_| message_id.as_str().to_owned())
+            .unwrap_or_else(|err| {
+                log::warn!(
+                    "i18n lookup failed for {:?} in locale {:?}: {err}",
+                    message_id.as_str(),
+                    self.locale,
+                );
+                message_id.as_str().to_owned()
+            })
     }
 }

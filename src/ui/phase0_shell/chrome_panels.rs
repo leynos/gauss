@@ -12,6 +12,10 @@ use super::{
 };
 
 impl Phase0Shell {
+    /// Build the document header panel.
+    ///
+    /// The header contains the localised document title placeholder,
+    /// alignment controls, zoom controls, snap control, and zoom ratio label.
     pub(super) fn document_header(&self) -> impl gpui::IntoElement {
         div()
             .flex()
@@ -31,6 +35,11 @@ impl Phase0Shell {
             .child(self.alignment_buttons())
     }
 
+    /// Build the status bar panel for tool and file operation feedback.
+    ///
+    /// `mode_status_line` is the localised tool and edge-mode status text.
+    /// `file_status_line` is an optional localised file operation message.
+    /// The returned element includes status controls and fixed status labels.
     pub(super) fn status_bar(
         &self,
         mode_status_line: String,

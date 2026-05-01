@@ -33,6 +33,11 @@ use super::{
 use crate::i18n::MessageId;
 
 impl Phase0Shell {
+    /// Build the full chrome layout around the editor content.
+    ///
+    /// `is_maximized` adjusts top-bar insets and disables resize borders so
+    /// compositor edge zones do not block chrome controls. The returned element
+    /// contains the top bar, tool rail, document panel, and status bar.
     pub(super) fn chrome_view(
         &mut self,
         is_maximized: bool,

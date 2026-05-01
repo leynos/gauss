@@ -89,6 +89,11 @@ fn lookup_template(shell: &Phase0Shell, id: &MessageId, fallback: &str) -> Strin
 }
 
 impl Phase0Shell {
+    /// Return a localised mode status string for the current tool state.
+    ///
+    /// The string includes the active tool mode, the edge mode when drawing,
+    /// and the maximised-window indicator when the shell last observed a
+    /// maximised window state.
     pub(super) fn mode_status_line(&self) -> String {
         let tool_label = self.localized_tool_mode_label();
         let edge_label = self.localized_edge_mode_label();
@@ -100,20 +105,19 @@ impl Phase0Shell {
         };
         match self.state.tool_mode {
             draw::ToolMode::Draw => {
-                let template = self
-                    .localizer
-                    .lookup(&self.locale, &MessageId::tool_status_mode_with_edge())
-                    .unwrap_or_else(|_| "Mode: {tool} ({edge})".to_owned());
+                let template = lookup_template(
+                    self,
+                    &MessageId::tool_status_mode_with_edge(),
+                    "Mode: {tool} ({edge})",
+                );
                 template
                     .replace("{tool}", &tool_label)
                     .replace("{edge}", &edge_label)
                     + &maximized_indicator
             }
             draw::ToolMode::Manipulate => {
-                let template = self
-                    .localizer
-                    .lookup(&self.locale, &MessageId::tool_status_mode())
-                    .unwrap_or_else(|_| "Mode: {tool}".to_owned());
+                let template =
+                    lookup_template(self, &MessageId::tool_status_mode(), "Mode: {tool}");
                 template.replace("{tool}", &tool_label) + &maximized_indicator
             }
         }
@@ -167,11 +171,19 @@ impl Phase0Shell {
         None
     }
 
+    /// Return the highest-priority localised file status string, if active.
+    ///
+    /// Returns `None` when there is no history, shell, save, open, or recent
+    /// file operation status to display.
     pub(super) fn file_status_line(&self) -> Option<String> {
         self.current_file_status()
             .map(|status| status.to_display_string(self))
     }
 
+    /// Build the interactive canvas area for document rendering and input.
+    ///
+    /// The returned element owns the canvas event handlers for pointer,
+    /// navigation, click, and scroll interactions.
     pub(super) fn canvas_area(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         div()
             .id("phase0-canvas")

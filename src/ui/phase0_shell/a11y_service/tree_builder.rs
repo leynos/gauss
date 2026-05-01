@@ -28,6 +28,11 @@ const RESERVED_NODE_IDS: [u64; 10] = [
     STATUS_NODE_ID.0,
 ];
 
+/// Construct the full AccessKit node map and focus node for a snapshot.
+///
+/// The returned map contains window chrome, canvas, status, and shape-list
+/// nodes. The focus node is selected from the current shape selection when
+/// possible, falling back to the canvas node.
 pub(super) fn build_node_map(
     snapshot: &A11ySnapshot,
 ) -> Result<(BTreeMap<NodeId, Node>, NodeId), A11yServiceError> {
@@ -60,7 +65,13 @@ fn insert_canvas_and_status_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: 
     let canvas_label = snapshot
         .localizer
         .lookup(&snapshot.locale, &MessageId::a11y_canvas())
-        .unwrap_or_else(|_| "Drawing canvas".to_owned());
+        .unwrap_or_else(|err| {
+            log::warn!(
+                "a11y i18n lookup failed for {:?}: {err}",
+                MessageId::a11y_canvas().as_str()
+            );
+            "Drawing canvas".to_owned()
+        });
     canvas.set_label(canvas_label);
     nodes.insert(CANVAS_NODE_ID, canvas);
 
@@ -107,7 +118,13 @@ fn insert_shape_list_nodes(
     let shape_list_label = snapshot
         .localizer
         .lookup(&snapshot.locale, &MessageId::a11y_shape_list())
-        .unwrap_or_else(|_| "Shapes".to_owned());
+        .unwrap_or_else(|err| {
+            log::warn!(
+                "a11y i18n lookup failed for {:?}: {err}",
+                MessageId::a11y_shape_list().as_str()
+            );
+            "Shapes".to_owned()
+        });
     shape_list.set_label(shape_list_label);
     shape_list.set_multiselectable();
     nodes.insert(SHAPE_LIST_NODE_ID, shape_list);
@@ -124,7 +141,13 @@ fn shape_label(
         || {
             let template = localizer
                 .lookup(locale, &MessageId::a11y_shape_item())
-                .unwrap_or_else(|_| "Shape {index}".to_owned());
+                .unwrap_or_else(|err| {
+                    log::warn!(
+                        "a11y i18n lookup failed for {:?}: {err}",
+                        MessageId::a11y_shape_item().as_str()
+                    );
+                    "Shape {index}".to_owned()
+                });
             template.replace("{index}", &(index + 1).to_string())
         },
         ToOwned::to_owned,
@@ -153,7 +176,13 @@ fn insert_root_node(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot)
     let window_title = snapshot
         .localizer
         .lookup(&snapshot.locale, &MessageId::a11y_window_title())
-        .unwrap_or_else(|_| "Gauss".to_owned());
+        .unwrap_or_else(|err| {
+            log::warn!(
+                "a11y i18n lookup failed for {:?}: {err}",
+                MessageId::a11y_window_title().as_str()
+            );
+            "Gauss".to_owned()
+        });
     root.set_label(window_title);
     root.set_children([
         NodeId(accessibility::node_ids::TITLEBAR),

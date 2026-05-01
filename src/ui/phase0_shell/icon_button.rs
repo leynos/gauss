@@ -10,14 +10,23 @@ use super::chrome_palette::{chrome_active, chrome_border, chrome_muted_text, chr
 const ICON_SIZE: f32 = 16.0;
 const BUTTON_SIZE: f32 = 28.0;
 
+/// Visual and interactive states for an icon button.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum IconButtonState {
+    /// Button can be clicked and uses the normal chrome styling.
     Enabled,
+    /// Button can be clicked and represents the active mode or state.
     Active,
+    /// Button is visible but cannot be clicked.
     Disabled,
+    /// Button reserves layout space for a control that is not active yet.
     Placeholder,
 }
 
+/// Construct a sized, styled icon-button base without an icon child.
+///
+/// `id` is used for GPUI element identity and debug selectors. `state`
+/// controls cursor, opacity, text colour, and active background styling.
 pub(super) fn icon_button_base(id: &'static str, state: IconButtonState) -> Stateful<gpui::Div> {
     let mut base = div()
         .id(id)
@@ -55,6 +64,11 @@ pub(super) fn icon_button_base(id: &'static str, state: IconButtonState) -> Stat
     base
 }
 
+/// Construct a complete icon button with an icon and optional tooltip.
+///
+/// Wraps [`icon_button_base`], adds the supplied `icon`, and attaches a tooltip
+/// builder when `tooltip` is present. The returned div is ready for callers to
+/// attach click handlers or other GPUI behaviours.
 pub(super) fn icon_button(
     id: &'static str,
     icon: UiIcon,
