@@ -1,5 +1,7 @@
 //! Layout and rendering for the Phase 0 shell.
 
+use std::path::Path;
+
 use gpui::{Window, div, prelude::*, white};
 
 use crate::i18n::MessageId;
@@ -15,22 +17,22 @@ use super::{
 /// These variants represent the possible file-related status messages
 /// in order of precedence (highest to lowest).
 #[derive(Debug, Clone, PartialEq)]
-pub(super) enum FileStatus {
+pub(super) enum FileStatus<'a> {
     /// History operation error (highest priority).
-    HistoryError { error: String },
+    HistoryError { error: &'a str },
     /// Generic shell operation error.
-    ShellError { error: String },
+    ShellError { error: &'a str },
     /// Save operation failed.
-    SaveFailed { error: String },
+    SaveFailed { error: &'a str },
     /// Open operation failed.
-    OpenFailed { error: String },
+    OpenFailed { error: &'a str },
     /// File was saved successfully.
-    Saved { path: std::path::PathBuf },
+    Saved { path: &'a Path },
     /// File was opened successfully.
-    Opened { path: std::path::PathBuf },
+    Opened { path: &'a Path },
 }
 
-impl FileStatus {
+impl FileStatus<'_> {
     /// Convert the file status to a display string using localization.
     fn to_display_string(&self, shell: &Phase0Shell) -> String {
         match self {
@@ -131,28 +133,28 @@ impl Phase0Shell {
     ///
     /// Returns the highest-priority file status variant if any status
     /// condition is present, or `None` if there is no status to display.
-    pub(super) fn current_file_status(&self) -> Option<FileStatus> {
-        if let Some(error) = self.last_history_error.clone() {
+    pub(super) fn current_file_status(&self) -> Option<FileStatus<'_>> {
+        if let Some(error) = self.last_history_error.as_deref() {
             return Some(FileStatus::HistoryError { error });
         }
 
-        if let Some(error) = self.shell_status_error.clone() {
+        if let Some(error) = self.shell_status_error.as_deref() {
             return Some(FileStatus::ShellError { error });
         }
 
-        if let Some(error) = self.last_save_error.clone() {
+        if let Some(error) = self.last_save_error.as_deref() {
             return Some(FileStatus::SaveFailed { error });
         }
 
-        if let Some(error) = self.last_open_error.clone() {
+        if let Some(error) = self.last_open_error.as_deref() {
             return Some(FileStatus::OpenFailed { error });
         }
 
-        if let Some(path) = self.last_saved_path.clone() {
+        if let Some(path) = self.last_saved_path.as_deref() {
             return Some(FileStatus::Saved { path });
         }
 
-        if let Some(path) = self.last_opened_path.clone() {
+        if let Some(path) = self.last_opened_path.as_deref() {
             return Some(FileStatus::Opened { path });
         }
 
