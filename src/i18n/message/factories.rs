@@ -190,6 +190,12 @@ impl MessageId {
         Self::new("status.history_error")
     }
 
+    /// Message identifier for "Shell error: {error}" status.
+    #[must_use]
+    pub fn status_shell_error() -> Self {
+        Self::new("status.shell_error")
+    }
+
     /// Message identifier for "Save failed: {error}" status.
     #[must_use]
     pub fn status_save_failed() -> Self {

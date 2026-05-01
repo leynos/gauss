@@ -80,9 +80,11 @@ fn message_id_from_str_creates_correctly() {
 #[case::status_saved(MessageId::status_saved, "status.saved")]
 #[case::status_opened(MessageId::status_opened, "status.opened")]
 #[case::status_history_error(MessageId::status_history_error, "status.history_error")]
+#[case::status_shell_error(MessageId::status_shell_error, "status.shell_error")]
 #[case::status_save_failed(MessageId::status_save_failed, "status.save_failed")]
 #[case::status_open_failed(MessageId::status_open_failed, "status.open_failed")]
 #[case::status_maximized(MessageId::status_maximized, "status.maximized")]
+#[case::status_plain_text(MessageId::status_plain_text, "status.plain_text")]
 #[case::status_zoom_ratio_1_1(MessageId::status_zoom_ratio_1_1, "status.zoom_ratio_1_1")]
 // Accessibility
 #[case::a11y_canvas(MessageId::a11y_canvas, "a11y.canvas")]

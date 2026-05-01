@@ -208,6 +208,14 @@ fn catalog_default_en_gb_preserves_template_placeholders() {
         "status_history_error template should contain {{error}} placeholder"
     );
 
+    let status_shell_error = catalog
+        .get(&MessageId::status_shell_error())
+        .expect("status_shell_error should be present in default_en_gb");
+    assert!(
+        status_shell_error.contains("{error}"),
+        "status_shell_error template should contain {{error}} placeholder"
+    );
+
     let status_save_failed = catalog
         .get(&MessageId::status_save_failed())
         .expect("status_save_failed should be present in default_en_gb");

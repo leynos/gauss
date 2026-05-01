@@ -163,6 +163,10 @@ impl Catalog {
             "History error: {error}".to_owned(),
         );
         messages.insert(
+            "status.shell_error".to_owned(),
+            "Shell error: {error}".to_owned(),
+        );
+        messages.insert(
             "status.save_failed".to_owned(),
             "Save failed: {error}".to_owned(),
         );

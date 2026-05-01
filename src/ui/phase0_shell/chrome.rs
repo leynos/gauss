@@ -110,7 +110,7 @@ impl Phase0Shell {
                 div()
                     .text_sm()
                     .text_color(chrome_muted_text())
-                    .child(self.localized_titlebar_recent()),
+                    .child(self.localize(&MessageId::chrome_titlebar_recent())),
             )
             // Double-click to toggle maximize/restore
             .on_click(cx.listener(
@@ -305,9 +305,5 @@ impl Phase0Shell {
             shell.did_request_quit = true;
             click_cx.quit();
         }))
-    }
-
-    fn localized_titlebar_recent(&self) -> String {
-        self.localize(&MessageId::chrome_titlebar_recent())
     }
 }

@@ -41,7 +41,13 @@ impl FileStatus {
                     .unwrap_or_else(|_| "History error: {error}".to_owned());
                 template.replace("{error}", error)
             }
-            Self::ShellError { error } => format!("Shell error: {error}"),
+            Self::ShellError { error } => {
+                let template = shell
+                    .localizer
+                    .lookup(&shell.locale, &MessageId::status_shell_error())
+                    .unwrap_or_else(|_| "Shell error: {error}".to_owned());
+                template.replace("{error}", error)
+            }
             Self::SaveFailed { error } => {
                 let template = shell
                     .localizer
