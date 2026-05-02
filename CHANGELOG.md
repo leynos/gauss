@@ -39,3 +39,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `UserError::InvalidOperation` must update their code to pass a `String`
   instead of `&'static str`. The simplest migration is to append `.into()` or
   `.to_string()` to existing string literals.
+
+### Internal
+
+- Adopt `rstest-bdd` v0.6.0-beta1 with GPUI harness
+  (`rstest-bdd-harness-gpui::GpuiHarness`) for BDD tests that need a
+  `TestAppContext`. The Phase 0 shell mode indicator test is migrated as a
+  pilot. See the [Developer's guide](docs/developers-guide.md) for the pattern.

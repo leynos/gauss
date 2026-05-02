@@ -277,3 +277,8 @@ Gauss adapts to platform conventions:
 
 All shortcuts using the "secondary" modifier (shown as Cmd on macOS) will
 automatically use Ctrl on other platforms.
+
+## Contributing
+
+See the [Developer's guide](developers-guide.md) for testing patterns, the GPUI
+BDD harness integration, and code-gate procedures.

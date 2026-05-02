@@ -84,6 +84,7 @@ missing_crate_level_docs = "deny"
 rstest = "0.26.1"
 rstest-bdd = "0.6.0-beta1"
 rstest-bdd-macros = "0.6.0-beta1"
+rstest-bdd-harness = "0.6.0-beta1"
 rstest-bdd-harness-gpui = "0.6.0-beta1"
 
 [dependencies]
@@ -104,6 +105,7 @@ gpui = { version = "0.2.2", features = ["test-support"] }
 rstest = { workspace = true }
 rstest-bdd = { workspace = true }
 rstest-bdd-macros = { workspace = true }
+rstest-bdd-harness = { workspace = true }
 rstest-bdd-harness-gpui = { workspace = true }
 test_support = { path = "crates/test_support" }
 uuid = { version = "1.21.0", features = ["v4"] }

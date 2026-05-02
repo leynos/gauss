@@ -2184,6 +2184,7 @@ dependencies = [
  "log",
  "rstest",
  "rstest-bdd",
+ "rstest-bdd-harness",
  "rstest-bdd-harness-gpui",
  "rstest-bdd-macros",
  "test_support",
