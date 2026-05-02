@@ -80,6 +80,12 @@ unexpected_cfgs = { level = "warn", check-cfg = ["cfg(coverage)", "cfg(coverage_
 [workspace.lints.rustdoc]
 missing_crate_level_docs = "deny"
 
+[workspace.dependencies]
+rstest = "0.26.1"
+rstest-bdd = "0.6.0-beta1"
+rstest-bdd-macros = "0.6.0-beta1"
+rstest-bdd-harness-gpui = "0.6.0-beta1"
+
 [dependencies]
 accesskit = "0.24.0"
 camino = "1.2.2"
@@ -95,9 +101,10 @@ thiserror = "2.0.18"
 [dev-dependencies]
 gauss-core = { version = "0.1.0", path = "crates/gauss-core", features = ["test-support"] }
 gpui = { version = "0.2.2", features = ["test-support"] }
-rstest = "0.26.1"
-rstest-bdd = "0.5.0"
-rstest-bdd-macros = "0.5.0"
+rstest = { workspace = true }
+rstest-bdd = { workspace = true }
+rstest-bdd-macros = { workspace = true }
+rstest-bdd-harness-gpui = { workspace = true }
 test_support = { path = "crates/test_support" }
 uuid = { version = "1.21.0", features = ["v4"] }
 
