@@ -89,7 +89,7 @@ The pilot is `tests/gpui_shell_mode_indicator.rs`. Reasons:
 A secondary candidate considered and **deferred**: `gpui_shell_quit_button.rs`.
 It only has a single observable outcome (`did_request_quit`), which would yield
 a one-scenario feature file. That offers little template value over the mode
-indicator. We mention it in the developers guide as the obvious next candidate
+indicator. The developers guide names it as the obvious next candidate
 once the pattern is in place.
 
 ## Workstreams
@@ -117,12 +117,12 @@ once the pattern is in place.
 
 ### B. Sweep `0.6.0` breaking changes
 
-1. **Implicit fixture-name normalisation.** Search the test tree for
+1. **Implicit fixture-name normalization.** Search the test tree for
    `_world`, `__world`, or any other underscore-prefixed parameter that
    currently relies on a literal underscore in a fixture key. Use
-   `rg -n '\b_+\w+\s*:\s*&?mut?\s*\w*World' tests crates` and inspect matches.
+   `rg -n '\b_+\w+\s*:' tests crates` and inspect matches.
    Where the underscore was only there to silence the unused-binding lint, no
-   source change is needed because the new normalisation rule still resolves to
+   source change is needed because the new normalization rule still resolves to
    the same key. Where the literal underscore *was* the key, add an explicit
    `#[from(_name)]` attribute. Existing `gauss` BDD tests (`a11y_service_bdd*`,
    `widget_capability_audit_bdd`, `undo_entry_count_bdd`, `i18n_bdd`) bind
@@ -220,7 +220,7 @@ narrowly scoped document. Sections:
    low-stakes place to apply the pattern.
 6. **Breaking changes to remember.** A one-page summary of the v0.6.0
    migration guide focused on what gauss contributors must know: underscore
-   fixture normalisation, `Default` requirement on harness types selected by
+   fixture normalization, `Default` requirement on harness types selected by
    macros, and the `Result`/`StepResult` fixture rules.
 7. **Running the gate.** Recap of the `make check-fmt`/`make lint`/`make
    test` triad with the `tee` log file convention from `AGENTS.md`.

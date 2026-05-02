@@ -196,8 +196,11 @@ fn then_mode_indicator_reads(
     expected: String,
 ) -> TestSupportResult<()> {
     let shell = world::with_world(|w| {
-        w.borrow().shell.clone().expect("shell not open")
-    });
+        w.borrow()
+            .shell
+            .clone()
+            .ok_or_else(|| TestSupportError::expectation("shell not open"))
+    })?;
     let actual = cx.read(|app| shell.read(app).mode_status_line_for_tests());
     if actual == expected {
         Ok(())
@@ -242,7 +245,7 @@ The next obvious candidate for this migration is `gpui_shell_quit_button`.
 
 A focused summary of the v0.6.0 changes that affect gauss contributors:
 
-- **Underscore fixture normalisation.** Parameters named `_world` in scenario or
+- **Underscore fixture normalization.** Parameters named `_world` in scenario or
   step signatures now resolve to the `world` fixture key, not `_world`. Use
   `#[from(_world)]` when a literal underscore-prefixed key is required.
 
