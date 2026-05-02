@@ -151,6 +151,12 @@ parameter name must differ from the fixture. Importing a symbol of the same
 name is not required; do not alias a function or item just to satisfy the
 compiler. Only the key stored in `StepContext` must match.
 
+Implicit fixture keys derived from scenario and step parameter names normalize
+at most one leading underscore. In practice, `world` and `_world` both resolve
+to the implicit fixture key `world`, while `__world` resolves to `_world`.
+Explicit `#[from(...)]` names remain exact and bypass this normalization, so
+`#[from(_world)]` still requests the literal `_world` fixture key.
+
 Internally, the step macros record the fixture names and generate wrapper code
 that, at runtime, retrieves references from a `StepContext`. This context is a
 key–value map of fixture names to type‑erased references. When a scenario runs,
@@ -277,7 +283,7 @@ fn last_input(world: &ReportWorld) {
   `crates/rstest-bdd/tests/mutable_world_macro.rs` for a guarded example and
   `crates/rstest-bdd/tests/mutable_fixture.rs` for the context‑level regression
   test used until the upstream fix lands. Tracking details live in
-  `docs/known-issues.md#rustc-ice-with-mutable-world-macro`.
+  `docs/known-issues.md#rustc-internal-compiler-error-ice-with-mutable-world-macro`.
 - For advanced cases—custom fixture injection or manual borrowing—use
   `StepContext::insert_owned` and `StepContext::borrow_mut` directly; the
   examples above cover most scenarios.
@@ -703,14 +709,16 @@ For migrations from a cucumber `World`, map the concepts as follows:
 ## Binding tests to scenarios
 
 The `#[scenario]` macro is the entry point that ties a Rust test function to a
-scenario defined in a `.feature` file. It accepts four arguments:
+scenario defined in a `.feature` file. It accepts six arguments:
 
-| Argument       | Purpose                                               | Status                                                                                    |
-| -------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `path: &str`   | Relative path to the feature file (required).         | **Implemented**: resolved and parsed at compile time.                                     |
-| `index: usize` | Optional zero-based scenario index (defaults to `0`). | **Implemented**: selects the scenario by position.                                        |
-| `name: &str`   | Optional scenario title; resolves when unique.        | **Implemented**: errors when missing and directs duplicates to `index`.                   |
-| `tags: &str`   | Optional tag-expression filter applied at expansion.  | **Implemented**: filters scenarios and outline example rows; errors when nothing matches. |
+| Argument           | Purpose                                                                | Status                                                                                                  |
+| ------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `path: &str`       | Relative path to the feature file (required).                          | **Implemented**: resolved and parsed at macro-expansion time.                                           |
+| `index: usize`     | Optional zero-based scenario index (defaults to `0`).                  | **Implemented**: selects the scenario by position.                                                      |
+| `name: &str`       | Optional scenario title; resolves when unique.                         | **Implemented**: errors when missing and directs duplicates to `index`.                                 |
+| `tags: &str`       | Optional tag-expression filter applied at expansion.                   | **Implemented**: filters scenarios and outline example rows; errors when nothing matches.               |
+| `harness: Path`    | Optional harness adapter type implementing `HarnessAdapter + Default`. | **Implemented**: emits trait-bound assertions and delegates execution when specified.                   |
+| `attributes: Path` | Optional attribute policy type implementing `AttributePolicy`.         | **Implemented**: emits a compile-time trait-bound assertion and resolves policy-backed test attributes. |
 
 Tag filters run at macro-expansion time against the union of tags on the
 feature, the matched scenario, and—when dealing with `Scenario Outline`—the
@@ -726,6 +734,351 @@ expression.
 #[scenario(path = "features/search.feature", tags = "@fast and not @wip")]
 fn smoke_test() {}
 ```
+
+### Harness adapter and attribute policy
+
+The `harness` and `attributes` parameters accept Rust type paths pointing to
+types that implement `HarnessAdapter` and `AttributePolicy` from the
+`rstest-bdd-harness` crate. These enable third-party framework integrations
+(per Architectural Decision Record (ADR-005)) without coupling the core crates
+to any specific runtime.
+
+Use them in this order of preference:
+
+- Omit both when the default synchronous `StdHarness` path is sufficient.
+- For first-party integrations, prefer `harness = ...` on its own and let the
+  macro infer the matching default attribute policy.
+- Add `attributes = ...` only when overriding the inferred default or
+  selecting an attribute policy without harness delegation.
+- Treat `runtime = "tokio-current-thread"` as legacy compatibility syntax for
+  `scenarios!`, not as the canonical configuration surface.
+
+When `harness` is specified, the generated test body delegates scenario
+execution through the harness adapter. The macro wraps the runtime portion of
+the test (context setup, step executor loop, skip handler, and user block) in a
+`ScenarioRunner` closure, constructs a `ScenarioRunRequest` with metadata
+(feature path, scenario name, line number, and tags), and calls
+`HarnessAdapter::run()`. The harness is instantiated via
+`<HarnessType as Default>::default()`, so the harness type must implement both
+`HarnessAdapter` and `Default`. The built-in `StdHarness` satisfies both
+requirements and simply executes the closure directly. `StdHarness` behavioural
+tests cover three guarantees: metadata remains visible on the request passed to
+the harness boundary, the runner closure executes once, and runner panics
+propagate unchanged. If a harness cannot initialize its runtime or framework
+environment, it returns `HarnessResult::Err(HarnessError::...)`; the generated
+test then panics with the concrete error detail because harness initialization
+is a fatal infrastructure error in this context.
+
+When `harness` is omitted, the generated code executes steps inline without any
+delegation, preserving backward compatibility.
+
+When `attributes` is specified, the macro resolves policy-backed test
+attributes. Currently this resolution is path-based:
+
+- the canonical `rstest_bdd_harness_tokio::TokioAttributePolicy` path emits
+  Tokio current-thread test attributes for async scenario signatures,
+- the canonical `rstest_bdd_harness_gpui::GpuiAttributePolicy` path emits
+  `#[gpui::test]` for synchronous and async scenario signatures, and
+- default and unknown policy paths emit `#[rstest::rstest]` only.
+
+When `attributes` is omitted, known first-party harnesses infer matching
+default attribute policies:
+
+- `rstest_bdd_harness::StdHarness` resolves to rstest-only emission,
+- `rstest_bdd_harness_tokio::TokioHarness` resolves to the Tokio
+  current-thread policy, and
+- `rstest_bdd_harness_gpui::GpuiHarness` resolves to the GPUI test policy.
+
+If the harness path is not one of those known first-party paths, the macro
+falls back to the existing `RuntimeMode` compatibility behaviour. This keeps
+the first-party Tokio compatibility path working while leaving third-party
+policy resolution explicit about its current limitation: arbitrary user-defined
+`AttributePolicy::test_attributes()` implementations are not evaluated during
+macro expansion.
+
+```rust,no_run
+# use rstest_bdd_macros::scenario;
+#[scenario(
+    path = "features/search.feature",
+    harness = rstest_bdd_harness::StdHarness,
+)]
+fn test_with_harness() {}
+```
+
+Both parameters are also accepted by `scenarios!`:
+
+```rust,no_run
+# use rstest_bdd_macros::scenarios;
+scenarios!(
+    "tests/features/auto",
+    harness = rstest_bdd_harness::StdHarness,
+);
+```
+
+#### Writing a custom harness adapter
+
+A custom harness adapter can intercept scenario execution to inject
+framework-specific setup and teardown. The harness type must implement both
+`HarnessAdapter` and `Default`:
+
+```rust,no_run
+use rstest_bdd_harness::{HarnessAdapter, HarnessResult, ScenarioRunRequest};
+
+#[derive(Default)]
+struct MyHarness;
+
+impl HarnessAdapter for MyHarness {
+    type Context = ();
+
+    fn run<T>(
+        &self,
+        request: ScenarioRunRequest<'_, Self::Context, T>,
+    ) -> HarnessResult<T> {
+        // Custom pre-scenario setup using request.metadata()
+        let result = request.run_without_context();
+        // Custom post-scenario teardown
+        Ok(result)
+    }
+}
+```
+
+Harness adapters must faithfully propagate the runner's return value inside
+`Ok(...)`. For fallible scenarios that return `Result<(), E>`, swallowing
+errors would cause tests to pass silently. Use `Err(HarnessError::...)` only
+for harness-level infrastructure failures, not for scenario assertion failures.
+When migrating pre-ADR-007 harness code, update `type Context`, the
+`ScenarioRunner` constructor signature, and the request execution helper
+together: unit-context harnesses (`StdHarness`, `TokioHarness`, and similar
+adapters using `Context = ()`) should call `run_without_context()`, while
+non-unit context harnesses should continue to use `request.run(context)`.
+
+If a custom harness also defines a custom attribute-policy type, document that
+policy separately for users. Today the generated macros only recognize the
+first-party canonical policy paths described above, so third-party policies
+still trait-check correctly but currently fall back to `#[rstest::rstest]`
+during code generation.
+
+### Using the Tokio harness
+
+The `rstest-bdd-harness-tokio` crate provides a ready-made Tokio integration.
+It is available as a dev-dependency:
+
+```toml
+[dev-dependencies]
+rstest-bdd-harness-tokio = "0.6.0-beta1"
+```
+
+`TokioHarness` can then be used directly in scenarios:
+
+```rust,no_run
+# use rstest_bdd_macros::scenario;
+#[scenario(
+    path = "tests/features/my_async.feature",
+    harness = rstest_bdd_harness_tokio::TokioHarness,
+)]
+fn my_tokio_scenario() {
+    // Steps execute inside a Tokio current-thread runtime.
+    // tokio::runtime::Handle::current() is available in step functions.
+}
+```
+
+`TokioHarness` builds a single-threaded Tokio runtime with a `LocalSet` per
+scenario invocation and executes the scenario runner inside it. When
+`attributes` is omitted, the macro infers
+`rstest_bdd_harness_tokio::TokioAttributePolicy` for this first-party harness.
+That policy emits `#[rstest::rstest]` and
+`#[tokio::test(flavor = "current_thread")]`.
+
+If the inferred Tokio default must be overridden explicitly, the
+`#[scenario(..., attributes = ...)]` attribute can select a different policy:
+
+```rust,no_run
+# use rstest_bdd_macros::scenario;
+#[scenario(
+    path = "tests/features/my_async.feature",
+    harness = rstest_bdd_harness_tokio::TokioHarness,
+    attributes = rstest_bdd_harness::DefaultAttributePolicy,
+)]
+fn my_tokio_scenario_with_explicit_override() {}
+```
+
+The explicit harness form above is the preferred configuration for new suites.
+The older `runtime = "tokio-current-thread"` form remains available only as a
+deprecated compatibility alias for `scenarios!`.
+
+`TokioHarness::run` performs one `tokio::task::yield_now()` tick after
+`request.run_without_context()` returns. This helps simple `spawn_local` tasks
+complete, but it does not fully drain the `LocalSet`. Tasks requiring
+additional wakeups (for example timers) may still be pending when `run()`
+returns, so steps should prefer explicit `.await`-based coordination when
+completion is required.
+
+For a complete working example, see the `examples/tokio-reminders` crate. Its
+BDD suite uses `TokioHarness` to exercise queued reminder behaviour under a
+Tokio current-thread runtime, while the crate's unit tests and doctest show the
+explicit `flush().await` pattern for multi-poll work that must complete before
+assertions run.
+
+> **Note:** combining `harness` with `async fn` scenario signatures produces
+> a compile error because `TokioHarness` runs synchronous scenario closures
+> inside a Tokio runtime — the harness owns the runtime, so the scenario
+> function itself must be synchronous. Step functions still have access to
+> `tokio::runtime::Handle::current()`, `tokio::spawn`, and
+> `tokio::task::spawn_local` without needing `async fn` signatures.
+>
+> Immediate-ready `async fn` step definitions are supported under
+> `TokioHarness`, but a harness-driven step that yields `Pending` will fail
+> with a runtime error. Use harness-driven async steps only for work that can
+> complete in one poll. For multi-poll async coordination, prefer synchronous
+> step definitions that trigger work and validate the richer async flow in
+> unit tests or in explicit `#[tokio::test]`-backed scenarios.
+>
+> For fully async scenarios (where the scenario function itself is
+> `async fn`), use **`#[scenario]`** with an explicit `#[tokio::test(flavor =
+> "current_thread")]` attribute — see [Using `#[scenario]` with
+> async](#using-scenario-with-async). For auto-discovered scenarios, use the
+> explicit harness form described in [Using the Tokio
+> harness](#using-the-tokio-harness), or annotate manual scenario tests with
+> `#[tokio::test]`.
+>
+> When `attributes` is specified, the macro resolves policy-backed test
+> attributes. `TokioAttributePolicy` emits
+> `#[tokio::test(flavor = "current_thread")]` for async scenario signatures.
+> For synchronous signatures (including harness-delegated scenarios), Tokio's
+> test attribute is omitted because Tokio requires `async fn`.
+
+### Using the GPUI harness
+
+The `rstest-bdd-harness-gpui` crate provides Graphical Processing User
+Interface (GPUI) integration for harness delegation and test attributes. Add it
+as a dev-dependency:
+
+```toml
+[dev-dependencies]
+rstest-bdd-harness-gpui = "0.6.0-beta1"
+```
+
+`GpuiHarness` can then be used directly in scenarios:
+
+```rust,no_run
+# use rstest_bdd_macros::scenario;
+#[scenario(
+    path = "tests/features/my_ui.feature",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
+fn my_gpui_scenario() {
+    // Steps execute with a gpui::TestAppContext injected by GpuiHarness.
+}
+```
+
+`GpuiHarness` delegates each scenario through `gpui::run_test`, constructs a
+`gpui::TestAppContext`, and passes it through `HarnessAdapter::Context`. When
+`attributes` is omitted, the macro infers
+`rstest_bdd_harness_gpui::GpuiAttributePolicy`. That policy emits
+`#[rstest::rstest]` and `#[gpui::test]`. The canonical
+`rstest_bdd_harness_gpui::GpuiAttributePolicy` path is recognized by the same
+path-based policy resolution used for Tokio, so the GPUI test attribute is
+available whether the scenario is synchronous or async. For `#[scenario]`, the
+equivalent absolute path `::rstest_bdd_harness_gpui::GpuiAttributePolicy` is
+also supported.
+
+If the inferred GPUI default must be overridden explicitly, the
+`#[scenario(..., attributes = ...)]` attribute can select a different policy:
+
+```rust,no_run
+# use rstest_bdd_macros::scenario;
+#[scenario(
+    path = "tests/features/my_ui.feature",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+    attributes = rstest_bdd_harness::DefaultAttributePolicy,
+)]
+fn my_gpui_scenario_with_explicit_override() {}
+```
+
+This contract is enforced by focused integration coverage in
+`crates/rstest-bdd/tests/trybuild_macros.rs` and
+`crates/rstest-bdd/tests/scenario_harness_gpui.rs`. Those suites verify GPUI
+attribute-policy resolution for `#[scenario]` and `scenarios!`, plus
+deduplication when a `#[scenario]` test already carries an explicit
+`#[gpui::test]`.
+
+For a complete working example, see the `examples/gpui-counter` crate, which
+models a simple counter application whose BDD suite exercises both
+`GpuiHarness` and `GpuiAttributePolicy` end-to-end. Step definitions in that
+example demonstrate accessing injected `TestAppContext` through the
+`#[from(rstest_bdd_harness_context)]` fixture key and recording
+harness-provided values (such as the dispatcher seed) in the domain model.
+
+> **Native-library setup:** this workspace uses a local GPUI test shim under
+> `vendor/gpui` that requires no additional native-library installation beyond
+> standard Rust toolchain components. Linux environments that link against the
+> full upstream GPUI crate may need X11 keyboard libraries (`libxcb1-dev`,
+> `libxkbcommon-dev`, `libxkbcommon-x11-dev` on Debian/Ubuntu), but the
+> workspace shim avoids that requirement.
+>
+> **Workspace note:** this repository uses a `version` plus `path` workspace
+> dependency for `gpui`, pointing local development at the shim under
+> `vendor/gpui` while retaining the crates.io version requirement used for
+> publication. The shim keeps the `run_test`, `TestAppContext`, and
+> `#[gpui::test]` APIs used by `rstest-bdd`, while publish-check automation
+> compiles a generated packaged harness validator against the upstream `gpui`
+> crate. GPUI-specific behavioural and integration suites remain feature-gated
+> behind `native-gpui-tests` and `gpui-harness-tests`.
+
+Harness-backed scenarios also expose harness context to step functions through
+a reserved fixture key: `rstest_bdd_harness_context`. The generated harness
+runner stores `HarnessAdapter::Context` in `StepContext` under that key before
+step execution starts.
+
+Use `#[from(rstest_bdd_harness_context)]` in step signatures to request the
+context with a domain-specific parameter name:
+
+```rust,no_run
+use rstest_bdd_harness::{HarnessAdapter, HarnessResult, ScenarioRunRequest};
+use rstest_bdd_macros::{given, scenario, then, when};
+
+#[derive(Debug)]
+struct AppContext {
+    counter: usize,
+}
+
+#[derive(Default)]
+struct AppHarness;
+
+impl HarnessAdapter for AppHarness {
+    type Context = AppContext;
+
+    fn run<T>(
+        &self,
+        request: ScenarioRunRequest<'_, Self::Context, T>,
+    ) -> HarnessResult<T> {
+        Ok(request.run(AppContext { counter: 7 }))
+    }
+}
+
+#[given("harness context starts at {n}")]
+fn starts_at(#[from(rstest_bdd_harness_context)] app: &AppContext, n: usize) {
+    assert_eq!(app.counter, n);
+}
+
+#[when("the context is incremented by {n}")]
+fn increment(#[from(rstest_bdd_harness_context)] app: &mut AppContext, n: usize) {
+    app.counter += n;
+}
+
+#[then("the context equals {n}")]
+fn equals(#[from(rstest_bdd_harness_context)] app: &AppContext, n: usize) {
+    assert_eq!(app.counter, n);
+}
+
+#[scenario(path = "tests/features/harness_context.feature", harness = AppHarness)]
+fn harness_context_flow() {}
+```
+
+Fixture extraction remains type-safe: the generated wrapper borrows the context
+fixture as the requested type. If the requested type does not match the
+harness-provided context type, execution fails with `StepError::MissingFixture`
+for that parameter.
 
 If the feature file cannot be found or contains invalid Gherkin, the macro
 emits a compile-time error with the offending path.
@@ -868,7 +1221,8 @@ For large suites, it is tedious to bind each scenario manually. The
 generates a module with a test for every `Scenario` found. Each test is named
 after the feature file and scenario title. Identifiers are sanitized
 (ASCII-only) and deduplicated by appending a numeric suffix when collisions
-occur.
+occur. The `dir` argument is resolved relative to `CARGO_MANIFEST_DIR` at
+macro-expansion time.
 
 ```rust,no_run
 use rstest_bdd_macros::{given, then, when, scenarios};
@@ -942,7 +1296,7 @@ fn counter() -> Counter {
     Counter::default()
 }
 
-#[given("a counter initialized to 0")]
+#[given("a counter initialised to 0")]
 fn init(counter: &mut Counter) {
     counter.value = 0;
 }
@@ -967,24 +1321,18 @@ The macro generates `#[rstest::rstest]` without duplicating
 
 ### Using `scenarios!` with async
 
-The `scenarios!` macro accepts a `runtime` argument to generate async tests for
-all discovered scenarios:
+**Deprecation notice:** The legacy `runtime = "tokio-current-thread"` argument
+is deprecated as of roadmap item 9.2.4. It now resolves to the explicit
+`harness = rstest_bdd_harness_tokio::TokioHarness` form and emits a
+compile-time warning. For new code, use the explicit harness form described in
+[Using the Tokio harness](#using-the-tokio-harness).
 
-```rust,no_run
-use rstest_bdd_macros::{given, then, when, scenarios};
-
-#[given("a precondition")] fn precondition() {}
-#[when("an action occurs")] fn action() {}
-#[then("events are recorded")] fn events() {}
-
-scenarios!("tests/features/auto", runtime = "tokio-current-thread");
-```
-
-When `runtime = "tokio-current-thread"` is specified:
-
-- Generated test functions are `async fn`.
-- Each test is annotated with `#[tokio::test(flavor = "current_thread")]`.
-- Steps execute sequentially within the single-threaded Tokio runtime.
+The deprecated `runtime = "tokio-current-thread"` syntax generates synchronous
+(not `async fn`) test functions executed via `TokioHarness`. Async step
+definitions (`async fn`) are not supported. For async scenario tests, use
+explicit `async fn` scenario tests with `#[tokio::test]` annotation, or use the
+explicit `harness = rstest_bdd_harness_tokio::TokioHarness` form with
+synchronous steps that drive async work via `tokio::spawn_local`.
 
 ### Recommended patterns for async work in steps
 
@@ -1023,9 +1371,10 @@ fn end_stream(stream_end: &StreamEnd) {
     stream_end.trigger();
 }
 
+// Note: runtime = "tokio-current-thread" is deprecated; prefer explicit harness form
 scenarios!(
     "tests/features/streams.feature",
-    runtime = "tokio-current-thread",
+    harness = rstest_bdd_harness_tokio::TokioHarness,
     fixtures = [stream_end]
 );
 ```
@@ -1033,9 +1382,8 @@ scenarios!(
 - **Use a per-step runtime only in synchronous scenarios:** When an async-only
   step runs under a synchronous scenario, `rstest-bdd` falls back to a per-step
   Tokio runtime and blocks on the step. Avoid building additional runtimes
-  inside an async scenario because Tokio panics with
-  `Cannot start a runtime from within a runtime`. For async scenarios, prefer
-  async steps, async fixtures, or the async test body.
+  inside an async scenario because nested runtimes can fail. For async
+  scenarios, prefer async steps, async fixtures, or the async test body.
 
 ```rust,no_run
 use rstest_bdd_macros::when;
@@ -1163,6 +1511,89 @@ fn async_wrapper_with_aliases<'ctx>(
   runtime is already active on the current thread.
 - **No `async_std` runtime:** Only Tokio is supported at present.
 
+## Harness adapter core APIs
+
+Architectural Decision Record (ADR-005) introduces a harness adapter layer, so
+framework integrations can live in opt-in crates. Phase 9.1 ships the core
+contracts in `rstest-bdd-harness`.
+
+`#[scenario]` and `scenarios!` now support harness and attribute-policy macro
+parameters. The legacy `runtime = "tokio-current-thread"` argument in
+`scenarios!` remains supported as compatibility syntax for Tokio harness
+selection. The core crate remains immediately useful for adapter authors
+building Tokio, Graphical Processing User Interface (GPUI), or other harness
+plug-ins.
+
+### Defining a harness adapter
+
+Use `HarnessAdapter` with `ScenarioRunRequest<'a, C, T>` and
+`ScenarioRunner<'a, C, T>` to execute one scenario closure inside the harness
+environment. `C` is the harness-specific context type:
+
+```rust,no_run
+use rstest_bdd_harness::{
+    HarnessAdapter, HarnessResult, ScenarioMetadata, ScenarioRunRequest, ScenarioRunner,
+};
+
+struct MyHarness;
+
+impl HarnessAdapter for MyHarness {
+    type Context = ();
+
+    fn run<T>(
+        &self,
+        request: ScenarioRunRequest<'_, Self::Context, T>,
+    ) -> HarnessResult<T> {
+        // Optional harness-specific setup using request.metadata().
+        Ok(request.run_without_context())
+    }
+}
+
+let request = ScenarioRunRequest::new(
+    ScenarioMetadata::new(
+        "tests/features/login.feature",
+        "Successful login",
+        12,
+        vec!["@smoke".to_string()],
+    ),
+    ScenarioRunner::new(|()| "ok"),
+);
+
+let harness = MyHarness;
+assert_eq!(harness.run(request).expect("harness should not fail"), "ok");
+```
+
+Harnesses that need framework resources can choose a non-unit context type and
+pass it through `request.run(context)`. For example, a GPUI harness can use
+`TestAppContext`, and a Bevy harness can use `bevy::ecs::World`.
+
+The built-in `StdHarness` implements the same trait and runs the closure
+synchronously without an async runtime or UI harness.
+
+This user guide focuses on how to use the delivered harness API. The design
+document records the underlying trust model and architectural rationale, in
+particular the path-based first-party policy mapping and the associated
+`Context` handoff introduced by ADR-007.
+
+### Defining an attribute policy
+
+`AttributePolicy` supplies test attributes that macro expansion should apply.
+The default policy emits only `#[rstest::rstest]`:
+
+```rust,no_run
+use rstest_bdd_harness::{AttributePolicy, DefaultAttributePolicy};
+
+let attrs = DefaultAttributePolicy::test_attributes();
+assert_eq!(attrs.len(), 1);
+assert_eq!(attrs[0].render(), "#[rstest::rstest]");
+```
+
+Adapter crates can define custom policies with additional attributes, such as
+Tokio runtime options, while keeping those dependencies out of the core
+`rstest-bdd` crates. At present, macro code generation recognizes only the
+first-party canonical policy paths for Tokio and GPUI; unknown third-party
+policy paths fall back to `#[rstest::rstest]`.
+
 ## Running and maintaining tests
 
 Once feature files and step definitions are in place, scenarios run via the
@@ -1183,14 +1614,14 @@ To enable validation, pin a feature in the project's `dev-dependencies`:
 
 ```toml
 [dev-dependencies]
-rstest-bdd-macros = { version = "0.5.0", features = ["compile-time-validation"] }
+rstest-bdd-macros = { version = "0.6.0-beta1", features = ["compile-time-validation"] }
 ```
 
 For strict checking use:
 
 ```toml
 [dev-dependencies]
-rstest-bdd-macros = { version = "0.5.0", features = ["strict-compile-time-validation"] }
+rstest-bdd-macros = { version = "0.6.0-beta1", features = ["strict-compile-time-validation"] }
 ```
 
 Steps are only validated when one of these features is enabled.
@@ -1583,7 +2014,7 @@ Localization tooling can be added to `Cargo.toml` as follows:
 
 ```toml
 [dependencies]
-rstest-bdd = "0.5.0"
+rstest-bdd = "0.6.0-beta1"
 i18n-embed = { version = "0.16", features = ["fluent-system", "desktop-requester"] }
 unic-langid = "0.9"
 ```
@@ -1713,16 +2144,37 @@ The binary `rstest-bdd-lsp` is placed in the Cargo bin directory.
 
 The server reads configuration from environment variables:
 
-| Variable                     | Description                                         | Default |
-| ---------------------------- | --------------------------------------------------- | ------- |
-| `RSTEST_BDD_LSP_LOG_LEVEL`   | Logging verbosity (trace, debug, info, warn, error) | `info`  |
-| `RSTEST_BDD_LSP_DEBOUNCE_MS` | Delay (ms) before processing file changes           | `300`   |
+| Variable                        | Description                                         | Default |
+| ------------------------------- | --------------------------------------------------- | ------- |
+| `RSTEST_BDD_LSP_LOG_LEVEL`      | Logging verbosity (trace, debug, info, warn, error) | `info`  |
+| `RSTEST_BDD_LSP_DEBOUNCE_MS`    | Delay (ms) before processing file changes           | `300`   |
+| `RSTEST_BDD_LSP_WORKSPACE_ROOT` | Override workspace root path for discovery          | (auto)  |
 
 Example:
 
 ```bash
 RSTEST_BDD_LSP_LOG_LEVEL=debug rstest-bdd-lsp
 ```
+
+### Command-line options
+
+The server also accepts command-line flags that override environment variables:
+
+```bash
+rstest-bdd-lsp --log-level debug --debounce-ms 100 --workspace-root /path/to/project
+```
+
+| Flag               | Description                                            | Default |
+| ------------------ | ------------------------------------------------------ | ------- |
+| `--log-level`      | Logging verbosity (trace, debug, info, warn, error)    | `info`  |
+| `--debounce-ms`    | Delay (ms) before processing file changes              | `300`   |
+| `--workspace-root` | Override workspace root path; bypasses LSP client root | (auto)  |
+
+Configuration precedence: Default → Environment variables → CLI flags.
+
+The `--workspace-root` flag overrides the LSP client's root URI and workspace
+folders for workspace discovery. This is useful when the editor sends incorrect
+paths or during headless or scripted testing scenarios.
 
 ### Editor integration
 
@@ -1762,6 +2214,31 @@ end
 
 lspconfig.rstest_bdd.setup({})
 ```
+
+#### Zed
+
+Zed uses its extension system to register language servers. Configure the
+binary via Zed's `settings.json`:
+
+```json
+{
+  "lsp": {
+    "rstest-bdd-lsp": {
+      "binary": {
+        "path": "rstest-bdd-lsp",
+        "arguments": ["--log-level", "info"]
+      }
+    }
+  },
+  "languages": {
+    "Rust": {
+      "language_servers": ["rust-analyzer", "rstest-bdd-lsp", "..."]
+    }
+  }
+}
+```
+
+Diagnostics and navigation require saving files to trigger indexing.
 
 ### Current capabilities
 
@@ -1814,7 +2291,7 @@ of locations to choose from.
 - Patterns with placeholders (e.g., `"I have {count:u32} items"`) match feature
   steps using the same regex semantics as the runtime.
 
-#### Go to implementation (feature → Rust)
+#### Go to Implementation (Feature → Rust)
 
 The inverse navigation—from feature steps to Rust implementations—is provided
 via the `textDocument/implementation` handler. This enables developers to jump
