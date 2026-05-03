@@ -1014,6 +1014,26 @@ Design decisions:
   `len()` remains unchanged while a group is active and increments by one on
   commit.
 
+#### 7.3.2.1 UI surfacing of history errors
+
+`handle_history_result()` in `src/ui/phase0_shell/draw/mod.rs` pattern-matches
+on `Result<(), HistoryError>` and stores failures in
+`Phase0Shell::last_history_error` (a `String`) and `last_history_error_typed`
+(the full `HistoryError` enum).  Successful operations clear both fields.
+
+These errors are surfaced to the user through the shell status bar:
+`file_status_line()` in `src/ui/phase0_shell/view.rs` returns
+`"History error: {message}"` whenever `last_history_error` is set.  History
+errors take priority over all other file statuses (save/open errors); this
+precedence is verified by `file_status_line_precedence` in
+`src/ui/phase0_shell/view_tests.rs`.
+
+The same path covers `apply_tool_commands()` in
+`src/ui/phase0_shell/tool_commands.rs`, which records errors from tool-driven
+`ApplyDocumentCommand` failures into `last_history_error`, and
+`apply_command()` in `draw/mod.rs`, which clears the error on successful edits
+to provide a recovery path after a prior failure.
+
 Validation coverage now includes:
 
 - model tests for grouped undo/redo batch semantics and boundary errors,
