@@ -1023,7 +1023,7 @@ on `Result<(), HistoryError>` and stores failures in
 
 These errors are surfaced to the user through the shell status bar:
 `file_status_line()` in `src/ui/phase0_shell/view.rs` returns
-`"History error: {message}"` whenever `last_history_error` is set.  History
+`"History error: {error}"` whenever `last_history_error` is set.  History
 errors take priority over all other file statuses (save/open errors); this
 precedence is verified by `file_status_line_precedence` in
 `src/ui/phase0_shell/view_tests.rs`.
