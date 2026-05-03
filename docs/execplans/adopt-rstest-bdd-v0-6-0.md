@@ -89,7 +89,7 @@ The pilot is `tests/gpui_shell_mode_indicator.rs`. Reasons:
 A secondary candidate considered and **deferred**: `gpui_shell_quit_button.rs`.
 It only has a single observable outcome (`did_request_quit`), which would yield
 a one-scenario feature file. That offers little template value over the mode
-indicator. The developers guide names it as the obvious next candidate
+indicator. The developer's guide names it as the obvious next candidate
 once the pattern is in place.
 
 ## Workstreams
@@ -137,7 +137,7 @@ once the pattern is in place.
    on first-party `GpuiHarness`, so no `HarnessResult<T>` migration is needed
    in tree.
 4. **Result-returning fixtures.** No change required for adoption; flag in
-   the developers guide as an available pattern but do not introduce one
+   the developer's guide as an available pattern but do not introduce one
    speculatively.
 5. Run the full gate after this sweep before starting the pilot migration.
    Commit any in-tree fix-ups separately from the pilot.
@@ -178,14 +178,14 @@ once the pattern is in place.
    `test-support`, so check whether `cargo test` on the existing Linux runner
    already links those libraries (it does, since the current `#[gpui::test]`
    tests already run there). If a new native dependency surfaces, document it
-   in the developers guide; do not silently add apt-package requirements.
+   in the developer's guide; do not silently add apt-package requirements.
 6. **Run the gate.** `make check-fmt`, `make lint`, `make test`, in that
    order, with output captured via `tee` per repo guidance. Commit the pilot as
    a single atomic change once green.
 
 ### D. Documentation: new `docs/developers-guide.md`
 
-Create a top-level developers guide focused on testing patterns and the new BDD
+Create a top-level developer's guide focused on testing patterns and the new BDD
 harness adoption. The widget-audit-developer-guide.md remains as its own
 narrowly scoped document. Sections:
 
@@ -231,7 +231,7 @@ columns and code blocks at 120, and runs through `make markdownlint` and
 
 ### E. Cross-document updates
 
-1. Add a one-line reference to the new developers guide from
+1. Add a one-line reference to the new developer's guide from
    `docs/users-guide.md` (or wherever a "Contributing/testing" pointer
    currently lives) so it is discoverable.
 2. Update `docs/roadmap.md` only if it currently calls out the rstest-bdd

@@ -21,7 +21,7 @@ Gauss uses three test styles, each with a distinct role:
   benefit from Gherkin readability.
 
 - **`rstest`-based unit tests** — pure Rust unit tests (`#[cfg(test)] mod tests`
-  blocks) using `rstest` fixtures and `#[rstest::rstest]` parameterisation.
+  blocks) using `rstest` fixtures and `#[rstest::rstest]` parameterization.
   These test isolated logic in `gauss-core` and `gauss-svg`.
 
 - **`rstest-bdd` behavioural tests** — Gherkin `.feature` files backed by step
