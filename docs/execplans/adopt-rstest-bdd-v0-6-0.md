@@ -89,8 +89,8 @@ The pilot is `tests/gpui_shell_mode_indicator.rs`. Reasons:
 A secondary candidate considered and **deferred**: `gpui_shell_quit_button.rs`.
 It only has a single observable outcome (`did_request_quit`), which would yield
 a one-scenario feature file. That offers little template value over the mode
-indicator. The developer's guide names it as the obvious next candidate
-once the pattern is in place.
+indicator. The developer's guide names it as the obvious next candidate once
+the pattern is in place.
 
 ## Workstreams
 
@@ -120,11 +120,11 @@ once the pattern is in place.
 1. **Implicit fixture-name normalization.** Search the test tree for
    `_world`, `__world`, or any other underscore-prefixed parameter that
    currently relies on a literal underscore in a fixture key. Use
-   `rg -n '\b_+\w+\s*:' tests crates` and inspect matches.
-   Where the underscore was only there to silence the unused-binding lint, no
-   source change is needed because the new normalization rule still resolves to
-   the same key. Where the literal underscore *was* the key, add an explicit
-   `#[from(_name)]` attribute. Existing `gauss` BDD tests (`a11y_service_bdd*`,
+   `rg -n '\b_+\w+\s*:' tests crates` and inspect matches. Where the underscore
+   was only there to silence the unused-binding lint, no source change is
+   needed because the new normalization rule still resolves to the same key.
+   Where the literal underscore *was* the key, add an explicit `#[from(_name)]`
+   attribute. Existing `gauss` BDD tests (`a11y_service_bdd*`,
    `widget_capability_audit_bdd`, `undo_entry_count_bdd`, `i18n_bdd`) bind
    `world: &mut Foo` without a leading underscore, so this is expected to be a
    low-friction sweep.
@@ -185,8 +185,8 @@ once the pattern is in place.
 
 ### D. Documentation: new `docs/developers-guide.md`
 
-Create a top-level developer's guide focused on testing patterns and the new BDD
-harness adoption. The widget-audit-developer-guide.md remains as its own
+Create a top-level developer's guide focused on testing patterns and the new
+BDD harness adoption. The widget-audit-developer-guide.md remains as its own
 narrowly scoped document. Sections:
 
 1. **Purpose and audience.** One paragraph: this guide is for contributors
@@ -275,8 +275,9 @@ Capture each invocation as `/tmp/$ACTION-gauss-adopt-rstest-bdd-v0-6-0.out` per
   this work lands, pause adoption and re-plan.
 - **Native libraries.** Confirm during workstream C that the existing
   Linux test environment already provides any X11/xkbcommon libraries the GPUI
-  harness needs. If not, document the apt-package requirement in the developers
-  guide and the runner setup; do not paper over a missing dependency.
+  harness needs. If not, document the apt-package requirement in the
+  developer's guide and the runner setup; do not paper over a missing
+  dependency.
 - **`Default` requirement.** `GpuiHarness` is selected by path, so the
   macro instantiates it with `Default`. Confirm the upstream
   `rstest-bdd-harness-gpui` crate derives `Default` on `GpuiHarness` (the
@@ -305,18 +306,28 @@ Capture each invocation as `/tmp/$ACTION-gauss-adopt-rstest-bdd-v0-6-0.out` per
 
 ### FixtureRefMut borrow conflict (discovered during workstream C)
 
-`StepContext::borrow_mut` takes `&mut self` and returns a `FixtureRefMut`
-that borrows `self` for its lifetime. A step that requests two mutable
-fixtures (e.g. `&mut TestAppContext` from the harness and `&mut ShellWorld`
-from a world fixture) triggers E0499 because the first `FixtureRefMut`'s
-borrow on `StepContext` prevents the second `borrow_mut` call.
+`StepContext::borrow_mut` takes `&mut self` and returns a `FixtureRefMut` that
+borrows `self` for its lifetime. A step that requests two mutable fixtures
+(e.g. `&mut TestAppContext` from the harness and `&mut ShellWorld` from a world
+fixture) triggers E0499 because the first `FixtureRefMut`'s borrow on
+`StepContext` prevents the second `borrow_mut` call.
 
-**Resolution:** Store the world in a thread-local `RefCell` rather than
-as a `StepContext` fixture. Each step then borrows only one mutable fixture
-from `StepContext` — the harness context. Thread-local storage is safe
-because each GPUI integration test runs on a single thread.
+**Resolution:** Store the world in a thread-local `RefCell` rather than as a
+`StepContext` fixture. Each step then borrows only one mutable fixture from
+`StepContext` — the harness context. Thread-local storage is safe because each
+GPUI integration test runs on a single thread.
 
-This pattern is documented in the `Thread-local world (and why)` section
-of `docs/developers-guide.md`. The `scenario!` macro (auto-discovery) is
-not yet validated with this pattern; individual `#[scenario]` bindings
-are used for now.
+**Reset protocol:** The `WORLD` thread-local persists for the lifetime of the
+thread, so scenarios can inherit stale `Option` fields after an early exit.
+Implement `pub(crate) fn reset_world()` in
+`tests/gpui_shell_mode_indicator_bdd/world.rs` to write `ShellWorld::default()`
+back into that `RefCell`, and invoke `world::reset_world()` as the first
+statement in every `#[given]` step in
+`tests/gpui_shell_mode_indicator_bdd/steps.rs`, before assigning new handles.
+The reset targets the same `RefCell` the steps read through
+`world::with_world`; it does not replace the harness context that `StepContext`
+still borrows exclusively as `&mut TestAppContext`.
+
+This pattern is documented in the `Thread-local world (and why)` section of
+`docs/developers-guide.md`. The `scenario!` macro (auto-discovery) is not yet
+validated with this pattern; individual `#[scenario]` bindings are used for now.

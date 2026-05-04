@@ -13,6 +13,7 @@ use test_support::{TestSupportError, TestSupportResult};
 fn given_shell_open(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> TestSupportResult<()> {
+    world::reset_world();
     init_test_app(cx);
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);

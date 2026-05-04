@@ -11,7 +11,10 @@
 //! error.
 
 mod common;
+
 mod gpui_shell_mode_indicator_bdd {
+    //! Companion modules for BDD steps and shared thread-local world state.
+
     pub(crate) mod steps;
     pub(crate) mod world;
 }

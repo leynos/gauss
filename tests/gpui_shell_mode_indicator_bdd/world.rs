@@ -24,6 +24,14 @@ thread_local! {
     static WORLD: RefCell<ShellWorld> = RefCell::new(ShellWorld::default());
 }
 
+/// Resets the thread-local world to its default state.
+///
+/// Call this at the start of every `#[given]` step to guarantee a clean
+/// slate even when a previous scenario terminated early.
+pub(crate) fn reset_world() {
+    WORLD.with(|w| *w.borrow_mut() = ShellWorld::default());
+}
+
 /// Returns a reference to the thread-local world.
 ///
 /// Each GPUI integration test runs on a single thread, so thread-local

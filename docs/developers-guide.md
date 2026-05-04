@@ -143,6 +143,48 @@ through a single `use`-imported function. Each step then borrows only one
 mutable fixture from `StepContext` — the harness context. Thread-local storage
 is safe because each GPUI integration test runs on a single thread.
 
+Steps receive at most **one** mutable fixture from generated `StepContext` code
+(`&mut TestAppContext` from the harness). The shared world sits **outside**
+that borrow, so use `world::reset_world()` and `world::with_world(...)`, not a
+method on `StepContext` itself.
+
+Every `#[given]` implementation **must** call `world::reset_world()` as its
+**first** operation, then perform harness setup and only then assign handles
+into the thread-local `RefCell` (for example via
+`world::with_world(|cell| { … })`). That order avoids cross-scenario bleed when
+a preceding scenario exited before its `Given` step finished filling every
+`Option`, and avoids relying on incomplete assignments alone: if the `Given`
+panics midway, leftover values persist until the next `reset_world()`.
+
+Shape (matches the pilot `given_shell_open`):
+
+```rust
+#[given("the Phase 0 shell is open")]
+fn given_shell_open(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> TestSupportResult<()> {
+    world::reset_world();
+    init_test_app(cx);
+    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| {
+        Phase0Shell::new(view_cx)
+    });
+    ensure_initial_draw(visual_cx);
+    let window = cx
+        .windows()
+        .first()
+        .copied()
+        .ok_or_else(|| TestSupportError::expectation("window after add_window_view"))?;
+    world::with_world(|cell| {
+        let mut world_ref = cell.borrow_mut();
+        world_ref.shell = Some(view);
+        world_ref.window = Some(window);
+    });
+    Ok(())
+}
+```
+
+`world.rs` holds the primitives the step calls:
+
 ```rust
 // world.rs
 use std::cell::RefCell;
@@ -164,6 +206,10 @@ thread_local! {
     static WORLD: RefCell<ShellWorld> = RefCell::new(ShellWorld::default());
 }
 
+pub(crate) fn reset_world() {
+    WORLD.with(|w| *w.borrow_mut() = ShellWorld::default());
+}
+
 pub(crate) fn with_world<F, R>(f: F) -> R
 where
     F: FnOnce(&RefCell<ShellWorld>) -> R,
@@ -172,9 +218,10 @@ where
 }
 ```
 
-Steps use `world::with_world(|w| { … })` to read or mutate the world without
-going through `StepContext`. The world resets naturally since each thread
-starts with a fresh `RefCell`.
+`When` and `Then` steps use `world::with_world(|w| { … })` to read or update
+stored handles without touching `StepContext` for a second mutable borrow. The
+same `WORLD` slot survives across successive scenarios on that thread, so
+clearing it in every `#[given]` (as above) is mandatory.
 
 ### Reusing helpers from `tests/common/mod.rs`
 
