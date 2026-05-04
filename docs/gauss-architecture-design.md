@@ -1014,6 +1014,45 @@ Design decisions:
   `len()` remains unchanged while a group is active and increments by one on
   commit.
 
+#### 7.3.2.1 UI surfacing of history errors
+
+`handle_history_result()` in `src/ui/phase0_shell/draw/mod.rs` pattern-matches
+on `Result<(), HistoryError>` and stores failures in
+`Phase0Shell::last_history_error` (a `String`) and `last_history_error_typed`
+(the full `HistoryError` enum).  Successful operations clear both fields.
+
+These errors are surfaced to the user through the shell status bar:
+`file_status_line()` in `src/ui/phase0_shell/view.rs` returns
+`"History error: {error}"` whenever `last_history_error` is set.  History
+errors take priority over all other file statuses (save/open errors); this
+precedence is verified by `file_status_line_precedence` in
+`src/ui/phase0_shell/view_tests.rs`.
+
+The same path covers `apply_tool_commands()` in
+`src/ui/phase0_shell/tool_commands.rs`, which records errors from tool-driven
+`ApplyDocumentCommand` failures into `last_history_error`, and
+`apply_command()` in `draw/mod.rs`, which clears the error on successful edits
+to provide a recovery path after a prior failure.
+
+The current approach has known limitations.  Because the status bar
+clears the error on the next successful command, a persistent replay
+failure (e.g. `UndoReplayFailed`) may be silently overwritten without
+the user taking any recovery action.  There is no programmatic hook for
+callers outside `Phase0Shell` to observe or react to history errors, and
+the typed `last_history_error_typed` field is not yet used to drive
+distinct UI affordances such as disabling undo/redo controls after a
+replay failure.
+
+The preferred future direction is structured error propagation through
+the command bus so that subscribers — scripting, tests, future panels —
+can react to history drift.  On `UndoReplayFailed` or
+`RedoReplayFailed` the affected history direction should be disabled in
+the toolbar and menu, accompanied by a "clear history" action rather
+than silently leaving the stack in an indeterminate state.  This aligns
+with §7.1's design decision to use typed `HistoryError` variants instead
+of untyped strings, and prepares the architecture for the
+macro-recording and scripting integrations described in §13.
+
 Validation coverage now includes:
 
 - model tests for grouped undo/redo batch semantics and boundary errors,

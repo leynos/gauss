@@ -242,8 +242,7 @@ From `view.rs`:
 - `view.rs` `MessageId::tool_status_mode()` → `tool.status.mode` →
   "Mode: {tool}"
 - `view.rs` `FileStatus::HistoryError { error }` →
-  `status.history_error` →
-  "History error: {error}"
+  `status.history_error` → "History error: {error}"
 - `view.rs` `FileStatus::SaveFailed { error }` → `status.save_failed` →
   "Save failed: {error}"
 - `view.rs` `FileStatus::OpenFailed { error }` → `status.open_failed` →
@@ -259,8 +258,7 @@ From `a11y_service/tree_builder.rs`:
 - `a11y_service::tree_builder` `shape_list_label` → `a11y.shape_list` →
   "Shapes"
 - `a11y_service::tree_builder` `shape_label` default template →
-  `a11y.shape_item` →
-  "Shape {index}"
+  `a11y.shape_item` → "Shape {index}"
 - `a11y_service::tree_builder` `window_title` →
   `a11y.window_title` → "Gauss"
 
