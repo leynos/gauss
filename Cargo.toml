@@ -89,7 +89,7 @@ gauss-core = { version = "0.1.0", path = "crates/gauss-core" }
 gauss-svg = { version = "0.1.0", path = "crates/gauss-svg" }
 gpui = "0.2.2"
 gpui-component = "0.5.1"
-log = "0.4.29"
+log = "0.4.31"
 thiserror = "2.0.18"
 
 [dev-dependencies]
