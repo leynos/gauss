@@ -91,7 +91,7 @@ groundwork for future products.
   that elements are reachable and announced correctly. (See Apple's VoiceOver
   developer guide
   ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext))
-  for expected behavior.)
+  for expected behaviour.)
 
 - **Linux (AT-SPI2):** All widgets expose correct **AT-SPI roles, states, and
   actions** on the accessibility bus. Text components implement the

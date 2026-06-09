@@ -76,8 +76,9 @@ phases.
   tools; Illustrator 10 itself emphasized improved SVG
   support([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=Illustrator%20now%20offers%20better%20support,and%20improvements%20abound%20as%20well)).
   In this phase, SVG is sufficient to represent the basic shapes, groups, and
-  style properties we have. (In later phases, we will evaluate if SVG can still
-  capture all advanced features or if an alternative open format is needed.)
+  current style properties. (In later phases, the plan will evaluate whether
+  SVG can still capture all advanced features or if an alternative open format
+  is needed.)
 
 - **Cross-Platform UI Framework:** Stand up the application shell using **GPUI
   and GPUI Component**. Create the main window with a toolbox (toolbar), canvas
@@ -290,7 +291,7 @@ geometric control or artistic effects.
   big **pain point** in manual drawing (as one reviewer noted, they saved
   “hours… tweaking points” by automating
   distortion([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=to%20the%20wonderful%20,be%20made%20to%20an%20illustration))).
-  We prioritize them here to position Gauss as a serious creative tool.
+  They are prioritized here to position Gauss as a serious creative tool.
 
 - **Envelope and Warp Effects:** Introduce the ability to **warp shapes by
   envelopes or preset warps**. Illustrator 10 had menu commands (or effects)
