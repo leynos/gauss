@@ -696,6 +696,32 @@ For the v0.6.0 or v1.0.0 roadmap:
   tests use a two-argument closure (`|_window, view_cx| ...`); the guide should
   state which gpui versions map to which arity, or the discrepancy costs every
   adopter a compile-error round trip.
+- **Build invalidation / `#[scenario]` macro (v0.6.x, high priority):** make
+  feature-file edits trigger a rebuild of the scenario binary. Cargo's
+  fingerprinting tracks Rust sources and declared inputs, but the
+  `#[scenario(path = "…")]` macro reads the `.feature` file with ordinary
+  filesystem I/O, so cargo cannot see the dependency. As observed in Stage C
+  (Surprises & Discoveries and Outcomes), a corrupted expectation can appear to
+  *pass* from cache until an unrelated `.rs` file is touched — a silent, severe
+  foot-gun for a testing framework. Prefer making the fix invisible to
+  consumers rather than a per-crate obligation:
+  1. *Macro-emitted `include_str!` (preferred).* Have the macro emit an
+     `include_str!("…/foo.feature")` (even to a discarded `const`); cargo tracks
+     `include_str!` paths for rebuild purposes, so this closes the loop with no
+     consumer action and cannot be forgotten.
+  2. *Shipped `build.rs` helper (fallback / complement).* Offer a build-script
+     helper that scans the features directory and emits
+     `cargo::rerun-if-changed=<dir>` plus a per-file line for each `.feature`.
+  The sibling project [`theoremc`](https://github.com/leynos/theoremc) already
+  solves the identical problem for its `.theorem` files and is a ready
+  reference: its `build.rs` always emits `cargo::rerun-if-changed=theorems`
+  (even when the directory is absent), adds nested directories and every
+  discovered file "for robustness across Cargo versions and edge cases", and
+  pairs that with a generated `OUT_DIR` suite compiled via `include!()` so the
+  macro never reads an untracked file behind cargo's back. Notably `theoremc`
+  treats invalidation as a *tested contract* (`tests/build_discovery_bdd.rs`
+  asserts the exact `rerun-if-changed=` lines); rstest-bdd should adopt the same
+  pattern and add a regression test for it.
 
 ## Interfaces and dependencies
 
