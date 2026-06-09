@@ -75,7 +75,7 @@ phases.
   native document format). Using SVG ensures immediate compatibility with other
   tools; Illustrator 10 itself emphasized improved SVG
   support([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=Illustrator%20now%20offers%20better%20support,and%20improvements%20abound%20as%20well)).
-   In this phase, SVG is sufficient to represent the basic shapes, groups, and
+  In this phase, SVG is sufficient to represent the basic shapes, groups, and
   style properties we have. (In later phases, we will evaluate if SVG can still
   capture all advanced features or if an alternative open format is needed.)
 
@@ -275,7 +275,7 @@ geometric control or artistic effects.
 - For each specific tool, define the transform: e.g. Twirl rotates points
   around the
   cursor([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=What%20really%20caught%20my%20eye,be%20made%20to%20an%20illustration)),
-   Bloat moves points outward from centre (inflating the shape), etc.
+  Bloat moves points outward from centre (inflating the shape), etc.
 
 - Use the GPU if possible for performance, but as these modify vector data,
   likely this is done on the CPU and then the result rendered. Efficiency is
@@ -290,7 +290,7 @@ geometric control or artistic effects.
   big **pain point** in manual drawing (as one reviewer noted, they saved
   “hours… tweaking points” by automating
   distortion([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=to%20the%20wonderful%20,be%20made%20to%20an%20illustration))).
-   We prioritize them here to position Gauss as a serious creative tool.
+  We prioritize them here to position Gauss as a serious creative tool.
 
 - **Envelope and Warp Effects:** Introduce the ability to **warp shapes by
   envelopes or preset warps**. Illustrator 10 had menu commands (or effects)
@@ -333,7 +333,7 @@ geometric control or artistic effects.
   **Magic Wand tool** and other selection aids. The Magic Wand in Illustrator
   allows selecting all objects with similar fill/stroke or other
   attributes([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=Moving%20along%20the%20toolbar%20Photoshop,%E2%80%94%20variations%20to%20be%20selected)).
-   It’s not used by beginners often, but it’s an **essential overlooked
+  It’s not used by beginners often, but it’s an **essential overlooked
   utility** for complex illustrations (e.g. quickly select all text of a
   certain color). Implement a Magic Wand that by default selects by fill color
   (and later allow criteria like stroke or opacity). Also, consider adding
@@ -371,13 +371,13 @@ geometric control or artistic effects.
 adding **creative vector manipulation tools**. Users can now do much more than
 basic shapes: they can combine shapes into new ones, create smooth blends, and
 apply funky distortions for artistic effect. Many of these features (liquify
-tools, blends) were distinguishing features of Illustrator
-10.[1][illustrator-6] Thus Gauss now stands on par in offering advanced
-creative freedom. The underlying implementation of effects and operations
-emphasizes reusability (e.g., a unified way to apply “effects” to objects) that
-will make adding future effects easier. Gauss remains stable and reasonably
-performant under the more complex workflows introduced here, and all operations
-continue to be scriptable and as accessible as possible.
+tools, blends) were distinguishing features of Illustrator 10.[1][
+illustrator-6] Thus Gauss now stands on par in offering advanced creative
+freedom. The underlying implementation of effects and operations emphasizes
+reusability (e.g., a unified way to apply “effects” to objects) that will make
+adding future effects easier. Gauss remains stable and reasonably performant
+under the more complex workflows introduced here, and all operations continue
+to be scriptable and as accessible as possible.
 
 ## Phase 4: Color, Appearance, and Visual Effects
 
@@ -563,9 +563,9 @@ ensuring Gauss can handle large, complex projects gracefully.
   the master; editing the master updates all instances – this massively
   streamlines repetitive
   graphics([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=Those%20familiar%20with%20the%20program,copying%20and%20pasting%20as%20necessary)
-   )(
+  )(
   [1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=Finally%2C%20Symbols%20are%20a%20space,space%20as%20a%20single%20copy)).
-   Implement a **Symbols panel** listing all symbols in the document (with
+  Implement a **Symbols panel** listing all symbols in the document (with
   thumbnails). Provide commands to redefine a symbol, break the link (expand to
   regular objects), and replace symbols (swap all instances of A with B). The
   benefit is both performance (one stored definition drawn many times, saving
@@ -576,19 +576,18 @@ ensuring Gauss can handle large, complex projects gracefully.
   for reuse** and was a marquee addition in Illustrator 10 (the Macworld review
   noted entire future textbook chapters for it
   ([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=Suffice%20it%20to%20say%20that,with%20a%20discussion%20of%20Symbols))),
-   so including it solidifies Gauss’s professional toolkit.
+  so including it solidifies Gauss’s professional toolkit.
 
 - **Symbolism Tools:** Along with basic symbols, implement the associated
   **Symbol Sprayer** and its companion tools (Shifter, Scruncher, Sizer,
   Spinner, Stainer, Screener, Styler). These are niche, but were very
   emblematic of Illustrator 10’s power. The Symbol Sprayer allows quickly
-  placing multiple symbol instances by “spraying” them on the
-  canvas([1][symbol-sprayer]) – great for backgrounds (leaves, stars, etc.).
-  The other tools manipulate the set: e.g. Symbol Shifter moves them around as
-  a group, Sizer scales instances, Spinner rotates them, Stainer recolors,
-  Screener adjusts transparency, Styler applies graphic styles. Implementing
-  all of these is a bit of an undertaking, but we can prioritize a subset if
-  needed:
+  placing multiple symbol instances by “spraying” them on the canvas([1][
+  symbol-sprayer]) – great for backgrounds (leaves, stars, etc.). The other
+  tools manipulate the set: e.g. Symbol Shifter moves them around as a group,
+  Sizer scales instances, Spinner rotates them, Stainer recolors, Screener
+  adjusts transparency, Styler applies graphic styles. Implementing all of
+  these is a bit of an undertaking, but we can prioritize a subset if needed:
 
 - The **Symbol Sprayer** itself is the main one (spray copies of a symbol with
   a brush).
@@ -656,9 +655,9 @@ or patterns).
 - **Data-Driven Graphics (Variables Panel):** One of Illustrator 10’s most
   innovative features was **Variables** for data-driven
   graphics([2](https://atpm.com/8.04/illustrator.shtml#:~:text=The%20ability%20to%20separate%20the,innovative%20features%20introduced%20in)
-   )(
+  )(
   [1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=Truly%20hardcore%20web%20designers%20will,The%20possibilities%20are)).
-   Gauss, having a built-in scripting engine, is well-positioned to support
+  Gauss, having a built-in scripting engine, is well-positioned to support
   this. In this phase, we evaluate and prototype data-driven workflows:
 
 - Provide a UI (similar to Illustrator’s Variables panel) to designate certain
@@ -679,7 +678,7 @@ utilize the scripting engine under the hood: e.g. the UI triggers a RustPython
 script that iterates over data and produces outputs. We might not fully
 integrate external databases as Illustrator 10 could (ODBC
 linking([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=…%20new%20dynamic%20data,ODBC%20compliant%20data%20source))),
- but supporting CSV/XML covers most needs in a modern sense. This feature is
+but supporting CSV/XML covers most needs in a modern sense. This feature is
 **high-value for certain professional scenarios** (especially printing, web
 banners, etc.), but not commonly used by every user – thus it comes in this
 later phase. It demonstrates Gauss going beyond static design into programmatic
@@ -721,9 +720,9 @@ up when generating possibly hundreds of variants and that memory is managed
 every feature. The addition of Symbols and advanced brushes means users can
 efficiently create and reuse complex elements across their
 design([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=Symbols%20to%20the%20rescue,a%20library%20of%20its%20own)
- )(
+)(
 [1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=All%20Symbols%20are%20grouped%20as,stylized%20through%20the%20Styles%20palette)).
- The ability to automate via data-driven graphics and scripting integration
+The ability to automate via data-driven graphics and scripting integration
 sets Gauss apart as a modern tool for large-scale design tasks (something
 Illustrator 10 pioneered but Gauss can do with even more ease using Python).
 For power users, virtually every Illustrator 10 feature of note (from envelope
@@ -757,7 +756,7 @@ that SVG cannot handle well.
 - The **Slice Tool** and slicing workflow for web images (Illustrator 10
   introduced object-based
   slicing([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=Internet%20design%20firms%20will%20jump,supports%20manual%20slicing%20%E2%80%94%20and)).
-   While web slicing is less relevant today, if we want parity we could include
+  While web slicing is less relevant today, if we want parity we could include
   a basic slicing feature for exporting image assets. Alternatively, we might
   skip this as a conscious decision given modern web design changes – but
   document the decision).

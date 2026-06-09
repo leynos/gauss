@@ -30,8 +30,8 @@ testing and debugging.
 ### Option A: `slotmap` generational keys
 
 Use `slotmap` for ID allocation and expose a `ShapeId` newtype backed by a
-`slotmap::Key`. Convert to AccessKit node IDs via `KeyData::as_ffi` and back
-via `KeyData::from_ffi`.
+`slotmap::Key`. Convert to AccessKit node IDs via `KeyData::as_ffi` and back via
+`KeyData::from_ffi`.
 
 ### Option B: `generational-arena`
 

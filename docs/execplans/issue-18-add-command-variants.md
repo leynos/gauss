@@ -91,8 +91,8 @@ redoing them, and by running the test suite with the new command coverage.
   captures the change, keeping the command surface minimal. Date/Author:
   2026-01-03, Codex.
 - Decision: Segment-based anchor insertion uses a dedicated
-  `Command::InsertAnchorOnSegment` variant while keeping draw-mode insertions
-  on `Command::InsertAnchor`. Rationale: Preserve action intent in command
+  `Command::InsertAnchorOnSegment` variant while keeping draw-mode insertions on
+  `Command::InsertAnchor`. Rationale: Preserve action intent in command
   history and future serialization, superseding the earlier decision for
   segment insertions. Date/Author: 2026-01-12, Codex.
 - Decision: Split `src/model/command` into feature submodules. Rationale:
@@ -240,8 +240,8 @@ Update or add the following interfaces so the migration is explicit and
 consistent:
 
 - In `src/ui/phase0_shell/draw/mod.rs`, replace `DocHistoryItem` with a new
-  `CommandHistoryItem` that stores `Command` and `CommandInverse` and
-  implements `HistoryItem`.
+  `CommandHistoryItem` that stores `Command` and `CommandInverse` and implements
+  `HistoryItem`.
 - In `src/ui/phase0_shell/mod.rs`, change `document_history` to
   `History<CommandHistoryItem>`.
 - In `src/ui/phase0_shell/draw/mod.rs` (or a new helper module), add

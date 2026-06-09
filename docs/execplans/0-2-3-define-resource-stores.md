@@ -1,9 +1,8 @@
 # Define Resource Stores for EngineState (0.2.3)
 
-This Execution Plan (ExecPlan) is a living document. The sections
-`Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
-`Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
-proceeds.
+This Execution Plan (ExecPlan) is a living document. The sections `Constraints`,
+`Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`, `Decision Log`,
+and `Outcomes & Retrospective` must be kept up to date as work proceeds.
 
 Status: COMPLETE
 
@@ -89,8 +88,8 @@ prepare for Phase 4 colour and effects work. Success is observable when:
 ## Surprises & Discoveries
 
 - Clippy rule `self_named_module_files` rejected `src/svg/import.rs` when a
-  sibling `src/svg/import/` directory was introduced. Import code was split
-  into `src/svg/import/mod.rs`, `path_data.rs`, and `resource_tags.rs`.
+  sibling `src/svg/import/` directory was introduced. Import code was split into
+  `src/svg/import/mod.rs`, `path_data.rs`, and `resource_tags.rs`.
 - `make test` was initially long-running due to large test compilation; a fresh
   run completed successfully after stabilizing code shape.
 - Existing paint code assumed solid colours; adding `Paint::as_solid()` and

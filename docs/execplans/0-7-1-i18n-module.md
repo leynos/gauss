@@ -1,9 +1,8 @@
 # Create the internationalization (i18n) module (0.7.1)
 
-This ExecPlan (execution plan) is a living document. The sections
-`Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
-`Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
-proceeds.
+This ExecPlan (execution plan) is a living document. The sections `Constraints`,
+`Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`, `Decision Log`,
+and `Outcomes & Retrospective` must be kept up to date as work proceeds.
 
 Status: COMPLETE (2026-03-25)
 
@@ -200,9 +199,9 @@ architecture update should still record concrete re-evaluation triggers:
 - translator-authored resource workflows,
 - or text that can no longer be handled safely by keyed substitution.
 
-If any of those triggers are reached, the project can revisit Fluent in
-`0.7.2`, `0.7.3`, or roadmap item `2.5.1` without breaking call sites, because
-the backend is hidden behind the `i18n` module.
+If any of those triggers are reached, the project can revisit Fluent in `0.7.2`,
+`0.7.3`, or roadmap item `2.5.1` without breaking call sites, because the
+backend is hidden behind the `i18n` module.
 
 ## Concrete file plan
 

@@ -1,9 +1,8 @@
 # Complete history error enum migration across code, tests, and docs (0.3.5)
 
-This Execution Plan (ExecPlan) is a living document. The sections
-`Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
-`Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
-proceeds.
+This Execution Plan (ExecPlan) is a living document. The sections `Constraints`,
+`Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`, `Decision Log`,
+and `Outcomes & Retrospective` must be kept up to date as work proceeds.
 
 Status: COMPLETE (implementation, documentation, and gates complete).
 
@@ -14,8 +13,8 @@ No `PLANS.md` exists in this repository.
 Roadmap item 0.3.5 requires the document history adapter error model to be
 fully migrated from `String` to a semantic enum (`HistoryError`) and reflected
 consistently across call sites, tests, and documentation. The architectural
-intent is explicit in `docs/roadmap.md` section `0.3.5` and architecture
-section `7.3.2` / section `20`.
+intent is explicit in `docs/roadmap.md` section `0.3.5` and architecture section
+`7.3.2` / section `20`.
 
 Success is observable when:
 

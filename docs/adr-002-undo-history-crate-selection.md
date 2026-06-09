@@ -99,8 +99,8 @@ _Table 1: Trade-offs between candidate undo crates._
 
 `undo_2` is accepted for document history. The spike demonstrated that its
 action-iterator API maps cleanly to the existing `Command`/`CommandInverse`
-model, and the adapter is small enough to replace if
-needed.[^undo2-docs][^undo2-versions]
+model, and the adapter is small enough to replace if needed.[^undo2-docs]
+[^undo2-versions]
 
 `undo` (option A) is deferred — `undo_2` meets all current requirements and its
 historical undo semantics are acceptable for Gauss.[^undo-docs][^undo-versions]

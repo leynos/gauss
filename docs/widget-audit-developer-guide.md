@@ -2,7 +2,7 @@
 
 This guide provides concrete examples for working with the
 [`ControlInventory`](https://github.com/leynos/gauss/blob/main/src/ui/widget_audit/mod.rs)
- API when adding new controls, writing tests, or querying the inventory
+API when adding new controls, writing tests, or querying the inventory
 programmatically.
 
 ## Overview
@@ -80,7 +80,7 @@ let planned = inventory.without_evidence();
 
 Each
 [`RequiredControl`](https://github.com/leynos/gauss/blob/main/src/ui/widget_audit/types.rs)
- provides comprehensive metadata:
+provides comprehensive metadata:
 
 ```rust
 use gauss::ui::widget_audit::RequiredControl;
