@@ -48,8 +48,8 @@ controls cover:
 - **Ellipse Tool** (`O`) — Create ellipses and circles
 - **Line Tool** (`\`) — Create straight line segments
 
-Current shell evidence exists for Selection, Direct Selection, and Pen tools
-via `src/ui/phase0_shell/tool_rail.rs`.
+Current shell evidence exists for Selection, Direct Selection, and Pen tools via
+`src/ui/phase0_shell/tool_rail.rs`.
 
 #### Properties panel (5 fields)
 

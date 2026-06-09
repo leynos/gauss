@@ -1,9 +1,8 @@
 # Audit GPUI (GPU-accelerated UI) feature selection for narrower build surfaces
 
-This Execution Plan (ExecPlan) is a living document. The sections
-`Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
-`Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
-proceeds.
+This Execution Plan (ExecPlan) is a living document. The sections `Constraints`,
+`Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`, `Decision Log`,
+and `Outcomes & Retrospective` must be kept up to date as work proceeds.
 
 Status: DRAFT (2026-03-14)
 

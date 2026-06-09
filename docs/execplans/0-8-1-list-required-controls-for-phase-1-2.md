@@ -1,9 +1,8 @@
 # List required controls for Phase 1-2 widget audit (0.8.1)
 
-This ExecPlan (execution plan) is a living document. The sections
-`Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
-`Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
-proceeds.
+This ExecPlan (execution plan) is a living document. The sections `Constraints`,
+`Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`, `Decision Log`,
+and `Outcomes & Retrospective` must be kept up to date as work proceeds.
 
 Status: DRAFT (2026-03-14)
 
@@ -186,8 +185,7 @@ or one coding agent performs the edits sequentially.
   `docs/gauss-architecture-design.md`, `docs/gauss-feature-plan.md`,
   `docs/using-gpui-and-gpui-component.md`,
   `docs/accesskit-based-accessibility-in-gpui.md`,
-  `docs/rust-testing-with-rstest-fixtures.md`,
-  `docs/rust-doctest-dry-guide.md`,
+  `docs/rust-testing-with-rstest-fixtures.md`, `docs/rust-doctest-dry-guide.md`,
   `docs/reliable-testing-in-rust-via-dependency-injection.md`, and
   `docs/rstest-bdd-users-guide.md`.
 - [x] (2026-03-14) Verified that `leta` is installed and usable for codebase
@@ -250,8 +248,8 @@ Implementation should proceed in four milestones.
 
 1. Establish the audit source of truth.
 
-Create a new internal module such as `src/ui/widget_audit/` that defines a
-typed `RequiredControl` record and supporting enums. Keep the schema focused on
+Create a new internal module such as `src/ui/widget_audit/` that defines a typed
+`RequiredControl` record and supporting enums. Keep the schema focused on
 requirements rather than implementation mapping. A novice should be able to
 open that module and answer, for each control, all of the following:
 

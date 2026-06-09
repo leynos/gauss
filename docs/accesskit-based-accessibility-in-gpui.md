@@ -18,14 +18,14 @@ screen-reader support (e.g. for the upcoming Marrakesh Express client).
   expose an accessibility tree with **stable node IDs**
   ([1](https://accesskit.dev/how-it-works/#:~:text=One%20notable%20consequence%20of%20this,ID%20for%20each%20UI%20element))
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
-   This approach allows GPUI to push updates to an AccessKit tree, with the
+  This approach allows GPUI to push updates to an AccessKit tree, with the
   adapters bridging to native Accessibility APIs on each OS.
 
 - **Biggest technical risk:** **Text support.** AccessKit's adapters handle
   single-line and multi-line text controls today, but **rich text or
   hypertext** content is *not yet supported*
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
-   If Gauss or Marrakesh Express requires full rich-text semantics (formatted
+  If Gauss or Marrakesh Express requires full rich-text semantics (formatted
   text spans, embedded objects, code editor features), either limiting those
   features in v1 or contributing upstream to extend AccessKit will be required.
 
@@ -34,7 +34,7 @@ screen-reader support (e.g. for the upcoming Marrakesh Express client).
   as "absolutely inaccessible" by blind users
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Summary))
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke)).
-   Shipping Gauss without accessibility is not an option. This project brings
+  Shipping Gauss without accessibility is not an option. This project brings
   GPUI to parity with competitor tools (e.g. VS Code's strong accessibility)
   and meets user needs from day one.
 
@@ -44,10 +44,10 @@ screen-reader support (e.g. for the upcoming Marrakesh Express client).
   Insights/Inspect** on Windows
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=2,the%20editor%20to%20learn%20it))
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke)),
-   **Accessibility Inspector** on macOS, and **Accerciser** on Linux
+  **Accessibility Inspector** on macOS, and **Accerciser** on Linux
   ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext))
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API)).
-   Continuous testing with screen readers (NVDA, JAWS, VoiceOver, Orca) is
+  Continuous testing with screen readers (NVDA, JAWS, VoiceOver, Orca) is
   essential to catch issues early.
 
 **Bottom line:** With focused integration, disciplined text handling, and a
@@ -67,17 +67,17 @@ groundwork for future products.
   movement, selection, word/line navigation, and text-change events
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Summary))
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=3,the%20editor%20to%20learn%20it)).
-   Events like `TextSelectionChanged` must be fired, and patterns like
+  Events like `TextSelectionChanged` must be fired, and patterns like
   **Invoke**, **Value**, **Selection**, etc., as appropriate. Success is
   verified with **NVDA**, **JAWS**, and **Narrator**, using Microsoft's Inspect
   or Accessibility Insights tool to confirm the presence of the expected UIA
   properties and patterns
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke))
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=intuition%20and%20Windows%2FVS%20Code%20habits,the%20folder%2C%20again%20nothing%20spoke)).
-   (Reference: Microsoft's UIA TextPattern documentation
+  (Reference: Microsoft's UIA TextPattern documentation
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext))
   ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext))
-   and implementation guidance
+  and implementation guidance
   ([3](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-about-text-and-textrange-patterns#:~:text=About%20the%20Text%20and%20TextRange,Services%20Framework%20%C2%B7%20Control%20Types)).)
 
 - **macOS (NSAccessibility):** Expose proper **NSAccessibility roles, labels,
@@ -88,17 +88,17 @@ groundwork for future products.
   (navigating via VO keys) and **Accessibility Inspector** on macOS
   ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext))
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API))
-   that elements are reachable and announced correctly. (See Apple's VoiceOver
+  that elements are reachable and announced correctly. (See Apple's VoiceOver
   developer guide
   ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext))
-   for expected behavior.)
+  for expected behaviour.)
 
 - **Linux (AT-SPI2):** All widgets expose correct **AT-SPI roles, states, and
   actions** on the accessibility bus. Text components implement the
   **AtspiText** interface (for caret and selection operations, text content
   retrieval, etc.)
   ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext)).
-   Test with **Orca** screen reader to ensure it can read focus, navigate text,
+  Test with **Orca** screen reader to ensure it can read focus, navigate text,
   and activate controls, and use **Accerciser** to inspect the accessibility
   tree.
 
@@ -109,9 +109,9 @@ scenarios. Implementation will follow platform-specific guidance (UIA
 TextPattern on Windows
 ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext))
 ([3](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-about-text-and-textrange-patterns#:~:text=About%20the%20Text%20and%20TextRange,Services%20Framework%20%C2%B7%20Control%20Types)),
- ATSPI Text on Linux
+ATSPI Text on Linux
 ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext)),
- and the macOS accessibility text protocol) to get this right.
+and the macOS accessibility text protocol) to get this right.
 
 ### Limited mobility / Keyboard and alternative input
 
@@ -123,14 +123,14 @@ TextPattern on Windows
   all times (meeting Web Content Accessibility Guidelines (WCAG) 2.1 Focus
   Visible criteria
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=2,the%20editor%20to%20learn%20it))).
-   Complex canvas interactions in Gauss will be mapped to keyboard controls
+  Complex canvas interactions in Gauss will be mapped to keyboard controls
   (e.g. arrow keys or WASD to nudge objects, keyboard shortcuts for drawing
   tools, etc.), so that a designer can create and edit illustrations without a
   mouse. This aligns with WCAG 2.1 Success Criterion **2.1.1 Keyboard** and
   **2.4.3 Focus Order**
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=3,the%20editor%20to%20learn%20it))
   ([4](https://zed.dev/blog/gpui-ownership#:~:text=Ownership%20and%20data%20flow%20in,an%20old%20version%20of%20GPUI)),
-   ensuring no functionality is mouse-exclusive.
+  ensuring no functionality is mouse-exclusive.
 
 - **Switch and voice control friendly:** All actionable UI elements expose
   **programmatic actions** that can be triggered by external assistive tools.
@@ -139,8 +139,8 @@ TextPattern on Windows
   and list items support **Selection**. On Windows, this corresponds to
   implementing the appropriate UIA Control Patterns (InvokePattern,
   ValuePattern, SelectionItem, etc.)
-  ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Summary)). On
-  macOS, it means implementing the `accessibilityPerformPress` or similar
+  ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Summary)).
+  On macOS, it means implementing the `accessibilityPerformPress` or similar
   methods, and on AT-SPI, providing atspi `Action` interfaces for clickable
   items. The goal is compatibility with voice control software and hardware
   switches that emulate keystrokes or direct API calls. (For reference,
@@ -162,7 +162,7 @@ TextPattern on Windows
 alignment with **EN 301 549** (the European accessibility standard for ICT
 products, which extends WCAG to non-web software) is recommended
 ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke)).
- This essentially means meeting WCAG 2.x success criteria in a desktop context.
+This essentially means meeting WCAG 2.x success criteria in a desktop context.
 The acceptance criteria above are designed with those guidelines in mind.
 
 ## Proposed Implementation Steps and Impact
@@ -190,10 +190,10 @@ in GPUI.
 UIs accessible, as long as stable IDs can be provided for elements
 ([1](https://accesskit.dev/how-it-works/#:~:text=One%20notable%20consequence%20of%20this,ID%20for%20each%20UI%20element))
 ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
- GPUI's architecture (all UI entities owned by a central `App` context
+GPUI's architecture (all UI entities owned by a central `App` context
 ([4](https://zed.dev/blog/gpui-ownership#:~:text=After%20initial%20attempts%20to%20use,and%20interact%20with%20other%20entities))
 ([4](https://zed.dev/blog/gpui-ownership#:~:text=UI%20framework%2C%20GPUI,and%20interact%20with%20other%20entities)))
- means stable `NodeId`s can be generated for each component (for example, using
+means stable `NodeId`s can be generated for each component (for example, using
 a combination of entity ID and type). AccessKit already handles the hard part:
 translating the `Node` tree and events to each platform's API. There is no need
 to implement UIA, NSAccessibility, or AT-SPI from scratch – data is fed to
@@ -207,29 +207,29 @@ Windows, Mac, and Linux are at feature parity and actively maintained
   own windowing). This means the `accesskit_winit` crate cannot be used
   out-of-the-box
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API));
-   instead, the lower-level adapter APIs must be called directly. On Windows,
+  instead, the lower-level adapter APIs must be called directly. On Windows,
   for example, the `WM_GETOBJECT` message must be handled to provide the
   `IAccessible` interface pointer to assistive tech. The AccessKit Windows
   adapter provides a helper for this (`Adapter::handle_wm_getobject`) which
   must be called when that message is received
   ([1](https://accesskit.dev/how-it-works/#:~:text=Platform%20adapters))
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API)).
-   Additionally, `Adapter::update_window_focus_state` needs to be called when
+  Additionally, `Adapter::update_window_focus_state` needs to be called when
   the window gains or loses focus, so the accessibility framework knows which
   window is active. These details require careful integration with GPUI's Win32
   message loop, Cocoa event loop, and X11/Wayland events respectively.
 
 - **Threading and init order:** On Windows, UI Automation expects the provider
-  (the app) to be ready to supply the accessibility tree **before returning
-  from `WM_GETOBJECT`**. That means the adapter initialization has to happen at
-  the right time. The AccessKit adapter will likely be initialized when the
-  window is created (or first shown) with a cached tree ready by the time a
-  screen reader first queries it. The adapter provides `update_if_active` and
-  `update` methods which only take effect when a screen reader is actually
-  listening (avoiding overhead if no AT is in use)
+  (the app) to be ready to supply the accessibility tree **before returning from
+  `WM_GETOBJECT`**. That means the adapter initialization has to happen at the
+  right time. The AccessKit adapter will likely be initialized when the window
+  is created (or first shown) with a cached tree ready by the time a screen
+  reader first queries it. The adapter provides `update_if_active` and `update`
+  methods which only take effect when a screen reader is actually listening
+  (avoiding overhead if no AT is in use)
   ([1](https://accesskit.dev/how-it-works/#:~:text=Platform%20adapters))
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API)).
-   These must be used correctly to avoid missing events.
+  These must be used correctly to avoid missing events.
 
 **Proof of concept:** A minimal window in GPUI is created, a few controls are
 added (e.g. a button and a text field), and the following is verified:
@@ -281,7 +281,7 @@ accessibility tree:
   Windows, this corresponds to supporting the UIA **TextPattern** methods for
   moving the text caret and selecting text
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
-   On Linux, the AT-SPI `Text` interface has methods like `SetCaretOffset`,
+  On Linux, the AT-SPI `Text` interface has methods like `SetCaretOffset`,
   `SetSelection`, etc., which the Unix adapter will invoke on the action
   handler.
 
@@ -296,7 +296,7 @@ accessibility tree:
 currently
 ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext))
 ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext)).
- This means if Gauss or the code editor has formatted text (different styles,
+This means if Gauss or the code editor has formatted text (different styles,
 or embedded controls within text), the adapters might not fully expose that
 structure. For phase 1, restricting to plain text or simple formatting in
 accessible content is likely. If the use-case absolutely needs rich text (say,
@@ -316,7 +316,7 @@ efficient (AccessKit's diff mechanism should help here).
   supported patterns for a focused element; *Value* and *Text* are expected
   (and *TextEdit* if editable) for a multiline editor
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke)).
-   Inspect.exe can also be used to retrieve the text via UIA and ensure it
+  Inspect.exe can also be used to retrieve the text via UIA and ensure it
   matches.
 
 - With a screen reader, test typical text interactions: type in a text field
@@ -448,7 +448,7 @@ accessibility testing session for each release.
 - Use **Accessibility Insights for Windows (AIWin)** in its **Assessment** mode
   or the FastPass automated checks
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=2,the%20editor%20to%20learn%20it))
-   regularly. This can catch missing labels, contrast issues, and missing
+  regularly. This can catch missing labels, contrast issues, and missing
   keyboard support. For example, AIWin's **FastPass** should report no
   **keyboard trap** issues, no missing names for controls, and no inappropriate
   roles. AIWin's CLI can be integrated into the CI pipeline for Windows builds
@@ -530,11 +530,11 @@ matrix).
   identifier** across frames
   ([1](https://accesskit.dev/how-it-works/#:~:text=One%20notable%20consequence%20of%20this,ID%20for%20each%20UI%20element))
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
-   The `NodeId` will likely be tied to the underlying GPUI `Entity` (since an
+  The `NodeId` will likely be tied to the underlying GPUI `Entity` (since an
   `Entity<Counter>` or similar persists in the App's entity map
   ([4](https://zed.dev/blog/gpui-ownership#:~:text=After%20initial%20attempts%20to%20use,and%20interact%20with%20other%20entities))
   ([4](https://zed.dev/blog/gpui-ownership#:~:text=UI%20framework%2C%20GPUI,and%20interact%20with%20other%20entities))).
-   AccessKit doesn't keep the whole UI tree; it relies on updates being sent.
+  AccessKit doesn't keep the whole UI tree; it relies on updates being sent.
   If an ID is accidentally changed when nothing else changed, the adapters
   might treat it as a removal/addition, which can confuse screen readers (e.g.,
   focus might get lost). A consistent ID scheme should be implemented (perhaps
@@ -587,7 +587,7 @@ matrix).
   referred to for correct implementation. (See also the discussion in the Winit
   issue about GPUI: GPUI has its own windowing system
   ([6](https://www.reddit.com/r/rust/comments/19fle6w/gpui_ui_framework_from_the_makers_of_zed/#:~:text=GPUI%3A%20UI%20Framework%20from%20the,to%20be%20depending%20on%20Metal)),
-   which reinforces that the integration must be handled directly, not
+  which reinforces that the integration must be handled directly, not
   expecting Winit to do it.)
 
 ## Example: Windows adapter integration snippet
@@ -657,7 +657,7 @@ closely (see `Adapter::new`, `Adapter::initialize`, `handle_wm_getobject`,
 `update_if_active`, etc. in AccessKit's docs
 ([1](https://accesskit.dev/how-it-works/#:~:text=Platform%20adapters))
 ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API))).
- The macOS adapter (`accesskit_macos::Adapter`) and Linux adapter
+The macOS adapter (`accesskit_macos::Adapter`) and Linux adapter
 (`accesskit_unix::Adapter`) have analogous methods for hooking into their
 respective event loops. For instance, on macOS an `NSView` subclass might be
 created for the GPUI content view and `accesskit_macos::Adapter::new` used with
@@ -677,7 +677,7 @@ callbacks), and sending incremental updates whenever the UI changes state.
   graphics), **AccessKit's current limitations** mean the content might not be
   presented perfectly to ATs
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)).
-   Either simplifying the exposed structure (e.g., expose plain text
+  Either simplifying the exposed structure (e.g., expose plain text
   alternative for screen readers) or contributing to AccessKit's development
   should be planned. This might involve working on features like an HTML-like
   accessibility tree for formatted text or ensuring code editors expose line
@@ -688,7 +688,7 @@ callbacks), and sending incremental updates whenever the UI changes state.
   segment and very vocal (see the Zed issue
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Summary))
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=3,the%20editor%20to%20learn%20it))).
-   A lot of feedback from them is anticipated. It's critical that Windows
+  A lot of feedback from them is anticipated. It's critical that Windows
   support is as complete as possible – that means all UIA patterns implemented
   where appropriate, no missing keyboard focuses, and thorough testing with
   NVDA and JAWS. If something works in NVDA but not JAWS (which can happen due
@@ -803,7 +803,7 @@ This plan builds on existing technologies and guidelines:
   README and documentation
   ([1](https://accesskit.dev/how-it-works/#:~:text=Platform%20adapters))
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext)),
-   which explain the immediate-mode friendly design, stable ID requirement, and
+  which explain the immediate-mode friendly design, stable ID requirement, and
   currently supported features (including text, with the noted omission of rich
   text/hypertext). AccessKit provides the multi-platform adapters needed (UIA,
   NSAccessibility, AT-SPI). It's open source and contributions can be made if
@@ -815,7 +815,7 @@ This plan builds on existing technologies and guidelines:
   GPUI"
   ([4](https://zed.dev/blog/gpui-ownership#:~:text=After%20initial%20attempts%20to%20use,and%20interact%20with%20other%20entities))
   ([4](https://zed.dev/blog/gpui-ownership#:~:text=UI%20framework%2C%20GPUI,and%20interact%20with%20other%20entities))
-   for an overview of how all UI state in GPUI is owned by a central `App`.
+  for an overview of how all UI state in GPUI is owned by a central `App`.
   This informs how stable IDs are generated and where the accessibility updates
   hook in (likely at the App or Window level).
 
@@ -825,34 +825,34 @@ This plan builds on existing technologies and guidelines:
   insight into what screen readers expect
   ([1](https://accesskit.dev/how-it-works/#:~:text=The%20current%20released%20platform%20adapters,support%20rich%20text%20or%20hypertext))
   ([5](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-implementingtextandtextrange#:~:text=Learn%20learn,1)).
-   Apple's developer docs on making apps accessible (NSAccessibility
+  Apple's developer docs on making apps accessible (NSAccessibility
   programming guide and VoiceOver guide) will help for macOS specifics (like
   how to label custom controls properly)
   ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext)).
-   The AT-SPI documentation (e.g., the GNOME accessibility guide) is a
+  The AT-SPI documentation (e.g., the GNOME accessibility guide) is a
   reference for Linux
   ([1](https://accesskit.dev/how-it-works/#:~:text=,the%20current%20Windows%20accessibility%20API)).
 
 - **Assistive Technology tools:** Tools like **Accessibility Insights for
   Windows** (which includes "Inspect" and automation scanners) will be used
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=2,the%20editor%20to%20learn%20it)),
-   Apple's **Accessibility Inspector**
+  Apple's **Accessibility Inspector**
   ([1](https://accesskit.dev/how-it-works/#:~:text=accessible%2C%20including%20support%20for%20both,support%20rich%20text%20or%20hypertext)),
-   and the **Orca screen reader** (with its learning resources
+  and the **Orca screen reader** (with its learning resources
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=2,the%20editor%20to%20learn%20it)))
-   to develop and test. These are essential to debug what the app is exposing.
+  to develop and test. These are essential to debug what the app is exposing.
   Familiarization with these tools early on is recommended.
 
 - **Standards and guidelines:** The **Web Content Accessibility Guidelines
   (WCAG) 2.1/2.2** are the basis for many accessibility requirements even in
   native apps
   ([4](https://zed.dev/blog/gpui-ownership#:~:text=Ownership%20and%20data%20flow%20in,an%20old%20version%20of%20GPUI)).
-   Relevant ones (like keyboard access, focus order, contrast, semantics) are
+  Relevant ones (like keyboard access, focus order, contrast, semantics) are
   mapped to the project context. Additionally, **EN 301 549** in the EU and
   **Section 508** in the US are standards/laws requiring accessible software –
   aligning with these will be important for enterprise adoption
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke)).
-   While the primary motive is usability, adhering to standards ensures nothing
+  While the primary motive is usability, adhering to standards ensures nothing
   is missed (like offering captions for any audio feedback, etc., though Gauss
   is mostly visual).
 
@@ -868,7 +868,7 @@ the line is minimized.
   that require software to meet accessibility standards (e.g., European public
   sector tenders often ask for EN 301 549 compliance
   ([2](https://github.com/zed-industries/zed/issues/41138#:~:text=Expected%20Behavior%3A%20The%20editor%20should,the%20folder%2C%20again%20nothing%20spoke))).
-   A VPAT (Voluntary Product Accessibility Template) based on the support
+  A VPAT (Voluntary Product Accessibility Template) based on the support
   matrix can be prepared to formally document compliance.
 
 - **Better software design:** Building with accessibility in mind often

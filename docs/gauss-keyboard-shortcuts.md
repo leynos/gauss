@@ -75,17 +75,17 @@ ______________________________________________________________________
 
 ## View artwork
 
-| Action                 | Windows             | macOS               |
-| ---------------------- | ------------------- | ------------------- |
-| Toggle screen modes    | F                   | F                   |
-| Fit artboard in window | Double‑click Hand   | Double‑click Hand   |
-| Actual size (100%)     | Ctrl + 1            | Command + 1         |
-| Hand tool (temporary)  | Spacebar            | Spacebar            |
-| Zoom in                | Ctrl + =            | Command + =         |
-| Zoom out               | Ctrl + -            | Command + -         |
-| Hide guides            | Ctrl + ;            | Command + ;         |
-| Show grid              | Ctrl + '            | Command + '         |
-| Smart guides on/off    | Ctrl + U            | Command + U         |
+| Action                 | Windows           | macOS             |
+| ---------------------- | ----------------- | ----------------- |
+| Toggle screen modes    | F                 | F                 |
+| Fit artboard in window | Double‑click Hand | Double‑click Hand |
+| Actual size (100%)     | Ctrl + 1          | Command + 1       |
+| Hand tool (temporary)  | Spacebar          | Spacebar          |
+| Zoom in                | Ctrl + =          | Command + =       |
+| Zoom out               | Ctrl + -          | Command + -       |
+| Hide guides            | Ctrl + ;          | Command + ;       |
+| Show grid              | Ctrl + '          | Command + '       |
+| Smart guides on/off    | Ctrl + U          | Command + U       |
 
 ______________________________________________________________________
 

@@ -1034,24 +1034,23 @@ The same path covers `apply_tool_commands()` in
 `apply_command()` in `draw/mod.rs`, which clears the error on successful edits
 to provide a recovery path after a prior failure.
 
-The current approach has known limitations.  Because the status bar
-clears the error on the next successful command, a persistent replay
-failure (e.g. `UndoReplayFailed`) may be silently overwritten without
-the user taking any recovery action.  There is no programmatic hook for
-callers outside `Phase0Shell` to observe or react to history errors, and
-the typed `last_history_error_typed` field is not yet used to drive
-distinct UI affordances such as disabling undo/redo controls after a
-replay failure.
+The current approach has known limitations.  Because the status bar clears the
+error on the next successful command, a persistent replay failure (e.g.
+`UndoReplayFailed`) may be silently overwritten without the user taking any
+recovery action.  There is no programmatic hook for callers outside
+`Phase0Shell` to observe or react to history errors, and the typed
+`last_history_error_typed` field is not yet used to drive distinct UI
+affordances such as disabling undo/redo controls after a replay failure.
 
-The preferred future direction is structured error propagation through
-the command bus so that subscribers — scripting, tests, future panels —
-can react to history drift.  On `UndoReplayFailed` or
-`RedoReplayFailed` the affected history direction should be disabled in
-the toolbar and menu, accompanied by a "clear history" action rather
-than silently leaving the stack in an indeterminate state.  This aligns
-with §7.1's design decision to use typed `HistoryError` variants instead
-of untyped strings, and prepares the architecture for the
-macro-recording and scripting integrations described in §13.
+The preferred future direction is structured error propagation through the
+command bus so that subscribers — scripting, tests, future panels — can react
+to history drift.  On `UndoReplayFailed` or `RedoReplayFailed` the affected
+history direction should be disabled in the toolbar and menu, accompanied by a
+"clear history" action rather than silently leaving the stack in an
+indeterminate state.  This aligns with §7.1's design decision to use typed
+`HistoryError` variants instead of untyped strings, and prepares the
+architecture for the macro-recording and scripting integrations described in
+§13.
 
 Validation coverage now includes:
 
