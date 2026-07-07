@@ -84,7 +84,7 @@ The feature file lives within the crate (commonly under `tests/features/`). The
 path to this file will be referenced by the `#[scenario]` macro in the test
 code.
 
-### Internationalized scenarios
+### Internationalised scenarios
 
 `rstest-bdd` reads the optional `# language: <code>` directive that appears at
 the top of a feature file. When a locale is specified, the parser uses that
@@ -131,8 +131,8 @@ argument, the wrapper panics with
 `pattern '<pattern>' missing capture for argument '<name>'`, making the
 mismatch explicit.
 
-For cucumber-rs migration compatibility notes, see
-[Migration and async patterns][migration-async-patterns].
+For cucumber-rs migration compatibility notes, see [Migration and async
+patterns][migration-async-patterns].
 
 The procedural macro implementation expands the annotated function into two
 parts: the original function and a wrapper function that registers the step in
@@ -154,7 +154,7 @@ compiler. Only the key stored in `StepContext` must match.
 Implicit fixture keys derived from scenario and step parameter names normalize
 at most one leading underscore. In practice, `world` and `_world` both resolve
 to the implicit fixture key `world`, while `__world` resolves to `_world`.
-Explicit `#[from(...)]` names remain exact and bypass this normalization, so
+Explicit `#[from(...)]` names remain exact and bypass this normalisation, so
 `#[from(_world)]` still requests the literal `_world` fixture key.
 
 Internally, the step macros record the fixture names and generate wrapper code
@@ -1021,14 +1021,7 @@ adapter, the macro infers `TokioAttributePolicy` from the canonical harness
 path when `attributes = ...` is omitted:
 
 ```rust,no_run
-# use rstest_bdd_macros::scenarios;
-
-scenarios!(
-    "tests/features/reminders",
-    harness = rstest_bdd_harness_tokio::TokioHarness,
-);
-```
-
+# use rstest_bdd_macros::scenario;
 ### Using the GPUI harness
 
 The `rstest-bdd-harness-gpui` crate provides Graphical Processing User
@@ -1051,30 +1044,155 @@ when `attributes = ...` is omitted:
 
 ```rust,no_run
 # use rstest_bdd_macros::scenario;
-
-#[scenario(
-    path = "tests/features/counter.feature",
-    harness = rstest_bdd_harness_gpui::GpuiHarness,
-)]
-fn counter_updates() {}
-```
-
 #### GPUI panic diagnostics carry scenario context
 
 When a step running under `GpuiHarness` panics, the harness prepends the
-feature path, scenario name, and feature-file line number to the panic message
-before re-raising it through `panic::resume_unwind`. The same fields are
-emitted as a `tracing::error!` record (`harness_type`, `feature_path`,
+feature path, scenario name, and feature-file line number to the panic
+message before re-raising it through `panic::resume_unwind`. The same fields
+are emitted as a `tracing::error!` record (`harness_type`, `feature_path`,
 `scenario_name`, `scenario_line`) and as a matching `stderr` line, so test
-runners that do not collect `tracing` events still surface the scenario name on
-failure. This makes a failing GPUI scenario identifiable from the `cargo test`
-or `cargo nextest` output without cross-referencing libtest function names
-against feature files. For a concrete regression example, see
+runners that do not collect `tracing` events still surface the scenario name
+on failure. This makes a failing GPUI scenario identifiable from the
+`cargo test` or `cargo nextest` output without cross-referencing libtest
+function names against feature files. For a concrete regression example, see
 `crates/rstest-bdd-harness-gpui/tests/scenario_name_in_logs.rs`.
 
-```rust,no_run
-# use serial_test::serial;
+#### Stateful GPUI scenarios with durable handles
 
+> **Note: this is a v0.6 interim workaround.**
+>
+> The thread-local scenario-state pattern below is the recommended way to
+> share mutable GPUI state across BDD steps in `rstest-bdd` 0.6.0, but it
+> exists to work around the current `StepContext::borrow_mut` contract
+> selected by
+> [ADR-007](https://github.com/leynos/rstest-bdd/blob/main/docs/adr-007-harness-context-injection.md).
+> Sections
+> 2.7.6.2 and 2.7.6.5 of the design document
+> ([rstest-bdd design][rstest-bdd-design]) and roadmap items 12.1.x track
+> the v0.7.0 redesign that will retire the thread-local approach in favour
+> of guard-based concurrent fixture borrowing and typed harness-context
+> extractors. New code adopted on 0.6 should expect to migrate when the
+> redesign lands; do not build wider abstractions on top of the thread-local
+> shape.
+
+<!-- -->
+
+> **Which gpui does this playbook target?**
+>
+> The snippets below and the regression suite at
+> `crates/rstest-bdd-harness-gpui/tests/stateful_window.rs` are written
+> against the *vendored* gpui under `vendor/gpui`. Downstream crates using
+> the *published* `gpui 0.2.2` on crates.io encounter a different test API.
+> The four shapes that differ are:
+>
+<!-- markdownlint-disable MD013 -->
+>
+> | Operation | Vendored gpui (regression suite + these snippets) | Published `gpui 0.2.2` (downstream adopters) |
+> | --- | --- | --- |
+> | `add_window_view` closure | `\|_context\| View::default()` (one argument) | `\|_window, view_cx\| View::new(view_cx)` (two arguments) |
+> | obtain window handle | `visual_cx.window_handle()` (inherent method on `VisualTestContext`) | `vcx.window_handle()` (same call, but `window_handle` is a `VisualContext` trait method, so add `use gpui::VisualContext;`) |
+> | `VisualTestContext::from_window` | returns `Option<VisualTestContext>` (`let … else { panic!(…) }`) | returns `VisualTestContext` by value (no `Option`) |
+> | `read_entity` / `update_entity` | `Option`/`Result` wrappers (`Some(1)`, `Ok(())`) | identity `type Result<T> = T`; returns `R` directly |
+>
+<!-- markdownlint-enable MD013 -->
+>
+> *Table: Vendored-to-published gpui 0.2.2 API shape differences.*
+>
+> Beyond those four shapes, published `gpui 0.2.2` returns
+> `(Entity<V>, &mut VisualTestContext)` from `add_window_view`, while the
+> vendored fork returns `(Entity<T>, VisualTestContext)` by value. Adopters
+> bind the visual context by mutable reference rather than owning it.
+>
+> The vendored fork also gives `update_entity` a typed
+> `Result<(), EntityError>` missing-entity path and wraps `read_entity` in
+> `Option<R>`. Published `gpui` returns `R` directly, so adopters cannot depend
+> on that typed error channel.
+>
+> Adapt call sites when consuming the published crate. The harness itself
+> (which only deals in `TestAppContext`) is not affected by this divergence.
+
+##### When to reach for the stateful playbook
+
+Stateful GPUI scenarios are those whose steps share durable resources, such as
+a typed view entity and the window that owns it, and need mutable access to
+the harness-provided `gpui::TestAppContext` as well. Scenarios that only read
+the harness context, or that share state through ordinary
+[`rstest`](https://docs.rs/rstest/) fixtures without also borrowing
+`TestAppContext` mutably, should keep using plain fixtures and skip this
+playbook. The pattern below is needed precisely when a single step must
+borrow both `&mut TestAppContext` and shared mutable scenario state, which
+the v0.6 `StepContext` API cannot express in one borrow.
+
+##### Durable handles versus visual context
+
+`gpui::TestAppContext::add_window_view` creates a test window and returns
+`(Entity<T>, VisualTestContext)`. `Entity<T>` is the typed, durable handle
+to the stored view; `VisualTestContext::window_handle()` returns the
+`AnyWindowHandle` that identifies the window itself. Both are cheap to copy
+and remain valid across steps. `VisualTestContext`, by contrast, borrows
+from the `TestAppContext` it was created against and must not be stored
+across steps: a later step is handed a fresh `&mut TestAppContext` from the
+harness, so any saved `VisualTestContext` would be tied to a stale borrow.
+Stateful steps therefore store `Entity<T>` and `AnyWindowHandle` only, and
+rebuild a fresh `VisualTestContext` inside each step that needs visual
+interaction using
+`gpui::VisualTestContext::from_window(window, &mut cx)`.
+
+##### Reset protocol
+
+Thread-local scenario state outlives any single scenario, so each scenario
+must observe a two-sided reset protocol to prevent handle leakage across
+serial scenarios on the same test thread:
+
+- **Reset before assignment.** The first `#[given]` that opens a window
+  resets the thread-local state before storing fresh handles. This makes a
+  reused thread observe a clean slate even if the previous scenario aborted
+  in a way that bypassed unwinding.
+- **Reset after teardown.** A `Drop`-based fixture guard runs at scenario
+  exit. Threading the guard through a `#[fixture]` ensures the reset runs on
+  every unwind path: success, assertion failure, and panic alike.
+
+Neither half is redundant. The constructor-side reset on the
+`scenario_state_cleanup` fixture covers the case where a previous scenario
+short-circuited (for example through `skip!`) or panicked in a way that
+suppressed `Drop`. The `Drop` reset covers the symmetric case where the
+*current* scenario panics and the next scenario's fixture is not yet
+constructed when teardown happens. Deleting either call is a correctness
+regression: the regression suite at
+`crates/rstest-bdd-harness-gpui/tests/stateful_window.rs` asserts
+`stale_window_count == 0` after the constructor-side reset to make the
+ordering observable, and the second scenario in
+`tests/features/stateful_window.feature` ("Opening a second GPUI window
+starts from reset state") fails if the `Drop` reset is removed.
+
+Each `#[scenario]` that participates in this protocol must carry
+`#[serial]` from the [`serial_test`](https://docs.rs/serial_test/) crate.
+GPUI scenarios share a process-wide `TestAppContext` slot, and the
+thread-local reset protocol assumes sequential execution; running stateful
+GPUI scenarios in parallel breaks both invariants.
+
+See [test-runner parallelism and scenario state](#test-runner-parallelism-and-scenario-state)
+for the full `#[serial]`, cargo-nextest, `#[file_serial]`, and nextest
+test-group matrix.
+
+##### Worked example
+
+The snippets below mirror the regression suite at
+`crates/rstest-bdd-harness-gpui/tests/stateful_window.rs` identifier for
+identifier. Treat that file as the executable reference: if a snippet here
+drifts from the suite, the suite wins and this section should be updated to
+match.
+
+The first snippet declares the scenario-state container, the two reset
+helpers, the `Drop`-based cleanup type, and the two `#[scenario]` functions
+that bind to the feature file. Each scenario carries `#[serial]` and pulls
+in the `scenario_state_cleanup` fixture so its constructor-side reset runs
+before any step:
+
+```rust,no_run
+# use rstest::fixture;
+# use rstest_bdd_macros::scenario;
+# use serial_test::serial;
 # use std::cell::RefCell;
 #[derive(Clone, Debug, Default)]
 struct CounterView {
@@ -1142,6 +1260,328 @@ fn scenario_opening_second_window_starts_from_reset_state(
 }
 ```
 
+The second snippet shows the `#[given]` that opens a fresh window. It
+defensively re-runs the reset before storing handles and observes the
+`stale_window_count` invariant that the regression suite encodes:
+
+```rust,no_run
+# use rstest_bdd_macros::given;
+# fn reset_state_before_assignment() {}
+# fn with_state<R>(_: impl FnOnce(&mut ()) -> R) -> R { unimplemented!() }
+#[given("a fresh GPUI window is opened")]
+fn fresh_gpui_window_is_opened(
+    #[from(rstest_bdd_harness_context)] context: &mut gpui::TestAppContext,
+) {
+    let stale_window_count = with_state(|state| usize::from(state.window.is_some()));
+    reset_state_before_assignment();
+
+    let (entity, visual_context) =
+        context.add_window_view(|_context| CounterView::default());
+    let window = visual_context.window_handle();
+
+    with_state(|state| {
+        state.entity = Some(entity);
+        state.window = Some(window);
+        state.opened_window_count = context.windows().len();
+    });
+
+    assert_eq!(
+        stale_window_count, 0,
+        "reset-before-assignment should remove stale scenario state"
+    );
+}
+```
+
+The third snippet shows a `#[when]` and a `#[then]` step that rebuild
+`VisualTestContext` from the stored window handle plus the
+harness-provided `TestAppContext`. `VisualTestContext::from_window`
+returns `Option<VisualTestContext>` because the window handle and the
+borrowed context must come from the same `TestAppContext`; the
+`let … else { panic!(…) }` shape is appropriate here because a `None` value
+means an invariant of the playbook has been violated, not a legitimate test
+outcome. This form also passes the repository's pedantic lint profile:
+
+```rust,no_run
+# use rstest_bdd_macros::{then, when};
+# fn current_handles() -> (gpui::Entity<()>, gpui::AnyWindowHandle) { unimplemented!() }
+#[when("the view is updated through a reconstructed visual context")]
+fn view_is_updated_through_reconstructed_visual_context(
+    #[from(rstest_bdd_harness_context)] context: &mut gpui::TestAppContext,
+) {
+    let (entity, window) = current_handles();
+    let Some(mut visual_context) = gpui::VisualTestContext::from_window(window, context) else {
+        panic!("stored window handle should reconstruct visual context");
+    };
+    assert_eq!(
+        visual_context.update_entity(entity, |view| view.value += 1),
+        Ok(())
+    );
+}
+
+#[then("the durable handles still identify the updated view")]
+fn durable_handles_identify_the_updated_view(
+    #[from(rstest_bdd_harness_context)] context: &mut gpui::TestAppContext,
+) {
+    let (entity, window) = current_handles();
+    let Some(visual_context) = gpui::VisualTestContext::from_window(window, context) else {
+        panic!("stored window handle should reconstruct visual context");
+    };
+
+    assert_eq!(
+        visual_context.read_entity(entity, |view| view.value),
+        Some(1)
+    );
+}
+```
+
+The error shape is consistent across all three snippets: surfaces of
+infrastructure invariants (handle reconstruction, fixture-stored handles)
+panic, and step-level domain assertions use `assert_eq!`. Steps that need to
+distinguish a legitimate failure mode from a programming invariant should
+return `StepResult<()>` and propagate the failure with `?`; mixing
+panic-on-invariant-violation `let … else { panic!(…) }` branches and
+`StepResult` within the same playbook reads ambiguously, so pick one shape per
+scenario.
+
+#### Fixture key versus parameter name
+
+Steps request the GPUI context through the *reserved fixture key*
+`rstest_bdd_harness_context`. The key is part of the public contract: every
+first-party adapter (Tokio, GPUI, and any future harness) injects its
+typed context through the same key, so step authors can rely on it across
+adapters. The *parameter name* used on the receiving side (`context` in the
+snippets above and in the regression suite) is adapter-agnostic and chosen
+by the step author for readability. The `#[from(rstest_bdd_harness_context)]`
+attribute is what binds the key, so do not let parameter naming convince a
+reader the binding name is part of the contract.
+
+#### Where to read more
+
+- [rstest-bdd design][rstest-bdd-design] §2.7.6.1 and §2.7.6.2 explain
+  why the workaround takes this shape and what the borrow contract currently
+  allows.
+- [rstest-bdd design][rstest-bdd-design] §2.7.6.5 records the v0.7.0
+  redesign target that retires the thread-local approach.
+- `crates/rstest-bdd-harness-gpui/tests/stateful_window.rs` is the
+  executable reference suite. Read it to confirm that the snippet here
+  still matches the regression coverage.
+- `crates/rstest-bdd-harness-gpui/tests/features/stateful_window.feature`
+  shows the Gherkin shape the suite binds to.
+- The v0.6.0 migration guide's [Migrate a stateful GPUI
+  test][gpui-migration] subsection (inside "Adopt GPUI harness
+  configuration") walks readers through moving an existing scenario to the
+  playbook.
+- Design-document §2.7.6.6 documents the feature-file rebuild-invalidation
+  foot-gun (`.feature`-only edits do not trigger a rebuild until roadmap item
+  11.3.1 lands).
+- Design-document §2.7.6.7 documents the full cargo test versus nextest matrix
+  for `#[serial]` and thread-local state.
+
+#### Pedantic lint profile
+
+The snippets above are the lint-clean form used by the regression suite. The
+repository runs Whitaker's `no_unwrap_or_else_panic` Dylint lint from
+`make lint`, so `unwrap_or_else(|| panic!(…))` is rejected even when it encodes
+an infrastructure invariant. The workspace also denies `clippy::expect_used`
+and `clippy::unwrap_used`, so `.expect(...)` and `.unwrap()` are not acceptable
+replacements.
+
+Use `let … else { panic!(…) }` with a fresh binding name:
+
+```rust,no_run
+# fn current_handles() -> Option<gpui::AnyWindowHandle> { unimplemented!() }
+let Some(window) = current_handles() else {
+    panic!("scenario should have stored a window handle");
+};
+```
+
+Under `clippy::shadow_reuse`, avoid re-using the same name for a trimmed or
+borrowed binding. For example, prefer a fresh guard name such as
+`world_guard` over shadowing `world`. [ADR-013][adr-013] records the decision
+to enforce this single Whitaker lint now while deferring the full Whitaker
+suite.
+
+#### Bulk-migration cookbook
+
+When migrating a large test suite, factor the whole durable-handle **step
+library** — the `#[given]`/`#[when]`/`#[then]` steps together with the state
+scaffolding — into one shared module per consuming crate, rather than copying it
+into every test file. This is the v0.6.0 shape, and it is deliberately explicit.
+Once roadmap items 11.1.3 and 11.1.4 ship (`ScenarioStore<T>` and the
+cleanup-guard fixture macro), the shared block shrinks to a single import and the
+`#[scenario]` cleanup parameter is generated for you. Adopt the pattern now and
+expect to shrink it then.
+
+##### Why one shared module works
+
+Steps register globally at binary link time through the
+[`inventory`](https://docs.rs/inventory/) crate, so every step compiled into a
+test binary is discoverable by every scenario in that binary, whatever module
+defined it. Placing the steps in a module that each binding file compiles in
+(through a `#[path]` include) therefore makes one library serve many scenarios
+across many feature files. Each integration-test file is its own binary with its
+own registry, so the same step text in two binaries never collides.
+
+Keep the shared module in the `tests/common/` **subdirectory** form
+(`tests/common/<name>.rs`), not `tests/<name>.rs`: Cargo compiles files placed
+directly under `tests/` as their own test binaries, but treats files in a
+subdirectory as ordinary modules. Mark every item a binding file references as
+`pub`, because a `#[path]`-included module is a real module boundary — the
+single-file worked example above never needed this.
+
+##### Layout
+
+```text
+tests/
+  common/
+    ledger_steps.rs   # shared: state scaffolding + fixture + given/when/then
+  features/
+    first.feature
+    second.feature
+  first_bdd.rs        # #[path] include + one #[scenario]; no steps here
+  second_bdd.rs
+```
+
+##### Binding a scenario
+
+Each binding file includes the shared library and binds a `#[scenario]` with no
+steps of its own. Bind the shared fixture with a module-qualified `#[from(...)]`
+path so its provenance stays visible at the binding site:
+
+```rust,no_run
+#[path = "common/ledger_steps.rs"]
+mod ledger_steps;
+
+use rstest_bdd_macros::scenario;
+
+#[scenario(
+    path = "tests/features/first.feature",
+    name = "First scenario reuses the shared step library",
+)]
+fn first(
+    #[from(ledger_steps::ledger_state)] _state: ledger_steps::LedgerState,
+) {
+}
+```
+
+The shared module keeps durable scenario state in a regular `rstest` fixture
+backed by `Slot<T>` — the clean shape recommended when steps do not also need
+mutable harness context — and defines the `#[given]`/`#[when]`/`#[then]` steps
+once. This keeps the library in one place, avoids copy-paste drift, and makes a
+consuming crate's growth cost one binding file per scenario rather than a fresh
+copy of the helpers.
+
+The executable reference for this shape lives at
+`crates/rstest-bdd/tests/bulk_migration_cookbook_a.rs` and `_b.rs`, both sharing
+`crates/rstest-bdd/tests/common/bulk_migration_steps.rs`; the compile-checked
+mirror is the trybuild fixture
+`crates/rstest-bdd/tests/fixtures_macros/scenario_bulk_migration_cookbook.rs`.
+If a snippet here drifts from those, the suite wins.
+
+##### Applying it to stateful GPUI scenarios
+
+For GPUI, the shared module holds the durable-handle library from the
+"Worked example" above: the `ScenarioState`, `thread_local!`,
+the two reset helpers, the `ScenarioStateCleanup` `Drop` guard, the
+`scenario_state_cleanup` fixture, and the `#[given]`/`#[when]`/`#[then]` steps
+that store `Entity<T>` and `AnyWindowHandle` and rebuild `VisualTestContext`.
+Each binding then adds `harness = rstest_bdd_harness_gpui::GpuiHarness` and
+`#[serial]` and binds the cleanup fixture the same module-qualified way, exactly
+as the single-scenario worked example shows. The executable reference for the
+GPUI half is `crates/rstest-bdd-harness-gpui/tests/stateful_window.rs`, so the
+sharing mechanism (this suite) and the GPUI durable-handle specifics
+(`stateful_window.rs`) are each backed by a runnable reference.
+
+Those GPUI snippets are written against the *vendored* gpui. Adopters on the
+published `gpui 0.2.2` — the audience migrating real suites — should adapt them
+using the vendored-to-published mapping table above (under "Durable handles
+versus visual context").
+
+Editing only a `.feature` file does not trigger a rebuild (see design-document
+§2.7.6.6), so touch a binding `.rs` file (or run `cargo clean -p <crate>`) after
+changing feature text; otherwise a stale build can mask the change.
+
+#### Test-runner parallelism and scenario state
+
+Stateful scenarios that share thread-local or process-wide state need different
+serialisation tools depending on the test runner. The `#[serial]` attribute
+from the [`serial_test`](https://docs.rs/serial_test/) crate is still required
+for `cargo test` compatibility, even though cargo-nextest runs each test in a
+separate operating-system process.
+
+| Runner | `#[serial]` effect | Cross-process exclusivity |
+| --- | --- | --- |
+| `cargo test` | In-process mutex; required | Not provided by `#[serial]` |
+| nextest (process-per-test) | Redundant-but-harmless | `#[file_serial]` or test-group |
+
+*Table: `#[serial]` behaviour by test runner.*
+
+Under `cargo test`, all tests in one integration-test binary run in a single
+process using multiple threads. `#[serial]` serialises tests that carry the
+same key, or all unkeyed `#[serial]` tests together, with an in-process mutex.
+Stateful GPUI scenarios therefore keep `#[serial]` so the reset protocol is
+respected when the suite runs without nextest.
+
+Under cargo-nextest (`cargo nextest run`, which this repository's `make test`
+target uses), each test is run in its own process. The `#[serial]` mutex is not
+contended across process boundaries, so the annotation is
+redundant-but-harmless for nextest runs. Keep it for `cargo test`; do not
+remove it just because nextest already isolates per-process thread-local state.
+The design rationale is recorded in
+[design-document §2.7.6.7][design-runner-parallelism], and the maintainer
+convention is summarised in
+[the developer guide][developer-serial-nextest].
+
+When separate test processes or separate test binaries must not overlap, use a
+cross-process mechanism instead of `#[serial]`. cargo-nextest
+[test-groups][nextest-test-groups] define logical mutexes across the whole
+nextest run. This example makes any test whose name contains `stateful_gpui::`
+run one at a time:
+
+```toml
+[test-groups]
+stateful-gpui = { max-threads = 1 }
+
+[[profile.default.overrides]]
+filter = 'test(stateful_gpui::)'
+test-group = 'stateful-gpui'
+```
+
+Test-groups are available in cargo-nextest 0.9.48 and later. They apply only to
+nextest scheduling; they do not change `cargo test` behaviour.
+
+The `serial_test` crate also provides `#[file_serial]`, which uses a file lock
+instead of the in-process mutex. Enable the crate's `file_locks` feature before
+using it:
+
+```toml
+[dev-dependencies]
+serial_test = { version = "...", features = ["file_locks"] }
+```
+
+The feature flag is the important part; choose the major version already used
+by the consuming workspace. The `file_locks` feature is available in both the
+2.x and 3.x `serial_test` lines.
+
+```rust,no_run
+
+# use serial_test::file_serial;
+#[test]
+#[file_serial(stateful_gpui)]
+fn opens_shared_gpui_resource() {
+    // Exercise the shared resource.
+}
+```
+
+`#[file_serial]` defaults to a lock file under the operating system's temporary
+directory, and supports explicit `path` and key arguments. It does not mutually
+exclude tests annotated with `#[serial]`; the two attributes use different lock
+mechanisms. Use one cross-process convention consistently for tests that must
+exclude one another.
+
+[gpui-migration]:
+v0-6-0-migration-guide.md#migrate-a-stateful-gpui-test
+
 ### Skipping scenarios
 
 Steps or hooks may call `rstest_bdd::skip!` to stop executing the remaining
@@ -1207,8 +1647,9 @@ that a step or scenario stopped executing. Use
 outcome, optionally constraining its message, and
 `rstest_bdd::assert_scenario_skipped!` to inspect
 [`ScenarioStatus`][scenario-status] records. Both macros accept
-`message_absent = true` to assert that no message was provided and substring
-matching to confirm that a message contains the expected reason.
+`message_absent = true` to assert
+that no message was provided and substring matching to confirm that a message
+contains the expected reason.
 
 ```rust,no_run
 use rstest_bdd::{assert_scenario_skipped, assert_step_skipped, StepExecution};
@@ -1319,7 +1760,7 @@ fn counter() -> Counter {
     Counter::default()
 }
 
-#[given("a counter initialized to 0")]
+#[given("a counter initialised to 0")]
 fn init(counter: &mut Counter) {
     counter.value = 0;
 }
@@ -1362,8 +1803,8 @@ synchronous steps that drive async work via `tokio::spawn_local`.
 Async scenarios run on Tokio's current-thread runtime. Step functions may be
 `async fn` and are awaited sequentially, keeping fixture borrows valid across
 `.await` points. Use one of the following patterns to keep async work safe and
-predictable. This section summarizes the canonical guidance in
-[Migration and async patterns][migration-async-patterns].
+predictable. This section summarizes the canonical guidance in [Migration and
+async patterns][migration-async-patterns].
 
 - **Prefer async fixtures:** If a step needs async data, move the async call
   into a fixture and inject the resolved value into the step. The scenario
@@ -1673,24 +2114,25 @@ Best practices for writing effective scenarios include:
   (for example, `1e3`, `-1E-9`), and the special values `NaN`, `inf`, and
   `Infinity` (matched case-insensitively). Matching is anchored: the entire
   step text must match the pattern; partial matches do not succeed. Escape
-  literal braces with `{{` and `}}`. Use `\` to match a single backslash. A
-  trailing `\` or any other backslash escape is treated literally, so `\d`
-  matches the two-character sequence `\d`. Nested braces inside placeholders
-  are not supported. Braces are not allowed inside type hints. Placeholders use
-  `{name}` or `{name:type}`; the type hint must not contain braces (for example,
-  `{n:{u32}}` and `{n:Vec<{u32}>}` are rejected). To describe braces in the
-  surrounding step text (for example, referring to `{u32}`), escape them as
-  `{{` and `}}` rather than placing them inside `{name:type}`. The lexer closes
-  the placeholder at the first `}` after the optional type hint; any characters
-  between the `:type` and that first `}` are ignored (for example,
-  `{n:u32 extra}` parses as `name = n`, `type = u32`). `name` must start with a
-  letter or underscore and may contain letters, digits, or underscores
-  (`[A-Za-z_][A-Za-z0-9_]*`). Whitespace within the type hint is ignored (for
-  example, `{count: u32}` and `{count:u32}` are both accepted), but whitespace
-  is not allowed between the name and the colon. Prefer the compact form
-  `{count:u32}` in new code. When a pattern contains no placeholders, the step
-  text must match exactly. Unknown type hints are treated as generic
-  placeholders and capture any non-newline text using a non-greedy match.
+  literal braces with `{{` and `}}`. Use
+  `\` to match a single backslash. A trailing `\` or any other backslash escape
+  is treated literally, so `\d` matches the two-character sequence `\d`. Nested
+  braces inside placeholders are not supported. Braces are not allowed inside
+  type hints. Placeholders use `{name}` or `{name:type}`; the type hint must
+  not contain braces (for example, `{n:{u32}}` and `{n:Vec<{u32}>}` are
+  rejected). To describe braces in the surrounding step text (for example,
+  referring to `{u32}`), escape them as `{{` and `}}` rather than placing them
+  inside `{name:type}`. The lexer closes the placeholder at the first `}` after
+  the optional type hint; any characters between the `:type` and that first `}`
+  are ignored (for example, `{n:u32 extra}` parses as `name = n`, `type = u32`).
+  `name` must start with a letter or underscore and may contain letters,
+  digits, or underscores (`[A-Za-z_][A-Za-z0-9_]*`). Whitespace within the type
+  hint is ignored (for example, `{count: u32}` and `{count:u32}` are both
+  accepted), but whitespace is not allowed between the name and the colon.
+  Prefer the compact form `{count:u32}` in new code. When a pattern contains no
+  placeholders, the step text must match exactly. Unknown type hints are
+  treated as generic placeholders and capture any non-newline text using a
+  non-greedy match.
 
 ## Data tables and doc strings
 
@@ -1746,324 +2188,6 @@ fn users_exist(#[datatable] rows: Rows<UserRow>) {
 Projects that prefer to work with raw rows can declare the argument as
 `Vec<Vec<String>>` and handle parsing manually. Both forms can co-exist within
 the same project, allowing incremental adoption of typed tables.
-
-```rust,no_run
-# fn reset_state_before_assignment() {}
-
-# fn with_state<R>(_: impl FnOnce(&mut ()) -> R) -> R { unimplemented!() }
-#[given("a fresh GPUI window is opened")]
-fn fresh_gpui_window_is_opened(
-    #[from(rstest_bdd_harness_context)] context: &mut gpui::TestAppContext,
-) {
-    let stale_window_count = with_state(|state| usize::from(state.window.is_some()));
-    reset_state_before_assignment();
-
-    let (entity, visual_context) =
-        context.add_window_view(|_context| CounterView::default());
-    let window = visual_context.window_handle();
-
-    with_state(|state| {
-        state.entity = Some(entity);
-        state.window = Some(window);
-        state.opened_window_count = context.windows().len();
-    });
-
-    assert_eq!(
-        stale_window_count, 0,
-        "reset-before-assignment should remove stale scenario state"
-    );
-}
-```
-
-The third snippet shows a `#[when]` and a `#[then]` step that rebuild
-`VisualTestContext` from the stored window handle plus the harness-provided
-`TestAppContext`. `VisualTestContext::from_window` returns
-`Option<VisualTestContext>` because the window handle and the borrowed context
-must come from the same `TestAppContext`; the `let … else { panic!(…) }` shape
-is appropriate here because a `None` value means an invariant of the playbook
-has been violated, not a legitimate test outcome. This form also passes the
-repository's pedantic lint profile:
-
-```rust,no_run
-# use rstest_bdd_macros::{then, when};
-
-# fn current_handles() -> (gpui::Entity<()>, gpui::AnyWindowHandle) { unimplemented!() }
-#[when("the view is updated through a reconstructed visual context")]
-fn view_is_updated_through_reconstructed_visual_context(
-    #[from(rstest_bdd_harness_context)] context: &mut gpui::TestAppContext,
-) {
-    let (entity, window) = current_handles();
-    let Some(mut visual_context) = gpui::VisualTestContext::from_window(window, context) else {
-        panic!("stored window handle should reconstruct visual context");
-    };
-    assert_eq!(
-        visual_context.update_entity(entity, |view| view.value += 1),
-        Ok(())
-    );
-}
-
-#[then("the durable handles still identify the updated view")]
-fn durable_handles_identify_the_updated_view(
-    #[from(rstest_bdd_harness_context)] context: &mut gpui::TestAppContext,
-) {
-    let (entity, window) = current_handles();
-    let Some(visual_context) = gpui::VisualTestContext::from_window(window, context) else {
-        panic!("stored window handle should reconstruct visual context");
-    };
-
-    assert_eq!(
-        visual_context.read_entity(entity, |view| view.value),
-        Some(1)
-    );
-}
-```
-
-The error shape is consistent across all three snippets: surfaces of
-infrastructure invariants (handle reconstruction, fixture-stored handles)
-panic, and step-level domain assertions use `assert_eq!`. Steps that need to
-distinguish a legitimate failure mode from a programming invariant should return
-`StepResult<()>` and propagate the failure with `?`; mixing
-panic-on-invariant-violation `let … else { panic!(…) }` branches and
-`StepResult` within the same playbook reads ambiguously, so pick one shape per
-scenario.
-
-### Fixture key versus parameter name
-
-Steps request the GPUI context through the *reserved fixture key*
-`rstest_bdd_harness_context`. The key is part of the public contract: every
-first-party adapter (Tokio, GPUI, and any future harness) injects its typed
-context through the same key, so step authors can rely on it across adapters.
-The *parameter name* used on the receiving side (`context` in the snippets
-above and in the regression suite) is adapter-agnostic and chosen by the step
-author for readability. The `#[from(rstest_bdd_harness_context)]` attribute is
-what binds the key, so do not let parameter naming convince a reader the
-binding name is part of the contract.
-
-#### Where to read more
-
-- [rstest-bdd design][rstest-bdd-design] §2.7.6.1 and §2.7.6.2 explain
-  why the workaround takes this shape and what the borrow contract currently
-  allows.
-- [rstest-bdd design][rstest-bdd-design] §2.7.6.5 records the v0.7.0
-  redesign target that retires the thread-local approach.
-- `crates/rstest-bdd-harness-gpui/tests/stateful_window.rs` is the
-  executable reference suite. Read it to confirm that the snippet here still
-  matches the regression coverage.
-- `crates/rstest-bdd-harness-gpui/tests/features/stateful_window.feature`
-  shows the Gherkin shape the suite binds to.
-- The v0.6.0 migration guide's [Migrate a stateful GPUI
-  test][gpui-migration] subsection (inside "Adopt GPUI harness configuration")
-  walks readers through moving an existing scenario to the playbook.
-- Design-document §2.7.6.6 documents the feature-file rebuild-invalidation
-  foot-gun (`.feature`-only edits do not trigger a rebuild until roadmap item
-  11.3.1 lands).
-- Design-document §2.7.6.7 documents the full cargo test versus nextest matrix
-  for `#[serial]` and thread-local state.
-
-#### Pedantic lint profile
-
-The snippets above are the lint-clean form used by the regression suite. The
-repository runs Whitaker's `no_unwrap_or_else_panic` Dylint lint from
-`make lint`, so `unwrap_or_else(|| panic!(…))` is rejected even when it encodes
-an infrastructure invariant. The workspace also denies `clippy::expect_used` and
-`clippy::unwrap_used`, so `.expect(...)` and `.unwrap()` are not acceptable
-replacements.
-
-Use `let … else { panic!(…) }` with a fresh binding name:
-
-```rust,no_run
-
-# fn current_handles() -> Option<gpui::AnyWindowHandle> { unimplemented!() }
-let Some(window) = current_handles() else {
-    panic!("scenario should have stored a window handle");
-};
-```
-
-Under `clippy::shadow_reuse`, avoid re-using the same name for a trimmed or
-borrowed binding. For example, prefer a fresh guard name such as `world_guard`
-over shadowing `world`. [ADR-013][adr-013] records the decision to enforce this
-single Whitaker lint now while deferring the full Whitaker suite.
-
-#### Bulk-migration cookbook
-
-When migrating a large test suite, factor the whole durable-handle **step
-library** — the `#[given]`/`#[when]`/`#[then]` steps together with the state
-scaffolding — into one shared module per consuming crate, rather than copying
-it into every test file. This is the v0.6.0 shape, and it is deliberately
-explicit. Once roadmap items 11.1.3 and 11.1.4 ship (`ScenarioStore<T>` and the
-cleanup-guard fixture macro), the shared block shrinks to a single import and
-the `#[scenario]` cleanup parameter is generated for you. Adopt the pattern now
-and expect to shrink it then.
-
-##### Why one shared module works
-
-Steps register globally at binary link time through the
-[`inventory`](https://docs.rs/inventory/) crate, so every step compiled into a
-test binary is discoverable by every scenario in that binary, whatever module
-defined it. Placing the steps in a module that each binding file compiles in
-(through a `#[path]` include) therefore makes one library serve many scenarios
-across many feature files. Each integration-test file is its own binary with
-its own registry, so the same step text in two binaries never collides.
-
-Keep the shared module in the `tests/common/` **subdirectory** form
-(`tests/common/<name>.rs`), not `tests/<name>.rs`: Cargo compiles files placed
-directly under `tests/` as their own test binaries, but treats files in a
-subdirectory as ordinary modules. Mark every item a binding file references as
-`pub`, because a `#[path]`-included module is a real module boundary — the
-single-file worked example above never needed this.
-
-##### Layout
-
-```text
-tests/
-  common/
-    ledger_steps.rs   # shared: state scaffolding + fixture + given/when/then
-  features/
-    first.feature
-    second.feature
-  first_bdd.rs        # #[path] include + one #[scenario]; no steps here
-  second_bdd.rs
-```
-
-##### Binding a scenario
-
-Each binding file includes the shared library and binds a `#[scenario]` with no
-steps of its own. Bind the shared fixture with a module-qualified
-`#[from(...)]` path so its provenance stays visible at the binding site:
-
-```rust,no_run
-#[path = "common/ledger_steps.rs"]
-mod ledger_steps;
-
-use rstest_bdd_macros::scenario;
-
-#[scenario(
-    path = "tests/features/first.feature",
-    name = "First scenario reuses the shared step library",
-)]
-fn first(
-    #[from(ledger_steps::ledger_state)] _state: ledger_steps::LedgerState,
-) {
-}
-```
-
-The shared module keeps durable scenario state in a regular `rstest` fixture
-backed by `Slot<T>` — the clean shape recommended when steps do not also need
-mutable harness context — and defines the `#[given]`/`#[when]`/`#[then]` steps
-once. This keeps the library in one place, avoids copy-paste drift, and makes a
-consuming crate's growth cost one binding file per scenario rather than a fresh
-copy of the helpers.
-
-The executable reference for this shape lives at
-`crates/rstest-bdd/tests/bulk_migration_cookbook_a.rs` and `_b.rs`, both sharing
-`crates/rstest-bdd/tests/common/bulk_migration_steps.rs`; the compile-checked
-mirror is the trybuild fixture
-`crates/rstest-bdd/tests/fixtures_macros/scenario_bulk_migration_cookbook.rs`.
-If a snippet here drifts from those, the suite wins.
-
-##### Applying it to stateful GPUI scenarios
-
-For GPUI, the shared module holds the durable-handle library from the "Worked
-example" above: the `ScenarioState`, `thread_local!`, the two reset helpers, the
-`ScenarioStateCleanup` `Drop` guard, the `scenario_state_cleanup` fixture, and
-the `#[given]`/`#[when]`/`#[then]` steps that store `Entity<T>` and
-`AnyWindowHandle` and rebuild `VisualTestContext`. Each binding then adds
-`harness = rstest_bdd_harness_gpui::GpuiHarness` and `#[serial]` and binds the
-cleanup fixture the same module-qualified way, exactly as the single-scenario
-worked example shows. The executable reference for the GPUI half is
-`crates/rstest-bdd-harness-gpui/tests/stateful_window.rs`, so the sharing
-mechanism (this suite) and the GPUI durable-handle specifics
-(`stateful_window.rs`) are each backed by a runnable reference.
-
-Those GPUI snippets are written against the *vendored* gpui. Adopters on the
-published `gpui 0.2.2` — the audience migrating real suites — should adapt them
-using the vendored-to-published mapping table above (under "Durable handles
-versus visual context").
-
-Editing only a `.feature` file does not trigger a rebuild (see design-document
-§2.7.6.6), so touch a binding `.rs` file (or run `cargo clean -p <crate>`)
-after changing feature text; otherwise a stale build can mask the change.
-
-#### Test-runner parallelism and scenario state
-
-Stateful scenarios that share thread-local or process-wide state need different
-serialization tools depending on the test runner. The `#[serial]` attribute
-from the [`serial_test`](https://docs.rs/serial_test/) crate is still required
-for `cargo test` compatibility, even though cargo-nextest runs each test in a
-separate operating-system process.
-
-| Runner                     | `#[serial]` effect         | Cross-process exclusivity      |
-| -------------------------- | -------------------------- | ------------------------------ |
-| `cargo test`               | In-process mutex; required | Not provided by `#[serial]`    |
-| nextest (process-per-test) | Redundant-but-harmless     | `#[file_serial]` or test-group |
-
-*Table: `#[serial]` behaviour by test runner.*
-
-Under `cargo test`, all tests in one integration-test binary run in a single
-process using multiple threads. `#[serial]` serializes tests that carry the
-same key, or all unkeyed `#[serial]` tests together, with an in-process mutex.
-Stateful GPUI scenarios therefore keep `#[serial]` so the reset protocol is
-respected when the suite runs without nextest.
-
-Under cargo-nextest (`cargo nextest run`, which this repository's `make test`
-target uses), each test is run in its own process. The `#[serial]` mutex is not
-contended across process boundaries, so the annotation is
-redundant-but-harmless for nextest runs. Keep it for `cargo test`; do not
-remove it just because nextest already isolates per-process thread-local state.
-The design rationale is recorded in
-[design-document §2.7.6.7][design-runner-parallelism], and the maintainer
-convention is summarized in [the developer guide][developer-serial-nextest].
-
-When separate test processes or separate test binaries must not overlap, use a
-cross-process mechanism instead of `#[serial]`. cargo-nextest
-[test-groups][nextest-test-groups] define logical mutexes across the whole
-nextest run. This example makes any test whose name contains `stateful_gpui::`
-run one at a time:
-
-```toml
-[test-groups]
-stateful-gpui = { max-threads = 1 }
-
-[[profile.default.overrides]]
-filter = 'test(stateful_gpui::)'
-test-group = 'stateful-gpui'
-```
-
-Test-groups are available in cargo-nextest 0.9.48 and later. They apply only to
-nextest scheduling; they do not change `cargo test` behaviour.
-
-The `serial_test` crate also provides `#[file_serial]`, which uses a file lock
-instead of the in-process mutex. Enable the crate's `file_locks` feature before
-using it:
-
-```toml
-[dev-dependencies]
-serial_test = { version = "...", features = ["file_locks"] }
-```
-
-The feature flag is the important part; choose the major version already used
-by the consuming workspace. The `file_locks` feature is available in both the
-2.x and 3.x `serial_test` lines.
-
-```rust,no_run
-
-
-# use serial_test::file_serial;
-#[test]
-#[file_serial(stateful_gpui)]
-fn opens_shared_gpui_resource() {
-    // Exercise the shared resource.
-}
-```
-
-`#[file_serial]` defaults to a lock file under the operating system's temporary
-directory, and supports explicit `path` and key arguments. It does not mutually
-exclude tests annotated with `#[serial]`; the two attributes use different lock
-mechanisms. Use one cross-process convention consistently for tests that must
-exclude one another.
-
-[gpui-migration]:
-v0-6-0-migration-guide.md#migrate-a-stateful-gpui-test
 
 ### Performance and caching
 
@@ -2658,139 +2782,3 @@ three amigos in the specification process.
 [design-runner-parallelism]: https://github.com/leynos/rstest-bdd/blob/main/docs/rstest-bdd-design.md#2767-test-runner-parallelism-and-scenario-state
 [developer-serial-nextest]: https://github.com/leynos/rstest-bdd/blob/main/docs/developers-guide.md#serial-file_serial-and-nextest-test-groups
 [nextest-test-groups]: https://nexte.st/docs/configuration/test-groups/
-
-### Worked example
-
-The snippets below mirror the regression suite at
-`crates/rstest-bdd-harness-gpui/tests/stateful_window.rs` identifier for
-identifier. Treat that file as the executable reference: if a snippet here
-drifts from the suite, the suite wins and this section should be updated to
-match.
-
-The first snippet declares the scenario-state container, the two reset helpers,
-the `Drop`-based cleanup type, and the two `#[scenario]` functions that bind to
-the feature file. Each scenario carries `#[serial]` and pulls in the
-`scenario_state_cleanup` fixture so its constructor-side reset runs before any
-step:
-
-```rust,no_run
-# use rstest::fixture;
-```
-
-#### When to reach for the stateful playbook
-
-Stateful GPUI scenarios are those whose steps share durable resources, such as
-a typed view entity and the window that owns it, and need mutable access to the
-harness-provided `gpui::TestAppContext` as well. Scenarios that only read the
-harness context, or that share state through ordinary
-[`rstest`](https://docs.rs/rstest/) fixtures without also borrowing
-`TestAppContext` mutably, should keep using plain fixtures and skip this
-playbook. The pattern below is needed precisely when a single step must borrow
-both `&mut TestAppContext` and shared mutable scenario state, which the v0.6
-`StepContext` API cannot express in one borrow.
-
-#### Stateful GPUI scenarios with durable handles
-
-> **Note: this is a v0.6 interim workaround.**
->
-> The thread-local scenario-state pattern below is the recommended way to
-> share mutable GPUI state across BDD steps in `rstest-bdd` 0.6.0, but it
-> exists to work around the current `StepContext::borrow_mut` contract
-> selected by
-> [ADR-007](https://github.com/leynos/rstest-bdd/blob/main/docs/adr-007-harness-context-injection.md).
-> Sections
-> 2.7.6.2 and 2.7.6.5 of the design document
-> ([rstest-bdd design][rstest-bdd-design]) and roadmap items 12.1.x track
-> the v0.7.0 redesign that will retire the thread-local approach in favour
-> of guard-based concurrent fixture borrowing and typed harness-context
-> extractors. New code adopted on 0.6 should expect to migrate when the
-> redesign lands; do not build wider abstractions on top of the thread-local
-> shape.
-
-<!-- -->
-
-> **Which gpui does this playbook target?**
->
-> The snippets below and the regression suite at
-> `crates/rstest-bdd-harness-gpui/tests/stateful_window.rs` are written
-> against the *vendored* gpui under `vendor/gpui`. Downstream crates using
-> the *published* `gpui 0.2.2` on crates.io encounter a different test API.
-> The four shapes that differ are:
->
-<!-- markdownlint-disable MD013 -->
->
-> | Operation | Vendored gpui (regression suite + these snippets) | Published `gpui 0.2.2` (downstream adopters) |
-> | --- | --- | --- |
-> | `add_window_view` closure | `\|_context\| View::default()` (one argument) | `\|_window, view_cx\| View::new(view_cx)` (two arguments) |
-> | obtain window handle | `visual_cx.window_handle()` (inherent method on `VisualTestContext`) | `vcx.window_handle()` (same call, but `window_handle` is a `VisualContext` trait method, so add `use gpui::VisualContext;`) |
-> | `VisualTestContext::from_window` | returns `Option<VisualTestContext>` (`let … else { panic!(…) }`) | returns `VisualTestContext` by value (no `Option`) |
-> | `read_entity` / `update_entity` | `Option`/`Result` wrappers (`Some(1)`, `Ok(())`) | identity `type Result<T> = T`; returns `R` directly |
->
-<!-- markdownlint-enable MD013 -->
->
-> *Table: Vendored-to-published gpui 0.2.2 API shape differences.*
->
-> Beyond those four shapes, published `gpui 0.2.2` returns
-> `(Entity<V>, &mut VisualTestContext)` from `add_window_view`, while the
-> vendored fork returns `(Entity<T>, VisualTestContext)` by value. Adopters
-> bind the visual context by mutable reference rather than owning it.
->
-> The vendored fork also gives `update_entity` a typed
-> `Result<(), EntityError>` missing-entity path and wraps `read_entity` in
-> `Option<R>`. Published `gpui` returns `R` directly, so adopters cannot depend
-> on that typed error channel.
->
-> Adapt call sites when consuming the published crate. The harness itself
-> (which only deals in `TestAppContext`) is not affected by this divergence.
-
-##### Reset protocol
-
-Thread-local scenario state outlives any single scenario, so each scenario must
-observe a two-sided reset protocol to prevent handle leakage across serial
-scenarios on the same test thread:
-
-- **Reset before assignment.** The first `#[given]` that opens a window
-  resets the thread-local state before storing fresh handles. This makes a
-  reused thread observe a clean slate even if the previous scenario aborted in
-  a way that bypassed unwinding.
-- **Reset after teardown.** A `Drop`-based fixture guard runs at scenario
-  exit. Threading the guard through a `#[fixture]` ensures the reset runs on
-  every unwind path: success, assertion failure, and panic alike.
-
-Neither half is redundant. The constructor-side reset on the
-`scenario_state_cleanup` fixture covers the case where a previous scenario
-short-circuited (for example through `skip!`) or panicked in a way that
-suppressed `Drop`. The `Drop` reset covers the symmetric case where the
-*current* scenario panics and the next scenario's fixture is not yet
-constructed when teardown happens. Deleting either call is a correctness
-regression: the regression suite at
-`crates/rstest-bdd-harness-gpui/tests/stateful_window.rs` asserts
-`stale_window_count == 0` after the constructor-side reset to make the ordering
-observable, and the second scenario in `tests/features/stateful_window.feature`
-("Opening a second GPUI window starts from reset state") fails if the `Drop`
-reset is removed.
-
-Each `#[scenario]` that participates in this protocol must carry `#[serial]`
-from the [`serial_test`](https://docs.rs/serial_test/) crate. GPUI scenarios
-share a process-wide `TestAppContext` slot, and the thread-local reset protocol
-assumes sequential execution; running stateful GPUI scenarios in parallel
-breaks both invariants.
-
-See
-[test-runner parallelism and scenario state](#test-runner-parallelism-and-scenario-state)
-for the full `#[serial]`, cargo-nextest, `#[file_serial]`, and nextest
-test-group matrix.
-
-##### Durable handles versus visual context
-
-`gpui::TestAppContext::add_window_view` creates a test window and returns
-`(Entity<T>, VisualTestContext)`. `Entity<T>` is the typed, durable handle to
-the stored view; `VisualTestContext::window_handle()` returns the
-`AnyWindowHandle` that identifies the window itself. Both are cheap to copy and
-remain valid across steps. `VisualTestContext`, by contrast, borrows from the
-`TestAppContext` it was created against and must not be stored across steps: a
-later step is handed a fresh `&mut TestAppContext` from the harness, so any
-saved `VisualTestContext` would be tied to a stale borrow. Stateful steps
-therefore store `Entity<T>` and `AnyWindowHandle` only, and rebuild a fresh
-`VisualTestContext` inside each step that needs visual interaction using
-`gpui::VisualTestContext::from_window(window, &mut cx)`.
