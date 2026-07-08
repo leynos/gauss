@@ -5,7 +5,7 @@ This ExecPlan (execution plan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: IN PROGRESS
+Status: COMPLETE
 
 ## Purpose / big picture
 
@@ -164,7 +164,11 @@ breached.
   helpers from `tests/gpui_history_draw_undo.rs`, trimmed the imports, and kept
   the two remaining `#[gpui::test]` functions. Full-workspace `make all` gate
   pending.
-- [ ] Stage G: update the beta tester's log and this plan's retrospective.
+- [x] (2026-07-08) Milestone 2 gate: `make all` green (909 passed).
+  CodeRabbit `review --agent`: **0 findings**.
+- [x] (2026-07-08) Stage G: updated the beta tester's log
+  (`~/docs/rstest-bdd-v0-6-0-beta3-gauss-testers-log.md`) and this plan's
+  retrospective. Plan COMPLETE.
 
 ## Surprises & discoveries
 
@@ -203,11 +207,20 @@ breached.
   `VisualTestContext::from_window(window, cx: &TestAppContext) -> Self`
   (owned, takes a shared `&TestAppContext`), `window_handle()` is a
   `gpui::VisualContext` trait method, and `add_window_view` returns
-  `(Entity<V>, &mut VisualTestContext)`. Steps use `.expect(...)` (the
-  workspace `clippy.toml` sets `allow-expect-in-tests = true`; `unwrap` is not
-  allowed in tests).
+  `(Entity<V>, &mut VisualTestContext)`.
   Rationale: avoid compile churn and match the gate-passing house style.
   Date/Author: 2026-07-08, implementation.
+
+- Decision: step and helper bodies use `let … else { panic!(…) }` for
+  Option/Result unwrapping, not `.expect(...)`.
+  Rationale: the plan assumed the `clippy.toml` `allow-expect-in-tests = true`
+  allowance would cover the step code. It does not — that allowance only exempts
+  `#[test]`/`#[gpui::test]` function bodies, and `#[given]`/`#[when]`/`#[then]`
+  steps (and their helpers) are plain functions, so `expect_used`/`unwrap_used`
+  fire there under `--all-targets` clippy. `shadow_reuse` also had to be avoided
+  by binding the handle tuple to a separate name before the `let … else`. The
+  playbook's own `let … else { panic!(…) }` shape passes the pedantic profile.
+  Date/Author: 2026-07-08, implementation (surfaced by the milestone-2 gate).
 
 - Decision: substitute a falsification check for a literal red-skeleton stage.
   Rationale: the deliverable *is* a test, so "fails before implementation" is
@@ -218,9 +231,34 @@ breached.
 
 ## Outcomes & retrospective
 
-To be completed at the end of implementation. Compare against Purpose: did the
-GPUI harness drive a real `TestAppContext` scenario against published
-`gpui 0.2.2`, and what friction did the beta surface?
+Both objectives were met. The workspace now builds and tests against
+`rstest-bdd 0.6.0-beta3`, and the draw/undo/redo GPUI behaviour runs as a
+Gherkin scenario driven through `rstest_bdd_harness_gpui::GpuiHarness` against
+the **published** `gpui 0.2.2`. `make all` is green (909 tests; net-zero count
+after swapping one `#[gpui::test]` for the BDD scenario), and a broken-assertion
+falsification proved the harness attributes failures to the feature path, line,
+scenario name, and failing step.
+
+What went well:
+
+- The headline risk (harness/`gpui 0.2.2` version incompatibility) did not
+  materialise: `rstest-bdd-harness-gpui 0.6.0-beta3` shares the single
+  `gpui 0.2.2` node, so `TestAppContext` unified with no `[patch]` gymnastics.
+- Verifying the published `gpui` API against the crate source up front avoided
+  the vendored-vs-published compile churn the plan anticipated.
+- `harness = GpuiHarness` inferred `#[gpui::test]` with no `attributes = ...`.
+
+What would be done differently:
+
+- The plan assumed `.expect(...)` would be fine in step bodies under
+  `allow-expect-in-tests`. It was not, because steps are plain functions. Future
+  BDD-on-strict-clippy work should reach for `let … else { panic!(…) }` from the
+  start. Captured as beta feedback in the tester's log.
+- Two avoidable stop-hook fmt failures came from hand-wrapping `use` lists and
+  closures; running `cargo fmt` immediately after each new file would have
+  pre-empted them.
+
+No functional defects were found in `rstest-bdd 0.6.0-beta3` during this trial.
 
 ## Context and orientation
 
@@ -742,3 +780,13 @@ red→green→refactor migration of the `draw_click_adds_points_and_undo_removes
 GPUI test to the `GpuiHarness` stateful playbook (Stages D–F), adapted to the
 published `gpui 0.2.2` API rather than the vendored fork. Awaiting approval
 before implementation.
+
+2026-07-08 — implementation complete. What changed since the draft: the Stage B
+spike confirmed the harness resolves against the single published `gpui 0.2.2`
+(go/no-go passed, no incompatibility). The `.expect(...)`-in-steps assumption
+was wrong — `allow-expect-in-tests` does not cover `#[given]`/`#[when]`/
+`#[then]` step functions, so step and helper bodies use `let … else { panic!(…)
+}` (Decision Log). Two stop-hook fmt failures from hand-wrapped `use` lists and
+closures were resolved with `cargo fmt`. Both milestones passed `make all`
+(909 tests) and CodeRabbit (`review --agent`, 0 findings each). No remaining
+work; Status is COMPLETE.
