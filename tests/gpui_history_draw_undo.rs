@@ -15,6 +15,9 @@ use gauss::model::ShapeId;
 use gauss::ui::{GpuiActivatePenTool, Phase0Shell};
 use gpui::{TestAppContext, point, px};
 
+
+};
+
 #[gpui::test]
 fn activate_pen_tool_from_manipulate_allows_drawing(cx: &mut TestAppContext) {
     init_test_app(cx);
