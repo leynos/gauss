@@ -31,6 +31,14 @@
 //! `#[gpui::test]` body under this beta. Both findings are recorded in the beta
 //! tester's log (`~/docs/rstest-bdd-v0-6-0-beta3-gauss-testers-log.md`).
 //!
+//! TODO(leynos/rstest-bdd#573): once the step macro resolves `Result` type
+//! aliases (or rejects unresolved return types instead of silently treating
+//! them as values), the step signatures below may use the
+//! `test_support::TestSupportResult<()>` alias for brevity.
+//! TODO(leynos/rstest-bdd#574): once the generated GPUI test body consumes the
+//! scenario `Result`, `draw_undo_scenario` may return
+//! `Result<(), TestSupportError>` and end with `Ok(())` instead of `()`.
+//!
 //! API note: this crate consumes the *published* `gpui 0.2.2`, so
 //! `VisualTestContext::from_window` returns a `VisualTestContext` by value and
 //! `window_handle()` is a `gpui::VisualContext` trait method. These differ from
@@ -125,6 +133,9 @@ fn with_visual_cx<R>(
 }
 
 #[given("a fresh Phase 0 shell window")]
+// TODO(leynos/rstest-bdd#573): spelled-out `Result<..>` (not the
+// `TestSupportResult` alias) is required so the macro treats this as a fallible
+// step; the same applies to every step below.
 fn fresh_phase0_shell_window(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
@@ -234,4 +245,8 @@ fn draw_shape_absent(
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
+// TODO(leynos/rstest-bdd#574): keep this scenario unit-returning. A fallible
+// `-> Result<(), TestSupportError>` return trips `unused_must_use` in the
+// generated `#[gpui::test]` body under `-D warnings`; a unit scenario still
+// propagates step `Err`s.
 fn draw_undo_scenario(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}

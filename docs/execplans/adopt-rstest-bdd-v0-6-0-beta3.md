@@ -313,7 +313,10 @@ defects** — the headline outcomes of the whole trial:
    scenario unit-returning; it still propagates step `Err`s.
 
 Both are documented with a validation matrix and upstream suggestions in the
-beta tester's log. The first is severe (a silent false-green in a test
+beta tester's log, and filed upstream as leynos/rstest-bdd#573 (alias-swallow
+false-green) and leynos/rstest-bdd#574 (fallible-scenario `unused_must_use`).
+The affected sites in `tests/gpui_draw_undo_bdd.rs` carry `TODO(...#573)` /
+`TODO(...#574)` comments. The first is severe (a silent false-green in a test
 framework) and is the most important thing this trial found.
 
 ## Context and orientation
