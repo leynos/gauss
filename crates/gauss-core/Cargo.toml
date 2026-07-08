@@ -14,8 +14,8 @@ undo_2 = "0.2.1"
 [dev-dependencies]
 gauss-core = { path = ".", features = ["test-support"] }
 rstest = "0.26.1"
-rstest-bdd = "0.5.0"
-rstest-bdd-macros = "0.5.0"
+rstest-bdd = "0.6.0-beta3"
+rstest-bdd-macros = "0.6.0-beta3"
 test_support = { version = "0.1.0", path = "../test_support" }
 
 [lints]
