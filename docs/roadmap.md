@@ -73,6 +73,79 @@ styling, gradients, text, effects, symbols, scripting integration.
 
 ______________________________________________________________________
 
+## Migration notes
+
+The following changes or migrations are required to progress from the current
+codebase:
+
+### Document model evolution
+
+The current `Document` uses a flat `Vec<Shape>` structure. The architecture
+document (§5.3) describes a hierarchical `Node` model with `NodeKind` variants
+for different object types. Migration path:
+
+1. Introduce `Node` and `NodeKind` types alongside existing `Shape`.
+2. Migrate `Shape` to `NodeKind::Path`.
+3. Add `NodeKind::Group`, `NodeKind::Rect`, `NodeKind::Ellipse`, etc.
+4. Replace `Vec<Shape>` with `NodeStore` using generational IDs.
+5. Update operations, selection, and rendering accordingly.
+
+### SVG I/O expansion
+
+The current SVG parser handles only `<path>` elements with absolute commands.
+Expansion required:
+
+1. Add parsing for `<rect>`, `<ellipse>`, `<circle>`, `<line>`, `<polyline>`,
+   `<polygon>`.
+2. Add parsing for `<g>` groups with transform inheritance.
+3. Add parsing for `<text>` and `<tspan>` (Phase 2).
+4. Add parsing for gradient definitions (Phase 4).
+5. Define Gauss namespace for metadata and implement stripping for web export.
+
+### Accessibility wiring
+
+The accessibility framework now publishes an AccessKit tree with stable node
+IDs, incremental updates, and explicit chrome semantics. Completed:
+
+1. Implemented `A11yService` as described in architecture §11.1.
+2. Wired existing node IDs to the AccessKit tree.
+3. Exposed roles and labels for UI chrome.
+4. Added incremental update mechanism.
+
+Accessibility wiring is complete for Phase 0 scope: AccessKit requests for the
+shipped chrome controls now route through the same shell/window action handlers
+used by keyboard shortcuts and UI controls.
+
+### Scripting integration
+
+RustPython is not yet integrated. Steps:
+
+1. Add `rustpython` crate dependency.
+2. Create `gauss-script` module per architecture §17.
+3. Define Python API surface per architecture §13.2.
+4. Ensure all actions are callable from scripts.
+
+### Crate extraction
+
+The repository now uses a Cargo workspace with the following landed split:
+
+- `gauss-core`: document, selection, viewport, commands, tools, and shared
+  deterministic test helpers.
+- `gauss-svg`: SVG parse/serialize plus Gauss metadata handling.
+- `gauss`: GPUI desktop application wiring, views, accessibility, and the
+  user-facing binary.
+- `test_support`: workspace-private test fixtures layered on `gauss-core`.
+
+Further extraction remains optional as the codebase grows:
+
+- `gauss-geometry`: additional Bézier maths, booleans, or heavier geometry
+  kernels if they outgrow `gauss-core`.
+- `gauss-render`: scene extraction, caching, and draw adapters.
+- `gauss-a11y`: AccessKit integration if it becomes reusable beyond the app.
+- `gauss-script`: RustPython host.
+
+______________________________________________________________________
+
 ## 0. Architecture foundations
 
 **Goal**: Establish the architectural spine before broad feature work
@@ -872,76 +945,3 @@ format strategy.
 - [ ] 6.7.4. Beta testing.
   - [ ] Recruit testers.
   - [ ] Collect and address feedback.
-
-______________________________________________________________________
-
-## Migration notes
-
-The following changes or migrations are required to progress from the current
-codebase:
-
-### Document model evolution
-
-The current `Document` uses a flat `Vec<Shape>` structure. The architecture
-document (§5.3) describes a hierarchical `Node` model with `NodeKind` variants
-for different object types. Migration path:
-
-1. Introduce `Node` and `NodeKind` types alongside existing `Shape`.
-2. Migrate `Shape` to `NodeKind::Path`.
-3. Add `NodeKind::Group`, `NodeKind::Rect`, `NodeKind::Ellipse`, etc.
-4. Replace `Vec<Shape>` with `NodeStore` using generational IDs.
-5. Update operations, selection, and rendering accordingly.
-
-### SVG I/O expansion
-
-The current SVG parser handles only `<path>` elements with absolute commands.
-Expansion required:
-
-1. Add parsing for `<rect>`, `<ellipse>`, `<circle>`, `<line>`, `<polyline>`,
-   `<polygon>`.
-2. Add parsing for `<g>` groups with transform inheritance.
-3. Add parsing for `<text>` and `<tspan>` (Phase 2).
-4. Add parsing for gradient definitions (Phase 4).
-5. Define Gauss namespace for metadata and implement stripping for web export.
-
-### Accessibility wiring
-
-The accessibility framework now publishes an AccessKit tree with stable node
-IDs, incremental updates, and explicit chrome semantics. Completed:
-
-1. Implemented `A11yService` as described in architecture §11.1.
-2. Wired existing node IDs to the AccessKit tree.
-3. Exposed roles and labels for UI chrome.
-4. Added incremental update mechanism.
-
-Accessibility wiring is complete for Phase 0 scope: AccessKit requests for the
-shipped chrome controls now route through the same shell/window action handlers
-used by keyboard shortcuts and UI controls.
-
-### Scripting integration
-
-RustPython is not yet integrated. Steps:
-
-1. Add `rustpython` crate dependency.
-2. Create `gauss-script` module per architecture §17.
-3. Define Python API surface per architecture §13.2.
-4. Ensure all actions are callable from scripts.
-
-### Crate extraction
-
-The repository now uses a Cargo workspace with the following landed split:
-
-- `gauss-core`: document, selection, viewport, commands, tools, and shared
-  deterministic test helpers.
-- `gauss-svg`: SVG parse/serialize plus Gauss metadata handling.
-- `gauss`: GPUI desktop application wiring, views, accessibility, and the
-  user-facing binary.
-- `test_support`: workspace-private test fixtures layered on `gauss-core`.
-
-Further extraction remains optional as the codebase grows:
-
-- `gauss-geometry`: additional Bézier maths, booleans, or heavier geometry
-  kernels if they outgrow `gauss-core`.
-- `gauss-render`: scene extraction, caching, and draw adapters.
-- `gauss-a11y`: AccessKit integration if it becomes reusable beyond the app.
-- `gauss-script`: RustPython host.
