@@ -5,7 +5,7 @@ This ExecPlan (execution plan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: IN PROGRESS (post-review follow-up: fallible steps + `#[then]` concern)
+Status: COMPLETE
 
 ## Purpose / big picture
 
@@ -174,8 +174,8 @@ breached.
   "`#[then]` should be an actual test" concern. Done: steps now return
   spelled-out `Result<(), TestSupportError>`; validation uncovered the
   alias-swallow false-green and the fallible-scenario `unused_must_use` defect
-  (Surprises & Decision Log); concern flagged in the tester's log. Full
-  `make all` gate + CodeRabbit pending.
+  (Surprises & Decision Log); concern flagged in the tester's log. `make all`
+  green (909 passed); CodeRabbit `review --agent`: **0 findings**. Plan COMPLETE.
 
 ## Surprises & discoveries
 
@@ -300,7 +300,21 @@ What would be done differently:
   closures; running `cargo fmt` immediately after each new file would have
   pre-empted them.
 
-No functional defects were found in `rstest-bdd 0.6.0-beta3` during this trial.
+Post-review follow-up (fallible steps + `#[then]` concern): on request, the
+steps and helpers were made fallible (no panics; `Result` + `?`). Validating
+that a `#[then]` is a genuine assertion uncovered **two real `rstest-bdd`
+defects** — the headline outcomes of the whole trial:
+
+1. A step declared with a `Result` **type alias** silently swallows its `Err`,
+   turning a failing `#[then]` into a false green. Fix: spell out `Result<..>`
+   in step signatures.
+2. A fallible scenario return trips `unused_must_use` in the generated
+   `#[gpui::test]` body (hard error under `-D warnings`). Mitigation: keep the
+   scenario unit-returning; it still propagates step `Err`s.
+
+Both are documented with a validation matrix and upstream suggestions in the
+beta tester's log. The first is severe (a silent false-green in a test
+framework) and is the most important thing this trial found.
 
 ## Context and orientation
 
