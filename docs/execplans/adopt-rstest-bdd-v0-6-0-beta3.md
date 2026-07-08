@@ -5,7 +5,7 @@ This ExecPlan (execution plan) is a living document. The sections
 `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
 proceeds.
 
-Status: COMPLETE
+Status: IN PROGRESS (post-review follow-up: fallible steps + `#[then]` concern)
 
 ## Purpose / big picture
 
@@ -168,7 +168,14 @@ breached.
   CodeRabbit `review --agent`: **0 findings**.
 - [x] (2026-07-08) Stage G: updated the beta tester's log
   (`~/docs/rstest-bdd-v0-6-0-beta3-gauss-testers-log.md`) and this plan's
-  retrospective. Plan COMPLETE.
+  retrospective.
+- [ ] Stage H (post-review follow-up, on user request): refactor steps/helpers
+  to be fallible (no panics; `Result` + `?`), and validate the
+  "`#[then]` should be an actual test" concern. Done: steps now return
+  spelled-out `Result<(), TestSupportError>`; validation uncovered the
+  alias-swallow false-green and the fallible-scenario `unused_must_use` defect
+  (Surprises & Decision Log); concern flagged in the tester's log. Full
+  `make all` gate + CodeRabbit pending.
 
 ## Surprises & discoveries
 
@@ -178,6 +185,28 @@ breached.
   `add_window_view(|_window, view_cx|`.
   Impact: confirms `gauss` is on the published `gpui 0.2.2` API surface, so the
   vendored-fork snippets in the upstream guide must be adapted, not copied.
+
+- Observation: a step whose return type is a `Result` **type alias** silently
+  swallows `Err` — the `#[then]` passes green even when its assertion fails.
+  Evidence: with steps declared `-> TestSupportResult<()>` (an alias for
+  `Result<(), TestSupportError>`) and the anchor-count assertion deliberately
+  broken, `cargo test` (after recompiling `gauss`) reported `1 passed`.
+  Spelling the type out as `Result<(), TestSupportError>` made the identical
+  broken assertion fail (`Step failed at index 2 ... expectation failed`).
+  Impact: the `rstest-bdd` step macro classifies return types syntactically and
+  does not resolve aliases, so an alias step is treated as value-returning and
+  its `Err` is discarded. This is a silent false-green — the worst failure class
+  for a test framework. All step signatures now spell out `Result<..>`. Filed as
+  the FLAGGED CONCERN in the beta tester's log with a full validation matrix and
+  upstream suggestions.
+
+- Observation: a *fallible* scenario (`-> Result<(), E>`) trips
+  `unused_must_use` in the generated `#[gpui::test]` body (a hard error under
+  `-D warnings`).
+  Evidence: `warning: unused Result that must be used --> ...#[scenario(...`,
+  escalated to an error by `cargo clippy -- -D warnings`.
+  Impact: a unit (`()`) scenario still propagates step `Err`s correctly, so the
+  scenario is kept unit-returning; the fallible-scenario shape is avoided.
 
 ## Decision log
 
@@ -221,6 +250,19 @@ breached.
   by binding the handle tuple to a separate name before the `let … else`. The
   playbook's own `let … else { panic!(…) }` shape passes the pedantic profile.
   Date/Author: 2026-07-08, implementation (surfaced by the milestone-2 gate).
+
+- Decision: on user request, make steps and helpers fully fallible (return
+  `Result`, propagate with `?` / explicit `Err`) instead of panicking, and keep
+  the scenario unit-returning. Step signatures spell out
+  `Result<(), TestSupportError>` (never the `TestSupportResult` alias).
+  Rationale: the user asked to avoid panics in fixtures/steps and prefer
+  fallible functions, and to validate that a `#[then]` is a real test.
+  Validation uncovered that the `Result` type alias silently swallows step
+  `Err`s (false green) and that a fallible scenario trips `unused_must_use`
+  under `-D warnings`; the spelled-out-step + unit-scenario shape is the only
+  combination that is both a genuine assertion and lint-clean. `with_visual_cx`
+  returns `Err` for the missing-handle invariant so the last panic is gone.
+  Date/Author: 2026-07-08, implementation (post-milestone-2 follow-up).
 
 - Decision: substitute a falsification check for a literal red-skeleton stage.
   Rationale: the deliverable *is* a test, so "fails before implementation" is

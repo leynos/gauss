@@ -15,6 +15,22 @@
 //! and observes a two-sided reset protocol: a reset before the first assignment
 //! of fresh handles, and a `Drop`-based reset after the scenario ends.
 //!
+//! Steps and their helpers are fallible: they propagate failures with `?` or an
+//! explicit `Err`, rather than panicking. An `Err` returned from a step aborts
+//! the scenario and fails the test, so the `Then` steps are genuine assertions.
+//!
+//! IMPORTANT: every step signature spells out `Result<(), TestSupportError>`
+//! rather than the `TestSupportResult` type alias. The `rstest-bdd` step macro
+//! classifies the return type syntactically and does *not* see through a
+//! `Result` type alias: with the alias it treats the returned value as an
+//! opaque payload and silently discards the `Err`, producing a false green.
+//! Spelling out `Result<..>` makes the macro treat the step as fallible so
+//! failures actually fail the test. The scenario itself returns `()`, not a
+//! `Result`: a unit scenario still propagates step `Err`s (validated), whereas
+//! a fallible scenario return trips `unused_must_use` in the generated
+//! `#[gpui::test]` body under this beta. Both findings are recorded in the beta
+//! tester's log (`~/docs/rstest-bdd-v0-6-0-beta3-gauss-testers-log.md`).
+//!
 //! API note: this crate consumes the *published* `gpui 0.2.2`, so
 //! `VisualTestContext::from_window` returns a `VisualTestContext` by value and
 //! `window_handle()` is a `gpui::VisualContext` trait method. These differ from
@@ -35,6 +51,7 @@ use gpui::{
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
+use test_support::{TestSupportError, TestSupportResult};
 
 /// Durable, per-scenario handles shared across steps.
 ///
@@ -87,95 +104,128 @@ fn scenario_state_cleanup() -> ScenarioStateCleanup {
 /// Rebuild a fresh `VisualTestContext` from the stored window handle and the
 /// harness-provided `TestAppContext`, then run `f` with the durable view entity.
 ///
+/// Returns `Err` when the durable handles have not been assigned (a scenario
+/// ordering invariant), so callers can propagate with `?` rather than panic.
+///
 /// Published `gpui 0.2.2`: `from_window` takes `&TestAppContext` and returns a
 /// `VisualTestContext` by value.
 fn with_visual_cx<R>(
     cx: &mut TestAppContext,
-    f: impl FnOnce(&mut VisualTestContext, &Entity<Phase0Shell>) -> R,
-) -> R {
+    f: impl FnOnce(&mut VisualTestContext, &Entity<Phase0Shell>) -> TestSupportResult<R>,
+) -> TestSupportResult<R> {
     let handles = with_state(|state| (state.entity.clone(), state.window));
     let (Some(entity), Some(window)) = handles else {
-        panic!("durable view and window handles should be set by the given step");
+        return Err(TestSupportError::missing(
+            "scenario handles",
+            "durable view and window handles set by the given step",
+        ));
     };
     let mut visual_cx = VisualTestContext::from_window(window, cx);
     f(&mut visual_cx, &entity)
 }
 
 #[given("a fresh Phase 0 shell window")]
-fn fresh_phase0_shell_window(#[from(rstest_bdd_harness_context)] cx: &mut TestAppContext) {
+fn fresh_phase0_shell_window(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
     reset_state_before_assignment();
     init_test_app(cx);
     let (entity, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
     let window = visual_cx.window_handle();
-    let Ok((first, second)) = canvas_points(visual_cx) else {
-        panic!("canvas points should be available");
-    };
+    let (first, second) = canvas_points(visual_cx)?;
     with_state(|state| {
         state.entity = Some(entity);
         state.window = Some(window);
         state.first = Some(first);
         state.second = Some(second);
     });
+    Ok(())
 }
 
 #[when("the first anchor is placed")]
-fn place_first_anchor(#[from(rstest_bdd_harness_context)] cx: &mut TestAppContext) {
+fn place_first_anchor(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
     let Some(first) = with_state(|state| state.first) else {
-        panic!("first canvas point should be set");
+        return Err(TestSupportError::missing(
+            "first canvas point",
+            "set by the given step",
+        ));
     };
     with_visual_cx(cx, |visual_cx, _view| {
         click_canvas_and_wait(visual_cx, first);
-    });
+        Ok(())
+    })
 }
 
 #[when("the second anchor is placed")]
-fn place_second_anchor(#[from(rstest_bdd_harness_context)] cx: &mut TestAppContext) {
+fn place_second_anchor(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
     let Some(second) = with_state(|state| state.second) else {
-        panic!("second canvas point should be set");
+        return Err(TestSupportError::missing(
+            "second canvas point",
+            "set by the given step",
+        ));
     };
     with_visual_cx(cx, |visual_cx, _view| {
         click_canvas_and_wait(visual_cx, second);
-    });
+        Ok(())
+    })
 }
 
 #[when("the last change is undone")]
-fn undo_last_change(#[from(rstest_bdd_harness_context)] cx: &mut TestAppContext) {
-    with_visual_cx(cx, |visual_cx, _view| simulate_document_undo(visual_cx));
+fn undo_last_change(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_visual_cx(cx, |visual_cx, _view| {
+        simulate_document_undo(visual_cx);
+        Ok(())
+    })
 }
 
 #[when("the last change is redone")]
-fn redo_last_change(#[from(rstest_bdd_harness_context)] cx: &mut TestAppContext) {
-    with_visual_cx(cx, |visual_cx, _view| simulate_document_redo(visual_cx));
+fn redo_last_change(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_visual_cx(cx, |visual_cx, _view| {
+        simulate_document_redo(visual_cx);
+        Ok(())
+    })
 }
 
 #[then("the draw shape anchor count is {count:usize}")]
 fn draw_shape_anchor_count(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
     count: usize,
-) {
+) -> Result<(), TestSupportError> {
     with_visual_cx(cx, |visual_cx, view| {
         let doc = read_document(visual_cx, view);
-        let Ok(shape) = require_draw_shape(&doc, "draw_undo scenario") else {
-            panic!("draw shape should be present");
-        };
-        assert_eq!(
-            shape.path.anchors.len(),
-            count,
-            "unexpected anchor count on the draw shape"
-        );
-    });
+        let shape = require_draw_shape(&doc, "draw_undo scenario")?;
+        let actual = shape.path.anchors.len();
+        if actual != count {
+            return Err(TestSupportError::expectation(format!(
+                "expected the draw shape to have {count} anchor(s), found {actual}"
+            )));
+        }
+        Ok(())
+    })
 }
 
 #[then("the draw shape is absent")]
-fn draw_shape_absent(#[from(rstest_bdd_harness_context)] cx: &mut TestAppContext) {
+fn draw_shape_absent(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
     with_visual_cx(cx, |visual_cx, view| {
         let doc = read_document(visual_cx, view);
-        assert!(
-            find_draw_shape(&doc).is_none(),
-            "draw shape should be absent after undoing the first click"
-        );
-    });
+        if find_draw_shape(&doc).is_some() {
+            return Err(TestSupportError::expectation(
+                "expected the draw shape to be absent after undoing the first click".to_owned(),
+            ));
+        }
+        Ok(())
+    })
 }
 
 #[scenario(
