@@ -150,13 +150,20 @@ breached.
   `0.6.0-beta3` in all three manifests. `cargo test -p gauss-core -p gauss-svg`
   green (0 failed). Full-workspace `make all` gate pending before the
   milestone-1 CodeRabbit review.
-- [ ] Stage D (red): add `tests/features/draw_undo.feature` and a failing
-  `tests/gpui_draw_undo_bdd.rs` skeleton.
-- [ ] Stage E (green): implement the GPUI harness steps and thread-local state;
-  scenario passes.
-- [ ] Stage F (refactor/cleanup): remove
-  `draw_click_adds_points_and_undo_removes` and its now-dead helpers from
-  `tests/gpui_history_draw_undo.rs`; run the full gate.
+- [x] (2026-07-08) Milestone 1 gate: `make all` green (909 tests passed, fmt +
+  clippy clean). CodeRabbit `review --agent`: **0 findings**.
+- [x] (2026-07-08) Stage D/E: added `tests/features/draw_undo.feature` and
+  implemented `tests/gpui_draw_undo_bdd.rs` (steps + thread-local state).
+  `cargo test --test gpui_draw_undo_bdd --features test-support` → `1 passed`.
+  Falsification: temporarily changing the anchor-count assertion to `count + 1`
+  produced a red at step index 2 (`Then the draw shape anchor count is 1`) with
+  the harness prepending feature path/line/scenario name to the panic; reverted
+  to green.
+- [x] (2026-07-08) Stage F (refactor/cleanup): removed
+  `draw_click_adds_points_and_undo_removes` and its nine now-dead file-local
+  helpers from `tests/gpui_history_draw_undo.rs`, trimmed the imports, and kept
+  the two remaining `#[gpui::test]` functions. Full-workspace `make all` gate
+  pending.
 - [ ] Stage G: update the beta tester's log and this plan's retrospective.
 
 ## Surprises & discoveries
@@ -190,6 +197,24 @@ breached.
   Rationale: the GPUI integration tests live in the root crate's `tests/`
   directory; the harness and serial gate are only needed there.
   Date/Author: 2026-07-08, planning session.
+
+- Decision: verified the published `gpui 0.2.2` test API against the crate
+  source rather than trusting the guide's vendored snippets:
+  `VisualTestContext::from_window(window, cx: &TestAppContext) -> Self`
+  (owned, takes a shared `&TestAppContext`), `window_handle()` is a
+  `gpui::VisualContext` trait method, and `add_window_view` returns
+  `(Entity<V>, &mut VisualTestContext)`. Steps use `.expect(...)` (the
+  workspace `clippy.toml` sets `allow-expect-in-tests = true`; `unwrap` is not
+  allowed in tests).
+  Rationale: avoid compile churn and match the gate-passing house style.
+  Date/Author: 2026-07-08, implementation.
+
+- Decision: substitute a falsification check for a literal red-skeleton stage.
+  Rationale: the deliverable *is* a test, so "fails before implementation" is
+  best evidenced by implementing it, observing green, then temporarily breaking
+  one `Then` expectation to observe a red for the intended reason and reverting.
+  This is the execplans-sanctioned nearest observable substitute.
+  Date/Author: 2026-07-08, implementation.
 
 ## Outcomes & retrospective
 
