@@ -1,175 +1,158 @@
-//! GPUI headless integration tests for manipulate-mode multi-shape dragging.
-//!
-//! When multiple shapes are selected, dragging any selected shape should:
-//!
-//! - keep the selection intact, and
-//! - translate all selected shapes by the same delta.
+//! Behavioural coverage for dragging a multi-shape selection.
 
 mod common;
+#[path = "selection_bdd/support.rs"]
+mod support;
 
-use common::{
-    add_square, assert_shape_translated_by_delta, canvas_bounds, ensure_initial_draw,
-    init_test_app, read_document,
+use common::{add_square, assert_shape_translated_by_delta, canvas_bounds, read_document};
+use gauss::model::{SelItem, Selection, Vec2};
+use gpui::{Modifiers, MouseButton, TestAppContext};
+use rstest_bdd_macros::{given, scenario, then, when};
+use serial_test::serial;
+use support::{
+    ScenarioStateCleanup, require_point, require_selection_contains_shapes, require_shape,
+    require_shape_id, shape_bbox_centre, viewport_to_screen_point, with_state, with_visual_cx,
 };
-use gauss::model::{Document, SelItem, Shape, ShapeId, Vec2};
-use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, px};
-use test_support::{TestSupportError, TestSupportResult, math};
+use test_support::TestSupportError;
 
-fn find_shape<'a>(doc: &'a Document, id: ShapeId, context: &str) -> TestSupportResult<&'a Shape> {
-    let message = format!("shape {id:?}: {context}");
-    doc.shape(id)
-        .ok_or_else(|| TestSupportError::missing("shape", message))
-}
-
-fn shape_bbox_centre(shape: &Shape) -> Vec2 {
-    assert!(
-        !shape.path.anchors.is_empty(),
-        "expected shape anchors when computing bounding box centre"
-    );
-    let mut min_x = f32::INFINITY;
-    let mut min_y = f32::INFINITY;
-    let mut max_x = f32::NEG_INFINITY;
-    let mut max_y = f32::NEG_INFINITY;
-    for anchor in &shape.path.anchors {
-        min_x = min_x.min(anchor.pos.x);
-        min_y = min_y.min(anchor.pos.y);
-        max_x = max_x.max(anchor.pos.x);
-        max_y = max_y.max(anchor.pos.y);
-    }
-    Vec2::new(math::midpoint(min_x, max_x), math::midpoint(min_y, max_y))
-}
-
-const fn viewport_to_screen_point(
-    viewport: gauss::model::Viewport,
-    world: Vec2,
-) -> gpui::Point<gpui::Pixels> {
-    let screen = viewport.world_to_screen(world);
-    gpui::point(px(screen.x), px(screen.y))
-}
-
-#[derive(Clone, Copy, Debug)]
-struct ShapePair {
-    first: ShapeId,
-    second: ShapeId,
-}
-
-fn arrange_multi_shape_selection(
-    visual_cx: &mut VisualTestContext,
-    view: &gpui::Entity<Phase0Shell>,
-    origin: Vec2,
-) -> TestSupportResult<ShapePair> {
-    let min1 = origin.add(Vec2::new(10.0, 10.0));
-    let max1 = origin.add(Vec2::new(110.0, 110.0));
-    let min2 = origin.add(Vec2::new(160.0, 10.0));
-    let max2 = origin.add(Vec2::new(260.0, 110.0));
-
-    let mut doc = visual_cx.read(|app| view.read(app).document().clone());
-    let first = add_square(&mut doc, min1, max1)?;
-    let second = add_square(&mut doc, min2, max2)?;
-    let shapes = ShapePair { first, second };
-
-    visual_cx.update(move |_window, app| {
-        view.update(app, |shell, view_cx| {
-            shell.enter_manipulate_mode_for_tests();
-            shell.replace_document_for_tests(doc);
-            shell.replace_selection_for_tests(gauss::model::Selection {
-                items: vec![SelItem::Shape(shapes.first), SelItem::Shape(shapes.second)],
+#[given("two selected squares are arranged")]
+fn two_selected_squares_are_arranged(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_visual_cx(cx, |visual_cx, view| {
+        let bounds = canvas_bounds(visual_cx)?;
+        let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
+        let mut document = read_document(visual_cx, view);
+        let first = add_square(
+            &mut document,
+            origin.add(Vec2::new(10.0, 10.0)),
+            origin.add(Vec2::new(110.0, 110.0)),
+        )?;
+        let second = add_square(
+            &mut document,
+            origin.add(Vec2::new(160.0, 10.0)),
+            origin.add(Vec2::new(260.0, 110.0)),
+        )?;
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, view_cx| {
+                shell.enter_manipulate_mode_for_tests();
+                shell.replace_document_for_tests(document);
+                shell.replace_selection_for_tests(Selection {
+                    items: vec![SelItem::Shape(first), SelItem::Shape(second)],
+                });
+                view_cx.notify();
             });
-            view_cx.notify();
         });
+        visual_cx.run_until_parked();
+
+        let updated_document = read_document(visual_cx, view);
+        let first_shape =
+            require_shape(&updated_document, first, "first square before drag")?.clone();
+        let second_shape =
+            require_shape(&updated_document, second, "second square before drag")?.clone();
+        let start_world = shape_bbox_centre(&first_shape)?;
+        let delta = Vec2::new(20.0, 10.0);
+        let viewport = visual_cx.read(|app| view.read(app).viewport());
+        with_state(|state| {
+            state.shape_ids.extend([first, second]);
+            state.shapes_before.extend([first_shape, second_shape]);
+            state
+                .points
+                .push(viewport_to_screen_point(viewport, start_world));
+            state
+                .points
+                .push(viewport_to_screen_point(viewport, start_world.add(delta)));
+            state.delta = Some(delta);
+        });
+        Ok(())
+    })
+}
+
+#[when("the first selected square is pressed")]
+fn first_selected_square_is_pressed(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let start = require_point(0, "selected square press")?;
+    with_visual_cx(cx, |visual_cx, _view| {
+        visual_cx.simulate_mouse_down(start, MouseButton::Left, Modifiers::none());
+        visual_cx.run_until_parked();
+        Ok(())
+    })
+}
+
+#[when("the first selected square is dragged")]
+fn first_selected_square_is_dragged(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let end = require_point(1, "selected square drag end")?;
+    with_visual_cx(cx, |visual_cx, _view| {
+        visual_cx.simulate_mouse_move(end, MouseButton::Left, Modifiers::none());
+        visual_cx.simulate_mouse_up(end, MouseButton::Left, Modifiers::none());
+        visual_cx.run_until_parked();
+        Ok(())
+    })
+}
+
+#[then("both squares remain selected")]
+fn both_squares_remain_selected(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let ids = [
+        require_shape_id(0, "first selected square")?,
+        require_shape_id(1, "second selected square")?,
+    ];
+    with_visual_cx(cx, |visual_cx, view| {
+        let selection = visual_cx.read(|app| view.read(app).selection().clone());
+        require_selection_contains_shapes(&selection, &ids, "multi-shape drag")
+    })
+}
+
+#[then("both squares move by the drag delta")]
+fn both_squares_move_by_delta(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let snapshot = with_state(|state| {
+        (
+            state.shape_ids.clone(),
+            state.shapes_before.clone(),
+            state.delta,
+        )
     });
-    visual_cx.run_until_parked();
-    Ok(shapes)
+    let ([first_id, second_id], [first_before, second_before], Some(delta)) =
+        (snapshot.0.as_slice(), snapshot.1.as_slice(), snapshot.2)
+    else {
+        return Err(TestSupportError::missing(
+            "multi-shape drag snapshot",
+            "recorded by the arrangement step",
+        ));
+    };
+    with_visual_cx(cx, |visual_cx, view| {
+        let document = read_document(visual_cx, view);
+        let first = require_shape(&document, *first_id, "first square after drag")?;
+        let second = require_shape(&document, *second_id, "second square after drag")?;
+        assert_shape_translated_by_delta(first, first_before, delta, "first selected square")?;
+        assert_shape_translated_by_delta(second, second_before, delta, "second selected square")
+    })
 }
 
-fn assert_selection_contains_shapes(
-    visual_cx: &VisualTestContext,
-    view: &gpui::Entity<Phase0Shell>,
-    expected_shape_ids: [ShapeId; 2],
-    context: &str,
-) -> TestSupportResult<()> {
-    let selection = visual_cx.read(|app| view.read(app).selection().clone());
-    if selection.items.len() != 2 {
-        return Err(TestSupportError::expectation(format!(
-            "expected selection to remain a 2-shape multi-select ({context}); selection={selection:?}"
-        )));
-    }
-
-    let [shape1_id, shape2_id] = expected_shape_ids;
-    if !(selection.contains(&SelItem::Shape(shape1_id))
-        && selection.contains(&SelItem::Shape(shape2_id)))
-    {
-        return Err(TestSupportError::expectation(format!(
-            "expected selection to contain both shapes ({context}); selection={selection:?}"
-        )));
-    }
-    Ok(())
+#[then("no drag is active")]
+fn no_drag_is_active(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_visual_cx(cx, |visual_cx, view| {
+        if visual_cx.read(|app| view.read(app).is_dragging()) {
+            return Err(TestSupportError::expectation(
+                "multi-shape drag gesture remained active".to_owned(),
+            ));
+        }
+        Ok(())
+    })
 }
 
-#[gpui::test]
-fn dragging_a_selected_shape_moves_all_selected_shapes_and_preserves_selection(
-    cx: &mut TestAppContext,
-) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
-
-    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
-    let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
-
-    // Arrange: add two extra shapes so we can multi-select and move them.
-    let shapes = arrange_multi_shape_selection(visual_cx, &view, origin)
-        .expect("expected to arrange multi-shape selection");
-    let shape1_id = shapes.first;
-    let shape2_id = shapes.second;
-
-    let viewport = visual_cx.read(|app| view.read(app).viewport());
-
-    let doc_before = read_document(visual_cx, &view);
-    let shape1_before = find_shape(&doc_before, shape1_id, "before drag shape1")
-        .expect("expected shape1 before drag")
-        .clone();
-    let shape2_before = find_shape(&doc_before, shape2_id, "before drag shape2")
-        .expect("expected shape2 before drag")
-        .clone();
-
-    let start_model = shape_bbox_centre(&shape1_before);
-    let delta = Vec2::new(20.0, 10.0);
-
-    let start_screen = viewport_to_screen_point(viewport, start_model);
-    let end_screen = viewport_to_screen_point(viewport, start_model.add(delta));
-
-    // Act: drag shape1 with no modifiers.
-    visual_cx.simulate_mouse_down(start_screen, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
-
-    // Assert: selection remains intact on mouse down (no collapse to a single shape).
-    assert_selection_contains_shapes(visual_cx, &view, [shape1_id, shape2_id], "after mouse down")
-        .expect("expected selection to remain a multi-select after mouse down");
-
-    visual_cx.simulate_mouse_move(end_screen, MouseButton::Left, Modifiers::none());
-    visual_cx.simulate_mouse_up(end_screen, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
-
-    // Assert: both shapes translate by the same delta and selection stays intact.
-    let doc_after = read_document(visual_cx, &view);
-    let shape1_after =
-        find_shape(&doc_after, shape1_id, "after drag shape1").expect("expected shape1 after drag");
-    let shape2_after =
-        find_shape(&doc_after, shape2_id, "after drag shape2").expect("expected shape2 after drag");
-
-    assert_shape_translated_by_delta(shape1_after, &shape1_before, delta, "shape1 after drag")
-        .expect("expected shape1 to translate by the drag delta");
-    assert_shape_translated_by_delta(shape2_after, &shape2_before, delta, "shape2 after drag")
-        .expect("expected shape2 to translate by the drag delta");
-
-    assert_selection_contains_shapes(visual_cx, &view, [shape1_id, shape2_id], "after drag")
-        .expect("expected selection to remain a multi-select after drag");
-
-    // Keep this test resilient: if we accidentally fall back to draw mode, fail
-    // loudly rather than flaking.
-    let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
-    assert!(!is_dragging, "expected drag gesture to have ended");
-}
+#[scenario(
+    path = "tests/features/selection.feature",
+    name = "Dragging one selected shape moves the full selection",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
+#[serial]
+fn multi_shape_drag(#[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}

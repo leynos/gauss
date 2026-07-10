@@ -1,68 +1,88 @@
-//! GPUI headless integration tests for selection behaviour in manipulate mode.
-//!
-//! Phase 0 uses `on_mouse_down` for selection. This test verifies that clicking
-//! empty canvas space clears the current selection.
+//! Behavioural coverage for clearing a selection by clicking empty canvas.
 
 mod common;
+#[path = "selection_bdd/support.rs"]
+mod support;
 
-use common::{click_left_and_wait, ensure_initial_draw, init_test_app, read_selection_items};
-use gauss::model::{Document, SelItem, ShapeId, Vec2};
-use gauss::ui::Phase0Shell;
+use common::{canvas_bounds, click_left_and_wait, read_selection};
+use gauss::model::{Document, SelItem, Selection, ShapeId, Vec2};
 use gauss_core::test_helpers::square_shape;
 use gpui::{TestAppContext, point, px};
+use rstest_bdd_macros::{given, scenario, then, when};
+use serial_test::serial;
+use support::{ScenarioStateCleanup, require_point, with_state, with_visual_cx};
+use test_support::TestSupportError;
 
-#[gpui::test]
+#[given("a selected square is arranged")]
 #[expect(
     clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
+    reason = "the empty-space point is derived from floating-point canvas geometry"
 )]
-fn clicking_empty_space_clears_selection(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
-
-    let bounds = common::canvas_bounds(visual_cx).expect("canvas bounds should be available");
-
-    let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
-    let width = f32::from(bounds.size.width);
-    let height = f32::from(bounds.size.height);
-
-    let mut doc = Document::new();
-    let shape_id = doc.append_shape(square_shape(
-        ShapeId::default(),
-        origin.add(Vec2::new(10.0, 10.0)),
-        origin.add(Vec2::new(60.0, 60.0)),
-    ));
-
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, view_cx| {
-            shell.enter_manipulate_mode_for_tests();
-            shell.replace_document_for_tests(doc);
-            shell.replace_selection_for_tests(gauss::model::Selection {
-                items: vec![SelItem::Shape(shape_id)],
+fn selected_square_is_arranged(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_visual_cx(cx, |visual_cx, view| {
+        let bounds = canvas_bounds(visual_cx)?;
+        let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
+        let mut document = Document::new();
+        let shape_id = document.append_shape(square_shape(
+            ShapeId::default(),
+            origin.add(Vec2::new(10.0, 10.0)),
+            origin.add(Vec2::new(60.0, 60.0)),
+        ));
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, view_cx| {
+                shell.enter_manipulate_mode_for_tests();
+                shell.replace_document_for_tests(document);
+                shell.replace_selection_for_tests(Selection {
+                    items: vec![SelItem::Shape(shape_id)],
+                });
+                view_cx.notify();
             });
-            view_cx.notify();
         });
-    });
-    visual_cx.run_until_parked();
-
-    let selection_before = read_selection_items(visual_cx, &view);
-    assert_eq!(
-        selection_before,
-        vec![SelItem::Shape(shape_id)],
-        "expected selection to start with the demo square selected"
-    );
-
-    let click_x = (width - 2.0).max(2.0);
-    let click_y = (height - 2.0).max(2.0);
-    let empty_point = point(bounds.origin.x + px(click_x), bounds.origin.y + px(click_y));
-
-    click_left_and_wait(visual_cx, empty_point);
-
-    let selection_after = read_selection_items(visual_cx, &view);
-    assert!(
-        selection_after.is_empty(),
-        "expected clicking empty space to clear selection; got {selection_after:?}"
-    );
+        visual_cx.run_until_parked();
+        let click_x = (f32::from(bounds.size.width) - 2.0).max(2.0);
+        let click_y = (f32::from(bounds.size.height) - 2.0).max(2.0);
+        with_state(|state| {
+            state.points.push(point(
+                bounds.origin.x + px(click_x),
+                bounds.origin.y + px(click_y),
+            ));
+        });
+        Ok(())
+    })
 }
+
+#[when("empty canvas space is clicked")]
+fn empty_canvas_space_is_clicked(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let point = require_point(0, "empty canvas point")?;
+    with_visual_cx(cx, |visual_cx, _view| {
+        click_left_and_wait(visual_cx, point);
+        Ok(())
+    })
+}
+
+#[then("the selection is empty")]
+fn selection_is_empty(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_visual_cx(cx, |visual_cx, view| {
+        let selection = read_selection(visual_cx, view);
+        if !selection.items.is_empty() {
+            return Err(TestSupportError::expectation(format!(
+                "expected empty selection; selection={selection:?}"
+            )));
+        }
+        Ok(())
+    })
+}
+
+#[scenario(
+    path = "tests/features/selection.feature",
+    name = "Clicking empty space clears selection",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
+#[serial]
+fn clear_selection(#[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
