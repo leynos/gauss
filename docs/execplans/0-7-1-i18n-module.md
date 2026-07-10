@@ -18,10 +18,10 @@ still hard-codes English strings in model helpers such as `Action::name()`,
 `Command::name()`, `KeyContext::name()`, `ToolMode::label()`,
 `EdgeMode::label()`, and in Phase 0 shell UI and accessibility text.
 
-This milestone should establish the module boundary and catalog shape that
+This milestone should establish the module boundary and catalogue shape that
 later milestones can build on without forcing a large rewrite. After this work
 lands, Gauss should have a GPUI-independent `i18n` module, a default English
-catalog, locale selection plus fallback behaviour, typed translation errors,
+catalogue, locale selection plus fallback behaviour, typed translation errors,
 and one narrow end-to-end integration slice that proves real UI and
 accessibility code can render through the new service. Broad string extraction
 belongs to roadmap item `0.7.2`, and localized command names belong to `0.7.3`.
@@ -50,7 +50,7 @@ ownership and short hand-offs:
 - Architecture agent: confirm the module boundary, evaluate Fluent versus a
   simpler keyed system, and update the architecture document with the final
   rationale and follow-up triggers.
-- Core i18n agent: implement `src/i18n/`, including locale handling, catalog
+- Core i18n agent: implement `src/i18n/`, including locale handling, catalogue
   lookup, fallback, and typed errors.
 - UI and accessibility agent: wire one proving integration slice into
   `Phase0Shell` and `A11yService` without broad extraction that belongs to
@@ -68,13 +68,13 @@ file ownership is disjoint.
 
 - Scope is limited to roadmap item `0.7.1`:
   - create the `i18n` module,
-  - define the message catalog structure,
+  - define the message catalogue structure,
   - evaluate Fluent versus a simpler keyed system,
   - prove the module on a narrow real call path.
 - Do not treat `0.7.1` as blanket UI-string extraction. Most inline Phase 0 UI
   labels stay for `0.7.2`, and localized command names stay for `0.7.3`.
 - Keep the `i18n` module independent of GPUI. Views may consume localized
-  strings, but catalog lookup and locale logic must not depend on GPUI types or
+  strings, but catalogue lookup and locale logic must not depend on GPUI types or
   window context.
 - Do not use process-global locale state or environment mutation for tests.
   Locale selection must be injected so tests remain deterministic and parallel.
@@ -131,9 +131,9 @@ Implementation should proceed in five milestones.
 
 1. Establish a failing test baseline. Add unit tests for locale selection,
    fallback, message lookup, and formatting failures. Add `rstest-bdd` feature
-   scenarios that describe catalog lookup and fallback behaviour in business
+   scenarios that describe catalogue lookup and fallback behaviour in business
    terms. Add one GPUI test that proves a Phase 0 shell surface changes when a
-   non-default test catalog is injected. The first pass should fail because the
+   non-default test catalogue is injected. The first pass should fail because the
    i18n layer does not exist yet.
 
 2. Add the core module under `src/i18n/`. Keep files small and purpose-driven,
@@ -142,16 +142,16 @@ Implementation should proceed in five milestones.
    should cover:
    - a locale type or newtype,
    - stable message identifiers,
-   - a localizer or catalog lookup service,
+   - a localizer or catalogue lookup service,
    - typed lookup and formatting errors,
-   - explicit fallback to the default catalog.
+   - explicit fallback to the default catalogue.
 
-3. Implement the catalog backend for `0.7.1`. The recommended choice for this
-   milestone is a simple keyed system, not Fluent. The catalog should be
+3. Implement the catalogue backend for `0.7.1`. The recommended choice for this
+   milestone is a simple keyed system, not Fluent. The catalogue should be
    compile-time data owned by Gauss, not an external runtime service. Prefer
    stable message identifiers with a single registry of shipped keys over raw
-   ad hoc string lookup. The default catalog should be `en-GB` only, while
-   tests may add an in-memory or test-only alternate catalog to prove that
+   ad hoc string lookup. The default catalogue should be `en-GB` only, while
+   tests may add an in-memory or test-only alternate catalogue to prove that
    translation lookup actually changes output.
 
 4. Wire one real integration slice. Keep it intentionally narrow. The best
@@ -162,16 +162,16 @@ Implementation should proceed in five milestones.
    `EdgeMode::label()`. Introduce an injected localizer seam so:
    - the Phase 0 shell status line uses the new message IDs,
    - the accessibility status node uses the same localized message IDs,
-   - tests can override the catalog without mutating global state.
+   - tests can override the catalogue without mutating global state.
    Leave other chrome labels, tooltips, and command names for the later roadmap
    items.
 
 5. Record the decision and close the milestone. Update the architecture
-   document to explain why `0.7.1` chose a keyed catalog now, what would force
+   document to explain why `0.7.1` chose a keyed catalogue now, what would force
    a Fluent migration later, and which future roadmap items own broader string
    extraction and grammar-sensitive localization. Update the user guide with
    any user-visible behaviour change. If the implementation ships only English
-   plus a test-only alternate catalog, say that explicitly. Then update the
+   plus a test-only alternate catalogue, say that explicitly. Then update the
    roadmap checkbox for `0.7.1` only after all gates pass.
 
 ## Recommended design
@@ -179,8 +179,8 @@ Implementation should proceed in five milestones.
 The recommended `0.7.1` design is:
 
 - `src/i18n/` as a top-level library module, not nested under `model` or `ui`.
-- A simple keyed catalog backend with stable Gauss-owned message identifiers.
-- One shipped production locale, `en-GB`, plus test-only alternate catalogs.
+- A simple keyed catalogue backend with stable Gauss-owned message identifiers.
+- One shipped production locale, `en-GB`, plus test-only alternate catalogues.
 - Explicit locale fallback to `en-GB`.
 - No user-facing locale preference UI yet.
 - No attempt to localize every existing string in this milestone.
@@ -236,7 +236,7 @@ Validation must follow a red-green-refactor flow.
 
 Unit tests should use `rstest` and cover:
 
-- successful lookup in the default catalog,
+- successful lookup in the default catalogue,
 - locale fallback when a requested locale is unsupported,
 - typed failure for an unknown message identifier,
 - typed failure for missing formatting arguments,
@@ -244,16 +244,16 @@ Unit tests should use `rstest` and cover:
 
 Behaviour tests should use `rstest-bdd` v0.5.0 and cover:
 
-- a requested locale using its own catalog,
+- a requested locale using its own catalogue,
 - fallback to English when a locale is unsupported,
 - failure reporting when a message key is unavailable.
 
 GPUI tests should cover:
 
 - the Phase 0 shell status text rendering localized output through an injected
-  test catalog,
+  test catalogue,
 - the accessibility status node using the same localized output,
-- unchanged behaviour when the default English catalog is used.
+- unchanged behaviour when the default English catalogue is used.
 
 Use `set -o pipefail` and `tee` for every long-running gate. Expected commands:
 
@@ -288,7 +288,7 @@ Completion evidence is:
 - [x] (2026-03-22) User approved the plan via cherry-pick and implementation
   request.
 - [x] (2026-03-22) Implemented the i18n module under `src/i18n/` with locale,
-  message, catalog, and error submodules.
+  message, catalogue, and error submodules.
 - [x] (2026-03-22) Wired the proving integration slice: Phase0Shell status line
   and AccessKit status node both use localized lookups.
 - [x] (2026-03-22) Created unit tests, BDD tests, and GPUI tests for the i18n
@@ -335,7 +335,7 @@ Completion evidence is:
 - (2026-03-22) The implementation required adding `localizer` and `locale`
   fields to both `Phase0Shell` and `A11ySnapshot`. Test helper methods
   `set_localizer` and `set_locale` were added to support GPUI tests with custom
-  catalogs.
+  catalogues.
 - (2026-03-22) The `A11ySnapshot` struct's `PartialEq` derive had to be relaxed
   to allow `Localizer` (which contains `HashMap` and doesn't derive `Eq`).
 - (2026-03-22) Test timeout analysis revealed the issue was not with test
@@ -351,7 +351,7 @@ Completion evidence is:
 - 2026-03-14: Plan `0.7.1` as a narrow scaffold milestone, not the full string
   extraction. Rationale: the roadmap explicitly splits module creation,
   extraction, and command-name localization into separate items.
-- 2026-03-14: Recommend a simple keyed catalog for `0.7.1` instead of Fluent.
+- 2026-03-14: Recommend a simple keyed catalogue for `0.7.1` instead of Fluent.
   Rationale: the current milestone needs a stable boundary and observable
   behaviour, not translator-facing grammar machinery.
 - 2026-03-14: Require one real UI plus accessibility proving slice instead of a
@@ -362,10 +362,10 @@ Completion evidence is:
   injection for non-deterministic state.
 - 2026-03-14: Do not begin implementation until the user approves this
   document. Rationale: follow the mandatory execplans approval gate.
-- 2026-03-22: Implement the keyed catalog system as planned. Created four
+- 2026-03-22: Implement the keyed catalogue system as planned. Created four
   submodules: `locale.rs`, `message.rs`, `catalog.rs`, and `error.rs` under
   `src/i18n/`. Rationale: keeps module files under the 400-line policy.
-- 2026-03-22: Use `HashMap<String, String>` for catalog storage. Rationale:
+- 2026-03-22: Use `HashMap<String, String>` for catalogue storage. Rationale:
   simple, testable, and sufficient for the current milestone's needs.
 
 ## Outcomes & Retrospective
@@ -375,8 +375,8 @@ Outcome: Implementation and validation complete (2026-03-22).
 The implementation successfully delivered the planned localization spine:
 
 - A top-level, GPUI-independent `i18n` module with four submodules (locale,
-  message, catalog, error) totaling under 400 lines per file.
-- A simple keyed catalog system with stable message identifiers.
+  message, catalogue, error) totalling under 400 lines per file.
+- A simple keyed catalogue system with stable message identifiers.
 - Documented architectural decision in §12 with explicit re-evaluation
   triggers for Fluent migration.
 - One real proving integration: Phase 0 shell status line and AccessKit status
@@ -415,7 +415,7 @@ Key lessons from implementation:
   implements `PartialEq`.
 - Test helper methods (`set_localizer`, `set_locale`) enabled clean GPUI test
   injection without global state mutation.
-- The keyed catalog approach proved simple and sufficient for the current
+- The keyed catalogue approach proved simple and sufficient for the current
   milestone's needs.
 - Clippy lint compliance during validation revealed opportunities for const
   functions and improved documentation that strengthened the public API.

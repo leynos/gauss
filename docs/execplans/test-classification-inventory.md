@@ -85,7 +85,7 @@ Supporting directories:
 
 #### Selection tests
 
-- `tests/gpui_selection_bbox_drag_requires_selection.rs` - Bbox drag behavior
+- `tests/gpui_selection_bbox_drag_requires_selection.rs` - Bbox drag behaviour
 - `tests/gpui_selection_clear_selection.rs` - Selection clearing
 - `tests/gpui_selection_multi_select.rs` - Multi-selection
 - `tests/gpui_selection_multi_shape_drag.rs` - Multi-shape dragging

@@ -150,7 +150,7 @@ and the macOS accessibility text protocol) to get this right.
 
 - **Low-vision accommodations:** Provide a high-contrast UI theme and scalable
   UI elements. Contrast-enhanced colour tokens should be defined (ensuring text
-  meets at least WCAG AA contrast ratio against its background) and honor
+  meets at least WCAG AA contrast ratio against its background) and honour
   system high-contrast settings when possible. Users should be able to increase
   UI scale (text and control size) without breaking layout. Also, ensure no
   critical information is conveyed by colour alone (provide shapes or text
@@ -482,7 +482,7 @@ support matrix** for GPUI components and Gauss features will be created:
   **Accessible Name** (and whether it comes from label, tooltip, etc.),
   **State/Value** (e.g., toggle state or slider value range), **Keyboard
   Interaction** (e.g., "Tab focuses, Space/Enter activates button, arrow keys
-  change slider", etc.), **Screen Reader Behavior** (what is announced when
+  change slider", etc.), **Screen Reader Behaviour** (what is announced when
   focused or when its value changes), and any **Live Region** usage (for
   dynamic announcements like notifications).
 

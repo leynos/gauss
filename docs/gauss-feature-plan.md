@@ -52,9 +52,9 @@ phases.
   layouts. Also include **arrange** operations like send-to-back/front and
   grouping/ungrouping for layer ordering control.
 
-- **Fill and Stroke (Solid Colors):** Introduce a simple styling panel to set
-  an object’s fill color, stroke color, and stroke weight. Use GPUI Component’s
-  built-in color picker for color selection. At this stage, support solid fills
+- **Fill and Stroke (Solid Colours):** Introduce a simple styling panel to set
+  an object’s fill colour, stroke colour, and stroke weight. Use GPUI Component’s
+  built-in colour picker for colour selection. At this stage, support solid fills
   and basic strokes (solid line, adjustable width) only – complex paint styles
   like gradients or patterns will come later. Ensure the UI reflects current
   fill/stroke and can apply changes to selected objects.
@@ -83,7 +83,7 @@ phases.
 - **Cross-Platform UI Framework:** Stand up the application shell using **GPUI
   and GPUI Component**. Create the main window with a toolbox (toolbar), canvas
   area, menus, and status bar. Use GPUI Component for standard controls
-  (buttons, sliders, menus, color picker) to get consistent theming and avoid
+  (buttons, sliders, menus, colour picker) to get consistent theming and avoid
   custom widget work upfront. Verify that GPUI Component can handle high-DPI
   rendering, input methods, and theming on each target OS. As part of this,
   **assess GPUI Component’s suitability** for Gauss’s more specialized UI
@@ -118,7 +118,7 @@ phases.
 - **Scripting Interface Init:** Embed a **RustPython** interpreter and design a
   scripting API that exposes the Phase 1 features. For example, provide
   programmatic ways to create shapes, select items, transform objects, and
-  adjust colors through Python scripts. Each user-facing command in the UI
+  adjust colours through Python scripts. Each user-facing command in the UI
   should correspond to a callable function in the scripting engine. This
   establishes a **reusable pattern**: as new features are added in each phase,
   we expose them to scripts immediately. By doing this early, we validate that
@@ -129,7 +129,7 @@ phases.
   calls).
 
 **Phase 1 Outcome:** A **minimal yet complete editor core** – users can draw
-shapes and paths, style them with solid colors, select and transform objects,
+shapes and paths, style them with solid colours, select and transform objects,
 manage basic layers, undo mistakes, and save their artwork to SVG. The UI runs
 on all target OSs with a consistent look. Crucially, the app’s foundation is
 laid with accessibility, scripting, and performance-aware design in place. This
@@ -169,8 +169,8 @@ challenge there) and scripting for text manipulation.
 
 - **Typography Controls:** Add UI for common text properties: font family
   selection (list system fonts), font size, basic styles (bold, italic,
-  underline), text alignment (left/center/right for paragraphs), and color
-  (reusing the color picker for fill color of text). These can be in a
+  underline), text alignment (left/center/right for paragraphs), and colour
+  (reusing the colour picker for fill colour of text). These can be in a
   dedicated **Text/Character panel** or options bar when text is selected. The
   goal is to cover what designers use daily for text styling. Advanced
   typography (kerning, tracking, vertical text, text on path) can be deferred,
@@ -316,13 +316,13 @@ geometric control or artistic effects.
   smoothly interpolating shapes. In Illustrator, the Blend Tool creates a
   series of intermediate objects between two or more selected objects,
   interpolating their shapes and styles. This is a high-value feature for
-  advanced illustrations (for instance, creating color transitions or object
+  advanced illustrations (for instance, creating colour transitions or object
   morphing effects). For Gauss, implement the ability to blend two shapes or
-  colors with a specified number of steps. This likely involves computing
+  colours with a specified number of steps. This likely involves computing
   intermediate geometry (for paths, maybe morphing via matching path points or
   using simpler linear interpolation if shapes are similar). Focus on blending
-  position, size, and color for now. The UI can allow setting the number of
-  steps and whether the blend is smooth color. This feature tests the
+  position, size, and colour for now. The UI can allow setting the number of
+  steps and whether the blend is smooth colour. This feature tests the
   reusability of our code: it might reuse the boolean/path code (for
   interpolating shapes, a naive approach is fine to start) and will integrate
   with grouping (the blend result could be treated as a special group object).
@@ -336,7 +336,7 @@ geometric control or artistic effects.
   attributes([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=Moving%20along%20the%20toolbar%20Photoshop,%E2%80%94%20variations%20to%20be%20selected)).
   It’s not used by beginners often, but it’s an **essential overlooked
   utility** for complex illustrations (e.g. quickly select all text of a
-  certain color). Implement a Magic Wand that by default selects by fill color
+  certain colour). Implement a Magic Wand that by default selects by fill colour
   (and later allow criteria like stroke or opacity). Also, consider adding
   **measurement tools** (e.g. a Measure tool to measure distances/angles) and
   improved snapping guides (smart guides) in this phase, as they assist in
@@ -357,7 +357,7 @@ geometric control or artistic effects.
 
 - **Accessibility & Scripting:** As new tool panels or options are added (for
   brushes, blends, etc.), continue to wire them into AccessKit. For example,
-  the brush size slider should be keyboard accessible and labeled. Where
+  the brush size slider should be keyboard accessible and labelled. Where
   possible, allow **keyboard alternatives** for these advanced tools (not all
   will have easy keyboard analogs, but e.g. one could nudge selected anchor
   points with arrow keys as a coarse alternative to Warp tool). Expand the
@@ -380,30 +380,30 @@ adding future effects easier. Gauss remains stable and reasonably performant
 under the more complex workflows introduced here, and all operations continue
 to be scriptable and as accessible as possible.
 
-## Phase 4: Color, Appearance, and Visual Effects
+## Phase 4: Colour, Appearance, and Visual Effects
 
 **Goals:** This phase focuses on the **appearance** side of vector artwork –
-high-fidelity coloring tools, transparency, and visual effects that define the
+high-fidelity colouring tools, transparency, and visual effects that define the
 polish of professional illustrations. These features are often **high-value for
 power users** because they allow creating sophisticated visuals (gradients,
 meshes, complex styling) and were a big part of Illustrator’s appeal. We treat
-many of these as foundational in the sense that a robust color and paint system
+many of these as foundational in the sense that a robust colour and paint system
 will unlock a broad set of design possibilities. We will also address the
 transparency and compositing model in this phase, ensuring Gauss can handle
 modern graphics rendering needs.
 
 **Key Features:**
 
-- **Gradient Fills and Gradient Tool:** Expand fill options beyond solid color
+- **Gradient Fills and Gradient Tool:** Expand fill options beyond solid colour
   by introducing **gradients**. Support at least linear and radial gradients
   (Illustrator 10 had both). Users can apply a gradient fill to any shape.
-  Implement a new **Gradient Editor widget** to manage gradient color stops –
+  Implement a new **Gradient Editor widget** to manage gradient colour stops –
   likely a custom GPUI component since this is a specialized UI. The editor can
-  appear as a popover or in a panel, showing a line or bar with multiple color
+  appear as a popover or in a panel, showing a line or bar with multiple colour
   stops that the user can add, remove, and adjust. Additionally, provide the
   **Gradient Tool** on the canvas: users can click and drag on a
   gradient-filled object to adjust the vector (start/end points and angle) of
-  the gradient. The combination of the off-canvas editor (for precise color
+  the gradient. The combination of the off-canvas editor (for precise colour
   stop control) and on-canvas Gradient Tool (for positioning) gives a complete
   gradient experience. Ensure that gradient parameters are part of the object’s
   style and saved to SVG (map to SVG `<linearGradient>` or `<radialGradient>`
@@ -411,15 +411,15 @@ modern graphics rendering needs.
   in design (backgrounds, shading) and were one of the top requested
   capabilities.
 
-- **Gradient Mesh Tool:** For ultimate color control, implement the **Gradient
-  Mesh** feature (Mesh Tool) to create complex multi-colored meshes within an
+- **Gradient Mesh Tool:** For ultimate colour control, implement the **Gradient
+  Mesh** feature (Mesh Tool) to create complex multi-coloured meshes within an
   object. This is a power-user feature that defined Illustrator’s capabilities
   in high-end illustration. The Mesh Tool allows a single shape to have a grid
-  of mesh points with different colors, blending smoothly across the shape. We
+  of mesh points with different colours, blending smoothly across the shape. We
   will let users convert a shape to a gradient mesh, specify rows and columns,
-  then use a Mesh Tool to move mesh points and assign colors. This is one of
+  then use a Mesh Tool to move mesh points and assign colours. This is one of
   the more complex vector painting features: from an implementation standpoint,
-  we must interpolate colors across a grid on a path, likely requiring a
+  we must interpolate colours across a grid on a path, likely requiring a
   triangulation or splitting the shape into many small patches for rendering
   (since SVG does not natively support gradient meshes). We treat gradient
   meshes as an **advanced** feature in this phase; it might be acceptable to
@@ -451,8 +451,8 @@ modern graphics rendering needs.
   fill to other shapes. Patterns may not be as commonly used as gradients, but
   they are important in certain designs and were present in AI10. From a
   technical perspective, patterns can be represented with SVG `<pattern>`
-  elements for output. The UI to manage swatches (colors, gradients, patterns)
-  can be unified in a **Swatches palette**, where users see all saved colors
+  elements for output. The UI to manage swatches (colours, gradients, patterns)
+  can be unified in a **Swatches palette**, where users see all saved colours
   and patterns and can apply or edit them.
 
 - **Transparency & Blending:** Introduce global **transparency** settings and
@@ -500,7 +500,7 @@ modern graphics rendering needs.
   making complex photo masks. In Gauss, allow users to designate an
   object/group as a clipping parent – in the UI, maybe a “Make Clipping Mask”
   command when two objects are selected (one being on top as the mask). This is
-  more of an object grouping behavior than a tool, but it’s essential. Opacity
+  more of an object grouping behaviour than a tool, but it’s essential. Opacity
   masks (layer masks) could be more advanced; we can map it to SVG by grouping
   and using an object as a mask with fill = black-to-white for transparency.
   These features ensure Gauss can do sophisticated compositing like Illustrator.
@@ -530,8 +530,8 @@ modern graphics rendering needs.
   gradient or hide effects, then restore on drop). The aim is to keep the
   editor feeling responsive even as visual complexity increases.
 
-**Phase 4 Outcome:** Gauss achieves full parity in the **color and appearance
-domain** with Illustrator 10. Users can paint with any color, apply beautiful
+**Phase 4 Outcome:** Gauss achieves full parity in the **colour and appearance
+domain** with Illustrator 10. Users can paint with any colour, apply beautiful
 gradients (even advanced mesh gradients), use pattern fills, and tweak
 transparency and blend modes for sophisticated compositions. Illustrations can
 be brought to a professional visual finish completely within Gauss, thanks to
@@ -663,7 +663,7 @@ or patterns).
 
 - Provide a UI (similar to Illustrator’s Variables panel) to designate certain
   object properties as **variables** (e.g. a text object’s content, or a
-  shape’s fill color can be marked variable).
+  shape’s fill colour can be marked variable).
 
 - Allow importing a data source (CSV or JSON) with fields corresponding to
   those variables.
@@ -766,8 +766,8 @@ that SVG cannot handle well.
   note it; or if we partially implemented, ensure it’s documented).
 
 - Any **UI improvements** that were in AI10, e.g. Shift to constrain
-  proportions (likely we have), or alternate color models (maybe allow entering
-  colors in CMYK or Lab if needed for print parity, though SVG is RGB-based).
+  proportions (likely we have), or alternate colour models (maybe allow entering
+  colours in CMYK or Lab if needed for print parity, though SVG is RGB-based).
 
 - The **Measure Tool** (for measuring distances/angles on the canvas – if not
   yet, add it as a small utility).
@@ -795,11 +795,11 @@ implementation or intentional exclusion.
   quickly via shortcuts (the Top 100 list we referenced includes shortcuts for
   every tool, which we have largely followed).
 
-- **Accessibility & Localisation Finalization:** Run a thorough **accessibility
+- **Accessibility & Localization Finalization:** Run a thorough **accessibility
   audit** now that the app is feature-complete. Test with screen readers (NVDA,
   JAWS, VoiceOver, Orca) on various flows: navigating menus, using tools via
   keyboard, reading properties in panels. Fix any missing labels or focus order
-  issues. Make sure any custom UI (e.g. color picker, gradient editor) has at
+  issues. Make sure any custom UI (e.g. colour picker, gradient editor) has at
   least basic accessibility (e.g. the gradient stops list could be represented
   in the accessibility tree, even if not fully manipulable via keyboard). Aim
   for compliance with relevant standards (WCAG2.1, EN 301 549) as noted in our

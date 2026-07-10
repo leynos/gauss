@@ -1,7 +1,7 @@
 # Gauss development roadmap
 
 This roadmap defines the path from the current Phase 0 proof-of-concept to
-Illustrator 10 feature parity. It synthesises the strategic vision from the
+Illustrator 10 feature parity. It synthesizes the strategic vision from the
 [feature plan](gauss-feature-plan.md) with the architectural foundations
 described in the [architecture document](gauss-architecture-design.md), and
 reflects the current state of the codebase.
@@ -63,7 +63,7 @@ implemented and tested:
 - **Basic styling**: Colour picker for stroke and fill; stroke width and
   opacity.
 - **Window chrome**: Minimize, maximize, fullscreen, close; keyboard
-  shortcuts; resize handles that respect maximised state.
+  shortcuts; resize handles that respect maximized state.
 - **Accessibility framework**: Phase 0 chrome wiring complete: stable node IDs,
   AccessKit tree projection, incremental updates, and chrome action routing are
   wired; Phase 1 accessibility work remains open beyond section `1.9`.
@@ -262,12 +262,12 @@ phases depend upon. See architecture document §20.
 ### 0.7. i18n scaffolding
 
 - [x] 0.7.1. Create i18n module.
-  - [x] Define message catalog structure.
+  - [x] Define message catalogue structure.
   - [x] Evaluate Fluent vs simpler keyed system. See architecture §12.
 - [x] 0.7.2. Extract UI strings.
   - [x] Replace inline strings with resource IDs.
   - [x] Start with window chrome and tool names.
-- [ ] 0.7.3. Localise command names.
+- [ ] 0.7.3. Localize command names.
   - [ ] Command names are user-visible (undo descriptions, scripting).
   - [ ] Ensure locale-aware formatting for numbers.
 
@@ -463,11 +463,11 @@ history.
 - [ ] 1.10.2. Define performance budgets.
   - [ ] Target 60fps for basic drawing operations.
   - [ ] Target sub-100ms latency for input response.
-- [ ] 1.10.3. Profile and optimise critical paths.
+- [ ] 1.10.3. Profile and optimize critical paths.
   - [ ] Identify bottlenecks in canvas rendering.
-  - [ ] Optimise hit testing (consider R-tree or BVH). See architecture §6.2.
+  - [ ] Optimize hit testing (consider R-tree or BVH). See architecture §6.2.
 
-### 1.11. Scripting interface initialisation
+### 1.11. Scripting interface initialization
 
 - [ ] 1.11.1. Embed RustPython interpreter.
   - [ ] Add `rustpython` dependency.
@@ -531,9 +531,9 @@ ______________________________________________________________________
   - [ ] Note AccessKit rich text limitations. See architecture §11.3.
 - [ ] 2.4.2. Ensure keyboard navigation in text editing mode.
 
-### 2.5. Internationalisation scaffolding
+### 2.5. Internationalization scaffolding
 
-- [ ] 2.5.1. Set up localisation framework.
+- [ ] 2.5.1. Set up localization framework.
   - [ ] Evaluate: Fluent, gettext, or custom solution.
   - [ ] Extract all UI strings to resource files. See architecture §12.
 - [ ] 2.5.2. Verify Unicode input.
@@ -731,7 +731,7 @@ effects for professional illustration polish.
 - [ ] 4.8.2. Implement swatch import/export.
   - [ ] ASE, ACO format support (optional).
 
-### 4.9. Performance optimisation
+### 4.9. Performance optimization
 
 - [ ] 4.9.1. Profile gradient and effect rendering.
   - [ ] Identify GPU bottlenecks.
@@ -872,17 +872,17 @@ format strategy.
 - [ ] 6.2.1. Audit all icons and tooltips.
   - [ ] Replace placeholder icons.
   - [ ] Ensure tooltips are present and accurate.
-- [ ] 6.2.2. Finalise keyboard shortcuts.
+- [ ] 6.2.2. Finalize keyboard shortcuts.
   - [ ] Match familiar defaults where possible.
   - [ ] Document complete shortcut reference.
 - [ ] 6.2.3. Implement panel arrangement.
   - [ ] Dock, undock, collapse panels.
   - [ ] Save and restore layout.
 - [ ] 6.2.4. Implement preferences dialog.
-  - [ ] Keyboard shortcuts customisation.
+  - [ ] Keyboard shortcuts customization.
   - [ ] Appearance settings.
 
-### 6.3. Accessibility finalisation
+### 6.3. Accessibility finalization
 
 - [ ] 6.3.1. Conduct accessibility audit.
   - [ ] All controls have labels and roles.
@@ -894,7 +894,7 @@ format strategy.
 - [ ] 6.3.3. Document accessibility features.
   - [ ] User guide for assistive technology users.
 
-### 6.4. Localisation finalisation
+### 6.4. Localization finalization
 
 - [ ] 6.4.1. Complete translation infrastructure.
   - [ ] All strings externalized.
@@ -910,11 +910,11 @@ format strategy.
 - [ ] 6.5.1. Profile with large real-world files.
   - [ ] Complex illustrations with many objects.
   - [ ] Heavy gradient and effect usage.
-- [ ] 6.5.2. Optimise identified bottlenecks.
+- [ ] 6.5.2. Optimize identified bottlenecks.
   - [ ] Rendering, hit testing, undo.
 - [ ] 6.5.3. Monitor memory usage.
   - [ ] Detect and fix leaks.
-  - [ ] Optimise large document handling.
+  - [ ] Optimize large document handling.
 
 ### 6.6. File format evaluation
 

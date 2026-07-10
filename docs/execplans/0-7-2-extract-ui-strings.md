@@ -15,11 +15,11 @@ strings**, building on the i18n scaffolding from 0.7.1.
 After this change:
 
 - All user-visible strings in window chrome and tool names are externalized in
-  the message catalog (`src/i18n/catalog/mod.rs`).
+  the message catalogue (`src/i18n/catalog/mod.rs`).
 - UI code retrieves strings via `MessageId` constants rather than hardcoded
   literals.
 - The accessibility tree uses the same localized strings as the visual UI.
-- Tests verify that all expected messages exist in the catalog and that lookups
+- Tests verify that all expected messages exist in the catalogue and that lookups
   succeed.
 
 Observable success: Running `cargo test` shows all i18n, UI, and accessibility
@@ -137,7 +137,7 @@ Known uncertainties that might affect the plan:
 
 **Completed successfully.**
 
-- All window chrome strings are now externalized in the message catalog.
+- All window chrome strings are now externalized in the message catalogue.
 - All tool tooltips are localized via `MessageId` lookups.
 - Status bar strings (zoom controls, alignment buttons) are externalized.
 - Style control labels (Stroke, Fill) are externalized.
@@ -265,7 +265,7 @@ From `a11y_service/tree_builder.rs`:
 
 ### Stage A: Preparation and MessageId Extension
 
-**Goal**: Define all new message identifiers and add them to the catalog.
+**Goal**: Define all new message identifiers and add them to the catalogue.
 
 1. **Extend `MessageId`** (`src/i18n/message/mod.rs`):
    - Add factory methods for window chrome strings.
@@ -285,7 +285,7 @@ From `a11y_service/tree_builder.rs`:
    - Group related messages for readability.
 
 3. **Validation**:
-   - Run `cargo test -p gauss i18n` to verify catalog tests pass.
+   - Run `cargo test -p gauss i18n` to verify catalogue tests pass.
    - Run `make check-fmt` and `make lint` to ensure code quality.
 
 ### Stage B: UI Component Updates
@@ -329,7 +329,7 @@ Update order (each validates with existing tests before proceeding):
 
 1. **Unit tests** (`src/i18n/catalog/tests.rs`):
    - Add test for each new `MessageId` factory method.
-   - Verify all messages exist in default catalog.
+   - Verify all messages exist in default catalogue.
 
 2. **BDD scenarios** (`tests/features/i18n_extraction.feature`):
 
@@ -393,7 +393,7 @@ pub fn a11y_canvas() -> Self { Self::new("a11y.canvas") }
 // ... etc
 ```
 
-### Step 2: Add catalog entries
+### Step 2: Add catalogue entries
 
 Edit `src/i18n/catalog/mod.rs` in `default_en_gb()`:
 
@@ -503,7 +503,7 @@ Acceptance behaviour:
 This plan is idempotent:
 
 - Adding the same `MessageId` method twice is a compile error (caught early).
-- Adding the same catalog entry twice would overwrite with same value
+- Adding the same catalogue entry twice would overwrite with same value
   (harmless).
 - Re-running the migration is safe as it produces the same end state.
 
@@ -564,7 +564,7 @@ Key files modified for UI string extraction:
 - `src/i18n/message/mod.rs` (+50): new `MessageId` factory methods.
 - `src/i18n/message/factories.rs` (+50): `MessageId` factory
   implementations.
-- `src/i18n/catalog/mod.rs` (+40): new catalog entries.
+- `src/i18n/catalog/mod.rs` (+40): new catalogue entries.
 - `src/ui/phase0_shell/tool_rail.rs` (~20): localized tooltips.
 - `src/ui/phase0_shell/chrome.rs` (~30): localized button labels.
 - `src/ui/phase0_shell/chrome_panels.rs` (~25): localized status bar.
