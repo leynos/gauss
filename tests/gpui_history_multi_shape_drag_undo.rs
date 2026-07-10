@@ -1,115 +1,216 @@
-//! GPUI headless integration test verifying that multi-shape drag produces
-//! exactly one undo entry.
-//!
-//! When multiple shapes are selected, dragging moves all of them but must
-//! create only a single history entry — not one entry per shape.
+//! BDD coverage for one-entry multi-shape drag history.
 
 #[path = "common/gpui_history_multi_shape_drag_undo.rs"]
 mod common;
-#[path = "common/selection_coordinates.rs"]
-mod selection_coordinates;
+#[path = "gpui_history_bdd/support.rs"]
+mod history_support;
+
+use std::cell::RefCell;
 
 use common::{
-    add_square, assert_shape_translated_by_delta, canvas_bounds, ensure_initial_draw,
-    init_test_app, read_document, read_history_len, simulate_document_undo,
+    add_square, assert_shape_translated_by_delta, canvas_bounds, read_document, read_history_len,
+    simulate_document_undo,
 };
-use gauss::model::{SelItem, ShapeId, Vec2};
-use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext};
-use selection_coordinates::viewport_to_screen_point;
-use test_support::TestSupportResult;
-use test_support::selection::{require_shape, shape_bbox_centre};
+use gauss::model::{Document, SelItem, Shape, ShapeId, Vec2};
+use gpui::{Modifiers, MouseButton, TestAppContext, px};
+use history_support::{DurableShell, missing};
+use rstest::fixture;
+use rstest_bdd_macros::{given, scenario, then, when};
+use serial_test::serial;
+use test_support::{TestSupportError, TestSupportResult, math};
 
-fn arrange_multi_shape_selection(
-    visual_cx: &mut VisualTestContext,
-    view: &gpui::Entity<Phase0Shell>,
-    origin: Vec2,
-) -> TestSupportResult<(ShapeId, ShapeId)> {
-    let min1 = origin.add(Vec2::new(10.0, 10.0));
-    let max1 = origin.add(Vec2::new(110.0, 110.0));
-    let min2 = origin.add(Vec2::new(160.0, 10.0));
-    let max2 = origin.add(Vec2::new(260.0, 110.0));
+#[derive(Default)]
+struct MultiDragState {
+    shell: Option<DurableShell>,
+    first: Option<Shape>,
+    second: Option<Shape>,
+    delta: Option<Vec2>,
+    history_before: Option<usize>,
+}
 
-    let mut doc = visual_cx.read(|app| view.read(app).document().clone());
-    let first = add_square(&mut doc, min1, max1)?;
-    let second = add_square(&mut doc, min2, max2)?;
+thread_local! {
+    static STATE: RefCell<MultiDragState> = RefCell::new(MultiDragState::default());
+}
 
-    visual_cx.update(move |_window, app| {
-        view.update(app, |shell, view_cx| {
-            shell.enter_manipulate_mode_for_tests();
-            shell.replace_document_for_tests(doc);
-            shell.replace_selection_for_tests(gauss::model::Selection {
-                items: vec![SelItem::Shape(first), SelItem::Shape(second)],
+fn with_state<R>(f: impl FnOnce(&mut MultiDragState) -> R) -> R {
+    STATE.with(|state| f(&mut state.borrow_mut()))
+}
+
+fn reset_state() {
+    with_state(|state| *state = MultiDragState::default());
+}
+
+struct Cleanup;
+
+impl Drop for Cleanup {
+    fn drop(&mut self) {
+        reset_state();
+    }
+}
+
+#[fixture]
+fn cleanup() -> Cleanup {
+    reset_state();
+    Cleanup
+}
+
+fn shell() -> Result<DurableShell, TestSupportError> {
+    with_state(|state| state.shell.clone()).ok_or_else(|| missing("Phase 0 shell"))
+}
+
+fn find_shape<'a>(
+    document: &'a Document,
+    id: ShapeId,
+    context: &str,
+) -> TestSupportResult<&'a Shape> {
+    document
+        .shape(id)
+        .ok_or_else(|| TestSupportError::missing("shape", format!("shape {id:?}: {context}")))
+}
+
+fn shape_bbox_centre(shape: &Shape) -> Result<Vec2, TestSupportError> {
+    let first = shape.path.anchors.first().ok_or_else(|| {
+        TestSupportError::missing("shape anchor", "computing bounding box centre")
+    })?;
+    let (mut min_x, mut min_y, mut max_x, mut max_y) =
+        (first.pos.x, first.pos.y, first.pos.x, first.pos.y);
+    for anchor in shape.path.anchors.iter().skip(1) {
+        min_x = min_x.min(anchor.pos.x);
+        min_y = min_y.min(anchor.pos.y);
+        max_x = max_x.max(anchor.pos.x);
+        max_y = max_y.max(anchor.pos.y);
+    }
+    Ok(Vec2::new(
+        math::midpoint(min_x, max_x),
+        math::midpoint(min_y, max_y),
+    ))
+}
+
+#[given("a fresh Phase 0 shell window with two selected shapes")]
+fn two_selected_shapes(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    reset_state();
+    let shell = DurableShell::open(cx);
+    let (first, second, history_before) = shell.with_visual(cx, |visual_cx, view| {
+        let bounds = canvas_bounds(visual_cx)?;
+        let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
+        let mut document = read_document(visual_cx, view);
+        let first_id = add_square(
+            &mut document,
+            origin.add(Vec2::new(10.0, 10.0)),
+            origin.add(Vec2::new(110.0, 110.0)),
+        )?;
+        let second_id = add_square(
+            &mut document,
+            origin.add(Vec2::new(160.0, 10.0)),
+            origin.add(Vec2::new(260.0, 110.0)),
+        )?;
+        let first = find_shape(&document, first_id, "before drag")?.clone();
+        let second = find_shape(&document, second_id, "before drag")?.clone();
+        visual_cx.update(|_window, app| {
+            view.update(app, |phase0, view_cx| {
+                phase0.enter_manipulate_mode_for_tests();
+                phase0.replace_document_for_tests(document);
+                phase0.replace_selection_for_tests(gauss::model::Selection {
+                    items: vec![SelItem::Shape(first_id), SelItem::Shape(second_id)],
+                });
+                view_cx.notify();
             });
-            view_cx.notify();
         });
+        visual_cx.run_until_parked();
+        Ok((first, second, read_history_len(visual_cx, view)))
+    })?;
+    with_state(|state| {
+        state.shell = Some(shell);
+        state.first = Some(first);
+        state.second = Some(second);
+        state.delta = Some(Vec2::new(20.0, 10.0));
+        state.history_before = Some(history_before);
     });
-    visual_cx.run_until_parked();
-    Ok((first, second))
+    Ok(())
 }
 
-#[gpui::test]
-fn multi_shape_drag_creates_exactly_one_undo_entry(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
-
-    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
-    let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
-
-    let (shape1_id, shape2_id) = arrange_multi_shape_selection(visual_cx, &view, origin)
-        .expect("expected to arrange multi-shape selection");
-
-    let viewport = visual_cx.read(|app| view.read(app).viewport());
-
-    let doc_before = read_document(visual_cx, &view);
-    let shape1_before = require_shape(&doc_before, shape1_id, "before drag")
-        .expect("expected shape1")
-        .clone();
-    let shape2_before = require_shape(&doc_before, shape2_id, "before drag")
-        .expect("expected shape2")
-        .clone();
-
-    let len_before = read_history_len(visual_cx, &view);
-
-    let start_model = shape_bbox_centre(&shape1_before).expect("shape1 should have anchors");
-    let delta = Vec2::new(20.0, 10.0);
-    let start_screen = viewport_to_screen_point(viewport, start_model);
-    let end_screen = viewport_to_screen_point(viewport, start_model.add(delta));
-
-    visual_cx.simulate_mouse_down(start_screen, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
-    visual_cx.simulate_mouse_move(end_screen, MouseButton::Left, Modifiers::none());
-    visual_cx.simulate_mouse_up(end_screen, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
-
-    let len_after = read_history_len(visual_cx, &view);
-    assert_eq!(
-        len_after,
-        len_before + 1,
-        "expected exactly one undo entry for multi-shape drag (not one per shape)"
-    );
-
-    let doc_after = read_document(visual_cx, &view);
-    let shape1_after =
-        require_shape(&doc_after, shape1_id, "after drag").expect("expected shape1 after drag");
-    let shape2_after =
-        require_shape(&doc_after, shape2_id, "after drag").expect("expected shape2 after drag");
-    assert_shape_translated_by_delta(shape1_after, &shape1_before, delta, "shape1 after drag")
-        .expect("expected shape1 to translate");
-    assert_shape_translated_by_delta(shape2_after, &shape2_before, delta, "shape2 after drag")
-        .expect("expected shape2 to translate");
-
-    simulate_document_undo(visual_cx);
-
-    let doc_after_undo = read_document(visual_cx, &view);
-    let shape1_restored = require_shape(&doc_after_undo, shape1_id, "after undo")
-        .expect("expected shape1 after undo");
-    let shape2_restored = require_shape(&doc_after_undo, shape2_id, "after undo")
-        .expect("expected shape2 after undo");
-    assert_shape_translated_by_delta(shape1_restored, &shape1_before, Vec2::ZERO, "shape1 undo")
-        .expect("expected shape1 to restore");
-    assert_shape_translated_by_delta(shape2_restored, &shape2_before, Vec2::ZERO, "shape2 undo")
-        .expect("expected shape2 to restore");
+#[when("the selected shapes are dragged together")]
+fn drag_selected_shapes(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let first = with_state(|state| state.first.clone()).ok_or_else(|| missing("first shape"))?;
+    let delta = with_state(|state| state.delta).ok_or_else(|| missing("drag delta"))?;
+    shell()?.with_visual(cx, |visual_cx, view| {
+        let viewport = visual_cx.read(|app| view.read(app).viewport());
+        let start_model = shape_bbox_centre(&first)?;
+        let start_screen = viewport.world_to_screen(start_model);
+        let end_screen = viewport.world_to_screen(start_model.add(delta));
+        let start = gpui::point(px(start_screen.x), px(start_screen.y));
+        let end = gpui::point(px(end_screen.x), px(end_screen.y));
+        visual_cx.simulate_mouse_down(start, MouseButton::Left, Modifiers::none());
+        visual_cx.run_until_parked();
+        visual_cx.simulate_mouse_move(end, MouseButton::Left, Modifiers::none());
+        visual_cx.simulate_mouse_up(end, MouseButton::Left, Modifiers::none());
+        visual_cx.run_until_parked();
+        Ok(())
+    })
 }
+
+#[when("the last document change is undone")]
+fn undo_drag(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    shell()?.with_visual(cx, |visual_cx, _view| {
+        simulate_document_undo(visual_cx);
+        Ok(())
+    })
+}
+
+#[then("both selected shapes move by the drag delta")]
+fn shapes_moved(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let delta = with_state(|state| state.delta).ok_or_else(|| missing("drag delta"))?;
+    assert_shapes_at_delta(cx, delta)
+}
+
+#[then("both selected shapes return to their positions before the drag")]
+fn shapes_restored(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    assert_shapes_at_delta(cx, Vec2::ZERO)
+}
+
+fn assert_shapes_at_delta(cx: &mut TestAppContext, delta: Vec2) -> Result<(), TestSupportError> {
+    let first = with_state(|state| state.first.clone()).ok_or_else(|| missing("first shape"))?;
+    let second = with_state(|state| state.second.clone()).ok_or_else(|| missing("second shape"))?;
+    shell()?.with_visual(cx, |visual_cx, view| {
+        let document = read_document(visual_cx, view);
+        let actual_first = find_shape(&document, first.id, "after drag history action")?;
+        let actual_second = find_shape(&document, second.id, "after drag history action")?;
+        assert_shape_translated_by_delta(actual_first, &first, delta, "first selected shape")?;
+        assert_shape_translated_by_delta(actual_second, &second, delta, "second selected shape")
+    })
+}
+
+#[then("the document history has gained 1 entry")]
+fn history_gained_one(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let before =
+        with_state(|state| state.history_before).ok_or_else(|| missing("history length"))?;
+    shell()?.with_visual(cx, |visual_cx, view| {
+        let actual = read_history_len(visual_cx, view);
+        if actual != before + 1 {
+            return Err(TestSupportError::expectation(format!(
+                "expected exactly one undo entry for multi-shape drag; before={before}, after={actual}"
+            )));
+        }
+        Ok(())
+    })
+}
+
+#[scenario(
+    path = "tests/features/history_multi_shape_drag_undo.feature",
+    name = "Dragging multiple shapes creates one undo entry and undo restores them",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
+#[serial]
+fn multi_shape_drag_scenario(#[from(cleanup)] _cleanup: Cleanup) {}

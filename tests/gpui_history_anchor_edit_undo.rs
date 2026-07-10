@@ -1,18 +1,22 @@
 //! GPUI headless integration tests for Phase 0 anchor insertion/deletion.
 
+#[path = "gpui_history_bdd/anchor_edit.rs"]
+mod anchor_edit;
+
 #[path = "common/gpui_history_anchor_edit_undo.rs"]
 mod common;
 
+#[path = "gpui_history_bdd/support.rs"]
+mod history_bdd_support;
+
 use common::{
     anchor_to_canvas_point, assert_vec2_close, canvas_bounds, click_canvas_and_wait,
-    ensure_initial_draw, init_test_app, read_document, read_history_len, require_draw_shape,
-    simulate_escape, simulate_key,
+    read_document, read_history_len, require_draw_shape, simulate_escape, simulate_key,
 };
 use gauss::model::{SelItem, Shape, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
+use gpui::{Modifiers, MouseButton, VisualTestContext, point, px};
 use test_support::{TestSupportError, TestSupportResult, math};
-
 #[derive(Clone, Copy, Debug)]
 struct PathCounts {
     anchors: usize,
@@ -248,88 +252,4 @@ fn delete_selected_anchor(
     )?;
     expect_selection_empty(visual_cx, view, "after delete")?;
     Ok(())
-}
-
-fn assert_undo_redo_round_trip(
-    visual_cx: &mut VisualTestContext,
-    view: &gpui::Entity<Phase0Shell>,
-) -> TestSupportResult<()> {
-    common::simulate_document_undo(visual_cx);
-    read_shape_with_counts(
-        visual_cx,
-        view,
-        PathCounts {
-            anchors: 3,
-            segments: 2,
-        },
-        "after undo delete",
-    )?;
-
-    common::simulate_document_undo(visual_cx);
-    read_shape_with_counts(
-        visual_cx,
-        view,
-        PathCounts {
-            anchors: 2,
-            segments: 1,
-        },
-        "after undo insert",
-    )?;
-
-    common::simulate_document_redo(visual_cx);
-    read_shape_with_counts(
-        visual_cx,
-        view,
-        PathCounts {
-            anchors: 3,
-            segments: 2,
-        },
-        "after redo insert",
-    )?;
-
-    common::simulate_document_redo(visual_cx);
-    read_shape_with_counts(
-        visual_cx,
-        view,
-        PathCounts {
-            anchors: 2,
-            segments: 1,
-        },
-        "after redo delete",
-    )?;
-    Ok(())
-}
-
-#[gpui::test]
-fn insert_and_delete_anchor_are_doc_undoable(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
-    let setup = draw_two_point_path(visual_cx, &view).expect("expected base draw path");
-    simulate_escape(visual_cx);
-
-    let midpoint = Vec2::new(
-        math::midpoint(setup.start_pos.x, setup.end_pos.x),
-        math::midpoint(setup.start_pos.y, setup.end_pos.y),
-    );
-    let len_before_insert = read_history_len(visual_cx, &view);
-
-    insert_anchor_at_midpoint(visual_cx, &view, &setup, midpoint)
-        .expect("expected anchor insertion to succeed");
-    assert_eq!(
-        read_history_len(visual_cx, &view),
-        len_before_insert + 1,
-        "expected one undo entry for anchor insertion"
-    );
-
-    delete_selected_anchor(visual_cx, &view)
-        .expect("expected delete to remove the inserted anchor");
-    assert_eq!(
-        read_history_len(visual_cx, &view),
-        len_before_insert + 2,
-        "expected two undo entries after insert + delete"
-    );
-    assert_undo_redo_round_trip(visual_cx, &view)
-        .expect("expected undo/redo to round-trip anchor edits");
 }

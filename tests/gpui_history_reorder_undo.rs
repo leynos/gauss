@@ -6,14 +6,17 @@
 
 #[path = "common/gpui_history_reorder_undo.rs"]
 mod common;
+#[path = "gpui_history_bdd/support.rs"]
+mod history_bdd_support;
+#[path = "gpui_history_bdd/reorder.rs"]
+mod reorder;
 
 use common::{
-    canvas_bounds, click_canvas_and_wait, demo_shape_id, ensure_initial_draw, init_test_app,
-    read_document, read_history_len, read_selection, simulate_escape, simulate_key,
+    click_canvas_and_wait, demo_shape_id, read_document, read_selection, simulate_escape,
 };
 use gauss::model::{Document, SelItem, Selection, ShapeId};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
+use gpui::{Modifiers, MouseButton, VisualTestContext, point, px};
 use test_support::{TestSupportError, TestSupportResult};
 
 #[derive(Clone, Copy, Debug)]
@@ -133,7 +136,7 @@ fn verify_initial_shapes_and_order(
     Ok((lower, higher, expected_ids))
 }
 
-fn verify_click_selects_topmost(
+fn click_and_verify_topmost(
     visual_cx: &mut VisualTestContext,
     view: &gpui::Entity<Phase0Shell>,
     click_point: gpui::Point<gpui::Pixels>,
@@ -151,121 +154,4 @@ fn verify_click_selects_topmost(
         )));
     }
     Ok(())
-}
-
-/// Encapsulates the shape state and history baseline for reorder verification.
-struct ReorderVerificationContext {
-    lower: ShapeId,
-    higher: ShapeId,
-    expected_ids: Vec<ShapeId>,
-    len_before: usize,
-}
-
-impl ReorderVerificationContext {
-    const fn new(
-        lower: ShapeId,
-        higher: ShapeId,
-        expected_ids: Vec<ShapeId>,
-        len_before: usize,
-    ) -> Self {
-        Self {
-            lower,
-            higher,
-            expected_ids,
-            len_before,
-        }
-    }
-}
-
-fn verify_reorder_and_undo_sequence(
-    visual_cx: &mut VisualTestContext,
-    view: &gpui::Entity<Phase0Shell>,
-    context: &ReorderVerificationContext,
-) -> TestSupportResult<()> {
-    simulate_key(visual_cx, "[", Modifiers::secondary_key());
-    let doc_after_lower = read_document(visual_cx, view);
-    let ids_after_lower = require_sorted_drawn_shape_ids(&doc_after_lower)?;
-    if ids_after_lower != context.expected_ids {
-        return Err(TestSupportError::expectation(
-            "expected shape ids to remain stable after lowering",
-        ));
-    }
-    assert_relative_order(
-        &doc_after_lower,
-        context.higher,
-        context.lower,
-        "after lowering top-most shape",
-    )?;
-    if read_history_len(visual_cx, view) != context.len_before + 1 {
-        return Err(TestSupportError::expectation(
-            "expected one undo entry for lower",
-        ));
-    }
-
-    simulate_key(visual_cx, "]", Modifiers::secondary_key());
-    let doc_after_raise = read_document(visual_cx, view);
-    let ids_after_raise = require_sorted_drawn_shape_ids(&doc_after_raise)?;
-    if ids_after_raise != context.expected_ids {
-        return Err(TestSupportError::expectation(
-            "expected shape ids to remain stable after raising",
-        ));
-    }
-    assert_relative_order(
-        &doc_after_raise,
-        context.lower,
-        context.higher,
-        "after raising back to top",
-    )?;
-    if read_history_len(visual_cx, view) != context.len_before + 2 {
-        return Err(TestSupportError::expectation(
-            "expected two undo entries for lower + raise",
-        ));
-    }
-
-    common::simulate_document_undo(visual_cx);
-    let doc_after_undo_raise = read_document(visual_cx, view);
-    assert_relative_order(
-        &doc_after_undo_raise,
-        context.higher,
-        context.lower,
-        "after undoing raise",
-    )?;
-
-    common::simulate_document_undo(visual_cx);
-    let doc_after_undo_lower = read_document(visual_cx, view);
-    assert_relative_order(
-        &doc_after_undo_lower,
-        context.lower,
-        context.higher,
-        "after undoing lower",
-    )
-}
-
-#[gpui::test]
-fn raise_lower_reorders_overlapping_shapes_with_undo(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
-
-    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
-    let points = line_points(&bounds);
-
-    draw_overlapping_lines(visual_cx, points);
-
-    let doc = read_document(visual_cx, &view);
-    let (lower, higher, expected_ids) =
-        verify_initial_shapes_and_order(&doc).expect("expected valid initial shape order");
-
-    verify_click_selects_topmost(visual_cx, &view, points.start, higher)
-        .expect("expected overlapping click to select the top-most shape");
-
-    let len_before_reorder = read_history_len(visual_cx, &view);
-
-    verify_reorder_and_undo_sequence(
-        visual_cx,
-        &view,
-        &ReorderVerificationContext::new(lower, higher, expected_ids, len_before_reorder),
-    )
-    .expect("expected reorder and undo sequence to be correct");
 }
