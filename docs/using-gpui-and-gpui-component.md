@@ -120,7 +120,7 @@ GPUI supports three primary registers. The PoC uses all three.
 
 3. **Elements (imperative UI)**
    - Elements give direct control over layout and rendering.
-   - Elements handle custom drawing (for example, `Canvas`) or specialised
+   - Elements handle custom drawing (for example, `Canvas`) or specialized
      layout.
 
 The PoC uses a view (`Phase0Shell`) that renders a toolbar and a canvas. The
@@ -148,7 +148,7 @@ keeps custom drawing focused on the canvas.
 ### Initialize once
 
 `gpui_component::init(app)` must be called inside the `Application::run`
-closure before using any components. This initialises theme state and registers
+closure before using any components. This initializes theme state and registers
 component services.
 
 ### Root wrapper is required

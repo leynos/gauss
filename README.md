@@ -1,5 +1,12 @@
 # Gauss
 
+## Spelling policy
+
+Run `make spelling` to enforce en-GB-oxendict prose spelling. The generated
+`typos.toml` starts from the shared estate dictionary, refreshes its untracked
+local cache only when the authority is newer, and then applies the narrow
+repository policy in `typos.local.toml`.
+
 Gauss is a Phase 0 proof-of-concept vector editor built with GPUI. It provides
 Draw and Manipulate modes, SVG import/export, and undo/redo with a separate
 selection history.

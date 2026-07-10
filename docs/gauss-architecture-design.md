@@ -52,7 +52,7 @@ redesign the feature.
 
 ### 2.1 Everything is an Action (and therefore scriptable)
 
-All user‑visible behavior must be representable as an **Action → Command**
+All user‑visible behaviour must be representable as an **Action → Command**
 pipeline:
 
 - **UI** invokes actions (buttons, menus, keyboard shortcuts, gestures)
@@ -116,7 +116,7 @@ Architecture must ensure:
 
 ### 2.6 Platform abstraction at the edges
 
-All platform-specific behavior (dialogs, clipboard, filesystem integration,
+All platform-specific behaviour (dialogs, clipboard, filesystem integration,
 accessibility adapters, printing later) must be isolated behind a small
 “platform boundary”, so Gauss can expand to Windows and FreeBSD even if
 GPUI/platform support evolves. 【111†using-gpui-and-gpui-component.md】
@@ -969,7 +969,7 @@ stacking without API changes.
 
 ### 7.3 Grouping and "boring but essential" correctness
 
-To avoid user-hostile undo behavior:
+To avoid user-hostile undo behaviour:
 
 - group multi-step interactions into a single undo step
 - clear history appropriately when opening a new document (PoC pitfall)
@@ -1481,7 +1481,7 @@ Localizability must be designed in from day one:
 
 Suggested approach:
 
-- `i18n` module with a message catalog (e.g., Fluent, ICU-based, or a simple
+- `i18n` module with a message catalogue (e.g., Fluent, ICU-based, or a simple
   keyed system)
 - Keep i18n independent of GPUI; views request localized strings from the
   service
@@ -1529,7 +1529,7 @@ for:
 
 - bezier/anchor editors
 - gradient editors (stops, ramps)
-- color pickers and sliders beyond stock components
+- colour pickers and sliders beyond stock components
 - transform handles, measurement overlays
 - path boolean UI affordances
 
@@ -1537,7 +1537,7 @@ for:
 
 Early in Phase 1, do a focused audit:
 
-1. List required UI controls for Phase 1–2 (toolbars, layers, properties, color)
+1. List required UI controls for Phase 1–2 (toolbars, layers, properties, colour)
 2. Map each to an existing GPUI Component widget or "needs custom"
 3. Define a tiny internal widget library for missing pieces (consistent
    focus/keyboard/a11y)
@@ -1588,7 +1588,7 @@ Create a small `platform` facade providing:
 - font enumeration and text shaping hooks (later)
 
 The PoC already notes headless prompt differences and recommends thin adapters
-for dialog behavior.
+for dialog behaviour.
 
 ______________________________________________________________________
 
@@ -1596,7 +1596,7 @@ ______________________________________________________________________
 
 The PoC recommends:
 
-- behavior-heavy tests at controller/model boundary
+- behaviour-heavy tests at controller/model boundary
 - a small set of `#[gpui::test]` integration tests for wiring/input
 
 ### 16.1 Test layers
@@ -1700,7 +1700,7 @@ broad feature work accelerates:
 4. **SVG load/save + metadata policy** (round-trip tests)
 5. **Tool framework** (trait + FSM patterns; selection + pen start)
 6. **A11yService skeleton** (stable IDs, UI chrome accessibility)
-7. **i18n scaffolding** (string catalog, localized command names)
+7. **i18n scaffolding** (string catalogue, localized command names)
 8. **Widget capability audit** (GPUI Component vs custom controls plan)
 
 Status update: roadmap items `0.5.1` through `0.5.4` implemented the tool

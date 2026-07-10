@@ -40,6 +40,8 @@ jobs:
             **/*.md
             !**/target/**
             !**/dist/**
+      - name: Spelling
+        run: make spelling
       - name: Install Whitaker
         run: |
           cargo install --locked \

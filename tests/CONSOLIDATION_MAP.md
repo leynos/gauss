@@ -65,7 +65,7 @@ maintaining each test as an independent Cargo target.
 
 ## Non-GPUI Tests (17 files, unchanged)
 
-### BDD (Behavior-Driven Development) Tests (13 files)
+### BDD (Behaviour-Driven Development) Tests (13 files)
 
 - a11y_service_bdd.rs - Accessibility service behaviour
 - a11y_service_routing_bdd.rs - Accessibility routing behaviour

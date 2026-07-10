@@ -4,3 +4,9 @@ target/
 .grepai/
 *.backup/
 *~
+.typos-oxendict-base.json
+.typos-oxendict-base.toml
+.uv-cache/
+.uv-tools/
+.coverage
+__pycache__/

@@ -467,7 +467,7 @@ Unit tests (`rstest`):
 
 - Exporting a simple document emits expected SVG fragments.
 - Importing an exported document and exporting again produces stable output
-  (allowing for whitespace normalisation if needed).
+  (allowing for whitespace normalization if needed).
 
 Acceptance:
 
