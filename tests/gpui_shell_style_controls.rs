@@ -1,112 +1,197 @@
-//! GPUI headless integration tests for Phase 0 stroke/fill controls.
+//! Behavioural shell-style-control coverage through `GpuiHarness`.
 
 #[path = "common/gpui_shell_style_controls.rs"]
 mod common;
+#[path = "shell_bdd/expect_equal.rs"]
+mod expect_equal_support;
+#[path = "shell_bdd/support.rs"]
+mod support;
+
+use std::cell::RefCell;
 
 use common::{
-    anchor_to_canvas_point, click_canvas_and_wait, ensure_initial_draw, init_test_app,
-    read_document, read_history_len, require_draw_shape, simulate_escape,
+    anchor_to_canvas_point, click_canvas_and_wait, read_document, read_history_len,
+    require_draw_shape, simulate_document_undo, simulate_escape,
 };
-use gauss::model::{Paint, Rgba, SelItem, ShapeId, Vec2};
+use expect_equal_support::expect_equal;
+use gauss::model::{Paint, PaintStyle, Rgba, SelItem, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Hsla, Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
+use rstest_bdd_macros::{given, scenario, then, when};
+use serial_test::serial;
+use support::{ScenarioStateCleanup, fresh_shell_with, with_shell};
 use test_support::{TestSupportError, TestSupportResult};
 
-fn select_anchor0(
+#[derive(Default)]
+struct StyleState {
+    original_style: Option<PaintStyle>,
+    history_len_before_style: Option<usize>,
+}
+
+thread_local! {
+    static STYLE_STATE: RefCell<StyleState> = RefCell::new(StyleState::default());
+}
+
+fn select_first_anchor(
     visual_cx: &mut VisualTestContext,
     view: &gpui::Entity<Phase0Shell>,
-    select_point: gpui::Point<gpui::Pixels>,
+    position: gpui::Point<gpui::Pixels>,
     shape_id: ShapeId,
 ) -> TestSupportResult<()> {
-    visual_cx.simulate_mouse_down(select_point, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_down(position, MouseButton::Left, Modifiers::none());
     visual_cx.run_until_parked();
-
     let selection = visual_cx.read(|app| view.read(app).selection().clone());
-    let expected_anchor = SelItem::Anchor {
+    let expected = SelItem::Anchor {
         shape: shape_id,
         anchor: 0,
     };
-    if !selection.contains(&expected_anchor) {
+    if !selection.contains(&expected) {
         return Err(TestSupportError::expectation(format!(
-            "expected anchor selection; selection={selection:?}"
+            "expected first anchor selection; selection={selection:?}"
         )));
     }
-
-    visual_cx.simulate_mouse_up(select_point, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_up(position, MouseButton::Left, Modifiers::none());
     visual_cx.run_until_parked();
     Ok(())
 }
 
-#[gpui::test]
-fn style_changes_apply_to_selected_shapes_and_are_undoable(cx: &mut TestAppContext) {
-    init_test_app(cx);
+#[given("a drawn shape with its first anchor selected")]
+fn drawn_shape_with_first_anchor_selected(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    STYLE_STATE.with(|cell| *cell.borrow_mut() = StyleState::default());
+    fresh_shell_with(cx, Phase0Shell::new);
+    with_shell(cx, |visual_cx, view| {
+        let bounds = common::canvas_bounds(visual_cx)?;
+        let first = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));
+        let second = point(
+            bounds.origin.x + bounds.size.width - px(2.0),
+            bounds.origin.y + bounds.size.height - px(2.0),
+        );
+        click_canvas_and_wait(visual_cx, first);
+        click_canvas_and_wait(visual_cx, second);
 
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
-
-    let bounds = common::canvas_bounds(visual_cx).expect("canvas bounds should be available");
-    let p1 = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));
-    let p2 = point(
-        bounds.origin.x + bounds.size.width - px(2.0),
-        bounds.origin.y + bounds.size.height - px(2.0),
-    );
-
-    click_canvas_and_wait(visual_cx, p1);
-    click_canvas_and_wait(visual_cx, p2);
-
-    let doc_before = read_document(visual_cx, &view);
-    let shape_before = require_draw_shape(&doc_before, "after drawing")
-        .expect("expected draw shape after drawing")
-        .clone();
-    let anchor0 = shape_before
-        .path
-        .anchors
-        .first()
-        .map_or(Vec2::ZERO, |anchor| anchor.pos);
-
-    simulate_escape(visual_cx);
-
-    let select_point = anchor_to_canvas_point(&bounds, anchor0, p1);
-    select_anchor0(visual_cx, &view, select_point, shape_before.id)
-        .expect("expected anchor selection");
-
-    let len_before_style = read_history_len(visual_cx, &view);
-
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.apply_stroke_colour(Some(Hsla::red()));
-            shell.apply_fill_colour(Some(Hsla::blue()));
+        let document = read_document(visual_cx, view);
+        let shape = require_draw_shape(&document, "after drawing")?.clone();
+        let anchor = shape
+            .path
+            .anchors
+            .first()
+            .map_or(Vec2::ZERO, |item| item.pos);
+        simulate_escape(visual_cx);
+        select_first_anchor(
+            visual_cx,
+            view,
+            anchor_to_canvas_point(&bounds, anchor, first),
+            shape.id,
+        )?;
+        STYLE_STATE.with(|cell| {
+            let mut state = cell.borrow_mut();
+            state.original_style = Some(shape.style);
+            state.history_len_before_style = Some(read_history_len(visual_cx, view));
         });
-    });
-    visual_cx.run_until_parked();
-    assert_eq!(
-        read_history_len(visual_cx, &view),
-        len_before_style + 2,
-        "expected two undo entries for stroke + fill changes"
-    );
+        Ok(())
+    })
+}
 
-    let doc_after = read_document(visual_cx, &view);
-    let shape_after = require_draw_shape(&doc_after, "after applying style")
-        .expect("expected draw shape after applying style");
-    assert_eq!(
-        shape_after.style.stroke,
-        Paint::Solid(Rgba::new(255, 0, 0, 255)),
-        "expected stroke to be updated to red"
-    );
-    assert_eq!(
-        shape_after.style.fill,
-        Paint::Solid(Rgba::new(0, 0, 255, 255)),
-        "expected fill to be updated to blue"
-    );
+#[when("the stroke is changed to red")]
+fn change_stroke_to_red(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, view| {
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, _cx| {
+                shell.apply_stroke_colour(Some(Hsla::red()));
+            });
+        });
+        visual_cx.run_until_parked();
+        Ok(())
+    })
+}
 
-    common::simulate_document_undo(visual_cx);
-    common::simulate_document_undo(visual_cx);
+#[when("the fill is changed to blue")]
+fn change_fill_to_blue(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, view| {
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, _cx| {
+                shell.apply_fill_colour(Some(Hsla::blue()));
+            });
+        });
+        visual_cx.run_until_parked();
+        Ok(())
+    })
+}
 
-    let doc_after_undo = read_document(visual_cx, &view);
-    let shape_after_undo =
-        require_draw_shape(&doc_after_undo, "after undo").expect("expected draw shape after undo");
-    assert_eq!(
-        shape_after_undo.style, shape_before.style,
-        "expected undo to restore the original style"
-    );
+#[then("the shape has a red stroke and blue fill")]
+fn shape_has_red_stroke_and_blue_fill(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, view| {
+        let document = read_document(visual_cx, view);
+        let shape = require_draw_shape(&document, "after applying style")?;
+        expect_equal(
+            &shape.style.stroke,
+            &Paint::Solid(Rgba::new(255, 0, 0, 255)),
+            "stroke after style changes",
+        )?;
+        expect_equal(
+            &shape.style.fill,
+            &Paint::Solid(Rgba::new(0, 0, 255, 255)),
+            "fill after style changes",
+        )
+    })
+}
+
+#[then("two document history entries are added")]
+fn two_document_history_entries_are_added(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let before = STYLE_STATE
+        .with(|cell| cell.borrow().history_len_before_style)
+        .ok_or_else(|| TestSupportError::missing("initial history length", "scenario setup"))?;
+    with_shell(cx, |visual_cx, view| {
+        expect_equal(
+            &read_history_len(visual_cx, view),
+            &(before + 2),
+            "history length after stroke and fill changes",
+        )
+    })
+}
+
+#[when("both style changes are undone")]
+fn undo_both_style_changes(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, _view| {
+        simulate_document_undo(visual_cx);
+        simulate_document_undo(visual_cx);
+        Ok(())
+    })
+}
+
+#[then("the shape has its original style")]
+fn shape_has_original_style(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let expected = STYLE_STATE
+        .with(|cell| cell.borrow().original_style.clone())
+        .ok_or_else(|| TestSupportError::missing("original style", "scenario setup"))?;
+    with_shell(cx, |visual_cx, view| {
+        let document = read_document(visual_cx, view);
+        let shape = require_draw_shape(&document, "after undo")?;
+        expect_equal(&shape.style, &expected, "style after undo")
+    })
+}
+
+#[scenario(
+    path = "tests/features/shell_style_controls.feature",
+    name = "Style changes apply to selected shapes and are undoable",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
+#[serial]
+fn style_changes_apply_to_selected_shapes_and_are_undoable(
+    #[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup,
+) {
 }

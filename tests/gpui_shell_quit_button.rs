@@ -1,35 +1,58 @@
-//! Validate that the Phase 0 shell can request application quit.
-//!
-//! The GPUI test platform does not necessarily exit when `App::quit()` is
-//! invoked, so the shell exposes a `did_request_quit` flag for stable headless
-//! assertions.
+//! Behavioural coverage for the shell Quit button through `GpuiHarness`.
 
+#[path = "shell_bdd/click.rs"]
+mod click_support;
 #[path = "common/gpui_shell_quit_button.rs"]
 mod common;
+#[path = "shell_bdd/expect_true.rs"]
+mod expect_true_support;
+#[path = "shell_bdd/support.rs"]
+mod support;
 
-use common::{ensure_initial_draw, init_test_app};
+use click_support::click_selector;
+use expect_true_support::expect_true;
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, TestAppContext, point, px};
+use gpui::TestAppContext;
+use rstest_bdd_macros::{given, scenario, then, when};
+use serial_test::serial;
+use support::{fresh_shell_with, with_shell, ScenarioStateCleanup};
+use test_support::TestSupportError;
 
-#[gpui::test]
-fn clicking_quit_button_requests_quit(cx: &mut TestAppContext) {
-    init_test_app(cx);
+#[given("a fresh Phase 0 shell window")]
+fn fresh_phase0_shell_window(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    fresh_shell_with(cx, Phase0Shell::new);
+    with_shell(cx, |_visual_cx, _view| Ok(()))?;
+    Ok(())
+}
 
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
+#[when("the Quit button is clicked")]
+fn click_quit_button(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, _view| {
+        click_selector(visual_cx, "#quit-button")
+    })
+}
 
-    let bounds = visual_cx
-        .debug_bounds("#quit-button")
-        .expect("quit button should have debug bounds after drawing");
+#[then("the shell requests quit")]
+fn shell_requests_quit(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, view| {
+        let did_request_quit = visual_cx.read(|app| view.read(app).did_request_quit());
+        expect_true(did_request_quit, "expected the shell to request quit")
+    })
+}
 
-    let position = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));
-    visual_cx.simulate_mouse_move(position, None, Modifiers::none());
-    visual_cx.simulate_click(position, Modifiers::none());
-    visual_cx.run_until_parked();
-
-    let did_request_quit = visual_cx.read(|app| view.read(app).did_request_quit());
-    assert!(
-        did_request_quit,
-        "clicking Quit should record that a quit request occurred"
-    );
+#[scenario(
+    path = "tests/features/shell_quit.feature",
+    name = "Quit button requests quit",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
+#[serial]
+fn quit_button_requests_quit(
+    #[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup,
+) {
 }

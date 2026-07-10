@@ -399,6 +399,24 @@ For a worked-out example, see the regression suite at
 playbook][users-guide-playbook] subsection. The pattern's rationale lives in
 §§2.7.6.1–2.7.6.2 of the [rstest-bdd design](rstest-bdd-design.md).
 
+
+#### Retain structural Gauss shell tests as raw GPUI tests
+
+The Gauss shell migration in issue 119 applies the GPUI harness to user actions
+and observable state transitions. Pure render-tree and geometry assertions stay
+as raw `#[gpui::test]` tests: forcing these checks into Given/When/Then language
+would obscure that they validate implementation structure rather than user
+behaviour.
+
+| File | Retained raw tests | Rationale |
+| --- | --- | --- |
+| `gpui_shell_canvas_layout.rs` | `canvas_is_not_collapsed_to_a_tiny_height` | Asserts a rendered height threshold. |
+| `gpui_shell_chrome_layout.rs` | `chrome_layout_exposes_core_controls` | Asserts debug-bound presence for render-tree selectors. |
+| `gpui_shell_resize_borders.rs` | `resize_borders_hidden_when_maximized`, `resize_borders_visible_when_not_maximized`, and `resize_borders_appear_when_restoring_from_maximized` | Asserts platform-specific resize-border presence and visibility. |
+| `gpui_shell_window_controls.rs` | `titlebar_drag_region_is_present`, `window_control_buttons_are_present`, `titlebar_drag_region_has_dimensions`, `window_control_buttons_have_dimensions`, `maximized_override_is_applied_in_tests`, `non_maximized_override_is_applied_in_tests`, `resize_canvas_not_present_when_maximised`, and `resize_canvas_present_when_not_maximised` | Asserts render-tree geometry, test plumbing, or platform-dependent element presence. |
+
+_Table 1: Structural Gauss shell tests retained outside the BDD harness._
+
 [adr-007]: adr-007-harness-context-injection.md
 
 [design-beta2-quick-wins]: rstest-bdd-design.md#2763-v060-beta2-quick-wins
@@ -484,7 +502,7 @@ mutable fixture plus one immutable fixture can produce [`E0502`][rustc-e0502],
 ``cannot borrow `*ctx` as mutable because it is also borrowed as immutable``.
 
 This GPUI-shaped snippet is intentionally rejected by the v0.6 generated
-wrapper; see *Why this happens* below.
+wrapper; see _Why this happens_ below.
 
 ```rust,ignore
 #[given("the shell is open")]
