@@ -93,15 +93,6 @@ language. The `examples/japanese-ledger` crate demonstrates the end-to-end
 workflow for Japanese:
 
 ```gherkin
-### Internationalized scenarios
-
-`rstest-bdd` reads the optional `# language: <code>` directive that appears at
-the top of a feature file. When a locale is specified, the parser uses that
-language's keyword catalogue, enabling teams to collaborate in their native
-language. The `examples/japanese-ledger` crate demonstrates the end-to-end
-workflow for Japanese:
-
-```gherkin
 # language: ja
 フィーチャ: 家計簿の残高を管理する
   シナリオ: 収入を記録する
@@ -2688,8 +2679,10 @@ in the `scenario_state_cleanup` fixture so its constructor-side reset runs
 before any step:
 
 ```rust,no_run
+# use rstest::fixture;
+```
 
-##### When to reach for the stateful playbook
+#### When to reach for the stateful playbook
 
 Stateful GPUI scenarios are those whose steps share durable resources, such as
 a typed view entity and the window that owns it, and need mutable access to
@@ -2700,9 +2693,6 @@ the harness context, or that share state through ordinary
 playbook. The pattern below is needed precisely when a single step must
 borrow both `&mut TestAppContext` and shared mutable scenario state, which
 the v0.6 `StepContext` API cannot express in one borrow.
-
-
-# use rstest::fixture;
 
 #### Stateful GPUI scenarios with durable handles
 
@@ -2758,7 +2748,6 @@ the v0.6 `StepContext` API cannot express in one borrow.
 > Adapt call sites when consuming the published crate. The harness itself
 > (which only deals in `TestAppContext`) is not affected by this divergence.
 
-
 ##### Reset protocol
 
 Thread-local scenario state outlives any single scenario, so each scenario
@@ -2795,7 +2784,6 @@ GPUI scenarios in parallel breaks both invariants.
 See [test-runner parallelism and scenario state](#test-runner-parallelism-and-scenario-state)
 for the full `#[serial]`, cargo-nextest, `#[file_serial]`, and nextest
 test-group matrix.
-
 
 ##### Durable handles versus visual context
 

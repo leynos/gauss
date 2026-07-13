@@ -12,7 +12,7 @@ use common::{
 };
 use gauss::model::ShapeId;
 use gauss::ui::{GpuiActivatePenTool, Phase0Shell};
-use gpui::{Modifiers, TestAppContext, point, px};
+use gpui::{TestAppContext, point, px};
 
 #[gpui::test]
 fn activate_pen_tool_from_manipulate_allows_drawing(cx: &mut TestAppContext) {
@@ -35,9 +35,7 @@ fn activate_pen_tool_from_manipulate_allows_drawing(cx: &mut TestAppContext) {
 
     let shape_count_before = read_document(visual_cx, &view).len();
 
-    visual_cx.simulate_mouse_move(click_in_manipulate, None, Modifiers::none());
-    visual_cx.simulate_click(click_in_manipulate, Modifiers::none());
-    visual_cx.run_until_parked();
+    common::click_canvas_and_wait(visual_cx, click_in_manipulate);
 
     let shape_count_after_manipulate_click = read_document(visual_cx, &view).len();
     assert_eq!(
@@ -48,9 +46,7 @@ fn activate_pen_tool_from_manipulate_allows_drawing(cx: &mut TestAppContext) {
     visual_cx.dispatch_action(GpuiActivatePenTool);
     visual_cx.run_until_parked();
 
-    visual_cx.simulate_mouse_move(click_in_draw, None, Modifiers::none());
-    visual_cx.simulate_click(click_in_draw, Modifiers::none());
-    visual_cx.run_until_parked();
+    common::click_canvas_and_wait(visual_cx, click_in_draw);
 
     let shape_count_after_draw_click = read_document(visual_cx, &view).len();
     assert_eq!(

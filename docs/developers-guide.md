@@ -15,7 +15,7 @@ serial_test = "3"
 ```
 
 Use the harness only for integration tests that need a GPUI test context. A
-scenario selects it through the canonical path so the macro supplies the GPUI
+scenario selects it through the canonical path, so the macro supplies the GPUI
 test attribute:
 
 ```rust,no_run

@@ -15,7 +15,7 @@ behavioural test — the draw/undo/redo flow currently written as a raw
 `#[gpui::test]` — is expressed as a Gherkin scenario driven through the
 first-party `rstest_bdd_harness_gpui::GpuiHarness`.
 
-You can see it working in two observable ways:
+Its operation is observable in two ways:
 
 1. `make test` (the project's full gate: format check, clippy, and the test
    suite) passes with every existing `*_bdd.rs` suite still green under the new
