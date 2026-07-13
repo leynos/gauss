@@ -32,6 +32,8 @@ locale = "en-gb"
 extend-ignore-re = [
     "(?s)```.*?```",
     "`[^`\\n]+`",
+    "flavor = \\\"current_thread\\\"",
+    "rust-analyzer",
 ]
 
 [default.extend-words]
@@ -1014,6 +1016,7 @@ extend-ignore-re = [
 "internationalizers" = "internationalizers"
 "internationalizes" = "internationalizes"
 "internationalizing" = "internationalizing"
+"inventario" = "inventario"
 "itemisable" = "itemizable"
 "itemisation" = "itemization"
 "itemisations" = "itemizations"

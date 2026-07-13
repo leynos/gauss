@@ -284,7 +284,7 @@ scenario name, and failing step.
 What went well:
 
 - The headline risk (harness/`gpui 0.2.2` version incompatibility) did not
-  materialise: `rstest-bdd-harness-gpui 0.6.0-beta3` shares the single
+  materialize: `rstest-bdd-harness-gpui 0.6.0-beta3` shares the single
   `gpui 0.2.2` node, so `TestAppContext` unified with no `[patch]` gymnastics.
 - Verifying the published `gpui` API against the crate source up front avoided
   the vendored-vs-published compile churn the plan anticipated.
@@ -298,7 +298,7 @@ What would be done differently:
   start. Captured as beta feedback in the tester's log.
 - Two avoidable stop-hook fmt failures came from hand-wrapping `use` lists and
   closures; running `cargo fmt` immediately after each new file would have
-  pre-empted them.
+  prevented them.
 
 Post-review follow-up (fallible steps + `#[then]` concern): on request, the
 steps and helpers were made fallible (no panics; `Result` + `?`). Validating
@@ -347,7 +347,7 @@ The migration target, `tests/gpui_history_draw_undo.rs`, contains three
 `#[gpui::test]` functions. Only `draw_click_adds_points_and_undo_removes`
 (lines ~163–243) is being migrated. It:
 
-1. Initialises the app (`common::init_test_app`).
+1. Initializes the app (`common::init_test_app`).
 2. Opens a window with
    `cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx))`, obtaining
    a durable `Entity<Phase0Shell>` and a `VisualTestContext`.
@@ -513,7 +513,7 @@ Implement, in `tests/gpui_draw_undo_bdd.rs`:
 1. The `ScenarioState` container, `thread_local!` cell, `reset_*` helpers,
    `ScenarioStateCleanup` `Drop` guard, and `scenario_state_cleanup` fixture
    (shapes under "Interfaces and dependencies").
-2. The `#[given]` that resets state, initialises the app, opens the window,
+2. The `#[given]` that resets state, initializes the app, opens the window,
    draws the initial frame, computes the two canvas points, and stores durable
    handles + points in the cell.
 3. The `#[when]`/`#[then]` steps that rebuild a `VisualTestContext` from the

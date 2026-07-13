@@ -84,7 +84,6 @@ The feature file lives within the crate (commonly under `tests/features/`). The
 path to this file will be referenced by the `#[scenario]` macro in the test
 code.
 
-
 ### Internationalized scenarios
 
 `rstest-bdd` reads the optional `# language: <code>` directive that appears at
@@ -745,7 +744,6 @@ include the leading `@`. When the filter is combined with `index` or `name`,
 the macro emits a compile error if the selected scenario does not satisfy the
 expression.
 
-
 ### Harness adapter and attribute policy
 
 The `harness` and `attributes` parameters accept Rust type paths pointing to
@@ -831,7 +829,6 @@ In simple terms, attribute selection works like this:
    deduplication suppresses the second copy).
 5. If none of those apply, the macro emits the normal synchronous
    `#[rstest::rstest]` attribute set.
-
 
 #### Third-party harness adapter cookbook
 
@@ -1012,7 +1009,6 @@ For complete first-party examples, compare the `examples/tokio-reminders` and
 `examples/gpui-counter` crates. They are not third-party templates, but they
 show how an adapter crate keeps runtime or framework dependencies outside the
 core runtime and macro crates.
-
 
 ### Using the Tokio harness
 
@@ -1323,7 +1319,7 @@ fn counter() -> Counter {
     Counter::default()
 }
 
-#[given("a counter initialised to 0")]
+#[given("a counter initialized to 0")]
 fn init(counter: &mut Counter) {
     counter.value = 0;
 }
@@ -1537,7 +1533,6 @@ fn async_wrapper_with_aliases<'ctx>(
   runtime is already active on the current thread.
 - **No `async_std` runtime:** Only Tokio is supported at present.
 
-
 ## Harness adapter core APIs
 
 Architectural Decision Record (ADR-005) introduces a harness adapter layer, so
@@ -1550,7 +1545,6 @@ parameters. The legacy `runtime = "tokio-current-thread"` argument in
 selection. The core crate remains immediately useful for adapter authors
 building Tokio, Graphical Processing User Interface (GPUI), or other harness
 plug-ins.
-
 
 ### Defining a harness adapter
 
@@ -1602,7 +1596,6 @@ This user guide focuses on how to use the delivered harness API. The design
 document records the underlying trust model and architectural rationale, in
 particular the path-based first-party policy mapping and the associated
 `Context` handoff introduced by ADR-007.
-
 
 ### Defining an attribute policy
 
@@ -1755,6 +1748,7 @@ Projects that prefer to work with raw rows can declare the argument as
 `Vec<Vec<String>>` and handle parsing manually. Both forms can co-exist within
 the same project, allowing incremental adoption of typed tables.
 
+```rust,no_run
 # fn reset_state_before_assignment() {}
 
 # fn with_state<R>(_: impl FnOnce(&mut ()) -> R) -> R { unimplemented!() }
@@ -1834,8 +1828,7 @@ panic-on-invariant-violation `let … else { panic!(…) }` branches and
 `StepResult` within the same playbook reads ambiguously, so pick one shape per
 scenario.
 
-
-#### Fixture key versus parameter name
+### Fixture key versus parameter name
 
 Steps request the GPUI context through the *reserved fixture key*
 `rstest_bdd_harness_context`. The key is part of the public contract: every
@@ -1846,7 +1839,6 @@ snippets above and in the regression suite) is adapter-agnostic and chosen
 by the step author for readability. The `#[from(rstest_bdd_harness_context)]`
 attribute is what binds the key, so do not let parameter naming convince a
 reader the binding name is part of the contract.
-
 
 #### Where to read more
 
@@ -1869,7 +1861,6 @@ reader the binding name is part of the contract.
   11.3.1 lands).
 - Design-document §2.7.6.7 documents the full cargo test versus nextest matrix
   for `#[serial]` and thread-local state.
-
 
 #### Pedantic lint profile
 
@@ -1896,7 +1887,6 @@ borrowed binding. For example, prefer a fresh guard name such as
 to enforce this single Whitaker lint now while deferring the full Whitaker
 suite.
 
-
 #### Bulk-migration cookbook
 
 When migrating a large test suite, factor the whole durable-handle **step
@@ -1907,7 +1897,6 @@ Once roadmap items 11.1.3 and 11.1.4 ship (`ScenarioStore<T>` and the
 cleanup-guard fixture macro), the shared block shrinks to a single import and the
 `#[scenario]` cleanup parameter is generated for you. Adopt the pattern now and
 expect to shrink it then.
-
 
 ##### Why one shared module works
 
@@ -1926,7 +1915,6 @@ subdirectory as ordinary modules. Mark every item a binding file references as
 `pub`, because a `#[path]`-included module is a real module boundary — the
 single-file worked example above never needed this.
 
-
 ##### Layout
 
 ```text
@@ -1939,7 +1927,6 @@ tests/
   first_bdd.rs        # #[path] include + one #[scenario]; no steps here
   second_bdd.rs
 ```
-
 
 ##### Binding a scenario
 
@@ -1977,7 +1964,6 @@ mirror is the trybuild fixture
 `crates/rstest-bdd/tests/fixtures_macros/scenario_bulk_migration_cookbook.rs`.
 If a snippet here drifts from those, the suite wins.
 
-
 ##### Applying it to stateful GPUI scenarios
 
 For GPUI, the shared module holds the durable-handle library from the
@@ -2001,11 +1987,10 @@ Editing only a `.feature` file does not trigger a rebuild (see design-document
 §2.7.6.6), so touch a binding `.rs` file (or run `cargo clean -p <crate>`) after
 changing feature text; otherwise a stale build can mask the change.
 
-
 #### Test-runner parallelism and scenario state
 
 Stateful scenarios that share thread-local or process-wide state need different
-serialisation tools depending on the test runner. The `#[serial]` attribute
+serialization tools depending on the test runner. The `#[serial]` attribute
 from the [`serial_test`](https://docs.rs/serial_test/) crate is still required
 for `cargo test` compatibility, even though cargo-nextest runs each test in a
 separate operating-system process.
@@ -2018,7 +2003,7 @@ separate operating-system process.
 *Table: `#[serial]` behaviour by test runner.*
 
 Under `cargo test`, all tests in one integration-test binary run in a single
-process using multiple threads. `#[serial]` serialises tests that carry the
+process using multiple threads. `#[serial]` serializes tests that carry the
 same key, or all unkeyed `#[serial]` tests together, with an in-process mutex.
 Stateful GPUI scenarios therefore keep `#[serial]` so the reset protocol is
 respected when the suite runs without nextest.
@@ -2030,7 +2015,7 @@ redundant-but-harmless for nextest runs. Keep it for `cargo test`; do not
 remove it just because nextest already isolates per-process thread-local state.
 The design rationale is recorded in
 [design-document §2.7.6.7][design-runner-parallelism], and the maintainer
-convention is summarised in
+convention is summarized in
 [the developer guide][developer-serial-nextest].
 
 When separate test processes or separate test binaries must not overlap, use a
@@ -2194,24 +2179,6 @@ surface context when something goes wrong. Matching on the error value enables
 inspection of the row and column that triggered the failure:
 
 ```rust,no_run
-# use rstest_bdd::datatable::{DataTableError, Rows};
-# use rstest_bdd_macros::DataTableRow;
-#
-# #[derive(Debug, PartialEq, Eq, DataTableRow)]
-# struct UserRow {
-#     name: String,
-#     #[datatable(truthy)]
-#     active: bool,
-# }
-```
-
-The selection function preserves the caller-supplied order, so applications can
-pass a list of preferred locales. The helper resolves to the best available
-translation and continues to fall back to English when a requested locale is
-not shipped with the crate. Procedural macro diagnostics remain in English so
-compile-time output stays deterministic regardless of the host machine’s
-language settings.
-
 # use rstest_bdd::datatable::{DataTableError, Rows};
 # use rstest_bdd_macros::DataTableRow;
 #
@@ -2444,7 +2411,6 @@ Example:
 RSTEST_BDD_LSP_LOG_LEVEL=debug rstest-bdd-lsp
 ```
 
-
 ### Command-line options
 
 The server also accepts command-line flags that override environment variables:
@@ -2503,7 +2469,6 @@ end
 
 lspconfig.rstest_bdd.setup({})
 ```
-
 
 #### Zed
 
@@ -2580,32 +2545,6 @@ of locations to choose from.
   resolving them to their contextual step type.
 - Patterns with placeholders (e.g., `"I have {count:u32} items"`) match feature
   steps using the same regex semantics as the runtime.
-
-
-#### Go to Implementation (Feature → Rust)
-
-The inverse navigation—from feature steps to Rust implementations—is provided
-via the `textDocument/implementation` handler. This enables developers to jump
-from a step line in a `.feature` file directly to the Rust function(s) that
-implement it.
-
-**Usage:**
-
-1. Place the cursor on a step line in a `.feature` file (e.g.,
-   `Given a user exists`).
-2. Invoke "Go to Implementation" (typically Ctrl+F12 or a similar keybinding in
-   most editors).
-3. The editor navigates to all matching Rust step functions.
-
-When multiple implementations match (duplicate step patterns), the editor
-presents a list of locations to choose from.
-
-**How matching works:**
-
-- Matching is keyword-aware: a `Given` step in a feature file only matches
-  `#[given]` implementations in Rust.
-- The step text is matched against the compiled regex patterns from the step
-  registry, ensuring consistency with the runtime.
 
 #### Go to Implementation (Feature → Rust)
 
@@ -2724,7 +2663,7 @@ three amigos in the specification process.
 [developer-serial-nextest]: https://github.com/leynos/rstest-bdd/blob/main/docs/developers-guide.md#serial-file_serial-and-nextest-test-groups
 [nextest-test-groups]: https://nexte.st/docs/configuration/test-groups/
 
-##### Worked example
+### Worked example
 
 The snippets below mirror the regression suite at
 `crates/rstest-bdd-harness-gpui/tests/stateful_window.rs` identifier for
