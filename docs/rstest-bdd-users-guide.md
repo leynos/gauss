@@ -1030,7 +1030,13 @@ adapter, the macro infers `TokioAttributePolicy` from the canonical harness
 path when `attributes = ...` is omitted:
 
 ```rust,no_run
-# use rstest_bdd_macros::scenario;
+# use rstest_bdd_macros::scenarios;
+
+scenarios!(
+    "tests/features/reminders",
+    harness = rstest_bdd_harness_tokio::TokioHarness,
+);
+```
 
 ### Using the GPUI harness
 
@@ -1053,6 +1059,14 @@ adapter, the macro infers `GpuiAttributePolicy` from the canonical harness path
 when `attributes = ...` is omitted:
 
 ```rust,no_run
+# use rstest_bdd_macros::scenario;
+
+#[scenario(
+    path = "tests/features/counter.feature",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
+fn counter_updates() {}
+```
 
 #### GPUI panic diagnostics carry scenario context
 
@@ -1067,6 +1081,7 @@ on failure. This makes a failing GPUI scenario identifiable from the
 function names against feature files. For a concrete regression example, see
 `crates/rstest-bdd-harness-gpui/tests/scenario_name_in_logs.rs`.
 
+```rust,no_run
 # use serial_test::serial;
 
 # use std::cell::RefCell;
@@ -1136,11 +1151,6 @@ fn scenario_opening_second_window_starts_from_reset_state(
 }
 ```
 
-The second snippet shows the `#[given]` that opens a fresh window. It
-defensively re-runs the reset before storing handles and observes the
-`stale_window_count` invariant that the regression suite encodes:
-
-```rust,no_run
 ### Skipping scenarios
 
 Steps or hooks may call `rstest_bdd::skip!` to stop executing the remaining

@@ -169,7 +169,7 @@ breached.
 - [x] (2026-07-08) Stage G: updated the beta tester's log
   (`~/docs/rstest-bdd-v0-6-0-beta3-gauss-testers-log.md`) and this plan's
   retrospective.
-- [ ] Stage H (post-review follow-up, on user request): refactor steps/helpers
+- [x] Stage H (post-review follow-up, on user request): refactor steps/helpers
   to be fallible (no panics; `Result` + `?`), and validate the
   "`#[then]` should be an actual test" concern. Done: steps now return
   spelled-out `Result<(), TestSupportError>`; validation uncovered the
