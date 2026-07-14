@@ -809,6 +809,9 @@ name = "camino"
 version = "1.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f2d30e4173c4026932d51d31d6b0613b1fd3014bf3f9f8943d4ba139c437ba0"
+dependencies = [
+ "serde_core",
+]
 
 [[package]]
 name = "cap-primitives"
@@ -870,6 +873,29 @@ dependencies = [
  "io-extras 0.19.0",
  "io-lifetimes 3.0.1",
  "rustix 1.1.2",
+]
+
+[[package]]
+name = "cargo-platform"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e35af189006b9c0f00a064685c727031e3ed2d8020f7ba284d78cc2671bd36ea"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "cargo_metadata"
+version = "0.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d886547e41f740c616ae73108f6eb70afe6d940c7bc697cb30f13daec073037"
+dependencies = [
+ "camino",
+ "cargo-platform",
+ "semver",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -2184,7 +2210,9 @@ dependencies = [
  "log",
  "rstest",
  "rstest-bdd",
+ "rstest-bdd-harness-gpui",
  "rstest-bdd-macros",
+ "serial_test",
  "test_support",
  "thiserror 2.0.18",
  "uuid",
@@ -5179,9 +5207,9 @@ dependencies = [
 
 [[package]]
 name = "rstest-bdd"
-version = "0.5.0"
+version = "0.6.0-beta3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "138d8e4f97e16906ebeb0bfb12d2c94f0b05913a96fc522111bec62ca8328522"
+checksum = "a53b8195de84b6694b210c967726e2a6e4bd82b3394951ad99b85062c7eca6b2"
 dependencies = [
  "ctor 0.2.9",
  "derive_more",
@@ -5197,15 +5225,38 @@ dependencies = [
  "rust-embed",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "unic-langid",
 ]
 
 [[package]]
-name = "rstest-bdd-macros"
-version = "0.5.0"
+name = "rstest-bdd-harness"
+version = "0.6.0-beta3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe104196f61dc8911a8da1b10005e9401e7c2e14ad9302e2de6688311c0beec7"
+checksum = "4f2994169999c2037287129466b9c576cf51add440bb7d30ee16f712d4e2edf5"
+dependencies = [
+ "cargo_metadata",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "rstest-bdd-harness-gpui"
+version = "0.6.0-beta3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8874a120d0ab30ea6764d724f74285a2ac93ed07d52b149d7ec2cbbc6b9c38ca"
+dependencies = [
+ "gpui",
+ "rstest-bdd",
+ "rstest-bdd-harness",
+ "tracing",
+]
+
+[[package]]
+name = "rstest-bdd-macros"
+version = "0.6.0-beta3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83080cc7749d3c8b2040c0f8be7faf350817342daade1d56df744655e33e9640"
 dependencies = [
  "camino",
  "cap-std 3.4.5",
@@ -5218,29 +5269,30 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
+ "rstest-bdd-harness",
  "rstest-bdd-patterns",
  "rstest-bdd-policy",
  "syn 2.0.111",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "walkdir",
 ]
 
 [[package]]
 name = "rstest-bdd-patterns"
-version = "0.5.0"
+version = "0.6.0-beta3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39abaa69316cdbbad0512dc0f37b704b09e4cdb5018d80f197cbdb77a2269d06"
+checksum = "9773a23087aa9d460f11a982232758e9438f9b09bf297eb1dac748b745a324bd"
 dependencies = [
  "gherkin",
  "regex",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
 name = "rstest-bdd-policy"
-version = "0.5.0"
+version = "0.6.0-beta3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88f2ca584f7d9d359a09f616900be015302c959d58c2c2da6c075573352dfa0d"
+checksum = "b3de569456285584981fdd241e1a87152e39fd2c3029ea1b88948b086bfbfbd6"
 
 [[package]]
 name = "rstest_macros"
@@ -5634,6 +5686,10 @@ name = "semver"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d767eb0aabc880b29956c35734170f26ed551a859dbd361d140cdbeca61ab1e2"
+dependencies = [
+ "serde",
+ "serde_core",
+]
 
 [[package]]
 name = "serde"
@@ -5764,6 +5820,31 @@ dependencies = [
  "ryu",
  "serde",
  "unsafe-libyaml",
+]
+
+[[package]]
+name = "serial_test"
+version = "3.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "699f4197115b8a7e7ff19c9a315a4bd6fffec26cc4626ef45ecaea389e081c6d"
+dependencies = [
+ "futures-executor",
+ "futures-util",
+ "log",
+ "once_cell",
+ "parking_lot",
+ "serial_test_derive",
+]
+
+[[package]]
+name = "serial_test_derive"
+version = "3.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94e153fc76e1c6a068703d6d29c508a0b15c061c4b7e43da59cc097bc342673c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.111",
 ]
 
 [[package]]

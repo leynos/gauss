@@ -7,13 +7,18 @@ stems = []
 
 [words]
 # Official names and abbreviations: "Azure Architecture Center", the mold
-# linker, and Level of Detail (LOD).
-accepted = ["Center", "LOD", "Mold", "mold"]
+# linker, Level of Detail (LOD), and a Spanish Gherkin example.
+accepted = ["Center", "LOD", "Mold", "inventario", "mold"]
 
 [words.corrections]
 
 [patterns]
-ignore = []
+# Preserve externally defined Rust API and tool names without weakening prose
+# spelling checks.
+ignore = [
+    "flavor = \"current_thread\"",
+    "rust-analyzer",
+]
 
 [files]
 exclude = []
