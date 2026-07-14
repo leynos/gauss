@@ -557,7 +557,7 @@ No new external dependencies. All work uses existing workspace crates:
 - `gauss` (for UI modules)
 - `gauss-core` (for model types)
 
-## Artifacts and notes
+## Artefacts and notes
 
 Key files modified for UI string extraction:
 

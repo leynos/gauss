@@ -369,7 +369,7 @@ Acceptance checklist for closure:
 - If Tool interface churn threatens downstream milestones (`0.5.4+`), stop and
   escalate with options instead of forcing a broad speculative refactor.
 
-## Artifacts and evidence to capture during implementation
+## Artefacts and evidence to capture during implementation
 
 - Gate logs in `/tmp`:
   `check-fmt-...`, `lint-...`, `test-...`, and docs gate logs when applicable.

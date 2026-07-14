@@ -211,7 +211,7 @@ external state. If a step goes wrong, revert file edits with version control
 and re-apply the plan. Prototype code added for icon rendering should be
 removed once the final approach is chosen.
 
-## Artifacts and Notes
+## Artefacts and Notes
 
 Icon mapping should be kept explicit. For example, map the following icons to
 their UI groups and mark placeholders where behaviour is missing:

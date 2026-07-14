@@ -226,7 +226,7 @@ read-only and can be re-run until they pass. If the command history update
 breaks undo or redo, revert to the last known-good state and re-apply the
 history changes in smaller increments.
 
-## Artifacts and Notes
+## Artefacts and Notes
 
 Keep the test logs for review:
 

@@ -373,9 +373,9 @@ Documentation acceptance:
 - If behaviour parity is uncertain, do not mark roadmap done; keep ExecPlan
   status truthful and partial.
 
-## Artifacts and notes
+## Artefacts and notes
 
-Current planning artifacts:
+Current planning artefacts:
 
 - Context pack id: `pk_gvavom4z`
 - Spark team findings:
@@ -383,7 +383,7 @@ Current planning artifacts:
   - Marisa: extraction boundary and risk hotspots
   - Axel: validation matrix across unit/BDD/GPUI layers
 
-Implementation closure artifacts to append later:
+Implementation closure artefacts to append later:
 
 - Gate log paths under `/tmp`
 - Key diffs and rationale snippets for architecture/doc updates
