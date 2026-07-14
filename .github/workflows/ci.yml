@@ -24,7 +24,7 @@ jobs:
         uses: rui314/setup-mold@725a8794d15fc7563f59595bd9556495c0564878
       - name: Setup Rust
         uses: >-
-          leynos/shared-actions/.github/actions/setup-rust@927edd45ae77be4251a8a18ca9eb5613a2e32cbd
+          leynos/shared-actions/.github/actions/setup-rust@d3cbe87e745e07b3ad53ddcb87deb19ffa95c9b8
       - name: Install system dependencies
         run: |
           sudo apt-get update
