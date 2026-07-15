@@ -147,7 +147,7 @@ Success is observable when:
 ## Decision log
 
 - Decision: moved from plan-only to implementation in this branch after explicit
-  user approval. Rationale: keep roadmap execution and artifact status aligned
+  user approval. Rationale: keep roadmap execution and artefact status aligned
   with the approved delivery scope. Date/Author: 2026-03-01 (assistant)
 
 - Decision: keep roadmap completion tied to documented behaviour and green gate

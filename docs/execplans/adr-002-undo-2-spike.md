@@ -398,7 +398,7 @@ Definition of done for `undo_2` suitability:
 - Keep validation logs in `/tmp` and overwrite them on rerun for deterministic
   evidence paths.
 
-## Artifacts and notes
+## Artefacts and notes
 
 Evidence to retain while executing this plan:
 

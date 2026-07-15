@@ -260,9 +260,9 @@ All edits are source-controlled and can be reapplied safely. If a change breaks
 tests, revert the last commit and re-run the test suite to isolate the failure.
 Avoid destructive commands such as `git reset --hard`.
 
-## Artifacts and Notes
+## Artefacts and Notes
 
-Expected new or modified artifacts:
+Expected new or modified artefacts:
 
 - `src/model/stable_id.rs` (or the chosen equivalent) for generational ID
   definitions.
