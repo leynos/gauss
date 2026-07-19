@@ -1,5 +1,8 @@
 # Gauss
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](
+https://deepwiki.com/leynos/gauss)
+
 ## Spelling policy
 
 Run `make spelling` to enforce en-GB-oxendict prose spelling. The generated
