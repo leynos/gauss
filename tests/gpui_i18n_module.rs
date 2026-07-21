@@ -4,7 +4,7 @@ mod common;
 
 use std::{cell::RefCell, collections::HashMap};
 
-use common::{init_test_app, test_french_catalog};
+use common::{init_test_app, make_test_catalog, test_french_catalog};
 use gauss::{
     i18n::{Catalog, Locale, Localizer},
     model::ToolMode,
@@ -47,42 +47,34 @@ fn scenario_state_cleanup() -> ScenarioStateCleanup {
     ScenarioStateCleanup
 }
 
-fn setup_localizer() -> Localizer {
-    let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), test_french_catalog());
-    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
+/// Builds the bilingual localizer shape shared by these scenarios: a French and
+/// an English catalogue with en-GB as the default (and therefore fallback)
+/// locale. Keeping the default locale in one place avoids repeating it per
+/// helper.
+fn build_localizer(french: Catalog, english: Catalog) -> Localizer {
+    let catalogs = HashMap::from([(Locale::fr_fr(), french), (Locale::en_gb(), english)]);
     Localizer::with_catalogs(catalogs, Locale::en_gb())
 }
 
+fn setup_localizer() -> Localizer {
+    build_localizer(test_french_catalog(), Catalog::default_en_gb())
+}
+
 fn partial_french_localizer() -> Localizer {
-    let partial_fr_catalog = Catalog::from_messages(HashMap::from([(
-        "tool_mode.draw".to_owned(),
-        "Dessiner".to_owned(),
-    )]));
-    let en_catalog = Catalog::from_messages(HashMap::from([
-        ("tool_mode.draw".to_owned(), "Draw".to_owned()),
-        ("tool_mode.manipulate".to_owned(), "Manipulate".to_owned()),
-        (
-            "edge_mode.line".to_owned(),
-            "Line via en-GB catalogue".to_owned(),
-        ),
-        (
-            "edge_mode.bezier_auto".to_owned(),
-            "Bezier (auto)".to_owned(),
-        ),
-        (
-            "tool.status.mode_with_edge".to_owned(),
-            "Mode: {tool} ({edge})".to_owned(),
-        ),
-        ("tool.status.mode".to_owned(), "Mode: {tool}".to_owned()),
-    ]));
-    Localizer::with_catalogs(
-        HashMap::from([
-            (Locale::fr_fr(), partial_fr_catalog),
-            (Locale::en_gb(), en_catalog),
-        ]),
-        Locale::en_gb(),
-    )
+    // The French catalogue is deliberately incomplete: only `tool_mode.draw` is
+    // present, so every other key must fall back to en-GB. The en-GB catalogue
+    // uses a distinctive `edge_mode.line` marker so the fallback path is
+    // observable in the mode status.
+    let partial_fr_catalog = make_test_catalog(&[("tool_mode.draw", "Dessiner")]);
+    let en_catalog = make_test_catalog(&[
+        ("tool_mode.draw", "Draw"),
+        ("tool_mode.manipulate", "Manipulate"),
+        ("edge_mode.line", "Line via en-GB catalogue"),
+        ("edge_mode.bezier_auto", "Bezier (auto)"),
+        ("tool.status.mode_with_edge", "Mode: {tool} ({edge})"),
+        ("tool.status.mode", "Mode: {tool}"),
+    ]);
+    build_localizer(partial_fr_catalog, en_catalog)
 }
 
 fn assign_shell(cx: &mut TestAppContext, localizer: Localizer, locale: Locale) {
@@ -184,6 +176,8 @@ fn mode_status_shows_tool_label(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
     label: String,
 ) -> Result<(), TestSupportError> {
+    // The Gherkin step quotes the label; strip the quotes the placeholder
+    // captured (see the same convention in tests/i18n_bdd.rs).
     status_contains(cx, label.trim_matches('"'), "tool label")
 }
 
@@ -192,6 +186,8 @@ fn mode_status_shows_edge_label(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
     label: String,
 ) -> Result<(), TestSupportError> {
+    // The Gherkin step quotes the label; strip the quotes the placeholder
+    // captured (see the same convention in tests/i18n_bdd.rs).
     status_contains(cx, label.trim_matches('"'), "edge label")
 }
 
