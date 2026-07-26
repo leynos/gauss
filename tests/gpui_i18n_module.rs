@@ -212,14 +212,17 @@ fn mode_status_omits_edge_mode(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     let status = status_line(cx)?;
-    // Manipulate mode has no edge; the active edge label ("Ligne", the Line
-    // edge mode in the test French catalogue) must therefore be absent.
-    let edge_label = "Ligne";
-    if !status.contains(edge_label) {
+    // Manipulate mode renders the tool-only template with no edge fragment.
+    // Assert the whole status so any spurious edge suffix is rejected in either
+    // locale (e.g. "Mode: Manipuler (Line)" or "(Ligne)"), not just the French
+    // edge label. The French catalogue localizes the tool label to "Manipuler"
+    // and falls back to the en-GB "Mode: {tool}" status template.
+    let expected = "Mode: Manipuler";
+    if status == expected {
         return Ok(());
     }
     Err(TestSupportError::expectation(format!(
-        "expected manipulate mode status to omit the edge label '{edge_label}', got: {status}"
+        "expected manipulate mode status '{expected}' with no edge fragment, got: {status}"
     )))
 }
 
