@@ -176,9 +176,7 @@ fn mode_status_shows_tool_label(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
     label: String,
 ) -> Result<(), TestSupportError> {
-    // The Gherkin step quotes the label; strip the quotes the placeholder
-    // captured (see the same convention in tests/i18n_bdd.rs).
-    status_contains(cx, label.trim_matches('"'), "tool label")
+    status_contains(cx, &label, "tool label")
 }
 
 #[then("the mode status shows the edge label {label}")]
@@ -186,9 +184,7 @@ fn mode_status_shows_edge_label(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
     label: String,
 ) -> Result<(), TestSupportError> {
-    // The Gherkin step quotes the label; strip the quotes the placeholder
-    // captured (see the same convention in tests/i18n_bdd.rs).
-    status_contains(cx, label.trim_matches('"'), "edge label")
+    status_contains(cx, &label, "edge label")
 }
 
 #[then("the mode status shows the fallback edge label")]
