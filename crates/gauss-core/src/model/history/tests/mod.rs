@@ -56,7 +56,12 @@ fn apply_move(
             delta: Vec2::new(dx, dy),
         }],
     };
-    let inverse = cmd.apply(doc).expect("apply_move should succeed");
+    // `.expect()` is disallowed outside test-attributed functions (whitaker
+    // `no_expect_outside_tests`); handle the Err explicitly instead.
+    let inverse = match cmd.apply(doc) {
+        Ok(inverse) => inverse,
+        Err(error) => panic!("apply_move should succeed: {error:?}"),
+    };
     (cmd, inverse)
 }
 
@@ -69,7 +74,12 @@ fn apply_insert(
     let cmd = Command::InsertShape {
         insertion: crate::model::ShapeInsertion { index, shape },
     };
-    let inverse = cmd.apply(doc).expect("apply_insert should succeed");
+    // `.expect()` is disallowed outside test-attributed functions (whitaker
+    // `no_expect_outside_tests`); handle the Err explicitly instead.
+    let inverse = match cmd.apply(doc) {
+        Ok(inverse) => inverse,
+        Err(error) => panic!("apply_insert should succeed: {error:?}"),
+    };
     (cmd, inverse)
 }
 
