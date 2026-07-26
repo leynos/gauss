@@ -21,6 +21,19 @@ struct ScenarioState {
     shell: Option<Entity<Phase0Shell>>,
 }
 
+// The shell entity is shared across Given/When/Then steps through this
+// `thread_local!` cell rather than an rstest fixture. This is the sanctioned
+// v0.6 interim "stateful GPUI" pattern, not incidental global state: a step
+// that borrows the harness-provided `&mut TestAppContext` cannot also take a
+// second fixture parameter for the shared state, because the generated wrapper
+// would hold a `borrow_ref`/`borrow_mut` pair on the same `StepContext` and
+// rustc rejects it (E0502) — reshaping the fixture to `&T` with interior
+// mutability does not help, since the conflict is on the `StepContext` handle,
+// not the fixture value. See docs/rstest-bdd-users-guide.md ("stateful GPUI
+// scenarios") and the identical pattern in tests/gpui_draw_undo_bdd.rs. The
+// thread-local shape is retired by the rstest-bdd v0.7.0 redesign. Each such
+// scenario is `#[serial]` and resets on both sides (before assigning fresh
+// handles and via a `Drop` guard after the scenario).
 thread_local! {
     static SCENARIO_STATE: RefCell<ScenarioState> = RefCell::new(ScenarioState::default());
 }
