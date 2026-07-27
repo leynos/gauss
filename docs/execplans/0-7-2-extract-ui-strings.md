@@ -19,7 +19,8 @@ After this change:
 - UI code retrieves strings via `MessageId` constants rather than hardcoded
   literals.
 - The accessibility tree uses the same localized strings as the visual UI.
-- Tests verify that all expected messages exist in the catalogue and that lookups
+- Tests verify that all expected messages exist in the catalogue and that
+  lookups
   succeed.
 
 Observable success: Running `cargo test` shows all i18n, UI, and accessibility

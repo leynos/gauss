@@ -1537,7 +1537,8 @@ for:
 
 Early in Phase 1, do a focused audit:
 
-1. List required UI controls for Phase 1–2 (toolbars, layers, properties, colour)
+1. List required UI controls for Phase 1–2 (toolbars, layers, properties,
+   colour)
 2. Map each to an existing GPUI Component widget or "needs custom"
 3. Define a tiny internal widget library for missing pieces (consistent
    focus/keyboard/a11y)

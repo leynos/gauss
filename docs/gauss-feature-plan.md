@@ -53,11 +53,11 @@ phases.
   grouping/ungrouping for layer ordering control.
 
 - **Fill and Stroke (Solid Colours):** Introduce a simple styling panel to set
-  an object’s fill colour, stroke colour, and stroke weight. Use GPUI Component’s
-  built-in colour picker for colour selection. At this stage, support solid fills
-  and basic strokes (solid line, adjustable width) only – complex paint styles
-  like gradients or patterns will come later. Ensure the UI reflects current
-  fill/stroke and can apply changes to selected objects.
+  an object’s fill colour, stroke colour, and stroke weight. Use GPUI
+  Component’s built-in colour picker for colour selection. At this stage,
+  support solid fills and basic strokes (solid line, adjustable width) only –
+  complex paint styles like gradients or patterns will come later. Ensure the
+  UI reflects current fill/stroke and can apply changes to selected objects.
 
 - **Layers Panel Basics:** Implement a minimal **Layers** or Objects panel to
   list objects and their grouping. Users should be able to toggle visibility
@@ -336,12 +336,12 @@ geometric control or artistic effects.
   attributes([1](https://www.macworld.com/article/164061/illustrator-6.html#:~:text=Moving%20along%20the%20toolbar%20Photoshop,%E2%80%94%20variations%20to%20be%20selected)).
   It’s not used by beginners often, but it’s an **essential overlooked
   utility** for complex illustrations (e.g. quickly select all text of a
-  certain colour). Implement a Magic Wand that by default selects by fill colour
-  (and later allow criteria like stroke or opacity). Also, consider adding
-  **measurement tools** (e.g. a Measure tool to measure distances/angles) and
-  improved snapping guides (smart guides) in this phase, as they assist in
-  precision which becomes more relevant as complexity grows. These do not need
-  heavy R&D, but add polish for power users.
+  certain colour). Implement a Magic Wand that by default selects by fill
+  colour (and later allow criteria like stroke or opacity). Also, consider
+  adding **measurement tools** (e.g. a Measure tool to measure
+  distances/angles) and improved snapping guides (smart guides) in this phase,
+  as they assist in precision which becomes more relevant as complexity grows.
+  These do not need heavy R&D, but add polish for power users.
 
 - **Continued Cross-Platform & Performance Work:** With many new geometric
   operations, test on each OS for any platform-specific issues (e.g.
@@ -372,8 +372,8 @@ geometric control or artistic effects.
 adding **creative vector manipulation tools**. Users can now do much more than
 basic shapes: they can combine shapes into new ones, create smooth blends, and
 apply funky distortions for artistic effect. Many of these features (liquify
-tools, blends) were distinguishing features of Illustrator 10.[1][
-illustrator-6] Thus Gauss now stands on par in offering advanced creative
+tools, blends) were distinguishing features of Illustrator 10.
+[1][ illustrator-6] Thus Gauss now stands on par in offering advanced creative
 freedom. The underlying implementation of effects and operations emphasizes
 reusability (e.g., a unified way to apply “effects” to objects) that will make
 adding future effects easier. Gauss remains stable and reasonably performant
@@ -387,9 +387,9 @@ high-fidelity colouring tools, transparency, and visual effects that define the
 polish of professional illustrations. These features are often **high-value for
 power users** because they allow creating sophisticated visuals (gradients,
 meshes, complex styling) and were a big part of Illustrator’s appeal. We treat
-many of these as foundational in the sense that a robust colour and paint system
-will unlock a broad set of design possibilities. We will also address the
-transparency and compositing model in this phase, ensuring Gauss can handle
+many of these as foundational in the sense that a robust colour and paint
+system will unlock a broad set of design possibilities. We will also address
+the transparency and compositing model in this phase, ensuring Gauss can handle
 modern graphics rendering needs.
 
 **Key Features:**
@@ -583,12 +583,13 @@ ensuring Gauss can handle large, complex projects gracefully.
   **Symbol Sprayer** and its companion tools (Shifter, Scruncher, Sizer,
   Spinner, Stainer, Screener, Styler). These are niche, but were very
   emblematic of Illustrator 10’s power. The Symbol Sprayer allows quickly
-  placing multiple symbol instances by “spraying” them on the canvas([1][
-  symbol-sprayer]) – great for backgrounds (leaves, stars, etc.). The other
-  tools manipulate the set: e.g. Symbol Shifter moves them around as a group,
-  Sizer scales instances, Spinner rotates them, Stainer recolors, Screener
-  adjusts transparency, Styler applies graphic styles. Implementing all of
-  these is a bit of an undertaking, but we can prioritize a subset if needed:
+  placing multiple symbol instances by “spraying” them on the canvas(
+  [1][ symbol-sprayer]) – great for backgrounds (leaves, stars, etc.). The
+  other tools manipulate the set: e.g. Symbol Shifter moves them around as a
+  group, Sizer scales instances, Spinner rotates them, Stainer recolors,
+  Screener adjusts transparency, Styler applies graphic styles. Implementing
+  all of these is a bit of an undertaking, but we can prioritize a subset if
+  needed:
 
 - The **Symbol Sprayer** itself is the main one (spray copies of a symbol with
   a brush).
@@ -766,8 +767,9 @@ that SVG cannot handle well.
   note it; or if we partially implemented, ensure it’s documented).
 
 - Any **UI improvements** that were in AI10, e.g. Shift to constrain
-  proportions (likely we have), or alternate colour models (maybe allow entering
-  colours in CMYK or Lab if needed for print parity, though SVG is RGB-based).
+  proportions (likely we have), or alternate colour models (maybe allow
+  entering colours in CMYK or Lab if needed for print parity, though SVG is
+  RGB-based).
 
 - The **Measure Tool** (for measuring distances/angles on the canvas – if not
   yet, add it as a small utility).

@@ -1,19 +1,18 @@
 # Adopt rstest-bdd v0.6.0-beta3 and migrate a GPUI behavioural test to the GPUI harness
 
-This ExecPlan (execution plan) is a living document. The sections
-`Constraints`, `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`,
-`Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work
-proceeds.
+This ExecPlan (execution plan) is a living document. The sections `Constraints`,
+`Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`, `Decision Log`,
+and `Outcomes & Retrospective` must be kept up to date as work proceeds.
 
 Status: COMPLETE
 
 ## Purpose / big picture
 
-After this change the `gauss` workspace builds and tests against
-`rstest-bdd` `0.6.0-beta3` instead of `0.5.0`, and one non-trivial GPUI
-behavioural test — the draw/undo/redo flow currently written as a raw
-`#[gpui::test]` — is expressed as a Gherkin scenario driven through the
-first-party `rstest_bdd_harness_gpui::GpuiHarness`.
+After this change the `gauss` workspace builds and tests against `rstest-bdd`
+`0.6.0-beta3` instead of `0.5.0`, and one non-trivial GPUI behavioural test —
+the draw/undo/redo flow currently written as a raw `#[gpui::test]` — is
+expressed as a Gherkin scenario driven through the first-party
+`rstest_bdd_harness_gpui::GpuiHarness`.
 
 Its operation is observable in two ways:
 
@@ -24,9 +23,9 @@ Its operation is observable in two ways:
    Gherkin scenario (`tests/features/draw_undo.feature`) end to end. Running
    `cargo test --test gpui_draw_undo_bdd` executes the GPUI harness, opens a
    real `TestAppContext` window, drives draw clicks and undo/redo through
-   registered steps, and passes. Deleting a `Then` assertion or the `Drop`-based
-   reset makes it fail, proving the steps and the two-sided reset protocol are
-   load-bearing.
+   registered steps, and passes. Deleting a `Then` assertion or the
+   `Drop`-based reset makes it fail, proving the steps and the two-sided reset
+   protocol are load-bearing.
 
 The wider goal is to act as a beta proof-point for `rstest-bdd 0.6.0-beta3`'s
 GPUI harness against a downstream project that consumes the **published**
@@ -92,49 +91,44 @@ breached.
 - Risk: `rstest-bdd-harness-gpui 0.6.0-beta3` depends on a `gpui` version that
   does not unify with the workspace's published `gpui 0.2.2`, so a step's
   `#[from(rstest_bdd_harness_context)] cx: &mut gpui::TestAppContext` refers to
-  a different `TestAppContext` type than the one `gauss` uses.
-  Severity: high. Likelihood: medium.
-  Mitigation: verify first, in a minimal spike (Stage B), before touching the
-  real test. This is the go/no-go gate. If it fails, the fallback is to land
-  the core version bump only and defer the GPUI migration, recording the
-  incompatibility in the tester's log and escalating.
+  a different `TestAppContext` type than the one `gauss` uses. Severity: high.
+  Likelihood: medium. Mitigation: verify first, in a minimal spike (Stage B),
+  before touching the real test. This is the go/no-go gate. If it fails, the
+  fallback is to land the core version bump only and defer the GPUI migration,
+  recording the incompatibility in the tester's log and escalating.
 
 - Risk: published `gpui 0.2.2` diverges from the vendored fork the upstream
   playbook is written against (closure arity of `add_window_view`,
   `VisualTestContext::from_window` returning a value rather than `Option`,
   `read_entity`/`update_entity` return shapes, and `window_handle()` living on
   the `VisualContext` trait). Copying the guide snippets verbatim will not
-  compile.
-  Severity: medium. Likelihood: high (certain if snippets are copied blindly).
-  Mitigation: the plan specifies the published-crate shapes explicitly and the
-  existing `tests/common/mod.rs` already demonstrates them
+  compile. Severity: medium. Likelihood: high (certain if snippets are copied
+  blindly). Mitigation: the plan specifies the published-crate shapes
+  explicitly and the existing `tests/common/mod.rs` already demonstrates them
   (`add_window_view(|_window, view_cx| ...)`).
 
 - Risk: the underscore-normalization breaking change silently rebinds a
-  `_name` step/scenario parameter to a different fixture key.
-  Severity: medium. Likelihood: low (an initial grep found no leading-underscore
-  step/scenario parameters in `gauss`).
-  Mitigation: run the audit grep in Stage A and add explicit `#[from(_name)]`
-  wherever a literal underscore key was intended.
+  `_name` step/scenario parameter to a different fixture key. Severity: medium.
+  Likelihood: low (an initial grep found no leading-underscore step/scenario
+  parameters in `gauss`). Mitigation: run the audit grep in Stage A and add
+  explicit `#[from(_name)]` wherever a literal underscore key was intended.
 
 - Risk: editing only a `.feature` file does not trigger a Cargo rebuild
   (upstream caveat until roadmap item 11.3.1 lands), producing misleading
-  "passing" runs.
-  Severity: low. Likelihood: medium.
-  Mitigation: always edit the `.rs` step file alongside the feature, or run
-  `cargo clean -p gauss` before re-running when only the feature changed.
+  "passing" runs. Severity: low. Likelihood: medium. Mitigation: always edit the
+  `.rs` step file alongside the feature, or run `cargo clean -p gauss` before
+  re-running when only the feature changed.
 
 - Risk: workspace restriction lints (`expect_used`, `unwrap_used`,
-  `float_arithmetic`) reject idiomatic test code.
-  Severity: low. Likelihood: medium.
-  Mitigation: mirror the file-scoped `#![expect(...)]` pattern already used in
-  `tests/common/mod.rs`.
+  `float_arithmetic`) reject idiomatic test code. Severity: low. Likelihood:
+  medium. Mitigation: mirror the file-scoped `#![expect(...)]` pattern already
+  used in `tests/common/mod.rs`.
 
 ## Progress
 
 - [x] (2026-07-08) Stage A: audit and dependency inventory (no functional
-  change). Findings: three manifests pin `rstest-bdd = "0.5.0"`
-  (root, `gauss-core`, `gauss-svg`); no `tokio-current-thread` alias; no custom
+  change). Findings: three manifests pin `rstest-bdd = "0.5.0"` (root,
+  `gauss-core`, `gauss-svg`); no `tokio-current-thread` alias; no custom
   `HarnessAdapter`; no leading-underscore fixture params and no `#[from(_...)]`
   (only a `_p3` tuple-destructure in `gpui_tooling_close_path.rs`, not a
   fixture). `0.6.0-beta3` confirmed published for `rstest-bdd`,
@@ -170,21 +164,21 @@ breached.
   (`~/docs/rstest-bdd-v0-6-0-beta3-gauss-testers-log.md`) and this plan's
   retrospective.
 - [x] Stage H (post-review follow-up, on user request): refactor steps/helpers
-  to be fallible (no panics; `Result` + `?`), and validate the
-  "`#[then]` should be an actual test" concern. Done: steps now return
-  spelled-out `Result<(), TestSupportError>`; validation uncovered the
-  alias-swallow false-green and the fallible-scenario `unused_must_use` defect
-  (Surprises & Decision Log); concern flagged in the tester's log. `make all`
-  green (909 passed); CodeRabbit `review --agent`: **0 findings**. Plan COMPLETE.
+  to be fallible (no panics; `Result` + `?`), and validate the "`#[then]`
+  should be an actual test" concern. Done: steps now return spelled-out
+  `Result<(), TestSupportError>`; validation uncovered the alias-swallow
+  false-green and the fallible-scenario `unused_must_use` defect (Surprises &
+  Decision Log); concern flagged in the tester's log. `make all` green (909
+  passed); CodeRabbit `review --agent`: **0 findings**. Plan COMPLETE.
 
 ## Surprises & discoveries
 
 - Observation: all 76 `add_window_view` call sites in `tests/` use the
-  two-argument closure `|_window, view_cx| ...`.
-  Evidence: `grep -rhoE "add_window_view\(\|[^)]*\|" tests` → 76 ×
-  `add_window_view(|_window, view_cx|`.
-  Impact: confirms `gauss` is on the published `gpui 0.2.2` API surface, so the
-  vendored-fork snippets in the upstream guide must be adapted, not copied.
+  two-argument closure `|_window, view_cx| ...`. Evidence:
+  `grep -rhoE "add_window_view\(\|[^)]*\|" tests` → 76 ×
+  `add_window_view(|_window, view_cx|`. Impact: confirms `gauss` is on the
+  published `gpui 0.2.2` API surface, so the vendored-fork snippets in the
+  upstream guide must be adapted, not copied.
 
 - Observation: a step whose return type is a `Result` **type alias** silently
   swallows `Err` — the `#[then]` passes green even when its assertion fails.
@@ -195,61 +189,57 @@ breached.
   broken assertion fail (`Step failed at index 2 ... expectation failed`).
   Impact: the `rstest-bdd` step macro classifies return types syntactically and
   does not resolve aliases, so an alias step is treated as value-returning and
-  its `Err` is discarded. This is a silent false-green — the worst failure class
-  for a test framework. All step signatures now spell out `Result<..>`. Filed as
-  the FLAGGED CONCERN in the beta tester's log with a full validation matrix and
-  upstream suggestions.
+  its `Err` is discarded. This is a silent false-green — the worst failure
+  class for a test framework. All step signatures now spell out `Result<..>`.
+  Filed as the FLAGGED CONCERN in the beta tester's log with a full validation
+  matrix and upstream suggestions.
 
 - Observation: a *fallible* scenario (`-> Result<(), E>`) trips
   `unused_must_use` in the generated `#[gpui::test]` body (a hard error under
-  `-D warnings`).
-  Evidence: `warning: unused Result that must be used --> ...#[scenario(...`,
-  escalated to an error by `cargo clippy -- -D warnings`.
-  Impact: a unit (`()`) scenario still propagates step `Err`s correctly, so the
-  scenario is kept unit-returning; the fallible-scenario shape is avoided.
+  `-D warnings`). Evidence:
+  `warning: unused Result that must be used --> ...#[scenario(...`, escalated
+  to an error by `cargo clippy -- -D warnings`. Impact: a unit (`()`) scenario
+  still propagates step `Err`s correctly, so the scenario is kept
+  unit-returning; the fallible-scenario shape is avoided.
 
 ## Decision log
 
 - Decision: migrate `draw_click_adds_points_and_undo_removes` (the
-  draw→undo→redo flow) rather than a simpler selection test.
-  Rationale: it is the richest behavioural narrative with durable
-  `Entity<Phase0Shell>` + window handles shared across many steps, so it is the
-  strongest exercise of the stateful GPUI harness playbook. Confirmed with the
-  user.
-  Date/Author: 2026-07-08, planning session.
+  draw→undo→redo flow) rather than a simpler selection test. Rationale: it is
+  the richest behavioural narrative with durable `Entity<Phase0Shell>` + window
+  handles shared across many steps, so it is the strongest exercise of the
+  stateful GPUI harness playbook. Confirmed with the user. Date/Author:
+  2026-07-08, planning session.
 
 - Decision: replace the original `#[gpui::test]` function once the BDD scenario
-  is green, rather than keeping both.
-  Rationale: one source of truth; avoids duplicated-coverage drift. Confirmed
-  with the user.
-  Date/Author: 2026-07-08, planning session.
+  is green, rather than keeping both. Rationale: one source of truth; avoids
+  duplicated-coverage drift. Confirmed with the user. Date/Author: 2026-07-08,
+  planning session.
 
 - Decision: add `rstest-bdd-harness-gpui` and `serial_test` as dev-dependencies
   of the root crate only (not `gauss-core`/`gauss-svg`, whose BDD suites are
-  non-GPUI).
-  Rationale: the GPUI integration tests live in the root crate's `tests/`
-  directory; the harness and serial gate are only needed there.
+  non-GPUI). Rationale: the GPUI integration tests live in the root crate's
+  `tests/` directory; the harness and serial gate are only needed there.
   Date/Author: 2026-07-08, planning session.
 
 - Decision: verified the published `gpui 0.2.2` test API against the crate
   source rather than trusting the guide's vendored snippets:
-  `VisualTestContext::from_window(window, cx: &TestAppContext) -> Self`
-  (owned, takes a shared `&TestAppContext`), `window_handle()` is a
+  `VisualTestContext::from_window(window, cx: &TestAppContext) -> Self` (owned,
+  takes a shared `&TestAppContext`), `window_handle()` is a
   `gpui::VisualContext` trait method, and `add_window_view` returns
-  `(Entity<V>, &mut VisualTestContext)`.
-  Rationale: avoid compile churn and match the gate-passing house style.
-  Date/Author: 2026-07-08, implementation.
+  `(Entity<V>, &mut VisualTestContext)`. Rationale: avoid compile churn and
+  match the gate-passing house style. Date/Author: 2026-07-08, implementation.
 
 - Decision: step and helper bodies use `let … else { panic!(…) }` for
-  Option/Result unwrapping, not `.expect(...)`.
-  Rationale: the plan assumed the `clippy.toml` `allow-expect-in-tests = true`
-  allowance would cover the step code. It does not — that allowance only exempts
-  `#[test]`/`#[gpui::test]` function bodies, and `#[given]`/`#[when]`/`#[then]`
-  steps (and their helpers) are plain functions, so `expect_used`/`unwrap_used`
-  fire there under `--all-targets` clippy. `shadow_reuse` also had to be avoided
-  by binding the handle tuple to a separate name before the `let … else`. The
-  playbook's own `let … else { panic!(…) }` shape passes the pedantic profile.
-  Date/Author: 2026-07-08, implementation (surfaced by the milestone-2 gate).
+  Option/Result unwrapping, not `.expect(...)`. Rationale: the plan assumed the
+  `clippy.toml` `allow-expect-in-tests = true` allowance would cover the step
+  code. It does not — that allowance only exempts `#[test]`/`#[gpui::test]`
+  function bodies, and `#[given]`/`#[when]`/`#[then]` steps (and their helpers)
+  are plain functions, so `expect_used`/`unwrap_used` fire there under
+  `--all-targets` clippy. `shadow_reuse` also had to be avoided by binding the
+  handle tuple to a separate name before the `let … else`. The playbook's own
+  `let … else { panic!(…) }` shape passes the pedantic profile. Date/Author:
+  2026-07-08, implementation (surfaced by the milestone-2 gate).
 
 - Decision: on user request, make steps and helpers fully fallible (return
   `Result`, propagate with `?` / explicit `Err`) instead of panicking, and keep
@@ -267,8 +257,8 @@ breached.
 - Decision: substitute a falsification check for a literal red-skeleton stage.
   Rationale: the deliverable *is* a test, so "fails before implementation" is
   best evidenced by implementing it, observing green, then temporarily breaking
-  one `Then` expectation to observe a red for the intended reason and reverting.
-  This is the execplans-sanctioned nearest observable substitute.
+  one `Then` expectation to observe a red for the intended reason and
+  reverting. This is the execplans-sanctioned nearest observable substitute.
   Date/Author: 2026-07-08, implementation.
 
 ## Outcomes & retrospective
@@ -277,9 +267,9 @@ Both objectives were met. The workspace now builds and tests against
 `rstest-bdd 0.6.0-beta3`, and the draw/undo/redo GPUI behaviour runs as a
 Gherkin scenario driven through `rstest_bdd_harness_gpui::GpuiHarness` against
 the **published** `gpui 0.2.2`. `make all` is green (909 tests; net-zero count
-after swapping one `#[gpui::test]` for the BDD scenario), and a broken-assertion
-falsification proved the harness attributes failures to the feature path, line,
-scenario name, and failing step.
+after swapping one `#[gpui::test]` for the BDD scenario), and a
+broken-assertion falsification proved the harness attributes failures to the
+feature path, line, scenario name, and failing step.
 
 What went well:
 
@@ -293,9 +283,9 @@ What went well:
 What would be done differently:
 
 - The plan assumed `.expect(...)` would be fine in step bodies under
-  `allow-expect-in-tests`. It was not, because steps are plain functions. Future
-  BDD-on-strict-clippy work should reach for `let … else { panic!(…) }` from the
-  start. Captured as beta feedback in the tester's log.
+  `allow-expect-in-tests`. It was not, because steps are plain functions.
+  Future BDD-on-strict-clippy work should reach for `let … else { panic!(…) }`
+  from the start. Captured as beta feedback in the tester's log.
 - Two avoidable stop-hook fmt failures came from hand-wrapping `use` lists and
   closures; running `cargo fmt` immediately after each new file would have
   prevented them.
@@ -322,8 +312,8 @@ framework) and is the most important thing this trial found.
 ## Context and orientation
 
 `gauss` is a Rust vector-drawing application built on GPUI. The workspace root
-crate is `gauss`; member crates are `crates/gauss-core`, `crates/gauss-svg`,
-and `crates/test_support`.
+crate is `gauss`; member crates are `crates/gauss-core`, `crates/gauss-svg`, and
+`crates/test_support`.
 
 Behaviour tests already use `rstest-bdd 0.5.0` in three manifests:
 
@@ -336,9 +326,9 @@ There are two distinct test styles in the root crate's `tests/` directory:
 
 - Non-GPUI BDD suites (`tests/i18n_bdd.rs`, `tests/a11y_service_bdd.rs`,
   `tests/widget_capability_audit_bdd/`, `tests/undo_entry_count_bdd/`,
-  `tests/a11y_service_routing_bdd.rs`) using `#[scenario]`/`#[given]`/
-  `#[when]`/`#[then]` with plain `rstest` fixtures. `tests/i18n_bdd.rs` is a
-  clean reference for the current binding style.
+  `tests/a11y_service_routing_bdd.rs`) using `#[scenario]`/`#[given]`/ `#[when]`
+  /`#[then]` with plain `rstest` fixtures. `tests/i18n_bdd.rs` is a clean
+  reference for the current binding style.
 - Raw GPUI integration tests (`tests/gpui_*.rs`, 40+ files) using
   `#[gpui::test]` directly with a shared helper module `tests/common/mod.rs`.
   These are **not** currently BDD; they are ordinary GPUI tests.
@@ -349,13 +339,13 @@ The migration target, `tests/gpui_history_draw_undo.rs`, contains three
 
 1. Initializes the app (`common::init_test_app`).
 2. Opens a window with
-   `cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx))`, obtaining
-   a durable `Entity<Phase0Shell>` and a `VisualTestContext`.
+   `cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx))`,
+   obtaining a durable `Entity<Phase0Shell>` and a `VisualTestContext`.
 3. Draws the initial frame (`common::ensure_initial_draw`).
 4. Computes two canvas points (`common::canvas_points`).
 5. Clicks the first point → draw shape has 1 anchor; clicks the second → 2
-   anchors; undoes → 1 anchor; undoes → shape absent; redoes → 1 anchor;
-   redoes → 2 anchors, asserting document state after each.
+   anchors; undoes → 1 anchor; undoes → shape absent; redoes → 1 anchor; redoes
+   → 2 anchors, asserting document state after each.
 
 The reusable helpers it needs already live in `tests/common/mod.rs`:
 `init_test_app`, `ensure_initial_draw`, `canvas_points`, `read_document`,
@@ -416,11 +406,10 @@ Establish the exact edit set and confirm the breaking-change surface.
 2. Audit the underscore-normalization breaking change. Run the following on
    one line:
    `grep -rnE "fn [a-z0-9_]+\s*\(" --include="*.rs" tests crates/*/tests`
-   `| grep -E "\b_[a-z]"`
-   and inspect any hit whose parameter both starts with `_` and is a fixture
-   (not a placeholder). Where a literal `_name` fixture key was intended, plan a
-   `#[from(_name)]` edit. Expectation from the initial survey: no changes
-   required.
+   `| grep -E "\b_[a-z]"` and inspect any hit whose parameter both starts with
+   `_` and is a fixture (not a placeholder). Where a literal `_name` fixture
+   key was intended, plan a `#[from(_name)]` edit. Expectation from the initial
+   survey: no changes required.
 3. Confirm no `scenarios!(..., runtime = "tokio-current-thread")` and no custom
    `HarnessAdapter` implementations exist:
    `grep -rn "tokio-current-thread\|HarnessAdapter" --include="*.rs" .`.
@@ -503,8 +492,8 @@ gauss-svg BDD tests via `cargo test -p gauss-core -p gauss-svg`) remain green.
    `todo!()` or assert a wrong count) so the scenario fails.
 
 Validation: `cargo test --test gpui_draw_undo_bdd` fails, and it fails for the
-intended reason (a step assertion/`todo!`, not a compile error or a missing-step
-registry panic). Record the failure transcript.
+intended reason (a step assertion/`todo!`, not a compile error or a
+missing-step registry panic). Record the failure transcript.
 
 ### Stage E — green: implement steps and thread-local state
 
@@ -517,9 +506,9 @@ Implement, in `tests/gpui_draw_undo_bdd.rs`:
    draws the initial frame, computes the two canvas points, and stores durable
    handles + points in the cell.
 3. The `#[when]`/`#[then]` steps that rebuild a `VisualTestContext` from the
-   stored window handle and the fresh `&mut TestAppContext` each time, then drive
-   clicks/undo/redo and assert document state via `common::read_document` /
-   `common::require_draw_shape` / `common::find_draw_shape`.
+   stored window handle and the fresh `&mut TestAppContext` each time, then
+   drive clicks/undo/redo and assert document state via `common::read_document`
+   / `common::require_draw_shape` / `common::find_draw_shape`.
 
 Reuse `tests/common/mod.rs` by declaring `mod common;` in the new file, exactly
 as the other `gpui_*.rs` tests do.
@@ -543,7 +532,8 @@ still runs the two remaining tests and passes.
 
 ### Stage G — documentation
 
-1. Append final entries to `~/docs/rstest-bdd-v0-6-0-beta3-gauss-testers-log.md`.
+1. Append final entries to
+   `~/docs/rstest-bdd-v0-6-0-beta3-gauss-testers-log.md`.
 2. Complete this plan's `Outcomes & retrospective`, `Surprises & discoveries`,
    and `Progress`.
 
@@ -833,19 +823,19 @@ Notes on the shapes above:
 ## Revision note
 
 Initial draft. Establishes a two-part delivery: a workspace-wide
-`rstest-bdd 0.5.0 → 0.6.0-beta3` bump (Stages A, C) gated by a
-harness/`gpui 0.2.2` compatibility spike (Stage B), followed by a
-red→green→refactor migration of the `draw_click_adds_points_and_undo_removes`
-GPUI test to the `GpuiHarness` stateful playbook (Stages D–F), adapted to the
-published `gpui 0.2.2` API rather than the vendored fork. Awaiting approval
-before implementation.
+`rstest-bdd 0.5.0 → 0.6.0-beta3` bump (Stages A, C) gated by a harness/
+`gpui 0.2.2` compatibility spike (Stage B), followed by a red→green→refactor
+migration of the `draw_click_adds_points_and_undo_removes` GPUI test to the
+`GpuiHarness` stateful playbook (Stages D–F), adapted to the published
+`gpui 0.2.2` API rather than the vendored fork. Awaiting approval before
+implementation.
 
 2026-07-08 — implementation complete. What changed since the draft: the Stage B
 spike confirmed the harness resolves against the single published `gpui 0.2.2`
 (go/no-go passed, no incompatibility). The `.expect(...)`-in-steps assumption
 was wrong — `allow-expect-in-tests` does not cover `#[given]`/`#[when]`/
-`#[then]` step functions, so step and helper bodies use `let … else { panic!(…)
-}` (Decision Log). Two stop-hook fmt failures from hand-wrapped `use` lists and
-closures were resolved with `cargo fmt`. Both milestones passed `make all`
-(909 tests) and CodeRabbit (`review --agent`, 0 findings each). No remaining
-work; Status is COMPLETE.
+`#[then]` step functions, so step and helper bodies use
+`let … else { panic!(…) }` (Decision Log). Two stop-hook fmt failures from
+hand-wrapped `use` lists and closures were resolved with `cargo fmt`. Both
+milestones passed `make all` (909 tests) and CodeRabbit (`review --agent`, 0
+findings each). No remaining work; Status is COMPLETE.

@@ -18,7 +18,7 @@ ______________________________________________________________________
 | Paste in place            | Shift + Ctrl + V       | Shift + Command + V          |
 | Paste on all artboards    | Alt + Shift + Ctrl + V | Option + Shift + Command + V |
 | Check spelling            | Ctrl + I               | Command + I                  |
-| Colour Settings            | Shift + Ctrl + K       | Shift + Command + K          |
+| Colour Settings           | Shift + Ctrl + K       | Shift + Command + K          |
 | Keyboard Shortcuts dialog | Alt + Shift + Ctrl + K | Option + Shift + Command + K |
 | Preferences dialog        | Ctrl + K               | Command + K                  |
 
@@ -142,7 +142,7 @@ ______________________________________________________________________
 | Copy          | F3      | F3    |
 | Paste         | F4      | F4    |
 | Brushes panel | F5      | F5    |
-| Colour panel   | F6      | F6    |
+| Colour panel  | F6      | F6    |
 | Layers panel  | F7      | F7    |
 | New symbol    | F8      | F8    |
 | Revert        | F12     | F12   |

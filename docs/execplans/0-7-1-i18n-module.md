@@ -74,8 +74,8 @@ file ownership is disjoint.
 - Do not treat `0.7.1` as blanket UI-string extraction. Most inline Phase 0 UI
   labels stay for `0.7.2`, and localized command names stay for `0.7.3`.
 - Keep the `i18n` module independent of GPUI. Views may consume localized
-  strings, but catalogue lookup and locale logic must not depend on GPUI types or
-  window context.
+  strings, but catalogue lookup and locale logic must not depend on GPUI types
+  or window context.
 - Do not use process-global locale state or environment mutation for tests.
   Locale selection must be injected so tests remain deterministic and parallel.
 - Prefer typed errors and explicit fallbacks over silent English-only
@@ -133,8 +133,8 @@ Implementation should proceed in five milestones.
    fallback, message lookup, and formatting failures. Add `rstest-bdd` feature
    scenarios that describe catalogue lookup and fallback behaviour in business
    terms. Add one GPUI test that proves a Phase 0 shell surface changes when a
-   non-default test catalogue is injected. The first pass should fail because the
-   i18n layer does not exist yet.
+   non-default test catalogue is injected. The first pass should fail because
+   the i18n layer does not exist yet.
 
 2. Add the core module under `src/i18n/`. Keep files small and purpose-driven,
    likely split as `mod.rs`, `locale.rs`, `message.rs`, `catalog.rs`, and
@@ -167,12 +167,12 @@ Implementation should proceed in five milestones.
    items.
 
 5. Record the decision and close the milestone. Update the architecture
-   document to explain why `0.7.1` chose a keyed catalogue now, what would force
-   a Fluent migration later, and which future roadmap items own broader string
-   extraction and grammar-sensitive localization. Update the user guide with
-   any user-visible behaviour change. If the implementation ships only English
-   plus a test-only alternate catalogue, say that explicitly. Then update the
-   roadmap checkbox for `0.7.1` only after all gates pass.
+   document to explain why `0.7.1` chose a keyed catalogue now, what would
+   force a Fluent migration later, and which future roadmap items own broader
+   string extraction and grammar-sensitive localization. Update the user guide
+   with any user-visible behaviour change. If the implementation ships only
+   English plus a test-only alternate catalogue, say that explicitly. Then
+   update the roadmap checkbox for `0.7.1` only after all gates pass.
 
 ## Recommended design
 
