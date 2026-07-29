@@ -1,21 +1,21 @@
 //! Behavioural coverage for loading SVG documents through the GPUI Open dialog.
 
 mod common;
+#[path = "common/file_io.rs"]
+mod file_io;
 #[path = "gpui_file_io_open_dialog/fixtures.rs"]
 mod fixtures;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 
-use std::{cell::RefCell, path::Path};
+use std::path::Path;
 
-use common::{
-    ensure_initial_draw,
-    file_io::{DurableShell, TempSvgFile},
-    init_test_app,
-};
+use common::{ensure_initial_draw, init_test_app};
+use file_io::{DurableShell, TempSvgFile, assert_no_path_prompt, assert_path_prompt};
 use gauss::model::Paint;
 use gauss::svg::metadata::GAUSS_METADATA_PREFIX;
 use gauss::ui::{OpenSvg, Phase0Shell};
 use gpui::TestAppContext;
-use rstest::fixture;
 use rstest_bdd_macros::{scenario, then, when};
 use serial_test::serial;
 use test_support::TestSupportError;
@@ -27,31 +27,7 @@ struct ScenarioState {
     initial_resources: Option<(usize, usize, usize)>,
 }
 
-thread_local! {
-    static STATE: RefCell<ScenarioState> = RefCell::new(ScenarioState::default());
-}
-
-fn with_state<R>(f: impl FnOnce(&mut ScenarioState) -> R) -> R {
-    STATE.with(|cell| f(&mut cell.borrow_mut()))
-}
-
-fn reset_state() {
-    with_state(|state| *state = ScenarioState::default());
-}
-
-struct ScenarioStateCleanup;
-
-impl Drop for ScenarioStateCleanup {
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-#[fixture]
-fn scenario_state_cleanup() -> ScenarioStateCleanup {
-    reset_state();
-    ScenarioStateCleanup
-}
+crate::scenario_state!(ScenarioState);
 
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone())
@@ -91,12 +67,7 @@ pub(crate) fn prepare_svg(
 fn no_file_path_prompt(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    if cx.did_prompt_for_new_path() {
-        return Err(TestSupportError::expectation(
-            "expected no file path prompt before Open",
-        ));
-    }
-    Ok(())
+    assert_no_path_prompt(cx, "expected no file path prompt before Open")
 }
 
 #[when("Open is requested")]
@@ -116,12 +87,7 @@ fn request_open(
 fn file_path_prompt(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    if !cx.did_prompt_for_new_path() {
-        return Err(TestSupportError::expectation(
-            "expected Open to display a file path prompt",
-        ));
-    }
-    Ok(())
+    assert_path_prompt(cx, "expected Open to display a file path prompt")
 }
 
 #[when("the temporary SVG is selected")]

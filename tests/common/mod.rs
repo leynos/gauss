@@ -10,8 +10,6 @@
 // Each integration test pulls in this module but only uses a subset of the
 // helpers, so allow dead code to keep the shared test surface in one place.
 
-pub mod file_io;
-
 use camino::{Utf8Path, Utf8PathBuf};
 use cap_std::fs_utf8::Dir;
 use gauss::model::{

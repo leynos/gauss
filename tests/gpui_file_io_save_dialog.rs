@@ -1,23 +1,26 @@
 //! Behavioural coverage for GPUI Save and web-ready export file dialogs.
 
 mod common;
+#[path = "common/file_io.rs"]
+mod file_io;
 #[path = "gpui_file_io_save_dialog/fixtures.rs"]
 mod fixtures;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 
-use std::{cell::RefCell, path::Path};
+use std::{path::Path, rc::Rc};
 
-use common::{
-    ensure_initial_draw,
-    file_io::{DurableShell, TempSvgFile},
-    init_test_app,
-};
+use common::{ensure_initial_draw, init_test_app};
+use file_io::{DurableShell, TempSvgFile, assert_no_path_prompt, assert_path_prompt};
 use gauss::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
 use gauss::ui::{ExportSvgWebReady, Phase0Shell, SaveSvg};
 use gpui::TestAppContext;
-use rstest::fixture;
 use rstest_bdd_macros::{scenario, then, when};
 use serial_test::serial;
 use test_support::TestSupportError;
+
+/// The serialised path element that `Phase0Shell::new` seeds the document with.
+const DEMO_SHAPE_PATH: &str = r#"<path d="M 10 10 L 90 10 L 90 90 L 10 90 Z""#;
 
 #[derive(Clone, Copy)]
 pub(crate) enum ExportAction {
@@ -25,38 +28,17 @@ pub(crate) enum ExportAction {
     WebReady,
 }
 
+/// The temporary SVG is shared behind an [`Rc`] so scenario steps can take a
+/// handle out of the state cell and perform file I/O without holding the
+/// `RefCell` borrow across the read.
 #[derive(Default)]
 struct ScenarioState {
     shell: Option<DurableShell>,
-    temp_svg: Option<TempSvgFile>,
+    temp_svg: Option<Rc<TempSvgFile>>,
     action: Option<ExportAction>,
 }
 
-thread_local! {
-    static STATE: RefCell<ScenarioState> = RefCell::new(ScenarioState::default());
-}
-
-fn with_state<R>(f: impl FnOnce(&mut ScenarioState) -> R) -> R {
-    STATE.with(|cell| f(&mut cell.borrow_mut()))
-}
-
-fn reset_state() {
-    with_state(|state| *state = ScenarioState::default());
-}
-
-struct ScenarioStateCleanup;
-
-impl Drop for ScenarioStateCleanup {
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-#[fixture]
-fn scenario_state_cleanup() -> ScenarioStateCleanup {
-    reset_state();
-    ScenarioStateCleanup
-}
+crate::scenario_state!(ScenarioState);
 
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone())
@@ -91,12 +73,7 @@ pub(crate) fn prepare_shell(
 fn no_file_path_prompt(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    if cx.did_prompt_for_new_path() {
-        return Err(TestSupportError::expectation(
-            "expected no file path prompt before export",
-        ));
-    }
-    Ok(())
+    assert_no_path_prompt(cx, "expected no file path prompt before export")
 }
 
 #[when("the configured export action is requested")]
@@ -122,12 +99,10 @@ fn request_export(
 fn file_path_prompt(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    if !cx.did_prompt_for_new_path() {
-        return Err(TestSupportError::expectation(
-            "expected the export action to display a file path prompt",
-        ));
-    }
-    Ok(())
+    assert_path_prompt(
+        cx,
+        "expected the export action to display a file path prompt",
+    )
 }
 
 #[when("a temporary save path is selected")]
@@ -138,7 +113,7 @@ fn select_temporary_save_path(
     let path = temp_svg.path().as_std_path().to_path_buf();
     cx.simulate_new_path_selection(|_directory: &Path| Some(path.clone()));
     cx.run_until_parked();
-    with_state(|state| state.temp_svg = Some(temp_svg));
+    with_state(|state| state.temp_svg = Some(Rc::new(temp_svg)));
     Ok(())
 }
 
@@ -173,9 +148,15 @@ fn selected_save_path_recorded(
     Ok(())
 }
 
+/// Take a handle to the scenario's temporary SVG, releasing the state borrow.
+fn temp_svg() -> Result<Rc<TempSvgFile>, TestSupportError> {
+    with_state(|state| state.temp_svg.clone())
+        .ok_or_else(|| TestSupportError::missing("temporary SVG", "set by the When step"))
+}
+
 fn saved_contents() -> Result<String, TestSupportError> {
-    with_state(|state| state.temp_svg.as_ref().map(TempSvgFile::read_to_string))
-        .ok_or_else(|| TestSupportError::missing("temporary SVG", "set by the When step"))?
+    let temp_svg = temp_svg()?;
+    temp_svg.read_to_string()
 }
 
 fn require_contents(fragment: &str, context: &str) -> Result<(), TestSupportError> {
@@ -190,10 +171,7 @@ fn require_contents(fragment: &str, context: &str) -> Result<(), TestSupportErro
 
 #[then("the saved SVG contains the demo shape")]
 fn saved_svg_contains_demo_shape() -> Result<(), TestSupportError> {
-    require_contents(
-        r#"<path d="M 10 10 L 90 10 L 90 90 L 10 90 Z""#,
-        "saved SVG did not contain the demo shape",
-    )
+    require_contents(DEMO_SHAPE_PATH, "saved SVG did not contain the demo shape")
 }
 
 #[then("the saved SVG contains the canonical Gauss metadata namespace")]
@@ -242,8 +220,8 @@ fn save_error_reports_pattern(
 
 #[then("no SVG file is written")]
 fn no_svg_file_written() -> Result<(), TestSupportError> {
-    let exists = with_state(|state| state.temp_svg.as_ref().is_some_and(TempSvgFile::exists));
-    if exists {
+    let temp_svg = with_state(|state| state.temp_svg.clone());
+    if temp_svg.is_some_and(|temp| temp.exists()) {
         return Err(TestSupportError::expectation(
             "export validation failure wrote an SVG file",
         ));
@@ -266,7 +244,7 @@ fn no_save_error(
 #[then("the saved SVG is web-ready and contains no Gauss metadata")]
 fn saved_svg_is_web_ready() -> Result<(), TestSupportError> {
     let contents = saved_contents()?;
-    let has_demo_shape = contents.contains(r#"<path d="M 10 10 L 90 10 L 90 90 L 10 90 Z""#);
+    let has_demo_shape = contents.contains(DEMO_SHAPE_PATH);
     let has_gauss_metadata = contents.contains(GAUSS_METADATA_NAMESPACE)
         || contents.contains(&format!("{GAUSS_METADATA_PREFIX}:"))
         || contents.contains("<metadata>");

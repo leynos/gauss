@@ -1,42 +1,23 @@
 //! Behavioural coverage for opening the save prompt through the GPUI Save button.
 
 mod common;
+#[path = "common/file_io.rs"]
+mod file_io;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 
-use std::cell::RefCell;
-
-use common::{ensure_initial_draw, file_io::DurableShell, init_test_app};
+use common::{ensure_initial_draw, init_test_app};
+use file_io::{DurableShell, assert_no_path_prompt, assert_path_prompt};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, TestAppContext, point, px};
-use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use test_support::TestSupportError;
 
-thread_local! {
-    static SHELL: RefCell<Option<DurableShell>> = const { RefCell::new(None) };
-}
-
-fn reset_state() {
-    SHELL.with(|cell| *cell.borrow_mut() = None);
-}
-
-struct ScenarioStateCleanup;
-
-impl Drop for ScenarioStateCleanup {
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-#[fixture]
-fn scenario_state_cleanup() -> ScenarioStateCleanup {
-    reset_state();
-    ScenarioStateCleanup
-}
+crate::scenario_state!(Option<DurableShell>);
 
 fn shell() -> Result<DurableShell, TestSupportError> {
-    SHELL
-        .with(|cell| cell.borrow().clone())
+    with_state(|state| state.clone())
         .ok_or_else(|| TestSupportError::missing("shell handles", "set by the Given step"))
 }
 
@@ -48,7 +29,7 @@ fn fresh_shell(
     init_test_app(cx);
     let (entity, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
-    SHELL.with(|cell| *cell.borrow_mut() = Some(DurableShell::new(entity, visual_cx)));
+    with_state(|state| *state = Some(DurableShell::new(entity, visual_cx)));
     shell()?;
     Ok(())
 }
@@ -57,12 +38,7 @@ fn fresh_shell(
 fn no_file_path_prompt(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    if cx.did_prompt_for_new_path() {
-        return Err(TestSupportError::expectation(
-            "expected no file path prompt to be visible",
-        ));
-    }
-    Ok(())
+    assert_no_path_prompt(cx, "expected no file path prompt to be visible")
 }
 
 #[when("the Save button is clicked")]
@@ -87,12 +63,7 @@ fn click_save_button(
 fn file_path_prompt(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    if !cx.did_prompt_for_new_path() {
-        return Err(TestSupportError::expectation(
-            "expected a file path prompt to be visible",
-        ));
-    }
-    Ok(())
+    assert_path_prompt(cx, "expected a file path prompt to be visible")
 }
 
 #[scenario(

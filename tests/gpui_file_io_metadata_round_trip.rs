@@ -1,20 +1,20 @@
 //! Behavioural coverage for preserving Gauss metadata through GPUI save and open flows.
 
 mod common;
+#[path = "common/file_io.rs"]
+mod file_io;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 
-use std::{cell::RefCell, path::Path};
+use std::path::Path;
 
-use common::{
-    ensure_initial_draw,
-    file_io::{DurableShell, TempSvgFile},
-    init_test_app,
-};
+use common::{ensure_initial_draw, init_test_app};
+use file_io::{DurableShell, TempSvgFile};
 use gauss::model::ShapeId;
 use gauss::svg::metadata::GAUSS_METADATA_NAMESPACE;
 use gauss::ui::{OpenSvg, Phase0Shell, SaveSvg};
 use gauss_core::test_helpers::shape_id_from_seed;
 use gpui::TestAppContext;
-use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use test_support::TestSupportError;
@@ -27,31 +27,7 @@ struct ScenarioState {
     expected_id: Option<ShapeId>,
 }
 
-thread_local! {
-    static STATE: RefCell<ScenarioState> = RefCell::new(ScenarioState::default());
-}
-
-fn with_state<R>(f: impl FnOnce(&mut ScenarioState) -> R) -> R {
-    STATE.with(|cell| f(&mut cell.borrow_mut()))
-}
-
-fn reset_state() {
-    with_state(|state| *state = ScenarioState::default());
-}
-
-struct ScenarioStateCleanup;
-
-impl Drop for ScenarioStateCleanup {
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-#[fixture]
-fn scenario_state_cleanup() -> ScenarioStateCleanup {
-    reset_state();
-    ScenarioStateCleanup
-}
+crate::scenario_state!(ScenarioState);
 
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone())
