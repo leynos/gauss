@@ -43,6 +43,25 @@ fn doc_with_one_shape(sample_shape: Shape) -> (Document, ShapeId) {
     (doc, id)
 }
 
+/// Apply `cmd` to `doc`, returning the command alongside its inverse.
+///
+/// `operation` names the calling helper so a failure identifies which command
+/// could not be applied. This is the single panic boundary for these helpers:
+/// `.expect()` is disallowed outside test-attributed functions (whitaker
+/// `no_expect_outside_tests`), so the `Err` variant is handled explicitly here
+/// rather than at each call site.
+fn apply_command(
+    doc: &mut Document,
+    cmd: Command,
+    operation: &str,
+) -> (Command, crate::model::command::CommandInverse) {
+    let inverse = match cmd.apply(doc) {
+        Ok(inverse) => inverse,
+        Err(error) => panic!("{operation} should succeed: {error:?}"),
+    };
+    (cmd, inverse)
+}
+
 /// Build and apply a `MoveShapes` command, returning the command and inverse.
 fn apply_move(
     doc: &mut Document,
@@ -56,13 +75,7 @@ fn apply_move(
             delta: Vec2::new(dx, dy),
         }],
     };
-    // `.expect()` is disallowed outside test-attributed functions (whitaker
-    // `no_expect_outside_tests`); handle the Err explicitly instead.
-    let inverse = match cmd.apply(doc) {
-        Ok(inverse) => inverse,
-        Err(error) => panic!("apply_move should succeed: {error:?}"),
-    };
-    (cmd, inverse)
+    apply_command(doc, cmd, "apply_move")
 }
 
 /// Build and apply an `InsertShape` command, returning the command and inverse.
@@ -74,13 +87,7 @@ fn apply_insert(
     let cmd = Command::InsertShape {
         insertion: crate::model::ShapeInsertion { index, shape },
     };
-    // `.expect()` is disallowed outside test-attributed functions (whitaker
-    // `no_expect_outside_tests`); handle the Err explicitly instead.
-    let inverse = match cmd.apply(doc) {
-        Ok(inverse) => inverse,
-        Err(error) => panic!("apply_insert should succeed: {error:?}"),
-    };
-    (cmd, inverse)
+    apply_command(doc, cmd, "apply_insert")
 }
 
 // ---------------------------------------------------------------------------
