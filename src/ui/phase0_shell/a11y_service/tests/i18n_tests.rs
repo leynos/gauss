@@ -118,14 +118,19 @@ fn fr_locale_snapshot(localizer: Localizer) -> A11ySnapshot {
 }
 
 fn get_status_label(snapshot: &A11ySnapshot) -> String {
-    let (nodes, _) = build_node_map(snapshot).expect("node map build should succeed");
-    let status_node = nodes
-        .get(&STATUS_NODE_ID)
-        .expect("expected node map to contain status node");
-    status_node
-        .label()
-        .expect("status node should have a label")
-        .to_owned()
+    // `.expect()` is disallowed outside test-attributed functions (whitaker
+    // `no_expect_outside_tests`); handle each failure explicitly instead.
+    let (nodes, _) = match build_node_map(snapshot) {
+        Ok(result) => result,
+        Err(error) => panic!("node map build should succeed: {error:?}"),
+    };
+    let Some(status_node) = nodes.get(&STATUS_NODE_ID) else {
+        panic!("expected node map to contain status node");
+    };
+    let Some(label) = status_node.label() else {
+        panic!("status node should have a label");
+    };
+    label.to_owned()
 }
 
 #[rstest]

@@ -172,8 +172,13 @@ fn create_line_shape_for_export(
 
 /// Verify SVG root element structure (without namespace checks).
 fn assert_svg_root_element(svg: &str, expected_width: f32, expected_height: f32) {
-    let document =
-        roxmltree::Document::parse(svg).expect("exported SVG should always be valid XML");
+    // `.expect()` is disallowed outside test-attributed functions (whitaker
+    // `no_expect_outside_tests`); handle the Err explicitly, matching the
+    // panic-in-test idiom used elsewhere in this suite.
+    let document = match roxmltree::Document::parse(svg) {
+        Ok(document) => document,
+        Err(error) => panic!("exported SVG should always be valid XML: {error:?}"),
+    };
     let root = document.root_element();
     assert!(svg.contains(r#"<svg xmlns="http://www.w3.org/2000/svg""#));
     assert!(svg.contains(&format!(
@@ -184,8 +189,13 @@ fn assert_svg_root_element(svg: &str, expected_width: f32, expected_height: f32)
 
 /// Verify Gauss metadata namespace declaration on root.
 fn assert_gauss_namespace_declared(svg: &str) {
-    let document =
-        roxmltree::Document::parse(svg).expect("exported SVG should always be valid XML");
+    // `.expect()` is disallowed outside test-attributed functions (whitaker
+    // `no_expect_outside_tests`); handle the Err explicitly, matching the
+    // panic-in-test idiom used elsewhere in this suite.
+    let document = match roxmltree::Document::parse(svg) {
+        Ok(document) => document,
+        Err(error) => panic!("exported SVG should always be valid XML: {error:?}"),
+    };
     let root = document.root_element();
     let metadata_namespace =
         format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#);

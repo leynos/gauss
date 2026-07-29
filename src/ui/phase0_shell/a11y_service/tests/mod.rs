@@ -56,9 +56,11 @@ fn snapshot_with_state(
 
 fn routed_service() -> A11yService {
     let mut service = A11yService::new();
-    service
-        .sync_from_shell_like(snapshot(&[], &[]))
-        .expect("baseline accessibility snapshot should sync");
+    // `.expect()` is disallowed outside test-attributed functions (whitaker
+    // `no_expect_outside_tests`); handle the Err explicitly instead.
+    if let Err(error) = service.sync_from_shell_like(snapshot(&[], &[])) {
+        panic!("baseline accessibility snapshot should sync: {error:?}");
+    }
     service
 }
 
