@@ -324,22 +324,44 @@ pub fn anchor_to_canvas_point(
     }
 }
 
+/// Verify a click left the shape count unchanged.
+///
+/// # Errors
+///
+/// Returns an expectation error when the click changed the shape count, which
+/// means the shell was still in draw mode.
+pub fn assert_click_added_no_shape(
+    shapes_before: usize,
+    shapes_after: usize,
+) -> TestSupportResult<()> {
+    if shapes_after != shapes_before {
+        return Err(TestSupportError::expectation(
+            "escape should switch to manipulate mode, where clicks do not add points",
+        ));
+    }
+    Ok(())
+}
+
+/// Escape to manipulate mode, click, and verify the click added no shape.
+///
+/// The baseline count is read after the escape rather than before it, because
+/// `Escape` itself commits or cancels an in-progress path and so can change the
+/// document on its own.
+///
+/// # Errors
+///
+/// Returns an expectation error when the click added a shape.
 pub fn switch_to_manipulate_mode_and_verify(
     visual_cx: &mut VisualTestContext,
     view: &Entity<Phase0Shell>,
     click_point: Point<Pixels>,
-) {
+) -> TestSupportResult<()> {
     simulate_escape(visual_cx);
 
     let shapes_after_escape = read_document(visual_cx, view).len();
-    visual_cx.simulate_mouse_move(click_point, None, Modifiers::none());
-    visual_cx.simulate_click(click_point, Modifiers::none());
-    visual_cx.run_until_parked();
+    click_canvas_and_wait(visual_cx, click_point);
     let shapes_after_click = read_document(visual_cx, view).len();
-    assert_eq!(
-        shapes_after_click, shapes_after_escape,
-        "escape should switch to manipulate mode, where clicks do not add points"
-    );
+    assert_click_added_no_shape(shapes_after_escape, shapes_after_click)
 }
 
 pub fn read_history_len(visual_cx: &VisualTestContext, view: &Entity<Phase0Shell>) -> usize {

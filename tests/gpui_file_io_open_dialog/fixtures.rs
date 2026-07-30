@@ -63,6 +63,13 @@ fn svg_with_canonical_namespace(
     )
 }
 
+/// The importer deliberately requires the canonical `xmlns:gauss` prefix and
+/// rejects this fixture's `g:` prefix, even though `g:editor` resolves to
+/// exactly the same namespace-qualified name that `gauss:editor` would, as
+/// both bind to `GAUSS_METADATA_NAMESPACE`. Without this note, a reader
+/// could mistake the rejection for an XML-namespace bug rather than an
+/// intentional strictness choice. This fixture exists to pin that
+/// behaviour.
 #[given("a temporary SVG with a non-canonical Gauss metadata prefix")]
 fn svg_with_noncanonical_prefix(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,

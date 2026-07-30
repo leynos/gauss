@@ -34,12 +34,24 @@ fn shell() -> Result<DurableShell, TestSupportError> {
         .ok_or_else(|| TestSupportError::missing("shell handles", "set by the Given step"))
 }
 
-fn create_shell(cx: &mut TestAppContext, for_open: bool) -> DurableShell {
+/// Which flavour of shell a scenario needs.
+///
+/// The save scenarios exercise the demo document that `Phase0Shell::new` seeds,
+/// whereas the open scenarios start from the empty test shell so the imported
+/// document is the only content present.
+#[derive(Clone, Copy)]
+enum ShellKind {
+    Save,
+    Open,
+}
+
+fn create_shell(cx: &mut TestAppContext, kind: ShellKind) -> DurableShell {
     init_test_app(cx);
-    let (entity, visual_cx) = if for_open {
-        cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx))
-    } else {
-        cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx))
+    let (entity, visual_cx) = match kind {
+        ShellKind::Save => cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx)),
+        ShellKind::Open => {
+            cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx))
+        }
     };
     ensure_initial_draw(visual_cx);
     DurableShell::new(entity, visual_cx)
@@ -50,7 +62,7 @@ fn prepare_save_shell(
     configure: impl FnOnce(&mut Phase0Shell),
 ) -> Result<(), TestSupportError> {
     reset_state();
-    let shell_handles = create_shell(cx, false);
+    let shell_handles = create_shell(cx, ShellKind::Save);
     shell_handles.with_visual_cx(cx, |visual_cx, entity| {
         entity.update(visual_cx, |shell, _cx| configure(shell));
         Ok(())
@@ -67,7 +79,7 @@ fn prepare_open_svg(
     reset_state();
     let temp_svg = TempSvgFile::create(prefix)?;
     temp_svg.write(contents)?;
-    let shell = create_shell(cx, true);
+    let shell = create_shell(cx, ShellKind::Open);
     with_state(|state| {
         state.shell = Some(shell);
         state.temp_svg = Some(temp_svg);

@@ -13,7 +13,7 @@ Feature: Save and export SVG file dialogs
   Scenario: Save reports a dangling gradient reference
     Given a shell with a dangling gradient reference prepared for a standard save
     When the configured export action is requested
-    When a temporary save path is selected
+    And a temporary save path is selected
     Then no save path is recorded
     And the save error reports the missing gradient resource
     And no SVG file is written
@@ -21,7 +21,7 @@ Feature: Save and export SVG file dialogs
   Scenario: Save reports a dangling pattern reference
     Given a shell with a dangling pattern reference prepared for a standard save
     When the configured export action is requested
-    When a temporary save path is selected
+    And a temporary save path is selected
     Then no save path is recorded
     And the save error reports the missing pattern resource
     And no SVG file is written
@@ -39,7 +39,7 @@ Feature: Save and export SVG file dialogs
   Scenario: Web-ready export reports a dangling gradient reference
     Given a shell with a dangling gradient reference prepared for a web-ready export
     When the configured export action is requested
-    When a temporary save path is selected
+    And a temporary save path is selected
     Then no save path is recorded
     And the save error reports the missing gradient resource
     And no SVG file is written
@@ -47,7 +47,7 @@ Feature: Save and export SVG file dialogs
   Scenario: Web-ready export reports a dangling pattern reference
     Given a shell with a dangling pattern reference prepared for a web-ready export
     When the configured export action is requested
-    When a temporary save path is selected
+    And a temporary save path is selected
     Then no save path is recorded
     And the save error reports the missing pattern resource
     And no SVG file is written

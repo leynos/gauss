@@ -36,3 +36,4 @@ Feature: Open SVG file dialog
     When Open is requested
     And the temporary SVG is selected
     Then the open error reports the canonical Gauss namespace declaration
+    And the original document and resources are preserved

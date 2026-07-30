@@ -220,8 +220,9 @@ fn save_error_reports_pattern(
 
 #[then("no SVG file is written")]
 fn no_svg_file_written() -> Result<(), TestSupportError> {
-    let temp_svg = with_state(|state| state.temp_svg.clone());
-    if temp_svg.is_some_and(|temp| temp.exists()) {
+    // Resolve through `temp_svg()` so a scenario that never selected a save path
+    // fails here rather than passing vacuously.
+    if temp_svg()?.exists() {
         return Err(TestSupportError::expectation(
             "export validation failure wrote an SVG file",
         ));

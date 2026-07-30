@@ -109,7 +109,8 @@ fn escape_during_manipulate_drag_preview_cancels_without_history_commit(cx: &mut
     draw_point(visual_cx, scenario.first);
     draw_point(visual_cx, scenario.second);
 
-    switch_to_manipulate_mode_and_verify(visual_cx, &view, scenario.first);
+    switch_to_manipulate_mode_and_verify(visual_cx, &view, scenario.first)
+        .expect("manipulate-mode click should not add a shape");
 
     let history_before_drag = read_history_len(visual_cx, &view);
     let anchors_before_escape =

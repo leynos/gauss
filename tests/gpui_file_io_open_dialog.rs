@@ -154,9 +154,13 @@ fn document_contains_one_shape(
     Ok(())
 }
 
-#[then("the document has no gradient or pattern resources")]
-fn document_has_no_resources(
-    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+/// Assert the imported document holds `expected` gradient and pattern counts.
+///
+/// `context` describes the expectation so each step keeps its own wording.
+fn require_resource_counts(
+    cx: &TestAppContext,
+    expected: (usize, usize),
+    context: &str,
 ) -> Result<(), TestSupportError> {
     let counts = cx.read(|app| {
         shell().ok().map(|handles| {
@@ -164,30 +168,26 @@ fn document_has_no_resources(
             (resources.gradient_count(), resources.pattern_count())
         })
     });
-    if counts != Some((0, 0)) {
+    if counts != Some(expected) {
         return Err(TestSupportError::expectation(format!(
-            "expected no gradient or pattern resources, found {counts:?}"
+            "{context}, found {counts:?}"
         )));
     }
     Ok(())
+}
+
+#[then("the document has no gradient or pattern resources")]
+fn document_has_no_resources(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    require_resource_counts(cx, (0, 0), "expected no gradient or pattern resources")
 }
 
 #[then("the document contains one gradient and one pattern")]
 fn document_contains_resources(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let counts = cx.read(|app| {
-        shell().ok().map(|handles| {
-            let resources = handles.entity().read(app).resources();
-            (resources.gradient_count(), resources.pattern_count())
-        })
-    });
-    if counts != Some((1, 1)) {
-        return Err(TestSupportError::expectation(format!(
-            "expected one gradient and one pattern, found {counts:?}"
-        )));
-    }
-    Ok(())
+    require_resource_counts(cx, (1, 1), "expected one gradient and one pattern")
 }
 
 #[then("the imported shape references the gradient and pattern")]
