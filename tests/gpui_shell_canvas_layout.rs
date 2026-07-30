@@ -6,7 +6,10 @@
 
 mod common;
 
-use common::{MIN_CANVAS_HEIGHT_PX, canvas_bounds, ensure_initial_draw, init_test_app};
+use common::{canvas_bounds, ensure_initial_draw, init_test_app};
+
+/// Minimum canvas height the Phase 0 chrome must leave for the canvas.
+const MIN_CANVAS_HEIGHT_PX: f32 = 200.0;
 use gauss::ui::Phase0Shell;
 use gpui::TestAppContext;
 
