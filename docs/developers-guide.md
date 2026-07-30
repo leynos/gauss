@@ -40,20 +40,27 @@ module. See `tests/gpui_draw_undo_bdd.rs` for the complete working pattern.
 
 The `gpui_file_io_*` scenario binaries cover Save and export dialog
 behaviour, where a `Given` step opens a window that a later `When` or `Then`
-step must go on to drive. A `gpui::VisualTestContext` cannot cross a step
-boundary, so these binaries store a `DurableShell` in scenario state instead:
-a `gpui::Entity<Phase0Shell>` paired with the window's `AnyWindowHandle`.
+step must go on to drive. A `gpui::VisualTestContext` borrows from the
+`TestAppContext` it was built against, and the harness hands each step a
+fresh `&mut TestAppContext`, so a context saved from one step would be tied
+to a stale borrow by the time the next step runs: it cannot cross a step
+boundary. These binaries store a `DurableShell` in scenario state instead: a
+`gpui::Entity<Phase0Shell>` paired with the window's `AnyWindowHandle`, both
+of which are cheap to copy and remain valid across steps.
 `DurableShell::with_visual_cx` rebuilds a `VisualTestContext` from that
 handle for the lifetime of a closure, giving a subsequent step a live
 context to act on.
 
-Because step functions cannot thread state through their arguments, each
-scenario binary keeps a thread-local state cell instead. Invoke
-`crate::scenario_state!(StateType)` once at the binary's crate root with any
-`Default`-implementing state type; the macro generates the `STATE` cell,
-`with_state` and `reset_state` helpers, the `ScenarioStateCleanup` drop
-guard, and the `scenario_state_cleanup` rstest fixture. Every `#[scenario]`
-function must accept
+The `scenario_state!` macro lives in `tests/common/scenario_state.rs`, which
+each binary that needs it includes via
+`#[path = "common/scenario_state.rs"] mod scenario_state;`, the same pattern
+used for `file_io.rs` below. Because step functions cannot thread state
+through their arguments, each scenario binary keeps a thread-local state
+cell instead. Invoke `crate::scenario_state!(StateType)` once at the binary's
+crate root with any `Default`-implementing state type; the macro generates
+the `STATE` cell, `with_state` and `reset_state` helpers, the
+`ScenarioStateCleanup` drop guard, and the `scenario_state_cleanup` rstest
+fixture. Every `#[scenario]` function must accept
 `#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup` so the
 state is reset both before and after the scenario runs. The simplest case
 stores a bare `Option<DurableShell>`:
