@@ -340,11 +340,14 @@ Targeted development checks during implementation:
 cargo test --workspace svg::export::metadata_tests | tee \
   "/tmp/test-unit-${project}-${branch}.out"
 
-cargo test --workspace metadata_round_trip_bdd | tee \
+cargo test --workspace --test metadata_round_trip_bdd | tee \
   "/tmp/test-bdd-${project}-${branch}.out"
 
-cargo test --workspace gpui_file_io_save_dialog gpui_file_io_metadata_round_trip | tee \
-  "/tmp/test-gpui-${project}-${branch}.out"
+cargo test --workspace --test gpui_file_io_save_dialog | tee \
+  "/tmp/test-gpui-save-dialog-${project}-${branch}.out"
+
+cargo test --workspace --test gpui_file_io_metadata_round_trip | tee \
+  "/tmp/test-gpui-metadata-round-trip-${project}-${branch}.out"
 ```
 
 Required full gates before completion:
