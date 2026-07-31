@@ -5,7 +5,7 @@
 //! the general `common` surface that every GPUI integration test compiles.
 #![expect(
     dead_code,
-    reason = "each file I/O scenario binary drives a different subset of these helpers"
+    reason = "each of the four scenario binaries drives a different subset; tracked by issue #150"
 )]
 
 use camino::{Utf8Path, Utf8PathBuf};

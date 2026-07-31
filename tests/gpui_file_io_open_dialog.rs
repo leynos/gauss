@@ -128,14 +128,13 @@ fn selected_path_recorded(
             .as_ref()
             .map(|temp| temp.path().as_std_path().to_path_buf())
     });
+    let handles = shell()?;
     let actual = cx.read(|app| {
-        shell().ok().and_then(|handles| {
-            handles
-                .entity()
-                .read(app)
-                .last_opened_path()
-                .map(Path::to_path_buf)
-        })
+        handles
+            .entity()
+            .read(app)
+            .last_opened_path()
+            .map(Path::to_path_buf)
     });
     if actual != expected {
         return Err(TestSupportError::expectation(format!(
@@ -145,23 +144,24 @@ fn selected_path_recorded(
     Ok(())
 }
 
-/// Read the number of shapes in the shell's document, if a shell exists.
-fn document_shape_count(cx: &TestAppContext) -> Option<usize> {
-    cx.read(|app| {
-        shell()
-            .ok()
-            .map(|handles| handles.entity().read(app).document().len())
-    })
+/// Read the number of shapes in the shell's document.
+///
+/// # Errors
+///
+/// Returns `Err` if the Given step that creates the shell has not run.
+fn document_shape_count(cx: &TestAppContext) -> Result<usize, TestSupportError> {
+    let handles = shell()?;
+    Ok(cx.read(|app| handles.entity().read(app).document().len()))
 }
 
 #[then("the document contains one shape")]
 fn document_contains_one_shape(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    if document_shape_count(cx) != Some(1) {
+    let count = document_shape_count(cx)?;
+    if count != 1 {
         return Err(TestSupportError::expectation(format!(
-            "expected one shape, found {:?}",
-            document_shape_count(cx)
+            "expected one shape, found {count}"
         )));
     }
     Ok(())
@@ -175,13 +175,12 @@ fn require_resource_counts(
     expected: (usize, usize),
     context: &str,
 ) -> Result<(), TestSupportError> {
+    let handles = shell()?;
     let counts = cx.read(|app| {
-        shell().ok().map(|handles| {
-            let resources = handles.entity().read(app).resources();
-            (resources.gradient_count(), resources.pattern_count())
-        })
+        let resources = handles.entity().read(app).resources();
+        (resources.gradient_count(), resources.pattern_count())
     });
-    if counts != Some(expected) {
+    if counts != expected {
         return Err(TestSupportError::expectation(format!(
             "{context}, found {counts:?}"
         )));
@@ -207,17 +206,16 @@ fn document_contains_resources(
 fn imported_shape_references_resources(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
+    let handles = shell()?;
     let matches = cx.read(|app| {
-        shell().ok().and_then(|handles| {
-            let shell = handles.entity().read(app);
-            let gradient = shell.resources().gradient_id_for_svg_id("sunset")?;
-            let pattern = shell.resources().pattern_id_for_svg_id("dots")?;
-            let shape = shell.document().shape_at(0)?;
-            Some(
-                shape.style.stroke == Paint::gradient(gradient)
-                    && shape.style.fill == Paint::pattern(pattern),
-            )
-        })
+        let shell = handles.entity().read(app);
+        let gradient = shell.resources().gradient_id_for_svg_id("sunset")?;
+        let pattern = shell.resources().pattern_id_for_svg_id("dots")?;
+        let shape = shell.document().shape_at(0)?;
+        Some(
+            shape.style.stroke == Paint::gradient(gradient)
+                && shape.style.fill == Paint::pattern(pattern),
+        )
     });
     if matches != Some(true) {
         return Err(TestSupportError::expectation(
@@ -232,19 +230,22 @@ fn original_state_preserved(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     let expected_resources = with_state(|state| state.initial_resources);
+    let handles = shell()?;
     let actual = cx.read(|app| {
-        shell().ok().map(|handles| {
-            let shell = handles.entity().read(app);
-            let resources = shell.resources();
-            (
-                shell.document().len(),
-                resources.gradient_count(),
-                resources.pattern_count(),
-                resources.symbol_count(),
-            )
-        })
+        let shell = handles.entity().read(app);
+        let resources = shell.resources();
+        (
+            shell.document().len(),
+            resources.gradient_count(),
+            resources.pattern_count(),
+            resources.symbol_count(),
+        )
     });
-    let expected = expected_resources.map(|(g, p, s)| (1, g, p, s));
+    let expected = expected_resources
+        .map(|(g, p, s)| (1, g, p, s))
+        .ok_or_else(|| {
+            TestSupportError::missing("initial resource counts", "set by the Given step")
+        })?;
     if actual != expected {
         return Err(TestSupportError::expectation(format!(
             "expected original document and resources {expected:?}, found {actual:?}"
@@ -253,24 +254,31 @@ fn original_state_preserved(
     Ok(())
 }
 
-/// Read the shell's last recorded Open error, if a shell exists.
-fn open_error(cx: &TestAppContext) -> Option<String> {
-    cx.read(|app| {
-        shell().ok().and_then(|handles| {
-            handles
-                .entity()
-                .read(app)
-                .last_open_error()
-                .map(str::to_owned)
-        })
-    })
+/// Read the shell's last recorded Open error.
+///
+/// The shell handle is resolved before reading, so absent scenario state is an
+/// error rather than an absent error message. That keeps `no open error is
+/// reported` from passing when no shell was ever created.
+///
+/// # Errors
+///
+/// Returns `Err` if the Given step that creates the shell has not run.
+fn open_error(cx: &TestAppContext) -> Result<Option<String>, TestSupportError> {
+    let handles = shell()?;
+    Ok(cx.read(|app| {
+        handles
+            .entity()
+            .read(app)
+            .last_open_error()
+            .map(str::to_owned)
+    }))
 }
 
 #[then("the open error reports a missing resource")]
 fn open_error_reports_missing_resource(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let error = open_error(cx);
+    let error = open_error(cx)?;
     if !error
         .as_deref()
         .is_some_and(|text| text.contains("missing resource"))
@@ -286,7 +294,7 @@ fn open_error_reports_missing_resource(
 fn no_open_error(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    if let Some(error) = open_error(cx) {
+    if let Some(error) = open_error(cx)? {
         return Err(TestSupportError::expectation(format!(
             "expected Open to succeed, found {error}"
         )));
@@ -299,7 +307,7 @@ fn open_error_reports_namespace(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     let expected = format!("xmlns:{GAUSS_METADATA_PREFIX}");
-    let error = open_error(cx);
+    let error = open_error(cx)?;
     if !error
         .as_deref()
         .is_some_and(|text| text.contains(&expected))

@@ -18,7 +18,7 @@ After this work:
 - `DocumentUndoHistory` exposes explicit grouping boundaries.
 - Commands recorded inside one open group collapse to one undoable step.
 - Grouping behaviour is validated at three levels: unit (`rstest`),
-  behavioural (`rstest-bdd` v0.5.0), and GPU-accelerated UI (GPUI) integration
+  behavioural (`rstest-bdd` 0.6.0-beta3), and GPU-accelerated UI (GPUI) integration
   tests.
 - Architecture and user docs describe grouping semantics and error handling.
 - Roadmap 0.3.2 is marked done only after all gates pass.
@@ -51,7 +51,7 @@ untouched.
 - Preserve existing non-grouped behaviour: simple commands still produce one
   entry and undo/redo semantics must not regress.
 - Do not introduce new dependencies for grouping.
-- Keep `rstest-bdd` compatibility on v0.5.0 patterns already used in this repo.
+- Keep `rstest-bdd` compatibility on 0.6.0-beta3 patterns already used in this repo.
 - Validate happy, unhappy, and edge paths with unit, behavioural, and GPUI
   tests.
 - Record design decisions in `docs/gauss-architecture-design.md`.
@@ -180,7 +180,7 @@ Unit tests (`rstest`) in `src/model/history/tests/`:
 - Edge: empty group, clear while grouping (or after group), branch-edit after a
   grouped entry.
 
-Behaviour tests (`rstest-bdd` v0.5.0) in `tests/undo_entry_count_bdd/` and
+Behaviour tests (`rstest-bdd` 0.6.0-beta3) in `tests/undo_entry_count_bdd/` and
 `tests/features/undo_entry_count.feature`:
 
 - Scenario proving grouped commands produce one undo entry.

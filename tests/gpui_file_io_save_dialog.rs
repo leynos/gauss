@@ -128,17 +128,26 @@ fn select_temporary_save_path(
     Ok(())
 }
 
-/// Read the shell's last recorded save path and error, if a shell exists.
-fn save_outcome(cx: &TestAppContext) -> Option<(Option<std::path::PathBuf>, Option<String>)> {
-    cx.read(|app| {
-        shell().ok().map(|handles| {
-            let shell = handles.entity().read(app);
-            (
-                shell.last_saved_path().map(Path::to_path_buf),
-                shell.last_save_error().map(str::to_owned),
-            )
-        })
-    })
+/// Read the shell's last recorded save path and error.
+///
+/// The shell handle is resolved before reading, so absent scenario state is an
+/// error rather than an absent path. That distinction keeps the negative
+/// assertions below from passing when no shell was ever created.
+///
+/// # Errors
+///
+/// Returns `Err` if the Given step that creates the shell has not run.
+fn save_outcome(
+    cx: &TestAppContext,
+) -> Result<(Option<std::path::PathBuf>, Option<String>), TestSupportError> {
+    let handles = shell()?;
+    Ok(cx.read(|app| {
+        let shell = handles.entity().read(app);
+        (
+            shell.last_saved_path().map(Path::to_path_buf),
+            shell.last_save_error().map(str::to_owned),
+        )
+    }))
 }
 
 #[then("the selected save path is recorded")]
@@ -151,7 +160,7 @@ fn selected_save_path_recorded(
             .as_ref()
             .map(|temp| temp.path().as_std_path().to_path_buf())
     });
-    let actual = save_outcome(cx).and_then(|(path, _error)| path);
+    let (actual, _error) = save_outcome(cx)?;
     if actual != expected {
         return Err(TestSupportError::expectation(format!(
             "expected saved path {expected:?}, found {actual:?}"
@@ -209,7 +218,8 @@ fn saved_svg_contains_namespace() -> Result<(), TestSupportError> {
 fn no_save_path_recorded(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    if save_outcome(cx).and_then(|(path, _error)| path).is_some() {
+    let (path, _error) = save_outcome(cx)?;
+    if path.is_some() {
         return Err(TestSupportError::expectation(
             "export validation failure recorded a save path",
         ));
@@ -223,7 +233,7 @@ fn no_save_path_recorded(
 ///
 /// Returns `Err` if no save error was recorded or it omits `expected`.
 fn require_save_error(cx: &TestAppContext, expected: &str) -> Result<(), TestSupportError> {
-    let error = save_outcome(cx).and_then(|(_path, error)| error);
+    let (_path, error) = save_outcome(cx)?;
     if !error.as_deref().is_some_and(|text| text.contains(expected)) {
         return Err(TestSupportError::expectation(format!(
             "expected save error containing {expected:?}, found {error:?}"
@@ -263,9 +273,10 @@ fn no_svg_file_written() -> Result<(), TestSupportError> {
 fn no_save_error(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    if let Some(error) = save_outcome(cx).and_then(|(_path, error)| error) {
+    let (_path, error) = save_outcome(cx)?;
+    if let Some(message) = error {
         return Err(TestSupportError::expectation(format!(
-            "expected web-ready export to succeed, found {error}"
+            "expected web-ready export to succeed, found {message}"
         )));
     }
     Ok(())

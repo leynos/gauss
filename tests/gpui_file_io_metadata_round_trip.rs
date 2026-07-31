@@ -145,14 +145,13 @@ fn save_to_temporary_svg(
     let path = temp_svg.path().as_std_path().to_path_buf();
     cx.simulate_new_path_selection(|_directory: &Path| Some(path.clone()));
     cx.run_until_parked();
+    let handles = shell()?;
     let saved = cx.read(|app| {
-        shell().ok().and_then(|handles| {
-            handles
-                .entity()
-                .read(app)
-                .last_saved_path()
-                .map(Path::to_path_buf)
-        })
+        handles
+            .entity()
+            .read(app)
+            .last_saved_path()
+            .map(Path::to_path_buf)
     });
     if saved.as_deref() != Some(path.as_path()) {
         return Err(TestSupportError::expectation(format!(
@@ -274,15 +273,14 @@ fn document_shape_has_known_id(
     let expected = with_state(|state| state.expected_id).ok_or_else(|| {
         TestSupportError::missing("expected Gauss identifier", "set by the Given step")
     })?;
+    let handles = shell()?;
     let actual = cx.read(|app| {
-        shell().ok().and_then(|handles| {
-            handles
-                .entity()
-                .read(app)
-                .document()
-                .shape_at(0)
-                .map(|s| s.id)
-        })
+        handles
+            .entity()
+            .read(app)
+            .document()
+            .shape_at(0)
+            .map(|shape| shape.id)
     });
     if actual != Some(expected) {
         return Err(TestSupportError::expectation(format!(
@@ -296,14 +294,13 @@ fn document_shape_has_known_id(
 fn shell_metadata_contains_project(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
+    let handles = shell()?;
     let metadata = cx.read(|app| {
-        shell().ok().and_then(|handles| {
-            handles
-                .entity()
-                .read(app)
-                .gauss_metadata_block()
-                .map(str::to_owned)
-        })
+        handles
+            .entity()
+            .read(app)
+            .gauss_metadata_block()
+            .map(str::to_owned)
     });
     if !metadata
         .as_deref()

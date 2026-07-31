@@ -23,7 +23,7 @@
 )]
 #![expect(
     dead_code,
-    reason = "each of the forty-one including binaries drives a different subset; see module docs"
+    reason = "each of the forty-one including binaries drives a different subset; tracked by issue #150"
 )]
 
 use camino::{Utf8Path, Utf8PathBuf};

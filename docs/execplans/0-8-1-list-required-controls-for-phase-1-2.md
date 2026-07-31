@@ -30,7 +30,7 @@ Success is observable when:
 - every listed control records its user-facing purpose, core states, keyboard
   expectations, accessibility expectations, and required Action-to-Command
   linkage;
-- unit tests (`rstest`), behaviour tests (`rstest-bdd` v0.5.0), and GPUI
+- unit tests (`rstest`), behaviour tests (`rstest-bdd` 0.6.0-beta3), and GPUI
   tests prove that the audit artefact is complete, internally consistent, and
   grounded in the current shell seams rather than being a free-form note;
 - `docs/gauss-architecture-design.md` records the design decision that keeps
@@ -113,7 +113,7 @@ or one coding agent performs the edits sequentially.
   module-level `//!` comments, public API docs where applicable, no file above
   400 lines, and no lint suppressions except as a last resort.
 - Required validation for the final implementation remains:
-  `rstest` unit tests, `rstest-bdd` v0.5.0 behaviour tests, `#[gpui::test]`
+  `rstest` unit tests, `rstest-bdd` 0.6.0-beta3 behaviour tests, `#[gpui::test]`
   coverage, `make check-fmt`, `make lint`, and `make test`.
 - Update `docs/gauss-architecture-design.md` with any design decision required
   to explain the chosen audit source of truth.
