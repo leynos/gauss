@@ -91,8 +91,8 @@ Success is observable when:
   metadata stripping and validation paths.
 - [x] (2026-02-25) Added `rstest-bdd` web-ready behavioural coverage with
   happy/unhappy/edge scenarios:
-  - `tests/features/web_ready_export.feature`
-  - `tests/web_ready_export_bdd.rs`
+  - `crates/gauss-svg/tests/features/web_ready_export.feature`
+  - `crates/gauss-svg/tests/web_ready_export_bdd.rs`
 - [x] (2026-02-25) Updated documentation for web-ready behaviour and policy:
   - `docs/users-guide.md`
   - `docs/gauss-architecture-design.md`
@@ -101,7 +101,7 @@ Success is observable when:
   shell actions (new `ExportSvgWebReady` action, chrome button, and file-dialog
   export intent split).
 - [x] (2026-02-25) Added GPUI coverage for web-ready export happy/unhappy
-  command flows in `tests/gpui_save_dialog.rs`.
+  command flows in `tests/gpui_file_io_save_dialog.rs`.
 - [x] (2026-02-25) Ran docs and lint gates successfully with logs:
   - `/tmp/fmt-gauss-0-4-3-web-ready-export.out`
   - `/tmp/markdownlint-gauss-0-4-3-web-ready-export.out`
@@ -142,11 +142,11 @@ Success is observable when:
   `ExportSvgWebReady` action, top-bar trigger, and `SaveIntent::WebReady`.
 - Existing metadata-preserving test coverage remained reusable, and web-ready
   behavioural coverage landed as a separate BDD harness:
-  - `src/svg/export/metadata_tests.rs`
-  - `tests/metadata_round_trip_bdd.rs`
-  - `tests/web_ready_export_bdd.rs`
-  - `tests/golden_round_trip.rs`
-  - `tests/gpui_save_dialog.rs`
+  - `crates/gauss-svg/src/svg/export/metadata_tests.rs`
+  - `crates/gauss-svg/tests/metadata_round_trip_bdd.rs`
+  - `crates/gauss-svg/tests/web_ready_export_bdd.rs`
+  - `crates/gauss-svg/tests/golden_round_trip.rs`
+  - `tests/gpui_file_io_save_dialog.rs`
 
 ## Decision log
 
@@ -200,12 +200,12 @@ Primary implementation points discovered with `grepai` and `leta`:
   - `src/ui/phase0_shell/chrome.rs` (Save button wiring)
   - `src/ui/phase0_shell/file_dialogs.rs` (`request_save`, `apply_save_path`)
 - Existing test surfaces to extend:
-  - `src/svg/export/metadata_tests.rs`
-  - `tests/metadata_round_trip_bdd.rs`
-  - `tests/features/metadata_round_trip.feature`
-  - `tests/golden_round_trip.rs`
-  - `tests/gpui_save_dialog.rs`
-  - `tests/gpui_metadata_round_trip.rs`
+  - `crates/gauss-svg/src/svg/export/metadata_tests.rs`
+  - `crates/gauss-svg/tests/metadata_round_trip_bdd.rs`
+  - `crates/gauss-svg/tests/features/metadata_round_trip.feature`
+  - `crates/gauss-svg/tests/golden_round_trip.rs`
+  - `tests/gpui_file_io_save_dialog.rs`
+  - `tests/gpui_file_io_metadata_round_trip.rs`
 - Documentation/bookkeeping:
   - `docs/gauss-architecture-design.md`
   - `docs/users-guide.md`
@@ -264,9 +264,10 @@ Stage C: Expand unit and golden coverage
   - unhappy: checked web-ready export still errors on missing gradient/pattern
     references.
   - edge: empty docs and shapes with null IDs still produce valid minimal SVG.
-- Extend `tests/golden_round_trip.rs` with web-ready normalization assertions.
-- Add one or more golden fixtures in `tests/golden/` for deterministic
-  web-ready output.
+- Extend `crates/gauss-svg/tests/golden_round_trip.rs` with web-ready
+  normalization assertions.
+- Add one or more golden fixtures in `crates/gauss-svg/tests/golden/` for
+  deterministic web-ready output.
 
 Validation checkpoint:
 
@@ -275,8 +276,9 @@ Validation checkpoint:
 
 Stage D: Expand behavioural (BDD) coverage
 
-- Extend `tests/features/metadata_round_trip.feature` and
-  `tests/metadata_round_trip_bdd.rs` with web-ready scenarios:
+- Extend `crates/gauss-svg/tests/features/metadata_round_trip.feature` and
+  `crates/gauss-svg/tests/metadata_round_trip_bdd.rs` with web-ready
+  scenarios:
   - happy: web-ready export strips Gauss metadata while preserving renderable
     path/style data.
   - unhappy: web-ready checked export reports missing referenced resources.
@@ -341,7 +343,7 @@ cargo test --workspace svg::export::metadata_tests | tee \
 cargo test --workspace metadata_round_trip_bdd | tee \
   "/tmp/test-bdd-${project}-${branch}.out"
 
-cargo test --workspace gpui_save_dialog gpui_metadata_round_trip | tee \
+cargo test --workspace gpui_file_io_save_dialog gpui_file_io_metadata_round_trip | tee \
   "/tmp/test-gpui-${project}-${branch}.out"
 ```
 

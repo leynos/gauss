@@ -40,11 +40,22 @@ struct ScenarioState {
 
 crate::scenario_state!(ScenarioState);
 
+/// Clone the durable shell handle out of thread-local scenario state.
+///
+/// # Errors
+///
+/// Returns `Err` if the Given step that populates the handle has not run yet.
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone())
         .ok_or_else(|| TestSupportError::missing("shell handles", "set by the Given step"))
 }
 
+/// Arrange a fresh Phase 0 shell for the given export `action`, resetting
+/// scenario state first and letting `configure` seed the document before use.
+///
+/// # Errors
+///
+/// Returns `Err` if the visual context cannot be borrowed to run `configure`.
 pub(crate) fn prepare_shell(
     cx: &mut TestAppContext,
     action: ExportAction,
@@ -117,6 +128,7 @@ fn select_temporary_save_path(
     Ok(())
 }
 
+/// Read the shell's last recorded save path and error, if a shell exists.
 fn save_outcome(cx: &TestAppContext) -> Option<(Option<std::path::PathBuf>, Option<String>)> {
     cx.read(|app| {
         shell().ok().map(|handles| {
@@ -154,11 +166,22 @@ fn temp_svg() -> Result<Rc<TempSvgFile>, TestSupportError> {
         .ok_or_else(|| TestSupportError::missing("temporary SVG", "set by the When step"))
 }
 
+/// Read the contents of the scenario's saved temporary SVG.
+///
+/// # Errors
+///
+/// Returns `Err` if no temporary SVG has been recorded or it cannot be read.
 fn saved_contents() -> Result<String, TestSupportError> {
     let temp_svg = temp_svg()?;
     temp_svg.read_to_string()
 }
 
+/// Assert the saved SVG's contents contain `fragment`, using `context` to
+/// describe the expectation in the error message.
+///
+/// # Errors
+///
+/// Returns `Err` if the saved contents cannot be read or omit `fragment`.
 fn require_contents(fragment: &str, context: &str) -> Result<(), TestSupportError> {
     let contents = saved_contents()?;
     if !contents.contains(fragment) {
@@ -194,6 +217,11 @@ fn no_save_path_recorded(
     Ok(())
 }
 
+/// Assert the shell's last save error contains `expected`.
+///
+/// # Errors
+///
+/// Returns `Err` if no save error was recorded or it omits `expected`.
 fn require_save_error(cx: &TestAppContext, expected: &str) -> Result<(), TestSupportError> {
     let error = save_outcome(cx).and_then(|(_path, error)| error);
     if !error.as_deref().is_some_and(|text| text.contains(expected)) {
@@ -221,8 +249,9 @@ fn save_error_reports_pattern(
 #[then("no SVG file is written")]
 fn no_svg_file_written() -> Result<(), TestSupportError> {
     // Resolve through `temp_svg()` so a scenario that never selected a save path
-    // fails here rather than passing vacuously.
-    if temp_svg()?.exists() {
+    // fails here rather than passing vacuously, and propagate metadata faults so a
+    // capability error cannot be mistaken for "not written".
+    if temp_svg()?.exists()? {
         return Err(TestSupportError::expectation(
             "export validation failure wrote an SVG file",
         ));

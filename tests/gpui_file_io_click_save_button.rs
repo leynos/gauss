@@ -16,6 +16,11 @@ use test_support::TestSupportError;
 
 crate::scenario_state!(Option<DurableShell>);
 
+/// Clone the durable shell handle out of thread-local scenario state.
+///
+/// # Errors
+///
+/// Returns `Err` if the Given step that populates the handle has not run yet.
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.clone())
         .ok_or_else(|| TestSupportError::missing("shell handles", "set by the Given step"))

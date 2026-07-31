@@ -29,6 +29,11 @@ struct ScenarioState {
 
 crate::scenario_state!(ScenarioState);
 
+/// Clone the durable shell handle out of thread-local scenario state.
+///
+/// # Errors
+///
+/// Returns `Err` if the Given step that populates the handle has not run yet.
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone())
         .ok_or_else(|| TestSupportError::missing("shell handles", "set by the Given step"))
@@ -45,6 +50,8 @@ enum ShellKind {
     Open,
 }
 
+/// Build and register a Phase 0 shell window of the requested `kind`,
+/// performing the initial draw before returning its durable handle.
 fn create_shell(cx: &mut TestAppContext, kind: ShellKind) -> DurableShell {
     init_test_app(cx);
     let (entity, visual_cx) = match kind {
@@ -57,6 +64,12 @@ fn create_shell(cx: &mut TestAppContext, kind: ShellKind) -> DurableShell {
     DurableShell::new(entity, visual_cx)
 }
 
+/// Arrange a fresh demo-seeded shell for the save scenarios, resetting
+/// scenario state first and letting `configure` adjust the shell before use.
+///
+/// # Errors
+///
+/// Returns `Err` if the visual context cannot be borrowed to run `configure`.
 fn prepare_save_shell(
     cx: &mut TestAppContext,
     configure: impl FnOnce(&mut Phase0Shell),
@@ -71,6 +84,12 @@ fn prepare_save_shell(
     Ok(())
 }
 
+/// Arrange an empty test shell and a temporary SVG file with `contents` for
+/// the open scenarios, resetting scenario state first.
+///
+/// # Errors
+///
+/// Returns `Err` if the temporary SVG cannot be created or written.
 fn prepare_open_svg(
     cx: &mut TestAppContext,
     prefix: &str,
@@ -149,6 +168,11 @@ fn save_to_temporary_svg(
     Ok(())
 }
 
+/// Clone the saved SVG contents recorded by the save step.
+///
+/// # Errors
+///
+/// Returns `Err` if the save step has not yet recorded the contents.
 fn saved_contents() -> Result<String, TestSupportError> {
     with_state(|state| state.saved_contents.clone())
         .ok_or_else(|| TestSupportError::missing("saved SVG contents", "set by the save step"))

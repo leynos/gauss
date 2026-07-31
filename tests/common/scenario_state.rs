@@ -43,6 +43,7 @@ macro_rules! scenario_state {
         struct ScenarioStateCleanup;
 
         impl ::core::ops::Drop for ScenarioStateCleanup {
+            /// Reset the scenario state as the guard goes out of scope.
             fn drop(&mut self) {
                 reset_state();
             }

@@ -29,11 +29,23 @@ struct ScenarioState {
 
 crate::scenario_state!(ScenarioState);
 
+/// Clone the durable shell handle out of thread-local scenario state.
+///
+/// # Errors
+///
+/// Returns `Err` if the Given step that populates the handle has not run yet.
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone())
         .ok_or_else(|| TestSupportError::missing("shell handles", "set by the Given step"))
 }
 
+/// Arrange a fresh Phase 0 shell and a temporary SVG file with `contents`,
+/// resetting scenario state first and recording the shell's initial resource
+/// counts for later comparison.
+///
+/// # Errors
+///
+/// Returns `Err` if the temporary SVG cannot be created or written.
 pub(crate) fn prepare_svg(
     cx: &mut TestAppContext,
     prefix: &str,
@@ -133,6 +145,7 @@ fn selected_path_recorded(
     Ok(())
 }
 
+/// Read the number of shapes in the shell's document, if a shell exists.
 fn document_shape_count(cx: &TestAppContext) -> Option<usize> {
     cx.read(|app| {
         shell()
@@ -240,6 +253,7 @@ fn original_state_preserved(
     Ok(())
 }
 
+/// Read the shell's last recorded Open error, if a shell exists.
 fn open_error(cx: &TestAppContext) -> Option<String> {
     cx.read(|app| {
         shell().ok().and_then(|handles| {
