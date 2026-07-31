@@ -5,15 +5,22 @@ mod common;
 mod support;
 
 use common::{add_square, assert_shape_translated_by_delta, canvas_bounds, read_document};
-use gauss::model::{Document, SelItem, Selection, Vec2};
+use gauss::model::{Document, SelItem, Selection, Shape, ShapeId, Vec2};
 use gpui::{Modifiers, MouseButton, TestAppContext};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use support::{
-    ScenarioStateCleanup, require_point, require_shape, require_shape_id, shape_bbox_centre,
-    viewport_to_screen_point, with_state, with_visual_cx,
+    ScenarioStateCleanup, require_point, set_scenario_data, with_scenario_data, with_state,
+    with_visual_cx,
 };
 use test_support::TestSupportError;
+use test_support::selection::{require_shape, shape_bbox_centre, viewport_to_screen_point};
+
+struct ScenarioData {
+    shape_id: ShapeId,
+    shape_before: Shape,
+    drag_started_after_press: Option<bool>,
+}
 
 #[given("an unselected square is arranged")]
 fn unselected_square_is_arranged(
@@ -44,14 +51,17 @@ fn unselected_square_is_arranged(
         let delta = Vec2::new(25.0, 15.0);
         let viewport = visual_cx.read(|app| view.read(app).viewport());
         with_state(|state| {
-            state.shape_ids.push(shape_id);
-            state.shapes_before.push(shape);
             state
                 .points
                 .push(viewport_to_screen_point(viewport, start_world));
             state
                 .points
                 .push(viewport_to_screen_point(viewport, start_world.add(delta)));
+        });
+        set_scenario_data(ScenarioData {
+            shape_id,
+            shape_before: shape,
+            drag_started_after_press: None,
         });
         Ok(())
     })
@@ -67,7 +77,9 @@ fn unselected_square_is_dragged(
         visual_cx.simulate_mouse_down(start, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
         let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
-        with_state(|state| state.drag_started_after_press = Some(is_dragging));
+        with_scenario_data::<ScenarioData, _>("unselected drag", |data| {
+            data.drag_started_after_press = Some(is_dragging);
+        })?;
         visual_cx.simulate_mouse_move(end, MouseButton::Left, Modifiers::none());
         visual_cx.simulate_mouse_up(end, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
@@ -79,7 +91,7 @@ fn unselected_square_is_dragged(
 fn square_is_selected(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let shape_id = require_shape_id(0, "selected square")?;
+    let shape_id = with_scenario_data::<ScenarioData, _>("selected square", |data| data.shape_id)?;
     with_visual_cx(cx, |visual_cx, view| {
         let selection = visual_cx.read(|app| view.read(app).selection().clone());
         if !selection.contains(&SelItem::Shape(shape_id)) {
@@ -93,7 +105,9 @@ fn square_is_selected(
 
 #[then("no drag starts before the square is preselected")]
 fn no_drag_starts_before_preselection() -> Result<(), TestSupportError> {
-    match with_state(|state| state.drag_started_after_press) {
+    match with_scenario_data::<ScenarioData, _>("drag state after press", |data| {
+        data.drag_started_after_press
+    })? {
         Some(false) => Ok(()),
         Some(true) => Err(TestSupportError::expectation(
             "unselected bounding-box press started a drag".to_owned(),
@@ -109,9 +123,8 @@ fn no_drag_starts_before_preselection() -> Result<(), TestSupportError> {
 fn square_remains_unchanged(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let shape_id = require_shape_id(0, "unchanged square")?;
-    let original = with_state(|state| state.shapes_before.first().cloned()).ok_or_else(|| {
-        TestSupportError::missing("original square", "recorded by the arrangement step")
+    let (shape_id, original) = with_scenario_data::<ScenarioData, _>("unchanged square", |data| {
+        (data.shape_id, data.shape_before.clone())
     })?;
     with_visual_cx(cx, |visual_cx, view| {
         let document = read_document(visual_cx, view);

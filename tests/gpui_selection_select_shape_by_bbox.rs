@@ -10,8 +10,13 @@ use gauss_core::test_helpers::square_shape;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
-use support::{ScenarioStateCleanup, require_point, require_shape_id, with_state, with_visual_cx};
+use support::{ScenarioStateCleanup, require_point, with_state, with_visual_cx};
 use test_support::{TestSupportError, math};
+
+struct ScenarioData {
+    shape_id: ShapeId,
+    selection_after_press: Option<Selection>,
+}
 
 #[given("an unselected square is arranged for bounding-box selection")]
 fn square_is_arranged_for_bbox_selection(
@@ -35,8 +40,11 @@ fn square_is_arranged_for_bbox_selection(
         });
         visual_cx.run_until_parked();
         with_state(|state| {
-            state.shape_ids.push(shape_id);
             state.points.push(point(px(centre.x), px(centre.y)));
+        });
+        support::set_scenario_data(ScenarioData {
+            shape_id,
+            selection_after_press: None,
         });
         Ok(())
     })
@@ -47,9 +55,13 @@ fn centre_of_square_is_clicked(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     let centre = require_point(0, "square centre")?;
-    with_visual_cx(cx, |visual_cx, _view| {
+    with_visual_cx(cx, |visual_cx, view| {
         visual_cx.simulate_mouse_down(centre, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
+        let selection = visual_cx.read(|app| view.read(app).selection().clone());
+        support::with_scenario_data::<ScenarioData, _>("bounding-box press", |data| {
+            data.selection_after_press = Some(selection);
+        })?;
         visual_cx.simulate_mouse_up(centre, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
         Ok(())
@@ -57,20 +69,21 @@ fn centre_of_square_is_clicked(
 }
 
 #[then("only the square is selected")]
-fn only_square_is_selected(
-    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
-) -> Result<(), TestSupportError> {
-    let shape_id = require_shape_id(0, "bounding-box selection")?;
-    with_visual_cx(cx, |visual_cx, view| {
-        let selection = visual_cx.read(|app| view.read(app).selection().clone());
-        let expected = vec![SelItem::Shape(shape_id)];
-        if selection.items != expected {
-            return Err(TestSupportError::expectation(format!(
-                "expected only square {shape_id:?}; selection={selection:?}"
-            )));
-        }
-        Ok(())
-    })
+fn only_square_is_selected() -> Result<(), TestSupportError> {
+    let (shape_id, selection_after_press) =
+        support::with_scenario_data::<ScenarioData, _>("bounding-box selection", |data| {
+            (data.shape_id, data.selection_after_press.clone())
+        })?;
+    let selection = selection_after_press.ok_or_else(|| {
+        TestSupportError::missing("selection after press", "recorded by the click step")
+    })?;
+    let expected = vec![SelItem::Shape(shape_id)];
+    if selection.items != expected {
+        return Err(TestSupportError::expectation(format!(
+            "expected only square {shape_id:?}; selection={selection:?}"
+        )));
+    }
+    Ok(())
 }
 
 #[scenario(

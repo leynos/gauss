@@ -5,15 +5,24 @@ mod common;
 mod support;
 
 use common::{add_square, assert_shape_translated_by_delta, canvas_bounds, read_document};
-use gauss::model::{SelItem, Selection, Vec2};
+use gauss::model::{SelItem, Selection, Shape, ShapeId, Vec2};
 use gpui::{Modifiers, MouseButton, TestAppContext};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use support::{
-    ScenarioStateCleanup, require_point, require_selection_contains_shapes, require_shape,
-    require_shape_id, shape_bbox_centre, viewport_to_screen_point, with_state, with_visual_cx,
+    ScenarioStateCleanup, require_point, set_scenario_data, with_scenario_data, with_state,
+    with_visual_cx,
 };
 use test_support::TestSupportError;
+use test_support::selection::{
+    require_selection_contains_shapes, require_shape, shape_bbox_centre, viewport_to_screen_point,
+};
+
+struct ScenarioData {
+    shape_ids: [ShapeId; 2],
+    shapes_before: [Shape; 2],
+    delta: Vec2,
+}
 
 #[given("two selected squares are arranged")]
 fn two_selected_squares_are_arranged(
@@ -54,15 +63,17 @@ fn two_selected_squares_are_arranged(
         let delta = Vec2::new(20.0, 10.0);
         let viewport = visual_cx.read(|app| view.read(app).viewport());
         with_state(|state| {
-            state.shape_ids.extend([first, second]);
-            state.shapes_before.extend([first_shape, second_shape]);
             state
                 .points
                 .push(viewport_to_screen_point(viewport, start_world));
             state
                 .points
                 .push(viewport_to_screen_point(viewport, start_world.add(delta)));
-            state.delta = Some(delta);
+        });
+        set_scenario_data(ScenarioData {
+            shape_ids: [first, second],
+            shapes_before: [first_shape, second_shape],
+            delta,
         });
         Ok(())
     })
@@ -97,10 +108,7 @@ fn first_selected_square_is_dragged(
 fn both_squares_remain_selected(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let ids = [
-        require_shape_id(0, "first selected square")?,
-        require_shape_id(1, "second selected square")?,
-    ];
+    let ids = with_scenario_data::<ScenarioData, _>("selected squares", |data| data.shape_ids)?;
     with_visual_cx(cx, |visual_cx, view| {
         let selection = visual_cx.read(|app| view.read(app).selection().clone());
         require_selection_contains_shapes(&selection, &ids, "multi-shape drag")
@@ -111,27 +119,16 @@ fn both_squares_remain_selected(
 fn both_squares_move_by_delta(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let snapshot = with_state(|state| {
-        (
-            state.shape_ids.clone(),
-            state.shapes_before.clone(),
-            state.delta,
-        )
-    });
-    let ([first_id, second_id], [first_before, second_before], Some(delta)) =
-        (snapshot.0.as_slice(), snapshot.1.as_slice(), snapshot.2)
-    else {
-        return Err(TestSupportError::missing(
-            "multi-shape drag snapshot",
-            "recorded by the arrangement step",
-        ));
-    };
+    let snapshot = with_scenario_data::<ScenarioData, _>("multi-shape drag snapshot", |data| {
+        (data.shape_ids, data.shapes_before.clone(), data.delta)
+    })?;
+    let ([first_id, second_id], [first_before, second_before], delta) = snapshot;
     with_visual_cx(cx, |visual_cx, view| {
         let document = read_document(visual_cx, view);
-        let first = require_shape(&document, *first_id, "first square after drag")?;
-        let second = require_shape(&document, *second_id, "second square after drag")?;
-        assert_shape_translated_by_delta(first, first_before, delta, "first selected square")?;
-        assert_shape_translated_by_delta(second, second_before, delta, "second selected square")
+        let first = require_shape(&document, first_id, "first square after drag")?;
+        let second = require_shape(&document, second_id, "second square after drag")?;
+        assert_shape_translated_by_delta(first, &first_before, delta, "first selected square")?;
+        assert_shape_translated_by_delta(second, &second_before, delta, "second selected square")
     })
 }
 

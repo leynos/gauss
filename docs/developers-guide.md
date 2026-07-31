@@ -92,6 +92,14 @@ state. Keep the scenario binding small; place the fixture-backed step
 definitions and any durable `Entity` or window-handle state in the same test
 module. See `tests/gpui_draw_undo_bdd.rs` for the complete working pattern.
 
+Selection scenarios share their durable window lifecycle through
+`tests/selection_bdd/support.rs`. That module stores only handles and screen
+points needed by every selection test binary. Each binary defines its own typed
+scenario payload and installs it with `set_scenario_data`; this keeps unused
+fields out of binaries that do not need them. Framework-independent shape
+queries and coordinate conversion live in `test_support::selection`, where
+other integration suites can reuse them without depending on the root GPUI
+application crate.
 ### Stateful file I/O scenarios
 
 The `gpui_file_io_*` scenario binaries cover Save and export dialog

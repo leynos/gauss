@@ -8,12 +8,20 @@ use common::{
     anchor_to_canvas_point, canvas_bounds, draw_point, read_document, require_draw_shape,
     shift_secondary,
 };
-use gauss::model::{SelItem, Selection};
+use gauss::model::{SelItem, Selection, ShapeId};
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
-use support::{ScenarioStateCleanup, require_point, require_shape_id, with_state, with_visual_cx};
+use support::{
+    ScenarioStateCleanup, require_point, set_scenario_data, with_scenario_data, with_state,
+    with_visual_cx,
+};
 use test_support::TestSupportError;
+
+struct ScenarioData {
+    shape_id: ShapeId,
+    drag_started_after_press: Option<bool>,
+}
 
 #[given("a two-anchor shape is arranged in manipulate mode")]
 fn two_anchor_shape_is_arranged(
@@ -39,7 +47,7 @@ fn two_anchor_shape_is_arranged(
                 TestSupportError::missing("anchor 1", "two-anchor selection setup")
             })?;
         let anchor0_point = anchor_to_canvas_point(&bounds, anchor0.pos, first);
-        let anchor1_point = anchor_to_canvas_point(&bounds, anchor1.pos, first);
+        let anchor1_point = anchor_to_canvas_point(&bounds, anchor1.pos, second);
         let shape_id = shape.id;
         visual_cx.update(|_window, app| {
             view.update(app, |shell, view_cx| {
@@ -49,8 +57,11 @@ fn two_anchor_shape_is_arranged(
         });
         visual_cx.run_until_parked();
         with_state(|state| {
-            state.shape_ids.push(shape_id);
             state.points.extend([anchor0_point, anchor1_point]);
+        });
+        set_scenario_data(ScenarioData {
+            shape_id,
+            drag_started_after_press: None,
         });
         Ok(())
     })
@@ -62,9 +73,13 @@ fn click_anchor(
     modifiers: Modifiers,
 ) -> Result<(), TestSupportError> {
     let point = require_point(index, "anchor click")?;
-    with_visual_cx(cx, |visual_cx, _view| {
+    with_visual_cx(cx, |visual_cx, view| {
         visual_cx.simulate_mouse_down(point, MouseButton::Left, modifiers);
         visual_cx.run_until_parked();
+        let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
+        with_scenario_data::<ScenarioData, _>("anchor click", |data| {
+            data.drag_started_after_press = Some(is_dragging);
+        })?;
         visual_cx.simulate_mouse_up(point, MouseButton::Left, modifiers);
         visual_cx.run_until_parked();
         Ok(())
@@ -93,7 +108,7 @@ fn first_anchor_is_shift_clicked(
 }
 
 fn expected_anchor_selection(indices: &[usize]) -> Result<Selection, TestSupportError> {
-    let shape_id = require_shape_id(0, "anchor selection")?;
+    let shape_id = with_scenario_data::<ScenarioData, _>("anchor selection", |data| data.shape_id)?;
     let mut items = vec![SelItem::Shape(shape_id)];
     items.extend(indices.iter().map(|anchor| SelItem::Anchor {
         shape: shape_id,
@@ -144,17 +159,19 @@ fn only_second_anchor_is_selected(
 }
 
 #[then("no drag is active")]
-fn no_drag_is_active(
-    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
-) -> Result<(), TestSupportError> {
-    with_visual_cx(cx, |visual_cx, view| {
-        if visual_cx.read(|app| view.read(app).is_dragging()) {
-            return Err(TestSupportError::expectation(
-                "Shift-click started a drag gesture".to_owned(),
-            ));
-        }
-        Ok(())
-    })
+fn no_drag_is_active() -> Result<(), TestSupportError> {
+    match with_scenario_data::<ScenarioData, _>("Shift-click drag state", |data| {
+        data.drag_started_after_press
+    })? {
+        Some(false) => Ok(()),
+        Some(true) => Err(TestSupportError::expectation(
+            "Shift-click started a drag gesture".to_owned(),
+        )),
+        None => Err(TestSupportError::missing(
+            "drag state after press",
+            "recorded by the anchor-click step",
+        )),
+    }
 }
 
 #[scenario(

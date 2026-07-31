@@ -13,6 +13,10 @@ use serial_test::serial;
 use support::{ScenarioStateCleanup, require_point, with_state, with_visual_cx};
 use test_support::TestSupportError;
 
+struct ScenarioData {
+    selected_shape_id: ShapeId,
+}
+
 #[given("a selected square is arranged")]
 #[expect(
     clippy::float_arithmetic,
@@ -49,6 +53,9 @@ fn selected_square_is_arranged(
                 bounds.origin.y + px(click_y),
             ));
         });
+        support::set_scenario_data(ScenarioData {
+            selected_shape_id: shape_id,
+        });
         Ok(())
     })
 }
@@ -68,11 +75,15 @@ fn empty_canvas_space_is_clicked(
 fn selection_is_empty(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
+    let selected_shape_id =
+        support::with_scenario_data::<ScenarioData, _>("selected square", |data| {
+            data.selected_shape_id
+        })?;
     with_visual_cx(cx, |visual_cx, view| {
         let selection = read_selection(visual_cx, view);
         if !selection.items.is_empty() {
             return Err(TestSupportError::expectation(format!(
-                "expected empty selection; selection={selection:?}"
+                "expected square {selected_shape_id:?} to be cleared; selection={selection:?}"
             )));
         }
         Ok(())
