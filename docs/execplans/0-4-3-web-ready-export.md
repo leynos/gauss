@@ -319,7 +319,7 @@ Run from repository root:
 
 ```sh
 project="$(basename "$PWD")"
-branch="$(git branch --show)"
+branch="$(git branch --show | tr '/' '-')"
 ```
 
 Discovery and tracing (implementation kickoff):
