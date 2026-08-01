@@ -1,5 +1,6 @@
 //! Behavioural coverage for opening the save prompt through the GPUI Save button.
 
+#[path = "common/gpui_file_io_click_save_button.rs"]
 mod common;
 #[path = "common/durable_shell.rs"]
 mod durable_shell;

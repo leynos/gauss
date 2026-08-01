@@ -1,5 +1,6 @@
 //! GPUI integration tests for shared hit-test service wiring.
 
+#[path = "common/gpui_tooling_hit_test_service.rs"]
 mod common;
 
 use common::{canvas_bounds, ensure_initial_draw, init_test_app};

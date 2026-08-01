@@ -12,6 +12,7 @@
 //! did not have [`KeyContext::Global`] set, `dispatch_action()` calls would silently
 //! fail and assertions would not pass.
 
+#[path = "common/gpui_tooling_keybinding_integration.rs"]
 mod common;
 
 use common::{ensure_initial_draw, init_test_app, read_selection_items};

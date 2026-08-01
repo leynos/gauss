@@ -7,6 +7,7 @@
 //! - The editor switches to manipulate mode so subsequent clicks do not place
 //!   more points.
 
+#[path = "common/gpui_tooling_close_path.rs"]
 mod common;
 
 use common::{

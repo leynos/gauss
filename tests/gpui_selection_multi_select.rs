@@ -6,6 +6,7 @@
 //! ordered clicks and press-time drag observations. Model-only helpers shared
 //! by other binaries live in `test_support::selection`.
 
+#[path = "common/gpui_selection_multi_select.rs"]
 mod common;
 #[path = "common/durable_shell.rs"]
 mod durable_shell;

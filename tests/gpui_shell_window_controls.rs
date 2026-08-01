@@ -3,6 +3,7 @@
 //! This module tests the keyboard-accessible window controls and verifies
 //! that resize zones are properly disabled when the window is maximised.
 
+#[path = "common/gpui_shell_window_controls.rs"]
 mod common;
 
 use common::{ensure_initial_draw, init_test_app};

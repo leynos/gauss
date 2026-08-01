@@ -45,21 +45,14 @@ fn doc_with_one_shape(sample_shape: Shape) -> (Document, ShapeId) {
 
 /// Apply `cmd` to `doc`, returning the command alongside its inverse.
 ///
-/// `operation` names the calling helper so a failure identifies which command
-/// could not be applied. This is the single panic boundary for these helpers:
-/// `.expect()` is disallowed outside test-attributed functions (whitaker
-/// `no_expect_outside_tests`), so the `Err` variant is handled explicitly here
-/// rather than at each call site.
+/// Failures remain explicit so each test can attach operation-specific context
+/// at its assertion boundary.
 fn apply_command(
     doc: &mut Document,
     cmd: Command,
-    operation: &str,
-) -> (Command, crate::model::command::CommandInverse) {
-    let inverse = match cmd.apply(doc) {
-        Ok(inverse) => inverse,
-        Err(error) => panic!("{operation} should succeed: {error:?}"),
-    };
-    (cmd, inverse)
+) -> Result<(Command, crate::model::command::CommandInverse), crate::model::UserError> {
+    let inverse = cmd.apply(doc)?;
+    Ok((cmd, inverse))
 }
 
 /// Build and apply a `MoveShapes` command, returning the command and inverse.
@@ -68,14 +61,14 @@ fn apply_move(
     shape_id: ShapeId,
     dx: f32,
     dy: f32,
-) -> (Command, crate::model::command::CommandInverse) {
+) -> Result<(Command, crate::model::command::CommandInverse), crate::model::UserError> {
     let cmd = Command::MoveShapes {
         movements: vec![crate::model::ShapeMovement {
             shape_id,
             delta: Vec2::new(dx, dy),
         }],
     };
-    apply_command(doc, cmd, "apply_move")
+    apply_command(doc, cmd)
 }
 
 /// Build and apply an `InsertShape` command, returning the command and inverse.
@@ -83,11 +76,11 @@ fn apply_insert(
     doc: &mut Document,
     index: usize,
     shape: Shape,
-) -> (Command, crate::model::command::CommandInverse) {
+) -> Result<(Command, crate::model::command::CommandInverse), crate::model::UserError> {
     let cmd = Command::InsertShape {
         insertion: crate::model::ShapeInsertion { index, shape },
     };
-    apply_command(doc, cmd, "apply_insert")
+    apply_command(doc, cmd)
 }
 
 // ---------------------------------------------------------------------------
@@ -145,7 +138,7 @@ fn record_then_undo_restores_state(doc_with_one_shape: (Document, ShapeId)) {
     let before = doc.clone();
     let mut history = DocumentUndoHistory::new();
 
-    let (cmd, inverse) = apply_move(&mut doc, id, 5.0, 10.0);
+    let (cmd, inverse) = apply_move(&mut doc, id, 5.0, 10.0).expect("move command should apply");
     history.record(cmd, inverse);
 
     assert!(history.can_undo());
@@ -158,7 +151,7 @@ fn record_then_undo_then_redo_reapplies(doc_with_one_shape: (Document, ShapeId))
     let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
-    let (cmd, inverse) = apply_move(&mut doc, id, 5.0, 10.0);
+    let (cmd, inverse) = apply_move(&mut doc, id, 5.0, 10.0).expect("move command should apply");
     let after_move = doc.clone();
     history.record(cmd, inverse);
 
@@ -175,11 +168,11 @@ fn multiple_records_sequential_undo(doc_with_one_shape: (Document, ShapeId)) {
     let state_0 = doc.clone();
     let mut history = DocumentUndoHistory::new();
 
-    let (cmd1, inv1) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd1, inv1) = apply_move(&mut doc, id, 1.0, 0.0).expect("move command should apply");
     let state_1 = doc.clone();
     history.record(cmd1, inv1);
 
-    let (cmd2, inv2) = apply_move(&mut doc, id, 0.0, 2.0);
+    let (cmd2, inv2) = apply_move(&mut doc, id, 0.0, 2.0).expect("move command should apply");
     history.record(cmd2, inv2);
 
     // Undo second command — back to state_1
@@ -196,7 +189,7 @@ fn clear_empties_history(doc_with_one_shape: (Document, ShapeId)) {
     let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
-    let (cmd, inverse) = apply_move(&mut doc, id, 3.0, 4.0);
+    let (cmd, inverse) = apply_move(&mut doc, id, 3.0, 4.0).expect("move command should apply");
     history.record(cmd, inverse);
     assert!(history.can_undo());
 
@@ -264,7 +257,8 @@ fn insert_shape_round_trip_through_history(sample_shape: Shape) {
 
     assert!(doc.is_empty());
 
-    let (cmd, inverse) = apply_insert(&mut doc, 0, sample_shape);
+    let (cmd, inverse) =
+        apply_insert(&mut doc, 0, sample_shape).expect("insert command should apply");
     assert_eq!(doc.len(), 1);
     let original_path = doc.shape_at(0).expect("shape exists").path.clone();
     history.record(cmd, inverse);
@@ -295,11 +289,11 @@ fn record_increments_len(doc_with_one_shape: (Document, ShapeId)) {
     let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
-    let (cmd1, inv1) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd1, inv1) = apply_move(&mut doc, id, 1.0, 0.0).expect("move command should apply");
     history.record(cmd1, inv1);
     assert_eq!(history.len(), 1);
 
-    let (cmd2, inv2) = apply_move(&mut doc, id, 0.0, 2.0);
+    let (cmd2, inv2) = apply_move(&mut doc, id, 0.0, 2.0).expect("move command should apply");
     history.record(cmd2, inv2);
     assert_eq!(history.len(), 2);
 }
@@ -309,9 +303,9 @@ fn undo_decrements_len(doc_with_one_shape: (Document, ShapeId)) {
     let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
-    let (cmd1, inv1) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd1, inv1) = apply_move(&mut doc, id, 1.0, 0.0).expect("move command should apply");
     history.record(cmd1, inv1);
-    let (cmd2, inv2) = apply_move(&mut doc, id, 0.0, 2.0);
+    let (cmd2, inv2) = apply_move(&mut doc, id, 0.0, 2.0).expect("move command should apply");
     history.record(cmd2, inv2);
     assert_eq!(history.len(), 2);
 
@@ -324,7 +318,7 @@ fn redo_restores_len(doc_with_one_shape: (Document, ShapeId)) {
     let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
-    let (cmd, inv) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd, inv) = apply_move(&mut doc, id, 1.0, 0.0).expect("move command should apply");
     history.record(cmd, inv);
     assert_eq!(history.len(), 1);
 
@@ -340,7 +334,7 @@ fn clear_resets_len_to_zero(doc_with_one_shape: (Document, ShapeId)) {
     let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
-    let (cmd, inv) = apply_move(&mut doc, id, 3.0, 4.0);
+    let (cmd, inv) = apply_move(&mut doc, id, 3.0, 4.0).expect("move command should apply");
     history.record(cmd, inv);
     assert_eq!(history.len(), 1);
 

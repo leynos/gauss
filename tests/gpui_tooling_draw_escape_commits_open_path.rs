@@ -4,6 +4,7 @@
 //! - keep the current open path in the document, and
 //! - switch to manipulate mode (so clicks no longer place points).
 
+#[path = "common/gpui_tooling_draw_escape_commits_open_path.rs"]
 mod common;
 
 use common::{

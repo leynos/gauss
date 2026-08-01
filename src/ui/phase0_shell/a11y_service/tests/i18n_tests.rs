@@ -117,26 +117,22 @@ fn fr_locale_snapshot(localizer: Localizer) -> A11ySnapshot {
     }
 }
 
-fn get_status_label(snapshot: &A11ySnapshot) -> String {
-    // `.expect()` is disallowed outside test-attributed functions (whitaker
-    // `no_expect_outside_tests`); handle each failure explicitly instead.
-    let (nodes, _) = match build_node_map(snapshot) {
-        Ok(result) => result,
-        Err(error) => panic!("node map build should succeed: {error:?}"),
-    };
-    let Some(status_node) = nodes.get(&STATUS_NODE_ID) else {
-        panic!("expected node map to contain status node");
-    };
-    let Some(label) = status_node.label() else {
-        panic!("status node should have a label");
-    };
-    label.to_owned()
+fn get_status_label(snapshot: &A11ySnapshot) -> Result<String, String> {
+    let (nodes, _) = build_node_map(snapshot).map_err(|error| error.to_string())?;
+    let status_node = nodes
+        .get(&STATUS_NODE_ID)
+        .ok_or_else(|| "expected node map to contain status node".to_owned())?;
+    status_node
+        .label()
+        .map(ToOwned::to_owned)
+        .ok_or_else(|| "status node should have a label".to_owned())
 }
 
 #[rstest]
 #[case::tool_mode_draw("Dessiner")]
 fn status_node_uses_localized_tool_mode_label(fr_localizer: Localizer, #[case] expected: &str) {
-    let label = get_status_label(&fr_locale_snapshot(fr_localizer));
+    let label = get_status_label(&fr_locale_snapshot(fr_localizer))
+        .expect("localized status label should be available");
     assert!(
         label.contains(expected),
         "Expected localized French '{expected}', got: {label}"
@@ -162,7 +158,7 @@ fn status_node_uses_localized_edge_mode_label(fr_edge_mode_catalog: Catalog) {
             locale: Locale::fr_fr(),
         },
     );
-    let label = get_status_label(&snapshot);
+    let label = get_status_label(&snapshot).expect("localized status label should be available");
     assert!(
         label.contains("Ligne"),
         "Expected localized French 'Ligne' for edge mode, got: {label}"
@@ -173,7 +169,8 @@ fn status_node_uses_localized_edge_mode_label(fr_edge_mode_catalog: Catalog) {
 fn status_node_falls_back_to_default_locale_when_message_missing(
     fr_localizer_with_fallback: Localizer,
 ) {
-    let label = get_status_label(&fr_locale_snapshot(fr_localizer_with_fallback));
+    let label = get_status_label(&fr_locale_snapshot(fr_localizer_with_fallback))
+        .expect("fallback status label should be available");
     assert!(
         label.contains("Draw"),
         "Expected fallback English 'Draw' for missing message, got: {label}"
@@ -203,7 +200,7 @@ fn status_node_omits_edge_mode_for_manipulate_tool(fr_manipulate_catalog: Catalo
             locale: Locale::fr_fr(),
         },
     );
-    let label = get_status_label(&snapshot);
+    let label = get_status_label(&snapshot).expect("localized status label should be available");
     assert!(
         label.contains("Manipuler"),
         "Expected localized French 'Manipuler' for Manipulate mode, got: {label}"

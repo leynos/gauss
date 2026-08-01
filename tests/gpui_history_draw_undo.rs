@@ -5,6 +5,7 @@
 //! scenario driven through the first-party GPUI harness; see
 //! `tests/gpui_draw_undo_bdd.rs` and `tests/features/draw_undo.feature`.
 
+#[path = "common/gpui_history_draw_undo.rs"]
 mod common;
 
 use common::{

@@ -1,0 +1,31 @@
+//! Square-shape construction for GPUI integration tests.
+
+use gauss::model::{
+    Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2,
+};
+use test_support::{TestSupportError, TestSupportResult};
+
+pub fn add_square(doc: &mut Document, min: Vec2, max: Vec2) -> TestSupportResult<ShapeId> {
+    let shape = Shape {
+        id: ShapeId::default(),
+        z: i32::try_from(doc.len())
+            .map_err(|error| TestSupportError::z_order_overflow("z-ordering", error))?,
+        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
+        path: PathGeom {
+            anchors: vec![
+                Anchor::new(min),
+                Anchor::new(Vec2::new(max.x, min.y)),
+                Anchor::new(max),
+                Anchor::new(Vec2::new(min.x, max.y)),
+            ],
+            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
+            closed: true,
+            closing_segment: SegmentKind::Line,
+        },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
+    };
+    Ok(doc.append_shape(shape))
+}

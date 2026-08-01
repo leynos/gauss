@@ -4,6 +4,7 @@
 //! meaningful portion of the window. We rely on debug bounds for the canvas
 //! container, not the inner `Canvas` element itself.
 
+#[path = "common/gpui_shell_canvas_layout.rs"]
 mod common;
 
 use common::{canvas_bounds, ensure_initial_draw, init_test_app};

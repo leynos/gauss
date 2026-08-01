@@ -1,5 +1,6 @@
 //! GPUI headless integration tests for Phase 0 stroke/fill controls.
 
+#[path = "common/gpui_shell_style_controls.rs"]
 mod common;
 
 use common::{

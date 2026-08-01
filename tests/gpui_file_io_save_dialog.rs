@@ -1,5 +1,6 @@
 //! Behavioural coverage for GPUI Save and web-ready export file dialogs.
 
+#[path = "common/gpui_file_io_save_dialog.rs"]
 mod common;
 #[path = "common/durable_shell.rs"]
 mod durable_shell;

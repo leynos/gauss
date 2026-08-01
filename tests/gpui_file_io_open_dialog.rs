@@ -1,5 +1,6 @@
 //! Behavioural coverage for loading SVG documents through the GPUI Open dialog.
 
+#[path = "common/gpui_file_io_open_dialog.rs"]
 mod common;
 #[path = "common/durable_shell.rs"]
 mod durable_shell;

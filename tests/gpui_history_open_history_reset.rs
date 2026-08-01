@@ -1,5 +1,6 @@
 //! GPUI tests for history state reset when opening a document.
 
+#[path = "common/gpui_history_open_history_reset.rs"]
 mod common;
 
 use std::path::Path;
@@ -33,7 +34,7 @@ fn create_open_fixture() -> TestSupportResult<TempFileGuard> {
         .map_err(|error| {
             TestSupportError::expectation(format!("test SVG file should be writable: {error}"))
         })?;
-    Ok(TempFileGuard::new_with_path(dir, file_name, svg_path))
+    Ok(TempFileGuard::new(dir, file_name, svg_path))
 }
 
 fn seed_history_and_selection(
@@ -89,7 +90,7 @@ fn assert_seeded_state(visual_cx: &VisualTestContext, view: &Entity<Phase0Shell>
 fn open_action_clears_document_history_and_selection_state(cx: &mut TestAppContext) {
     init_test_app(cx);
     let cleanup = create_open_fixture().expect("open fixture should be created");
-    let svg_path_ref = cleanup.path().expect("temp file path should be set");
+    let svg_path_ref = cleanup.path();
 
     let view: gpui::Entity<Phase0Shell> = {
         let (view, visual_cx) =

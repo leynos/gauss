@@ -44,6 +44,7 @@
 //! `window_handle()` is a `gpui::VisualContext` trait method. These differ from
 //! the vendored-fork shapes in the upstream user's guide.
 
+#[path = "common/gpui_draw_undo_bdd.rs"]
 mod common;
 
 use std::cell::RefCell;

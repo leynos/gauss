@@ -1,5 +1,6 @@
 //! Behavioural coverage for preserving Gauss metadata through GPUI save and open flows.
 
+#[path = "common/gpui_file_io_metadata_round_trip.rs"]
 mod common;
 
 #[path = "common/durable_shell.rs"]

@@ -1,5 +1,6 @@
 //! GPUI headless integration tests for Phase 0 anchor insertion/deletion.
 
+#[path = "common/gpui_history_anchor_edit_undo.rs"]
 mod common;
 
 use common::{

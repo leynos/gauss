@@ -8,6 +8,7 @@
 //! This test also covers undo: once a segment is toggled, `Undo` should restore
 //! both the segment kind and the handle positions.
 
+#[path = "common/gpui_tooling_toggle_segment_kind.rs"]
 mod common;
 
 use common::{
