@@ -22,22 +22,6 @@ fn fr_tool_mode_catalog() -> Catalog {
     Catalog::from_messages(messages)
 }
 
-/// Creates a French edge mode catalog.
-#[fixture]
-fn fr_edge_mode_catalog() -> Catalog {
-    let mut messages = HashMap::new();
-    messages.insert("edge_mode.line".to_owned(), "Ligne".to_owned());
-    Catalog::from_messages(messages)
-}
-
-/// Creates a French manipulate tool mode catalog.
-#[fixture]
-fn fr_manipulate_catalog() -> Catalog {
-    let mut messages = HashMap::new();
-    messages.insert("tool_mode.manipulate".to_owned(), "Manipuler".to_owned());
-    Catalog::from_messages(messages)
-}
-
 /// Creates a localizer with a French catalog and en-GB default.
 #[fixture]
 fn fr_localizer(fr_tool_mode_catalog: Catalog) -> Localizer {
@@ -139,12 +123,23 @@ fn status_node_uses_localized_tool_mode_label(fr_localizer: Localizer, #[case] e
     );
 }
 
-fn fr_status_label_for_tool_mode(
-    fr_catalog: Catalog,
-    tool_mode: ToolMode,
-) -> Result<String, String> {
+#[rstest]
+#[case::draw_mode(ToolMode::Draw, "tool_mode.draw", "Dessiner", Some("Ligne"))]
+#[case::manipulate_mode(ToolMode::Manipulate, "tool_mode.manipulate", "Manipuler", None)]
+fn status_node_uses_localized_mode_labels(
+    #[case] tool_mode: ToolMode,
+    #[case] tool_message_key: &str,
+    #[case] expected_tool_label: &str,
+    #[case] expected_edge_label: Option<&str>,
+) {
+    let mut messages = HashMap::new();
+    messages.insert(tool_message_key.to_owned(), expected_tool_label.to_owned());
+    if let Some(edge_label) = expected_edge_label {
+        messages.insert("edge_mode.line".to_owned(), edge_label.to_owned());
+    }
+
     let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), fr_catalog);
+    catalogs.insert(Locale::fr_fr(), Catalog::from_messages(messages));
     catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
     let snapshot = snapshot_with_full_state(
@@ -158,18 +153,23 @@ fn fr_status_label_for_tool_mode(
             locale: Locale::fr_fr(),
         },
     );
+    let label = get_status_label(&snapshot).expect("localized status label should be available");
 
-    get_status_label(&snapshot)
-}
-
-#[rstest]
-fn status_node_uses_localized_edge_mode_label(fr_edge_mode_catalog: Catalog) {
-    let label = fr_status_label_for_tool_mode(fr_edge_mode_catalog, ToolMode::Draw)
-        .expect("localized status label should be available");
     assert!(
-        label.contains("Ligne"),
-        "Expected localized French 'Ligne' for edge mode, got: {label}"
+        label.contains(expected_tool_label),
+        "Expected localized French '{expected_tool_label}' for {tool_mode:?} mode, got: {label}"
     );
+    if let Some(edge_label) = expected_edge_label {
+        assert!(
+            label.contains(edge_label),
+            "Expected localized French '{edge_label}' for edge mode, got: {label}"
+        );
+    } else {
+        assert!(
+            !label.contains("Ligne") && !label.contains("Line"),
+            "Manipulate mode should omit edge mode fragment from status, got: {label}"
+        );
+    }
 }
 
 #[rstest]
@@ -185,19 +185,5 @@ fn status_node_falls_back_to_default_locale_when_message_missing(
     assert!(
         label.contains("Ligne"),
         "Expected French 'Ligne' from partial catalog, got: {label}"
-    );
-}
-
-#[rstest]
-fn status_node_omits_edge_mode_for_manipulate_tool(fr_manipulate_catalog: Catalog) {
-    let label = fr_status_label_for_tool_mode(fr_manipulate_catalog, ToolMode::Manipulate)
-        .expect("localized status label should be available");
-    assert!(
-        label.contains("Manipuler"),
-        "Expected localized French 'Manipuler' for Manipulate mode, got: {label}"
-    );
-    assert!(
-        !label.contains("Ligne") && !label.contains("Line"),
-        "Manipulate mode should omit edge mode fragment from status, got: {label}"
     );
 }
