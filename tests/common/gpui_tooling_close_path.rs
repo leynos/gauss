@@ -9,6 +9,8 @@ mod anchor_point;
 mod canvas;
 #[path = "canvas_bounds.rs"]
 mod canvas_bounds;
+#[path = "document.rs"]
+mod document;
 #[path = "draw_point.rs"]
 mod draw_point;
 #[path = "draw_shape.rs"]
@@ -22,6 +24,8 @@ mod initial_draw;
 pub use anchor_point::anchor_to_canvas_point;
 /// Returns the rendered canvas bounds used to position close-path input.
 pub use canvas_bounds::canvas_bounds;
+/// Returns an owned document snapshot for close-path outcome assertions.
+pub use document::read_document;
 /// Adds a draw point at a canvas position and parks the GPUI event loop.
 pub use draw_point::draw_point;
 /// Returns the first non-demo shape for close-path outcome assertions.

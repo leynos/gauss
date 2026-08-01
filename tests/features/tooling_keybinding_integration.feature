@@ -2,8 +2,8 @@ Feature: Tooling keybinding integration
 
   Scenario: UI initialization registers action bindings
     Given the test application initializes its UI action bindings
-    When a Phase 0 shell window is opened
-    Then the shell completes its initial draw
+    When V is pressed in the opened Phase 0 shell
+    Then manipulate mode is active
 
   Scenario: Select all selects every shape
     Given a fresh Phase 0 shell window with two unselected shapes

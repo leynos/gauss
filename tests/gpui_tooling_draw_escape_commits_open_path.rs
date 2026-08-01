@@ -2,12 +2,14 @@
 
 #[path = "common/gpui_tooling_draw_escape_commits_open_path.rs"]
 mod common;
-
 #[path = "tooling_bdd/draw_escape_steps.rs"]
 mod draw_escape_steps;
-
 #[path = "tooling_bdd/state.rs"]
 mod state;
+
+use rstest_bdd_macros::scenario;
+use serial_test::serial;
+use state::{ScenarioStateCleanup, scenario_state_cleanup};
 
 #[scenario(
     path = "tests/features/tooling_draw_escape_commits_open_path.feature",

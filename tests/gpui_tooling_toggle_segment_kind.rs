@@ -2,12 +2,14 @@
 
 #[path = "common/gpui_tooling_toggle_segment_kind.rs"]
 mod common;
-
 #[path = "tooling_bdd/state.rs"]
 mod state;
-
 #[path = "tooling_bdd/toggle_segment_steps.rs"]
 mod toggle_segment_steps;
+
+use rstest_bdd_macros::scenario;
+use serial_test::serial;
+use state::{ScenarioStateCleanup, scenario_state_cleanup};
 
 #[scenario(
     path = "tests/features/tooling_toggle_segment_kind.feature",

@@ -2,12 +2,15 @@
 
 #[path = "common/gpui_tooling_hit_test_service.rs"]
 mod common;
-
 #[path = "tooling_bdd/hit_test_steps.rs"]
 mod hit_test_steps;
-
 #[path = "tooling_bdd/state.rs"]
 mod state;
+
+use rstest_bdd_macros::scenario;
+use serial_test::serial;
+use state::{ScenarioStateCleanup, scenario_state_cleanup};
+
 #[scenario(path = "tests/features/tooling_hit_test_service.feature", name = "Hovering a handle prefers the handle hit", harness = rstest_bdd_harness_gpui::GpuiHarness)]
 #[serial]
 fn hovering_handle_prefers_handle_hit(

@@ -10,7 +10,6 @@ struct ClosePathState {
     bounds: Bounds<Pixels>,
     points: [Point<Pixels>; 3],
     expected_shape_id: Option<ShapeId>,
-    closed_shape_id: Option<ShapeId>,
 }
 
 fn triangle_points(bounds: &Bounds<Pixels>) -> [Point<Pixels>; 3] {
@@ -77,7 +76,6 @@ fn fresh_phase0_shell_window(
             points: triangle_points(&bounds),
             bounds,
             expected_shape_id: None,
-            closed_shape_id: None,
         })
     })
 }
@@ -115,7 +113,6 @@ fn click_first_triangle_anchor(
         if data.expected_shape_id.is_none() {
             data.expected_shape_id = Some(shape_id);
         }
-        data.closed_shape_id = Some(shape_id);
         Ok(())
     })
 }
@@ -153,8 +150,13 @@ fn triangle_path_is_closed(
 fn closing_preserves_drawn_shape(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    state::with_visual_cx(cx, |_visual_cx, _view, data: &mut ClosePathState| {
-        if data.closed_shape_id != data.expected_shape_id {
+    state::with_visual_cx(cx, |visual_cx, view, data: &mut ClosePathState| {
+        let expected = data.expected_shape_id.ok_or_else(|| {
+            TestSupportError::missing("expected shape id", "recorded before closing")
+        })?;
+        let doc = common::read_document(visual_cx, view);
+        let shape = common::require_draw_shape(&doc, "after close")?;
+        if shape.id != expected {
             return Err(TestSupportError::expectation(
                 "expected close operation to target the drawn shape",
             ));

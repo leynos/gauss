@@ -29,27 +29,12 @@ fn initialize_ui_bindings(
     state::initialize(cx, |_visual_cx, _view| Ok(KeybindingState::Registration))
 }
 
-#[when("a Phase 0 shell window is opened")]
-fn open_phase0_shell(
+#[when("V is pressed in the opened Phase 0 shell")]
+fn press_select_tool_shortcut(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     state::with_visual_cx(cx, |visual_cx, _view, _data: &mut KeybindingState| {
-        common::ensure_initial_draw(visual_cx);
-        Ok(())
-    })
-}
-
-#[then("the shell completes its initial draw")]
-fn shell_completes_initial_draw(
-    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
-) -> Result<(), TestSupportError> {
-    state::with_visual_cx(cx, |_visual_cx, _view, data: &mut KeybindingState| {
-        if !matches!(data, KeybindingState::Registration) {
-            return Err(TestSupportError::missing(
-                "registration state",
-                "UI initialization scenario",
-            ));
-        }
+        common::simulate_key(visual_cx, "v", gpui::Modifiers::none());
         Ok(())
     })
 }

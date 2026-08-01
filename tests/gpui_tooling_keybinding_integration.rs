@@ -2,12 +2,14 @@
 
 #[path = "common/gpui_tooling_keybinding_integration.rs"]
 mod common;
-
 #[path = "tooling_bdd/keybinding_steps.rs"]
 mod keybinding_steps;
-
 #[path = "tooling_bdd/state.rs"]
 mod state;
+
+use rstest_bdd_macros::scenario;
+use serial_test::serial;
+use state::{ScenarioStateCleanup, scenario_state_cleanup};
 
 #[scenario(path = "tests/features/tooling_keybinding_integration.feature", name = "UI initialization registers action bindings", harness = rstest_bdd_harness_gpui::GpuiHarness)]
 #[serial]
