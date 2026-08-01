@@ -139,26 +139,33 @@ fn status_node_uses_localized_tool_mode_label(fr_localizer: Localizer, #[case] e
     );
 }
 
-#[rstest]
-fn status_node_uses_localized_edge_mode_label(fr_edge_mode_catalog: Catalog) {
+fn fr_status_label_for_tool_mode(
+    fr_catalog: Catalog,
+    tool_mode: ToolMode,
+) -> Result<String, String> {
     let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), fr_edge_mode_catalog);
+    catalogs.insert(Locale::fr_fr(), fr_catalog);
     catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
-
-    // Use snapshot_with_full_state to exercise localized_edge_mode_label path
     let snapshot = snapshot_with_full_state(
         &[],
         &[],
         false,
         LocalisedModeState {
-            tool_mode: ToolMode::Draw,
+            tool_mode,
             edge_mode: EdgeMode::Line,
             localizer,
             locale: Locale::fr_fr(),
         },
     );
-    let label = get_status_label(&snapshot).expect("localized status label should be available");
+
+    get_status_label(&snapshot)
+}
+
+#[rstest]
+fn status_node_uses_localized_edge_mode_label(fr_edge_mode_catalog: Catalog) {
+    let label = fr_status_label_for_tool_mode(fr_edge_mode_catalog, ToolMode::Draw)
+        .expect("localized status label should be available");
     assert!(
         label.contains("Ligne"),
         "Expected localized French 'Ligne' for edge mode, got: {label}"
@@ -183,24 +190,8 @@ fn status_node_falls_back_to_default_locale_when_message_missing(
 
 #[rstest]
 fn status_node_omits_edge_mode_for_manipulate_tool(fr_manipulate_catalog: Catalog) {
-    let mut catalogs = HashMap::new();
-    catalogs.insert(Locale::fr_fr(), fr_manipulate_catalog);
-    catalogs.insert(Locale::en_gb(), Catalog::default_en_gb());
-    let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
-
-    // Use snapshot_with_full_state to test Manipulate mode (no edge mode fragment)
-    let snapshot = snapshot_with_full_state(
-        &[],
-        &[],
-        false,
-        LocalisedModeState {
-            tool_mode: ToolMode::Manipulate,
-            edge_mode: EdgeMode::Line,
-            localizer,
-            locale: Locale::fr_fr(),
-        },
-    );
-    let label = get_status_label(&snapshot).expect("localized status label should be available");
+    let label = fr_status_label_for_tool_mode(fr_manipulate_catalog, ToolMode::Manipulate)
+        .expect("localized status label should be available");
     assert!(
         label.contains("Manipuler"),
         "Expected localized French 'Manipuler' for Manipulate mode, got: {label}"
