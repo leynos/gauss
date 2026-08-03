@@ -363,6 +363,7 @@ fn close_group_after_failed_history_operation(
     visual_cx.run_until_parked();
 }
 
+/// Verify that an active group rejects an undo or redo without changing state.
 fn verify_history_operation_while_group_active_fails(
     cx: &mut TestAppContext,
     operation: HistoryOperation,

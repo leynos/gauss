@@ -47,6 +47,7 @@ fn dispatch_accesskit_action(
     (routed, did_request_quit)
 }
 
+/// Assert that a serialized chrome button exposes its accessibility contract.
 fn assert_chrome_button_semantics(
     update: &TreeUpdate,
     expected: &accessibility::ChromeButtonSemantics,
@@ -83,6 +84,7 @@ fn assert_chrome_button_semantics(
     );
 }
 
+/// Assert that the initial update contains the titlebar and chrome controls.
 fn assert_initial_serialised_update(initial_update: &TreeUpdate) {
     assert!(
         initial_update.tree.is_some(),

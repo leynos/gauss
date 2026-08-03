@@ -1,5 +1,63 @@
 # Developer's guide
 
+
+## Validate lint and documentation policy
+
+Install the pinned Rust toolchain from the repository root before running the
+validation targets:
+
+```sh
+rustup install
+```
+
+The `rust-toolchain.toml` manifest installs `rustfmt`, `clippy`, and
+`rust-analyzer` for the pinned compiler. Keep all three components in the
+manifest so formatting, linting, and Language Server Protocol (LSP) analysis
+use the same Rust release.
+
+Run the required commit gates sequentially:
+
+```sh
+make check-fmt
+make lint
+make test
+```
+
+`make lint` performs three checks. Rustdoc builds the workspace documentation
+with `RUSTDOC_FLAGS` set to `--cfg docsrs -D warnings` by default. Clippy then
+checks the workspace with all targets and features, including integration
+tests, before Whitaker applies its Dylint rules to the same target set.
+
+The workspace denies undocumented public APIs, unsafe code, direct environment
+access, panic-prone operations, lossy numerical conversions, debug output, and
+the configured Clippy hygiene rules. Add documentation or repair the underlying
+code instead of suppressing a lint.
+
+`make test` runs the full nextest suite, falling back to `cargo test` when
+nextest is unavailable. It then runs the equivalent of the following doctest
+command so examples compile with all workspace features:
+
+```sh
+RUSTFLAGS="-D warnings" cargo test --workspace --doc --all-features
+```
+
+The target passes the configured `RUST_FLAGS` value to both test stages. When
+supplying coverage configuration, sanitizer options, or other compiler flags,
+retain `-D warnings` in the override so doctests use the same build
+configuration and warning policy as the main suite.
+
+
+### Inject environment readers
+
+Clippy rejects direct calls to `std::env::var`, `var_os`, `vars`, and `vars_os`
+in production code. Define a narrow environment-reader port and inject its
+implementation at the application boundary instead. Inject a stub reader in
+tests so cases remain deterministic.
+
+Clippy also rejects `std::env::set_var` and `remove_var`. Do not mutate the
+process environment in tests; configure the stub reader with the values needed
+by each case.
+
 ## GPUI harness behavioural tests
 
 The root package owns the GPUI integration tests under `tests/`. The GPUI
