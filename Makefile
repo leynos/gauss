@@ -38,7 +38,7 @@ test: ## Run tests (nextest if available, otherwise cargo test)
 		echo "cargo-nextest not installed, falling back to cargo test"; \
 		RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) test $(TEST_FLAGS) $(BUILD_JOBS); \
 	fi
-	RUSTFLAGS="-D warnings" $(CARGO) test --workspace --doc --all-features $(BUILD_JOBS)
+	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) test --workspace --doc --all-features $(BUILD_JOBS)
 
 test-ci: ## Run tests with CI profile (stricter settings)
 	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile ci $(TEST_FLAGS) $(BUILD_JOBS)
