@@ -98,9 +98,9 @@ points needed by every selection test binary. Each binary defines its own typed
 scenario payload and installs it with `set_scenario_data`; this keeps unused
 fields out of binaries that do not need them. Framework-independent shape and
 selection queries live in `test_support::selection`, where other integration
-suites can reuse them without depending on GPUI. Keep coordinate conversion in
-`tests/common::viewport_to_screen_point` and pointer interaction helpers in
-`tests/common`; reuse both from BDD and direct GPUI tests.
+suites can reuse them without depending on GPUI. Include
+`tests/common/selection_coordinates.rs` only in binaries that convert selection
+coordinates, and keep pointer interaction helpers in `tests/common`.
 ### Stateful file I/O scenarios
 
 The `gpui_file_io_*` scenario binaries cover Save and export dialog

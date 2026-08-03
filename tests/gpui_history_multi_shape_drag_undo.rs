@@ -5,15 +5,17 @@
 //! create only a single history entry — not one entry per shape.
 
 mod common;
+#[path = "common/selection_coordinates.rs"]
+mod selection_coordinates;
 
 use common::{
     add_square, assert_shape_translated_by_delta, canvas_bounds, ensure_initial_draw,
     init_test_app, read_document, read_history_len, simulate_document_undo,
-    viewport_to_screen_point,
 };
 use gauss::model::{SelItem, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext};
+use selection_coordinates::viewport_to_screen_point;
 use test_support::TestSupportResult;
 use test_support::selection::{require_shape, shape_bbox_centre};
 

@@ -1,22 +1,22 @@
 //! BDD coverage for dragging an unselected shape by its bounding box.
 //!
 //! This binary binds the corresponding scenario in `selection.feature` to the
-//! GPUI `GpuiHarness`. It uses `common` for canvas interactions and GPUI
-//! coordinates, shared lifecycle state from `selection_bdd::support`, and
-//! reusable model queries from `test_support::selection` to preserve the
-//! press-time selection rule.
+//! GPUI `GpuiHarness`. It uses `common` for canvas interactions,
+//! `selection_coordinates` for GPUI conversion, shared lifecycle state from
+//! `selection_bdd::support`, and reusable model queries from
+//! `test_support::selection` to preserve the press-time selection rule.
 
 mod common;
+#[path = "common/selection_coordinates.rs"]
+mod selection_coordinates;
 #[path = "selection_bdd/support.rs"]
 pub mod support;
 
-use common::{
-    add_square, assert_shape_translated_by_delta, canvas_bounds, read_document,
-    viewport_to_screen_point,
-};
+use common::{add_square, assert_shape_translated_by_delta, canvas_bounds, read_document};
 use gauss::model::{Document, SelItem, Selection, Shape, ShapeId, Vec2};
 use gpui::{Modifiers, MouseButton, TestAppContext};
 use rstest_bdd_macros::{given, scenario, then, when};
+use selection_coordinates::viewport_to_screen_point;
 use serial_test::serial;
 use support::{
     ScenarioStateCleanup, assert_no_drag_after_press, require_point, set_scenario_data,
