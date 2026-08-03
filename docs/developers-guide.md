@@ -35,10 +35,10 @@ code instead of suppressing a lint.
 
 `make test` runs the full nextest suite, falling back to `cargo test` when
 nextest is unavailable. It then runs the equivalent of the following doctest
-command so examples compile with all workspace features:
+command, so examples compile with all workspace features:
 
 ```sh
-RUSTFLAGS="-D warnings" cargo test --workspace --doc --all-features
+RUSTFLAGS="-D warnings" RUSTDOCFLAGS="--cfg docsrs -D warnings" cargo test --workspace --doc --all-features
 ```
 
 The target passes the configured `RUST_FLAGS` value to both test stages. When
@@ -46,13 +46,12 @@ supplying coverage configuration, sanitizer options, or other compiler flags,
 retain `-D warnings` in the override so doctests use the same build
 configuration and warning policy as the main suite.
 
-
 ### Inject environment readers
 
 Clippy rejects direct calls to `std::env::var`, `var_os`, `vars`, and `vars_os`
 in production code. Define a narrow environment-reader port and inject its
 implementation at the application boundary instead. Inject a stub reader in
-tests so cases remain deterministic.
+tests, so cases remain deterministic.
 
 Clippy also rejects `std::env::set_var` and `remove_var`. Do not mutate the
 process environment in tests; configure the stub reader with the values needed
