@@ -5,6 +5,9 @@
 //! These tests only run on non-Linux platforms where the inner resize borders
 //! are used.
 
+// The shared helpers are only referenced by the non-Linux tests below, so the
+// module declaration carries the same target gate as its uses.
+#[cfg(not(target_os = "linux"))]
 mod common;
 
 #[cfg(not(target_os = "linux"))]

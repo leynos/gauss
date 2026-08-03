@@ -79,7 +79,8 @@ fn dragging_demo_shape_moves_it_and_undo_restores(cx: &mut TestAppContext) {
         .clone();
 
     // Switch to manipulate mode (Phase0Shell defaults to draw mode).
-    switch_to_manipulate_mode_and_verify(visual_cx, &view, scenario.first);
+    switch_to_manipulate_mode_and_verify(visual_cx, &view, scenario.first)
+        .expect("manipulate-mode click should not add a shape");
 
     let len_before = read_history_len(visual_cx, &view);
 

@@ -1,0 +1,395 @@
+//! Legacy shared helper surface for the Phase 0 GPUI integration tests.
+//!
+//! Forty-one integration-test binaries include this module and each drives a
+//! different subset of the helpers. Every binary is a separate crate, so this
+//! source is compiled forty-one times with a different set of items live in
+//! each. That is why the `dead_code` expectation below is module-scoped and
+//! cannot be narrowed to individual items:
+//!
+//! - A per-item `#[expect(dead_code)]` is *unfulfilled* in the binaries that do
+//!   use that item, raising `unfulfilled_lint_expectations` there instead.
+//! - `#[allow(dead_code)]` would avoid that, but `clippy::allow_attributes` is
+//!   denied workspace-wide.
+//!
+//! The surface has been reduced rather than merely suppressed: helpers that were
+//! dead in every binary are deleted, and helpers with a single consumer now live
+//! in that consumer. What remains is genuinely shared by several binaries.
+//!
+//! The file-I/O helpers show the shape this module should eventually take. They
+//! sit outside it, split across `common/durable_shell.rs`, `common/path_prompt.rs`
+//! and the `common/temp_svg*.rs` modules, each included only by the binaries that
+//! use all of it — so none of them needs an expectation at all. Applying the same
+//! split here means roughly twenty modules across forty-one binaries, which issue
+//! #150 tracks separately.
+#![expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
+#![expect(
+    dead_code,
+    reason = "forty-one binaries include this module; each uses a different subset (issue #150)"
+)]
+
+use camino::{Utf8Path, Utf8PathBuf};
+use cap_std::fs_utf8::Dir;
+use gauss::model::{
+    Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, SelItem, Selection, Shape, ShapeId,
+    Vec2,
+};
+use gauss::ui::{GpuiRedo, GpuiUndo, Phase0Shell};
+use gpui::{
+    Bounds, Entity, KeyDownEvent, Keystroke, Modifiers, MouseButton, Pixels, Point, TestAppContext,
+    VisualTestContext, point, px,
+};
+use test_support::{TestSupportError, TestSupportResult};
+
+pub const CANVAS_PADDING_PX: f32 = 2.0;
+
+pub struct TempFileGuard {
+    dir: Dir,
+    file_name: Utf8PathBuf,
+    path: Option<Utf8PathBuf>,
+}
+
+impl TempFileGuard {
+    pub const fn new(dir: Dir, file_name: Utf8PathBuf) -> Self {
+        Self {
+            dir,
+            file_name,
+            path: None,
+        }
+    }
+
+    pub const fn new_with_path(dir: Dir, file_name: Utf8PathBuf, path: Utf8PathBuf) -> Self {
+        Self {
+            dir,
+            file_name,
+            path: Some(path),
+        }
+    }
+
+    pub const fn dir(&self) -> &Dir {
+        &self.dir
+    }
+
+    pub fn path(&self) -> Option<&Utf8Path> {
+        self.path.as_ref().map(Utf8PathBuf::as_path)
+    }
+}
+
+impl Drop for TempFileGuard {
+    fn drop(&mut self) {
+        let _cleanup = self.dir.remove_file(self.file_name.as_path());
+    }
+}
+
+pub fn init_test_app(cx: &mut TestAppContext) {
+    cx.update(gauss::ui::init);
+}
+
+pub fn ensure_initial_draw(visual_cx: &mut VisualTestContext) {
+    visual_cx.update(|window, app| {
+        let _draw = window.draw(app);
+    });
+    visual_cx.run_until_parked();
+}
+
+pub fn demo_shape_id(doc: &Document) -> Option<ShapeId> {
+    doc.shape_id_at(0)
+}
+
+pub fn add_square(doc: &mut Document, min: Vec2, max: Vec2) -> TestSupportResult<ShapeId> {
+    let shape = Shape {
+        id: ShapeId::default(),
+        z: i32::try_from(doc.len())
+            .map_err(|error| TestSupportError::z_order_overflow("z-ordering", error))?,
+        style: PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None),
+        path: PathGeom {
+            anchors: vec![
+                Anchor::new(min),
+                Anchor::new(Vec2::new(max.x, min.y)),
+                Anchor::new(max),
+                Anchor::new(Vec2::new(min.x, max.y)),
+            ],
+            segments: vec![SegmentKind::Line, SegmentKind::Line, SegmentKind::Line],
+            closed: true,
+            closing_segment: SegmentKind::Line,
+        },
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
+    };
+    Ok(doc.append_shape(shape))
+}
+
+pub fn canvas_bounds(visual_cx: &mut VisualTestContext) -> TestSupportResult<Bounds<Pixels>> {
+    visual_cx.debug_bounds("#phase0-canvas").ok_or_else(|| {
+        TestSupportError::missing("canvas debug bounds (#phase0-canvas)", "after drawing")
+    })
+}
+
+pub fn canvas_points(
+    visual_cx: &mut VisualTestContext,
+) -> TestSupportResult<(Point<Pixels>, Point<Pixels>)> {
+    let bounds = canvas_bounds(visual_cx)?;
+    let first = point(
+        bounds.origin.x + px(CANVAS_PADDING_PX),
+        bounds.origin.y + px(CANVAS_PADDING_PX),
+    );
+    let second = point(
+        bounds.origin.x + bounds.size.width - px(CANVAS_PADDING_PX),
+        bounds.origin.y + bounds.size.height - px(CANVAS_PADDING_PX),
+    );
+    Ok((first, second))
+}
+
+pub fn click_canvas(visual_cx: &mut VisualTestContext, position: Point<Pixels>) {
+    visual_cx.simulate_mouse_move(position, None, Modifiers::none());
+    visual_cx.simulate_click(position, Modifiers::none());
+}
+
+pub fn click_canvas_and_wait(visual_cx: &mut VisualTestContext, position: Point<Pixels>) {
+    click_canvas(visual_cx, position);
+    visual_cx.run_until_parked();
+}
+
+pub fn click_left(visual_cx: &mut VisualTestContext, position: Point<Pixels>) {
+    visual_cx.simulate_mouse_down(position, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_up(position, MouseButton::Left, Modifiers::none());
+}
+
+pub fn click_left_and_wait(visual_cx: &mut VisualTestContext, position: Point<Pixels>) {
+    click_left(visual_cx, position);
+    visual_cx.run_until_parked();
+}
+
+pub fn draw_point(visual_cx: &mut VisualTestContext, position: Point<Pixels>) {
+    click_canvas_and_wait(visual_cx, position);
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct CanvasDragScenario {
+    pub bounds: Bounds<Pixels>,
+    pub first: Point<Pixels>,
+    pub second: Point<Pixels>,
+    pub drag_end: Point<Pixels>,
+    pub delta: Vec2,
+}
+
+pub fn canvas_drag_scenario(
+    visual_cx: &mut VisualTestContext,
+    horizontal_limit: f32,
+    vertical_limit: f32,
+) -> TestSupportResult<CanvasDragScenario> {
+    let bounds = canvas_bounds(visual_cx)?;
+
+    let width = f32::from(bounds.size.width);
+    let height = f32::from(bounds.size.height);
+
+    let first = point(
+        bounds.origin.x + px(CANVAS_PADDING_PX),
+        bounds.origin.y + px(CANVAS_PADDING_PX),
+    );
+    let second = point(
+        bounds.origin.x + px((width - CANVAS_PADDING_PX).max(CANVAS_PADDING_PX)),
+        bounds.origin.y + px((height - CANVAS_PADDING_PX).max(CANVAS_PADDING_PX)),
+    );
+
+    let max_horizontal_delta = (width - (2.0 * CANVAS_PADDING_PX)).max(1.0);
+    let max_vertical_delta = (height - (2.0 * CANVAS_PADDING_PX)).max(1.0);
+    let horizontal_delta = max_horizontal_delta.min(horizontal_limit);
+    let vertical_delta = max_vertical_delta.min(vertical_limit);
+    let drag_end = point(first.x + px(horizontal_delta), first.y + px(vertical_delta));
+
+    Ok(CanvasDragScenario {
+        bounds,
+        first,
+        second,
+        drag_end,
+        delta: Vec2::new(horizontal_delta, vertical_delta),
+    })
+}
+
+pub fn read_document(visual_cx: &VisualTestContext, view: &gpui::Entity<Phase0Shell>) -> Document {
+    visual_cx.read(|app| view.read(app).document().clone())
+}
+
+pub fn read_selection(visual_cx: &VisualTestContext, view: &Entity<Phase0Shell>) -> Selection {
+    visual_cx.read(|app| view.read(app).selection().clone())
+}
+
+pub fn read_selection_items(
+    visual_cx: &VisualTestContext,
+    view: &Entity<Phase0Shell>,
+) -> Vec<SelItem> {
+    read_selection(visual_cx, view).items
+}
+
+pub fn find_draw_shape(doc: &Document) -> Option<&Shape> {
+    let demo_id = demo_shape_id(doc)?;
+    doc.iter_in_draw_order().find(|shape| shape.id != demo_id)
+}
+
+pub fn require_draw_shape<'a>(doc: &'a Document, context: &str) -> TestSupportResult<&'a Shape> {
+    let message = format!("draw shape: {context}");
+    find_draw_shape(doc).ok_or_else(|| TestSupportError::missing("shape", message))
+}
+
+pub fn simulate_key(visual_cx: &mut VisualTestContext, key: &str, modifiers: Modifiers) {
+    visual_cx.simulate_event(KeyDownEvent {
+        keystroke: Keystroke {
+            modifiers,
+            key: key.to_owned(),
+            key_char: None,
+        },
+        is_held: false,
+    });
+    visual_cx.run_until_parked();
+}
+
+pub fn simulate_escape(visual_cx: &mut VisualTestContext) {
+    simulate_key(visual_cx, "escape", Modifiers::none());
+}
+
+pub const fn shift_secondary(modifiers: Modifiers) -> Modifiers {
+    let mut next = modifiers;
+    next.shift = true;
+    next
+}
+
+pub fn simulate_document_undo(visual_cx: &mut VisualTestContext) {
+    visual_cx.dispatch_action(GpuiUndo);
+    visual_cx.run_until_parked();
+}
+
+pub fn simulate_document_redo(visual_cx: &mut VisualTestContext) {
+    visual_cx.dispatch_action(GpuiRedo);
+    visual_cx.run_until_parked();
+}
+
+pub fn assert_vec2_close(actual: Vec2, expected: Vec2, context: &str) -> TestSupportResult<()> {
+    let diff = actual.sub(expected);
+    if diff.distance_squared(Vec2::ZERO) > 0.0001 {
+        return Err(TestSupportError::expectation(format!(
+            "{context}: expected={expected:?} got={actual:?}"
+        )));
+    }
+    Ok(())
+}
+
+pub fn assert_shape_translated_by_delta(
+    shape: &Shape,
+    original: &Shape,
+    delta: Vec2,
+    context: &str,
+) -> TestSupportResult<()> {
+    if shape.path.anchors.len() != original.path.anchors.len() {
+        return Err(TestSupportError::expectation(format!(
+            "anchor count mismatch: {context}"
+        )));
+    }
+
+    for (current, start) in shape.path.anchors.iter().zip(original.path.anchors.iter()) {
+        let expected = start.pos.add(delta);
+        let diff = current.pos.sub(expected);
+        if diff.distance_squared(Vec2::ZERO) > 0.0001 {
+            return Err(TestSupportError::expectation(format!(
+                "anchor did not move by expected delta: {context}; start={:?} expected={:?} got={:?} delta={:?}",
+                start.pos, expected, current.pos, delta
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// Convert an anchor position into a canvas point.
+///
+/// Tests sometimes store anchor positions relative to the canvas origin and
+/// sometimes in absolute window coordinates. This helper chooses the
+/// interpretation that is closest to the expected local padding to keep tests
+/// resilient to both representations.
+pub fn anchor_to_canvas_point(
+    bounds: &Bounds<Pixels>,
+    anchor: Vec2,
+    reference: Point<Pixels>,
+) -> Point<Pixels> {
+    let expected_local = Vec2::new(CANVAS_PADDING_PX, CANVAS_PADDING_PX);
+    let expected_abs = Vec2::new(f32::from(reference.x), f32::from(reference.y));
+    let use_local =
+        anchor.distance_squared(expected_local) <= anchor.distance_squared(expected_abs);
+    if use_local {
+        point(
+            bounds.origin.x + px(anchor.x),
+            bounds.origin.y + px(anchor.y),
+        )
+    } else {
+        point(px(anchor.x), px(anchor.y))
+    }
+}
+
+/// Verify a click left the shape count unchanged.
+///
+/// # Errors
+///
+/// Returns an expectation error when the click changed the shape count, which
+/// means the shell was still in draw mode.
+pub fn assert_click_added_no_shape(
+    shapes_before: usize,
+    shapes_after: usize,
+) -> TestSupportResult<()> {
+    if shapes_after != shapes_before {
+        return Err(TestSupportError::expectation(
+            "escape should switch to manipulate mode, where clicks do not add points",
+        ));
+    }
+    Ok(())
+}
+
+/// Escape to manipulate mode, click, and verify the click added no shape.
+///
+/// The baseline count is read after the escape rather than before it, because
+/// `Escape` itself commits or cancels an in-progress path and so can change the
+/// document on its own.
+///
+/// # Errors
+///
+/// Returns an expectation error when the click added a shape.
+pub fn switch_to_manipulate_mode_and_verify(
+    visual_cx: &mut VisualTestContext,
+    view: &Entity<Phase0Shell>,
+    click_point: Point<Pixels>,
+) -> TestSupportResult<()> {
+    simulate_escape(visual_cx);
+
+    let shapes_after_escape = read_document(visual_cx, view).len();
+    click_canvas_and_wait(visual_cx, click_point);
+    let shapes_after_click = read_document(visual_cx, view).len();
+    assert_click_added_no_shape(shapes_after_escape, shapes_after_click)
+}
+
+pub fn read_history_len(visual_cx: &VisualTestContext, view: &Entity<Phase0Shell>) -> usize {
+    visual_cx.read(|app| view.read(app).document_history_len_for_tests())
+}
+
+/// i18n test helpers
+///
+/// Creates a test catalog with the given key-value pairs.
+pub fn make_test_catalog(entries: &[(&str, &str)]) -> gauss::i18n::Catalog {
+    use std::collections::HashMap;
+    let mut messages = HashMap::new();
+    for (key, value) in entries {
+        messages.insert((*key).to_owned(), (*value).to_owned());
+    }
+    gauss::i18n::Catalog::from_messages(messages)
+}
+
+/// Creates a French test catalog with common UI messages.
+pub fn test_french_catalog() -> gauss::i18n::Catalog {
+    make_test_catalog(&[
+        ("tool_mode.draw", "Dessiner"),
+        ("tool_mode.manipulate", "Manipuler"),
+        ("edge_mode.line", "Ligne"),
+        ("edge_mode.bezier_auto", "Bézier (auto)"),
+    ])
+}

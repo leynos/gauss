@@ -10,6 +10,18 @@ use gauss::model::Vec2;
 use gauss::ui::Phase0Shell;
 use gpui::{TestAppContext, point, px};
 
+/// Dispatch the selection-undo action and wait for the app to settle.
+fn simulate_selection_undo(visual_cx: &mut gpui::VisualTestContext) {
+    visual_cx.dispatch_action(gauss::ui::GpuiSelectionUndo);
+    visual_cx.run_until_parked();
+}
+
+/// Dispatch the selection-redo action and wait for the app to settle.
+fn simulate_selection_redo(visual_cx: &mut gpui::VisualTestContext) {
+    visual_cx.dispatch_action(gauss::ui::GpuiSelectionRedo);
+    visual_cx.run_until_parked();
+}
+
 #[gpui::test]
 #[expect(
     clippy::float_arithmetic,
@@ -69,14 +81,14 @@ fn selection_undo_uses_shift_modified_stack(cx: &mut TestAppContext) {
         "expected selection to be cleared; got selection={selection_after_clear:?}"
     );
 
-    common::simulate_selection_undo(visual_cx);
+    simulate_selection_undo(visual_cx);
     let selection_after_undo = visual_cx.read(|app| view.read(app).selection().clone());
     assert_eq!(
         selection_after_undo, selected_snapshot,
         "expected Shift+Undo to restore the selection"
     );
 
-    common::simulate_selection_redo(visual_cx);
+    simulate_selection_redo(visual_cx);
     let selection_after_redo = visual_cx.read(|app| view.read(app).selection().clone());
     assert_eq!(
         selection_after_redo, selection_after_clear,

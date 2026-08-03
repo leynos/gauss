@@ -19,7 +19,8 @@ fn right_click_in_manipulate_mode_is_noop(cx: &mut TestAppContext) {
     let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
     let click_point = point(bounds.origin.x + px(8.0), bounds.origin.y + px(8.0));
 
-    switch_to_manipulate_mode_and_verify(visual_cx, &view, click_point);
+    switch_to_manipulate_mode_and_verify(visual_cx, &view, click_point)
+        .expect("manipulate-mode click should not add a shape");
 
     let selection_before = read_selection(visual_cx, &view);
 
@@ -49,7 +50,8 @@ fn zero_delta_drag_does_not_create_history_entry(cx: &mut TestAppContext) {
     draw_point(visual_cx, scenario.first);
     draw_point(visual_cx, scenario.second);
 
-    switch_to_manipulate_mode_and_verify(visual_cx, &view, scenario.first);
+    switch_to_manipulate_mode_and_verify(visual_cx, &view, scenario.first)
+        .expect("manipulate-mode click should not add a shape");
 
     let history_before = read_history_len(visual_cx, &view);
     let selection_before = read_selection(visual_cx, &view);
