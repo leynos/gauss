@@ -1,15 +1,21 @@
 //! Behavioural coverage for preserving Gauss metadata through GPUI save and open flows.
 
 mod common;
-#[path = "common/file_io.rs"]
-mod file_io;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
 #[path = "common/scenario_state.rs"]
 mod scenario_state;
+#[path = "common/temp_svg.rs"]
+mod temp_svg;
+#[path = "common/temp_svg_read.rs"]
+mod temp_svg_read;
+#[path = "common/temp_svg_write.rs"]
+mod temp_svg_write;
 
 use std::path::Path;
 
 use common::{ensure_initial_draw, init_test_app};
-use file_io::{DurableShell, TempSvgFile};
+use durable_shell::DurableShell;
 use gauss::model::ShapeId;
 use gauss::svg::metadata::GAUSS_METADATA_NAMESPACE;
 use gauss::ui::{OpenSvg, Phase0Shell, SaveSvg};
@@ -17,6 +23,7 @@ use gauss_core::test_helpers::shape_id_from_seed;
 use gpui::TestAppContext;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
+use temp_svg::TempSvgFile;
 use test_support::TestSupportError;
 
 #[derive(Default)]
@@ -148,7 +155,7 @@ fn save_to_temporary_svg(
     let handles = shell()?;
     let saved = cx.read(|app| {
         handles
-            .entity()
+            .entity
             .read(app)
             .last_saved_path()
             .map(Path::to_path_buf)
@@ -276,7 +283,7 @@ fn document_shape_has_known_id(
     let handles = shell()?;
     let actual = cx.read(|app| {
         handles
-            .entity()
+            .entity
             .read(app)
             .document()
             .shape_at(0)
@@ -297,7 +304,7 @@ fn shell_metadata_contains_project(
     let handles = shell()?;
     let metadata = cx.read(|app| {
         handles
-            .entity()
+            .entity
             .read(app)
             .gauss_metadata_block()
             .map(str::to_owned)

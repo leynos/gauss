@@ -1,23 +1,31 @@
 //! Behavioural coverage for loading SVG documents through the GPUI Open dialog.
 
 mod common;
-#[path = "common/file_io.rs"]
-mod file_io;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
 #[path = "gpui_file_io_open_dialog/fixtures.rs"]
 mod fixtures;
+#[path = "common/path_prompt.rs"]
+mod path_prompt;
 #[path = "common/scenario_state.rs"]
 mod scenario_state;
+#[path = "common/temp_svg.rs"]
+mod temp_svg;
+#[path = "common/temp_svg_write.rs"]
+mod temp_svg_write;
 
 use std::path::Path;
 
 use common::{ensure_initial_draw, init_test_app};
-use file_io::{DurableShell, TempSvgFile, assert_no_path_prompt, assert_path_prompt};
+use durable_shell::DurableShell;
 use gauss::model::Paint;
 use gauss::svg::metadata::GAUSS_METADATA_PREFIX;
 use gauss::ui::{OpenSvg, Phase0Shell};
 use gpui::TestAppContext;
+use path_prompt::{assert_no_path_prompt, assert_path_prompt};
 use rstest_bdd_macros::{scenario, then, when};
 use serial_test::serial;
+use temp_svg::TempSvgFile;
 use test_support::TestSupportError;
 
 #[derive(Default)]
@@ -60,7 +68,7 @@ pub(crate) fn prepare_svg(
     ensure_initial_draw(visual_cx);
     let shell = DurableShell::new(entity, visual_cx);
     let initial_resources = cx.read(|app| {
-        let resources = shell.entity().read(app).resources();
+        let resources = shell.entity.read(app).resources();
         (
             resources.gradient_count(),
             resources.pattern_count(),
@@ -131,7 +139,7 @@ fn selected_path_recorded(
     let handles = shell()?;
     let actual = cx.read(|app| {
         handles
-            .entity()
+            .entity
             .read(app)
             .last_opened_path()
             .map(Path::to_path_buf)
@@ -151,7 +159,7 @@ fn selected_path_recorded(
 /// Returns `Err` if the Given step that creates the shell has not run.
 fn document_shape_count(cx: &TestAppContext) -> Result<usize, TestSupportError> {
     let handles = shell()?;
-    Ok(cx.read(|app| handles.entity().read(app).document().len()))
+    Ok(cx.read(|app| handles.entity.read(app).document().len()))
 }
 
 #[then("the document contains one shape")]
@@ -177,7 +185,7 @@ fn require_resource_counts(
 ) -> Result<(), TestSupportError> {
     let handles = shell()?;
     let counts = cx.read(|app| {
-        let resources = handles.entity().read(app).resources();
+        let resources = handles.entity.read(app).resources();
         (resources.gradient_count(), resources.pattern_count())
     });
     if counts != expected {
@@ -208,7 +216,7 @@ fn imported_shape_references_resources(
 ) -> Result<(), TestSupportError> {
     let handles = shell()?;
     let matches = cx.read(|app| {
-        let shell = handles.entity().read(app);
+        let shell = handles.entity.read(app);
         let gradient = shell.resources().gradient_id_for_svg_id("sunset")?;
         let pattern = shell.resources().pattern_id_for_svg_id("dots")?;
         let shape = shell.document().shape_at(0)?;
@@ -232,7 +240,7 @@ fn original_state_preserved(
     let expected_resources = with_state(|state| state.initial_resources);
     let handles = shell()?;
     let actual = cx.read(|app| {
-        let shell = handles.entity().read(app);
+        let shell = handles.entity.read(app);
         let resources = shell.resources();
         (
             shell.document().len(),
@@ -267,7 +275,7 @@ fn open_error(cx: &TestAppContext) -> Result<Option<String>, TestSupportError> {
     let handles = shell()?;
     Ok(cx.read(|app| {
         handles
-            .entity()
+            .entity
             .read(app)
             .last_open_error()
             .map(str::to_owned)

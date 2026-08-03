@@ -1,15 +1,18 @@
 //! Behavioural coverage for opening the save prompt through the GPUI Save button.
 
 mod common;
-#[path = "common/file_io.rs"]
-mod file_io;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
+#[path = "common/path_prompt.rs"]
+mod path_prompt;
 #[path = "common/scenario_state.rs"]
 mod scenario_state;
 
 use common::{ensure_initial_draw, init_test_app};
-use file_io::{DurableShell, assert_no_path_prompt, assert_path_prompt};
+use durable_shell::DurableShell;
 use gauss::ui::Phase0Shell;
 use gpui::{Modifiers, TestAppContext, point, px};
+use path_prompt::{assert_no_path_prompt, assert_path_prompt};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use test_support::TestSupportError;

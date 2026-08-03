@@ -1,22 +1,32 @@
 //! Behavioural coverage for GPUI Save and web-ready export file dialogs.
 
 mod common;
-#[path = "common/file_io.rs"]
-mod file_io;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
 #[path = "gpui_file_io_save_dialog/fixtures.rs"]
 mod fixtures;
+#[path = "common/path_prompt.rs"]
+mod path_prompt;
 #[path = "common/scenario_state.rs"]
 mod scenario_state;
+#[path = "common/temp_svg.rs"]
+mod temp_svg;
+#[path = "common/temp_svg_exists.rs"]
+mod temp_svg_exists;
+#[path = "common/temp_svg_read.rs"]
+mod temp_svg_read;
 
 use std::{path::Path, rc::Rc};
 
 use common::{ensure_initial_draw, init_test_app};
-use file_io::{DurableShell, TempSvgFile, assert_no_path_prompt, assert_path_prompt};
+use durable_shell::DurableShell;
 use gauss::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
 use gauss::ui::{ExportSvgWebReady, Phase0Shell, SaveSvg};
 use gpui::TestAppContext;
+use path_prompt::{assert_no_path_prompt, assert_path_prompt};
 use rstest_bdd_macros::{scenario, then, when};
 use serial_test::serial;
+use temp_svg::TempSvgFile;
 use test_support::TestSupportError;
 
 /// The serialised path element that `Phase0Shell::new` seeds the document with.
@@ -142,7 +152,7 @@ fn save_outcome(
 ) -> Result<(Option<std::path::PathBuf>, Option<String>), TestSupportError> {
     let handles = shell()?;
     Ok(cx.read(|app| {
-        let shell = handles.entity().read(app);
+        let shell = handles.entity.read(app);
         (
             shell.last_saved_path().map(Path::to_path_buf),
             shell.last_save_error().map(str::to_owned),

@@ -54,9 +54,10 @@ context to act on.
 The `scenario_state!` macro lives in `tests/common/scenario_state.rs`, which
 each binary that needs it includes via
 `#[path = "common/scenario_state.rs"] mod scenario_state;`, the same pattern
-used for `file_io.rs` below. Because step functions cannot thread state
-through their arguments, each scenario binary keeps a thread-local state
-cell instead. Invoke `crate::scenario_state!(StateType)` once at the binary's
+used for the file I/O helper modules described below. Because step
+functions cannot thread state through their arguments, each scenario
+binary keeps a thread-local state cell instead. Invoke
+`crate::scenario_state!(StateType)` once at the binary's
 crate root with any `Default`-implementing state type; the macro generates
 the `STATE` cell, `with_state` and `reset_state` helpers, the
 `ScenarioStateCleanup` drop guard, and the `scenario_state_cleanup` rstest
@@ -91,12 +92,26 @@ save-dialog binary therefore stores an `Option<Rc<TempSvgFile>>` and clones
 the `Rc` out of the cell before reading the file, releasing the `RefCell`
 borrow first.
 
-`tests/common/file_io.rs` is deliberately not a submodule of `common`. Only
-the four `gpui_file_io_*` binaries include it, via
-`#[path = "common/file_io.rs"] mod file_io;`, so these helpers stay out of
-the shared surface that every GPUI integration test otherwise compiles.
-Within it, `assert_no_path_prompt(cx, context)` and
-`assert_path_prompt(cx, context)` share the underlying
+The file I/O helpers are deliberately not submodules of `common`. They live
+in six focused modules under `tests/common/`, each pulled in only by the
+binaries that use it, via `#[path = "common/<name>.rs"] mod <name>;`:
+
+- `durable_shell.rs` — `DurableShell`, included by all four
+  `gpui_file_io_*` binaries.
+- `path_prompt.rs` — `assert_no_path_prompt` and `assert_path_prompt`,
+  included by the click-save-button, open-dialog and save-dialog binaries.
+- `temp_svg.rs` — `TempSvgFile`, included by the open-dialog,
+  metadata-round-trip and save-dialog binaries.
+- `temp_svg_write.rs`, `temp_svg_read.rs` and `temp_svg_exists.rs` — the
+  `write`, `read_to_string` and `exists` operations on `TempSvgFile`,
+  each included only by the binaries that perform that operation.
+
+Splitting the helpers this finely means every module is fully used by
+every binary that includes it, so the compiler still catches a genuinely
+unused helper instead of a blanket `dead_code` expectation hiding it. It
+also keeps these helpers out of the shared surface that every GPUI
+integration test otherwise compiles. `assert_no_path_prompt(cx, context)`
+and `assert_path_prompt(cx, context)` share the underlying
 `did_prompt_for_new_path` check, while each step binding supplies its own
 failure message via `context`.
 

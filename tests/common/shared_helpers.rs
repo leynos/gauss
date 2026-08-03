@@ -14,9 +14,13 @@
 //! The surface has been reduced rather than merely suppressed: helpers that were
 //! dead in every binary are deleted, and helpers with a single consumer now live
 //! in that consumer. What remains is genuinely shared by several binaries.
-//! Newer file-I/O helpers deliberately stay outside this module, in
-//! `tests/common/file_io.rs`, which only the four consuming binaries include and
-//! which scopes its own expectation.
+//!
+//! The file-I/O helpers show the shape this module should eventually take. They
+//! sit outside it, split across `common/durable_shell.rs`, `common/path_prompt.rs`
+//! and the `common/temp_svg*.rs` modules, each included only by the binaries that
+//! use all of it — so none of them needs an expectation at all. Applying the same
+//! split here means roughly twenty modules across forty-one binaries, which issue
+//! #150 tracks separately.
 #![expect(
     clippy::float_arithmetic,
     reason = "integration tests use floating point geometry inputs"
