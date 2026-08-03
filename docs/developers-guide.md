@@ -101,6 +101,7 @@ selection queries live in `test_support::selection`, where other integration
 suites can reuse them without depending on GPUI. Include
 `tests/common/selection_coordinates.rs` only in binaries that convert selection
 coordinates, and keep pointer interaction helpers in `tests/common`.
+
 ### Stateful file I/O scenarios
 
 The `gpui_file_io_*` scenario binaries cover Save and export dialog
