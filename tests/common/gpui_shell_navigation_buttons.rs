@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_shell_navigation_buttons.rs`.
+//! Harness facade for the `tests/gpui_shell_navigation_buttons.rs` integration test.
+//!
+//! Re-exports drawing, canvas geometry, keyboard escape, and modifier input for
+//! navigation-button scenarios.
 
 mod anchor_point;
 mod canvas;

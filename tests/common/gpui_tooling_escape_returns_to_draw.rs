@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_tooling_escape_returns_to_draw.rs`.
+//! Harness facade for the `tests/gpui_tooling_escape_returns_to_draw.rs` integration test.
+//!
+//! Re-exports drag and drawing setup, tool-mode transitions, and history
+//! inspection for escape handling.
 
 mod canvas;
 mod canvas_bounds;

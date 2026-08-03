@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_selection_select_tool_noop_paths.rs`.
+//! Harness facade for the `tests/gpui_selection_select_tool_noop_paths.rs` integration test.
+//!
+//! Re-exports drag scenarios, tool-mode setup, and history and selection
+//! inspection for no-op paths.
 
 mod canvas;
 mod canvas_bounds;

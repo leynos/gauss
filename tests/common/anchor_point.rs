@@ -4,6 +4,12 @@ use super::canvas::CANVAS_PADDING_PX;
 use gauss::model::Vec2;
 use gpui::{Bounds, Pixels, Point, point, px};
 
+/// Maps an anchor from document or absolute coordinates into a canvas point.
+///
+/// `anchor` is interpreted relative to `bounds.origin` when it is nearer the
+/// padded local origin than the absolute `reference`; otherwise its components
+/// are used as absolute pixel coordinates. The returned point is always in the
+/// window coordinate space used by GPUI input events.
 pub fn anchor_to_canvas_point(
     bounds: &Bounds<Pixels>,
     anchor: Vec2,

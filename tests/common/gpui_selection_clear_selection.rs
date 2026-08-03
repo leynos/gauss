@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_selection_clear_selection.rs`.
+//! Harness facade for the `tests/gpui_selection_clear_selection.rs` integration test.
+//!
+//! Re-exports app and canvas setup, pointer input, and selection inspection for
+//! clear-selection scenarios.
 
 mod canvas_bounds;
 mod click_left;

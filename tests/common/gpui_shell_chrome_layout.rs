@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_shell_chrome_layout.rs`.
+//! Harness facade for the `tests/gpui_shell_chrome_layout.rs` integration test.
+//!
+//! Re-exports app and canvas setup, click interaction, and shape lookup for shell
+//! chrome layout scenarios.
 
 mod canvas_bounds;
 mod canvas_click;

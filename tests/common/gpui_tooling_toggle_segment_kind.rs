@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_tooling_toggle_segment_kind.rs`.
+//! Harness facade for the `tests/gpui_tooling_toggle_segment_kind.rs` integration test.
+//!
+//! Re-exports canvas input, document history, shape lookup, and vector assertions
+//! for segment-kind toggles.
 
 mod anchor_point;
 mod canvas;

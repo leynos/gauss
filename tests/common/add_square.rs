@@ -5,6 +5,15 @@ use gauss::model::{
 };
 use test_support::{TestSupportError, TestSupportResult};
 
+/// Appends a closed square spanning `min` to `max` and returns its generated ID.
+///
+/// The input points are opposite corners in document coordinates. The square is
+/// inserted above the existing shapes with the standard test paint style.
+///
+/// # Errors
+///
+/// Returns an error when the document length cannot be represented as an `i32`
+/// z-order value.
 pub fn add_square(doc: &mut Document, min: Vec2, max: Vec2) -> TestSupportResult<ShapeId> {
     let shape = Shape {
         id: ShapeId::default(),

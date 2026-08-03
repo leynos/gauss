@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_history_command_grouping_undo.rs`.
+//! Harness facade for the `tests/gpui_history_command_grouping_undo.rs` integration test.
+//!
+//! Re-exports app setup, document history controls, history inspection, and
+//! vector assertions for grouped undo.
 
 mod document;
 mod document_undo;

@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_shell_style_controls.rs`.
+//! Harness facade for the `tests/gpui_shell_style_controls.rs` integration test.
+//!
+//! Re-exports canvas interaction, document history, and shape inspection for
+//! style-control scenarios.
 
 mod anchor_point;
 mod canvas;

@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_history_draw_undo.rs`.
+//! Harness facade for the `tests/gpui_history_draw_undo.rs` integration test.
+//!
+//! Re-exports app and canvas setup, click interaction, and document inspection
+//! for drawing undo scenarios.
 
 mod canvas_bounds;
 mod canvas_click;

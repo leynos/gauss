@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_history_drag_handle_undo.rs`.
+//! Harness facade for the `tests/gpui_history_drag_handle_undo.rs` integration test.
+//!
+//! Re-exports handle-drag scenarios, drawing setup, document history, and
+//! vector assertions for drag undo.
 
 mod anchor_point;
 mod canvas;

@@ -1,4 +1,6 @@
-//! Narrow support surface for `gpui_selection_bbox_drag_requires_selection.rs`.
+//! Harness facade for the `tests/gpui_selection_bbox_drag_requires_selection.rs` integration test.
+//!
+//! Re-exports app and canvas setup plus square creation for selection-required bounding-box drags.
 
 mod add_square;
 mod canvas_bounds;

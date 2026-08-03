@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_history_selection_history.rs`.
+//! Harness facade for the `tests/gpui_history_selection_history.rs` integration test.
+//!
+//! Re-exports drawing and pointer input, app setup, and selection history
+//! controls for selection scenarios.
 
 mod anchor_point;
 mod canvas;

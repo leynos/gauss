@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_history_reorder_undo.rs`.
+//! Harness facade for the `tests/gpui_history_reorder_undo.rs` integration test.
+//!
+//! Re-exports canvas input, document history and selection inspection, and
+//! shape lookup for reorder undo.
 
 mod canvas_bounds;
 mod canvas_click;

@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_tooling_draw_escape_commits_open_path.rs`.
+//! Harness facade for the `tests/gpui_tooling_draw_escape_commits_open_path.rs` integration test.
+//!
+//! Re-exports canvas clicks, escape input, document inspection, and shape lookup
+//! for open-path commits.
 
 mod canvas_bounds;
 mod canvas_click;

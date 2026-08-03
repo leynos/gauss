@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_tooling_hit_test_service.rs`.
+//! Harness facade for the `tests/gpui_tooling_hit_test_service.rs` integration test.
+//!
+//! Re-exports app initialization, initial-draw synchronization, and canvas bounds
+//! for hit-test scenarios.
 
 mod canvas_bounds;
 mod init_app;

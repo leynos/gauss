@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_shell_quit_button.rs`.
+//! Harness facade for the `tests/gpui_shell_quit_button.rs` integration test.
+//!
+//! Re-exports app initialization and initial-draw synchronization for
+//! quit-button interaction scenarios.
 
 mod init_app;
 mod initial_draw;

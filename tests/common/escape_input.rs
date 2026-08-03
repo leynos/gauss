@@ -2,6 +2,7 @@
 
 use gpui::{KeyDownEvent, Keystroke, Modifiers, VisualTestContext};
 
+/// Dispatches an unmodified Escape key-down event and drains the event loop.
 pub fn simulate_escape(visual_cx: &mut VisualTestContext) {
     visual_cx.simulate_event(KeyDownEvent {
         keystroke: Keystroke {

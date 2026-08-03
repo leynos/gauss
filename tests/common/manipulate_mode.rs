@@ -3,6 +3,10 @@
 use gauss::ui::Phase0Shell;
 use gpui::{Entity, KeyDownEvent, Keystroke, Modifiers, Pixels, Point, VisualTestContext};
 
+/// Presses Escape to enter manipulate mode and verifies a click adds no shape.
+///
+/// The helper drains the event loop after each input and panics if the click
+/// changes the document's shape count.
 pub fn switch_to_manipulate_mode_and_verify(
     visual_cx: &mut VisualTestContext,
     view: &Entity<Phase0Shell>,

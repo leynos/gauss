@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_draw_undo_bdd.rs`.
+//! Harness facade for the `tests/gpui_draw_undo_bdd.rs` integration test.
+//!
+//! Re-exports app and canvas setup, document history controls, and shape lookup
+//! helpers for draw undo scenarios.
 
 mod canvas;
 mod canvas_bounds;

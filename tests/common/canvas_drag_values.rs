@@ -1,14 +1,14 @@
 //! Raw bounded canvas-drag values for domain-specific test scenarios.
-#![expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
-
 use super::{canvas::CANVAS_PADDING_PX, canvas_bounds::canvas_bounds};
 use gauss::model::Vec2;
 use gpui::{Bounds, Pixels, Point, VisualTestContext, point, px};
 use test_support::TestSupportResult;
 
+/// Raw canvas-drag geometry ordered as bounds, first point, opposing point,
+/// drag endpoint, and document-space delta.
+///
+/// Both canvas points use the two-pixel inset defined by
+/// [`CANVAS_PADDING_PX`].
 pub type CanvasDragValues = (
     Bounds<Pixels>,
     Point<Pixels>,
@@ -17,6 +17,19 @@ pub type CanvasDragValues = (
     Vec2,
 );
 
+/// Calculates raw drag geometry bounded by the canvas and supplied axis limits.
+///
+/// The canvas points are inset by two pixels. Positive limits are capped by
+/// the drawable extent, while negative limits remain negative and therefore
+/// produce a drag towards the leading edge.
+///
+/// # Errors
+///
+/// Propagates failure to locate the canvas bounds.
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
 pub fn canvas_drag_values(
     visual_cx: &mut VisualTestContext,
     horizontal_limit: f32,

@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_selection_multi_shape_drag.rs`.
+//! Harness facade for the `tests/gpui_selection_multi_shape_drag.rs` integration test.
+//!
+//! Re-exports multi-shape and canvas setup, document inspection, and translation
+//! assertions for selection drags.
 
 mod add_square;
 mod canvas_bounds;

@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_tooling_close_path.rs`.
+//! Harness facade for the `tests/gpui_tooling_close_path.rs` integration test.
+//!
+//! Re-exports app and canvas setup, drawing input, and shape inspection for
+//! close-path tooling scenarios.
 
 mod anchor_point;
 mod canvas;

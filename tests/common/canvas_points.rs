@@ -6,6 +6,11 @@ use test_support::TestSupportResult;
 
 use super::canvas_bounds::canvas_bounds;
 
+/// Returns opposing canvas points inset by [`CANVAS_PADDING_PX`].
+///
+/// # Errors
+///
+/// Propagates failure to locate the canvas bounds.
 pub fn canvas_points(
     visual_cx: &mut VisualTestContext,
 ) -> TestSupportResult<(Point<Pixels>, Point<Pixels>)> {

@@ -3,6 +3,15 @@
 use gauss::model::{Shape, Vec2};
 use test_support::{TestSupportError, TestSupportResult};
 
+/// Checks that every anchor in `shape` equals its original plus `delta`.
+///
+/// Both shapes must have the same anchor count. Each translated anchor may
+/// differ from its expected document-space position by at most `0.01` units.
+///
+/// # Errors
+///
+/// Returns a test-support expectation error when anchor counts differ or an
+/// anchor exceeds the translation tolerance; diagnostics include `context`.
 pub fn assert_shape_translated_by_delta(
     shape: &Shape,
     original: &Shape,

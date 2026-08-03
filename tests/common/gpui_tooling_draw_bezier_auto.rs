@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_tooling_draw_bezier_auto.rs`.
+//! Harness facade for the `tests/gpui_tooling_draw_bezier_auto.rs` integration test.
+//!
+//! Re-exports drawing and canvas setup plus vector assertions for automatic
+//! Bézier construction scenarios.
 
 mod canvas_bounds;
 mod draw_point;

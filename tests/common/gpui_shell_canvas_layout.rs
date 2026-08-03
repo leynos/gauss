@@ -1,4 +1,6 @@
-//! Narrow support surface for `gpui_shell_canvas_layout.rs`.
+//! Harness facade for the `tests/gpui_shell_canvas_layout.rs` integration test.
+//!
+//! Re-exports app setup, canvas bounds, and the minimum canvas height for shell layout assertions.
 
 mod canvas_bounds;
 mod canvas_height;

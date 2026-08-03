@@ -1,4 +1,6 @@
-//! Narrow support surface for `gpui_shell_viewport_input.rs`.
+//! Harness facade for the `tests/gpui_shell_viewport_input.rs` integration test.
+//!
+//! Re-exports app setup, canvas bounds, and the canvas inset for viewport input assertions.
 
 mod canvas;
 mod canvas_bounds;

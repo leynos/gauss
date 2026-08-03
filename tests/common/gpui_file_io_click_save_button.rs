@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_file_io_click_save_button.rs`.
+//! Harness facade for the `tests/gpui_file_io_click_save_button.rs` integration test.
+//!
+//! Re-exports app initialization and initial-draw synchronization for
+//! save-button interaction scenarios.
 
 mod init_app;
 mod initial_draw;

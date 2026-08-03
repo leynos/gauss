@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_history_anchor_edit_undo.rs`.
+//! Harness facade for the `tests/gpui_history_anchor_edit_undo.rs` integration test.
+//!
+//! Re-exports canvas interaction, document history, keyboard input, and vector
+//! assertions for anchor-edit undo.
 
 mod anchor_point;
 mod canvas;

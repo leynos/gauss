@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_history_close_path_undo.rs`.
+//! Harness facade for the `tests/gpui_history_close_path_undo.rs` integration test.
+//!
+//! Re-exports drawing, canvas conversion, document history, and app lifecycle
+//! helpers for close-path undo.
 
 mod anchor_point;
 mod canvas;

@@ -1,4 +1,6 @@
-//! Narrow support surface for `gpui_selection_multi_select.rs`.
+//! Harness facade for the `tests/gpui_selection_multi_select.rs` integration test.
+//!
+//! Re-exports drawing and canvas setup plus modifier input for multi-selection scenarios.
 
 mod anchor_point;
 mod canvas;

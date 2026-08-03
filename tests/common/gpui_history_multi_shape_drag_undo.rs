@@ -1,4 +1,7 @@
-//! Narrow support surface for `gpui_history_multi_shape_drag_undo.rs`.
+//! Harness facade for the `tests/gpui_history_multi_shape_drag_undo.rs` integration test.
+//!
+//! Re-exports multi-shape setup, document history controls, and translation
+//! assertions for drag undo.
 
 mod add_square;
 mod canvas_bounds;
