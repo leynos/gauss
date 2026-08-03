@@ -10,6 +10,7 @@ CARGO ?= $(or $(wildcard $(HOME)/.cargo/bin/cargo),cargo)
 BUILD_JOBS ?=
 RUST_FLAGS ?=
 RUST_FLAGS := -D warnings $(RUST_FLAGS)
+RUSTDOC_FLAGS ?= --cfg docsrs -D warnings
 CARGO_FLAGS ?= --workspace --all-targets --all-features
 CLIPPY_FLAGS ?= $(CARGO_FLAGS) -- $(RUST_FLAGS)
 TEST_FLAGS ?= $(CARGO_FLAGS)
@@ -37,6 +38,7 @@ test: ## Run tests (nextest if available, otherwise cargo test)
 		echo "cargo-nextest not installed, falling back to cargo test"; \
 		RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) test $(TEST_FLAGS) $(BUILD_JOBS); \
 	fi
+	RUSTFLAGS="-D warnings" $(CARGO) test --workspace --doc --all-features $(BUILD_JOBS)
 
 test-ci: ## Run tests with CI profile (stricter settings)
 	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile ci $(TEST_FLAGS) $(BUILD_JOBS)

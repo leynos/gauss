@@ -65,7 +65,9 @@ where
 /// Assert that a command fails with `ShapeNotFound` for a specific shape ID.
 pub fn assert_fails_with_shape_not_found(doc: Document, cmd: &Command, expected_id: ShapeId) {
     assert_command_error(doc, cmd, |err| match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, expected_id),
+        UserError::ShapeNotFound(id) => {
+            assert_eq!(id, expected_id, "error should report the missing shape");
+        }
         other => panic!("unexpected error: {other:?}"),
     });
 }
@@ -77,7 +79,9 @@ pub fn assert_inverse_fails_with_shape_not_found(
     expected_id: ShapeId,
 ) {
     assert_inverse_error(doc, inverse, |err| match err {
-        UserError::ShapeNotFound(id) => assert_eq!(id, expected_id),
+        UserError::ShapeNotFound(id) => {
+            assert_eq!(id, expected_id, "error should report the missing shape");
+        }
         other => panic!("unexpected error: {other:?}"),
     });
 }
@@ -91,8 +95,14 @@ pub fn assert_fails_with_anchor_not_found(
 ) {
     assert_command_error(doc, cmd, |err| match err {
         UserError::AnchorNotFound(sid, idx) => {
-            assert_eq!(sid, expected_shape_id);
-            assert_eq!(idx, expected_anchor_idx);
+            assert_eq!(
+                sid, expected_shape_id,
+                "error should report the target shape"
+            );
+            assert_eq!(
+                idx, expected_anchor_idx,
+                "error should report the missing anchor"
+            );
         }
         other => panic!("unexpected error: {other:?}"),
     });
@@ -107,8 +117,14 @@ pub fn assert_fails_with_segment_not_found(
 ) {
     assert_command_error(doc, cmd, |err| match err {
         UserError::SegmentNotFound(sid, idx) => {
-            assert_eq!(sid, expected_shape_id);
-            assert_eq!(idx, expected_segment_idx);
+            assert_eq!(
+                sid, expected_shape_id,
+                "error should report the target shape"
+            );
+            assert_eq!(
+                idx, expected_segment_idx,
+                "error should report the missing segment"
+            );
         }
         other => panic!("unexpected error: {other:?}"),
     });

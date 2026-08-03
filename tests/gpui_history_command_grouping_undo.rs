@@ -402,6 +402,7 @@ fn verify_history_operation_while_group_active_fails(
     assert_eq!(
         read_last_history_error(visual_cx, &view),
         Some(expected_error),
+        "expected grouped {operation_name} to record its history error",
     );
 
     close_group_after_failed_history_operation(visual_cx, &view, operation);

@@ -1,6 +1,7 @@
 //! Behavioural coverage for preserving Gauss metadata through GPUI save and open flows.
 
 mod common;
+
 #[path = "common/durable_shell.rs"]
 mod durable_shell;
 #[path = "common/scenario_state.rs"]
