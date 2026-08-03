@@ -1,10 +1,19 @@
-//! Behavioural coverage for dragging a multi-shape selection.
+//! BDD coverage for dragging every shape in a multi-shape selection.
+//!
+//! This binary binds the corresponding scenario in `selection.feature` to the
+//! GPUI `GpuiHarness`. Canvas operations and GPUI coordinates come from
+//! `common`, durable handles come from `selection_bdd::support`, and model-only
+//! shape and selection queries come from `test_support::selection` for reuse
+//! across test suites.
 
 mod common;
 #[path = "selection_bdd/support.rs"]
-mod support;
+pub mod support;
 
-use common::{add_square, assert_shape_translated_by_delta, canvas_bounds, read_document};
+use common::{
+    add_square, assert_shape_translated_by_delta, canvas_bounds, read_document,
+    viewport_to_screen_point,
+};
 use gauss::model::{SelItem, Selection, Shape, ShapeId, Vec2};
 use gpui::{Modifiers, MouseButton, TestAppContext};
 use rstest_bdd_macros::{given, scenario, then, when};
@@ -15,7 +24,7 @@ use support::{
 };
 use test_support::TestSupportError;
 use test_support::selection::{
-    require_selection_contains_shapes, require_shape, shape_bbox_centre, viewport_to_screen_point,
+    require_selection_contains_shapes, require_shape, shape_bbox_centre,
 };
 
 struct ScenarioData {

@@ -1,8 +1,14 @@
-//! Behavioural coverage for selecting a shape through its bounding box.
+//! BDD coverage for selecting a shape through its bounding box.
+//!
+//! This binary binds the corresponding press-time scenario in
+//! `selection.feature` to the GPUI `GpuiHarness`. It uses `common` for canvas
+//! geometry and `selection_bdd::support` for reusable lifecycle state, then
+//! records the shell selection before mouse-up. Model-only helpers shared by
+//! other binaries live in `test_support::selection`.
 
 mod common;
 #[path = "selection_bdd/support.rs"]
-mod support;
+pub mod support;
 
 use common::canvas_bounds;
 use gauss::model::{Document, SelItem, Selection, ShapeId, Vec2};

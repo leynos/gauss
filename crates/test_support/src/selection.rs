@@ -1,7 +1,6 @@
-//! Reusable selection queries and coordinate helpers for integration tests.
+//! Reusable model-only selection queries for integration tests.
 
-use gauss_core::model::{Document, SelItem, Selection, Shape, ShapeId, Vec2, Viewport};
-use gpui::{Pixels, Point, px};
+use gauss_core::model::{Document, SelItem, Selection, Shape, ShapeId, Vec2};
 
 use crate::{TestSupportError, TestSupportResult, math};
 
@@ -45,13 +44,6 @@ pub fn shape_bbox_centre(shape: &Shape) -> TestSupportResult<Vec2> {
         math::midpoint(min_x, max_x),
         math::midpoint(min_y, max_y),
     ))
-}
-
-/// Convert a world-space point into GPUI screen coordinates.
-#[must_use]
-pub const fn viewport_to_screen_point(viewport: Viewport, world: Vec2) -> Point<Pixels> {
-    let screen = viewport.world_to_screen(world);
-    gpui::point(px(screen.x), px(screen.y))
 }
 
 /// Require a selection to contain exactly the expected shapes.

@@ -1,8 +1,14 @@
-//! Behavioural coverage for manipulate-mode no-op pointer paths.
+//! BDD coverage for manipulate-mode pointer paths that must be no-ops.
+//!
+//! This binary binds the right-click and zero-delta scenarios in
+//! `selection.feature` to the GPUI `GpuiHarness`. It reuses pointer and history
+//! utilities from `common` and durable lifecycle state from
+//! `selection_bdd::support` to compare state before and after. Model-only
+//! helpers shared by other binaries live in `test_support::selection`.
 
 mod common;
 #[path = "selection_bdd/support.rs"]
-mod support;
+pub mod support;
 
 use common::{
     canvas_bounds, canvas_drag_scenario, draw_point, read_history_len, read_selection,

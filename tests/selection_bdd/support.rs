@@ -1,4 +1,11 @@
-//! Shared durable GPUI state for selection behavioural scenarios.
+//! Shared GPUI lifecycle support for the selection BDD integration binaries.
+//!
+//! Each binary binds scenarios from `selection.feature` through `GpuiHarness`
+//! and textually includes this module. The support retains window handles,
+//! interaction points, and binary-specific payloads between steps. `common`
+//! initializes the Phase 0 shell and owns GPUI interactions and coordinates;
+//! model-only assertions live in `test_support::selection` for reuse outside
+//! the GPUI harness.
 
 use std::{any::Any, cell::RefCell};
 
@@ -37,6 +44,11 @@ pub fn set_scenario_data<T: 'static>(data: T) {
 }
 
 /// Mutate the scenario-specific payload as its concrete type.
+///
+/// # Errors
+///
+/// Returns an error when the scenario payload is absent or has a different
+/// concrete type.
 pub fn with_scenario_data<T: 'static, R>(
     context: &str,
     f: impl FnOnce(&mut T) -> R,
@@ -68,14 +80,42 @@ impl Drop for ScenarioStateCleanup {
     }
 }
 
-#[fixture]
 /// Reset scenario state before execution and return its cleanup guard.
+#[fixture]
 pub fn scenario_state_cleanup() -> ScenarioStateCleanup {
     reset_state_before_assignment();
     ScenarioStateCleanup
 }
 
+/// Require a recorded press not to have started a drag gesture.
+///
+/// # Errors
+///
+/// Returns an error when the press started a drag or no press state was
+/// recorded.
+pub fn assert_no_drag_after_press(
+    drag_started_after_press: Option<bool>,
+    drag_started_message: &str,
+    missing_record_message: &str,
+) -> TestSupportResult<()> {
+    match drag_started_after_press {
+        Some(false) => Ok(()),
+        Some(true) => Err(TestSupportError::expectation(
+            drag_started_message.to_owned(),
+        )),
+        None => Err(TestSupportError::missing(
+            "drag state after press",
+            missing_record_message,
+        )),
+    }
+}
+
 /// Reconstruct a visual context from the durable handles for this scenario.
+///
+/// # Errors
+///
+/// Returns an error when the scenario handles are absent or the supplied
+/// operation fails.
 pub fn with_visual_cx<R>(
     cx: &mut TestAppContext,
     f: impl FnOnce(&mut VisualTestContext, &Entity<Phase0Shell>) -> TestSupportResult<R>,
@@ -92,6 +132,10 @@ pub fn with_visual_cx<R>(
 }
 
 /// Read a recorded screen point by index.
+///
+/// # Errors
+///
+/// Returns an error when no point is recorded at `index`.
 pub fn require_point(index: usize, context: &str) -> TestSupportResult<Point<Pixels>> {
     with_state(|state| state.points.get(index).copied()).ok_or_else(|| {
         TestSupportError::missing(format!("scenario point {index}"), context.to_owned())

@@ -9,43 +9,13 @@ mod common;
 use common::{
     add_square, assert_shape_translated_by_delta, canvas_bounds, ensure_initial_draw,
     init_test_app, read_document, read_history_len, simulate_document_undo,
+    viewport_to_screen_point,
 };
-use gauss::model::{Document, SelItem, Shape, ShapeId, Vec2};
+use gauss::model::{SelItem, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, px};
-use test_support::{TestSupportError, TestSupportResult, math};
-
-fn find_shape<'a>(doc: &'a Document, id: ShapeId, context: &str) -> TestSupportResult<&'a Shape> {
-    let message = format!("shape {id:?}: {context}");
-    doc.shape(id)
-        .ok_or_else(|| TestSupportError::missing("shape", message))
-}
-
-fn shape_bbox_centre(shape: &Shape) -> Vec2 {
-    assert!(
-        !shape.path.anchors.is_empty(),
-        "expected shape anchors when computing bounding box centre"
-    );
-    let mut min_x = f32::INFINITY;
-    let mut min_y = f32::INFINITY;
-    let mut max_x = f32::NEG_INFINITY;
-    let mut max_y = f32::NEG_INFINITY;
-    for anchor in &shape.path.anchors {
-        min_x = min_x.min(anchor.pos.x);
-        min_y = min_y.min(anchor.pos.y);
-        max_x = max_x.max(anchor.pos.x);
-        max_y = max_y.max(anchor.pos.y);
-    }
-    Vec2::new(math::midpoint(min_x, max_x), math::midpoint(min_y, max_y))
-}
-
-const fn viewport_to_screen_point(
-    viewport: gauss::model::Viewport,
-    world: Vec2,
-) -> gpui::Point<gpui::Pixels> {
-    let screen = viewport.world_to_screen(world);
-    gpui::point(px(screen.x), px(screen.y))
-}
+use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext};
+use test_support::TestSupportResult;
+use test_support::selection::{require_shape, shape_bbox_centre};
 
 fn arrange_multi_shape_selection(
     visual_cx: &mut VisualTestContext,
@@ -91,16 +61,16 @@ fn multi_shape_drag_creates_exactly_one_undo_entry(cx: &mut TestAppContext) {
     let viewport = visual_cx.read(|app| view.read(app).viewport());
 
     let doc_before = read_document(visual_cx, &view);
-    let shape1_before = find_shape(&doc_before, shape1_id, "before drag")
+    let shape1_before = require_shape(&doc_before, shape1_id, "before drag")
         .expect("expected shape1")
         .clone();
-    let shape2_before = find_shape(&doc_before, shape2_id, "before drag")
+    let shape2_before = require_shape(&doc_before, shape2_id, "before drag")
         .expect("expected shape2")
         .clone();
 
     let len_before = read_history_len(visual_cx, &view);
 
-    let start_model = shape_bbox_centre(&shape1_before);
+    let start_model = shape_bbox_centre(&shape1_before).expect("shape1 should have anchors");
     let delta = Vec2::new(20.0, 10.0);
     let start_screen = viewport_to_screen_point(viewport, start_model);
     let end_screen = viewport_to_screen_point(viewport, start_model.add(delta));
@@ -120,9 +90,9 @@ fn multi_shape_drag_creates_exactly_one_undo_entry(cx: &mut TestAppContext) {
 
     let doc_after = read_document(visual_cx, &view);
     let shape1_after =
-        find_shape(&doc_after, shape1_id, "after drag").expect("expected shape1 after drag");
+        require_shape(&doc_after, shape1_id, "after drag").expect("expected shape1 after drag");
     let shape2_after =
-        find_shape(&doc_after, shape2_id, "after drag").expect("expected shape2 after drag");
+        require_shape(&doc_after, shape2_id, "after drag").expect("expected shape2 after drag");
     assert_shape_translated_by_delta(shape1_after, &shape1_before, delta, "shape1 after drag")
         .expect("expected shape1 to translate");
     assert_shape_translated_by_delta(shape2_after, &shape2_before, delta, "shape2 after drag")
@@ -131,10 +101,10 @@ fn multi_shape_drag_creates_exactly_one_undo_entry(cx: &mut TestAppContext) {
     simulate_document_undo(visual_cx);
 
     let doc_after_undo = read_document(visual_cx, &view);
-    let shape1_restored =
-        find_shape(&doc_after_undo, shape1_id, "after undo").expect("expected shape1 after undo");
-    let shape2_restored =
-        find_shape(&doc_after_undo, shape2_id, "after undo").expect("expected shape2 after undo");
+    let shape1_restored = require_shape(&doc_after_undo, shape1_id, "after undo")
+        .expect("expected shape1 after undo");
+    let shape2_restored = require_shape(&doc_after_undo, shape2_id, "after undo")
+        .expect("expected shape2 after undo");
     assert_shape_translated_by_delta(shape1_restored, &shape1_before, Vec2::ZERO, "shape1 undo")
         .expect("expected shape1 to restore");
     assert_shape_translated_by_delta(shape2_restored, &shape2_before, Vec2::ZERO, "shape2 undo")

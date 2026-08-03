@@ -1,20 +1,29 @@
-//! Behavioural coverage for bounding-box drags of unselected shapes.
+//! BDD coverage for dragging an unselected shape by its bounding box.
+//!
+//! This binary binds the corresponding scenario in `selection.feature` to the
+//! GPUI `GpuiHarness`. It uses `common` for canvas interactions and GPUI
+//! coordinates, shared lifecycle state from `selection_bdd::support`, and
+//! reusable model queries from `test_support::selection` to preserve the
+//! press-time selection rule.
 
 mod common;
 #[path = "selection_bdd/support.rs"]
-mod support;
+pub mod support;
 
-use common::{add_square, assert_shape_translated_by_delta, canvas_bounds, read_document};
+use common::{
+    add_square, assert_shape_translated_by_delta, canvas_bounds, read_document,
+    viewport_to_screen_point,
+};
 use gauss::model::{Document, SelItem, Selection, Shape, ShapeId, Vec2};
 use gpui::{Modifiers, MouseButton, TestAppContext};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use support::{
-    ScenarioStateCleanup, require_point, set_scenario_data, with_scenario_data, with_state,
-    with_visual_cx,
+    ScenarioStateCleanup, assert_no_drag_after_press, require_point, set_scenario_data,
+    with_scenario_data, with_state, with_visual_cx,
 };
 use test_support::TestSupportError;
-use test_support::selection::{require_shape, shape_bbox_centre, viewport_to_screen_point};
+use test_support::selection::{require_shape, shape_bbox_centre};
 
 struct ScenarioData {
     shape_id: ShapeId,
@@ -105,18 +114,15 @@ fn square_is_selected(
 
 #[then("no drag starts before the square is preselected")]
 fn no_drag_starts_before_preselection() -> Result<(), TestSupportError> {
-    match with_scenario_data::<ScenarioData, _>("drag state after press", |data| {
-        data.drag_started_after_press
-    })? {
-        Some(false) => Ok(()),
-        Some(true) => Err(TestSupportError::expectation(
-            "unselected bounding-box press started a drag".to_owned(),
-        )),
-        None => Err(TestSupportError::missing(
-            "drag state after press",
-            "recorded by the drag step",
-        )),
-    }
+    let drag_started_after_press =
+        with_scenario_data::<ScenarioData, _>("drag state after press", |data| {
+            data.drag_started_after_press
+        })?;
+    assert_no_drag_after_press(
+        drag_started_after_press,
+        "unselected bounding-box press started a drag",
+        "recorded by the drag step",
+    )
 }
 
 #[then("the square remains unchanged")]

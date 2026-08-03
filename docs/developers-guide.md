@@ -96,10 +96,11 @@ Selection scenarios share their durable window lifecycle through
 `tests/selection_bdd/support.rs`. That module stores only handles and screen
 points needed by every selection test binary. Each binary defines its own typed
 scenario payload and installs it with `set_scenario_data`; this keeps unused
-fields out of binaries that do not need them. Framework-independent shape
-queries and coordinate conversion live in `test_support::selection`, where
-other integration suites can reuse them without depending on the root GPUI
-application crate.
+fields out of binaries that do not need them. Framework-independent shape and
+selection queries live in `test_support::selection`, where other integration
+suites can reuse them without depending on GPUI. Keep coordinate conversion in
+`tests/common::viewport_to_screen_point` and pointer interaction helpers in
+`tests/common`; reuse both from BDD and direct GPUI tests.
 ### Stateful file I/O scenarios
 
 The `gpui_file_io_*` scenario binaries cover Save and export dialog

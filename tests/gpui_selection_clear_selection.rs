@@ -1,8 +1,14 @@
-//! Behavioural coverage for clearing a selection by clicking empty canvas.
+//! BDD coverage for clearing selection by clicking empty canvas space.
+//!
+//! This binary binds the corresponding scenario in `selection.feature` to the
+//! GPUI `GpuiHarness`. It combines canvas utilities from `common` with reusable
+//! lifecycle state in `selection_bdd::support`. The assertion reads the Phase
+//! 0 shell directly; model-only helpers shared by other binaries live in
+//! `test_support::selection`.
 
 mod common;
 #[path = "selection_bdd/support.rs"]
-mod support;
+pub mod support;
 
 use common::{canvas_bounds, click_left_and_wait, read_selection};
 use gauss::model::{Document, SelItem, Selection, ShapeId, Vec2};

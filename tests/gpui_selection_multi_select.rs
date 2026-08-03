@@ -1,8 +1,14 @@
-//! Behavioural coverage for Shift-click anchor multi-selection.
+//! BDD coverage for Shift-click anchor multi-selection without dragging.
+//!
+//! This binary binds the corresponding scenario in `selection.feature` to the
+//! GPUI `GpuiHarness`. It uses `common` for anchor coordinates and modifiers,
+//! while `selection_bdd::support` supplies reusable lifecycle state for the
+//! ordered clicks and press-time drag observations. Model-only helpers shared
+//! by other binaries live in `test_support::selection`.
 
 mod common;
 #[path = "selection_bdd/support.rs"]
-mod support;
+pub mod support;
 
 use common::{
     anchor_to_canvas_point, canvas_bounds, draw_point, read_document, require_draw_shape,
@@ -13,8 +19,8 @@ use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use support::{
-    ScenarioStateCleanup, require_point, set_scenario_data, with_scenario_data, with_state,
-    with_visual_cx,
+    ScenarioStateCleanup, assert_no_drag_after_press, require_point, set_scenario_data,
+    with_scenario_data, with_state, with_visual_cx,
 };
 use test_support::TestSupportError;
 
@@ -160,18 +166,15 @@ fn only_second_anchor_is_selected(
 
 #[then("no drag is active")]
 fn no_drag_is_active() -> Result<(), TestSupportError> {
-    match with_scenario_data::<ScenarioData, _>("Shift-click drag state", |data| {
-        data.drag_started_after_press
-    })? {
-        Some(false) => Ok(()),
-        Some(true) => Err(TestSupportError::expectation(
-            "Shift-click started a drag gesture".to_owned(),
-        )),
-        None => Err(TestSupportError::missing(
-            "drag state after press",
-            "recorded by the anchor-click step",
-        )),
-    }
+    let drag_started_after_press =
+        with_scenario_data::<ScenarioData, _>("Shift-click drag state", |data| {
+            data.drag_started_after_press
+        })?;
+    assert_no_drag_after_press(
+        drag_started_after_press,
+        "Shift-click started a drag gesture",
+        "recorded by the anchor-click step",
+    )
 }
 
 #[scenario(

@@ -8,3 +8,12 @@
 mod shared_helpers;
 
 pub use shared_helpers::*;
+
+/// Convert a world-space point into GPUI screen coordinates.
+pub const fn viewport_to_screen_point(
+    viewport: gauss::model::Viewport,
+    world: Vec2,
+) -> Point<Pixels> {
+    let screen = viewport.world_to_screen(world);
+    point(px(screen.x), px(screen.y))
+}
