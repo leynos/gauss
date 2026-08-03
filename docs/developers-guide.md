@@ -1,6 +1,5 @@
 # Developer's guide
 
-
 ## Validate lint and documentation policy
 
 Install the pinned Rust toolchain from the repository root before running the
