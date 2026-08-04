@@ -3,12 +3,19 @@
 //! Re-exports app and canvas setup, drawing input, and shape inspection for
 //! close-path tooling scenarios.
 
+#[path = "anchor_point.rs"]
 mod anchor_point;
+#[path = "canvas.rs"]
 mod canvas;
+#[path = "canvas_bounds.rs"]
 mod canvas_bounds;
+#[path = "draw_point.rs"]
 mod draw_point;
+#[path = "draw_shape.rs"]
 mod draw_shape;
+#[path = "init_app.rs"]
 mod init_app;
+#[path = "initial_draw.rs"]
 mod initial_draw;
 
 pub use anchor_point::anchor_to_canvas_point;

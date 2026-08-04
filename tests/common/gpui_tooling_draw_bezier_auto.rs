@@ -3,11 +3,17 @@
 //! Re-exports drawing and canvas setup plus vector assertions for automatic
 //! Bézier construction scenarios.
 
+#[path = "canvas_bounds.rs"]
 mod canvas_bounds;
+#[path = "draw_point.rs"]
 mod draw_point;
+#[path = "draw_shape.rs"]
 mod draw_shape;
+#[path = "init_app.rs"]
 mod init_app;
+#[path = "initial_draw.rs"]
 mod initial_draw;
+#[path = "vec2_assertion.rs"]
 mod vec2_assertion;
 
 pub use canvas_bounds::canvas_bounds;

@@ -3,18 +3,31 @@
 //! Re-exports shape-drag setup, document history controls, and translation
 //! assertions for shape-drag undo.
 
+#[path = "canvas.rs"]
 mod canvas;
+#[path = "canvas_bounds.rs"]
 mod canvas_bounds;
+#[path = "canvas_drag_delta.rs"]
 mod canvas_drag_delta;
+#[path = "canvas_drag_values.rs"]
 mod canvas_drag_values;
+#[path = "document.rs"]
 mod document;
+#[path = "document_undo.rs"]
 mod document_undo;
+#[path = "draw_point.rs"]
 mod draw_point;
+#[path = "draw_shape.rs"]
 mod draw_shape;
+#[path = "history.rs"]
 mod history;
+#[path = "init_app.rs"]
 mod init_app;
+#[path = "initial_draw.rs"]
 mod initial_draw;
+#[path = "manipulate_mode.rs"]
 mod manipulate_mode;
+#[path = "shape_translation.rs"]
 mod shape_translation;
 
 pub use canvas_drag_delta::canvas_drag_scenario;
