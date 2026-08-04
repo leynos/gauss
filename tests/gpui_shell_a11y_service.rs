@@ -12,10 +12,31 @@ mod expect_true_support;
 #[path = "shell_bdd/support.rs"]
 mod support;
 
+use std::cell::RefCell;
+
+use accesskit::{Action, ActionRequest, Role, TreeId, TreeUpdate};
+use expect_equal_support::expect_equal;
+use expect_true_support::expect_true;
+use gauss::model::{SelItem, Selection, ShapeId, Vec2};
+use gauss::ui::Phase0Shell;
+use gauss::ui::phase0_shell::{
+    A11yActionRequestError, A11yRequestedAction, A11yUpdateKind, A11yWindowAction, CloseWindow,
+    accessibility,
+};
+use gpui::TestAppContext;
+use rstest_bdd_macros::{given, scenario, then, when};
+use serial_test::serial;
+use support::{ScenarioStateCleanup, fresh_shell_with, with_shell};
+use test_support::{TestSupportError, TestSupportResult};
+
 #[derive(Default)]
 struct A11yState {
     inserted_shape_id: Option<u64>,
     routed: Option<Result<A11yRequestedAction, A11yActionRequestError>>,
+}
+
+thread_local! {
+    static A11Y_STATE: RefCell<A11yState> = RefCell::new(A11yState::default());
 }
 
 #[given("a fresh Phase 0 shell window")]
