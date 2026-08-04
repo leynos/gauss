@@ -9,8 +9,18 @@ pub struct TempFileGuard {
     pub dir: Dir,
     /// File name relative to [`Self::dir`] used for cleanup.
     pub file_name: Utf8PathBuf,
-    /// Optional full path to the final file for tests that need to reopen it.
-    pub path: Option<Utf8PathBuf>,
+}
+
+impl TempFileGuard {
+    /// Creates a cleanup guard for `file_name` within `dir`.
+    pub const fn new(dir: Dir, file_name: Utf8PathBuf) -> Self {
+        Self { dir, file_name }
+    }
+
+    /// Returns the capability-scoped directory containing the temporary file.
+    pub const fn dir(&self) -> &Dir {
+        &self.dir
+    }
 }
 
 impl Drop for TempFileGuard {

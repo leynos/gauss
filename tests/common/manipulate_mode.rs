@@ -2,16 +2,21 @@
 
 use gauss::ui::Phase0Shell;
 use gpui::{Entity, KeyDownEvent, Keystroke, Modifiers, Pixels, Point, VisualTestContext};
+use test_support::{TestSupportError, TestSupportResult};
 
 /// Presses Escape to enter manipulate mode and verifies a click adds no shape.
 ///
-/// The helper drains the event loop after each input and panics if the click
-/// changes the document's shape count.
+/// The helper drains the event loop after each input.
+///
+/// # Errors
+///
+/// Returns an error if the manipulate-mode click changes the document's shape
+/// count.
 pub fn switch_to_manipulate_mode_and_verify(
     visual_cx: &mut VisualTestContext,
     view: &Entity<Phase0Shell>,
     click_point: Point<Pixels>,
-) {
+) -> TestSupportResult<()> {
     visual_cx.simulate_event(KeyDownEvent {
         keystroke: Keystroke {
             modifiers: Modifiers::none(),
@@ -27,8 +32,10 @@ pub fn switch_to_manipulate_mode_and_verify(
     visual_cx.simulate_click(click_point, Modifiers::none());
     visual_cx.run_until_parked();
     let shapes_after_click = visual_cx.read(|app| view.read(app).document().len());
-    assert_eq!(
-        shapes_after_click, shapes_after_escape,
-        "escape should switch to manipulate mode, where clicks do not add points"
-    );
+    if shapes_after_click != shapes_after_escape {
+        return Err(TestSupportError::expectation(
+            "escape should switch to manipulate mode, where clicks do not add points",
+        ));
+    }
+    Ok(())
 }

@@ -5,11 +5,11 @@
 
 mod init_app;
 mod initial_draw;
-mod temp_file_path;
+mod temp_file;
 
 /// Initializes Gauss for the open-dialog harness.
 pub use init_app::init_test_app;
 /// Performs the initial draw and waits for GPUI to park.
 pub use initial_draw::ensure_initial_draw;
 /// Guards the full temporary path used by the open-dialog lifecycle.
-pub use temp_file_path::TempFileGuard;
+pub use temp_file::TempFileGuard;

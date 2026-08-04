@@ -5,11 +5,11 @@
 
 mod init_app;
 mod initial_draw;
-mod temp_file_save;
+mod temp_file;
 
 /// Initializes Gauss for the save-dialog harness.
 pub use init_app::init_test_app;
 /// Performs the initial draw and waits for GPUI to park.
 pub use initial_draw::ensure_initial_draw;
 /// Guards the temporary target used throughout the save-dialog lifecycle.
-pub use temp_file_save::TempFileGuard;
+pub use temp_file::TempFileGuard;
