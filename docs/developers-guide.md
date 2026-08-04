@@ -120,6 +120,34 @@ For a new harness, add `tests/common/<harness>.rs` and include it with
 used by that harness and re-export only its helpers; do not recreate a global
 helper module.
 
+
+### Shell BDD support and test classification
+
+Shell tests describe a user-visible action or observable state transition as a
+Gherkin scenario under `tests/features/`. Keep render-tree presence, geometry,
+and test-plumbing assertions as raw `#[gpui::test]` tests: Given/When/Then
+language would hide that these checks depend on implementation structure rather
+than behaviour. The retained structural inventory and rationale are recorded in
+the [v0.6.0 migration guide](rstest-bdd-v0-6-0-migration-guide.md#retain-structural-gauss-shell-tests-as-raw-gpui-tests).
+
+The focused modules under `tests/shell_bdd/` provide shared support for the
+behavioural shell scenarios:
+
+- `support.rs` stores durable shell entity and window handles between steps,
+  rebuilds a `VisualTestContext` for each step, and resets thread-local state
+  through the `ScenarioStateCleanup` fixture.
+- `click.rs` performs fallible selector-based clicks and drains pending GPUI
+  work.
+- `expect_equal.rs` and `expect_true.rs` return `TestSupportError` values from
+  step assertions instead of panicking.
+
+Include only the support modules that a test binary uses. Use a path attribute
+such as `#[path = "shell_bdd/support.rs"]`; that module also requires the test
+crate's `common` module for application initialization and the initial draw.
+Selective inclusion keeps unused-helper checks effective and avoids adding the
+complete shell support surface to every GPUI integration test. Each stateful
+scenario must accept the cleanup fixture and remain `#[serial]`.
+
 ### Stateful history scenarios
 
 The `gpui_history_bdd` binaries combine rstest-bdd 0.6.0-beta3's injected

@@ -72,22 +72,24 @@ fn drawn_shape_with_first_anchor_selected(
         click_canvas_and_wait(visual_cx, second);
 
         let document = read_document(visual_cx, view);
-        let shape = require_draw_shape(&document, "after drawing")?.clone();
+        let shape = require_draw_shape(&document, "after drawing")?;
+        let shape_id = shape.id;
         let anchor = shape
             .path
             .anchors
             .first()
             .map_or(Vec2::ZERO, |item| item.pos);
+        let original_style = shape.style.clone();
         simulate_escape(visual_cx);
         select_first_anchor(
             visual_cx,
             view,
             anchor_to_canvas_point(&bounds, anchor, first),
-            shape.id,
+            shape_id,
         )?;
         STYLE_STATE.with(|cell| {
             let mut state = cell.borrow_mut();
-            state.original_style = Some(shape.style);
+            state.original_style = Some(original_style);
             state.history_len_before_style = Some(read_history_len(visual_cx, view));
         });
         Ok(())
