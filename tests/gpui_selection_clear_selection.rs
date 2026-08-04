@@ -24,10 +24,6 @@ struct ScenarioData {
 }
 
 #[given("a selected square is arranged")]
-#[expect(
-    clippy::float_arithmetic,
-    reason = "the empty-space point is derived from floating-point canvas geometry"
-)]
 fn selected_square_is_arranged(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
@@ -51,13 +47,21 @@ fn selected_square_is_arranged(
             });
         });
         visual_cx.run_until_parked();
-        let click_x = (f32::from(bounds.size.width) - 2.0).max(2.0);
-        let click_y = (f32::from(bounds.size.height) - 2.0).max(2.0);
+        let selection = read_selection(visual_cx, view);
+        let expected_selection = Selection {
+            items: vec![SelItem::Shape(shape_id)],
+        };
+        if selection != expected_selection {
+            return Err(TestSupportError::expectation(format!(
+                "expected selected square before empty-canvas click; found {selection:?}"
+            )));
+        }
+        let click_x = (bounds.size.width - px(2.0)).max(px(2.0));
+        let click_y = (bounds.size.height - px(2.0)).max(px(2.0));
         with_state(|state| {
-            state.points.push(point(
-                bounds.origin.x + px(click_x),
-                bounds.origin.y + px(click_y),
-            ));
+            state
+                .points
+                .push(point(bounds.origin.x + click_x, bounds.origin.y + click_y));
         });
         support::set_scenario_data(ScenarioData {
             selected_shape_id: shape_id,

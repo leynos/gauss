@@ -143,9 +143,7 @@ pub fn require_point(index: usize, context: &str) -> TestSupportResult<Point<Pix
 }
 
 #[given("a fresh Phase 0 shell window")]
-fn fresh_phase0_shell_window(
-    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
-) -> Result<(), TestSupportError> {
+fn fresh_phase0_shell_window(#[from(rstest_bdd_harness_context)] cx: &mut TestAppContext) {
     reset_state_before_assignment();
     init_test_app(cx);
     let (entity, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
@@ -155,6 +153,4 @@ fn fresh_phase0_shell_window(
         state.entity = Some(entity);
         state.window = Some(window);
     });
-    with_visual_cx(cx, |_visual_cx, _entity| Ok(()))?;
-    Ok(())
 }

@@ -10,7 +10,7 @@ mod common;
 #[path = "selection_bdd/support.rs"]
 pub mod support;
 
-use common::canvas_bounds;
+use common::{canvas_bounds, read_selection};
 use gauss::model::{Document, SelItem, Selection, ShapeId, Vec2};
 use gauss_core::test_helpers::square_shape;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
@@ -45,6 +45,12 @@ fn square_is_arranged_for_bbox_selection(
             });
         });
         visual_cx.run_until_parked();
+        let selection = read_selection(visual_cx, view);
+        if !selection.items.is_empty() {
+            return Err(TestSupportError::expectation(format!(
+                "expected empty selection before bounding-box press; found {selection:?}"
+            )));
+        }
         with_state(|state| {
             state.points.push(point(px(centre.x), px(centre.y)));
         });
