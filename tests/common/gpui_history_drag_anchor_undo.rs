@@ -3,18 +3,31 @@
 //! It exposes app lifecycle, drawing, document-history, anchor-drag, Escape,
 //! and vector-assertion helpers required by that harness.
 
+#[path = "canvas.rs"]
 mod canvas;
+#[path = "canvas_bounds.rs"]
 mod canvas_bounds;
+#[path = "canvas_drag_anchor.rs"]
 mod canvas_drag_anchor;
+#[path = "canvas_drag_values.rs"]
 mod canvas_drag_values;
+#[path = "document.rs"]
 mod document;
+#[path = "document_undo.rs"]
 mod document_undo;
+#[path = "draw_point.rs"]
 mod draw_point;
+#[path = "draw_shape.rs"]
 mod draw_shape;
+#[path = "escape_input.rs"]
 mod escape_input;
+#[path = "history.rs"]
 mod history;
+#[path = "init_app.rs"]
 mod init_app;
+#[path = "initial_draw.rs"]
 mod initial_draw;
+#[path = "vec2_assertion.rs"]
 mod vec2_assertion;
 
 /// Anchor-drag points and displacement used by this history harness.

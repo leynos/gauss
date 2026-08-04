@@ -10,7 +10,8 @@ use test_support::{TestSupportError, TestSupportResult};
 /// squared distance exceeds `0.0001`.
 pub fn assert_vec2_close(actual: Vec2, expected: Vec2, context: &str) -> TestSupportResult<()> {
     let diff = actual.sub(expected);
-    if diff.distance_squared(Vec2::ZERO) > 0.0001 {
+    let squared_distance = diff.distance_squared(Vec2::ZERO);
+    if !squared_distance.is_finite() || squared_distance > 0.0001 {
         return Err(TestSupportError::expectation(format!(
             "{context}: expected={expected:?} got={actual:?}"
         )));
