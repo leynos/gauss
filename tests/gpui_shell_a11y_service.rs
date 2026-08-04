@@ -47,6 +47,7 @@ fn dispatch_accesskit_action(
     (routed, did_request_quit)
 }
 
+/// Assert that a serialized chrome button exposes its accessibility contract.
 fn assert_chrome_button_semantics(
     update: &TreeUpdate,
     expected: &accessibility::ChromeButtonSemantics,
@@ -57,13 +58,33 @@ fn assert_chrome_button_semantics(
             expected.node_id
         );
     };
-    assert_eq!(node.role(), Role::Button);
-    assert_eq!(node.label(), Some(expected.label));
-    assert_eq!(node.description(), Some(expected.shortcut_hint));
-    assert_eq!(node.keyboard_shortcut(), Some(expected.shortcut_hint));
-    assert!(node.supports_action(Action::Click));
+    assert_eq!(
+        node.role(),
+        Role::Button,
+        "chrome control should be a button"
+    );
+    assert_eq!(
+        node.label(),
+        Some(expected.label),
+        "button label should match"
+    );
+    assert_eq!(
+        node.description(),
+        Some(expected.shortcut_hint),
+        "button description should expose its shortcut"
+    );
+    assert_eq!(
+        node.keyboard_shortcut(),
+        Some(expected.shortcut_hint),
+        "button should expose its keyboard shortcut"
+    );
+    assert!(
+        node.supports_action(Action::Click),
+        "chrome button should support click actions"
+    );
 }
 
+/// Assert that the initial update contains the titlebar and chrome controls.
 fn assert_initial_serialised_update(initial_update: &TreeUpdate) {
     assert!(
         initial_update.tree.is_some(),
@@ -77,10 +98,15 @@ fn assert_initial_serialised_update(initial_update: &TreeUpdate) {
             accessibility::node_ids::TITLEBAR
         );
     };
-    assert_eq!(titlebar.role(), Role::TitleBar);
+    assert_eq!(
+        titlebar.role(),
+        Role::TitleBar,
+        "titlebar should expose its role"
+    );
     assert_eq!(
         titlebar.label(),
-        Some(accessibility::accessible_names::TITLEBAR)
+        Some(accessibility::accessible_names::TITLEBAR),
+        "titlebar should expose its accessible name"
     );
     for expected in accessibility::chrome_button_semantics(false) {
         assert_chrome_button_semantics(initial_update, &expected);

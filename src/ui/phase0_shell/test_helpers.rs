@@ -271,7 +271,7 @@ impl Phase0Shell {
 
     /// Return a mutable reference to the document for direct mutation.
     ///
-    /// Unlike [`replace_document_for_tests`], this preserves the history stack,
+    /// Unlike [`Self::replace_document_for_tests`], this preserves the history stack,
     /// allowing tests to create invalid states that trigger history errors.
     pub const fn document_mut_for_tests(&mut self) -> &mut Document {
         &mut self.state.document
