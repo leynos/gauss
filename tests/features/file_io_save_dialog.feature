@@ -9,6 +9,7 @@ Feature: Save and export SVG file dialogs
     Then the selected save path is recorded
     And the saved SVG contains the demo shape
     And the saved SVG contains the canonical Gauss metadata namespace
+    And the temporary SVG is cleaned up
 
   Scenario: Save reports a dangling gradient reference
     Given a shell with a dangling gradient reference prepared for a standard save
@@ -17,6 +18,7 @@ Feature: Save and export SVG file dialogs
     Then no save path is recorded
     And the save error reports the missing gradient resource
     And no SVG file is written
+    And the temporary SVG is cleaned up
 
   Scenario: Save reports a dangling pattern reference
     Given a shell with a dangling pattern reference prepared for a standard save
@@ -25,6 +27,7 @@ Feature: Save and export SVG file dialogs
     Then no save path is recorded
     And the save error reports the missing pattern resource
     And no SVG file is written
+    And the temporary SVG is cleaned up
 
   Scenario: Web-ready export strips Gauss metadata
     Given a shell with Gauss metadata prepared for a web-ready export
@@ -35,6 +38,7 @@ Feature: Save and export SVG file dialogs
     Then the selected save path is recorded
     And no save error is reported
     And the saved SVG is web-ready and contains no Gauss metadata
+    And the temporary SVG is cleaned up
 
   Scenario: Web-ready export reports a dangling gradient reference
     Given a shell with a dangling gradient reference prepared for a web-ready export
@@ -43,6 +47,7 @@ Feature: Save and export SVG file dialogs
     Then no save path is recorded
     And the save error reports the missing gradient resource
     And no SVG file is written
+    And the temporary SVG is cleaned up
 
   Scenario: Web-ready export reports a dangling pattern reference
     Given a shell with a dangling pattern reference prepared for a web-ready export
@@ -51,3 +56,4 @@ Feature: Save and export SVG file dialogs
     Then no save path is recorded
     And the save error reports the missing pattern resource
     And no SVG file is written
+    And the temporary SVG is cleaned up

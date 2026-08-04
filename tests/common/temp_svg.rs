@@ -56,4 +56,13 @@ impl TempSvgFile {
     pub fn path(&self) -> &Utf8Path {
         self.path.as_path()
     }
+
+    /// Consumes the temporary SVG and removes it through its directory capability.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if removing the temporary SVG fails.
+    pub fn cleanup(self) -> TestSupportResult<()> {
+        self.cleanup.cleanup()
+    }
 }

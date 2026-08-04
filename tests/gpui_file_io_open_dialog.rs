@@ -48,6 +48,14 @@ fn shell() -> Result<DurableShell, TestSupportError> {
         .ok_or_else(|| TestSupportError::missing("shell handles", "set by the Given step"))
 }
 
+/// Remove the scenario's temporary SVG through its directory capability.
+#[then("the temporary SVG is cleaned up")]
+fn cleanup_temp_svg() -> Result<(), TestSupportError> {
+    with_state(|state| state.temp_svg.take())
+        .ok_or_else(|| TestSupportError::missing("temporary SVG", "set by the Given step"))?
+        .cleanup()
+}
+
 /// Arrange a fresh Phase 0 shell and a temporary SVG file with `contents`,
 /// resetting scenario state first and recording the shell's initial resource
 /// counts for later comparison.

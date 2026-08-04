@@ -186,6 +186,17 @@ fn temp_svg() -> Result<Rc<TempSvgFile>, TestSupportError> {
         .ok_or_else(|| TestSupportError::missing("temporary SVG", "set by the When step"))
 }
 
+/// Remove the scenario's temporary SVG after proving no step still owns it.
+#[then("the temporary SVG is cleaned up")]
+fn cleanup_temp_svg() -> Result<(), TestSupportError> {
+    let shared_temp_svg = with_state(|state| state.temp_svg.take())
+        .ok_or_else(|| TestSupportError::missing("temporary SVG", "set by the When step"))?;
+    let temp_svg = Rc::try_unwrap(shared_temp_svg).map_err(|_| {
+        TestSupportError::expectation("temporary SVG was still shared during scenario cleanup")
+    })?;
+    temp_svg.cleanup()
+}
+
 /// Read the contents of the scenario's saved temporary SVG.
 ///
 /// # Errors
