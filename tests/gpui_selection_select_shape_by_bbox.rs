@@ -71,7 +71,7 @@ fn centre_of_square_is_clicked(
         visual_cx.simulate_mouse_down(centre, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
         let selection = visual_cx.read(|app| view.read(app).selection().clone());
-        support::with_scenario_data::<ScenarioData, _>("bounding-box press", |data| {
+        support::with_mut_scenario_data::<ScenarioData, _>("bounding-box press", |data| {
             data.selection_after_press = Some(selection);
         })?;
         visual_cx.simulate_mouse_up(centre, MouseButton::Left, Modifiers::none());

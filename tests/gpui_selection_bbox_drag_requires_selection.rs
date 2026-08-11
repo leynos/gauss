@@ -20,7 +20,7 @@ use selection_coordinates::viewport_to_screen_point;
 use serial_test::serial;
 use support::{
     ScenarioStateCleanup, assert_no_drag_after_press, require_point, set_scenario_data,
-    with_scenario_data, with_state, with_visual_cx,
+    with_mut_scenario_data, with_scenario_data, with_state, with_visual_cx,
 };
 use test_support::TestSupportError;
 use test_support::selection::{require_shape, shape_bbox_centre};
@@ -86,7 +86,7 @@ fn unselected_square_is_dragged(
         visual_cx.simulate_mouse_down(start, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
         let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
-        with_scenario_data::<ScenarioData, _>("unselected drag", |data| {
+        with_mut_scenario_data::<ScenarioData, _>("unselected drag", |data| {
             data.drag_started_after_press = Some(is_dragging);
         })?;
         visual_cx.simulate_mouse_move(end, MouseButton::Left, Modifiers::none());

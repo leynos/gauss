@@ -43,13 +43,33 @@ pub fn set_scenario_data<T: 'static>(data: T) {
     with_state(|state| state.data = Some(Box::new(data)));
 }
 
-/// Mutate the scenario-specific payload as its concrete type.
+/// Read the scenario-specific payload as its concrete type.
 ///
 /// # Errors
 ///
 /// Returns an error when the scenario payload is absent or has a different
 /// concrete type.
 pub fn with_scenario_data<T: 'static, R>(
+    context: &str,
+    f: impl FnOnce(&T) -> R,
+) -> TestSupportResult<R> {
+    with_state(|state| {
+        state
+            .data
+            .as_deref()
+            .and_then(|data| data.downcast_ref::<T>())
+            .map(f)
+    })
+    .ok_or_else(|| TestSupportError::missing("scenario data", context))
+}
+
+/// Mutate the scenario-specific payload as its concrete type.
+///
+/// # Errors
+///
+/// Returns an error when the scenario payload is absent or has a different
+/// concrete type.
+pub fn with_mut_scenario_data<T: 'static, R>(
     context: &str,
     f: impl FnOnce(&mut T) -> R,
 ) -> TestSupportResult<R> {

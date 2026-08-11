@@ -24,6 +24,7 @@ Feature: Manipulate-mode selection
     Then no drag is active
     When the first anchor is shift-clicked
     Then only the second anchor is selected
+    Then no drag is active
 
   Scenario: Dragging one selected shape moves the full selection
     Given a fresh Phase 0 shell window

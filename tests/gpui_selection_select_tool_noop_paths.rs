@@ -11,9 +11,10 @@ mod common;
 pub mod support;
 
 use common::{
-    canvas_bounds, canvas_drag_scenario, draw_point, read_history_len, read_selection,
-    switch_to_manipulate_mode_and_verify,
+    canvas_bounds, canvas_drag_scenario, draw_point, read_document, read_history_len,
+    read_selection, require_draw_shape, switch_to_manipulate_mode_and_verify,
 };
+use gauss::model::SelItem;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
@@ -67,7 +68,14 @@ fn drawn_shape_is_selected(
         draw_point(visual_cx, drag.second);
         switch_to_manipulate_mode_and_verify(visual_cx, view, drag.first)?;
         let history_before = read_history_len(visual_cx, view);
+        let document = read_document(visual_cx, view);
+        let shape_id = require_draw_shape(&document, "zero-delta drag setup")?.id;
         let selection_before = read_selection(visual_cx, view);
+        if !selection_before.contains(&SelItem::Shape(shape_id)) {
+            return Err(TestSupportError::expectation(format!(
+                "expected drawn shape {shape_id:?} to be selected before zero-delta drag; selection={selection_before:?}"
+            )));
+        }
         with_state(|state| state.points.push(drag.first));
         support::set_scenario_data(ScenarioData {
             selection_before: Some(selection_before),

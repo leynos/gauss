@@ -20,13 +20,14 @@ use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use support::{
     ScenarioStateCleanup, assert_no_drag_after_press, require_point, set_scenario_data,
-    with_scenario_data, with_state, with_visual_cx,
+    with_mut_scenario_data, with_scenario_data, with_state, with_visual_cx,
 };
 use test_support::TestSupportError;
 
 struct ScenarioData {
     shape_id: ShapeId,
-    drag_started_after_press: Option<bool>,
+    additive_shift_drag_started_after_press: Option<bool>,
+    toggle_shift_drag_started_after_press: Option<bool>,
 }
 
 #[given("a two-anchor shape is arranged in manipulate mode")]
@@ -67,7 +68,8 @@ fn two_anchor_shape_is_arranged(
         });
         set_scenario_data(ScenarioData {
             shape_id,
-            drag_started_after_press: None,
+            additive_shift_drag_started_after_press: None,
+            toggle_shift_drag_started_after_press: None,
         });
         Ok(())
     })
@@ -77,14 +79,15 @@ fn click_anchor(
     cx: &mut TestAppContext,
     index: usize,
     modifiers: Modifiers,
+    record_drag_state: impl FnOnce(&mut ScenarioData, bool),
 ) -> Result<(), TestSupportError> {
     let point = require_point(index, "anchor click")?;
     with_visual_cx(cx, |visual_cx, view| {
         visual_cx.simulate_mouse_down(point, MouseButton::Left, modifiers);
         visual_cx.run_until_parked();
         let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
-        with_scenario_data::<ScenarioData, _>("anchor click", |data| {
-            data.drag_started_after_press = Some(is_dragging);
+        with_mut_scenario_data::<ScenarioData, _>("anchor click", |data| {
+            record_drag_state(data, is_dragging);
         })?;
         visual_cx.simulate_mouse_up(point, MouseButton::Left, modifiers);
         visual_cx.run_until_parked();
@@ -96,21 +99,35 @@ fn click_anchor(
 fn first_anchor_is_clicked(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    click_anchor(cx, 0, Modifiers::none())
+    click_anchor(cx, 0, Modifiers::none(), |_, _| {})
 }
 
 #[when("the second anchor is shift-clicked")]
 fn second_anchor_is_shift_clicked(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    click_anchor(cx, 1, shift_secondary(Modifiers::none()))
+    click_anchor(
+        cx,
+        1,
+        shift_secondary(Modifiers::none()),
+        |data, is_dragging| {
+            data.additive_shift_drag_started_after_press = Some(is_dragging);
+        },
+    )
 }
 
 #[when("the first anchor is shift-clicked")]
 fn first_anchor_is_shift_clicked(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    click_anchor(cx, 0, shift_secondary(Modifiers::none()))
+    click_anchor(
+        cx,
+        0,
+        shift_secondary(Modifiers::none()),
+        |data, is_dragging| {
+            data.toggle_shift_drag_started_after_press = Some(is_dragging);
+        },
+    )
 }
 
 fn expected_anchor_selection(indices: &[usize]) -> Result<Selection, TestSupportError> {
@@ -166,15 +183,26 @@ fn only_second_anchor_is_selected(
 
 #[then("no drag is active")]
 fn no_drag_is_active() -> Result<(), TestSupportError> {
-    let drag_started_after_press =
+    let (additive_shift_drag_started_after_press, toggle_shift_drag_started_after_press) =
         with_scenario_data::<ScenarioData, _>("Shift-click drag state", |data| {
-            data.drag_started_after_press
+            (
+                data.additive_shift_drag_started_after_press,
+                data.toggle_shift_drag_started_after_press,
+            )
         })?;
     assert_no_drag_after_press(
-        drag_started_after_press,
-        "Shift-click started a drag gesture",
-        "recorded by the anchor-click step",
-    )
+        additive_shift_drag_started_after_press,
+        "additive Shift-click started a drag gesture",
+        "recorded by the second-anchor Shift-click step",
+    )?;
+    if let Some(toggle_drag_started) = toggle_shift_drag_started_after_press {
+        assert_no_drag_after_press(
+            Some(toggle_drag_started),
+            "toggle Shift-click started a drag gesture",
+            "recorded by the first-anchor Shift-click step",
+        )?;
+    }
+    Ok(())
 }
 
 #[scenario(
