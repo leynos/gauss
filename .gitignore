@@ -10,3 +10,8 @@ target/
 .uv-tools/
 .coverage
 __pycache__/
+.vtcode/
+.claude/
+.memdb/
+*.swp
+*.swo
