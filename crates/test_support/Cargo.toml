@@ -7,5 +7,9 @@ edition = "2024"
 gauss-core = { version = "0.1.0", path = "../gauss-core", features = ["test-support"] }
 thiserror = "2.0.18"
 
+[dev-dependencies]
+rstest = "0.26.1"
+trybuild = "1.0.116"
+
 [lints]
 workspace = true
