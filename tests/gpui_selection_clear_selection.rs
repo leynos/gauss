@@ -16,7 +16,7 @@ use gauss_core::test_helpers::square_shape;
 use gpui::{TestAppContext, point, px};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
-use support::{ScenarioStateCleanup, require_point, with_state, with_visual_cx};
+use support::{ScenarioContext, ScenarioStateCleanup, require_point, with_state, with_visual_cx};
 use test_support::TestSupportError;
 
 struct ScenarioData {
@@ -74,7 +74,7 @@ fn selected_square_is_arranged(
 fn empty_canvas_space_is_clicked(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let point = require_point(0, "empty canvas point")?;
+    let point = require_point(0, ScenarioContext::EmptyCanvasPoint)?;
     with_visual_cx(cx, |visual_cx, _view| {
         click_left_and_wait(visual_cx, point);
         Ok(())
@@ -86,7 +86,7 @@ fn selection_is_empty(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     let selected_shape_id =
-        support::with_scenario_data::<ScenarioData, _>("selected square", |data| {
+        support::with_scenario_data::<ScenarioData, _>(ScenarioContext::SelectedSquare, |data| {
             data.selected_shape_id
         })?;
     with_visual_cx(cx, |visual_cx, view| {

@@ -19,8 +19,8 @@ use rstest_bdd_macros::{given, scenario, then, when};
 use selection_coordinates::viewport_to_screen_point;
 use serial_test::serial;
 use support::{
-    ScenarioStateCleanup, require_point, set_scenario_data, with_scenario_data, with_state,
-    with_visual_cx,
+    ScenarioContext, ScenarioStateCleanup, require_point, set_scenario_data, with_scenario_data,
+    with_state, with_visual_cx,
 };
 use test_support::TestSupportError;
 use test_support::selection::{
@@ -92,7 +92,7 @@ fn two_selected_squares_are_arranged(
 fn first_selected_square_is_pressed(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let start = require_point(0, "selected square press")?;
+    let start = require_point(0, ScenarioContext::SelectedSquarePress)?;
     with_visual_cx(cx, |visual_cx, _view| {
         visual_cx.simulate_mouse_down(start, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
@@ -104,7 +104,7 @@ fn first_selected_square_is_pressed(
 fn first_selected_square_is_dragged(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let end = require_point(1, "selected square drag end")?;
+    let end = require_point(1, ScenarioContext::SelectedSquareDragEnd)?;
     with_visual_cx(cx, |visual_cx, _view| {
         visual_cx.simulate_mouse_move(end, MouseButton::Left, Modifiers::none());
         visual_cx.simulate_mouse_up(end, MouseButton::Left, Modifiers::none());
@@ -117,7 +117,9 @@ fn first_selected_square_is_dragged(
 fn both_squares_remain_selected(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let ids = with_scenario_data::<ScenarioData, _>("selected squares", |data| data.shape_ids)?;
+    let ids = with_scenario_data::<ScenarioData, _>(ScenarioContext::SelectedSquares, |data| {
+        data.shape_ids
+    })?;
     with_visual_cx(cx, |visual_cx, view| {
         let selection = visual_cx.read(|app| view.read(app).selection().clone());
         require_selection_contains_shapes(&selection, &ids, "multi-shape drag")
@@ -128,9 +130,10 @@ fn both_squares_remain_selected(
 fn both_squares_move_by_delta(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let snapshot = with_scenario_data::<ScenarioData, _>("multi-shape drag snapshot", |data| {
-        (data.shape_ids, data.shapes_before.clone(), data.delta)
-    })?;
+    let snapshot =
+        with_scenario_data::<ScenarioData, _>(ScenarioContext::MultiShapeDragSnapshot, |data| {
+            (data.shape_ids, data.shapes_before.clone(), data.delta)
+        })?;
     let ([first_id, second_id], [first_before, second_before], delta) = snapshot;
     with_visual_cx(cx, |visual_cx, view| {
         let document = read_document(visual_cx, view);

@@ -18,7 +18,7 @@ use gauss::model::SelItem;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
-use support::{ScenarioStateCleanup, require_point, with_state, with_visual_cx};
+use support::{ScenarioContext, ScenarioStateCleanup, require_point, with_state, with_visual_cx};
 use test_support::TestSupportError;
 
 #[derive(Default)]
@@ -49,7 +49,7 @@ fn manipulate_mode_is_active(
 fn canvas_is_right_clicked(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let point = require_point(0, "right-click point")?;
+    let point = require_point(0, ScenarioContext::RightClickPoint)?;
     with_visual_cx(cx, |visual_cx, _view| {
         visual_cx.simulate_mouse_down(point, MouseButton::Right, Modifiers::none());
         visual_cx.simulate_mouse_up(point, MouseButton::Right, Modifiers::none());
@@ -89,7 +89,7 @@ fn drawn_shape_is_selected(
 fn selected_point_is_dragged_by_zero_distance(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let point = require_point(0, "zero-delta drag point")?;
+    let point = require_point(0, ScenarioContext::ZeroDeltaDragPoint)?;
     with_visual_cx(cx, |visual_cx, _view| {
         visual_cx.simulate_mouse_down(point, MouseButton::Left, Modifiers::none());
         visual_cx.simulate_mouse_move(point, MouseButton::Left, Modifiers::none());
@@ -103,9 +103,10 @@ fn selected_point_is_dragged_by_zero_distance(
 fn selection_is_unchanged(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let expected = support::with_scenario_data::<ScenarioData, _>("selection snapshot", |data| {
-        data.selection_before.clone()
-    })?
+    let expected = support::with_scenario_data::<ScenarioData, _>(
+        ScenarioContext::SelectionSnapshot,
+        |data| data.selection_before.clone(),
+    )?
     .ok_or_else(|| {
         TestSupportError::missing("selection snapshot", "recorded by the arrangement step")
     })?;
@@ -124,12 +125,13 @@ fn selection_is_unchanged(
 fn document_history_length_is_unchanged(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let expected = support::with_scenario_data::<ScenarioData, _>("history length", |data| {
-        data.history_before
-    })?
-    .ok_or_else(|| {
-        TestSupportError::missing("history length", "recorded by the arrangement step")
-    })?;
+    let expected =
+        support::with_scenario_data::<ScenarioData, _>(ScenarioContext::HistoryLength, |data| {
+            data.history_before
+        })?
+        .ok_or_else(|| {
+            TestSupportError::missing("history length", "recorded by the arrangement step")
+        })?;
     with_visual_cx(cx, |visual_cx, view| {
         let actual = read_history_len(visual_cx, view);
         if actual != expected {
