@@ -1,23 +1,25 @@
 //! Shared GPUI lifecycle support for the selection BDD integration binaries.
 //!
 //! Each binary binds scenarios from `selection.feature` through `GpuiHarness`
-//! and textually includes this module. The support retains window handles,
-//! interaction points, and binary-specific payloads between steps. `common`
-//! initializes the Phase 0 shell and owns GPUI interactions and coordinates;
-//! model-only assertions live in `test_support::selection` for reuse outside
-//! the GPUI harness.
+//! and textually includes this module. The support retains selection-specific
+//! interaction points and binary-specific payloads between steps, while
+//! `common::scenario_state` and `common::durable_shell` own the shared
+//! lifecycle mechanics. Harnesses that mutate scenario payloads opt into
+//! `mutable_scenario_data`; `common` initializes the Phase 0 shell and owns
+//! GPUI interactions and coordinates; model-only assertions live in
+//! `test_support::selection` for reuse outside the GPUI harness.
 
-use std::{any::Any, cell::RefCell, fmt};
+use std::{any::Any, fmt};
 
 use gauss::ui::Phase0Shell;
-use gpui::{
-    AnyWindowHandle, Entity, Pixels, Point, TestAppContext, VisualContext, VisualTestContext,
-};
-use rstest::fixture;
+use gpui::{Entity, Pixels, Point, TestAppContext, VisualTestContext};
 use rstest_bdd_macros::given;
 use test_support::{TestSupportError, TestSupportResult};
 
-use crate::common::{ensure_initial_draw, init_test_app};
+use crate::{
+    common::{ensure_initial_draw, init_test_app},
+    durable_shell::DurableShell,
+};
 
 /// Typed descriptions of selection BDD step data and interaction points.
 ///
@@ -137,28 +139,20 @@ impl NoDragPress {
 /// Durable handles and interaction points shared by selection scenario steps.
 #[derive(Default)]
 pub struct ScenarioState {
-    entity: Option<Entity<Phase0Shell>>,
-    window: Option<AnyWindowHandle>,
+    shell: Option<DurableShell>,
     /// Screen points shared between arrangement and interaction steps.
     pub points: Vec<Point<Pixels>>,
     data: Option<Box<dyn Any>>,
 }
 
-thread_local! {
-    static SCENARIO_STATE: RefCell<ScenarioState> = RefCell::new(ScenarioState::default());
-}
-
-/// Mutate the lifecycle state for the current scenario.
-pub fn with_state<R>(f: impl FnOnce(&mut ScenarioState) -> R) -> R {
-    SCENARIO_STATE.with(|cell| f(&mut cell.borrow_mut()))
-}
+crate::scenario_state!(ScenarioState; pub(super));
 
 /// Replace the scenario-specific payload.
 pub fn set_scenario_data<T: 'static>(data: T) {
     with_state(|state| state.data = Some(Box::new(data)));
 }
 
-fn with_typed_scenario_data<R>(
+pub(super) fn with_typed_scenario_data<R>(
     context: ScenarioContext,
     lookup: impl FnOnce(&mut dyn Any) -> Option<R>,
 ) -> TestSupportResult<R> {
@@ -177,43 +171,6 @@ pub fn with_scenario_data<T: 'static, R>(
     f: impl FnOnce(&T) -> R,
 ) -> TestSupportResult<R> {
     with_typed_scenario_data(context, |data| data.downcast_ref::<T>().map(f))
-}
-
-/// Mutate the scenario-specific payload for a typed scenario context.
-///
-/// # Errors
-///
-/// Returns an error when the scenario payload is absent or has a different
-/// concrete type.
-pub fn with_mut_scenario_data<T: 'static, R>(
-    context: ScenarioContext,
-    f: impl FnOnce(&mut T) -> R,
-) -> TestSupportResult<R> {
-    with_typed_scenario_data(context, |data| data.downcast_mut::<T>().map(f))
-}
-
-fn reset_state_after_scenario() {
-    SCENARIO_STATE.with(|cell| *cell.borrow_mut() = ScenarioState::default());
-}
-
-fn reset_state_before_assignment() {
-    reset_state_after_scenario();
-}
-
-/// Drop guard that clears thread-local scenario state after a test.
-pub struct ScenarioStateCleanup;
-
-impl Drop for ScenarioStateCleanup {
-    fn drop(&mut self) {
-        reset_state_after_scenario();
-    }
-}
-
-/// Reset scenario state before execution and return its cleanup guard.
-#[fixture]
-pub fn scenario_state_cleanup() -> ScenarioStateCleanup {
-    reset_state_before_assignment();
-    ScenarioStateCleanup
 }
 
 /// Require a typed recorded press not to have started a drag gesture.
@@ -248,15 +205,13 @@ pub fn with_visual_cx<R>(
     cx: &mut TestAppContext,
     f: impl FnOnce(&mut VisualTestContext, &Entity<Phase0Shell>) -> TestSupportResult<R>,
 ) -> TestSupportResult<R> {
-    let handles = with_state(|state| (state.entity.clone(), state.window));
-    let (Some(entity), Some(window)) = handles else {
+    let Some(shell) = with_state(|state| state.shell.clone()) else {
         return Err(TestSupportError::missing(
             "scenario handles",
             "set by the fresh-window step",
         ));
     };
-    let mut visual_cx = VisualTestContext::from_window(window, cx);
-    f(&mut visual_cx, &entity)
+    shell.with_visual_cx(cx, f)
 }
 
 /// Read a recorded screen point by index for a typed scenario context.
@@ -370,13 +325,9 @@ mod tests {
 
 #[given("a fresh Phase 0 shell window")]
 fn fresh_phase0_shell_window(#[from(rstest_bdd_harness_context)] cx: &mut TestAppContext) {
-    reset_state_before_assignment();
+    reset_state();
     init_test_app(cx);
     let (entity, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
-    let window = visual_cx.window_handle();
-    with_state(|state| {
-        state.entity = Some(entity);
-        state.window = Some(window);
-    });
+    with_state(|state| state.shell = Some(DurableShell::new(entity, visual_cx)));
 }

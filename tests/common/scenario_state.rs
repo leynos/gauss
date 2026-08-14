@@ -20,7 +20,8 @@
 ///
 /// Paths are fully qualified so the macro does not depend on what the calling
 /// binary happens to have in scope. Invoke it as `crate::scenario_state!(..)`
-/// from a scenario binary's crate root.
+/// from a scenario binary's crate root, or pass a visibility after a semicolon
+/// when a private support module must expose the generated items to its parent.
 #[macro_export]
 macro_rules! scenario_state {
     ($state:ty) => {
@@ -52,6 +53,42 @@ macro_rules! scenario_state {
         /// Clear the scenario state before a scenario runs and again afterwards.
         #[::rstest::fixture]
         fn scenario_state_cleanup() -> ScenarioStateCleanup {
+            reset_state();
+            ScenarioStateCleanup
+        }
+    };
+    ($state:ty; $visibility:vis) => {
+        $crate::scenario_state!(@declare [$visibility] $state);
+    };
+    (@declare [$visibility:vis] $state:ty) => {
+        thread_local! {
+            static STATE: ::std::cell::RefCell<$state> =
+                ::std::cell::RefCell::new(<$state as ::core::default::Default>::default());
+        }
+
+        /// Run `f` with exclusive access to the scenario state.
+        $visibility fn with_state<R>(f: impl ::core::ops::FnOnce(&mut $state) -> R) -> R {
+            STATE.with(|cell| f(&mut cell.borrow_mut()))
+        }
+
+        /// Restore the scenario state to its default value.
+        $visibility fn reset_state() {
+            with_state(|state| *state = <$state as ::core::default::Default>::default());
+        }
+
+        /// Guard that clears the scenario state once a scenario finishes.
+        $visibility struct ScenarioStateCleanup;
+
+        impl ::core::ops::Drop for ScenarioStateCleanup {
+            /// Reset the scenario state as the guard goes out of scope.
+            fn drop(&mut self) {
+                reset_state();
+            }
+        }
+
+        /// Clear the scenario state before a scenario runs and again afterwards.
+        #[::rstest::fixture]
+        $visibility fn scenario_state_cleanup() -> ScenarioStateCleanup {
             reset_state();
             ScenarioStateCleanup
         }

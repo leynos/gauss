@@ -7,8 +7,12 @@
 //! `test_support::selection`.
 
 mod common;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 #[path = "selection_bdd/support.rs"]
-pub mod support;
+mod support;
 
 use common::{canvas_bounds, click_left_and_wait, read_selection};
 use gauss::model::{Document, SelItem, Selection, ShapeId, Vec2};

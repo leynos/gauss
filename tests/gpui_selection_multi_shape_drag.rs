@@ -7,10 +7,14 @@
 //! from `test_support::selection` for reuse across test suites.
 
 mod common;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 #[path = "common/selection_coordinates.rs"]
 mod selection_coordinates;
 #[path = "selection_bdd/support.rs"]
-pub mod support;
+mod support;
 
 use common::{add_square, assert_shape_translated_by_delta, canvas_bounds, read_document};
 use gauss::model::{SelItem, Selection, Shape, ShapeId, Vec2};

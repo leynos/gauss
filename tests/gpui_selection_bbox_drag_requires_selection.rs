@@ -7,20 +7,27 @@
 //! `test_support::selection` to preserve the press-time selection rule.
 
 mod common;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
+#[path = "selection_bdd/mutable_scenario_data.rs"]
+mod mutable_scenario_data;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 #[path = "common/selection_coordinates.rs"]
 mod selection_coordinates;
 #[path = "selection_bdd/support.rs"]
-pub mod support;
+mod support;
 
 use common::{add_square, assert_shape_translated_by_delta, canvas_bounds, read_document};
 use gauss::model::{Document, SelItem, Selection, Shape, ShapeId, Vec2};
 use gpui::{Modifiers, MouseButton, TestAppContext};
+use mutable_scenario_data::with_mut_scenario_data;
 use rstest_bdd_macros::{given, scenario, then, when};
 use selection_coordinates::viewport_to_screen_point;
 use serial_test::serial;
 use support::{
     NoDragPress, ScenarioContext, ScenarioStateCleanup, assert_no_drag_after_press, require_point,
-    set_scenario_data, with_mut_scenario_data, with_scenario_data, with_state, with_visual_cx,
+    set_scenario_data, with_scenario_data, with_state, with_visual_cx,
 };
 use test_support::TestSupportError;
 use test_support::selection::{require_shape, shape_bbox_centre};
@@ -29,6 +36,7 @@ struct ScenarioData {
     shape_id: ShapeId,
     shape_before: Shape,
     drag_started_after_press: Option<bool>,
+    selection_after_press: Option<Selection>,
 }
 
 #[given("an unselected square is arranged")]
@@ -71,6 +79,7 @@ fn unselected_square_is_arranged(
             shape_id,
             shape_before: shape,
             drag_started_after_press: None,
+            selection_after_press: None,
         });
         Ok(())
     })
@@ -86,8 +95,10 @@ fn unselected_square_is_dragged(
         visual_cx.simulate_mouse_down(start, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
         let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
+        let selection = visual_cx.read(|app| view.read(app).selection().clone());
         with_mut_scenario_data::<ScenarioData, _>(ScenarioContext::UnselectedDrag, |data| {
             data.drag_started_after_press = Some(is_dragging);
+            data.selection_after_press = Some(selection);
         })?;
         visual_cx.simulate_mouse_move(end, MouseButton::Left, Modifiers::none());
         visual_cx.simulate_mouse_up(end, MouseButton::Left, Modifiers::none());
@@ -97,22 +108,20 @@ fn unselected_square_is_dragged(
 }
 
 #[then("the square is selected")]
-fn square_is_selected(
-    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
-) -> Result<(), TestSupportError> {
-    let shape_id =
+fn square_is_selected() -> Result<(), TestSupportError> {
+    let (shape_id, selection_after_press) =
         with_scenario_data::<ScenarioData, _>(ScenarioContext::SelectedSquare, |data| {
-            data.shape_id
+            (data.shape_id, data.selection_after_press.clone())
         })?;
-    with_visual_cx(cx, |visual_cx, view| {
-        let selection = visual_cx.read(|app| view.read(app).selection().clone());
-        if !selection.contains(&SelItem::Shape(shape_id)) {
-            return Err(TestSupportError::expectation(format!(
-                "expected square to be selected; selection={selection:?}"
-            )));
-        }
-        Ok(())
-    })
+    let selection = selection_after_press.ok_or_else(|| {
+        TestSupportError::missing("selection after press", "recorded by the drag step")
+    })?;
+    if !selection.contains(&SelItem::Shape(shape_id)) {
+        return Err(TestSupportError::expectation(format!(
+            "expected square to be selected; selection={selection:?}"
+        )));
+    }
+    Ok(())
 }
 
 #[then("no drag starts before the square is preselected")]

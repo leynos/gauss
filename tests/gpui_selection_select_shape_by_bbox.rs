@@ -7,13 +7,20 @@
 //! other binaries live in `test_support::selection`.
 
 mod common;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
+#[path = "selection_bdd/mutable_scenario_data.rs"]
+mod mutable_scenario_data;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 #[path = "selection_bdd/support.rs"]
-pub mod support;
+mod support;
 
 use common::{canvas_bounds, read_selection};
 use gauss::model::{Document, SelItem, Selection, ShapeId, Vec2};
 use gauss_core::test_helpers::square_shape;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
+use mutable_scenario_data::with_mut_scenario_data;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use support::{ScenarioContext, ScenarioStateCleanup, require_point, with_state, with_visual_cx};
@@ -71,12 +78,9 @@ fn centre_of_square_is_clicked(
         visual_cx.simulate_mouse_down(centre, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
         let selection = visual_cx.read(|app| view.read(app).selection().clone());
-        support::with_mut_scenario_data::<ScenarioData, _>(
-            ScenarioContext::BoundingBoxPress,
-            |data| {
-                data.selection_after_press = Some(selection);
-            },
-        )?;
+        with_mut_scenario_data::<ScenarioData, _>(ScenarioContext::BoundingBoxPress, |data| {
+            data.selection_after_press = Some(selection);
+        })?;
         visual_cx.simulate_mouse_up(centre, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
         Ok(())

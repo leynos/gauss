@@ -7,8 +7,12 @@
 //! helpers shared by other binaries live in `test_support::selection`.
 
 mod common;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 #[path = "selection_bdd/support.rs"]
-pub mod support;
+mod support;
 
 use common::{
     canvas_bounds, canvas_drag_scenario, draw_point, read_document, read_history_len,
