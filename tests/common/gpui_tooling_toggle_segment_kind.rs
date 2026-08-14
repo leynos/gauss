@@ -48,7 +48,7 @@ pub use escape_input::simulate_escape;
 pub use history::read_history_len;
 /// Initializes the Gauss application in the harness's GPUI test context.
 pub use init_app::init_test_app;
-/// Performs the initial draw and waits for the GPUI event loop to become parked.
+/// Performs the initial draw and waits for GPUI to become parked.
 pub use initial_draw::ensure_initial_draw;
 /// Checks that harness-observed vectors are within the helper's tolerance.
 pub use vec2_assertion::assert_vec2_close;
