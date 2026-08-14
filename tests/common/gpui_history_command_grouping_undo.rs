@@ -3,11 +3,17 @@
 //! Re-exports app setup, document history controls, history inspection, and
 //! vector assertions for grouped undo.
 
+#[path = "document.rs"]
 mod document;
+#[path = "document_undo.rs"]
 mod document_undo;
+#[path = "history.rs"]
 mod history;
+#[path = "init_app.rs"]
 mod init_app;
+#[path = "initial_draw.rs"]
 mod initial_draw;
+#[path = "vec2_assertion.rs"]
 mod vec2_assertion;
 
 /// Provides the harness with an owned snapshot of the shell's current document.

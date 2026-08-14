@@ -4,18 +4,23 @@ use gauss::model::Vec2;
 use gpui::{Bounds, Pixels, Point, VisualTestContext, point, px};
 use test_support::TestSupportResult;
 
-/// Raw canvas-drag geometry ordered as bounds, first point, opposing point,
-/// drag endpoint, and document-space delta.
+/// Raw canvas-drag geometry shared by domain-specific test scenarios.
 ///
 /// Both canvas points use the two-pixel inset defined by
 /// [`CANVAS_PADDING_PX`].
-pub type CanvasDragValues = (
-    Bounds<Pixels>,
-    Point<Pixels>,
-    Point<Pixels>,
-    Point<Pixels>,
-    Vec2,
-);
+#[derive(Clone, Copy, Debug)]
+pub struct CanvasDragValues {
+    /// Bounds of the rendered canvas in window coordinates.
+    pub bounds: Bounds<Pixels>,
+    /// Padded point at the canvas's leading corner.
+    pub first: Point<Pixels>,
+    /// Padded point at the canvas's opposing corner.
+    pub second: Point<Pixels>,
+    /// Endpoint obtained by applying the bounded displacement to [`Self::first`].
+    pub drag_end: Point<Pixels>,
+    /// Bounded document-space displacement represented by the drag.
+    pub delta: Vec2,
+}
 
 /// Calculates raw drag geometry bounded by the canvas and supplied axis limits.
 ///
@@ -52,11 +57,11 @@ pub fn canvas_drag_values(
     let vertical_delta = max_vertical_delta.min(vertical_limit);
     let drag_end = point(first.x + px(horizontal_delta), first.y + px(vertical_delta));
 
-    Ok((
+    Ok(CanvasDragValues {
         bounds,
         first,
         second,
         drag_end,
-        Vec2::new(horizontal_delta, vertical_delta),
-    ))
+        delta: Vec2::new(horizontal_delta, vertical_delta),
+    })
 }

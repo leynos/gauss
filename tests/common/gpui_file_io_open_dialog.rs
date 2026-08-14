@@ -3,8 +3,11 @@
 //! It exposes app lifecycle and guarded temporary-path capabilities required
 //! to exercise the open-dialog harness.
 
+#[path = "init_app.rs"]
 mod init_app;
+#[path = "initial_draw.rs"]
 mod initial_draw;
+#[path = "temp_file.rs"]
 mod temp_file;
 
 /// Initializes Gauss for the open-dialog harness.

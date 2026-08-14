@@ -9,8 +9,13 @@ mod init_app;
 mod initial_draw;
 mod selection;
 
+/// Returns the rendered canvas bounds used to choose an empty click position.
 pub use canvas_bounds::canvas_bounds;
+/// Simulates an unmodified left click and parks the event loop afterwards.
 pub use click_left::click_left_and_wait;
+/// Initializes the Gauss application in the GPUI test context.
 pub use init_app::init_test_app;
+/// Performs the first window draw and parks the event loop before interaction.
 pub use initial_draw::ensure_initial_draw;
+/// Copies the shell view's current selection items for click assertions.
 pub use selection::read_selection_items;

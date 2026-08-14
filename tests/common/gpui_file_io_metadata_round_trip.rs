@@ -7,6 +7,9 @@ mod init_app;
 mod initial_draw;
 mod temp_file;
 
+/// Initializes the Gauss application in the GPUI test context.
 pub use init_app::init_test_app;
+/// Performs the first window draw and parks the event loop before metadata I/O.
 pub use initial_draw::ensure_initial_draw;
+/// Owns a temporary metadata file and removes it when the guard is dropped.
 pub use temp_file::TempFileGuard;

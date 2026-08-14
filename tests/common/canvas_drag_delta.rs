@@ -1,6 +1,6 @@
 //! Canvas-drag scenario for shape and preview movement tests.
 
-use super::canvas_drag_values::canvas_drag_values;
+use super::canvas_drag_values::{CanvasDragValues, canvas_drag_values};
 use gauss::model::Vec2;
 use gpui::{Pixels, Point, VisualTestContext};
 use test_support::TestSupportResult;
@@ -26,8 +26,13 @@ pub fn canvas_drag_scenario(
     horizontal_limit: f32,
     vertical_limit: f32,
 ) -> TestSupportResult<CanvasDragScenario> {
-    let (_bounds, first, second, _drag_end, delta) =
-        canvas_drag_values(visual_cx, horizontal_limit, vertical_limit)?;
+    let CanvasDragValues {
+        bounds: _bounds,
+        first,
+        second,
+        drag_end: _drag_end,
+        delta,
+    } = canvas_drag_values(visual_cx, horizontal_limit, vertical_limit)?;
     Ok(CanvasDragScenario {
         first,
         second,
