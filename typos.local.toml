@@ -16,7 +16,14 @@ accepted = ["Center", "LOD", "Mold", "inventario", "mold"]
 # Preserve externally defined Rust API and tool names without weakening prose
 # spelling checks.
 ignore = [
-    "`[^`\\n]+`",
+    "`AXDescription`",
+    "`AXGroup`",
+    "`AXLabel`",
+    "`AXRole`",
+    "`Catalog`",
+    "`Catalog::default_en_gb\\(\\)`",
+    "`catalog\\.rs`",
+    "`color`",
     "flavor = \"current_thread\"",
     "rust-analyzer",
 ]

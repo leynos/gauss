@@ -43,6 +43,14 @@ pub fn set_scenario_data<T: 'static>(data: T) {
     with_state(|state| state.data = Some(Box::new(data)));
 }
 
+fn with_typed_scenario_data<R>(
+    context: &str,
+    lookup: impl FnOnce(&mut dyn Any) -> Option<R>,
+) -> TestSupportResult<R> {
+    with_state(|state| state.data.as_deref_mut().and_then(lookup))
+        .ok_or_else(|| TestSupportError::missing("scenario data", context))
+}
+
 /// Read the scenario-specific payload as its concrete type.
 ///
 /// # Errors
@@ -53,14 +61,7 @@ pub fn with_scenario_data<T: 'static, R>(
     context: &str,
     f: impl FnOnce(&T) -> R,
 ) -> TestSupportResult<R> {
-    with_state(|state| {
-        state
-            .data
-            .as_deref()
-            .and_then(|data| data.downcast_ref::<T>())
-            .map(f)
-    })
-    .ok_or_else(|| TestSupportError::missing("scenario data", context))
+    with_typed_scenario_data(context, |data| data.downcast_ref::<T>().map(f))
 }
 
 /// Mutate the scenario-specific payload as its concrete type.
@@ -73,14 +74,7 @@ pub fn with_mut_scenario_data<T: 'static, R>(
     context: &str,
     f: impl FnOnce(&mut T) -> R,
 ) -> TestSupportResult<R> {
-    with_state(|state| {
-        state
-            .data
-            .as_deref_mut()
-            .and_then(|data| data.downcast_mut::<T>())
-            .map(f)
-    })
-    .ok_or_else(|| TestSupportError::missing("scenario data", context))
+    with_typed_scenario_data(context, |data| data.downcast_mut::<T>().map(f))
 }
 
 fn reset_state_after_scenario() {
