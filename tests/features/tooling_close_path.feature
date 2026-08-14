@@ -5,7 +5,8 @@ Feature: Close drawn paths
     When three triangle anchors are placed
     Then the triangle path is open
     When the first triangle anchor is clicked again
-    Then the triangle path is closed
+    Then the shell is in manipulate mode
+    And the triangle path is closed
     And the closing operation preserves the drawn shape
     When the canvas is clicked away from the closed path
     Then no point is added to the closed path

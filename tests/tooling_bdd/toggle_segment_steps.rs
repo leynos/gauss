@@ -152,8 +152,7 @@ fn press_tab(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     state::with_visual_cx(cx, |visual_cx, _view, _data: &mut ToggleSegmentState| {
-        visual_cx.simulate_keystrokes("tab");
-        visual_cx.run_until_parked();
+        common::simulate_key(visual_cx, "tab", Modifiers::none());
         Ok(())
     })
 }

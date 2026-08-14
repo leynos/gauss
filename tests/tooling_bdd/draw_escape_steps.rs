@@ -6,11 +6,12 @@ use gpui::{Pixels, Point, TestAppContext, point, px};
 use rstest_bdd_macros::{given, then, when};
 use test_support::TestSupportError;
 
-struct DrawEscapeState {
+pub(crate) struct DrawEscapeState {
     points: [Point<Pixels>; 2],
     shape_id: Option<ShapeId>,
     anchor_count: Option<usize>,
     segment_count: Option<usize>,
+    document_len: Option<usize>,
 }
 
 #[given("a fresh Phase 0 shell window")]
@@ -27,6 +28,7 @@ fn fresh_phase0_shell_window(
             shape_id: None,
             anchor_count: None,
             segment_count: None,
+            document_len: None,
         })
     })
 }
@@ -72,16 +74,7 @@ fn active_path_is_open(
         data.shape_id = Some(shape.id);
         data.anchor_count = Some(shape.path.anchors.len());
         data.segment_count = Some(shape.path.segments.len());
-        Ok(())
-    })
-}
-
-#[when("Escape is pressed")]
-fn press_escape(
-    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
-) -> Result<(), TestSupportError> {
-    state::with_visual_cx(cx, |visual_cx, _view, _data: &mut DrawEscapeState| {
-        common::simulate_escape(visual_cx);
+        data.document_len = Some(doc.len());
         Ok(())
     })
 }
@@ -106,10 +99,12 @@ fn open_path_remains_unchanged(
         let unchanged = Some(shape.id) == data.shape_id
             && !shape.path.closed
             && Some(shape.path.anchors.len()) == data.anchor_count
-            && Some(shape.path.segments.len()) == data.segment_count;
+            && Some(shape.path.segments.len()) == data.segment_count
+            && Some(doc.len()) == data.document_len
+            && visual_cx.read(|app| view.read(app).is_manipulate_mode());
         if !unchanged {
             return Err(TestSupportError::expectation(
-                "expected Escape to preserve the same open path and manipulate click to add nothing",
+                "expected Escape to enter manipulate mode, preserve the same open path and document length, and make the click add nothing",
             ));
         }
         Ok(())

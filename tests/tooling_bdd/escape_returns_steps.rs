@@ -6,7 +6,7 @@ use gpui::{Modifiers, MouseButton, Pixels, Point, TestAppContext, point, px};
 use rstest_bdd_macros::{given, then, when};
 use test_support::{TestSupportError, math};
 
-enum EscapeState {
+pub(crate) enum EscapeState {
     Click {
         point: Point<Pixels>,
         shapes_before: usize,
@@ -105,16 +105,6 @@ fn no_new_shape_is_created(
                 "expected manipulate-mode click not to create a shape",
             ));
         }
-        Ok(())
-    })
-}
-
-#[when("Escape is pressed")]
-fn press_escape(
-    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
-) -> Result<(), TestSupportError> {
-    state::with_visual_cx(cx, |visual_cx, _view, _data: &mut EscapeState| {
-        common::simulate_escape(visual_cx);
         Ok(())
     })
 }

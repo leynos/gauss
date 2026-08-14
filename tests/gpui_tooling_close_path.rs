@@ -4,12 +4,20 @@
 mod close_path_steps;
 #[path = "common/gpui_tooling_close_path.rs"]
 mod common;
+#[path = "tooling_bdd/shared_steps.rs"]
+mod shared_steps;
 #[path = "tooling_bdd/state.rs"]
 mod state;
 
 use rstest_bdd_macros::scenario;
 use serial_test::serial;
 use state::{ScenarioStateCleanup, scenario_state_cleanup};
+
+struct SharedStepState;
+
+impl shared_steps::SharedStepStateMarker for SharedStepState {
+    type Data = close_path_steps::ClosePathState;
+}
 
 #[scenario(
     path = "tests/features/tooling_close_path.feature",

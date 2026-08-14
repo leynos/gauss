@@ -80,18 +80,24 @@ pub fn with_visual_cx<T: 'static, R>(
         ));
     };
     let mut visual_cx = VisualTestContext::from_window(window, cx);
-    SCENARIO_STATE.with(|cell| {
-        let mut state = cell.borrow_mut();
-        let data = state
-            .data
-            .as_deref_mut()
-            .and_then(|data| data.downcast_mut::<T>())
-            .ok_or_else(|| {
-                TestSupportError::missing(
-                    std::any::type_name::<T>(),
-                    "scenario-specific data assigned by the Given step",
-                )
-            })?;
-        operation(&mut visual_cx, &entity, data)
-    })
+    let stored_data = SCENARIO_STATE.with(|cell| cell.borrow_mut().data.take());
+    let Some(scenario_data) = stored_data else {
+        return Err(TestSupportError::missing(
+            std::any::type_name::<T>(),
+            "scenario-specific data assigned by the Given step",
+        ));
+    };
+    let mut typed_data = match scenario_data.downcast::<T>() {
+        Ok(typed_data) => typed_data,
+        Err(original_data) => {
+            SCENARIO_STATE.with(|cell| cell.borrow_mut().data = Some(original_data));
+            return Err(TestSupportError::missing(
+                std::any::type_name::<T>(),
+                "scenario-specific data assigned by the Given step",
+            ));
+        }
+    };
+    let result = operation(&mut visual_cx, &entity, &mut typed_data);
+    SCENARIO_STATE.with(|cell| cell.borrow_mut().data = Some(typed_data));
+    result
 }

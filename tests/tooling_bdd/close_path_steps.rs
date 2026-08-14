@@ -6,7 +6,7 @@ use gpui::{Bounds, Pixels, Point, TestAppContext, VisualTestContext, point, px};
 use rstest_bdd_macros::{given, then, when};
 use test_support::{TestSupportError, TestSupportResult};
 
-struct ClosePathState {
+pub(crate) struct ClosePathState {
     bounds: Bounds<Pixels>,
     points: [Point<Pixels>; 3],
     expected_shape_id: Option<ShapeId>,
@@ -165,6 +165,20 @@ fn closing_preserves_drawn_shape(
     })
 }
 
+#[then("the shell is in manipulate mode")]
+fn shell_is_in_manipulate_mode(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    state::with_visual_cx(cx, |visual_cx, view, _data: &mut ClosePathState| {
+        if !visual_cx.read(|app| view.read(app).is_manipulate_mode()) {
+            return Err(TestSupportError::expectation(
+                "expected closing the path to enter manipulate mode",
+            ));
+        }
+        Ok(())
+    })
+}
+
 #[when("the canvas is clicked away from the closed path")]
 fn click_away_from_closed_path(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -201,17 +215,6 @@ fn place_first_triangle_anchor(
 ) -> Result<(), TestSupportError> {
     state::with_visual_cx(cx, |visual_cx, _view, data: &mut ClosePathState| {
         common::draw_point(visual_cx, data.points[0]);
-        Ok(())
-    })
-}
-
-#[when("the draw edge mode is switched to Bezier auto")]
-fn switch_to_bezier_auto(
-    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
-) -> Result<(), TestSupportError> {
-    state::with_visual_cx(cx, |visual_cx, _view, _data: &mut ClosePathState| {
-        visual_cx.simulate_keystrokes("tab");
-        visual_cx.run_until_parked();
         Ok(())
     })
 }

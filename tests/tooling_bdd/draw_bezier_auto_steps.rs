@@ -8,7 +8,7 @@ use test_support::{TestSupportError, TestSupportResult};
 
 const CATMULL_ROM_TENSION: f32 = 1.0;
 
-struct BezierAutoState {
+pub(crate) struct BezierAutoState {
     points: [Point<gpui::Pixels>; 4],
 }
 
@@ -93,17 +93,6 @@ fn place_first_anchor(
 ) -> Result<(), TestSupportError> {
     state::with_visual_cx(cx, |visual_cx, _view, data: &mut BezierAutoState| {
         common::draw_point(visual_cx, data.points[0]);
-        Ok(())
-    })
-}
-
-#[when("the draw edge mode is switched to Bezier auto")]
-fn switch_to_bezier_auto(
-    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
-) -> Result<(), TestSupportError> {
-    state::with_visual_cx(cx, |visual_cx, _view, _data: &mut BezierAutoState| {
-        visual_cx.simulate_keystrokes("tab");
-        visual_cx.run_until_parked();
         Ok(())
     })
 }

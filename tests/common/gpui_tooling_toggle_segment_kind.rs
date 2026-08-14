@@ -1,7 +1,7 @@
 //! Harness facade for the `tests/gpui_tooling_toggle_segment_kind.rs` integration test.
 //!
-//! Re-exports canvas input, document history, shape lookup, and vector assertions
-//! for segment-kind toggles.
+//! Re-exports canvas and keyboard input, document history, shape lookup, and
+//! vector assertions for segment-kind toggles.
 
 #[path = "anchor_point.rs"]
 mod anchor_point;
@@ -25,6 +25,8 @@ mod history;
 mod init_app;
 #[path = "initial_draw.rs"]
 mod initial_draw;
+#[path = "key_input.rs"]
+mod key_input;
 #[path = "vec2_assertion.rs"]
 mod vec2_assertion;
 
@@ -50,5 +52,7 @@ pub use history::read_history_len;
 pub use init_app::init_test_app;
 /// Performs the initial draw and waits for GPUI to become parked.
 pub use initial_draw::ensure_initial_draw;
+/// Dispatches a key event with modifiers and waits for the GPUI event loop.
+pub use key_input::simulate_key;
 /// Checks that harness-observed vectors are within the helper's tolerance.
 pub use vec2_assertion::assert_vec2_close;

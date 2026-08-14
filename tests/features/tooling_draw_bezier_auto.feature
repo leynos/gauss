@@ -1,6 +1,6 @@
 Feature: Draw Bezier auto paths
 
-  Scenario: Tab switches to Bezier auto and synthesises handles
+  Scenario: Tab switches to Bezier auto and synthesizes handles
     Given a fresh Phase 0 shell window
     When the first of four drawing anchors is placed
     And the draw edge mode is switched to Bezier auto
