@@ -4,6 +4,8 @@
 mod scenario_state;
 
 mod support {
+    //! Fixture support that exercises the macro's parent-visible expansion.
+
     #[derive(Default)]
     pub(super) struct ScenarioState {
         pub(super) value: u8,
