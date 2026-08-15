@@ -2,8 +2,17 @@
 
 #[path = "common/gpui_shell_style_controls.rs"]
 mod common;
+
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
 #[path = "shell_bdd/expect_equal.rs"]
 mod expect_equal_support;
+
+#[path = "shell_bdd/lifecycle.rs"]
+mod lifecycle;
+
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 #[path = "shell_bdd/support.rs"]
 mod support;
 
@@ -60,7 +69,7 @@ fn drawn_shape_with_first_anchor_selected(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     STYLE_STATE.with(|cell| *cell.borrow_mut() = StyleState::default());
-    fresh_shell_with(cx, Phase0Shell::new);
+    fresh_shell_with(cx, Phase0Shell::new)?;
     with_shell(cx, |visual_cx, view| {
         let bounds = common::canvas_bounds(visual_cx)?;
         let first = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));

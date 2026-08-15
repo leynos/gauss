@@ -2,10 +2,19 @@
 
 #[path = "common/gpui_shell_viewport_input.rs"]
 mod common;
+
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
 #[path = "shell_bdd/expect_equal.rs"]
 mod expect_equal_support;
 #[path = "shell_bdd/expect_true.rs"]
 mod expect_true_support;
+
+#[path = "shell_bdd/lifecycle.rs"]
+mod lifecycle;
+
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 #[path = "shell_bdd/support.rs"]
 mod support;
 
@@ -38,9 +47,7 @@ fn fresh_phase0_shell_window(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     INPUT_STATE.with(|cell| *cell.borrow_mut() = InputState::default());
-    fresh_shell_with(cx, Phase0Shell::new);
-    with_shell(cx, |_visual_cx, _view| Ok(()))?;
-    Ok(())
+    fresh_shell_with(cx, Phase0Shell::new)
 }
 
 fn canvas_position(

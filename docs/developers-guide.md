@@ -133,20 +133,22 @@ the [v0.6.0 migration guide](rstest-bdd-v0-6-0-migration-guide.md#retain-structu
 The focused modules under `tests/shell_bdd/` provide shared support for the
 behavioural shell scenarios:
 
-- `support.rs` stores durable shell entity and window handles between steps,
-  rebuilds a `VisualTestContext` for each step, and resets thread-local state
-  through the `ScenarioStateCleanup` fixture.
+- `support.rs` keeps shell-specific scenario state and rebuilds a
+  `VisualTestContext` for each step. It uses `DurableShell` from
+  `tests/common/durable_shell.rs` and the `scenario_state!` macro from
+  `tests/common/scenario_state.rs`.
+- `lifecycle.rs` initializes the application and completes the initial draw
+  without depending on the broad test crate `common` module.
 - `click.rs` performs fallible selector-based clicks and drains pending GPUI
   work.
 - `expect_equal.rs` and `expect_true.rs` return `TestSupportError` values from
   step assertions instead of panicking.
 
 Include only the support modules that a test binary uses. Use a path attribute
-such as `#[path = "shell_bdd/support.rs"]`; that module also requires the test
-crate's `common` module for application initialization and the initial draw.
-Selective inclusion keeps unused-helper checks effective and avoids adding the
-complete shell support surface to every GPUI integration test. Each stateful
-scenario must accept the cleanup fixture and remain `#[serial]`.
+such as `#[path = "shell_bdd/support.rs"]`. Selective inclusion keeps
+unused-helper checks effective and avoids adding the complete shell support
+surface to every GPUI integration test. Each stateful scenario must accept the
+cleanup fixture and remain `#[serial]`.
 
 ### Stateful history scenarios
 

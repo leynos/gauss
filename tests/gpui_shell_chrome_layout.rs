@@ -1,4 +1,4 @@
-//! Structural GPUI coverage for the Phase 1 shell chrome layout.
+//! Structural GPUI coverage for the Phase 0 shell chrome layout.
 //!
 //! This raw test intentionally checks only that chrome elements participate in
 //! layout. User interactions with those elements live in the BDD companion.

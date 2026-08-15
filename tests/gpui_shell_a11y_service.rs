@@ -3,6 +3,14 @@
 #[path = "common/gpui_shell_a11y_service.rs"]
 mod common;
 
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
+
+#[path = "shell_bdd/lifecycle.rs"]
+mod lifecycle;
+
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 #[path = "shell_bdd/expect_equal.rs"]
 mod expect_equal_support;
 
@@ -44,9 +52,7 @@ fn fresh_phase0_shell_window(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     A11Y_STATE.with(|cell| *cell.borrow_mut() = A11yState::default());
-    fresh_shell_with(cx, Phase0Shell::new_for_tests);
-    with_shell(cx, |_visual_cx, _view| Ok(()))?;
-    Ok(())
+    fresh_shell_with(cx, Phase0Shell::new_for_tests)
 }
 
 #[when("a shape is inserted")]
@@ -298,10 +304,8 @@ fn shell_does_not_request_quit(
 }
 
 fn expect_quit(cx: &mut TestAppContext, expected: bool) -> TestSupportResult<()> {
-    with_shell(cx, |visual_cx, view| {
-        let actual = visual_cx.read(|app| view.read(app).did_request_quit());
-        expect_equal(&actual, &expected, "shell quit request")
-    })
+    let actual = shell_did_request_quit!(cx)?;
+    expect_equal(&actual, &expected, "shell quit request")
 }
 
 #[then("the accessibility request routes to close the window")]
@@ -338,34 +342,66 @@ fn expect_routed(
     })
 }
 
-#[scenario(path = "tests/features/shell_a11y_service.feature", name = "Initial accessibility tree is emitted", harness = rstest_bdd_harness_gpui::GpuiHarness)]
+#[scenario(
+    path = "tests/features/shell_a11y_service.feature",
+    name = "Initial accessibility tree is emitted",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
 #[serial]
 fn initial_tree(#[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
 
-#[scenario(path = "tests/features/shell_a11y_service.feature", name = "Shape insertion emits an incremental accessibility update", harness = rstest_bdd_harness_gpui::GpuiHarness)]
+#[scenario(
+    path = "tests/features/shell_a11y_service.feature",
+    name = "Shape insertion emits an incremental accessibility update",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
 #[serial]
 fn shape_insert(#[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
 
-#[scenario(path = "tests/features/shell_a11y_service.feature", name = "Idle rendering emits no accessibility update", harness = rstest_bdd_harness_gpui::GpuiHarness)]
+#[scenario(
+    path = "tests/features/shell_a11y_service.feature",
+    name = "Idle rendering emits no accessibility update",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
 #[serial]
 fn idle_render(#[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
 
-#[scenario(path = "tests/features/shell_a11y_service.feature", name = "Stale shape selection emits no accessibility update", harness = rstest_bdd_harness_gpui::GpuiHarness)]
+#[scenario(
+    path = "tests/features/shell_a11y_service.feature",
+    name = "Stale shape selection emits no accessibility update",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
 #[serial]
 fn stale_selection(#[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
 
-#[scenario(path = "tests/features/shell_a11y_service.feature", name = "Close-window action requests quit", harness = rstest_bdd_harness_gpui::GpuiHarness)]
+#[scenario(
+    path = "tests/features/shell_a11y_service.feature",
+    name = "Close-window action requests quit",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
 #[serial]
 fn close_action(#[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
 
-#[scenario(path = "tests/features/shell_a11y_service.feature", name = "Accessibility close click requests quit", harness = rstest_bdd_harness_gpui::GpuiHarness)]
+#[scenario(
+    path = "tests/features/shell_a11y_service.feature",
+    name = "Accessibility close click requests quit",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
 #[serial]
 fn a11y_close(#[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
 
-#[scenario(path = "tests/features/shell_a11y_service.feature", name = "Unsupported accessibility action is rejected", harness = rstest_bdd_harness_gpui::GpuiHarness)]
+#[scenario(
+    path = "tests/features/shell_a11y_service.feature",
+    name = "Unsupported accessibility action is rejected",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
 #[serial]
 fn unsupported_action(#[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
 
-#[scenario(path = "tests/features/shell_a11y_service.feature", name = "Unknown accessibility node is rejected", harness = rstest_bdd_harness_gpui::GpuiHarness)]
+#[scenario(
+    path = "tests/features/shell_a11y_service.feature",
+    name = "Unknown accessibility node is rejected",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
 #[serial]
 fn unknown_node(#[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}

@@ -2,12 +2,16 @@
 
 #[path = "shell_bdd/click.rs"]
 mod click_support;
-#[path = "common/gpui_shell_tool_rail.rs"]
-mod common;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
 #[path = "shell_bdd/expect_equal.rs"]
 mod expect_equal_support;
 #[path = "shell_bdd/expect_true.rs"]
 mod expect_true_support;
+#[path = "shell_bdd/lifecycle.rs"]
+mod lifecycle;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 #[path = "shell_bdd/support.rs"]
 mod support;
 
@@ -25,16 +29,14 @@ use test_support::{TestSupportError, TestSupportResult};
 fn fresh_phase0_shell_window(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    fresh_shell_with(cx, Phase0Shell::new);
-    with_shell(cx, |_visual_cx, _view| Ok(()))?;
-    Ok(())
+    fresh_shell_with(cx, Phase0Shell::new)
 }
 
 #[given("a fresh Phase 0 shell window with an active draw shape")]
 fn shell_with_active_draw_shape(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    fresh_shell_with(cx, Phase0Shell::new);
+    fresh_shell_with(cx, Phase0Shell::new)?;
     with_shell(cx, |visual_cx, view| {
         visual_cx.update(|_window, app| {
             view.update(app, |shell, _cx| {

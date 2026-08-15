@@ -1,21 +1,29 @@
 //! Behavioural coverage for the shell mode indicator through `GpuiHarness`.
 
-#[path = "common/gpui_shell_mode_indicator.rs"]
-mod common;
-
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
 #[path = "shell_bdd/expect_equal.rs"]
 mod expect_equal_support;
-
+#[path = "shell_bdd/lifecycle.rs"]
+mod lifecycle;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 #[path = "shell_bdd/support.rs"]
 mod support;
+
+use expect_equal_support::expect_equal;
+use gauss::ui::Phase0Shell;
+use gpui::TestAppContext;
+use rstest_bdd_macros::{given, scenario, then, when};
+use serial_test::serial;
+use support::{fresh_shell_with, with_shell, ScenarioStateCleanup};
+use test_support::TestSupportError;
 
 #[given("a fresh Phase 0 shell window")]
 fn fresh_phase0_shell_window(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    fresh_shell_with(cx, Phase0Shell::new);
-    with_shell(cx, |_visual_cx, _view| Ok(()))?;
-    Ok(())
+    fresh_shell_with(cx, Phase0Shell::new)
 }
 
 #[when("the edge mode is cycled with Tab")]

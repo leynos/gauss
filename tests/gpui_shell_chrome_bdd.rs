@@ -3,10 +3,16 @@
 #[path = "shell_bdd/click.rs"]
 mod click_support;
 mod common;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
 #[path = "shell_bdd/expect_equal.rs"]
 mod expect_equal_support;
 #[path = "shell_bdd/expect_true.rs"]
 mod expect_true_support;
+#[path = "shell_bdd/lifecycle.rs"]
+mod lifecycle;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 #[path = "shell_bdd/support.rs"]
 mod support;
 
@@ -24,18 +30,14 @@ use test_support::TestSupportError;
 fn fresh_phase0_shell_window(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    fresh_shell_with(cx, Phase0Shell::new);
-    with_shell(cx, |_visual_cx, _view| Ok(()))?;
-    Ok(())
+    fresh_shell_with(cx, Phase0Shell::new)
 }
 
 #[given("a fresh testable Phase 0 shell window")]
 fn fresh_testable_phase0_shell_window(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    fresh_shell_with(cx, Phase0Shell::new_for_tests);
-    with_shell(cx, |_visual_cx, _view| Ok(()))?;
-    Ok(())
+    fresh_shell_with(cx, Phase0Shell::new_for_tests)
 }
 
 #[when("the canvas is clicked")]
@@ -124,10 +126,10 @@ fn draw_shape_anchor_count(
 fn shell_requests_quit(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    with_shell(cx, |visual_cx, view| {
-        let did_quit = visual_cx.read(|app| view.read(app).did_request_quit());
-        expect_true(did_quit, "expected shell to request quit")
-    })
+    expect_true(
+        shell_did_request_quit!(cx)?,
+        "expected shell to request quit",
+    )
 }
 
 #[scenario(path = "tests/features/shell_chrome.feature", name = "Canvas input remains active beneath chrome", harness = rstest_bdd_harness_gpui::GpuiHarness)]

@@ -36,6 +36,8 @@ extend-ignore-re = [
     "`Catalog(?:::[^`]+)?`",
     "`catalog\\.rs`",
     "`color`",
+    "`resize_canvas_not_present_when_maximised`",
+    "`resize_canvas_present_when_not_maximised`",
     "flavor = \"current_thread\"",
     "rust-analyzer",
 ]

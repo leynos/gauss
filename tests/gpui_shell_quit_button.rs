@@ -2,10 +2,14 @@
 
 #[path = "shell_bdd/click.rs"]
 mod click_support;
-#[path = "common/gpui_shell_quit_button.rs"]
-mod common;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
 #[path = "shell_bdd/expect_true.rs"]
 mod expect_true_support;
+#[path = "shell_bdd/lifecycle.rs"]
+mod lifecycle;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 #[path = "shell_bdd/support.rs"]
 mod support;
 
@@ -22,9 +26,7 @@ use test_support::TestSupportError;
 fn fresh_phase0_shell_window(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    fresh_shell_with(cx, Phase0Shell::new);
-    with_shell(cx, |_visual_cx, _view| Ok(()))?;
-    Ok(())
+    fresh_shell_with(cx, Phase0Shell::new)
 }
 
 #[when("the Quit button is clicked")]
@@ -40,10 +42,10 @@ fn click_quit_button(
 fn shell_requests_quit(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    with_shell(cx, |visual_cx, view| {
-        let did_request_quit = visual_cx.read(|app| view.read(app).did_request_quit());
-        expect_true(did_request_quit, "expected the shell to request quit")
-    })
+    expect_true(
+        shell_did_request_quit!(cx)?,
+        "expected the shell to request quit",
+    )
 }
 
 #[scenario(
