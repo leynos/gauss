@@ -102,6 +102,18 @@ suites can reuse them without depending on GPUI. Include
 `tests/common/selection_coordinates.rs` only in binaries that convert selection
 coordinates, and keep pointer interaction helpers in `tests/common`.
 
+Test support is organized around per-harness, capability-sized facades. This
+replaces the deleted `tests/common/shared_helpers.rs`: each integration-test
+binary owns a `tests/common/<harness>.rs` facade that declares only the focused
+capability modules it needs and re-exports the narrow surface it consumes.
+Shared implementations remain in focused modules under `tests/common/`; the
+facade owns their composition for its harness.
+
+For a new harness, add `tests/common/<harness>.rs` and include it with
+`#[path = "common/<harness>.rs"] mod common;`. Declare only the capabilities
+used by that harness and re-export only its helpers; do not recreate a global
+helper module.
+
 ### Stateful file I/O scenarios
 
 The `gpui_file_io_*` scenario binaries cover Save and export dialog
