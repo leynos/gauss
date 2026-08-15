@@ -84,7 +84,7 @@ The feature file lives within the crate (commonly under `tests/features/`). The
 path to this file will be referenced by the `#[scenario]` macro in the test
 code.
 
-### Internationalised scenarios
+### Internationalized scenarios
 
 `rstest-bdd` reads the optional `# language: <code>` directive that appears at
 the top of a feature file. When a locale is specified, the parser uses that
@@ -154,7 +154,7 @@ compiler. Only the key stored in `StepContext` must match.
 Implicit fixture keys derived from scenario and step parameter names normalize
 at most one leading underscore. In practice, `world` and `_world` both resolve
 to the implicit fixture key `world`, while `__world` resolves to `_world`.
-Explicit `#[from(...)]` names remain exact and bypass this normalisation, so
+Explicit `#[from(...)]` names remain exact and bypass this normalization, so
 `#[from(_world)]` still requests the literal `_world` fixture key.
 
 Internally, the step macros record the fixture names and generate wrapper code
@@ -1504,7 +1504,7 @@ changing feature text; otherwise a stale build can mask the change.
 #### Test-runner parallelism and scenario state
 
 Stateful scenarios that share thread-local or process-wide state need different
-serialisation tools depending on the test runner. The `#[serial]` attribute
+serialization tools depending on the test runner. The `#[serial]` attribute
 from the [`serial_test`](https://docs.rs/serial_test/) crate is still required
 for `cargo test` compatibility, even though cargo-nextest runs each test in a
 separate operating-system process.
@@ -1517,7 +1517,7 @@ separate operating-system process.
 *Table: `#[serial]` behaviour by test runner.*
 
 Under `cargo test`, all tests in one integration-test binary run in a single
-process using multiple threads. `#[serial]` serialises tests that carry the
+process using multiple threads. `#[serial]` serializes tests that carry the
 same key, or all unkeyed `#[serial]` tests together, with an in-process mutex.
 Stateful GPUI scenarios therefore keep `#[serial]` so the reset protocol is
 respected when the suite runs without nextest.
@@ -1529,7 +1529,7 @@ redundant-but-harmless for nextest runs. Keep it for `cargo test`; do not
 remove it just because nextest already isolates per-process thread-local state.
 The design rationale is recorded in
 [design-document §2.7.6.7][design-runner-parallelism], and the maintainer
-convention is summarised in
+convention is summarized in
 [the developer guide][developer-serial-nextest].
 
 When separate test processes or separate test binaries must not overlap, use a

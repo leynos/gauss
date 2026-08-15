@@ -398,6 +398,10 @@ history.
   - [ ] Ensure multistep interactions create single undo entries.
         Completion: every drag and compound tool interaction produces
         exactly one undo entry; verified by parameterized tests.
+  - [x] Migrate the fixed GPUI history scenarios to rstest-bdd feature files
+        and the GPUI harness, including draw, anchor, handle and multi-shape
+        drags, grouping, reorder, close-path, selection, and document-open
+        reset cases.
   - [x] Verify history clears correctly on document open.
         See architecture §7.2.
 - [ ] 1.6.2. Add History panel (optional).

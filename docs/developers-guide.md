@@ -120,6 +120,61 @@ For a new harness, add `tests/common/<harness>.rs` and include it with
 used by that harness and re-export only its helpers; do not recreate a global
 helper module.
 
+
+### Stateful history scenarios
+
+The `gpui_history_bdd` binaries combine rstest-bdd 0.6.0-beta3's injected
+`&mut TestAppContext` with state that must survive BDD step boundaries. This
+combination requires a thread-local, resettable state workaround. Do not use
+`ScenarioState` or `Slot` fixture injection for these scenarios: the borrowed
+GPUI context cannot cross steps through those fixture values.
+
+Store a `DurableShell` in the thread-local state instead of a
+`VisualTestContext`. `DurableShell` keeps the `Entity<Phase0Shell>` and
+`AnyWindowHandle` that remain valid across steps. Use `DurableShell::open` for
+normal interaction scenarios and `DurableShell::open_for_tests` when a history
+step needs the test-only shell seams. Each step receives a fresh context and
+rebuilds its short-lived visual context with
+`shell.with_visual(cx, |visual_cx, entity| { ... })`. Use `shell.entity()` only
+for reads that do not need a visual context.
+
+Mark every history scenario with `#[serial]`. The GPUI harness and the
+thread-local state are process-local, so serial execution keeps scenarios from
+overlapping. Reset the state before a scenario through an rstest fixture, and
+reset it again when that fixture's cleanup guard is dropped. Setup steps may
+also call `reset_state()` before replacing the state, but they must never hold
+the state-cell borrow while using the injected `TestAppContext`.
+
+The essential shape is:
+
+```rust,no_run
+thread_local! {
+    static STATE: RefCell<HistoryState> = RefCell::new(HistoryState::default());
+}
+
+fn reset_state() {
+    STATE.with(|state| *state.borrow_mut() = HistoryState::default());
+}
+
+#[fixture]
+fn state_cleanup() -> StateCleanup {
+    reset_state();
+    StateCleanup
+}
+
+#[scenario(
+    path = "tests/features/history_drag_anchor_undo.feature",
+    name = "Dragging an anchor creates one undo entry and undo restores it",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
+#[serial]
+fn drag_anchor_history(#[from(state_cleanup)] _cleanup: StateCleanup) {}
+```
+
+The step that creates the shell stores the returned `DurableShell`; later steps
+accept `#[from(rstest_bdd_harness_context)] cx: &mut TestAppContext` and call
+`with_visual` for the duration of each interaction or assertion.
+
 ### Stateful file I/O scenarios
 
 The `gpui_file_io_*` scenario binaries cover Save and export dialog

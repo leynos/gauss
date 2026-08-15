@@ -66,39 +66,40 @@ fn drawn_shape(
 ) -> Result<(), TestSupportError> {
     reset_state();
     let shell = DurableShell::open(cx);
-    let values = shell.with_visual(cx, |visual_cx, view| {
-        let drag = canvas_drag_scenario(visual_cx, 20.0, 10.0)?;
-        draw_point(visual_cx, drag.first);
-        draw_point(visual_cx, drag.second);
-        let document = read_document(visual_cx, view);
-        let original = require_draw_shape(&document, "after drawing two points")?.clone();
-        switch_to_manipulate_mode_and_verify(visual_cx, view, drag.first);
-        let start = point(
-            px(math::midpoint(
-                f32::from(drag.first.x),
-                f32::from(drag.second.x),
-            )),
-            px(math::midpoint(
-                f32::from(drag.first.y),
-                f32::from(drag.second.y),
-            )),
-        );
-        let end = point(start.x + px(drag.delta.x), start.y + px(drag.delta.y));
-        Ok((
-            original,
-            drag.delta,
-            start,
-            end,
-            read_history_len(visual_cx, view),
-        ))
-    })?;
+    let (original, delta, start, end, history_before) =
+        shell.with_visual(cx, |visual_cx, view| {
+            let drag = canvas_drag_scenario(visual_cx, 20.0, 10.0)?;
+            draw_point(visual_cx, drag.first);
+            draw_point(visual_cx, drag.second);
+            let document = read_document(visual_cx, view);
+            let original = require_draw_shape(&document, "after drawing two points")?.clone();
+            switch_to_manipulate_mode_and_verify(visual_cx, view, drag.first)?;
+            let start = point(
+                px(math::midpoint(
+                    f32::from(drag.first.x),
+                    f32::from(drag.second.x),
+                )),
+                px(math::midpoint(
+                    f32::from(drag.first.y),
+                    f32::from(drag.second.y),
+                )),
+            );
+            let end = point(start.x + px(drag.delta.x), start.y + px(drag.delta.y));
+            Ok((
+                original,
+                drag.delta,
+                start,
+                end,
+                read_history_len(visual_cx, view),
+            ))
+        })?;
     with_state(|state| {
         state.shell = Some(shell);
-        state.original = Some(values.0);
-        state.delta = Some(values.1);
-        state.start = Some(values.2);
-        state.end = Some(values.3);
-        state.history_before = Some(values.4);
+        state.original = Some(original);
+        state.delta = Some(delta);
+        state.start = Some(start);
+        state.end = Some(end);
+        state.history_before = Some(history_before);
     });
     Ok(())
 }
@@ -112,11 +113,12 @@ fn drag_shape(
     shell()?.with_visual(cx, |visual_cx, view| {
         visual_cx.simulate_mouse_down(start, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
-        let original = with_state(|state| state.original.clone()).ok_or_else(|| missing("original shape"))?;
+        let original_id = with_state(|state| state.original.as_ref().map(|shape| shape.id))
+            .ok_or_else(|| missing("original shape"))?;
         let selection = visual_cx.read(|app| view.read(app).selection().clone());
         let is_selected = selection.items.iter().any(|item| match item {
-            SelItem::Shape(id) => *id == original.id,
-            SelItem::Segment { shape, .. } => *shape == original.id,
+            SelItem::Shape(id) => *id == original_id,
+            SelItem::Segment { shape, .. } => *shape == original_id,
             _ => false,
         });
         if !is_selected || !visual_cx.read(|app| view.read(app).is_dragging()) {

@@ -30,7 +30,7 @@ fn draw_two_point_bezier_path(visual_cx: &mut VisualTestContext, scenario: Canva
     visual_cx.run_until_parked();
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 struct HandleDragSetup {
     scenario: CanvasDragScenario,
     shape_id: ShapeId,

@@ -70,8 +70,7 @@ fn fresh_shell_with_handle(
 fn drag_selected_handle(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let setup = with_state(|state| state.setup.as_ref().map(clone_setup))
-        .ok_or_else(|| missing("handle drag setup"))?;
+    let setup = with_state(|state| state.setup).ok_or_else(|| missing("handle drag setup"))?;
     shell()?.with_visual(cx, |visual_cx, view| {
         visual_cx.simulate_mouse_down(setup.handle_start, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
@@ -81,17 +80,6 @@ fn drag_selected_handle(
         visual_cx.run_until_parked();
         Ok(())
     })
-}
-
-const fn clone_setup(setup: &HandleDragSetup) -> HandleDragSetup {
-    HandleDragSetup {
-        scenario: setup.scenario,
-        shape_id: setup.shape_id,
-        first_anchor_pos: setup.first_anchor_pos,
-        original_handle_out: setup.original_handle_out,
-        handle_start: setup.handle_start,
-        handle_end: setup.handle_end,
-    }
 }
 
 #[when("the last document change is undone")]
@@ -108,8 +96,7 @@ fn undo_last_change(
 fn anchor_fixed_handle_moved(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let setup = with_state(|state| state.setup.as_ref().map(clone_setup))
-        .ok_or_else(|| missing("handle drag setup"))?;
+    let setup = with_state(|state| state.setup).ok_or_else(|| missing("handle drag setup"))?;
     shell()?.with_visual(cx, |visual_cx, view| {
         let document = read_document(visual_cx, view);
         let shape = require_draw_shape(&document, "after dragging handle")?;
@@ -138,8 +125,7 @@ fn anchor_fixed_handle_moved(
 fn anchor_and_handle_restored(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let setup = with_state(|state| state.setup.as_ref().map(clone_setup))
-        .ok_or_else(|| missing("handle drag setup"))?;
+    let setup = with_state(|state| state.setup).ok_or_else(|| missing("handle drag setup"))?;
     shell()?.with_visual(cx, |visual_cx, view| {
         let document = read_document(visual_cx, view);
         let shape = require_draw_shape(&document, "after undo")?;
