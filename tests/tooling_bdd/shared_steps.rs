@@ -1,7 +1,7 @@
 //! Shared keyboard-action step definitions for GPUI tooling scenarios.
 
-use crate::state;
-use gpui::{KeyDownEvent, Keystroke, Modifiers, TestAppContext};
+use crate::{common, state};
+use gpui::TestAppContext;
 use rstest_bdd_macros::when;
 use test_support::TestSupportError;
 
@@ -32,15 +32,7 @@ fn press_escape(
     state::with_visual_cx::<<crate::SharedStepState as SharedStepStateMarker>::Data, _>(
         cx,
         |visual_cx, _view, _data| {
-            visual_cx.simulate_event(KeyDownEvent {
-                keystroke: Keystroke {
-                    modifiers: Modifiers::none(),
-                    key: "escape".to_owned(),
-                    key_char: None,
-                },
-                is_held: false,
-            });
-            visual_cx.run_until_parked();
+            common::simulate_escape(visual_cx);
             Ok(())
         },
     )

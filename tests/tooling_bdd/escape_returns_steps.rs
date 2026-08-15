@@ -19,6 +19,45 @@ pub(crate) enum EscapeState {
     },
 }
 
+type DragStateFields<'a> = (
+    &'a Point<Pixels>,
+    &'a Point<Pixels>,
+    &'a usize,
+    &'a Vec<Anchor>,
+);
+
+impl EscapeState {
+    fn as_click(
+        &mut self,
+        context: &'static str,
+    ) -> Result<(&Point<Pixels>, &usize), TestSupportError> {
+        let Self::Click {
+            point,
+            shapes_before,
+        } = self
+        else {
+            return Err(TestSupportError::missing("click state", context));
+        };
+        Ok((point, shapes_before))
+    }
+
+    fn as_drag<'a>(
+        &'a mut self,
+        context: &'static str,
+    ) -> Result<DragStateFields<'a>, TestSupportError> {
+        let Self::Drag {
+            drag_start,
+            drag_preview,
+            history_before,
+            anchors_before,
+        } = self
+        else {
+            return Err(TestSupportError::missing("drag state", context));
+        };
+        Ok((drag_start, drag_preview, history_before, anchors_before))
+    }
+}
+
 fn shape_count(
     visual_cx: &gpui::VisualTestContext,
     view: &gpui::Entity<gauss::ui::Phase0Shell>,
@@ -36,12 +75,6 @@ fn draw_shape_anchors(
         .path
         .anchors
         .clone())
-}
-
-fn click_canvas(visual_cx: &mut gpui::VisualTestContext, point: Point<Pixels>) {
-    visual_cx.simulate_mouse_move(point, None, Modifiers::none());
-    visual_cx.simulate_click(point, Modifiers::none());
-    visual_cx.run_until_parked();
 }
 
 fn drag_cancelled_without_changes(
@@ -78,13 +111,8 @@ fn click_test_point(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     state::with_visual_cx(cx, |visual_cx, _view, data: &mut EscapeState| {
-        let EscapeState::Click { point, .. } = data else {
-            return Err(TestSupportError::missing(
-                "click state",
-                "test-point scenario",
-            ));
-        };
-        click_canvas(visual_cx, *point);
+        let (point, _) = data.as_click("test-point scenario")?;
+        common::click_canvas_and_wait(visual_cx, *point);
         Ok(())
     })
 }
@@ -94,12 +122,7 @@ fn no_new_shape_is_created(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     state::with_visual_cx(cx, |visual_cx, view, data: &mut EscapeState| {
-        let EscapeState::Click { shapes_before, .. } = data else {
-            return Err(TestSupportError::missing(
-                "click state",
-                "test-point scenario",
-            ));
-        };
+        let (_, shapes_before) = data.as_click("test-point scenario")?;
         if shape_count(visual_cx, view) != *shapes_before {
             return Err(TestSupportError::expectation(
                 "expected manipulate-mode click not to create a shape",
@@ -114,12 +137,7 @@ fn one_new_shape_is_created(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     state::with_visual_cx(cx, |visual_cx, view, data: &mut EscapeState| {
-        let EscapeState::Click { shapes_before, .. } = data else {
-            return Err(TestSupportError::missing(
-                "click state",
-                "test-point scenario",
-            ));
-        };
+        let (_, shapes_before) = data.as_click("test-point scenario")?;
         if shape_count(visual_cx, view) != shapes_before.saturating_add(1) {
             return Err(TestSupportError::expectation(
                 "expected draw-mode click to create one new shape",
@@ -139,7 +157,7 @@ fn shell_with_two_anchor_path(
         common::draw_point(visual_cx, scenario.second);
         common::simulate_escape(visual_cx);
         let shapes_after_escape = shape_count(visual_cx, view);
-        click_canvas(visual_cx, scenario.first);
+        common::click_canvas_and_wait(visual_cx, scenario.first);
         if shape_count(visual_cx, view) != shapes_after_escape {
             return Err(TestSupportError::expectation(
                 "expected manipulate mode after committing the open path",
@@ -173,17 +191,7 @@ fn start_drag_preview(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     state::with_visual_cx(cx, |visual_cx, _view, data: &mut EscapeState| {
-        let EscapeState::Drag {
-            drag_start,
-            drag_preview,
-            ..
-        } = data
-        else {
-            return Err(TestSupportError::missing(
-                "drag state",
-                "drag-preview scenario",
-            ));
-        };
+        let (drag_start, drag_preview, _, _) = data.as_drag("drag-preview scenario")?;
         visual_cx.simulate_mouse_down(*drag_start, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
         visual_cx.simulate_mouse_move(*drag_preview, MouseButton::Left, Modifiers::none());
@@ -197,12 +205,7 @@ fn drag_preview_is_active_without_commit(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     state::with_visual_cx(cx, |visual_cx, view, data: &mut EscapeState| {
-        let EscapeState::Drag { history_before, .. } = data else {
-            return Err(TestSupportError::missing(
-                "drag state",
-                "drag-preview scenario",
-            ));
-        };
+        let (_, _, history_before, _) = data.as_drag("drag-preview scenario")?;
         let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
         if !is_dragging || common::read_history_len(visual_cx, view) != *history_before {
             return Err(TestSupportError::expectation(
@@ -218,17 +221,7 @@ fn drag_preview_is_cancelled_without_changes(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     state::with_visual_cx(cx, |visual_cx, view, data: &mut EscapeState| {
-        let EscapeState::Drag {
-            history_before,
-            anchors_before,
-            ..
-        } = data
-        else {
-            return Err(TestSupportError::missing(
-                "drag state",
-                "drag-preview scenario",
-            ));
-        };
+        let (_, _, history_before, anchors_before) = data.as_drag("drag-preview scenario")?;
         let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
         let anchors_after = draw_shape_anchors(visual_cx, view, "after Escape during preview")?;
         let history_after = common::read_history_len(visual_cx, view);

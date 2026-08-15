@@ -64,6 +64,27 @@ pub fn initialize<T: 'static>(
     Ok(())
 }
 
+/// Removes and downcasts the scenario's typed scratch data for one step.
+fn take_scenario_data<T: 'static>() -> TestSupportResult<Box<T>> {
+    let missing_data = || {
+        TestSupportError::missing(
+            std::any::type_name::<T>(),
+            "scenario-specific data assigned by the Given step",
+        )
+    };
+    let stored_data = SCENARIO_STATE.with(|cell| cell.borrow_mut().data.take());
+    let Some(scenario_data) = stored_data else {
+        return Err(missing_data());
+    };
+    match scenario_data.downcast::<T>() {
+        Ok(typed_data) => Ok(typed_data),
+        Err(original_data) => {
+            SCENARIO_STATE.with(|cell| cell.borrow_mut().data = Some(original_data));
+            Err(missing_data())
+        }
+    }
+}
+
 /// Rebuilds the visual context and exposes the scenario's typed scratch data.
 pub fn with_visual_cx<T: 'static, R>(
     cx: &mut TestAppContext,
@@ -80,23 +101,7 @@ pub fn with_visual_cx<T: 'static, R>(
         ));
     };
     let mut visual_cx = VisualTestContext::from_window(window, cx);
-    let stored_data = SCENARIO_STATE.with(|cell| cell.borrow_mut().data.take());
-    let Some(scenario_data) = stored_data else {
-        return Err(TestSupportError::missing(
-            std::any::type_name::<T>(),
-            "scenario-specific data assigned by the Given step",
-        ));
-    };
-    let mut typed_data = match scenario_data.downcast::<T>() {
-        Ok(typed_data) => typed_data,
-        Err(original_data) => {
-            SCENARIO_STATE.with(|cell| cell.borrow_mut().data = Some(original_data));
-            return Err(TestSupportError::missing(
-                std::any::type_name::<T>(),
-                "scenario-specific data assigned by the Given step",
-            ));
-        }
-    };
+    let mut typed_data = take_scenario_data()?;
     let result = operation(&mut visual_cx, &entity, &mut typed_data);
     SCENARIO_STATE.with(|cell| cell.borrow_mut().data = Some(typed_data));
     result

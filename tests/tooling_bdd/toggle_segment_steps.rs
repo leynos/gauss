@@ -119,7 +119,7 @@ fn shell_with_selected_line_segment(
         common::click_canvas_and_wait(visual_cx, first);
         common::click_canvas_and_wait(visual_cx, second);
         let doc = common::read_document(visual_cx, view);
-        let shape = common::require_draw_shape(&doc, "after drawing")?.clone();
+        let shape = common::require_draw_shape(&doc, "after drawing")?;
         let start = shape
             .path
             .anchors
