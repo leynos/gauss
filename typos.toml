@@ -32,7 +32,14 @@ locale = "en-gb"
 extend-ignore-re = [
     "(?s)```.*?```",
     "\\brust-analyzer\\b",
-    "`[^`\\n]+`",
+    "`AXDescription`",
+    "`AXGroup`",
+    "`AXLabel`",
+    "`AXRole`",
+    "`Catalog::default_en_gb\\(\\)`",
+    "`Catalog`",
+    "`catalog\\.rs`",
+    "`color`",
     "flavor = \"current_thread\"",
     "rust-analyzer",
 ]

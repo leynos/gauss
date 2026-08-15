@@ -7,6 +7,7 @@ use thiserror::Error;
 
 pub mod fixtures;
 pub mod math;
+pub mod selection;
 pub mod shapes;
 pub use shapes::{line_shape, open_triangle, sample_shape, shape_id, shape_with_handles};
 

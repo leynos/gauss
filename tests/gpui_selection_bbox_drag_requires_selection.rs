@@ -1,135 +1,165 @@
-//! GPUI headless integration tests for bounding-box dragging rules.
+//! BDD coverage for dragging an unselected shape by its bounding box.
 //!
-//! Phase 0 uses a loose bounding-box hit test as the fallback for selecting a
-//! shape in manipulate mode. However, dragging by the bounding box is only
-//! allowed once the shape is already selected.
-//!
-//! This keeps "select" and "move" as separate gestures for bbox hits, while
-//! still allowing explicit drags when the user has a selected shape (or a
-//! multi-selection).
+//! This binary binds the corresponding scenario in `selection.feature` to the
+//! GPUI `GpuiHarness`. It uses `common` for canvas interactions,
+//! `selection_coordinates` for GPUI conversion, shared lifecycle state from
+//! `selection_bdd::support`, and reusable model queries from
+//! `test_support::selection` to preserve the press-time selection rule.
 
 mod common;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
+#[path = "selection_bdd/mutable_scenario_data.rs"]
+mod mutable_scenario_data;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
+#[path = "common/selection_coordinates.rs"]
+mod selection_coordinates;
+#[path = "selection_bdd/support.rs"]
+mod support;
 
-use common::{add_square, canvas_bounds, ensure_initial_draw, init_test_app};
-use gauss::model::{Document, SelItem, Shape, ShapeId, Vec2};
-use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, px};
-use test_support::{TestSupportError, TestSupportResult, math};
+use common::{add_square, assert_shape_translated_by_delta, canvas_bounds, read_document};
+use gauss::model::{Document, SelItem, Selection, Shape, ShapeId, Vec2};
+use gpui::{Modifiers, MouseButton, TestAppContext};
+use mutable_scenario_data::with_mut_scenario_data;
+use rstest_bdd_macros::{given, scenario, then, when};
+use selection_coordinates::viewport_to_screen_point;
+use serial_test::serial;
+use support::{
+    NoDragPress, ScenarioContext, ScenarioStateCleanup, assert_no_drag_after_press, require_point,
+    set_scenario_data, with_scenario_data, with_state, with_visual_cx,
+};
+use test_support::TestSupportError;
+use test_support::selection::{require_shape, shape_bbox_centre};
 
-fn require_shape<'a>(
-    doc: &'a Document,
-    id: ShapeId,
-    context: &str,
-) -> TestSupportResult<&'a Shape> {
-    let message = format!("shape {id:?}: {context}");
-    doc.shape(id)
-        .ok_or_else(|| TestSupportError::missing("shape", message))
+struct ScenarioData {
+    shape_id: ShapeId,
+    shape_before: Shape,
+    drag_started_after_press: Option<bool>,
+    selection_after_press: Option<Selection>,
 }
 
-fn shape_bbox_centre(shape: &Shape) -> Vec2 {
-    let mut min_x = f32::INFINITY;
-    let mut min_y = f32::INFINITY;
-    let mut max_x = f32::NEG_INFINITY;
-    let mut max_y = f32::NEG_INFINITY;
-    for anchor in &shape.path.anchors {
-        min_x = min_x.min(anchor.pos.x);
-        min_y = min_y.min(anchor.pos.y);
-        max_x = max_x.max(anchor.pos.x);
-        max_y = max_y.max(anchor.pos.y);
-    }
+#[given("an unselected square is arranged")]
+fn unselected_square_is_arranged(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_visual_cx(cx, |visual_cx, view| {
+        let bounds = canvas_bounds(visual_cx)?;
+        let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
+        let mut document = Document::new();
+        let shape_id = add_square(
+            &mut document,
+            origin.add(Vec2::new(10.0, 10.0)),
+            origin.add(Vec2::new(110.0, 110.0)),
+        )?;
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, view_cx| {
+                shell.enter_manipulate_mode_for_tests();
+                shell.replace_document_for_tests(document);
+                shell.replace_selection_for_tests(Selection::empty());
+                view_cx.notify();
+            });
+        });
+        visual_cx.run_until_parked();
 
-    Vec2::new(math::midpoint(min_x, max_x), math::midpoint(min_y, max_y))
+        let updated_document = read_document(visual_cx, view);
+        let shape = require_shape(&updated_document, shape_id, "before unselected drag")?.clone();
+        let start_world = shape_bbox_centre(&shape)?;
+        let delta = Vec2::new(25.0, 15.0);
+        let viewport = visual_cx.read(|app| view.read(app).viewport());
+        with_state(|state| {
+            state
+                .points
+                .push(viewport_to_screen_point(viewport, start_world));
+            state
+                .points
+                .push(viewport_to_screen_point(viewport, start_world.add(delta)));
+        });
+        set_scenario_data(ScenarioData {
+            shape_id,
+            shape_before: shape,
+            drag_started_after_press: None,
+            selection_after_press: None,
+        });
+        Ok(())
+    })
 }
 
-const fn viewport_to_screen_point(
-    viewport: gauss::model::Viewport,
-    world: Vec2,
-) -> gpui::Point<gpui::Pixels> {
-    let screen = viewport.world_to_screen(world);
-    gpui::point(px(screen.x), px(screen.y))
+#[when("the unselected square is dragged by its bounding box")]
+fn unselected_square_is_dragged(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let start = require_point(0, ScenarioContext::UnselectedDragStart)?;
+    let end = require_point(1, ScenarioContext::UnselectedDragEnd)?;
+    with_visual_cx(cx, |visual_cx, view| {
+        visual_cx.simulate_mouse_down(start, MouseButton::Left, Modifiers::none());
+        visual_cx.run_until_parked();
+        let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
+        let selection = visual_cx.read(|app| view.read(app).selection().clone());
+        with_mut_scenario_data::<ScenarioData, _>(ScenarioContext::UnselectedDrag, |data| {
+            data.drag_started_after_press = Some(is_dragging);
+            data.selection_after_press = Some(selection);
+        })?;
+        visual_cx.simulate_mouse_move(end, MouseButton::Left, Modifiers::none());
+        visual_cx.simulate_mouse_up(end, MouseButton::Left, Modifiers::none());
+        visual_cx.run_until_parked();
+        Ok(())
+    })
 }
 
-fn assert_shape_unchanged(shape: &Shape, original: &Shape, context: &str) -> TestSupportResult<()> {
-    if shape.path.anchors.len() != original.path.anchors.len() {
+#[then("the square is selected")]
+fn square_is_selected() -> Result<(), TestSupportError> {
+    let (shape_id, selection_after_press) =
+        with_scenario_data::<ScenarioData, _>(ScenarioContext::SelectedSquare, |data| {
+            (data.shape_id, data.selection_after_press.clone())
+        })?;
+    let selection = selection_after_press.ok_or_else(|| {
+        TestSupportError::missing("selection after press", "recorded by the drag step")
+    })?;
+    if !selection.contains(&SelItem::Shape(shape_id)) {
         return Err(TestSupportError::expectation(format!(
-            "anchor count mismatch: {context}"
+            "expected square to be selected; selection={selection:?}"
         )));
-    }
-
-    for (current, start) in shape.path.anchors.iter().zip(original.path.anchors.iter()) {
-        let diff = current.pos.sub(start.pos);
-        if diff.distance_squared(Vec2::ZERO) > 0.0001 {
-            return Err(TestSupportError::expectation(format!(
-                "expected shape to remain unchanged ({context}); start={:?} got={:?}",
-                start.pos, current.pos
-            )));
-        }
     }
     Ok(())
 }
 
-#[gpui::test]
-fn bbox_dragging_requires_shape_to_be_preselected(cx: &mut TestAppContext) {
-    init_test_app(cx);
+#[then("no drag starts before the square is preselected")]
+fn no_drag_starts_before_preselection() -> Result<(), TestSupportError> {
+    let drag_started_after_press =
+        with_scenario_data::<ScenarioData, _>(ScenarioContext::DragStateAfterPress, |data| {
+            data.drag_started_after_press
+        })?;
+    assert_no_drag_after_press(drag_started_after_press, NoDragPress::UnselectedBoundingBox)
+}
 
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
+#[then("the square remains unchanged")]
+fn square_remains_unchanged(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let (shape_id, original) =
+        with_scenario_data::<ScenarioData, _>(ScenarioContext::UnchangedSquare, |data| {
+            (data.shape_id, data.shape_before.clone())
+        })?;
+    with_visual_cx(cx, |visual_cx, view| {
+        let document = read_document(visual_cx, view);
+        let current = require_shape(&document, shape_id, "after unselected drag")?;
+        assert_shape_translated_by_delta(
+            current,
+            &original,
+            Vec2::ZERO,
+            "unselected bounding-box drag",
+        )
+    })
+}
 
-    let bounds = canvas_bounds(visual_cx).expect("canvas bounds should be available");
-    let origin = Vec2::new(f32::from(bounds.origin.x), f32::from(bounds.origin.y));
-
-    let min = origin.add(Vec2::new(10.0, 10.0));
-    let max = origin.add(Vec2::new(110.0, 110.0));
-    let mut doc = Document::new();
-    let shape_id = add_square(&mut doc, min, max).expect("expected to build square shape");
-
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, view_cx| {
-            shell.enter_manipulate_mode_for_tests();
-            shell.replace_document_for_tests(doc);
-            shell.replace_selection_for_tests(gauss::model::Selection::empty());
-            view_cx.notify();
-        });
-    });
-    visual_cx.run_until_parked();
-
-    let viewport = visual_cx.read(|app| view.read(app).viewport());
-
-    let doc_before = visual_cx.read(|app| view.read(app).document().clone());
-    let shape_before = require_shape(&doc_before, shape_id, "before drag")
-        .expect("expected shape before drag")
-        .clone();
-    let start_world = shape_bbox_centre(&shape_before);
-    let delta = Vec2::new(25.0, 15.0);
-
-    let start_screen = viewport_to_screen_point(viewport, start_world);
-    let end_screen = viewport_to_screen_point(viewport, start_world.add(delta));
-
-    // Act: attempt to drag the shape via its bbox without it being selected
-    // before mouse down.
-    visual_cx.simulate_mouse_down(start_screen, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
-
-    // Assert: the bbox hit should select the shape, but must not start a drag
-    // gesture until the shape was already selected.
-    let selection_after_down = visual_cx.read(|app| view.read(app).selection().clone());
-    assert!(
-        selection_after_down.contains(&SelItem::Shape(shape_id)),
-        "expected bbox mouse down to select the shape; selection={selection_after_down:?}"
-    );
-    let is_dragging = visual_cx.read(|app| view.read(app).is_dragging());
-    assert!(
-        !is_dragging,
-        "expected bbox mouse down not to start dragging when shape was not preselected"
-    );
-
-    visual_cx.simulate_mouse_move(end_screen, MouseButton::Left, Modifiers::none());
-    visual_cx.simulate_mouse_up(end_screen, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
-
-    let doc_after = visual_cx.read(|app| view.read(app).document().clone());
-    let shape_after = require_shape(&doc_after, shape_id, "after attempted drag")
-        .expect("expected shape after attempted drag");
-    assert_shape_unchanged(shape_after, &shape_before, "bbox drag without preselection")
-        .expect("expected shape to remain unchanged after bbox drag");
+#[scenario(
+    path = "tests/features/selection.feature",
+    name = "Dragging an unselected shape selects without moving it",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
+#[serial]
+fn bbox_drag_requires_preselection(
+    #[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup,
+) {
 }
