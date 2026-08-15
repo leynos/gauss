@@ -24,7 +24,7 @@ jobs:
         uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444
       - name: Setup Rust
         uses: >-
-          leynos/shared-actions/.github/actions/setup-rust@19a7f5d1b8d5c1b2236c39720a5744492b3fc129
+          leynos/shared-actions/.github/actions/setup-rust@7576833762e94de1cea606f88c10ae3cd665b5e6
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -34,7 +34,7 @@ jobs:
         run: make check-fmt
       - name: Markdown lint
         uses: >-
-          DavidAnson/markdownlint-cli2-action@6bf21b07787794f89a243495939cd651942aeabe
+          DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff
         with:
           globs: |
             **/*.md
@@ -53,7 +53,7 @@ jobs:
         run: make lint
       - name: Test and Measure Coverage
         uses: >-
-          leynos/shared-actions/.github/actions/generate-coverage@19a7f5d1b8d5c1b2236c39720a5744492b3fc129
+          leynos/shared-actions/.github/actions/generate-coverage@7576833762e94de1cea606f88c10ae3cd665b5e6
         with:
           features: test-support
           output-path: lcov.info
@@ -64,7 +64,7 @@ jobs:
           CS_ACCESS_TOKEN: ${{ secrets.CS_ACCESS_TOKEN }}
         if: env.CS_ACCESS_TOKEN != '' && github.event_name == 'pull_request'
         uses: >-
-          leynos/shared-actions/.github/actions/upload-codescene-coverage@19a7f5d1b8d5c1b2236c39720a5744492b3fc129
+          leynos/shared-actions/.github/actions/upload-codescene-coverage@7576833762e94de1cea606f88c10ae3cd665b5e6
         with:
           format: lcov
           mode: check
