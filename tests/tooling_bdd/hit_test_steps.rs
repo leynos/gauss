@@ -25,7 +25,7 @@ enum HitTestState {
 }
 
 fn require_square<'a>(
-    data: &'a mut HitTestState,
+    data: &'a HitTestState,
     context: &'static str,
 ) -> Result<(&'a ShapeId, &'a Vec2, &'a Vec2), TestSupportError> {
     let HitTestState::Square { shape_id, min, max } = data else {
@@ -35,7 +35,7 @@ fn require_square<'a>(
 }
 
 fn require_overlap<'a>(
-    data: &'a mut HitTestState,
+    data: &'a HitTestState,
     context: &'static str,
 ) -> Result<(&'a ShapeId, &'a Vec2), TestSupportError> {
     let HitTestState::Overlap { top, centre } = data else {

@@ -19,6 +19,7 @@ mod init_app;
 mod initial_draw;
 
 pub use canvas_bounds::canvas_bounds;
+/// Clicks an unmodified canvas point and waits for the GPUI event loop to settle.
 pub use canvas_click::click_canvas_and_wait;
 pub use canvas_drag_delta::canvas_drag_scenario;
 pub use document::read_document;
