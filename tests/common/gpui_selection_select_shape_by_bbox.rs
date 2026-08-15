@@ -3,9 +3,13 @@
 //! Re-exports app initialization, initial-draw synchronization, and canvas bounds
 //! for bounding-box selection.
 
+#[path = "canvas_bounds.rs"]
 mod canvas_bounds;
+#[path = "init_app.rs"]
 mod init_app;
+#[path = "initial_draw.rs"]
 mod initial_draw;
+#[path = "read_selection.rs"]
 mod read_selection;
 
 /// Returns the rendered canvas bounds used to position the bounding-box click.

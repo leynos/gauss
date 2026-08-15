@@ -3,8 +3,11 @@
 //! Re-exports app setup, initial-draw synchronization, and guarded temporary
 //! files for metadata round trips.
 
+#[path = "init_app.rs"]
 mod init_app;
+#[path = "initial_draw.rs"]
 mod initial_draw;
+#[path = "temp_file.rs"]
 mod temp_file;
 
 /// Initializes the Gauss application in the GPUI test context.

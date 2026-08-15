@@ -3,11 +3,17 @@
 //! Re-exports multi-shape and canvas setup, document inspection, and translation
 //! assertions for selection drags.
 
+#[path = "add_square.rs"]
 mod add_square;
+#[path = "canvas_bounds.rs"]
 mod canvas_bounds;
+#[path = "document.rs"]
 mod document;
+#[path = "init_app.rs"]
 mod init_app;
+#[path = "initial_draw.rs"]
 mod initial_draw;
+#[path = "shape_translation.rs"]
 mod shape_translation;
 
 /// Appends a closed square for multi-shape drag setup and returns its shape ID.

@@ -3,10 +3,15 @@
 //! Re-exports app setup, history and selection inspection, and temporary paths
 //! for open-file history resets.
 
+#[path = "history.rs"]
 mod history;
+#[path = "init_app.rs"]
 mod init_app;
+#[path = "initial_draw.rs"]
 mod initial_draw;
+#[path = "read_selection.rs"]
 mod read_selection;
+#[path = "temp_file_path.rs"]
 mod temp_file_path;
 
 /// Provides the harness with the shell's current document-history entry count.

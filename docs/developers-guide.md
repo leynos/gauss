@@ -62,13 +62,19 @@ The root package owns the GPUI integration tests under `tests/`. The GPUI
 behavioural test pattern uses `rstest-bdd` scenarios with the first-party
 `rstest_bdd_harness_gpui::GpuiHarness` to inject a `gpui::TestAppContext`.
 
-The root `Cargo.toml` declares the two supporting development dependencies:
+The root `Cargo.toml` declares the three supporting development dependencies:
 
 ```toml
 [dev-dependencies]
+proptest = "1.11.0"
 rstest-bdd-harness-gpui = "0.6.0-beta3"
 serial_test = "3"
 ```
+
+Use `proptest` for property-based tests where helper contracts must hold across
+generated inputs, such as non-finite vector values and repeated temporary-file
+cleanup. Keep those properties focused on the invariant under test, with
+example-based tests covering representative scenario behaviour.
 
 Use the harness only for integration tests that need a GPUI test context. A
 scenario selects it through the canonical path, so the macro supplies the GPUI

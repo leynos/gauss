@@ -3,16 +3,27 @@
 //! Re-exports app and canvas setup, document history controls, and shape lookup
 //! helpers for draw undo scenarios.
 
+#[path = "canvas.rs"]
 mod canvas;
+#[path = "canvas_bounds.rs"]
 mod canvas_bounds;
+#[path = "canvas_click.rs"]
 mod canvas_click;
+#[path = "canvas_points.rs"]
 mod canvas_points;
+#[path = "document.rs"]
 mod document;
+#[path = "document_redo.rs"]
 mod document_redo;
+#[path = "document_undo.rs"]
 mod document_undo;
+#[path = "draw_shape.rs"]
 mod draw_shape;
+#[path = "find_draw_shape.rs"]
 mod find_draw_shape;
+#[path = "init_app.rs"]
 mod init_app;
+#[path = "initial_draw.rs"]
 mod initial_draw;
 
 /// Moves to a canvas point, clicks, and returns after the event loop parks.
