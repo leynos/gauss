@@ -6,6 +6,7 @@
 mod canvas_bounds;
 mod init_app;
 mod initial_draw;
+mod read_selection;
 
 /// Returns the rendered canvas bounds used to position the bounding-box click.
 pub use canvas_bounds::canvas_bounds;
@@ -13,3 +14,5 @@ pub use canvas_bounds::canvas_bounds;
 pub use init_app::init_test_app;
 /// Performs the first window draw and parks the event loop before interaction.
 pub use initial_draw::ensure_initial_draw;
+/// Returns the selected shape after the bounding-box click.
+pub use read_selection::read_selection;

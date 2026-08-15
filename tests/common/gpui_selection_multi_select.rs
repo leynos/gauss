@@ -8,6 +8,8 @@ mod anchor_point;
 mod canvas;
 #[path = "canvas_bounds.rs"]
 mod canvas_bounds;
+#[path = "document.rs"]
+mod document;
 #[path = "draw_point.rs"]
 mod draw_point;
 #[path = "draw_shape.rs"]
@@ -23,6 +25,8 @@ mod modifiers;
 pub use anchor_point::anchor_to_canvas_point;
 /// Returns the rendered canvas bounds used to position selection input.
 pub use canvas_bounds::canvas_bounds;
+/// Returns an owned document snapshot for multi-selection setup assertions.
+pub use document::read_document;
 /// Adds a draw point at a canvas position and parks the GPUI event loop.
 pub use draw_point::draw_point;
 /// Returns the first non-demo shape for multi-selection assertions.
