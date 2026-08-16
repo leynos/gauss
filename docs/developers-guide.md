@@ -171,7 +171,9 @@ Scenarios that also exercise the filesystem hold a `TempSvgFile`: a
 UUID-suffixed temporary SVG reached through a cap-std `Dir` capability
 rather than an ambient path. Its owned `TempFileGuard` removes the file on
 drop, so the scenario state owns the file's lifetime alongside the shell
-handle. File I/O must not run while the `with_state` borrow is held; the
+handle. Scenario cleanup calls `TempSvgFile::cleanup` so removal failures
+propagate, while `Drop` remains an idempotent best-effort fallback. File I/O
+must not run while the `with_state` borrow is held; the
 save-dialog binary therefore stores an `Option<Rc<TempSvgFile>>` and clones
 the `Rc` out of the cell before reading the file, releasing the `RefCell`
 borrow first.
