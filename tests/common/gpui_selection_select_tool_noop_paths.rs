@@ -3,17 +3,29 @@
 //! Re-exports drag scenarios, tool-mode setup, and history and selection
 //! inspection for no-op paths.
 
+#[path = "canvas.rs"]
 mod canvas;
+#[path = "canvas_bounds.rs"]
 mod canvas_bounds;
+#[path = "canvas_drag_points.rs"]
 mod canvas_drag_points;
+#[path = "canvas_drag_values.rs"]
 mod canvas_drag_values;
+#[path = "document.rs"]
 mod document;
+#[path = "draw_point.rs"]
 mod draw_point;
+#[path = "draw_shape.rs"]
 mod draw_shape;
+#[path = "history.rs"]
 mod history;
+#[path = "init_app.rs"]
 mod init_app;
+#[path = "initial_draw.rs"]
 mod initial_draw;
+#[path = "manipulate_mode.rs"]
 mod manipulate_mode;
+#[path = "read_selection.rs"]
 mod read_selection;
 
 /// Returns the rendered canvas bounds used to position no-op interactions.

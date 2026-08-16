@@ -14,7 +14,7 @@ impl TempSvgFile {
     /// yet or its contents are not valid UTF-8.
     pub fn read_to_string(&self) -> TestSupportResult<String> {
         self.cleanup
-            .dir()
+            .dir
             .read_to_string(self.file_name.as_path())
             .map_err(|error| TestSupportError::io("reading the temporary SVG", error))
     }

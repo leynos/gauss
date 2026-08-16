@@ -11,8 +11,8 @@ mod init_app;
 mod initial_draw;
 #[path = "read_selection.rs"]
 mod read_selection;
-#[path = "temp_file_path.rs"]
-mod temp_file_path;
+#[path = "temp_file.rs"]
+mod temp_file;
 
 /// Provides the harness with the shell's current document-history entry count.
 pub use history::read_history_len;
@@ -23,4 +23,4 @@ pub use initial_draw::ensure_initial_draw;
 /// Provides the harness with the shell's current selection snapshot.
 pub use read_selection::read_selection;
 /// Owns a temporary file, exposes its full path, and removes it on drop.
-pub use temp_file_path::TempFileGuard;
+pub use temp_file::TempFileGuard;

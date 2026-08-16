@@ -1,6 +1,6 @@
 //! Temporary-file cleanup for GPUI integration tests.
 
-use camino::Utf8PathBuf;
+use camino::{Utf8Path, Utf8PathBuf};
 use cap_std::fs_utf8::Dir;
 use test_support::{TestSupportError, TestSupportResult};
 
@@ -10,17 +10,23 @@ pub struct TempFileGuard {
     pub dir: Dir,
     /// File name relative to [`Self::dir`] used for cleanup.
     pub file_name: Utf8PathBuf,
+    /// Full path exposed to integration tests that pass it to GPUI dialogs.
+    path: Utf8PathBuf,
 }
 
 impl TempFileGuard {
-    /// Creates a cleanup guard for `file_name` within `dir`.
-    pub const fn new(dir: Dir, file_name: Utf8PathBuf) -> Self {
-        Self { dir, file_name }
+    /// Creates a cleanup guard for `file_name` within `dir` and its full `path`.
+    pub const fn new(dir: Dir, file_name: Utf8PathBuf, path: Utf8PathBuf) -> Self {
+        Self {
+            dir,
+            file_name,
+            path,
+        }
     }
 
-    /// Returns the capability-scoped directory containing the temporary file.
-    pub const fn dir(&self) -> &Dir {
-        &self.dir
+    /// Returns the guarded file's full path by reference.
+    pub fn path(&self) -> &Utf8Path {
+        self.path.as_path()
     }
 
     /// Removes the guarded file through its directory capability.
@@ -66,7 +72,8 @@ mod tests {
         let dir = Dir::open_ambient_dir(&temp_dir, ambient_authority())
             .map_err(|error| TestSupportError::io("opening the temporary directory", error))?;
         let file_name = Utf8PathBuf::from(format!("{prefix}-{}", Uuid::new_v4()));
-        Ok(TempFileGuard::new(dir, file_name))
+        let path = temp_dir.join(&file_name);
+        Ok(TempFileGuard::new(dir, file_name, path))
     }
 
     #[test]
