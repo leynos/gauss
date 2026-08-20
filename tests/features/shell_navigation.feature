@@ -9,8 +9,10 @@ Feature: Shell navigation buttons
 
   Scenario: Shift navigation buttons undo and redo selection history
     Given a selected anchor with a red stroke
+    And the selection is non-empty
     When the selection is cleared
-    And Shift-navigation Back is clicked
+    Then the selection is cleared
+    When Shift-navigation Back is clicked
     Then the previous selection is restored
     And the stroke remains red
     When Shift-navigation Forward is clicked

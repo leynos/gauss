@@ -53,15 +53,14 @@ fn enter_manipulate_mode(
     })
 }
 
-#[then("the mode indicator reads {expected}")]
+#[then(r#"the mode indicator reads "{expected}""#)]
 fn mode_indicator_reads(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
     expected: String,
 ) -> Result<(), TestSupportError> {
     with_shell(cx, |visual_cx, view| {
         let actual = visual_cx.read(|app| view.read(app).mode_status_line_for_tests());
-        let expected_value = String::from(expected.trim_matches('"'));
-        expect_equal(&actual, &expected_value, "mode indicator")
+        expect_equal(&actual, &expected, "mode indicator")
     })
 }
 

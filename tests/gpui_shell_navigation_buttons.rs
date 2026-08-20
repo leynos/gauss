@@ -213,11 +213,6 @@ fn clear_selection(
         .with(|cell| cell.borrow().bounds)
         .ok_or_else(|| TestSupportError::missing("canvas bounds", "scenario setup"))?;
     with_shell(cx, |visual_cx, view| {
-        let before = visual_cx.read(|app| view.read(app).selection().clone());
-        expect_true(
-            !before.items.is_empty(),
-            "expected selection before clearing",
-        )?;
         click_button(
             visual_cx,
             clear_point(&bounds),
@@ -225,12 +220,25 @@ fn clear_selection(
             Modifiers::none(),
         );
         let after = visual_cx.read(|app| view.read(app).selection().clone());
-        expect_true(after.items.is_empty(), "expected selection to be cleared")?;
         NAVIGATION_STATE.with(|cell| {
             let mut state = cell.borrow_mut();
-            state.selection_before_clear = Some(before);
             state.selection_after_clear = Some(after);
         });
+        Ok(())
+    })
+}
+
+#[given("the selection is non-empty")]
+fn selection_is_non_empty(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, view| {
+        let selection = visual_cx.read(|app| view.read(app).selection().clone());
+        expect_true(
+            !selection.items.is_empty(),
+            "expected selection before clearing",
+        )?;
+        NAVIGATION_STATE.with(|cell| cell.borrow_mut().selection_before_clear = Some(selection));
         Ok(())
     })
 }
@@ -289,6 +297,10 @@ fn selection_is_cleared(
     let expected = NAVIGATION_STATE
         .with(|cell| cell.borrow().selection_after_clear.clone())
         .ok_or_else(|| TestSupportError::missing("cleared selection", "clear step"))?;
+    expect_true(
+        expected.items.is_empty(),
+        "expected selection to be cleared",
+    )?;
     with_shell(cx, |visual_cx, view| {
         let actual = visual_cx.read(|app| view.read(app).selection().clone());
         expect_equal(
