@@ -21,7 +21,6 @@ Feature: Manipulate-mode selection
     Then only the first anchor is selected
     When the second anchor is shift-clicked
     Then both anchors are selected
-    Then no drag is active
     When the first anchor is shift-clicked
     Then only the second anchor is selected
     Then no drag is active
