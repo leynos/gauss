@@ -9,10 +9,14 @@ mod anchor_point;
 mod canvas;
 #[path = "canvas_bounds.rs"]
 mod canvas_bounds;
+#[path = "document.rs"]
+mod document;
 #[path = "draw_point.rs"]
 mod draw_point;
 #[path = "draw_shape.rs"]
 mod draw_shape;
+#[path = "escape_input.rs"]
+mod escape_input;
 #[path = "init_app.rs"]
 mod init_app;
 #[path = "initial_draw.rs"]
@@ -22,10 +26,14 @@ mod initial_draw;
 pub use anchor_point::anchor_to_canvas_point;
 /// Returns the rendered canvas bounds used to position close-path input.
 pub use canvas_bounds::canvas_bounds;
+/// Returns an owned document snapshot for close-path outcome assertions.
+pub use document::read_document;
 /// Adds a draw point at a canvas position and parks the GPUI event loop.
 pub use draw_point::draw_point;
 /// Returns the first non-demo shape for close-path outcome assertions.
 pub use draw_shape::require_draw_shape;
+/// Dispatches an unmodified Escape key event and waits for the GPUI event loop to settle.
+pub use escape_input::simulate_escape;
 /// Initializes Gauss in the GPUI test application context.
 pub use init_app::init_test_app;
 /// Performs the initial draw and parks the GPUI event loop before input.
