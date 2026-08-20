@@ -8,5 +8,3 @@ mod history_bdd_support;
 
 #[path = "gpui_history_bdd/multi_shape.rs"]
 mod multi_shape;
-#[path = "gpui_history_bdd/support.rs"]
-mod history_bdd_support;
