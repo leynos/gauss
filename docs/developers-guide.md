@@ -120,7 +120,6 @@ For a new harness, add `tests/common/<harness>.rs` and include it with
 used by that harness and re-export only its helpers; do not recreate a global
 helper module.
 
-
 ### Shell BDD support and test classification
 
 Shell tests describe a user-visible action or observable state transition as a

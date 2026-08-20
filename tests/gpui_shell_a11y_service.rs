@@ -9,10 +9,10 @@ mod durable_shell;
 #[path = "shell_bdd/lifecycle.rs"]
 mod lifecycle;
 
-#[path = "common/scenario_state.rs"]
-mod scenario_state;
 #[path = "shell_bdd/expect_equal.rs"]
 mod expect_equal_support;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 
 #[path = "shell_bdd/expect_true.rs"]
 mod expect_true_support;

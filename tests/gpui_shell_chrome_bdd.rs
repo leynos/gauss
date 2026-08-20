@@ -2,6 +2,7 @@
 
 #[path = "shell_bdd/click.rs"]
 mod click_support;
+#[path = "common/gpui_shell_chrome_bdd.rs"]
 mod common;
 #[path = "common/durable_shell.rs"]
 mod durable_shell;

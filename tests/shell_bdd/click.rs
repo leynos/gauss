@@ -1,6 +1,6 @@
 //! Fallible element-click support for shell BDD scenarios.
 
-use gpui::{point, px, Modifiers, VisualTestContext};
+use gpui::{Modifiers, VisualTestContext, point, px};
 use test_support::{TestSupportError, TestSupportResult};
 
 /// Click the element identified by `selector`, then drain pending GPUI work.

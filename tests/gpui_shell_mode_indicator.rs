@@ -16,7 +16,7 @@ use gauss::ui::Phase0Shell;
 use gpui::TestAppContext;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
-use support::{fresh_shell_with, with_shell, ScenarioStateCleanup};
+use support::{ScenarioStateCleanup, fresh_shell_with, with_shell};
 use test_support::TestSupportError;
 
 #[given("a fresh Phase 0 shell window")]

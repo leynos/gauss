@@ -6,19 +6,17 @@
 mod anchor_point;
 mod canvas;
 mod canvas_bounds;
+mod document;
 mod draw_point;
 mod draw_shape;
 mod escape_input;
-mod init_app;
-mod initial_draw;
 mod modifiers;
 
 pub use anchor_point::anchor_to_canvas_point;
 pub use canvas::CANVAS_PADDING_PX;
 pub use canvas_bounds::canvas_bounds;
+pub use document::read_document;
 pub use draw_point::draw_point;
 pub use draw_shape::require_draw_shape;
 pub use escape_input::simulate_escape;
-pub use init_app::init_test_app;
-pub use initial_draw::ensure_initial_draw;
 pub use modifiers::shift_secondary;
