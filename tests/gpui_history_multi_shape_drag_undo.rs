@@ -4,6 +4,7 @@
 //! When multiple shapes are selected, dragging moves all of them but must
 //! create only a single history entry — not one entry per shape.
 
+#[path = "common/gpui_history_multi_shape_drag_undo.rs"]
 mod common;
 #[path = "common/selection_coordinates.rs"]
 mod selection_coordinates;

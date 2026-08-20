@@ -1,5 +1,6 @@
 //! Behavioural coverage for preserving Gauss metadata through GPUI save and open flows.
 
+#[path = "common/gpui_file_io_metadata_round_trip.rs"]
 mod common;
 
 #[path = "common/durable_shell.rs"]
@@ -45,6 +46,14 @@ crate::scenario_state!(ScenarioState);
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone())
         .ok_or_else(|| TestSupportError::missing("shell handles", "set by the Given step"))
+}
+
+/// Remove the scenario's temporary SVG through its directory capability.
+#[then("the temporary SVG is cleaned up")]
+fn cleanup_temp_svg() -> Result<(), TestSupportError> {
+    with_state(|state| state.temp_svg.take())
+        .ok_or_else(|| TestSupportError::missing("temporary SVG", "set by a save or Given step"))?
+        .cleanup()
 }
 
 /// Which flavour of shell a scenario needs.

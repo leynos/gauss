@@ -4,6 +4,7 @@
 //! “lower” behaviour depends only on z-order, not on choosing distinct hit
 //! targets.
 
+#[path = "common/gpui_history_reorder_undo.rs"]
 mod common;
 
 use common::{

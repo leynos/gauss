@@ -9,6 +9,7 @@
 //! This test asserts that switching to Bézier auto via `Tab` yields cubic
 //! segments with the expected handle positions.
 
+#[path = "common/gpui_tooling_draw_bezier_auto.rs"]
 mod common;
 
 use common::{

@@ -6,6 +6,7 @@
 //! `selection_bdd::support`, and reusable model queries from
 //! `test_support::selection` to preserve the press-time selection rule.
 
+#[path = "common/gpui_selection_bbox_drag_requires_selection.rs"]
 mod common;
 #[path = "common/durable_shell.rs"]
 mod durable_shell;

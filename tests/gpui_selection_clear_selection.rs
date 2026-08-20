@@ -6,6 +6,7 @@
 //! 0 shell directly; model-only helpers shared by other binaries live in
 //! `test_support::selection`.
 
+#[path = "common/gpui_selection_clear_selection.rs"]
 mod common;
 #[path = "common/durable_shell.rs"]
 mod durable_shell;

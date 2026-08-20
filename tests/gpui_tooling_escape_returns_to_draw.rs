@@ -4,6 +4,7 @@
 //! - Draw → Manipulate: commit the current open path and enter manipulate mode.
 //! - Manipulate → Draw: return to draw mode so clicks place points again.
 
+#[path = "common/gpui_tooling_escape_returns_to_draw.rs"]
 mod common;
 
 use common::{

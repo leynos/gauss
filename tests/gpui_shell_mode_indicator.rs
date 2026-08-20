@@ -6,6 +6,7 @@
 //! - `Tab` toggling the draw edge mode label, and
 //! - manipulate mode not displaying an edge mode suffix.
 
+#[path = "common/gpui_shell_mode_indicator.rs"]
 mod common;
 
 use common::{ensure_initial_draw, init_test_app};

@@ -4,6 +4,7 @@
 //! invoked, so the shell exposes a `did_request_quit` flag for stable headless
 //! assertions.
 
+#[path = "common/gpui_shell_quit_button.rs"]
 mod common;
 
 use common::{ensure_initial_draw, init_test_app};

@@ -1,5 +1,6 @@
 //! Behavioural tests for the Phase 1 chrome layout.
 
+#[path = "common/gpui_shell_chrome_layout.rs"]
 mod common;
 
 use common::{canvas_bounds, click_canvas_and_wait, ensure_initial_draw, init_test_app};

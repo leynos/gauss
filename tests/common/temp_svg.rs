@@ -15,7 +15,6 @@ use crate::common::TempFileGuard;
 
 /// A uniquely named temporary SVG whose lifetime is owned by the scenario.
 pub struct TempSvgFile {
-    path: Utf8PathBuf,
     /// Name within the owning directory capability, used by the operation modules.
     pub(crate) file_name: Utf8PathBuf,
     /// Directory capability and drop-time cleanup, used by the operation modules.
@@ -44,16 +43,55 @@ impl TempSvgFile {
         let path = temp_dir.join(&file_name);
         let dir = Dir::open_ambient_dir(&temp_dir, ambient_authority())
             .map_err(|error| TestSupportError::io("opening the temporary directory", error))?;
-        let cleanup = TempFileGuard::new(dir, file_name.clone());
-        Ok(Self {
-            path,
-            file_name,
-            cleanup,
-        })
+        let cleanup = TempFileGuard::new(dir, file_name.clone(), path);
+        Ok(Self { file_name, cleanup })
     }
 
     /// Returns the full path of the temporary file, whether or not it has been written yet.
     pub fn path(&self) -> &Utf8Path {
-        self.path.as_path()
+        self.cleanup.path()
+    }
+
+    /// Consumes the temporary SVG and removes it through its directory capability.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if removing the temporary SVG fails. The inner guard's
+    /// later drop-time cleanup is an idempotent best-effort fallback.
+    pub fn cleanup(self) -> TestSupportResult<()> {
+        self.cleanup.cleanup()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! Tests that temporary SVG cleanup removes the wrapper's guarded file.
+
+    use super::*;
+
+    #[test]
+    fn cleanup_removes_the_written_svg() -> TestSupportResult<()> {
+        let temp_svg = TempSvgFile::create("gauss-test-temp-svg-cleanup")?;
+        let file_name = temp_svg.file_name.clone();
+        let dir = temp_svg
+            .cleanup
+            .dir
+            .try_clone()
+            .map_err(|error| TestSupportError::io("cloning the temporary directory", error))?;
+        dir.write(file_name.as_path(), b"temporary")
+            .map_err(|error| TestSupportError::io("writing the temporary SVG", error))?;
+
+        temp_svg.cleanup()?;
+
+        match dir.metadata(file_name.as_path()) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Ok(_) => Err(TestSupportError::expectation(
+                "explicit cleanup left the temporary SVG on disc",
+            )),
+            Err(error) => Err(TestSupportError::io(
+                "checking the explicitly cleaned temporary SVG",
+                error,
+            )),
+        }
     }
 }

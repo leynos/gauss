@@ -1,5 +1,6 @@
 //! GPUI headless integration tests for Phase 0 selection history.
 
+#[path = "common/gpui_history_selection_history.rs"]
 mod common;
 
 use common::{

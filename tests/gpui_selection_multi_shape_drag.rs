@@ -6,6 +6,7 @@
 //! `selection_bdd::support`, and model-only shape and selection queries come
 //! from `test_support::selection` for reuse across test suites.
 
+#[path = "common/gpui_selection_multi_shape_drag.rs"]
 mod common;
 #[path = "common/durable_shell.rs"]
 mod durable_shell;

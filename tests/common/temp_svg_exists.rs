@@ -16,7 +16,7 @@ impl TempSvgFile {
     /// Returns `Err` if the metadata lookup fails for any reason other than the
     /// file being absent.
     pub fn exists(&self) -> TestSupportResult<bool> {
-        match self.cleanup.dir().metadata(self.file_name.as_path()) {
+        match self.cleanup.dir.metadata(self.file_name.as_path()) {
             Ok(_metadata) => Ok(true),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
             Err(error) => Err(TestSupportError::io(

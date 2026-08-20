@@ -13,7 +13,7 @@ impl TempSvgFile {
     /// Returns `Err` if the underlying write to the capability-scoped directory fails.
     pub fn write(&self, contents: &str) -> TestSupportResult<()> {
         self.cleanup
-            .dir()
+            .dir
             .write(self.file_name.as_path(), contents.as_bytes())
             .map_err(|error| TestSupportError::io("writing the temporary SVG", error))
     }

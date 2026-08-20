@@ -3,6 +3,7 @@
 //! Phase 0 maps mouse "back/forward" navigation buttons to undo/redo. Holding
 //! Shift switches to the selection history stack.
 
+#[path = "common/gpui_shell_navigation_buttons.rs"]
 mod common;
 
 use common::{

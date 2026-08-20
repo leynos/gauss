@@ -1,5 +1,6 @@
 //! GPUI integration coverage for the accessibility tree service wiring.
 
+#[path = "common/gpui_shell_a11y_service.rs"]
 mod common;
 
 use accesskit::{Action, ActionRequest, Role, TreeId, TreeUpdate};

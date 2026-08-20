@@ -1,5 +1,6 @@
 //! GPUI headless integration tests for document command grouping.
 
+#[path = "common/gpui_history_command_grouping_undo.rs"]
 mod common;
 
 use common::{

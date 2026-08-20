@@ -54,14 +54,10 @@ fn snapshot_with_state(
     }
 }
 
-fn routed_service() -> A11yService {
+fn routed_service() -> Result<A11yService, A11yServiceError> {
     let mut service = A11yService::new();
-    // `.expect()` is disallowed outside test-attributed functions (whitaker
-    // `no_expect_outside_tests`); handle the Err explicitly instead.
-    if let Err(error) = service.sync_from_shell_like(snapshot(&[], &[])) {
-        panic!("baseline accessibility snapshot should sync: {error:?}");
-    }
-    service
+    service.sync_from_shell_like(snapshot(&[], &[]))?;
+    Ok(service)
 }
 
 #[rstest]
@@ -290,7 +286,7 @@ fn chrome_click_requests_route_to_existing_window_actions(
     #[case] node_id: u64,
     #[case] expected: A11yRequestedAction,
 ) {
-    let service = routed_service();
+    let service = routed_service().expect("baseline accessibility snapshot should sync");
     let request = ActionRequest {
         action: Action::Click,
         target_tree: TreeId::ROOT,
@@ -327,7 +323,7 @@ fn rejected_action_requests_return_expected_error(
     #[case] msg: &str,
     #[case] expected_error: A11yActionRequestError,
 ) {
-    let service = routed_service();
+    let service = routed_service().expect("baseline accessibility snapshot should sync");
     let request = ActionRequest {
         action,
         target_tree: TreeId::ROOT,
@@ -342,7 +338,7 @@ fn rejected_action_requests_return_expected_error(
 
 #[rstest]
 fn unsupported_tree_is_rejected() {
-    let service = routed_service();
+    let service = routed_service().expect("baseline accessibility snapshot should sync");
     let unsupported_tree = TreeId(Uuid::from_u128(7));
     let request = ActionRequest {
         action: Action::Click,

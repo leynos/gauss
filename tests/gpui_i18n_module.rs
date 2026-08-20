@@ -1,5 +1,6 @@
 //! GPUI behavioural scenarios for localized Phase 0 shell status text.
 
+#[path = "common/gpui_i18n_module.rs"]
 mod common;
 
 use std::{cell::RefCell, collections::HashMap};

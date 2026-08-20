@@ -1,0 +1,67 @@
+//! Raw bounded canvas-drag values for domain-specific test scenarios.
+use super::{canvas::CANVAS_PADDING_PX, canvas_bounds::canvas_bounds};
+use gauss::model::Vec2;
+use gpui::{Bounds, Pixels, Point, VisualTestContext, point, px};
+use test_support::TestSupportResult;
+
+/// Raw canvas-drag geometry shared by domain-specific test scenarios.
+///
+/// Both canvas points use the two-pixel inset defined by
+/// [`CANVAS_PADDING_PX`].
+#[derive(Clone, Copy, Debug)]
+pub struct CanvasDragValues {
+    /// Bounds of the rendered canvas in window coordinates.
+    pub bounds: Bounds<Pixels>,
+    /// Padded point at the canvas's leading corner.
+    pub first: Point<Pixels>,
+    /// Padded point at the canvas's opposing corner.
+    pub second: Point<Pixels>,
+    /// Endpoint obtained by applying the bounded displacement to [`Self::first`].
+    pub drag_end: Point<Pixels>,
+    /// Bounded document-space displacement represented by the drag.
+    pub delta: Vec2,
+}
+
+/// Calculates raw drag geometry bounded by the canvas and supplied axis limits.
+///
+/// The canvas points are inset by two pixels. Positive limits are capped by
+/// the drawable extent, while negative limits remain negative and therefore
+/// produce a drag towards the leading edge.
+///
+/// # Errors
+///
+/// Propagates failure to locate the canvas bounds.
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
+pub fn canvas_drag_values(
+    visual_cx: &mut VisualTestContext,
+    horizontal_limit: f32,
+    vertical_limit: f32,
+) -> TestSupportResult<CanvasDragValues> {
+    let bounds = canvas_bounds(visual_cx)?;
+    let width = f32::from(bounds.size.width);
+    let height = f32::from(bounds.size.height);
+    let first = point(
+        bounds.origin.x + px(CANVAS_PADDING_PX),
+        bounds.origin.y + px(CANVAS_PADDING_PX),
+    );
+    let second = point(
+        bounds.origin.x + px((width - CANVAS_PADDING_PX).max(CANVAS_PADDING_PX)),
+        bounds.origin.y + px((height - CANVAS_PADDING_PX).max(CANVAS_PADDING_PX)),
+    );
+    let max_horizontal_delta = (width - (2.0 * CANVAS_PADDING_PX)).max(1.0);
+    let max_vertical_delta = (height - (2.0 * CANVAS_PADDING_PX)).max(1.0);
+    let horizontal_delta = max_horizontal_delta.min(horizontal_limit);
+    let vertical_delta = max_vertical_delta.min(vertical_limit);
+    let drag_end = point(first.x + px(horizontal_delta), first.y + px(vertical_delta));
+
+    Ok(CanvasDragValues {
+        bounds,
+        first,
+        second,
+        drag_end,
+        delta: Vec2::new(horizontal_delta, vertical_delta),
+    })
+}

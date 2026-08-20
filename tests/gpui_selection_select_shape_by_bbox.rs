@@ -6,6 +6,7 @@
 //! records the shell selection before mouse-up. Model-only helpers shared by
 //! other binaries live in `test_support::selection`.
 
+#[path = "common/gpui_selection_select_shape_by_bbox.rs"]
 mod common;
 #[path = "common/durable_shell.rs"]
 mod durable_shell;

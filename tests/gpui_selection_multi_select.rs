@@ -6,6 +6,7 @@
 //! ordered clicks and press-time drag observations. Model-only helpers shared
 //! by other binaries live in `test_support::selection`.
 
+#[path = "common/gpui_selection_multi_select.rs"]
 mod common;
 #[path = "common/durable_shell.rs"]
 mod durable_shell;
@@ -204,9 +205,10 @@ fn no_drag_is_active() -> Result<(), TestSupportError> {
         additive_shift_drag_started_after_press,
         NoDragPress::AdditiveShiftClick,
     )?;
-    if let Some(toggle_drag_started) = toggle_shift_drag_started_after_press {
-        assert_no_drag_after_press(Some(toggle_drag_started), NoDragPress::ToggleShiftClick)?;
-    }
+    assert_no_drag_after_press(
+        toggle_shift_drag_started_after_press,
+        NoDragPress::ToggleShiftClick,
+    )?;
     Ok(())
 }
 

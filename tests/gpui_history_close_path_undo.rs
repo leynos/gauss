@@ -1,6 +1,7 @@
 //! GPUI headless integration test verifying that closing a path produces
 //! exactly one undo entry and that undo reopens it.
 
+#[path = "common/gpui_history_close_path_undo.rs"]
 mod common;
 
 use common::{

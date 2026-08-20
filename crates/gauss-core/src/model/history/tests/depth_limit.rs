@@ -20,7 +20,8 @@ fn with_max_depth_respects_custom_limit(doc_with_one_shape: (Document, ShapeId))
 
     // Record 5 commands — only the last 3 should survive pruning.
     for i in 0_i16..5 {
-        let (cmd, inv) = apply_move(&mut doc, id, f32::from(i), 0.0);
+        let (cmd, inv) =
+            apply_move(&mut doc, id, f32::from(i), 0.0).expect("move command should apply");
         history.record(cmd, inv);
     }
 
@@ -49,22 +50,22 @@ fn depth_limit_preserves_undo_covered_entries(doc_with_one_shape: (Document, Sha
     let mut history = DocumentUndoHistory::with_max_depth(4);
 
     // A: move right
-    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0).expect("move A should apply");
     history.record(cmd_a, inv_a);
 
     // B: move down
-    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0);
+    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0).expect("move B should apply");
     history.record(cmd_b, inv_b);
 
     // Undo B — creates an undo marker in the history
     history.undo(&mut doc).expect("undo B");
 
     // C: branch edit (move left)
-    let (cmd_c, inv_c) = apply_move(&mut doc, id, -3.0, 0.0);
+    let (cmd_c, inv_c) = apply_move(&mut doc, id, -3.0, 0.0).expect("move C should apply");
     history.record(cmd_c, inv_c);
 
     // D: another move
-    let (cmd_d, inv_d) = apply_move(&mut doc, id, 0.0, -1.0);
+    let (cmd_d, inv_d) = apply_move(&mut doc, id, 0.0, -1.0).expect("move D should apply");
     history.record(cmd_d, inv_d);
 
     // History now has entries + undo markers; verify undo still works.

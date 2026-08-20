@@ -1,5 +1,6 @@
 //! GPUI headless integration tests for Phase 0 manipulate-mode interactions.
 
+#[path = "common/gpui_history_drag_shape_undo.rs"]
 mod common;
 
 use common::{

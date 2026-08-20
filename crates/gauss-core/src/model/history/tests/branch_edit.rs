@@ -20,12 +20,12 @@ fn branch_edit_preserves_historical_undo(doc_with_one_shape: (Document, ShapeId)
     let mut history = DocumentUndoHistory::new();
 
     // A: move right
-    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0).expect("move A should apply");
     let state_a = doc.clone();
     history.record(cmd_a, inv_a);
 
     // B: move down
-    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0);
+    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0).expect("move B should apply");
     history.record(cmd_b, inv_b);
 
     // Undo B — back to state_a
@@ -33,7 +33,7 @@ fn branch_edit_preserves_historical_undo(doc_with_one_shape: (Document, ShapeId)
     assert_eq!(doc, state_a);
 
     // C: move left (branch edit after undoing B)
-    let (cmd_c, inv_c) = apply_move(&mut doc, id, -3.0, 0.0);
+    let (cmd_c, inv_c) = apply_move(&mut doc, id, -3.0, 0.0).expect("move C should apply");
     history.record(cmd_c, inv_c);
     assert!(
         !history.can_redo(),
@@ -64,13 +64,13 @@ fn multiple_undo_then_redo_round_trip(doc_with_one_shape: (Document, ShapeId)) {
     let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
-    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0).expect("move A should apply");
     history.record(cmd_a, inv_a);
 
-    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0);
+    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0).expect("move B should apply");
     history.record(cmd_b, inv_b);
 
-    let (cmd_c, inv_c) = apply_move(&mut doc, id, -1.0, 0.0);
+    let (cmd_c, inv_c) = apply_move(&mut doc, id, -1.0, 0.0).expect("move C should apply");
     let state_abc = doc.clone();
     history.record(cmd_c, inv_c);
 
@@ -91,10 +91,10 @@ fn clear_after_partial_undo(doc_with_one_shape: (Document, ShapeId)) {
     let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
-    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0).expect("move A should apply");
     history.record(cmd_a, inv_a);
 
-    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0);
+    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0).expect("move B should apply");
     history.record(cmd_b, inv_b);
 
     history.undo(&mut doc).expect("undo B");
@@ -111,7 +111,7 @@ fn undo_after_clear_is_noop(doc_with_one_shape: (Document, ShapeId)) {
     let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
-    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0).expect("move A should apply");
     let state_after_a = doc.clone();
     history.record(cmd_a, inv_a);
 

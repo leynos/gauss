@@ -3,6 +3,7 @@
 //! These tests exercise scroll wheel event dispatch against the Phase 0 view,
 //! asserting the viewport pan/zoom state updates as expected.
 
+#[path = "common/gpui_shell_viewport_input.rs"]
 mod common;
 
 use common::{canvas_bounds, ensure_initial_draw, init_test_app};

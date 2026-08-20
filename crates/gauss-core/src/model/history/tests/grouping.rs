@@ -18,9 +18,9 @@ fn grouped_commands_collapse_to_one_entry_and_undo_redo_as_a_batch(
 
     history.begin_group().expect("begin group should succeed");
 
-    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd_a, inv_a) = apply_move(&mut doc, id, 1.0, 0.0).expect("move A should apply");
     history.record(cmd_a, inv_a);
-    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0);
+    let (cmd_b, inv_b) = apply_move(&mut doc, id, 0.0, 2.0).expect("move B should apply");
     history.record(cmd_b, inv_b);
 
     // Grouped commands are not realized until the group is closed.
@@ -82,12 +82,13 @@ fn clear_discards_active_group_and_realized_history(doc_with_one_shape: (Documen
     let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
 
-    let (cmd, inv) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd, inv) = apply_move(&mut doc, id, 1.0, 0.0).expect("move command should apply");
     history.record(cmd, inv);
     assert_eq!(history.len(), 1);
 
     history.begin_group().expect("begin group should succeed");
-    let (grouped_cmd, grouped_inv) = apply_move(&mut doc, id, 0.0, 2.0);
+    let (grouped_cmd, grouped_inv) =
+        apply_move(&mut doc, id, 0.0, 2.0).expect("grouped move should apply");
     history.record(grouped_cmd, grouped_inv);
 
     history.clear();
@@ -104,7 +105,7 @@ fn clear_discards_active_group_and_realized_history(doc_with_one_shape: (Documen
 fn undo_while_group_is_open_returns_error(doc_with_one_shape: (Document, ShapeId)) {
     let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
-    let (cmd, inv) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd, inv) = apply_move(&mut doc, id, 1.0, 0.0).expect("move command should apply");
     history.record(cmd, inv);
     let state_before_undo = doc.clone();
 
@@ -121,7 +122,7 @@ fn undo_while_group_is_open_returns_error(doc_with_one_shape: (Document, ShapeId
 fn redo_while_group_is_open_returns_error(doc_with_one_shape: (Document, ShapeId)) {
     let (mut doc, id) = doc_with_one_shape;
     let mut history = DocumentUndoHistory::new();
-    let (cmd, inv) = apply_move(&mut doc, id, 1.0, 0.0);
+    let (cmd, inv) = apply_move(&mut doc, id, 1.0, 0.0).expect("move command should apply");
     history.record(cmd, inv);
     history.undo(&mut doc).expect("undo should succeed");
     let state_before_redo = doc.clone();
@@ -166,7 +167,8 @@ fn grouped_redo_reports_first_error_and_leaves_partial_state(
     );
 
     // Step 2: succeeds on redo and mutates document state.
-    let (middle_cmd, middle_inv) = apply_move(&mut doc, id, 2.0, 0.0);
+    let (middle_cmd, middle_inv) =
+        apply_move(&mut doc, id, 2.0, 0.0).expect("middle move should apply");
     history.record(middle_cmd, middle_inv);
     let expected_partial = doc.clone();
 

@@ -62,13 +62,19 @@ The root package owns the GPUI integration tests under `tests/`. The GPUI
 behavioural test pattern uses `rstest-bdd` scenarios with the first-party
 `rstest_bdd_harness_gpui::GpuiHarness` to inject a `gpui::TestAppContext`.
 
-The root `Cargo.toml` declares the two supporting development dependencies:
+The root `Cargo.toml` declares the three supporting development dependencies:
 
 ```toml
 [dev-dependencies]
+proptest = "1.11.0"
 rstest-bdd-harness-gpui = "0.6.0-beta3"
 serial_test = "3"
 ```
+
+Use `proptest` for property-based tests where helper contracts must hold across
+generated inputs, such as non-finite vector values and repeated temporary-file
+cleanup. Keep those properties focused on the invariant under test, with
+example-based tests covering representative scenario behaviour.
 
 Use the harness only for integration tests that need a GPUI test context. A
 scenario selects it through the canonical path, so the macro supplies the GPUI
@@ -101,6 +107,18 @@ selection queries live in `test_support::selection`, where other integration
 suites can reuse them without depending on GPUI. Include
 `tests/common/selection_coordinates.rs` only in binaries that convert selection
 coordinates, and keep pointer interaction helpers in `tests/common`.
+
+Test support is organized around per-harness, capability-sized facades. This
+replaces the deleted `tests/common/shared_helpers.rs`: each integration-test
+binary owns a `tests/common/<harness>.rs` facade that declares only the focused
+capability modules it needs and re-exports the narrow surface it consumes.
+Shared implementations remain in focused modules under `tests/common/`; the
+facade owns their composition for its harness.
+
+For a new harness, add `tests/common/<harness>.rs` and include it with
+`#[path = "common/<harness>.rs"] mod common;`. Declare only the capabilities
+used by that harness and re-export only its helpers; do not recreate a global
+helper module.
 
 ### Stateful file I/O scenarios
 
@@ -153,7 +171,9 @@ Scenarios that also exercise the filesystem hold a `TempSvgFile`: a
 UUID-suffixed temporary SVG reached through a cap-std `Dir` capability
 rather than an ambient path. Its owned `TempFileGuard` removes the file on
 drop, so the scenario state owns the file's lifetime alongside the shell
-handle. File I/O must not run while the `with_state` borrow is held; the
+handle. Scenario cleanup calls `TempSvgFile::cleanup` so removal failures
+propagate, while `Drop` remains an idempotent best-effort fallback. File I/O
+must not run while the `with_state` borrow is held; the
 save-dialog binary therefore stores an `Option<Rc<TempSvgFile>>` and clones
 the `Rc` out of the cell before reading the file, releasing the `RefCell`
 borrow first.

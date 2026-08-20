@@ -9,6 +9,7 @@ Feature: Open SVG file dialog
     Then the selected SVG path is recorded
     And the document contains one shape
     And the document has no gradient or pattern resources
+    And the temporary SVG is cleaned up
 
   Scenario: Open loads resource definitions and paint references
     Given a temporary SVG with gradient and pattern resources
@@ -16,6 +17,7 @@ Feature: Open SVG file dialog
     And the temporary SVG is selected
     Then the document contains one gradient and one pattern
     And the imported shape references the gradient and pattern
+    And the temporary SVG is cleaned up
 
   Scenario: Open reports a missing resource reference
     Given a temporary SVG with a missing resource reference
@@ -23,6 +25,7 @@ Feature: Open SVG file dialog
     And the temporary SVG is selected
     Then the original document and resources are preserved
     And the open error reports a missing resource
+    And the temporary SVG is cleaned up
 
   Scenario: Open accepts the canonical Gauss metadata namespace
     Given a temporary SVG with the canonical Gauss metadata namespace
@@ -30,6 +33,7 @@ Feature: Open SVG file dialog
     And the temporary SVG is selected
     Then the document contains one shape
     And no open error is reported
+    And the temporary SVG is cleaned up
 
   Scenario: Open rejects a non-canonical Gauss metadata prefix
     Given a temporary SVG with a non-canonical Gauss metadata prefix
@@ -37,3 +41,4 @@ Feature: Open SVG file dialog
     And the temporary SVG is selected
     Then the open error reports the canonical Gauss namespace declaration
     And the original document and resources are preserved
+    And the temporary SVG is cleaned up

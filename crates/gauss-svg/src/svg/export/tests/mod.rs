@@ -171,14 +171,12 @@ fn create_line_shape_for_export(
 }
 
 /// Verify SVG root element structure (without namespace checks).
-fn assert_svg_root_element(svg: &str, expected_width: f32, expected_height: f32) {
-    // `.expect()` is disallowed outside test-attributed functions (whitaker
-    // `no_expect_outside_tests`); handle the Err explicitly, matching the
-    // panic-in-test idiom used elsewhere in this suite.
-    let document = match roxmltree::Document::parse(svg) {
-        Ok(document) => document,
-        Err(error) => panic!("exported SVG should always be valid XML: {error:?}"),
-    };
+fn assert_svg_root_element(
+    document: &roxmltree::Document<'_>,
+    svg: &str,
+    expected_width: f32,
+    expected_height: f32,
+) {
     let root = document.root_element();
     assert!(svg.contains(r#"<svg xmlns="http://www.w3.org/2000/svg""#));
     assert!(svg.contains(&format!(
@@ -188,14 +186,7 @@ fn assert_svg_root_element(svg: &str, expected_width: f32, expected_height: f32)
 }
 
 /// Verify Gauss metadata namespace declaration on root.
-fn assert_gauss_namespace_declared(svg: &str) {
-    // `.expect()` is disallowed outside test-attributed functions (whitaker
-    // `no_expect_outside_tests`); handle the Err explicitly, matching the
-    // panic-in-test idiom used elsewhere in this suite.
-    let document = match roxmltree::Document::parse(svg) {
-        Ok(document) => document,
-        Err(error) => panic!("exported SVG should always be valid XML: {error:?}"),
-    };
+fn assert_gauss_namespace_declared(document: &roxmltree::Document<'_>, svg: &str) {
     let root = document.root_element();
     let metadata_namespace =
         format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#);
@@ -207,9 +198,14 @@ fn assert_gauss_namespace_declared(svg: &str) {
 }
 
 /// Combined assertion: verify complete SVG root structure.
-fn assert_valid_svg_root(svg: &str, expected_width: f32, expected_height: f32) {
-    assert_svg_root_element(svg, expected_width, expected_height);
-    assert_gauss_namespace_declared(svg);
+fn assert_valid_svg_root(
+    document: &roxmltree::Document<'_>,
+    svg: &str,
+    expected_width: f32,
+    expected_height: f32,
+) {
+    assert_svg_root_element(document, svg, expected_width, expected_height);
+    assert_gauss_namespace_declared(document, svg);
 }
 
 /// Expected path attributes for SVG path assertions.
@@ -251,7 +247,8 @@ fn assert_paint_server_opacity(svg: &str, expected: PaintServerOpacityExpectatio
 fn exports_empty_document_with_valid_svg_root() {
     let doc = Document::new();
     let svg = export_svg(&doc, CanvasSize::new(100.0, 50.0));
-    assert_valid_svg_root(&svg, 100.0, 50.0);
+    let xml = roxmltree::Document::parse(&svg).expect("exported SVG should be valid XML");
+    assert_valid_svg_root(&xml, &svg, 100.0, 50.0);
 }
 
 #[rstest]

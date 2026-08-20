@@ -8,6 +8,7 @@
 // The shared helpers are only referenced by the non-Linux tests below, so the
 // module declaration carries the same target gate as its uses.
 #[cfg(not(target_os = "linux"))]
+#[path = "common/gpui_shell_resize_borders.rs"]
 mod common;
 
 #[cfg(not(target_os = "linux"))]

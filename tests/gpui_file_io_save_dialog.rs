@@ -1,5 +1,6 @@
 //! Behavioural coverage for GPUI Save and web-ready export file dialogs.
 
+#[path = "common/gpui_file_io_save_dialog.rs"]
 mod common;
 #[path = "common/durable_shell.rs"]
 mod durable_shell;
@@ -183,6 +184,17 @@ fn selected_save_path_recorded(
 fn temp_svg() -> Result<Rc<TempSvgFile>, TestSupportError> {
     with_state(|state| state.temp_svg.clone())
         .ok_or_else(|| TestSupportError::missing("temporary SVG", "set by the When step"))
+}
+
+/// Remove the scenario's temporary SVG after proving no step still owns it.
+#[then("the temporary SVG is cleaned up")]
+fn cleanup_temp_svg() -> Result<(), TestSupportError> {
+    let shared_temp_svg = with_state(|state| state.temp_svg.take())
+        .ok_or_else(|| TestSupportError::missing("temporary SVG", "set by the When step"))?;
+    let temp_svg = Rc::try_unwrap(shared_temp_svg).map_err(|_| {
+        TestSupportError::expectation("temporary SVG was still shared during scenario cleanup")
+    })?;
+    temp_svg.cleanup()
 }
 
 /// Read the contents of the scenario's saved temporary SVG.

@@ -6,22 +6,19 @@ schema = 1
 stems = []
 
 [words]
-# Official names and abbreviations: "Azure Architecture Center", the mold
-# linker, Level of Detail (LOD), and a Spanish Gherkin example.
+# Official names, abbreviations, and repository-specific terms: "Azure
+# Architecture Center", the mold linker, Level of Detail (LOD), and a Spanish
+# Gherkin example.
 accepted = ["Center", "LOD", "Mold", "inventario", "mold"]
 
 [words.corrections]
 
 [patterns]
-# Preserve externally defined Rust API and tool names without weakening prose
-# spelling checks.
+# Preserve externally defined API names, file names, and tool names without
+# weakening prose spelling checks. These patterns match only exact code spans.
 ignore = [
-    "`AXDescription`",
-    "`AXGroup`",
-    "`AXLabel`",
-    "`AXRole`",
-    "`Catalog`",
-    "`Catalog::default_en_gb\\(\\)`",
+    "`(?:AXDescription|AXGroup|AXRole|AXLabel)`",
+    "`Catalog(?:::[^`]+)?`",
     "`catalog\\.rs`",
     "`color`",
     "flavor = \"current_thread\"",
