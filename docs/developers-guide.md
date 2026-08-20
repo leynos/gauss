@@ -120,7 +120,6 @@ For a new harness, add `tests/common/<harness>.rs` and include it with
 used by that harness and re-export only its helpers; do not recreate a global
 helper module.
 
-
 ### Stateful history scenarios
 
 The `gpui_history_bdd` binaries combine rstest-bdd 0.6.0-beta3's injected
