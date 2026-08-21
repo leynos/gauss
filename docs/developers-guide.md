@@ -150,6 +150,29 @@ unused-helper checks effective and avoids adding the complete shell support
 surface to every GPUI integration test. Each stateful scenario must accept the
 cleanup fixture and remain `#[serial]`.
 
+
+### Integration-test inventory validation
+
+The authoritative integration-test inventory comes from the root `gauss`
+package in Cargo metadata. The checker reads the target source markers,
+classifies each target, and verifies the documented inventory markers in the
+four inventory documents. Run it through the Make target:
+
+```sh
+make check-integration-test-inventory
+```
+
+This target invokes the repository script with `uv` using the following
+equivalent command:
+
+```sh
+UV_CACHE_DIR=.uv-cache UV_TOOL_DIR=.uv-tools uv run \
+  scripts/check_integration_test_inventory.py
+```
+
+`markdownlint` depends on this target, so documentation validation also fails
+when the documented inventory differs from the current Cargo metadata.
+
 ### Stateful history scenarios
 
 The `gpui_history_bdd` binaries combine rstest-bdd 0.6.0-beta3's injected

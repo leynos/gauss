@@ -1,5 +1,6 @@
 .PHONY: help all clean test test-ci test-quick build release lint fmt \
-	check-fmt check-integration-test-inventory markdownlint nixie typecheck \
+	check-fmt check-integration-test-inventory integration-test-inventory-test \
+	markdownlint nixie typecheck \
 	spelling spelling-helper-test
 
 
@@ -68,8 +69,24 @@ check-fmt: ## Verify formatting
 markdownlint: spelling check-integration-test-inventory ## Lint Markdown files and enforce repository spelling
 	$(MDLINT) '**/*.md'
 
-check-integration-test-inventory: ## Verify documented integration-test counts against Cargo metadata
+check-integration-test-inventory: integration-test-inventory-test ## Verify documented integration-test counts against Cargo metadata
 	@$(UV_ENV) $(UV) run scripts/check_integration_test_inventory.py
+
+integration-test-inventory-test: ## Test the integration-test inventory checker
+	@$(UV_ENV) $(UV) tool run ruff@$(RUFF_VERSION) format --isolated \
+		--target-version py313 --check scripts/check_integration_test_inventory.py \
+		scripts/tests/test_integration_test_inventory.py \
+		scripts/tests/test_integration_test_inventory_cli.py
+	@$(UV_ENV) $(UV) tool run ruff@$(RUFF_VERSION) check --isolated \
+		--target-version py313 scripts/check_integration_test_inventory.py \
+		scripts/tests/test_integration_test_inventory.py \
+		scripts/tests/test_integration_test_inventory_cli.py
+	@PYTHONPATH=scripts HYPOTHESIS_STORAGE_DIRECTORY=/tmp/gauss-hypothesis \
+		$(UV_ENV) $(UV) run --no-project --python 3.13 \
+		--with pytest==9.0.2 --with hypothesis==6.151.9 \
+		python -m pytest scripts/tests/test_integration_test_inventory.py \
+		scripts/tests/test_integration_test_inventory_cli.py \
+		-c /dev/null --rootdir=. -p no:cacheprovider
 
 spelling: spelling-helper-test ## Enforce en-GB-oxendict spelling in Markdown prose
 	@$(UV_ENV) $(UV) run scripts/generate_typos_config.py

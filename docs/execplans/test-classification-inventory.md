@@ -22,6 +22,9 @@ raw structural GPUI; the remaining scenario targets are non-GPUI BDD; and the
 remaining targets are other integration tests.
 `make check-integration-test-inventory` automates this check.
 
+_Table: Current authoritative root `gauss` integration-test inventory derived
+from Cargo metadata._
+
 | Category                                                 | Count |
 | -------------------------------------------------------- | ----: |
 | Root `gauss` integration-test targets (`cargo metadata`) | 51    |

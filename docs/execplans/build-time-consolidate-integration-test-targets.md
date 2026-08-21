@@ -25,6 +25,9 @@ raw structural GPUI; the remaining scenario targets are non-GPUI BDD; and the
 remaining targets are other integration tests.
 `make check-integration-test-inventory` automates this check.
 
+_Table: Current authoritative root `gauss` integration-test inventory derived
+from Cargo metadata._
+
 | Category                                                 | Count |
 | -------------------------------------------------------- | ----: |
 | Root `gauss` integration-test targets (`cargo metadata`) | 51    |
@@ -251,7 +254,7 @@ Validation gate:
 
 ### Scope revision
 
-The original plan aimed to reduce the number of test *targets* by consolidating
+The original plan aimed to reduce the number of test _targets_ by consolidating
 39 GPUI tests into 5 grouped binaries (e.g., `tests/gpui_shell.rs`). During
 implementation, a simpler approach emerged: rather than creating nested module
 structures with complex imports, the consolidation was achieved through a
@@ -305,7 +308,7 @@ well-organized:
 
 ### Consolidation approach revision
 
-The initial plan envisioned creating 5 consolidated test *targets* (e.g.,
+The initial plan envisioned creating 5 consolidated test _targets_ (e.g.,
 `tests/gpui_shell.rs` containing all shell tests). However, during
 implementation, a different approach emerged as more practical:
 
@@ -332,7 +335,7 @@ limitations (missing `libxcb` library preventing test linking). The structural
 goal of organizing tests by feature area was achieved through consistent naming.
 
 **Historical expected impact**: While this approach did not reduce the number
-of test *targets* in the 2026-03 snapshot (still 56), it provided:
+of test _targets_ in the 2026-03 snapshot (still 56), it provided:
 
 - Clear feature-area organization via naming convention
 - Easier test discovery (`cargo test --test gpui_shell_*`)

@@ -18,16 +18,17 @@ import re
 import subprocess
 import sys
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+CONSOLIDATION_MAP = REPOSITORY_ROOT / "tests/CONSOLIDATION_MAP.md"
 INVENTORY_DOCUMENTS = (
     REPOSITORY_ROOT
     / "docs/execplans/build-time-consolidate-integration-test-targets.md",
     REPOSITORY_ROOT / "docs/execplans/adopt-rstest-bdd-v0-6-0-beta3.md",
     REPOSITORY_ROOT / "docs/execplans/test-classification-inventory.md",
-    REPOSITORY_ROOT / "tests/CONSOLIDATION_MAP.md",
+    CONSOLIDATION_MAP,
 )
 MARKER_PATTERN = re.compile(r"<!-- integration-test-inventory: (?P<fields>[^>]+) -->")
 FIELD_PATTERN = re.compile(r"(?P<name>[a-z_]+)=(?P<value>\d+)")
@@ -44,22 +45,85 @@ CATEGORY_ORDER = (
     "non_gpui_bdd",
     "other_integration",
 )
+TARGET_LIST_HEADINGS = {
+    "harness_gpui_bdd": "Harness-backed GPUI BDD targets",
+    "raw_structural_gpui": "Raw structural GPUI targets",
+    "non_gpui_bdd": "Non-GPUI BDD targets",
+    "other_integration": "Other integration targets",
+}
 
 
-def cargo_metadata() -> dict[str, object]:
-    """Return Cargo metadata for the repository's current workspace."""
-    result = subprocess.run(
-        ("cargo", "metadata", "--no-deps", "--format-version", "1"),
-        cwd=REPOSITORY_ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return json.loads(result.stdout)
+def _read_target_source(source_path: Path) -> str:
+    """Read one target source file, translating filesystem failures."""
+    try:
+        return source_path.read_text(encoding="utf-8")
+    except OSError as error:
+        raise ValueError(
+            f"could not read integration-test source {source_path}"
+        ) from error
+
+
+def cargo_metadata(
+    runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+) -> dict[str, object]:
+    """Read Cargo metadata for the repository's current workspace.
+
+    Parameters
+    ----------
+    runner : Callable[..., subprocess.CompletedProcess[str]], optional
+        Process runner used to execute Cargo. The default invokes
+        :func:`subprocess.run` with the authoritative metadata command.
+
+    Returns
+    -------
+    dict[str, object]
+        Decoded JSON object emitted by Cargo metadata.
+
+    Raises
+    ------
+    ValueError
+        If Cargo cannot run, returns a non-zero status, emits invalid JSON, or
+        emits a JSON value other than an object.
+    """
+    try:
+        result = runner(
+            ("cargo", "metadata", "--no-deps", "--format-version", "1"),
+            cwd=REPOSITORY_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise ValueError("could not read Cargo metadata") from error
+
+    try:
+        metadata = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise ValueError("Cargo metadata is not valid JSON") from error
+    if not isinstance(metadata, dict):
+        raise ValueError("Cargo metadata must be a JSON object")
+    return metadata
 
 
 def root_gauss_package(metadata: dict[str, object]) -> dict[str, object]:
-    """Return the root ``gauss`` package selected from Cargo metadata."""
+    """Select the root ``gauss`` package from Cargo metadata.
+
+    Parameters
+    ----------
+    metadata : dict[str, object]
+        Decoded Cargo metadata for the current workspace.
+
+    Returns
+    -------
+    dict[str, object]
+        The package named ``gauss`` whose manifest is the repository root.
+
+    Raises
+    ------
+    ValueError
+        If the packages field is malformed or does not contain the root
+        ``gauss`` package.
+    """
     root_manifest = str(REPOSITORY_ROOT / "Cargo.toml")
     packages = metadata["packages"]
     if not isinstance(packages, list):
@@ -82,7 +146,23 @@ def root_gauss_package(metadata: dict[str, object]) -> dict[str, object]:
 
 
 def root_gauss_targets(metadata: dict[str, object]) -> Iterable[dict[str, object]]:
-    """Yield integration-test targets declared by the root ``gauss`` package."""
+    """Yield integration-test targets declared by the root ``gauss`` package.
+
+    Parameters
+    ----------
+    metadata : dict[str, object]
+        Decoded Cargo metadata for the current workspace.
+
+    Returns
+    -------
+    Iterable[dict[str, object]]
+        Dictionary targets whose kind includes ``test``.
+
+    Raises
+    ------
+    ValueError
+        If the selected root package has a malformed targets field.
+    """
     targets = root_gauss_package(metadata).get("targets")
     if not isinstance(targets, list):
         raise ValueError("root gauss package targets must be a list")
@@ -95,7 +175,18 @@ def root_gauss_targets(metadata: dict[str, object]) -> Iterable[dict[str, object
 
 
 def category_for(source: str) -> str:
-    """Classify one integration-test target using its explicit source markers."""
+    """Classify one integration-test target using explicit source markers.
+
+    Parameters
+    ----------
+    source : str
+        UTF-8 source text for one Cargo integration-test target.
+
+    Returns
+    -------
+    str
+        One mutually exclusive category in :data:`CATEGORY_ORDER`.
+    """
     if HARNESS_PATTERN.search(source):
         return "harness_gpui_bdd"
     if RAW_GPUI_PATTERN.search(source):
@@ -105,26 +196,59 @@ def category_for(source: str) -> str:
     return "other_integration"
 
 
-def inventory() -> dict[str, list[str]]:
-    """Return current target names grouped by their mutually exclusive category."""
+def inventory(
+    metadata_reader: Callable[[], dict[str, object]] = cargo_metadata,
+    source_reader: Callable[[Path], str] = _read_target_source,
+) -> dict[str, list[str]]:
+    """Group current root targets by their mutually exclusive category.
+
+    Parameters
+    ----------
+    metadata_reader : Callable[[], dict[str, object]], optional
+        Reader for the authoritative Cargo metadata object.
+    source_reader : Callable[[Path], str], optional
+        Reader for each target source path.
+
+    Returns
+    -------
+    dict[str, list[str]]
+        Sorted target names for every category in :data:`CATEGORY_ORDER`.
+
+    Raises
+    ------
+    ValueError
+        If Cargo target metadata lacks a string name or source path, or a
+        reader cannot provide the required input.
+    """
     targets_by_category: dict[str, list[str]] = defaultdict(list)
-    for target in root_gauss_targets(cargo_metadata()):
+    for target in root_gauss_targets(metadata_reader()):
         source_path = target.get("src_path")
         target_name = target.get("name")
         if not isinstance(source_path, str) or not isinstance(target_name, str):
             raise ValueError(
                 "integration-test target requires string name and source path"
             )
-        targets_by_category[
-            category_for(Path(source_path).read_text(encoding="utf-8"))
-        ].append(target_name)
+        targets_by_category[category_for(source_reader(Path(source_path)))].append(
+            target_name
+        )
     return {
         category: sorted(targets_by_category[category]) for category in CATEGORY_ORDER
     }
 
 
 def counts(targets_by_category: dict[str, list[str]]) -> dict[str, int]:
-    """Calculate documented totals from the classified integration targets."""
+    """Calculate documented totals from classified integration targets.
+
+    Parameters
+    ----------
+    targets_by_category : dict[str, list[str]]
+        Target names grouped under every category in :data:`CATEGORY_ORDER`.
+
+    Returns
+    -------
+    dict[str, int]
+        Per-category counts plus ``gpui_target`` and ``total`` derived totals.
+    """
     result = {
         category: len(targets_by_category[category]) for category in CATEGORY_ORDER
     }
@@ -134,7 +258,23 @@ def counts(targets_by_category: dict[str, list[str]]) -> dict[str, int]:
 
 
 def documented_counts(document: Path) -> dict[str, int]:
-    """Read the single machine-checkable current-inventory marker from a document."""
+    """Read the single machine-checkable current-inventory marker.
+
+    Parameters
+    ----------
+    document : Path
+        Inventory document containing exactly one current-inventory marker.
+
+    Returns
+    -------
+    dict[str, int]
+        Parsed category and derived-total counts from the marker.
+
+    Raises
+    ------
+    ValueError
+        If the document has the wrong marker count or marker fields.
+    """
     matches = MARKER_PATTERN.findall(document.read_text(encoding="utf-8"))
     if len(matches) != 1:
         raise ValueError(f"{document}: expected exactly one inventory marker")
@@ -150,22 +290,96 @@ def documented_counts(document: Path) -> dict[str, int]:
     return values
 
 
-def validate_documentation(actual: dict[str, int]) -> None:
-    """Fail when any current-inventory document differs from Cargo metadata."""
+def documented_targets(document: Path) -> dict[str, list[str]]:
+    """Read the category target lists documented in the consolidation map.
+
+    Parameters
+    ----------
+    document : Path
+        Consolidation map containing one headed target list per category.
+
+    Returns
+    -------
+    dict[str, list[str]]
+        Sorted target names for every category in :data:`CATEGORY_ORDER`.
+
+    Raises
+    ------
+    ValueError
+        If a required category heading is missing.
+    """
+    source = document.read_text(encoding="utf-8")
+    targets_by_category: dict[str, list[str]] = {}
+    for category, heading in TARGET_LIST_HEADINGS.items():
+        heading_match = re.search(
+            rf"^### {re.escape(heading)} \(\d+\)$", source, re.MULTILINE
+        )
+        if heading_match is None:
+            raise ValueError(f"{document}: missing target list for {category}")
+        next_heading = re.search(r"^### ", source[heading_match.end() :], re.MULTILINE)
+        section_end = (
+            heading_match.end() + next_heading.start()
+            if next_heading is not None
+            else len(source)
+        )
+        section = source[heading_match.end() : section_end]
+        targets_by_category[category] = sorted(
+            re.findall(r"^- `(?P<target>[^`]+)`$", section, re.MULTILINE)
+        )
+    return targets_by_category
+
+
+def validate_documentation(
+    targets_by_category: dict[str, list[str]],
+    documents: tuple[Path, ...] = INVENTORY_DOCUMENTS,
+    target_list_document: Path = CONSOLIDATION_MAP,
+) -> None:
+    """Validate documented counts and exact target lists against Cargo metadata.
+
+    Parameters
+    ----------
+    targets_by_category : dict[str, list[str]]
+        Sorted target inventory derived from the root Cargo package.
+    documents : tuple[Path, ...], optional
+        Documents that must carry a current-inventory count marker.
+    target_list_document : Path, optional
+        Consolidation map whose category lists must match the inventory.
+
+    Raises
+    ------
+    ValueError
+        If a documented count marker or target list differs from the derived
+        inventory.
+    """
+    actual = counts(targets_by_category)
     failures = [
         f"{document}: documented {documented_counts(document)}, actual {actual}"
-        for document in INVENTORY_DOCUMENTS
+        for document in documents
         if documented_counts(document) != actual
     ]
+    documented = documented_targets(target_list_document)
+    failures.extend(
+        f"{target_list_document}: documented {documented[category]}, "
+        f"actual {targets_by_category[category]} for {category}"
+        for category in CATEGORY_ORDER
+        if documented[category] != targets_by_category[category]
+    )
     if failures:
         raise ValueError("\n".join(failures))
 
 
 def main() -> None:
-    """Print the target inventory and validate every documented current count."""
+    """Print and validate the current integration-test inventory.
+
+    Raises
+    ------
+    ValueError
+        If source metadata, documented counts, or documented target lists do
+        not match the authoritative root-package inventory.
+    """
     targets_by_category = inventory()
     actual = counts(targets_by_category)
-    validate_documentation(actual)
+    validate_documentation(targets_by_category)
     for category in CATEGORY_ORDER:
         print(
             f"{category}: {actual[category]} ({', '.join(targets_by_category[category])})"

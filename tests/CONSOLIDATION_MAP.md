@@ -7,6 +7,9 @@ package reported by `cargo metadata --no-deps --format-version 1`. It is not a
 filename discovered by a glob. A **GPUI target** is either a harness-backed
 GPUI BDD target or a raw structural GPUI target.
 
+_Table: Current authoritative root `gauss` integration-test inventory derived
+from Cargo metadata._
+
 | Classification                   | Definition                                                                                   | Current targets |
 | -------------------------------- | -------------------------------------------------------------------------------------------- | --------------: |
 | Harness-backed GPUI BDD          | Contains a `#[scenario]` registration with `harness = rstest_bdd_harness_gpui::GpuiHarness`. | 25              |

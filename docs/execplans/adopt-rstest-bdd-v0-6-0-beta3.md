@@ -23,6 +23,9 @@ raw structural GPUI; the remaining scenario targets are non-GPUI BDD; and the
 remaining targets are other integration tests.
 `make check-integration-test-inventory` automates this check.
 
+_Table: Current authoritative root `gauss` integration-test inventory derived
+from Cargo metadata._
+
 | Category                                                 | Count |
 | -------------------------------------------------------- | ----: |
 | Root `gauss` integration-test targets (`cargo metadata`) | 51    |
@@ -71,7 +74,7 @@ escalation, not a workaround.
   raise the toolchain floor to satisfy the new dependency.
 - The project consumes **published `gpui = "0.2.2"`** from crates.io. Do not
   vendor gpui or switch to the upstream `rstest-bdd` vendored fork. All GPUI
-  harness step code must use the *published* `gpui 0.2.2` API shapes (see
+  harness step code must use the _published_ `gpui 0.2.2` API shapes (see
   "Published vs vendored gpui" under Context and orientation), not the vendored
   shapes shown verbatim in the upstream user's guide.
 - The workspace clippy posture in the root `Cargo.toml` (`pedantic` plus the
@@ -104,7 +107,7 @@ breached.
   `0.6.0-beta3` on crates.io, stop and escalate.
 - New dependencies: adopting the harness adds `rstest-bdd-harness-gpui` and
   `serial_test` as dev-dependencies. These two are anticipated and approved by
-  this plan. Any *further* new dependency beyond those two requires escalation.
+  this plan. Any _further_ new dependency beyond those two requires escalation.
 - Breaking-change surface: if the underscore-normalization breaking change (see
   Risks) turns out to affect more than a handful of existing step/scenario
   signatures, or requires changing production code (not just test signatures),
@@ -223,7 +226,7 @@ breached.
   Filed as the FLAGGED CONCERN in the beta tester's log with a full validation
   matrix and upstream suggestions.
 
-- Observation: a *fallible* scenario (`-> Result<(), E>`) trips
+- Observation: a _fallible_ scenario (`-> Result<(), E>`) trips
   `unused_must_use` in the generated `#[gpui::test]` body (a hard error under
   `-D warnings`). Evidence:
   `warning: unused Result that must be used --> ...#[scenario(...`, escalated
@@ -284,7 +287,7 @@ breached.
   Date/Author: 2026-07-08, implementation (post-milestone-2 follow-up).
 
 - Decision: substitute a falsification check for a literal red-skeleton stage.
-  Rationale: the deliverable *is* a test, so "fails before implementation" is
+  Rationale: the deliverable _is_ a test, so "fails before implementation" is
   best evidenced by implementing it, observing green, then temporarily breaking
   one `Then` expectation to observe a red for the intended reason and
   reverting. This is the execplans-sanctioned nearest observable substitute.
@@ -401,7 +404,7 @@ Key terms:
   `GpuiHarness` that value is `gpui::TestAppContext`. A step receives it with
   `#[from(rstest_bdd_harness_context)] cx: &mut gpui::TestAppContext`.
 - **Stateful GPUI playbook**: the v0.6 interim pattern for scenarios whose steps
-  must share durable handles *and* borrow `&mut TestAppContext`. Because the
+  must share durable handles _and_ borrow `&mut TestAppContext`. Because the
   v0.6 `StepContext` cannot lend two mutable borrows in one step, durable
   handles live in a `thread_local!` cell instead of a second fixture. Each
   scenario is `#[serial]` and observes a two-sided reset protocol
@@ -410,7 +413,7 @@ Key terms:
 ### Published vs vendored gpui (must-read before writing steps)
 
 The upstream user's guide and its regression suite are written against the
-*vendored* gpui under `vendor/gpui`. `gauss` uses the *published* `gpui 0.2.2`.
+_vendored_ gpui under `vendor/gpui`. `gauss` uses the _published_ `gpui 0.2.2`.
 Use the published shapes:
 
 - `add_window_view` closure takes **two** arguments:

@@ -1,6 +1,6 @@
 //! Focused GPUI lifecycle facade for shell BDD scenario binaries.
 //!
-//! Shell BDD binaries need application initialisation and one completed initial
+//! Shell BDD binaries need application initialization and one completed initial
 //! draw without depending on the broad legacy `common` helper surface.
 
 #[path = "../common/init_app.rs"]
