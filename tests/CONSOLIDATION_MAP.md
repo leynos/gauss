@@ -92,7 +92,10 @@ maintaining each test as an independent Cargo target.
 
 ## Summary
 
-**Before**: 55 top-level integration test files (38 GPUI + 17 non-GPUI)
+These counts are the historical consolidation snapshot affected by the removal
+of `gpui_shell_quit_button.rs`, rather than a live inventory of this directory.
+
+**Before**: 56 top-level integration test files (39 GPUI + 17 non-GPUI)
 
 **After**: 55 top-level integration test files (38 GPUI + 17 non-GPUI)
 

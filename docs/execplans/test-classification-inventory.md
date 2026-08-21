@@ -50,17 +50,21 @@ Supporting directories:
 
 ### App integration tests → Stay in `tests/`
 
-All GPUI-dependent tests stay in the app crate:
+All GPUI-dependent tests and the non-GPUI app-layer accessibility tests stay in
+the app crate:
 
-#### Accessibility tests
+#### GPUI accessibility tests
 
-- `tests/a11y_service_bdd.rs` - AccessKit service (requires GPUI)
-- `tests/a11y_service_routing_bdd.rs` - AccessKit routing (requires GPUI)
 - `tests/gpui_shell_a11y_service.rs` - Shell accessibility integration
 
 Supporting directories:
 
 - `tests/a11y_service_bdd/` - AccessKit BDD fixtures
+
+#### Non-GPUI accessibility tests
+
+- `tests/a11y_service_bdd.rs` - AccessKit service behaviour
+- `tests/a11y_service_routing_bdd.rs` - AccessKit routing behaviour
 
 #### File I/O tests
 
@@ -78,6 +82,7 @@ Supporting directories:
 - `tests/gpui_history_drag_handle_undo.rs` - Handle dragging with undo
 - `tests/gpui_history_drag_shape_undo.rs` - Shape dragging with undo
 - `tests/gpui_history_draw_undo.rs` - Drawing with undo
+- `tests/gpui_draw_undo_bdd.rs` - Draw-mode undo and redo behaviour
 - `tests/gpui_history_multi_shape_drag_undo.rs` - Multi-shape drag with undo
 - `tests/gpui_history_open_history_reset.rs` - History reset on open
 - `tests/gpui_history_reorder_undo.rs` - Shape reordering with undo
@@ -95,6 +100,7 @@ Supporting directories:
 #### Shell/UI tests
 
 - `tests/gpui_shell_canvas_layout.rs` - Canvas layout
+- `tests/gpui_shell_chrome_bdd.rs` - Shell chrome behaviour
 - `tests/gpui_shell_chrome_layout.rs` - Chrome layout
 - `tests/gpui_shell_mode_indicator.rs` - Mode indicator
 - `tests/gpui_shell_navigation_buttons.rs` - Navigation buttons
@@ -103,6 +109,14 @@ Supporting directories:
 - `tests/gpui_shell_tool_rail.rs` - Tool rail
 - `tests/gpui_shell_viewport_input.rs` - Viewport input
 - `tests/gpui_shell_window_controls.rs` - Window controls
+
+#### Internationalization tests
+
+- `tests/gpui_i18n_module.rs` - Localized shell status text
+
+#### Test-support API tests
+
+- `tests/test_support_const_apis.rs` - Compile-time GPUI test-support APIs
 
 #### Tooling tests
 
@@ -131,7 +145,8 @@ Supporting directories:
 
 **To stay:**
 
-- 40 GPUI-dependent tests → `tests/` (app crate)
+- 42 GPUI-dependent tests → `tests/` (app crate)
+- 2 non-GPUI app-layer accessibility tests → `tests/` (app crate)
 
 ## Notes
 

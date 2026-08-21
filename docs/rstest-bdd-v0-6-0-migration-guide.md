@@ -408,6 +408,10 @@ assertions stay as raw `#[gpui::test]` tests: forcing these checks into
 Given/When/Then language would obscure that they validate implementation
 structure rather than user behaviour.
 
+Table 1 records 15 retained raw test functions, rather than an assertion count.
+Fourteen run normally; one remains ignored because the GPUI test platform may
+not use client-side decorations.
+
 | File                            | Retained raw tests                                                                                                                                                                                                                                                                                                                                                                         | Rationale                                                                                                                                  |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `gpui_shell_canvas_layout.rs`   | `canvas_is_not_collapsed_to_a_tiny_height`                                                                                                                                                                                                                                                                                                                                                 | Asserts a rendered height threshold.                                                                                                       |
@@ -416,7 +420,8 @@ structure rather than user behaviour.
 | `gpui_shell_style_controls.rs`  | `style_changes_apply_to_selected_shapes_and_are_undoable`                                                                                                                                                                                                                                                                                                                                  | Exercises style command and history checks through test-only APIs.                                                                         |
 | `gpui_shell_window_controls.rs` | `titlebar_drag_region_is_present`, `window_control_buttons_are_present`, `titlebar_drag_region_has_dimensions`, `window_control_buttons_have_dimensions`, `maximized_override_is_applied_in_tests`, `non_maximized_override_is_applied_in_tests`, `maximized_override_changes_titlebar_render`, `resize_canvas_not_present_when_maximised`, and `resize_canvas_present_when_not_maximised` | Asserts render-tree geometry, test plumbing, platform-dependent element presence, or rerendering after a test-only maximized-state change. |
 
-_Table 1: Structural Gauss shell tests retained outside the BDD harness._
+_Table 1: Fifteen structural Gauss shell test functions retained outside the
+BDD harness._
 
 [adr-007]: adr-007-harness-context-injection.md
 

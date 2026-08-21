@@ -1,7 +1,7 @@
 //! Structural tests for window-control geometry and test override plumbing.
 //!
 //! These remain raw GPUI tests because they inspect element presence, rendered
-//! dimensions, or the test-only maximised-state override rather than a user
+//! dimensions, or the test-only maximized-state override rather than a user
 //! action. The GPUI test platform cannot drive native window maximize or resize
 //! operations, so this file retains that test-plumbing coverage.
 
@@ -65,9 +65,9 @@ fn assert_element_has_size(
     );
 }
 
-/// Assert that the maximised state override returns the expected value.
+/// Assert that the maximized state override returns the expected value.
 ///
-/// This helper creates a window with the specified maximised override and
+/// This helper creates a window with the specified maximized override and
 /// verifies that `is_maximized_for_resize_borders_for_tests` returns the
 /// expected value.
 fn assert_maximised_override_matches(cx: &mut TestAppContext, expected_maximised: bool) {
@@ -114,7 +114,7 @@ fn window_control_buttons_are_present(cx: &mut TestAppContext) {
 /// Test that the titlebar drag region has appropriate dimensions.
 ///
 /// Note: Clicking the titlebar is not tested because GPUI's test platform
-/// does not implement `start_window_move()`. Double-click to toggle maximise
+/// does not implement `start_window_move()`. Double-click to toggle maximize
 /// also isn't testable as `zoom_window()` is similarly unimplemented.
 /// This test verifies the UI structure instead.
 #[gpui::test]
@@ -139,21 +139,21 @@ fn window_control_buttons_have_dimensions(cx: &mut TestAppContext) {
     }
 }
 
-/// Test that the maximised state override works in tests.
+/// Test that the maximized state override works in tests.
 ///
-/// This verifies the test infrastructure for simulating maximised state.
+/// This verifies the test infrastructure for simulating maximized state.
 #[gpui::test]
 fn maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
     assert_maximised_override_matches(cx, true);
 }
 
-/// Test that setting maximised to false via test override works.
+/// Test that setting maximized to false via test override works.
 #[gpui::test]
 fn non_maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
     assert_maximised_override_matches(cx, false);
 }
 
-/// Test that changing the maximised override updates the titlebar render.
+/// Test that changing the maximized override updates the titlebar render.
 ///
 /// This verifies test-only state plumbing because GPUI's test window cannot
 /// exercise the native maximize action.
@@ -188,11 +188,11 @@ fn maximized_override_changes_titlebar_render(cx: &mut TestAppContext) {
         );
     });
 }
-/// Test that resize canvas is not present when window is maximised.
+/// Test that resize canvas is not present when window is maximized.
 ///
 /// This verifies the behavioural guard that prevents resize operations when
-/// the window is maximised. The resize canvas element is only added to the
-/// render tree when the window is NOT maximised, so its absence confirms
+/// the window is maximized. The resize canvas element is only added to the
+/// render tree when the window is NOT maximized, so its absence confirms
 /// that the resize handler cannot be triggered.
 ///
 /// Note: This test is skipped on non-Linux platforms because client-side
@@ -210,7 +210,7 @@ fn resize_canvas_not_present_when_maximised(cx: &mut TestAppContext) {
     );
 }
 
-/// Test that resize canvas IS present when window is not maximised.
+/// Test that resize canvas IS present when window is not maximized.
 ///
 /// This is the inverse of `resize_canvas_not_present_when_maximised` and
 /// verifies that resize functionality is available in normal window state.
@@ -218,9 +218,9 @@ fn resize_canvas_not_present_when_maximised(cx: &mut TestAppContext) {
 /// Note: This test is skipped because GPUI's test platform may not return
 /// `Decorations::Client` for window decorations. When the platform returns
 /// `Decorations::Server`, the resize canvas is never rendered regardless
-/// of maximised state, causing this test to fail spuriously. The maximised
+/// of maximized state, causing this test to fail spuriously. The maximized
 /// case still provides value as a regression test: if client decorations
-/// are ever used, the resize canvas should not be present when maximised.
+/// are ever used, the resize canvas should not be present when maximized.
 #[gpui::test]
 #[cfg(target_os = "linux")]
 #[ignore = "GPUI test platform may not use client-side decorations"]
