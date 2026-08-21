@@ -32,27 +32,13 @@ pub use vec2_assertion::assert_vec2_close;
 use gauss::ui::Phase0Shell;
 use gpui::{Entity, VisualTestContext};
 
-/// Observable document-history entries and undo/redo availability.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct DocumentHistoryState {
-    /// Number of realised history entries.
-    pub entry_count: usize,
-    /// Whether the current history position can be undone.
-    pub can_undo: bool,
-    /// Whether the current history position can be redone.
-    pub can_redo: bool,
-}
+/// Re-export the test-support document-history snapshot for BDD consumers.
+pub use gauss::ui::DocumentHistoryState;
 
 /// Returns the current entries and cursor availability in the document history.
 pub fn read_history_state(
     visual_cx: &VisualTestContext,
     view: &Entity<Phase0Shell>,
 ) -> DocumentHistoryState {
-    let (entry_count, can_undo, can_redo) =
-        visual_cx.read(|app| view.read(app).document_history_state_for_tests());
-    DocumentHistoryState {
-        entry_count,
-        can_undo,
-        can_redo,
-    }
+    visual_cx.read(|app| view.read(app).document_history_state_for_tests())
 }

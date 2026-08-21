@@ -146,7 +146,7 @@ fn assert_document_and_history_unchanged(
     cx: &mut TestAppContext,
     context: &str,
 ) -> TestSupportResult<()> {
-    let history_before = with_state(|state| state.history_state_before)
+    let history_before = with_state(|state| state.history_state_before.clone())
         .ok_or_else(|| missing("initial history state"))?;
     let document_before = with_state(|state| state.document_before.clone())
         .ok_or_else(|| missing("document before operation"))?;
@@ -201,7 +201,7 @@ fn closing_group_preserves_state(
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn undo_while_active(#[from(state_cleanup)] _cleanup: StateCleanup) {}
+fn undo_while_active(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
 
 /// Run the active-group redo preservation feature scenario.
 #[scenario(
@@ -210,7 +210,7 @@ fn undo_while_active(#[from(state_cleanup)] _cleanup: StateCleanup) {}
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn redo_while_active(#[from(state_cleanup)] _cleanup: StateCleanup) {}
+fn redo_while_active(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
 
 #[cfg(test)]
 mod tests {
@@ -223,7 +223,7 @@ mod tests {
     #[serial]
     fn history_error_read_can_reenter_scenario_state() {
         reset_state();
-        let _cleanup = StateCleanup;
+        let _cleanup = ScenarioStateCleanup;
         let expected = HistoryError::UndoWhileGroupActive;
 
         read_and_store_history_error(|| {

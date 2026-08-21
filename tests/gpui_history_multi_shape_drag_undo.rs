@@ -1,5 +1,8 @@
 //! BDD coverage for one-entry multi-shape drag history.
 
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
+
 #[path = "common/gpui_history_multi_shape_drag_undo.rs"]
 mod common;
 

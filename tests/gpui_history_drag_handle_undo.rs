@@ -1,5 +1,8 @@
 //! GPUI headless integration tests for Phase 0 handle dragging.
 
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
+
 #[path = "common/gpui_history_drag_handle_undo.rs"]
 mod common;
 #[path = "gpui_history_bdd/drag_handle.rs"]

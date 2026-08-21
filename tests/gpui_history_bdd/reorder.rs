@@ -26,12 +26,10 @@ struct ReorderState {
 
 crate::scenario_state!(ReorderState);
 
-/// Retrieve the durable shell stored in scenario state.
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.get()).ok_or_else(|| missing("Phase 0 shell"))
 }
 
-/// Retrieve the lower and higher shape identifiers from scenario state.
 fn shape_pair() -> Result<(ShapeId, ShapeId), TestSupportError> {
     let (lower, higher) = with_state(|state| (state.lower.get(), state.higher.get()));
     Ok((
@@ -72,7 +70,6 @@ fn fresh_shell_with_overlapping_shapes(
     Ok(())
 }
 
-/// Click the overlap and verify the topmost shape is selected.
 #[when("the overlap is clicked")]
 fn click_overlap(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -85,7 +82,7 @@ fn click_overlap(
     })
 }
 
-/// Assert the topmost shape remains selected after the click.
+/// Keep the selection invariant established before either reorder operation.
 #[then("the topmost shape is selected")]
 fn topmost_shape_is_selected(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -103,7 +100,6 @@ fn topmost_shape_is_selected(
     })
 }
 
-/// Lower the selected shape with the reorder shortcut.
 #[when("the selected shape is lowered")]
 fn lower_selected_shape(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -114,7 +110,6 @@ fn lower_selected_shape(
     })
 }
 
-/// Raise the selected shape with the reorder shortcut.
 #[when("the selected shape is raised")]
 fn raise_selected_shape(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -159,7 +154,6 @@ fn assert_selected_shape_order(
     })
 }
 
-/// Assert the selected shape is below the other shape.
 #[then("the selected shape is below the other drawn shape")]
 fn selected_shape_is_below(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -167,7 +161,6 @@ fn selected_shape_is_below(
     assert_selected_shape_order(cx, false)
 }
 
-/// Assert the selected shape is above the other shape.
 #[then("the selected shape is above the other drawn shape")]
 fn selected_shape_is_above(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -198,7 +191,6 @@ fn history_has_gained(
     })
 }
 
-/// Assert the plural history-entry form using the shared count check.
 #[then("the document history has gained {count:u64} entries")]
 fn history_has_gained_entries(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -207,7 +199,7 @@ fn history_has_gained_entries(
     history_has_gained(cx, count)
 }
 
-/// Undo the most recent reorder document change.
+/// Cross the recorded reorder-history boundary before checking restored order.
 #[when("the last document change is undone")]
 fn undo_last_document_change(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -218,7 +210,6 @@ fn undo_last_document_change(
     })
 }
 
-/// Run the shape reorder undo feature scenario.
 #[scenario(
     path = "tests/features/history_reorder_undo.feature",
     name = "Lowering and raising shapes are undoable",

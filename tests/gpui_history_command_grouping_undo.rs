@@ -1,5 +1,8 @@
 //! GPUI headless integration tests for document command grouping.
 
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
+
 #[path = "gpui_history_bdd/command_grouping.rs"]
 mod command_grouping;
 

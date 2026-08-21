@@ -28,6 +28,8 @@ mod style_controls;
 mod test_helpers;
 #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
 mod test_history;
+#[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+pub use self::test_history::DocumentHistoryState;
 mod tool_commands;
 mod tool_rail;
 mod view;

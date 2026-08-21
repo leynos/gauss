@@ -28,13 +28,15 @@
 //! let state = EngineState::with_document(doc);
 //! assert_eq!(state.document_history_len(), 0);
 //! ```
-
 use crate::model::{
     Command, Document, EdgeMode, PaintStyle, ResizeAnchor, Rgba, Selection, ShapeId, ToolMode,
     UserError, Viewport,
 };
 
 use super::{DocumentUndoHistory, HistoryError, ResourceStore, StyleStore};
+#[cfg(feature = "test-support")]
+#[path = "engine_state/test_history.rs"]
+mod test_history;
 
 /// Unified state for the Gauss editor.
 ///

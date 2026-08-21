@@ -6,11 +6,8 @@
 //! history, and durable-shell utilities are imported from the test support
 //! modules.
 
-use std::cell::RefCell;
-
 use gauss::model::Vec2;
 use gpui::{Bounds, Pixels, Point, TestAppContext};
-use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use test_support::TestSupportError;
@@ -27,35 +24,7 @@ struct ClosePathState {
     initial_history_len: Option<usize>,
 }
 
-thread_local! {
-    static STATE: RefCell<ClosePathState> = RefCell::new(ClosePathState::default());
-}
-
-/// Apply a closure to the close-path scenario state.
-fn with_state<R>(f: impl FnOnce(&mut ClosePathState) -> R) -> R {
-    STATE.with(|state| f(&mut state.borrow_mut()))
-}
-
-/// Reset all close-path state before or after a scenario.
-fn reset_state() {
-    with_state(|state| *state = ClosePathState::default());
-}
-
-struct StateCleanup;
-
-impl Drop for StateCleanup {
-    /// Clear thread-local state when the scenario guard is dropped.
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-/// Reset state and return the scenario cleanup guard.
-#[fixture]
-fn state_cleanup() -> StateCleanup {
-    reset_state();
-    StateCleanup
-}
+crate::scenario_state!(ClosePathState);
 
 /// Retrieve the durable shell stored by the Given step.
 fn shell() -> Result<DurableShell, TestSupportError> {
@@ -211,4 +180,4 @@ fn history_has_gained_entries(
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn close_path_history_scenario(#[from(state_cleanup)] _cleanup: StateCleanup) {}
+fn close_path_history_scenario(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}

@@ -1,13 +1,14 @@
 //! BDD coverage for shape drag history.
 
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
+
 #[path = "common/gpui_history_drag_shape_undo.rs"]
 mod common;
 #[path = "gpui_history_bdd/support.rs"]
 mod history_bdd_support;
 #[path = "gpui_history_bdd/support_open.rs"]
 mod history_bdd_support_open;
-
-use std::cell::RefCell;
 
 use common::{
     assert_shape_translated_by_delta, canvas_drag_scenario, draw_point, read_document,
@@ -17,7 +18,6 @@ use common::{
 use gauss::model::{SelItem, Shape, Vec2};
 use gpui::{Modifiers, MouseButton, Pixels, Point, TestAppContext, point, px};
 use history_bdd_support::{DurableShell, missing};
-use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use test_support::{TestSupportError, math};
@@ -32,31 +32,7 @@ struct DragState {
     history_before: Option<usize>,
 }
 
-thread_local! {
-    static STATE: RefCell<DragState> = RefCell::new(DragState::default());
-}
-
-fn with_state<R>(f: impl FnOnce(&mut DragState) -> R) -> R {
-    STATE.with(|state| f(&mut state.borrow_mut()))
-}
-
-fn reset_state() {
-    with_state(|state| *state = DragState::default());
-}
-
-struct Cleanup;
-
-impl Drop for Cleanup {
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-#[fixture]
-fn cleanup() -> Cleanup {
-    reset_state();
-    Cleanup
-}
+crate::scenario_state!(DragState);
 
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone()).ok_or_else(|| missing("Phase 0 shell"))
@@ -220,4 +196,4 @@ fn history_gained_one(
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn drag_shape_scenario(#[from(cleanup)] _cleanup: Cleanup) {}
+fn drag_shape_scenario(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}

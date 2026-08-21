@@ -5,8 +5,6 @@
 //! binary runs the feature scenario with `GpuiHarness`; common document,
 //! canvas, history, and durable-shell helpers provide the shared setup.
 
-use std::cell::RefCell;
-
 use crate::common::{
     add_square, assert_shape_translated_by_delta, canvas_bounds, read_document, read_history_len,
     simulate_document_undo,
@@ -14,7 +12,6 @@ use crate::common::{
 use crate::history_bdd_support::{DurableShell, missing};
 use gauss::model::{Document, SelItem, Shape, ShapeId, Vec2};
 use gpui::{Modifiers, MouseButton, TestAppContext, px};
-use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use test_support::{TestSupportError, TestSupportResult, math};
@@ -28,35 +25,7 @@ struct MultiDragState {
     history_before: Option<usize>,
 }
 
-thread_local! {
-    static STATE: RefCell<MultiDragState> = RefCell::new(MultiDragState::default());
-}
-
-/// Apply a closure to the multi-shape drag scenario state.
-fn with_state<R>(f: impl FnOnce(&mut MultiDragState) -> R) -> R {
-    STATE.with(|state| f(&mut state.borrow_mut()))
-}
-
-/// Reset all multi-shape drag state before or after a scenario.
-fn reset_state() {
-    with_state(|state| *state = MultiDragState::default());
-}
-
-struct Cleanup;
-
-impl Drop for Cleanup {
-    /// Clear thread-local state when the scenario guard is dropped.
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-/// Reset state and return the scenario cleanup guard.
-#[fixture]
-fn cleanup() -> Cleanup {
-    reset_state();
-    Cleanup
-}
+crate::scenario_state!(MultiDragState);
 
 /// Retrieve the durable shell stored by the Given step.
 fn shell() -> Result<DurableShell, TestSupportError> {
@@ -228,4 +197,4 @@ fn history_gained_one(
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn multi_shape_drag_scenario(#[from(cleanup)] _cleanup: Cleanup) {}
+fn multi_shape_drag_scenario(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}

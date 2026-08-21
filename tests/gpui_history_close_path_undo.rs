@@ -1,6 +1,9 @@
 //! GPUI headless integration test verifying that closing a path produces
 //! exactly one undo entry and that undo reopens it.
 
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
+
 #[path = "gpui_history_bdd/close_path.rs"]
 mod close_path;
 

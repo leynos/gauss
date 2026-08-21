@@ -1,5 +1,8 @@
 //! GPUI headless integration tests for Phase 0 anchor insertion/deletion.
 
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
+
 #[path = "gpui_history_bdd/anchor_edit.rs"]
 mod anchor_edit;
 

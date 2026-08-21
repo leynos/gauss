@@ -6,10 +6,7 @@
 //! `rstest_bdd_harness_gpui::GpuiHarness`, while shared drawing, history, and
 //! durable-shell support comes from the parent test module.
 
-use std::cell::RefCell;
-
 use gpui::TestAppContext;
-use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use test_support::TestSupportError;
@@ -25,35 +22,7 @@ struct AnchorEditState {
     initial_history_len: Option<usize>,
 }
 
-thread_local! {
-    static STATE: RefCell<AnchorEditState> = RefCell::new(AnchorEditState::default());
-}
-
-/// Apply a closure to the anchor-edit scenario state.
-fn with_state<R>(f: impl FnOnce(&mut AnchorEditState) -> R) -> R {
-    STATE.with(|state| f(&mut state.borrow_mut()))
-}
-
-/// Reset all anchor-edit state before or after a scenario.
-fn reset_state() {
-    with_state(|state| *state = AnchorEditState::default());
-}
-
-struct StateCleanup;
-
-impl Drop for StateCleanup {
-    /// Clear thread-local state when the scenario guard is dropped.
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-/// Reset state and return the scenario cleanup guard.
-#[fixture]
-fn state_cleanup() -> StateCleanup {
-    reset_state();
-    StateCleanup
-}
+crate::scenario_state!(AnchorEditState);
 
 /// Retrieve the durable shell stored by the Given step.
 fn shell() -> Result<DurableShell, TestSupportError> {
@@ -191,4 +160,4 @@ fn history_has_gained_entry(
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn anchor_edit_history_scenario(#[from(state_cleanup)] _cleanup: StateCleanup) {}
+fn anchor_edit_history_scenario(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}

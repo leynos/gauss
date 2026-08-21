@@ -6,10 +6,7 @@
 //! shared document/history helpers with the durable shell from the common
 //! history BDD support.
 
-use std::cell::RefCell;
-
 use gpui::TestAppContext;
-use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 
@@ -31,35 +28,7 @@ struct GroupingState {
     operation: Option<HistoryOperation>,
 }
 
-thread_local! {
-    static STATE: RefCell<GroupingState> = RefCell::new(GroupingState::default());
-}
-
-/// Apply a closure to the command-grouping scenario state.
-fn with_state<R>(f: impl FnOnce(&mut GroupingState) -> R) -> R {
-    STATE.with(|state| f(&mut state.borrow_mut()))
-}
-
-/// Reset all command-grouping state before or after a scenario.
-fn reset_state() {
-    with_state(|state| *state = GroupingState::default());
-}
-
-struct StateCleanup;
-
-impl Drop for StateCleanup {
-    /// Clear thread-local state when the scenario guard is dropped.
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-/// Reset state and return the scenario cleanup guard.
-#[fixture]
-fn state_cleanup() -> StateCleanup {
-    reset_state();
-    StateCleanup
-}
+crate::scenario_state!(GroupingState);
 
 /// Retrieve the durable shell stored by the Given step.
 fn shell() -> Result<DurableShell, TestSupportError> {
@@ -340,7 +309,7 @@ fn active_group_remains_closable(
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn grouped_commands(#[from(state_cleanup)] _cleanup: StateCleanup) {}
+fn grouped_commands(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
 
 /// Run the invalid end-without-begin feature scenario.
 #[scenario(
@@ -349,7 +318,7 @@ fn grouped_commands(#[from(state_cleanup)] _cleanup: StateCleanup) {}
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn end_without_begin(#[from(state_cleanup)] _cleanup: StateCleanup) {}
+fn end_without_begin(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
 
 /// Run the nested-group rejection feature scenario.
 #[scenario(
@@ -358,4 +327,4 @@ fn end_without_begin(#[from(state_cleanup)] _cleanup: StateCleanup) {}
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn nested_group(#[from(state_cleanup)] _cleanup: StateCleanup) {}
+fn nested_group(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}

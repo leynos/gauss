@@ -5,10 +5,7 @@
 //! integration binary executes the feature scenario with `GpuiHarness`, and
 //! shared setup and durable-shell utilities come from the BDD support modules.
 
-use std::cell::RefCell;
-
 use gpui::{Modifiers, MouseButton, TestAppContext};
-use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use test_support::TestSupportError;
@@ -23,35 +20,7 @@ struct DragHandleState {
     initial_history_len: Option<usize>,
 }
 
-thread_local! {
-    static STATE: RefCell<DragHandleState> = RefCell::new(DragHandleState::default());
-}
-
-/// Apply a closure to the handle-drag scenario state.
-fn with_state<R>(f: impl FnOnce(&mut DragHandleState) -> R) -> R {
-    STATE.with(|state| f(&mut state.borrow_mut()))
-}
-
-/// Reset all handle-drag state before or after a scenario.
-fn reset_state() {
-    with_state(|state| *state = DragHandleState::default());
-}
-
-struct StateCleanup;
-
-impl Drop for StateCleanup {
-    /// Clear thread-local state when the scenario guard is dropped.
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-/// Reset state and return the scenario cleanup guard.
-#[fixture]
-fn state_cleanup() -> StateCleanup {
-    reset_state();
-    StateCleanup
-}
+crate::scenario_state!(DragHandleState);
 
 /// Retrieve the durable shell stored by the Given step.
 fn shell() -> Result<DurableShell, TestSupportError> {
@@ -184,4 +153,4 @@ fn history_has_gained_entries(
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn drag_handle_history_scenario(#[from(state_cleanup)] _cleanup: StateCleanup) {}
+fn drag_handle_history_scenario(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}

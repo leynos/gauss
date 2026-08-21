@@ -21,6 +21,8 @@ pub use action_bridge::{
 };
 pub use gauss_window_border::GaussRoot;
 pub(crate) use icon_assets::{UiIcon, icon_element};
+#[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+pub use phase0_shell::DocumentHistoryState;
 pub use phase0_shell::{ExportSvgWebReady, OpenSvg, Phase0Shell, SaveSvg};
 
 /// Initialise GPUI integrations used by Gauss.
