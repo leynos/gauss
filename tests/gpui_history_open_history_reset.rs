@@ -2,6 +2,8 @@
 
 #[path = "common/gpui_history_open_history_reset.rs"]
 mod common;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 
 #[path = "gpui_history_bdd/support.rs"]
 mod history_bdd_support;
@@ -10,7 +12,7 @@ mod history_bdd_support_entity;
 #[path = "gpui_history_bdd/support_open_for_tests.rs"]
 mod history_bdd_support_open_for_tests;
 
-use std::{cell::RefCell, path::Path};
+use std::path::Path;
 
 use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};
@@ -19,42 +21,20 @@ use gauss::model::{Command, SelItem, Selection, ShapeMovement, Vec2};
 use gauss::ui::OpenSvg;
 use gpui::TestAppContext;
 use history_bdd_support::{DurableShell, missing};
-use rstest::fixture;
-use rstest_bdd_macros::{given, scenario, then, when};
+use rstest_bdd::Slot;
+use rstest_bdd_macros::{ScenarioState, given, scenario, then, when};
 use serial_test::serial;
 use test_support::{TestSupportError, TestSupportResult};
 use uuid::Uuid;
 
-#[derive(Default)]
+#[derive(Default, ScenarioState)]
 struct OpenState {
-    shell: Option<DurableShell>,
-    file: Option<TempFileGuard>,
+    shell: Slot<DurableShell>,
+    file: Slot<TempFileGuard>,
 }
 
-thread_local! {
-    static STATE: RefCell<OpenState> = RefCell::new(OpenState::default());
-}
+crate::scenario_state!(OpenState);
 
-fn with_state<R>(f: impl FnOnce(&mut OpenState) -> R) -> R {
-    STATE.with(|state| f(&mut state.borrow_mut()))
-}
-
-fn reset_state() {
-    with_state(|state| *state = OpenState::default());
-}
-struct Cleanup;
-
-impl Drop for Cleanup {
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-#[fixture]
-fn cleanup() -> Cleanup {
-    reset_state();
-    Cleanup
-}
 fn create_open_fixture() -> TestSupportResult<TempFileGuard> {
     let temp_dir = Utf8PathBuf::from_path_buf(std::env::temp_dir())
         .map_err(|_| TestSupportError::expectation("temp dir should be valid UTF-8"))?;
@@ -77,7 +57,7 @@ fn create_open_fixture() -> TestSupportResult<TempFileGuard> {
 }
 
 fn shell() -> Result<DurableShell, TestSupportError> {
-    with_state(|state| state.shell.clone()).ok_or_else(|| missing("Phase 0 shell"))
+    with_state(|state| state.shell.get()).ok_or_else(|| missing("Phase 0 shell"))
 }
 
 #[given("a fresh Phase 0 shell test window with document history and selection")]
@@ -124,8 +104,8 @@ fn seeded_shell(
         Ok(())
     })?;
     with_state(|state| {
-        state.shell = Some(shell);
-        state.file = Some(file);
+        state.shell.set(shell);
+        state.file.set(file);
     });
     Ok(())
 }
@@ -135,14 +115,8 @@ fn open_document(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     let shell = shell()?;
-    let path = with_state(|state| {
-        state
-            .file
-            .as_ref()
-            .map(TempFileGuard::path)
-            .map(Utf8PathBuf::from)
-    })
-    .ok_or_else(|| missing("open fixture path"))?;
+    let path = with_state(|state| state.file.with_ref(|file| Utf8PathBuf::from(file.path())))
+        .ok_or_else(|| missing("open fixture path"))?;
     shell.with_visual(cx, |visual_cx, _view| {
         visual_cx.dispatch_action(OpenSvg);
         visual_cx.run_until_parked();
@@ -188,4 +162,4 @@ fn selection_empty(
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn open_history_reset_scenario(#[from(cleanup)] _cleanup: Cleanup) {}
+fn open_history_reset_scenario(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}

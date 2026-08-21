@@ -12,6 +12,8 @@ mod history_bdd_support;
 mod history_bdd_support_open;
 #[path = "gpui_history_bdd/reorder.rs"]
 mod reorder;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 
 use common::{
     click_canvas_and_wait, demo_shape_id, read_document, read_selection, simulate_escape,

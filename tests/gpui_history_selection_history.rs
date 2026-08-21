@@ -6,8 +6,8 @@ mod common;
 mod history_bdd_support;
 #[path = "gpui_history_bdd/support_open.rs"]
 mod history_bdd_support_open;
-
-use std::cell::RefCell;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
 
 use common::{
     anchor_to_canvas_point, canvas_bounds, click_left_and_wait, draw_point, require_draw_shape,
@@ -16,8 +16,8 @@ use common::{
 use gauss::model::Selection;
 use gpui::{Pixels, Point, TestAppContext, point, px};
 use history_bdd_support::{DurableShell, missing};
-use rstest::fixture;
-use rstest_bdd_macros::{given, scenario, then, when};
+use rstest_bdd::Slot;
+use rstest_bdd_macros::{ScenarioState, given, scenario, then, when};
 use serial_test::serial;
 use test_support::TestSupportError;
 
@@ -33,44 +33,20 @@ fn simulate_selection_redo(visual_cx: &mut gpui::VisualTestContext) {
     visual_cx.run_until_parked();
 }
 
-#[derive(Default)]
+#[derive(Default, ScenarioState)]
 struct SelectionState {
-    shell: Option<DurableShell>,
-    select_point: Option<Point<Pixels>>,
-    clear_point: Option<Point<Pixels>>,
-    selected: Option<Selection>,
-    cleared: Option<Selection>,
-    shape_count: Option<usize>,
+    shell: Slot<DurableShell>,
+    select_point: Slot<Point<Pixels>>,
+    clear_point: Slot<Point<Pixels>>,
+    selected: Slot<Selection>,
+    cleared: Slot<Selection>,
+    shape_count: Slot<usize>,
 }
 
-thread_local! {
-    static STATE: RefCell<SelectionState> = RefCell::new(SelectionState::default());
-}
-
-fn with_state<R>(f: impl FnOnce(&mut SelectionState) -> R) -> R {
-    STATE.with(|state| f(&mut state.borrow_mut()))
-}
-
-fn reset_state() {
-    with_state(|state| *state = SelectionState::default());
-}
-
-struct Cleanup;
-
-impl Drop for Cleanup {
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-#[fixture]
-fn cleanup() -> Cleanup {
-    reset_state();
-    Cleanup
-}
+crate::scenario_state!(SelectionState);
 
 fn shell() -> Result<DurableShell, TestSupportError> {
-    with_state(|state| state.shell.clone()).ok_or_else(|| missing("Phase 0 shell"))
+    with_state(|state| state.shell.get()).ok_or_else(|| missing("Phase 0 shell"))
 }
 
 #[given("a fresh Phase 0 shell window with a drawn path in manipulate mode")]
@@ -110,10 +86,10 @@ fn drawn_path(
         Ok((select_point, clear_point, document.len()))
     })?;
     with_state(|state| {
-        state.shell = Some(shell);
-        state.select_point = Some(select_point);
-        state.clear_point = Some(clear_point);
-        state.shape_count = Some(shape_count);
+        state.shell.set(shell);
+        state.select_point.set(select_point);
+        state.clear_point.set(clear_point);
+        state.shape_count.set(shape_count);
     });
     Ok(())
 }
@@ -122,11 +98,12 @@ fn drawn_path(
 fn select_anchor(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let point = with_state(|state| state.select_point).ok_or_else(|| missing("select point"))?;
+    let point =
+        with_state(|state| state.select_point.get()).ok_or_else(|| missing("select point"))?;
     shell()?.with_visual(cx, |visual_cx, view| {
         click_left_and_wait(visual_cx, point);
         let selected = visual_cx.read(|app| view.read(app).selection().clone());
-        with_state(|state| state.selected = Some(selected));
+        with_state(|state| state.selected.set(selected));
         Ok(())
     })
 }
@@ -135,11 +112,12 @@ fn select_anchor(
 fn clear_selection(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let point = with_state(|state| state.clear_point).ok_or_else(|| missing("clear point"))?;
+    let point =
+        with_state(|state| state.clear_point.get()).ok_or_else(|| missing("clear point"))?;
     shell()?.with_visual(cx, |visual_cx, view| {
         click_left_and_wait(visual_cx, point);
         let cleared = visual_cx.read(|app| view.read(app).selection().clone());
-        with_state(|state| state.cleared = Some(cleared));
+        with_state(|state| state.cleared.set(cleared));
         Ok(())
     })
 }
@@ -175,7 +153,7 @@ fn selection_not_empty(
 fn selection_empty(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let expected = with_state(|state| state.cleared.clone());
+    let expected = with_state(|state| state.cleared.get());
     assert_selection(cx, true, expected.as_ref())
 }
 
@@ -184,7 +162,7 @@ fn selection_restored(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     let expected =
-        with_state(|state| state.selected.clone()).ok_or_else(|| missing("selected snapshot"))?;
+        with_state(|state| state.selected.get()).ok_or_else(|| missing("selected snapshot"))?;
     assert_selection(cx, false, Some(&expected))
 }
 
@@ -208,7 +186,8 @@ fn assert_selection(
 fn document_unchanged(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let expected = with_state(|state| state.shape_count).ok_or_else(|| missing("shape count"))?;
+    let expected =
+        with_state(|state| state.shape_count.get()).ok_or_else(|| missing("shape count"))?;
     shell()?.with_visual(cx, |visual_cx, view| {
         let actual = visual_cx.read(|app| view.read(app).document().len());
         if actual != expected {
@@ -226,4 +205,4 @@ fn document_unchanged(
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn selection_history_scenario(#[from(cleanup)] _cleanup: Cleanup) {}
+fn selection_history_scenario(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}

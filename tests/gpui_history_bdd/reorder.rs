@@ -1,57 +1,31 @@
 //! BDD bindings for shape reorder history.
 
-use std::cell::RefCell;
-
 use gpui::TestAppContext;
-use rstest::fixture;
-use rstest_bdd_macros::{given, scenario, then, when};
+use rstest_bdd::Slot;
+use rstest_bdd_macros::{ScenarioState, given, scenario, then, when};
 use serial_test::serial;
 
 use super::*;
 use crate::history_bdd_support::{DurableShell, missing};
 
-#[derive(Default)]
+#[derive(Default, ScenarioState)]
 struct ReorderState {
-    shell: Option<DurableShell>,
-    click_point: Option<gpui::Point<gpui::Pixels>>,
-    lower: Option<ShapeId>,
-    higher: Option<ShapeId>,
-    expected_ids: Option<Vec<ShapeId>>,
-    history_before: Option<usize>,
+    shell: Slot<DurableShell>,
+    click_point: Slot<gpui::Point<gpui::Pixels>>,
+    lower: Slot<ShapeId>,
+    higher: Slot<ShapeId>,
+    expected_ids: Slot<Vec<ShapeId>>,
+    history_before: Slot<usize>,
 }
 
-thread_local! {
-    static STATE: RefCell<ReorderState> = RefCell::new(ReorderState::default());
-}
-
-fn with_state<R>(f: impl FnOnce(&mut ReorderState) -> R) -> R {
-    STATE.with(|state| f(&mut state.borrow_mut()))
-}
-
-fn reset_state() {
-    with_state(|state| *state = ReorderState::default());
-}
-
-struct StateCleanup;
-
-impl Drop for StateCleanup {
-    fn drop(&mut self) {
-        reset_state();
-    }
-}
-
-#[fixture]
-fn state_cleanup() -> StateCleanup {
-    reset_state();
-    StateCleanup
-}
+crate::scenario_state!(ReorderState);
 
 fn shell() -> Result<DurableShell, TestSupportError> {
-    with_state(|state| state.shell.clone()).ok_or_else(|| missing("Phase 0 shell"))
+    with_state(|state| state.shell.get()).ok_or_else(|| missing("Phase 0 shell"))
 }
 
 fn shape_pair() -> Result<(ShapeId, ShapeId), TestSupportError> {
-    let (lower, higher) = with_state(|state| (state.lower, state.higher));
+    let (lower, higher) = with_state(|state| (state.lower.get(), state.higher.get()));
     Ok((
         lower.ok_or_else(|| missing("lower shape"))?,
         higher.ok_or_else(|| missing("higher shape"))?,
@@ -79,12 +53,12 @@ fn fresh_shell_with_overlapping_shapes(
             ))
         })?;
     with_state(|state| {
-        state.shell = Some(shell);
-        state.click_point = Some(points.start);
-        state.lower = Some(lower);
-        state.higher = Some(higher);
-        state.expected_ids = Some(expected_ids);
-        state.history_before = Some(history_before);
+        state.shell.set(shell);
+        state.click_point.set(points.start);
+        state.lower.set(lower);
+        state.higher.set(higher);
+        state.expected_ids.set(expected_ids);
+        state.history_before.set(history_before);
     });
     Ok(())
 }
@@ -93,8 +67,8 @@ fn fresh_shell_with_overlapping_shapes(
 fn click_overlap(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let point =
-        with_state(|state| state.click_point).ok_or_else(|| missing("overlap click point"))?;
+    let point = with_state(|state| state.click_point.get())
+        .ok_or_else(|| missing("overlap click point"))?;
     let (_, higher) = shape_pair()?;
     shell()?.with_visual(cx, |visual_cx, view| {
         click_and_verify_topmost(visual_cx, view, point, higher)
@@ -142,7 +116,7 @@ fn raise_selected_shape(
 fn shape_identifiers_are_unchanged(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let expected = with_state(|state| state.expected_ids.clone())
+    let expected = with_state(|state| state.expected_ids.get())
         .ok_or_else(|| missing("initial shape identifiers"))?;
     shell()?.with_visual(cx, |visual_cx, view| {
         let actual = require_sorted_drawn_shape_ids(&read_document(visual_cx, view))?;
@@ -189,7 +163,7 @@ fn history_has_gained(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
     count: u64,
 ) -> Result<(), TestSupportError> {
-    let before = with_state(|state| state.history_before)
+    let before = with_state(|state| state.history_before.get())
         .ok_or_else(|| missing("initial history length"))?;
     let increment = usize::try_from(count).map_err(|error| {
         TestSupportError::expectation(format!("history increment is invalid: {error}"))
@@ -230,4 +204,4 @@ fn undo_last_document_change(
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-fn reorder_history(#[from(state_cleanup)] _cleanup: StateCleanup) {}
+fn reorder_history(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
