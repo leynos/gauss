@@ -58,30 +58,40 @@ def cargo_metadata() -> dict[str, object]:
     return json.loads(result.stdout)
 
 
-def root_gauss_targets(metadata: dict[str, object]) -> Iterable[dict[str, object]]:
-    """Yield integration-test targets declared by the root ``gauss`` package."""
+def root_gauss_package(metadata: dict[str, object]) -> dict[str, object]:
+    """Return the root ``gauss`` package selected from Cargo metadata."""
     root_manifest = str(REPOSITORY_ROOT / "Cargo.toml")
     packages = metadata["packages"]
     if not isinstance(packages, list):
         raise ValueError("cargo metadata packages must be a list")
 
-    for package in packages:
-        if not isinstance(package, dict):
-            continue
-        if (
-            package.get("name") != "gauss"
-            or package.get("manifest_path") != root_manifest
-        ):
-            continue
-        targets = package.get("targets")
-        if not isinstance(targets, list):
-            raise ValueError("root gauss package targets must be a list")
-        for target in targets:
-            if isinstance(target, dict) and "test" in target.get("kind", []):
-                yield target
-        return
+    package = next(
+        (
+            package
+            for package in packages
+            if isinstance(package, dict)
+            and package.get("name") == "gauss"
+            and package.get("manifest_path") == root_manifest
+        ),
+        None,
+    )
+    if package is None:
+        raise ValueError("could not find the root gauss package in cargo metadata")
 
-    raise ValueError("could not find the root gauss package in cargo metadata")
+    return package
+
+
+def root_gauss_targets(metadata: dict[str, object]) -> Iterable[dict[str, object]]:
+    """Yield integration-test targets declared by the root ``gauss`` package."""
+    targets = root_gauss_package(metadata).get("targets")
+    if not isinstance(targets, list):
+        raise ValueError("root gauss package targets must be a list")
+
+    return (
+        target
+        for target in targets
+        if isinstance(target, dict) and "test" in target.get("kind", [])
+    )
 
 
 def category_for(source: str) -> str:
