@@ -3,7 +3,9 @@
 #[path = "common/gpui_history_selection_history.rs"]
 mod common;
 #[path = "gpui_history_bdd/support.rs"]
-mod history_support;
+mod history_bdd_support;
+#[path = "gpui_history_bdd/support_open.rs"]
+mod history_bdd_support_open;
 
 use std::cell::RefCell;
 
@@ -13,7 +15,7 @@ use common::{
 };
 use gauss::model::Selection;
 use gpui::{Pixels, Point, TestAppContext, point, px};
-use history_support::{DurableShell, missing};
+use history_bdd_support::{DurableShell, missing};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;

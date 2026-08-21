@@ -8,6 +8,8 @@ mod common;
 
 #[path = "gpui_history_bdd/support.rs"]
 mod history_bdd_support;
+#[path = "gpui_history_bdd/support_open.rs"]
+mod history_bdd_support_open;
 
 use common::{
     anchor_to_canvas_point, assert_vec2_close, canvas_bounds, click_canvas_and_wait, read_document,

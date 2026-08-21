@@ -3,7 +3,9 @@
 #[path = "common/gpui_history_draw_undo.rs"]
 mod common;
 #[path = "gpui_history_bdd/support.rs"]
-mod history_support;
+mod history_bdd_support;
+#[path = "gpui_history_bdd/support_open.rs"]
+mod history_bdd_support_open;
 
 use std::cell::RefCell;
 
@@ -11,7 +13,7 @@ use common::{canvas_bounds, click_canvas_and_wait, read_document, require_draw_s
 use gauss::model::ShapeId;
 use gauss::ui::GpuiActivatePenTool;
 use gpui::{Pixels, Point, TestAppContext, point, px};
-use history_support::{DurableShell, missing};
+use history_bdd_support::{DurableShell, missing};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;

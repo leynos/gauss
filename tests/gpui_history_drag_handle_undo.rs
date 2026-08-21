@@ -6,6 +6,8 @@ mod common;
 mod drag_handle;
 #[path = "gpui_history_bdd/support.rs"]
 mod history_bdd_support;
+#[path = "gpui_history_bdd/support_open.rs"]
+mod history_bdd_support_open;
 
 use common::{
     CanvasDragScenario, anchor_to_canvas_point, assert_vec2_close, canvas_drag_scenario,

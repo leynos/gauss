@@ -4,7 +4,11 @@
 mod common;
 
 #[path = "gpui_history_bdd/support.rs"]
-mod history_support;
+mod history_bdd_support;
+#[path = "gpui_history_bdd/support_entity.rs"]
+mod history_bdd_support_entity;
+#[path = "gpui_history_bdd/support_open_for_tests.rs"]
+mod history_bdd_support_open_for_tests;
 
 use std::{cell::RefCell, path::Path};
 
@@ -14,7 +18,7 @@ use common::{TempFileGuard, read_history_len, read_selection};
 use gauss::model::{Command, SelItem, Selection, ShapeMovement, Vec2};
 use gauss::ui::OpenSvg;
 use gpui::TestAppContext;
-use history_support::{DurableShell, missing};
+use history_bdd_support::{DurableShell, missing};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
