@@ -146,7 +146,7 @@ the state-cell borrow while using the injected `TestAppContext`.
 
 The essential shape is:
 
-```rust,no_run
+```rust,ignore
 thread_local! {
     static STATE: RefCell<HistoryState> = RefCell::new(HistoryState::default());
 }

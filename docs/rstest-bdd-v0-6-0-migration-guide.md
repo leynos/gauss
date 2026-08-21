@@ -365,7 +365,7 @@ interim thread-local pattern documented under
 Apply this migration when an existing scenario stored a `VisualTestContext`
 between steps or relied on a non-thread-local mutable world together with
 `#[from(rstest_bdd_harness_context)]`. The [Stateful GPUI scenarios with
-durable handles][users-guide-playbook] subsection of the user guide is the
+durable handles][users-guide-playbook] subsection of the user's guide is the
 in-depth reference; the steps below mirror its outline:
 
 1. **Update the dev-dependency.** In `Cargo.toml`, depend on
@@ -569,7 +569,7 @@ the playbook redirect instead.
   target.
 - [ADR-007][adr-007] records the harness-context injection contract.
 - [Stateful GPUI scenarios with durable handles][users-guide-playbook] is the
-  user-guide playbook.
+  playbook in the user's guide.
 
 ### Feature-file edits do not trigger a rebuild
 

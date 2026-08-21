@@ -1022,6 +1022,8 @@ path when `attributes = ...` is omitted:
 
 ```rust,no_run
 # use rstest_bdd_macros::scenario;
+```
+
 ### Using the GPUI harness
 
 The `rstest-bdd-harness-gpui` crate provides Graphical Processing User
@@ -1044,6 +1046,8 @@ when `attributes = ...` is omitted:
 
 ```rust,no_run
 # use rstest_bdd_macros::scenario;
+```
+
 #### GPUI panic diagnostics carry scenario context
 
 When a step running under `GpuiHarness` panics, the harness prepends the
