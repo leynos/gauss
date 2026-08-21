@@ -83,9 +83,14 @@ fn attempt_operation(cx: &mut TestAppContext) -> TestSupportResult<()> {
             });
         });
         visual_cx.run_until_parked();
-        with_state(|state| state.error = read_last_history_error(visual_cx, view));
+        read_and_store_history_error(|| read_last_history_error(visual_cx, view));
         Ok(())
     })
+}
+
+fn read_and_store_history_error(read_error: impl FnOnce() -> Option<HistoryError>) {
+    let error = read_error();
+    with_state(|state| state.error = error);
 }
 
 #[when("document undo is attempted while the group is active")]
@@ -182,3 +187,29 @@ fn undo_while_active(#[from(state_cleanup)] _cleanup: StateCleanup) {}
 )]
 #[serial]
 fn redo_while_active(#[from(state_cleanup)] _cleanup: StateCleanup) {}
+
+#[cfg(test)]
+mod tests {
+    //! Regression coverage for active-group scenario-state sequencing.
+
+    use super::*;
+
+    #[test]
+    #[serial]
+    fn history_error_read_can_reenter_scenario_state() {
+        reset_state();
+        let _cleanup = StateCleanup;
+        let expected = HistoryError::UndoWhileGroupActive;
+
+        read_and_store_history_error(|| {
+            with_state(|state| state.operation = Some(HistoryOperation::Undo));
+            Some(expected.clone())
+        });
+
+        assert_eq!(
+            with_state(|state| state.error.clone()),
+            Some(expected),
+            "history-error reads may access scenario state before their result is stored"
+        );
+    }
+}
