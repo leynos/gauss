@@ -1,57 +1,29 @@
 //! Durable GPUI handles shared by the history BDD step libraries.
+//!
+//! This module re-exports the common durable shell used by the Phase 0 BDD
+//! binaries, while the adjacent extensions provide history-specific creation
+//! and entity access for `GpuiHarness` scenario bindings.
+
+#[path = "../common/durable_shell.rs"]
+mod common_durable_shell;
+
 use gauss::ui::Phase0Shell;
-use gpui::{AnyWindowHandle, Entity, TestAppContext, VisualTestContext};
+use gpui::{Entity, TestAppContext, VisualTestContext};
 use test_support::{TestSupportError, TestSupportResult};
 
-/// Handles that may safely outlive an individual BDD step.
-///
-/// The handle stores the shell entity and window handle, so a later step can
-/// rebuild its short-lived visual context without retaining a borrow from an
-/// earlier `TestAppContext`.
-///
-/// # Examples
-///
-/// A step can retain a clone for a later step:
-///
-/// ```rust,no_run
-/// # use gpui::TestAppContext;
-/// # use crate::history_bdd_support::DurableShell;
-/// # fn open_window(cx: &mut TestAppContext) {
-/// let shell = DurableShell::open(cx);
-/// let shell_for_next_step = shell.clone();
-/// # let _ = shell_for_next_step;
-/// # }
-/// ```
-#[derive(Clone)]
-pub struct DurableShell {
-    pub(crate) entity: Entity<Phase0Shell>,
-    pub(crate) window: AnyWindowHandle,
-}
+pub use common_durable_shell::DurableShell;
 
 impl DurableShell {
-    /// Rebuild a visual context for the current harness step.
+    /// Rebuild a visual context for the current history BDD step.
     ///
-    /// The closure receives a context valid for the duration of the call and
-    /// the shell entity. Its result is returned to the step unchanged.
-    ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// # use gpui::TestAppContext;
-    /// # use crate::history_bdd_support::DurableShell;
-    /// # use test_support::TestSupportResult;
-    /// # fn inspect(shell: &DurableShell, cx: &mut TestAppContext) -> TestSupportResult<()> {
-    /// shell.with_visual(cx, |_visual_cx, _shell_entity| Ok(()))?;
-    /// # Ok(())
-    /// # }
-    /// ```
+    /// The history scenario binaries use this compatibility name while sharing
+    /// the durable handle implementation with the broader GPUI test suite.
     pub fn with_visual<R>(
         &self,
         cx: &mut TestAppContext,
         f: impl FnOnce(&mut VisualTestContext, &Entity<Phase0Shell>) -> TestSupportResult<R>,
     ) -> TestSupportResult<R> {
-        let mut visual_cx = VisualTestContext::from_window(self.window, cx);
-        f(&mut visual_cx, &self.entity)
+        self.with_visual_cx(cx, f)
     }
 }
 

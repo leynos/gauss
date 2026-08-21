@@ -1,4 +1,10 @@
-//! BDD bindings for anchor insertion and deletion history.
+//! BDD step bindings for anchor insertion and deletion history.
+//!
+//! The steps build a two-anchor path, exercise midpoint insertion and
+//! deletion, and verify the resulting undo/redo history from the associated
+//! feature scenario. The integration binary runs the scenario through
+//! `rstest_bdd_harness_gpui::GpuiHarness`, while shared drawing, history, and
+//! durable-shell support comes from the parent test module.
 
 use std::cell::RefCell;
 
@@ -23,10 +29,12 @@ thread_local! {
     static STATE: RefCell<AnchorEditState> = RefCell::new(AnchorEditState::default());
 }
 
+/// Apply a closure to the anchor-edit scenario state.
 fn with_state<R>(f: impl FnOnce(&mut AnchorEditState) -> R) -> R {
     STATE.with(|state| f(&mut state.borrow_mut()))
 }
 
+/// Reset all anchor-edit state before or after a scenario.
 fn reset_state() {
     with_state(|state| *state = AnchorEditState::default());
 }
@@ -34,21 +42,25 @@ fn reset_state() {
 struct StateCleanup;
 
 impl Drop for StateCleanup {
+    /// Clear thread-local state when the scenario guard is dropped.
     fn drop(&mut self) {
         reset_state();
     }
 }
 
+/// Reset state and return the scenario cleanup guard.
 #[fixture]
 fn state_cleanup() -> StateCleanup {
     reset_state();
     StateCleanup
 }
 
+/// Retrieve the durable shell stored by the Given step.
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone()).ok_or_else(|| missing("Phase 0 shell"))
 }
 
+/// Prepare a shell containing a two-anchor path and its history baseline.
 #[given("a fresh Phase 0 shell window with a two-anchor path")]
 fn fresh_shell_with_two_anchor_path(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -73,6 +85,7 @@ fn fresh_shell_with_two_anchor_path(
     Ok(())
 }
 
+/// Insert an anchor at the midpoint recorded during setup.
 #[when("an anchor is inserted at the path midpoint")]
 fn insert_midpoint_anchor(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -85,6 +98,7 @@ fn insert_midpoint_anchor(
     })
 }
 
+/// Delete the selected midpoint anchor.
 #[when("the inserted anchor is deleted")]
 fn delete_midpoint_anchor(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -92,6 +106,7 @@ fn delete_midpoint_anchor(
     shell()?.with_visual(cx, delete_selected_anchor)
 }
 
+/// Undo the most recent anchor-edit document change.
 #[when("the last document change is undone")]
 fn undo_last_change(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -102,6 +117,7 @@ fn undo_last_change(
     })
 }
 
+/// Redo the most recent undone anchor-edit change.
 #[when("the last document change is redone")]
 fn redo_last_change(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -112,6 +128,7 @@ fn redo_last_change(
     })
 }
 
+/// Assert the path's anchor and segment counts.
 #[then("the path has {anchors:usize} anchors and {segments:usize} segments")]
 fn path_has_counts(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -129,6 +146,7 @@ fn path_has_counts(
     })
 }
 
+/// Assert the path's anchor count and its single segment.
 #[then("the path has {anchors:usize} anchors and 1 segment")]
 fn path_has_one_segment(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -137,6 +155,7 @@ fn path_has_one_segment(
     path_has_counts(cx, anchors, 1)
 }
 
+/// Assert the document history increased by the requested number of entries.
 #[then("the document history has gained {entries:usize} entries")]
 fn history_has_gained_entries(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -156,6 +175,7 @@ fn history_has_gained_entries(
     })
 }
 
+/// Assert the singular history-entry form using the shared count check.
 #[then("the document history has gained {entries:usize} entry")]
 fn history_has_gained_entry(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -164,6 +184,7 @@ fn history_has_gained_entry(
     history_has_gained_entries(cx, entries)
 }
 
+/// Run the anchor insertion and deletion history feature scenario.
 #[scenario(
     path = "tests/features/history_anchor_edit_undo.feature",
     name = "Anchor insertion and deletion round-trip through undo and redo",

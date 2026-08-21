@@ -11,7 +11,10 @@ mod history_bdd_support;
 #[path = "gpui_history_bdd/support_open_for_tests.rs"]
 mod history_bdd_support_open_for_tests;
 
-use common::{read_document, read_history_len, simulate_document_undo};
+use common::{
+    DocumentHistoryState, read_document, read_history_len, read_history_state,
+    simulate_document_undo,
+};
 use gauss::model::history::HistoryError;
 use gauss::model::{Command, Document, ShapeId, ShapeMovement, Vec2};
 use gauss::ui::Phase0Shell;

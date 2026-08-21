@@ -1,4 +1,9 @@
-//! BDD bindings for Bezier-handle drag history.
+//! BDD step bindings for Bezier-handle drag history.
+//!
+//! The steps select and drag a Bezier handle, then verify that undo restores
+//! both the anchor and handle while creating one history entry. The parent
+//! integration binary executes the feature scenario with `GpuiHarness`, and
+//! shared setup and durable-shell utilities come from the BDD support modules.
 
 use std::cell::RefCell;
 
@@ -22,10 +27,12 @@ thread_local! {
     static STATE: RefCell<DragHandleState> = RefCell::new(DragHandleState::default());
 }
 
+/// Apply a closure to the handle-drag scenario state.
 fn with_state<R>(f: impl FnOnce(&mut DragHandleState) -> R) -> R {
     STATE.with(|state| f(&mut state.borrow_mut()))
 }
 
+/// Reset all handle-drag state before or after a scenario.
 fn reset_state() {
     with_state(|state| *state = DragHandleState::default());
 }
@@ -33,21 +40,25 @@ fn reset_state() {
 struct StateCleanup;
 
 impl Drop for StateCleanup {
+    /// Clear thread-local state when the scenario guard is dropped.
     fn drop(&mut self) {
         reset_state();
     }
 }
 
+/// Reset state and return the scenario cleanup guard.
 #[fixture]
 fn state_cleanup() -> StateCleanup {
     reset_state();
     StateCleanup
 }
 
+/// Retrieve the durable shell stored by the Given step.
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone()).ok_or_else(|| missing("Phase 0 shell"))
 }
 
+/// Prepare a selected Bezier handle and record its original geometry.
 #[given("a fresh Phase 0 shell window with a selected Bezier handle")]
 fn fresh_shell_with_handle(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -66,6 +77,7 @@ fn fresh_shell_with_handle(
     Ok(())
 }
 
+/// Drag the selected Bezier handle by the scenario's configured delta.
 #[when("the selected Bezier handle is dragged")]
 fn drag_selected_handle(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -82,6 +94,7 @@ fn drag_selected_handle(
     })
 }
 
+/// Undo the handle-drag document change.
 #[when("the last document change is undone")]
 fn undo_last_change(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -92,6 +105,7 @@ fn undo_last_change(
     })
 }
 
+/// Assert the anchor stays fixed while its outgoing handle moves.
 #[then("the anchor stays fixed and its outgoing handle moves by the drag delta")]
 fn anchor_fixed_handle_moved(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -121,6 +135,7 @@ fn anchor_fixed_handle_moved(
     })
 }
 
+/// Assert that undo restored the anchor and outgoing handle.
 #[then("the anchor and outgoing handle return to their positions before the drag")]
 fn anchor_and_handle_restored(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -142,6 +157,7 @@ fn anchor_and_handle_restored(
     })
 }
 
+/// Assert the document history increased by the requested number of entries.
 #[then("the document history has gained {entries:usize} entry")]
 fn history_has_gained_entries(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -161,6 +177,7 @@ fn history_has_gained_entries(
     })
 }
 
+/// Run the Bezier-handle drag undo and restoration feature scenario.
 #[scenario(
     path = "tests/features/history_drag_handle_undo.feature",
     name = "Dragging a handle creates one undo entry and undo restores it",

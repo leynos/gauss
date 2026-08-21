@@ -418,7 +418,7 @@ rstest-bdd-design.md#2761-borrow-constraint-exposed-by-gpui-adoption
 https://doc.rust-lang.org/nomicon/borrow-splitting.html
 
 [users-guide-playbook]:
-users-guide.md#stateful-gpui-scenarios-with-durable-handles
+rstest-bdd-users-guide.md#stateful-gpui-scenarios-with-durable-handles
 
 ## Migration checklist
 

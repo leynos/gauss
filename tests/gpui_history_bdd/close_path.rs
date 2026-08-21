@@ -1,4 +1,10 @@
-//! BDD bindings for close-path history.
+//! BDD step bindings for closing and reopening a path through history.
+//!
+//! The steps draw an open three-anchor path, close it at the first anchor,
+//! and verify that undo restores the open state. The parent integration binary
+//! executes the feature scenario with `GpuiHarness`; shared canvas, document,
+//! history, and durable-shell utilities are imported from the test support
+//! modules.
 
 use std::cell::RefCell;
 
@@ -25,10 +31,12 @@ thread_local! {
     static STATE: RefCell<ClosePathState> = RefCell::new(ClosePathState::default());
 }
 
+/// Apply a closure to the close-path scenario state.
 fn with_state<R>(f: impl FnOnce(&mut ClosePathState) -> R) -> R {
     STATE.with(|state| f(&mut state.borrow_mut()))
 }
 
+/// Reset all close-path state before or after a scenario.
 fn reset_state() {
     with_state(|state| *state = ClosePathState::default());
 }
@@ -36,21 +44,25 @@ fn reset_state() {
 struct StateCleanup;
 
 impl Drop for StateCleanup {
+    /// Clear thread-local state when the scenario guard is dropped.
     fn drop(&mut self) {
         reset_state();
     }
 }
 
+/// Reset state and return the scenario cleanup guard.
 #[fixture]
 fn state_cleanup() -> StateCleanup {
     reset_state();
     StateCleanup
 }
 
+/// Retrieve the durable shell stored by the Given step.
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone()).ok_or_else(|| missing("Phase 0 shell"))
 }
 
+/// Prepare an open three-anchor path and record its initial state.
 #[given("a fresh Phase 0 shell window with an open three-anchor path")]
 fn fresh_shell_with_open_path(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -100,6 +112,7 @@ fn fresh_shell_with_open_path(
     Ok(())
 }
 
+/// Close the path by clicking the first anchor.
 #[when("the path is closed by clicking its first anchor")]
 fn close_path_at_first_anchor(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -117,6 +130,7 @@ fn close_path_at_first_anchor(
     })
 }
 
+/// Undo the close-path document change.
 #[when("the last document change is undone")]
 fn undo_last_change(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -127,6 +141,7 @@ fn undo_last_change(
     })
 }
 
+/// Assert the path's closed flag and anchor count.
 fn assert_path_state(
     cx: &mut TestAppContext,
     expected_closed: bool,
@@ -151,6 +166,7 @@ fn assert_path_state(
     })
 }
 
+/// Assert that the path is closed with the expected number of anchors.
 #[then("the path is closed with {anchors:usize} anchors")]
 fn path_is_closed(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -159,6 +175,7 @@ fn path_is_closed(
     assert_path_state(cx, true, anchors)
 }
 
+/// Assert that the path is open with the expected number of anchors.
 #[then("the path is open with {anchors:usize} anchors")]
 fn path_is_open(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -167,6 +184,7 @@ fn path_is_open(
     assert_path_state(cx, false, anchors)
 }
 
+/// Assert the document history increased by the requested number of entries.
 #[then("the document history has gained {entries:usize} entry")]
 fn history_has_gained_entries(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -186,6 +204,7 @@ fn history_has_gained_entries(
     })
 }
 
+/// Run the close-path undo and reopen feature scenario.
 #[scenario(
     path = "tests/features/history_close_path_undo.feature",
     name = "Closing a path creates one undo entry and undo reopens it",

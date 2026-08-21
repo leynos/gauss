@@ -26,6 +26,8 @@ mod selection_history;
 mod style_controls;
 #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
 mod test_helpers;
+#[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
+mod test_history;
 mod tool_commands;
 mod tool_rail;
 mod view;

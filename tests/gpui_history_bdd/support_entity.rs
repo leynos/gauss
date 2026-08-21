@@ -1,4 +1,9 @@
-//! Read-only shell-entity access for history scenario binaries that need it.
+//! Read-only shell-entity access for history scenario binaries.
+//!
+//! This extension exposes the durable shell's entity to steps that must read
+//! state after a visual context has been released. The parent integration
+//! binaries use it alongside `GpuiHarness`, the durable-shell support module,
+//! and the shared history helpers.
 
 use gauss::ui::Phase0Shell;
 use gpui::Entity;

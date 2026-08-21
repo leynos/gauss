@@ -1,7 +1,12 @@
 //! Test-seam shell construction for history scenario binaries that need it.
+//!
+//! This extension opens a Phase 0 shell with the test-only history seams used
+//! by command-grouping scenarios. The parent integration binaries run those
+//! scenarios with `GpuiHarness`, reusing the durable-shell and shared support
+//! modules for setup and state inspection.
 
 use gauss::ui::Phase0Shell;
-use gpui::{TestAppContext, VisualContext};
+use gpui::TestAppContext;
 
 use crate::{
     common::{ensure_initial_draw, init_test_app},
@@ -28,9 +33,6 @@ impl DurableShell {
         let (entity, visual_cx) =
             cx.add_window_view(|_window, view_cx| Phase0Shell::new_for_tests(view_cx));
         ensure_initial_draw(visual_cx);
-        Self {
-            entity,
-            window: visual_cx.window_handle(),
-        }
+        Self::new(entity, visual_cx)
     }
 }

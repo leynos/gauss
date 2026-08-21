@@ -13,7 +13,7 @@ use common::{
     anchor_to_canvas_point, canvas_bounds, click_left_and_wait, draw_point, require_draw_shape,
     simulate_escape,
 };
-use gauss::model::Selection;
+use gauss::model::{Document, Selection};
 use gpui::{Pixels, Point, TestAppContext, point, px};
 use history_bdd_support::{DurableShell, missing};
 use rstest_bdd::Slot;
@@ -40,7 +40,7 @@ struct SelectionState {
     clear_point: Slot<Point<Pixels>>,
     selected: Slot<Selection>,
     cleared: Slot<Selection>,
-    shape_count: Slot<usize>,
+    document: Slot<Document>,
 }
 
 crate::scenario_state!(SelectionState);
@@ -59,7 +59,7 @@ fn drawn_path(
 ) -> Result<(), TestSupportError> {
     reset_state();
     let shell = DurableShell::open(cx);
-    let (select_point, clear_point, shape_count) = shell.with_visual(cx, |visual_cx, view| {
+    let (select_point, clear_point, document) = shell.with_visual(cx, |visual_cx, view| {
         let bounds = canvas_bounds(visual_cx)?;
         let width = f32::from(bounds.size.width);
         let height = f32::from(bounds.size.height);
@@ -83,13 +83,13 @@ fn drawn_path(
             bounds.origin.y + px((height - 12.0).max(1.0)),
         );
         simulate_escape(visual_cx);
-        Ok((select_point, clear_point, document.len()))
+        Ok((select_point, clear_point, document))
     })?;
     with_state(|state| {
         state.shell.set(shell);
         state.select_point.set(select_point);
         state.clear_point.set(clear_point);
-        state.shape_count.set(shape_count);
+        state.document.set(document);
     });
     Ok(())
 }
@@ -187,13 +187,13 @@ fn document_unchanged(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     let expected =
-        with_state(|state| state.shape_count.get()).ok_or_else(|| missing("shape count"))?;
+        with_state(|state| state.document.get()).ok_or_else(|| missing("document snapshot"))?;
     shell()?.with_visual(cx, |visual_cx, view| {
-        let actual = visual_cx.read(|app| view.read(app).document().len());
+        let actual = visual_cx.read(|app| view.read(app).document().clone());
         if actual != expected {
-            return Err(TestSupportError::expectation(format!(
-                "selection undo/redo changed document shape count from {expected} to {actual}"
-            )));
+            return Err(TestSupportError::expectation(
+                "selection undo/redo changed the document".to_owned(),
+            ));
         }
         Ok(())
     })

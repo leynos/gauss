@@ -1268,7 +1268,7 @@ The second snippet shows the `#[given]` that opens a fresh window. It
 defensively re-runs the reset before storing handles and observes the
 `stale_window_count` invariant that the regression suite encodes:
 
-```rust,no_run
+```rust,ignore
 # use rstest_bdd_macros::given;
 # fn reset_state_before_assignment() {}
 # fn with_state<R>(_: impl FnOnce(&mut ()) -> R) -> R { unimplemented!() }
@@ -1305,7 +1305,7 @@ borrowed context must come from the same `TestAppContext`; the
 means an invariant of the playbook has been violated, not a legitimate test
 outcome. This form also passes the repository's pedantic lint profile:
 
-```rust,no_run
+```rust,ignore
 # use rstest_bdd_macros::{then, when};
 # fn current_handles() -> (gpui::Entity<()>, gpui::AnyWindowHandle) { unimplemented!() }
 #[when("the view is updated through a reconstructed visual context")]
@@ -1413,8 +1413,8 @@ scaffolding — into one shared module per consuming crate, rather than copying 
 into every test file. This is the v0.6.0 shape, and it is deliberately explicit.
 Once roadmap items 11.1.3 and 11.1.4 ship (`ScenarioStore<T>` and the
 cleanup-guard fixture macro), the shared block shrinks to a single import and the
-`#[scenario]` cleanup parameter is generated for you. Adopt the pattern now and
-expect to shrink it then.
+`#[scenario]` cleanup parameter is generated automatically. Adopt the pattern
+now and expect to shrink it then.
 
 ##### Why one shared module works
 

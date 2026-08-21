@@ -1,4 +1,9 @@
-//! BDD bindings for one-entry multi-shape drag history.
+//! BDD step bindings for one-entry multi-shape drag history.
+//!
+//! The steps create two selected shapes, drag them together, and verify that
+//! one history entry moves or restores both shapes. The parent integration
+//! binary runs the feature scenario with `GpuiHarness`; common document,
+//! canvas, history, and durable-shell helpers provide the shared setup.
 
 use std::cell::RefCell;
 
@@ -27,10 +32,12 @@ thread_local! {
     static STATE: RefCell<MultiDragState> = RefCell::new(MultiDragState::default());
 }
 
+/// Apply a closure to the multi-shape drag scenario state.
 fn with_state<R>(f: impl FnOnce(&mut MultiDragState) -> R) -> R {
     STATE.with(|state| f(&mut state.borrow_mut()))
 }
 
+/// Reset all multi-shape drag state before or after a scenario.
 fn reset_state() {
     with_state(|state| *state = MultiDragState::default());
 }
@@ -38,21 +45,25 @@ fn reset_state() {
 struct Cleanup;
 
 impl Drop for Cleanup {
+    /// Clear thread-local state when the scenario guard is dropped.
     fn drop(&mut self) {
         reset_state();
     }
 }
 
+/// Reset state and return the scenario cleanup guard.
 #[fixture]
 fn cleanup() -> Cleanup {
     reset_state();
     Cleanup
 }
 
+/// Retrieve the durable shell stored by the Given step.
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone()).ok_or_else(|| missing("Phase 0 shell"))
 }
 
+/// Find a shape by identifier and report a scenario-specific missing error.
 fn find_shape<'a>(
     document: &'a Document,
     id: ShapeId,
@@ -63,6 +74,7 @@ fn find_shape<'a>(
         .ok_or_else(|| TestSupportError::missing("shape", format!("shape {id:?}: {context}")))
 }
 
+/// Calculate the centre of a shape's anchor bounding box.
 fn shape_bbox_centre(shape: &Shape) -> Result<Vec2, TestSupportError> {
     let first = shape.path.anchors.first().ok_or_else(|| {
         TestSupportError::missing("shape anchor", "computing bounding box centre")
@@ -81,6 +93,7 @@ fn shape_bbox_centre(shape: &Shape) -> Result<Vec2, TestSupportError> {
     ))
 }
 
+/// Prepare two selected shapes and record their pre-drag geometry.
 #[given("a fresh Phase 0 shell window with two selected shapes")]
 fn two_selected_shapes(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -126,6 +139,7 @@ fn two_selected_shapes(
     Ok(())
 }
 
+/// Drag both selected shapes together by the configured delta.
 #[when("the selected shapes are dragged together")]
 fn drag_selected_shapes(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -148,6 +162,7 @@ fn drag_selected_shapes(
     })
 }
 
+/// Undo the multi-shape drag document change.
 #[when("the last document change is undone")]
 fn undo_drag(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -158,6 +173,7 @@ fn undo_drag(
     })
 }
 
+/// Assert that both selected shapes moved by the drag delta.
 #[then("both selected shapes move by the drag delta")]
 fn shapes_moved(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -166,6 +182,7 @@ fn shapes_moved(
     assert_shapes_at_delta(cx, delta)
 }
 
+/// Assert that undo restored both selected shapes.
 #[then("both selected shapes return to their positions before the drag")]
 fn shapes_restored(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -173,6 +190,7 @@ fn shapes_restored(
     assert_shapes_at_delta(cx, Vec2::ZERO)
 }
 
+/// Assert both stored shapes are translated by the supplied delta.
 fn assert_shapes_at_delta(cx: &mut TestAppContext, delta: Vec2) -> Result<(), TestSupportError> {
     let first = with_state(|state| state.first.clone()).ok_or_else(|| missing("first shape"))?;
     let second = with_state(|state| state.second.clone()).ok_or_else(|| missing("second shape"))?;
@@ -185,6 +203,7 @@ fn assert_shapes_at_delta(cx: &mut TestAppContext, delta: Vec2) -> Result<(), Te
     })
 }
 
+/// Assert the multi-shape drag created exactly one history entry.
 #[then("the document history has gained 1 entry")]
 fn history_gained_one(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -202,6 +221,7 @@ fn history_gained_one(
     })
 }
 
+/// Run the multi-shape drag undo and restoration feature scenario.
 #[scenario(
     path = "tests/features/history_multi_shape_drag_undo.feature",
     name = "Dragging multiple shapes creates one undo entry and undo restores them",

@@ -1,4 +1,10 @@
-//! BDD bindings for document command grouping history.
+//! BDD step bindings for document command grouping history.
+//!
+//! The steps cover successful grouped moves and invalid group transitions,
+//! matching the command-grouping feature scenarios. The parent integration
+//! binary runs each scenario with `GpuiHarness`, and this module combines
+//! shared document/history helpers with the durable shell from the common
+//! history BDD support.
 
 use std::cell::RefCell;
 
@@ -18,6 +24,7 @@ struct GroupingState {
     shell: Option<DurableShell>,
     shape: Option<ShapeId>,
     history_before: Option<usize>,
+    history_state_before: Option<DocumentHistoryState>,
     document_before: Option<Document>,
     anchor_before: Option<Vec2>,
     error: Option<HistoryError>,
@@ -28,10 +35,12 @@ thread_local! {
     static STATE: RefCell<GroupingState> = RefCell::new(GroupingState::default());
 }
 
+/// Apply a closure to the command-grouping scenario state.
 fn with_state<R>(f: impl FnOnce(&mut GroupingState) -> R) -> R {
     STATE.with(|state| f(&mut state.borrow_mut()))
 }
 
+/// Reset all command-grouping state before or after a scenario.
 fn reset_state() {
     with_state(|state| *state = GroupingState::default());
 }
@@ -39,25 +48,30 @@ fn reset_state() {
 struct StateCleanup;
 
 impl Drop for StateCleanup {
+    /// Clear thread-local state when the scenario guard is dropped.
     fn drop(&mut self) {
         reset_state();
     }
 }
 
+/// Reset state and return the scenario cleanup guard.
 #[fixture]
 fn state_cleanup() -> StateCleanup {
     reset_state();
     StateCleanup
 }
 
+/// Retrieve the durable shell stored by the Given step.
 fn shell() -> Result<DurableShell, TestSupportError> {
     with_state(|state| state.shell.clone()).ok_or_else(|| missing("Phase 0 shell"))
 }
 
+/// Retrieve the history length recorded during scenario setup.
 fn history_before() -> Result<usize, TestSupportError> {
     with_state(|state| state.history_before).ok_or_else(|| missing("initial history length"))
 }
 
+/// Begin a document command group and surface any history error.
 fn begin_group(durable_shell: &DurableShell, cx: &mut TestAppContext) -> TestSupportResult<()> {
     durable_shell.with_visual(cx, |visual_cx, view| {
         visual_cx.update(|_window, app| {
@@ -72,10 +86,12 @@ fn begin_group(durable_shell: &DurableShell, cx: &mut TestAppContext) -> TestSup
     })
 }
 
+/// Convert a group-transition error into a scenario expectation failure.
 fn grouping_error(context: &str, error: &HistoryError) -> TestSupportError {
     TestSupportError::expectation(format!("{context} failed: {error}"))
 }
 
+/// Assert that the recorded history error matches the expected error.
 fn expect_history_error(expected: HistoryError, context: &str) -> TestSupportResult<()> {
     let actual = with_state(|state| state.error.clone());
     if actual != Some(expected) {
@@ -86,6 +102,7 @@ fn expect_history_error(expected: HistoryError, context: &str) -> TestSupportRes
     Ok(())
 }
 
+/// Open a test shell and record its initial history length.
 fn fresh_shell(cx: &mut TestAppContext) -> TestSupportResult<DurableShell> {
     reset_state();
     let shell = DurableShell::open_for_tests(cx);
@@ -98,6 +115,7 @@ fn fresh_shell(cx: &mut TestAppContext) -> TestSupportResult<DurableShell> {
     Ok(shell)
 }
 
+/// Prepare a test shell containing one shape and its baseline geometry.
 #[given("a fresh Phase 0 shell test window with one shape")]
 fn fresh_shell_with_shape(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -108,11 +126,8 @@ fn fresh_shell_with_shape(
         shell.with_visual(cx, |visual_cx, view| {
             replace_document_for_grouping_test(visual_cx, view, document_with_one_shape(shape));
             let document = read_document(visual_cx, view);
-            Ok((
-                read_history_len(visual_cx, view),
-                document.clone(),
-                first_anchor_for_shape(&document, shape, "before grouped command")?,
-            ))
+            let anchor_before = first_anchor_for_shape(&document, shape, "before grouped command")?;
+            Ok((read_history_len(visual_cx, view), document, anchor_before))
         })?;
     with_state(|state| {
         state.shape = Some(shape);
@@ -123,6 +138,7 @@ fn fresh_shell_with_shape(
     Ok(())
 }
 
+/// Commit two moves as one grouped document command.
 #[when("two shape moves are committed in one document command group")]
 fn commit_two_grouped_moves(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -152,6 +168,7 @@ fn commit_two_grouped_moves(
     })
 }
 
+/// Assert the grouped command produced the requested history increment.
 #[then("the document history has gained {count:u64} entry")]
 fn history_gained(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -172,6 +189,7 @@ fn history_gained(
     })
 }
 
+/// Assert the shape reflects both moves committed in the group.
 #[then("the shape reflects both grouped moves")]
 fn shape_reflects_grouped_moves(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -190,6 +208,7 @@ fn shape_reflects_grouped_moves(
     })
 }
 
+/// Undo the grouped document command.
 #[when("the last document change is undone")]
 fn undo_last_document_change(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -200,6 +219,7 @@ fn undo_last_document_change(
     })
 }
 
+/// Assert undo restores the shape's pre-group position.
 #[then("the shape returns to its position before the grouped moves")]
 fn shape_returns_before_grouped_moves(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -214,6 +234,7 @@ fn shape_returns_before_grouped_moves(
     })
 }
 
+/// Prepare a fresh test shell for invalid group-transition scenarios.
 #[given("a fresh Phase 0 shell test window")]
 fn fresh_test_shell(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -221,6 +242,7 @@ fn fresh_test_shell(
     fresh_shell(cx).map(|_| ())
 }
 
+/// Attempt to end a document command group that was never begun.
 #[when("a document command group is ended without being begun")]
 fn end_group_without_begin(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -236,11 +258,13 @@ fn end_group_without_begin(
     Ok(())
 }
 
+/// Assert the invalid end operation reports no active group.
 #[then("the history error is no active group")]
 fn history_error_is_no_active_group() -> Result<(), TestSupportError> {
     expect_history_error(HistoryError::NoActiveGroup, "no active group error")
 }
 
+/// Assert the invalid group transition left history unchanged.
 #[then("the document history is unchanged")]
 fn history_is_unchanged(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -257,6 +281,7 @@ fn history_is_unchanged(
     })
 }
 
+/// Prepare a test shell with an active document command group.
 #[given("a fresh Phase 0 shell test window with an active document command group")]
 fn fresh_shell_with_active_group(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -265,6 +290,7 @@ fn fresh_shell_with_active_group(
     begin_group(&shell, cx)
 }
 
+/// Attempt to begin a nested document command group.
 #[when("another document command group is begun")]
 fn begin_nested_group(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -280,6 +306,7 @@ fn begin_nested_group(
     Ok(())
 }
 
+/// Assert the nested group attempt reports an active group.
 #[then("the history error is group already active")]
 fn history_error_is_group_already_active() -> Result<(), TestSupportError> {
     expect_history_error(
@@ -288,6 +315,7 @@ fn history_error_is_group_already_active() -> Result<(), TestSupportError> {
     )
 }
 
+/// Assert the original active group can still be closed.
 #[then("the active document command group remains closable")]
 fn active_group_remains_closable(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
@@ -305,6 +333,7 @@ fn active_group_remains_closable(
     })
 }
 
+/// Run the successful grouped-command feature scenario.
 #[scenario(
     path = "tests/features/history_command_grouping_undo.feature",
     name = "Grouped document commands collapse to one undo step",
@@ -313,6 +342,7 @@ fn active_group_remains_closable(
 #[serial]
 fn grouped_commands(#[from(state_cleanup)] _cleanup: StateCleanup) {}
 
+/// Run the invalid end-without-begin feature scenario.
 #[scenario(
     path = "tests/features/history_command_grouping_undo.feature",
     name = "Ending a group without beginning one preserves history",
@@ -321,6 +351,7 @@ fn grouped_commands(#[from(state_cleanup)] _cleanup: StateCleanup) {}
 #[serial]
 fn end_without_begin(#[from(state_cleanup)] _cleanup: StateCleanup) {}
 
+/// Run the nested-group rejection feature scenario.
 #[scenario(
     path = "tests/features/history_command_grouping_undo.feature",
     name = "Beginning a nested group preserves history",

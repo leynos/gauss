@@ -1,7 +1,12 @@
 //! Normal-shell construction for history scenario binaries that drive the UI.
+//!
+//! This extension opens and initially draws a normal Phase 0 shell for the
+//! interaction-driven anchor, path, drag, and reorder scenarios. The parent
+//! integration binaries invoke it through `GpuiHarness` and combine it with
+//! the durable-shell and shared canvas support modules.
 
 use gauss::ui::Phase0Shell;
-use gpui::{TestAppContext, VisualContext};
+use gpui::TestAppContext;
 
 use crate::{
     common::{ensure_initial_draw, init_test_app},
@@ -27,9 +32,6 @@ impl DurableShell {
         init_test_app(cx);
         let (entity, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
         ensure_initial_draw(visual_cx);
-        Self {
-            entity,
-            window: visual_cx.window_handle(),
-        }
+        Self::new(entity, visual_cx)
     }
 }
