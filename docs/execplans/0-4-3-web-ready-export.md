@@ -277,8 +277,7 @@ Validation checkpoint:
 Stage D: Expand behavioural (BDD) coverage
 
 - Extend `crates/gauss-svg/tests/features/metadata_round_trip.feature` and
-  `crates/gauss-svg/tests/metadata_round_trip_bdd.rs` with web-ready
-  scenarios:
+  `crates/gauss-svg/tests/metadata_round_trip_bdd.rs` with web-ready scenarios:
   - happy: web-ready export strips Gauss metadata while preserving renderable
     path/style data.
   - unhappy: web-ready checked export reports missing referenced resources.

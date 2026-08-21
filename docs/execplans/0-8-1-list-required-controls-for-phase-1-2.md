@@ -113,8 +113,8 @@ or one coding agent performs the edits sequentially.
   module-level `//!` comments, public API docs where applicable, no file above
   400 lines, and no lint suppressions except as a last resort.
 - Required validation for the final implementation remains:
-  `rstest` unit tests, `rstest-bdd` 0.6.0-beta3 behaviour tests, `#[gpui::test]`
-  coverage, `make check-fmt`, `make lint`, and `make test`.
+  `rstest` unit tests, `rstest-bdd` 0.6.0-beta3 behaviour tests,
+  `#[gpui::test]` coverage, `make check-fmt`, `make lint`, and `make test`.
 - Update `docs/gauss-architecture-design.md` with any design decision required
   to explain the chosen audit source of truth.
 - Update `docs/users-guide.md` only if the implementation introduces a new

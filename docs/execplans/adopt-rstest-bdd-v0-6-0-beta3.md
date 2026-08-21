@@ -326,9 +326,9 @@ There are two distinct test styles in the root crate's `tests/` directory:
 
 - Non-GPUI BDD suites (`tests/i18n_bdd.rs`, `tests/a11y_service_bdd.rs`,
   `tests/widget_capability_audit_bdd/`, `tests/undo_entry_count_bdd/`,
-  `tests/a11y_service_routing_bdd.rs`) using `#[scenario]`/`#[given]`/ `#[when]`
-  /`#[then]` with plain `rstest` fixtures. `tests/i18n_bdd.rs` is a clean
-  reference for the current binding style.
+  `tests/a11y_service_routing_bdd.rs`) using `#[scenario]`/`#[given]`/
+  `#[when]` /`#[then]` with plain `rstest` fixtures. `tests/i18n_bdd.rs` is a
+  clean reference for the current binding style.
 - Raw GPUI integration tests (`tests/gpui_*.rs`, 40+ files) using
   `#[gpui::test]` directly with a shared helper module `tests/common/mod.rs`.
   These are **not** currently BDD; they are ordinary GPUI tests.

@@ -78,7 +78,7 @@ fn insert_shape(
             })
         })?;
         A11Y_STATE.with(|cell| cell.borrow_mut().inserted_shape_id = Some(inserted_id));
-        common::ensure_initial_draw(visual_cx);
+        lifecycle::ensure_initial_draw(visual_cx);
         Ok(())
     })
 }
@@ -100,7 +100,7 @@ fn render_without_state_changes(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     with_shell(cx, |visual_cx, _view| {
-        common::ensure_initial_draw(visual_cx);
+        lifecycle::ensure_initial_draw(visual_cx);
         Ok(())
     })
 }
@@ -120,7 +120,7 @@ fn select_stale_shape(
                 view_cx.notify();
             });
         });
-        common::ensure_initial_draw(visual_cx);
+        lifecycle::ensure_initial_draw(visual_cx);
         Ok(())
     })
 }

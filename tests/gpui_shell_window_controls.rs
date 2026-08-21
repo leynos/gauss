@@ -2,8 +2,8 @@
 //!
 //! These remain raw GPUI tests because they inspect element presence, rendered
 //! dimensions, or the test-only maximised-state override rather than a user
-//! action. Behavioural state changes and resize interaction live in the BDD
-//! companion test.
+//! action. The GPUI test platform cannot drive native window maximize or resize
+//! operations, so this file retains that test-plumbing coverage.
 
 #[path = "common/gpui_shell_window_controls.rs"]
 mod common;
@@ -151,6 +151,42 @@ fn maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
 #[gpui::test]
 fn non_maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
     assert_maximised_override_matches(cx, false);
+}
+
+/// Test that changing the maximised override updates the titlebar render.
+///
+/// This verifies test-only state plumbing because GPUI's test window cannot
+/// exercise the native maximize action.
+#[gpui::test]
+fn maximized_override_changes_titlebar_render(cx: &mut TestAppContext) {
+    let (view, visual_cx) = setup_window_with(cx, |shell| {
+        shell.set_maximized_for_tests(Some(false));
+    });
+    let before = visual_cx
+        .debug_bounds("#titlebar-drag-region")
+        .expect("titlebar drag region should exist before maximization");
+
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _view_cx| {
+            shell.set_maximized_for_tests(Some(true));
+        });
+    });
+    ensure_initial_draw(visual_cx);
+
+    let after = visual_cx
+        .debug_bounds("#titlebar-drag-region")
+        .expect("titlebar drag region should exist after maximization");
+    assert_ne!(
+        after, before,
+        "maximized state should change the titlebar render bounds"
+    );
+    visual_cx.update(|window, app| {
+        assert!(
+            view.read(app)
+                .is_maximized_for_resize_borders_for_tests(window),
+            "expected shell to observe maximized state"
+        );
+    });
 }
 /// Test that resize canvas is not present when window is maximised.
 ///

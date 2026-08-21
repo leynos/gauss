@@ -108,6 +108,17 @@ fn new_path_prompt_is_requested(
     expect_true(cx.did_prompt_for_new_path(), "expected a new-path prompt")
 }
 
+#[then("no new-path prompt is requested")]
+fn no_new_path_prompt_is_requested(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    cx.run_until_parked();
+    expect_true(
+        !cx.did_prompt_for_new_path(),
+        "expected no pending new-path prompt",
+    )
+}
+
 #[when("the new-path prompt is cancelled")]
 fn cancel_new_path_prompt(#[from(rstest_bdd_harness_context)] cx: &mut TestAppContext) {
     cx.simulate_new_path_selection(|_directory| None);

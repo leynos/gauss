@@ -7,15 +7,19 @@ Feature: Shell chrome actions
 
   Scenario: Open button requests a path
     Given a fresh testable Phase 0 shell window
+    Then no new-path prompt is requested
     When the Open button is clicked
     Then a new-path prompt is requested
     When the new-path prompt is cancelled
+    Then no new-path prompt is requested
 
   Scenario: Save button requests a path
     Given a fresh Phase 0 shell window
+    Then no new-path prompt is requested
     When the Save button is clicked
     Then a new-path prompt is requested
     When the new-path prompt is cancelled
+    Then no new-path prompt is requested
 
   Scenario: Undo and redo buttons update the document
     Given a fresh Phase 0 shell window

@@ -98,7 +98,6 @@ Supporting directories:
 - `tests/gpui_shell_chrome_layout.rs` - Chrome layout
 - `tests/gpui_shell_mode_indicator.rs` - Mode indicator
 - `tests/gpui_shell_navigation_buttons.rs` - Navigation buttons
-- `tests/gpui_shell_quit_button.rs` - Quit button
 - `tests/gpui_shell_resize_borders.rs` - Resize borders
 - `tests/gpui_shell_style_controls.rs` - Style controls
 - `tests/gpui_shell_tool_rail.rs` - Tool rail
@@ -132,7 +131,7 @@ Supporting directories:
 
 **To stay:**
 
-- 41 GPUI-dependent tests → `tests/` (app crate)
+- 40 GPUI-dependent tests → `tests/` (app crate)
 
 ## Notes
 

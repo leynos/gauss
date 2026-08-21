@@ -1,22 +1,21 @@
 # Integration Test Organization Mapping
 
-This document describes the organization of 56 top-level integration test files
+This document describes the organization of 55 top-level integration test files
 using a flat naming convention grouped by feature area.
 
-## GPUI (General Purpose UI) Tests (39 files organized into 5 feature areas)
+## GPUI (General Purpose UI) Tests (38 files organized into 5 feature areas)
 
-The 39 GPUI integration tests use a flat naming pattern
+The 38 GPUI integration tests use a flat naming pattern
 `gpui_{group}_{test_name}.rs` to organize tests by feature area while
 maintaining each test as an independent Cargo target.
 
-### Shell/Chrome - Window and Chrome Behaviour (11 tests)
+### Shell/Chrome - Window and Chrome Behaviour (10 tests)
 
 - gpui_shell_a11y_service.rs
 - gpui_shell_canvas_layout.rs
 - gpui_shell_chrome_layout.rs
 - gpui_shell_mode_indicator.rs
 - gpui_shell_navigation_buttons.rs
-- gpui_shell_quit_button.rs
 - gpui_shell_resize_borders.rs
 - gpui_shell_style_controls.rs
 - gpui_shell_tool_rail.rs
@@ -93,9 +92,9 @@ maintaining each test as an independent Cargo target.
 
 ## Summary
 
-**Before**: 56 top-level integration test files (39 GPUI + 17 non-GPUI)
+**Before**: 55 top-level integration test files (38 GPUI + 17 non-GPUI)
 
-**After**: 56 top-level integration test files (39 GPUI + 17 non-GPUI)
+**After**: 55 top-level integration test files (38 GPUI + 17 non-GPUI)
 
 **Change**: GPUI tests reorganized using flat naming pattern
 `gpui_{group}_{name}.rs` to group tests by feature area (shell, history,
