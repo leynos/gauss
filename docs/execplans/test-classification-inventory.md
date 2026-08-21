@@ -2,10 +2,44 @@
 
 ## Purpose
 
-This document classifies all current integration tests by their owning crate to
-guide the test move implementation in `build-time-move-model-and-svg-tests.md`.
+This document classifies the current root `gauss` integration-test targets by
+test style. It is the inventory used by the test move and consolidation plans.
 
-## Classification criteria
+### Current authoritative inventory
+
+The current inventory is derived from root `gauss` test targets in Cargo
+metadata, rather than from filename globs:
+
+```bash
+cargo metadata --no-deps --format-version 1 |
+  jq -r '.packages[] | select(.name == "gauss") | .targets[] |
+    select(.kind | index("test")) | .name'
+```
+
+Classify each target's source by its test declaration: a scenario with
+`GpuiHarness` is harness-backed GPUI BDD; a direct `#[gpui::test]` target is
+raw structural GPUI; the remaining scenario targets are non-GPUI BDD; and the
+remaining targets are other integration tests.
+`make check-integration-test-inventory` automates this check.
+
+| Category                                                 | Count |
+| -------------------------------------------------------- | ----: |
+| Root `gauss` integration-test targets (`cargo metadata`) | 51    |
+| Harness-backed GPUI BDD (scenario with `GpuiHarness`)    | 25    |
+| Raw structural GPUI (direct `#[gpui::test]`)             | 16    |
+| Non-GPUI BDD                                             | 5     |
+| Other integration targets                                | 5     |
+| GPUI targets (harness-backed + raw structural)           | 41    |
+
+<!-- integration-test-inventory: total=51 harness_gpui_bdd=25
+raw_structural_gpui=16 non_gpui_bdd=5 other_integration=5 gpui_target=41 -->
+
+## Historical test-move classification (2026-03)
+
+The remaining sections preserve the pre-move ownership classification. They do
+not supersede the current Cargo-target inventory above.
+
+### Classification criteria
 
 - **Pure model**: Tests that only exercise `gauss-core` functionality (document,
   commands, tools, history)  without GPUI
@@ -14,7 +48,7 @@ guide the test move implementation in `build-time-move-model-and-svg-tests.md`.
 - **App integration**: Tests that require GPUI, window interaction, or
   cross-crate integration
 
-## Test inventory
+### Test inventory
 
 ### Pure model tests → Move to `crates/gauss-core/tests/`
 
@@ -136,7 +170,7 @@ Supporting directories:
 
 - `tests/undo_entry_count_bdd/` - BDD tests for undo entry counting (multi-file)
 
-## Summary
+### Historical test-move summary
 
 **To move:**
 
@@ -145,8 +179,7 @@ Supporting directories:
 
 **To stay:**
 
-- 42 GPUI-dependent tests → `tests/` (app crate)
-- 2 non-GPUI app-layer accessibility tests → `tests/` (app crate)
+- App integration tests → `tests/` (app crate)
 
 ## Notes
 

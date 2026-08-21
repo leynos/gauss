@@ -1,5 +1,6 @@
 .PHONY: help all clean test test-ci test-quick build release lint fmt \
-	check-fmt markdownlint nixie typecheck spelling spelling-helper-test
+	check-fmt check-integration-test-inventory markdownlint nixie typecheck \
+	spelling spelling-helper-test
 
 
 TARGET ?= libgauss.rlib
@@ -64,8 +65,11 @@ fmt: ## Format Rust and Markdown sources
 check-fmt: ## Verify formatting
 	$(CARGO) fmt --all -- --check
 
-markdownlint: spelling ## Lint Markdown files and enforce repository spelling
+markdownlint: spelling check-integration-test-inventory ## Lint Markdown files and enforce repository spelling
 	$(MDLINT) '**/*.md'
+
+check-integration-test-inventory: ## Verify documented integration-test counts against Cargo metadata
+	@$(UV_ENV) $(UV) run scripts/check_integration_test_inventory.py
 
 spelling: spelling-helper-test ## Enforce en-GB-oxendict spelling in Markdown prose
 	@$(UV_ENV) $(UV) run scripts/generate_typos_config.py

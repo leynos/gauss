@@ -6,6 +6,35 @@ and `Outcomes & Retrospective` must be kept up to date as work proceeds.
 
 Status: COMPLETE
 
+## Current authoritative inventory
+
+The current inventory is derived from root `gauss` test targets in Cargo
+metadata, rather than from filename globs:
+
+```bash
+cargo metadata --no-deps --format-version 1 |
+  jq -r '.packages[] | select(.name == "gauss") | .targets[] |
+    select(.kind | index("test")) | .name'
+```
+
+Classify each target's source by its test declaration: a scenario with
+`GpuiHarness` is harness-backed GPUI BDD; a direct `#[gpui::test]` target is
+raw structural GPUI; the remaining scenario targets are non-GPUI BDD; and the
+remaining targets are other integration tests.
+`make check-integration-test-inventory` automates this check.
+
+| Category                                                 | Count |
+| -------------------------------------------------------- | ----: |
+| Root `gauss` integration-test targets (`cargo metadata`) | 51    |
+| Harness-backed GPUI BDD (scenario with `GpuiHarness`)    | 25    |
+| Raw structural GPUI (direct `#[gpui::test]`)             | 16    |
+| Non-GPUI BDD                                             | 5     |
+| Other integration targets                                | 5     |
+| GPUI targets (harness-backed + raw structural)           | 41    |
+
+<!-- integration-test-inventory: total=51 harness_gpui_bdd=25
+raw_structural_gpui=16 non_gpui_bdd=5 other_integration=5 gpui_target=41 -->
+
 ## Purpose / big picture
 
 After this change the `gauss` workspace builds and tests against `rstest-bdd`
@@ -315,23 +344,26 @@ framework) and is the most important thing this trial found.
 crate is `gauss`; member crates are `crates/gauss-core`, `crates/gauss-svg`, and
 `crates/test_support`.
 
-Behaviour tests already use `rstest-bdd 0.5.0` in three manifests:
+At the start of this completed plan, behaviour tests used `rstest-bdd 0.5.0` in
+three manifests:
 
 - `Cargo.toml` (root) — dev-dependencies `rstest`, `rstest-bdd`,
   `rstest-bdd-macros`.
 - `crates/gauss-core/Cargo.toml` — same three.
 - `crates/gauss-svg/Cargo.toml` — same three.
 
-There are two distinct test styles in the root crate's `tests/` directory:
+The root crate's `tests/` directory now contains four target styles:
 
-- Non-GPUI BDD suites (`tests/i18n_bdd.rs`, `tests/a11y_service_bdd.rs`,
-  `tests/widget_capability_audit_bdd/`, `tests/undo_entry_count_bdd/`,
-  `tests/a11y_service_routing_bdd.rs`) using `#[scenario]`/`#[given]`/
-  `#[when]` /`#[then]` with plain `rstest` fixtures. `tests/i18n_bdd.rs` is a
-  clean reference for the current binding style.
-- Raw GPUI integration tests (`tests/gpui_*.rs`, 40+ files) using
-  `#[gpui::test]` directly with a shared helper module `tests/common/mod.rs`.
-  These are **not** currently BDD; they are ordinary GPUI tests.
+- 25 harness-backed GPUI BDD targets registered with `GpuiHarness`;
+- 16 raw structural GPUI targets registered directly with `#[gpui::test]`;
+- 5 non-GPUI BDD targets using plain `rstest` fixtures; and
+- 5 other integration targets.
+
+Thus `tests/gpui_*.rs` is not a BDD classification: the directory contains both
+direct raw GPUI tests and `GpuiHarness`-backed BDD tests. The retained
+window-control target is structural and native-platform-limited, covering
+geometry, element presence, and test plumbing rather than a user-driven
+maximize or resize operation.
 
 The migration target, `tests/gpui_history_draw_undo.rs`, contains three
 `#[gpui::test]` functions. Only `draw_click_adds_points_and_undo_removes`
