@@ -34,7 +34,10 @@ impl DocumentUndoHistory {
                 .iter()
                 .map(|entry| format!("{entry:?}"))
                 .collect(),
-            cursor: entry_count,
+            cursor: self
+                .commands
+                .current_command_index()
+                .map_or(0, |index| index + 1),
             entry_count,
             can_undo: self.can_undo(),
             can_redo: self.can_redo(),

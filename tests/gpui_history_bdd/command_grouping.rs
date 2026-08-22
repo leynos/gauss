@@ -71,15 +71,20 @@ fn expect_history_error(expected: HistoryError, context: &str) -> TestSupportRes
     Ok(())
 }
 
-/// Open a test shell and record its initial history length.
+/// Open a test shell and record its complete initial history state.
 fn fresh_shell(cx: &mut TestAppContext) -> TestSupportResult<DurableShell> {
     reset_state();
     let shell = DurableShell::open_for_tests(cx);
-    let history_before =
-        shell.with_visual(cx, |visual_cx, view| Ok(read_history_len(visual_cx, view)))?;
+    let (history_before, history_state_before) = shell.with_visual(cx, |visual_cx, view| {
+        Ok((
+            read_history_len(visual_cx, view),
+            read_history_state(visual_cx, view),
+        ))
+    })?;
     with_state(|state| {
         state.shell = Some(shell.clone());
         state.history_before = Some(history_before);
+        state.history_state_before = Some(history_state_before);
     });
     Ok(shell)
 }
@@ -233,17 +238,18 @@ fn history_error_is_no_active_group() -> Result<(), TestSupportError> {
     expect_history_error(HistoryError::NoActiveGroup, "no active group error")
 }
 
-/// Assert the invalid group transition left history unchanged.
+/// Assert the invalid group transition preserved the complete history state.
 #[then("the document history is unchanged")]
 fn history_is_unchanged(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
-    let expected = history_before()?;
+    let expected = with_state(|state| state.history_state_before.clone())
+        .ok_or_else(|| missing("initial history state"))?;
     shell()?.with_visual(cx, |visual_cx, view| {
-        let actual = read_history_len(visual_cx, view);
+        let actual = read_history_state(visual_cx, view);
         if actual != expected {
             return Err(TestSupportError::expectation(format!(
-                "expected failed grouping boundary call to leave history unchanged; expected {expected}, got {actual}"
+                "expected failed grouping boundary call to leave history unchanged; expected {expected:?}, got {actual:?}"
             )));
         }
         Ok(())
