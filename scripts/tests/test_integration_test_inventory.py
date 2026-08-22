@@ -144,7 +144,9 @@ def test_root_gauss_package_selects_the_root_manifest(
         ]
     }
 
-    assert inventory_module.root_gauss_package(metadata) is selected
+    assert inventory_module.root_gauss_package(metadata) is selected, (
+        "root package selection must use the repository manifest"
+    )
 
 
 def test_root_gauss_package_rejects_non_list_packages(
@@ -192,7 +194,9 @@ def test_root_gauss_targets_filters_non_test_and_malformed_targets(
         ]
     }
 
-    assert list(inventory_module.root_gauss_targets(metadata)) == [test_target]
+    assert list(inventory_module.root_gauss_targets(metadata)) == [test_target], (
+        "only dictionary test targets should remain"
+    )
 
 
 @pytest.mark.parametrize(
@@ -214,7 +218,9 @@ def test_category_for_uses_registration_markers(
     expected: str,
 ) -> None:
     """Classify targets from their harness registration markers."""
-    assert inventory_module.category_for(source) == expected
+    assert inventory_module.category_for(source) == expected, (
+        "registration markers must select the documented category"
+    )
 
 
 @settings(database=None)
@@ -252,7 +258,9 @@ def test_category_for_uses_documented_precedence(
         else "other_integration"
     )
 
-    assert checker_module().category_for(source) == expected
+    assert checker_module().category_for(source) == expected, (
+        "harness, raw, and BDD markers must retain their precedence"
+    )
 
 
 def test_inventory_reads_metadata_and_sources_through_injected_seams(
@@ -281,7 +289,7 @@ def test_inventory_reads_metadata_and_sources_through_injected_seams(
         "raw_structural_gpui": ["z_raw"],
         "non_gpui_bdd": [],
         "other_integration": [],
-    }
+    }, "injected readers must produce a sorted classified inventory"
 
 
 @settings(database=None)
@@ -301,11 +309,11 @@ def test_counts_conserve_all_category_targets(
 
     assert actual["total"] == sum(
         len(targets_by_category[category]) for category in CATEGORY_ORDER
-    )
+    ), "total must conserve targets across all categories"
     assert actual["gpui_target"] == (
         len(targets_by_category["harness_gpui_bdd"])
         + len(targets_by_category["raw_structural_gpui"])
-    )
+    ), "GPUI total must include only harness-backed and raw targets"
 
 
 def test_documented_counts_parses_a_complete_marker(
@@ -323,7 +331,7 @@ def test_documented_counts_parses_a_complete_marker(
         "non_gpui_bdd": 1,
         "other_integration": 1,
         "gpui_target": 2,
-    }
+    }, "a complete marker must preserve every derived count"
 
 
 def test_documented_counts_rejects_missing_required_fields(
@@ -356,6 +364,21 @@ def test_validate_documentation_rejects_a_target_list_mismatch(
         )
 
 
+def test_documented_targets_rejects_a_heading_count_mismatch(
+    inventory_module: InventoryModule,
+    tmp_path: Path,
+) -> None:
+    """Reject a category heading whose displayed count differs from its list."""
+    document = tmp_path / "CONSOLIDATION_MAP.md"
+    document.write_text(
+        consolidation_map().replace("targets (1)", "targets (2)", 1),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="heading has 2 targets"):
+        inventory_module.documented_targets(document)
+
+
 def test_main_prints_the_validated_inventory(
     inventory_module: InventoryModule,
     monkeypatch: pytest.MonkeyPatch,
@@ -374,4 +397,4 @@ def test_main_prints_the_validated_inventory(
         "other_integration: 1 (other)\n"
         "gpui_target: 2\n"
         "total: 4\n"
-    )
+    ), "main must print each validated category and derived total"

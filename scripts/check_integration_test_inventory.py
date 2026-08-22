@@ -54,7 +54,6 @@ TARGET_LIST_HEADINGS = {
 
 
 def _read_target_source(source_path: Path) -> str:
-    """Read one target source file, translating filesystem failures."""
     try:
         return source_path.read_text(encoding="utf-8")
     except OSError as error:
@@ -306,26 +305,31 @@ def documented_targets(document: Path) -> dict[str, list[str]]:
     Raises
     ------
     ValueError
-        If a required category heading is missing.
+        If a category heading is missing or its count is incorrect.
     """
     source = document.read_text(encoding="utf-8")
     targets_by_category: dict[str, list[str]] = {}
     for category, heading in TARGET_LIST_HEADINGS.items():
         heading_match = re.search(
-            rf"^### {re.escape(heading)} \(\d+\)$", source, re.MULTILINE
+            rf"^### {re.escape(heading)} \((?P<count>\d+)\)$",
+            source,
+            re.MULTILINE,
         )
         if heading_match is None:
             raise ValueError(f"{document}: missing target list for {category}")
         next_heading = re.search(r"^### ", source[heading_match.end() :], re.MULTILINE)
-        section_end = (
-            heading_match.end() + next_heading.start()
-            if next_heading is not None
-            else len(source)
-        )
+        section_end = len(source)
+        if next_heading is not None:
+            section_end = heading_match.end() + next_heading.start()
         section = source[heading_match.end() : section_end]
-        targets_by_category[category] = sorted(
-            re.findall(r"^- `(?P<target>[^`]+)`$", section, re.MULTILINE)
-        )
+        targets = sorted(re.findall(r"^- `(?P<target>[^`]+)`$", section, re.MULTILINE))
+        documented_count = int(heading_match["count"])
+        if documented_count != len(targets):
+            raise ValueError(
+                f"{document}: {category} heading has {documented_count} targets, "
+                f"but lists {len(targets)}"
+            )
+        targets_by_category[category] = targets
     return targets_by_category
 
 

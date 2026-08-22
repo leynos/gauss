@@ -77,9 +77,11 @@ def test_checker_cli_reports_a_valid_inventory(tmp_path: Path) -> None:
         check=False,
     )
 
-    assert result.returncode == 0
-    assert "harness_gpui_bdd: 1 (gpui_example)" in result.stdout
-    assert "total: 1" in result.stdout
+    assert result.returncode == 0, "the checker should succeed for matching docs"
+    assert "harness_gpui_bdd: 1 (gpui_example)" in result.stdout, (
+        "the checker should print the classified target"
+    )
+    assert "total: 1" in result.stdout, "the checker should print the total"
 
 
 def test_checker_cli_rejects_documentation_count_mismatch(tmp_path: Path) -> None:
@@ -99,6 +101,10 @@ def test_checker_cli_rejects_documentation_count_mismatch(tmp_path: Path) -> Non
         check=False,
     )
 
-    assert result.returncode == 1
-    assert "integration-test inventory check failed" in result.stderr
-    assert "documented {'total': 2" in result.stderr
+    assert result.returncode == 1, "a documented-count mismatch must fail"
+    assert "integration-test inventory check failed" in result.stderr, (
+        "a mismatch should identify the checker failure"
+    )
+    assert "documented {'total': 2" in result.stderr, (
+        "a mismatch should report the documented count"
+    )
