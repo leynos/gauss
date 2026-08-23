@@ -277,10 +277,10 @@ def documented_counts(document: Path) -> dict[str, int]:
     matches = MARKER_PATTERN.findall(document.read_text(encoding="utf-8"))
     if len(matches) != 1:
         raise ValueError(f"{document}: expected exactly one inventory marker")
-    values = {
-        field["name"]: int(field["value"])
-        for field in FIELD_PATTERN.finditer(matches[0])
-    }
+    fields = list(FIELD_PATTERN.finditer(matches[0]))
+    if len({field["name"] for field in fields}) != len(fields):
+        raise ValueError(f"{document}: inventory marker has duplicate fields")
+    values = {field["name"]: int(field["value"]) for field in fields}
     required = {*CATEGORY_ORDER, "gpui_target", "total"}
     if values.keys() != required:
         raise ValueError(
@@ -310,13 +310,13 @@ def documented_targets(document: Path) -> dict[str, list[str]]:
     source = document.read_text(encoding="utf-8")
     targets_by_category: dict[str, list[str]] = {}
     for category, heading in TARGET_LIST_HEADINGS.items():
-        heading_match = re.search(
-            rf"^### {re.escape(heading)} \((?P<count>\d+)\)$",
-            source,
-            re.MULTILINE,
-        )
-        if heading_match is None:
-            raise ValueError(f"{document}: missing target list for {category}")
+        heading_pattern = rf"^### {re.escape(heading)} \((?P<count>\d+)\)$"
+        heading_matches = list(re.finditer(heading_pattern, source, re.MULTILINE))
+        if len(heading_matches) != 1:
+            raise ValueError(
+                f"{document}: expected exactly one target list for {category}"
+            )
+        heading_match = heading_matches[0]
         next_heading = re.search(r"^### ", source[heading_match.end() :], re.MULTILINE)
         section_end = len(source)
         if next_heading is not None:
