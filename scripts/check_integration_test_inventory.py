@@ -3,12 +3,9 @@
 # requires-python = ">=3.13"
 # dependencies = []
 # ///
-"""Verify the documented root-Gauss integration-test inventory.
+"""Verify documented root-Gauss integration-test inventory from Cargo metadata.
 
-Cargo metadata identifies integration-test targets independently of the test
-directory layout. Source markers then classify each target by its registered
-test harness, preserving a reproducible distinction between GPUI BDD and raw
-structural coverage.
+Source markers classify registered harnesses as GPUI BDD or raw structural coverage.
 """
 
 from __future__ import annotations
@@ -70,8 +67,7 @@ def cargo_metadata(
     Parameters
     ----------
     runner : Callable[..., subprocess.CompletedProcess[str]], optional
-        Process runner used to execute Cargo. The default invokes
-        :func:`subprocess.run` with the authoritative metadata command.
+        Process runner. Defaults to :func:`subprocess.run` with the metadata command.
 
     Returns
     -------
@@ -81,8 +77,7 @@ def cargo_metadata(
     Raises
     ------
     ValueError
-        If Cargo cannot run, returns a non-zero status, emits invalid JSON, or
-        emits a JSON value other than an object.
+        If Cargo metadata cannot be read or is malformed.
     """
     try:
         result = runner(
@@ -94,7 +89,6 @@ def cargo_metadata(
         )
     except (OSError, subprocess.CalledProcessError) as error:
         raise ValueError("could not read Cargo metadata") from error
-
     try:
         metadata = json.loads(result.stdout)
     except json.JSONDecodeError as error:
@@ -115,19 +109,17 @@ def root_gauss_package(metadata: dict[str, object]) -> dict[str, object]:
     Returns
     -------
     dict[str, object]
-        The package named ``gauss`` whose manifest is the repository root.
+        The root-manifest package named ``gauss``.
 
     Raises
     ------
     ValueError
-        If the packages field is malformed or does not contain the root
-        ``gauss`` package.
+        If packages are malformed or omit the root ``gauss`` package.
     """
     root_manifest = str(REPOSITORY_ROOT / "Cargo.toml")
     packages = metadata["packages"]
     if not isinstance(packages, list):
         raise ValueError("cargo metadata packages must be a list")
-
     package = next(
         (
             package
@@ -140,7 +132,6 @@ def root_gauss_package(metadata: dict[str, object]) -> dict[str, object]:
     )
     if package is None:
         raise ValueError("could not find the root gauss package in cargo metadata")
-
     return package
 
 
@@ -165,7 +156,6 @@ def root_gauss_targets(metadata: dict[str, object]) -> Iterable[dict[str, object
     targets = root_gauss_package(metadata).get("targets")
     if not isinstance(targets, list):
         raise ValueError("root gauss package targets must be a list")
-
     return (
         target
         for target in targets
@@ -216,8 +206,7 @@ def inventory(
     Raises
     ------
     ValueError
-        If Cargo target metadata lacks a string name or source path, or a
-        reader cannot provide the required input.
+        If target metadata or a reader cannot provide required input.
     """
     targets_by_category: dict[str, list[str]] = defaultdict(list)
     for target in root_gauss_targets(metadata_reader()):
@@ -289,6 +278,35 @@ def documented_counts(document: Path) -> dict[str, int]:
     return values
 
 
+def _target_list_section(
+    source: str,
+    document: Path,
+    category: str,
+    heading: str,
+) -> str:
+    heading_pattern = rf"^### {re.escape(heading)} \((?P<count>\d+)\)$"
+    heading_matches = list(re.finditer(heading_pattern, source, re.MULTILINE))
+    if not heading_matches:
+        raise ValueError(f"{document}: missing target list for {category}")
+    if len(heading_matches) != 1:
+        raise ValueError(f"{document}: expected exactly one target list for {category}")
+    heading_match = heading_matches[0]
+    next_heading = re.search(r"^### ", source[heading_match.end() :], re.MULTILINE)
+    section_end = (
+        heading_match.end() + next_heading.start()
+        if next_heading is not None
+        else len(source)
+    )
+    section = source[heading_match.end() : section_end]
+    target_count = len(re.findall(r"^- `(?P<target>[^`]+)`$", section, re.MULTILINE))
+    if int(heading_match["count"]) != target_count:
+        raise ValueError(
+            f"{document}: {category} heading has {heading_match['count']} targets, "
+            f"but lists {target_count}"
+        )
+    return section
+
+
 def documented_targets(document: Path) -> dict[str, list[str]]:
     """Read the category target lists documented in the consolidation map.
 
@@ -310,26 +328,10 @@ def documented_targets(document: Path) -> dict[str, list[str]]:
     source = document.read_text(encoding="utf-8")
     targets_by_category: dict[str, list[str]] = {}
     for category, heading in TARGET_LIST_HEADINGS.items():
-        heading_pattern = rf"^### {re.escape(heading)} \((?P<count>\d+)\)$"
-        heading_matches = list(re.finditer(heading_pattern, source, re.MULTILINE))
-        if len(heading_matches) != 1:
-            raise ValueError(
-                f"{document}: expected exactly one target list for {category}"
-            )
-        heading_match = heading_matches[0]
-        next_heading = re.search(r"^### ", source[heading_match.end() :], re.MULTILINE)
-        section_end = len(source)
-        if next_heading is not None:
-            section_end = heading_match.end() + next_heading.start()
-        section = source[heading_match.end() : section_end]
-        targets = sorted(re.findall(r"^- `(?P<target>[^`]+)`$", section, re.MULTILINE))
-        documented_count = int(heading_match["count"])
-        if documented_count != len(targets):
-            raise ValueError(
-                f"{document}: {category} heading has {documented_count} targets, "
-                f"but lists {len(targets)}"
-            )
-        targets_by_category[category] = targets
+        section = _target_list_section(source, document, category, heading)
+        targets_by_category[category] = sorted(
+            re.findall(r"^- `(?P<target>[^`]+)`$", section, re.MULTILINE)
+        )
     return targets_by_category
 
 
@@ -352,8 +354,7 @@ def validate_documentation(
     Raises
     ------
     ValueError
-        If a documented count marker or target list differs from the derived
-        inventory.
+        If a documented marker or target list differs from the inventory.
     """
     actual = counts(targets_by_category)
     failures = [
@@ -378,8 +379,7 @@ def main() -> None:
     Raises
     ------
     ValueError
-        If source metadata, documented counts, or documented target lists do
-        not match the authoritative root-package inventory.
+        If source metadata or documented inventory data does not match.
     """
     targets_by_category = inventory()
     actual = counts(targets_by_category)

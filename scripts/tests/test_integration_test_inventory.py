@@ -132,7 +132,6 @@ def test_root_gauss_package_selects_the_root_manifest(
             selected,
         ]
     }
-
     assert inventory_module.root_gauss_package(metadata) is selected, (
         "root package selection must use the repository manifest"
     )
@@ -149,7 +148,6 @@ def test_root_gauss_package_rejects_missing_root_package(
     inventory_module: InventoryModule,
 ) -> None:
     metadata = {"packages": [{"name": "other", "manifest_path": "Cargo.toml"}]}
-
     with pytest.raises(
         ValueError,
         match="could not find the root gauss package in cargo metadata",
@@ -161,7 +159,6 @@ def test_root_gauss_targets_rejects_non_list_targets(
     inventory_module: InventoryModule,
 ) -> None:
     metadata = {"packages": [root_package(inventory_module, {})]}
-
     with pytest.raises(ValueError, match="root gauss package targets must be a list"):
         list(inventory_module.root_gauss_targets(metadata))
 
@@ -178,7 +175,6 @@ def test_root_gauss_targets_filters_non_test_and_malformed_targets(
             )
         ]
     }
-
     assert list(inventory_module.root_gauss_targets(metadata)) == [test_target], (
         "only dictionary test targets should remain"
     )
@@ -241,7 +237,6 @@ def test_category_for_uses_documented_precedence(
         if bdd
         else "other_integration"
     )
-
     assert inventory_module.category_for(source) == expected, (
         "harness, raw, and BDD markers must retain their precedence"
     )
@@ -266,7 +261,6 @@ def test_inventory_reads_metadata_and_sources_through_injected_seams(
         Path("bdd.rs"): '#[scenario(path = "test.feature", harness = '
         "rstest_bdd_harness_gpui::GpuiHarness)]",
     }
-
     assert inventory_module.inventory(lambda: metadata, sources.__getitem__) == {
         "harness_gpui_bdd": ["a_bdd"],
         "raw_structural_gpui": ["z_raw"],
@@ -289,7 +283,6 @@ def test_counts_conserve_all_category_targets(
     targets_by_category: dict[str, list[str]],
 ) -> None:
     actual = inventory_module.counts(targets_by_category)
-
     assert actual["total"] == sum(
         len(targets_by_category[category]) for category in CATEGORY_ORDER
     ), "total must conserve targets across all categories"
@@ -305,7 +298,6 @@ def test_documented_counts_parses_a_complete_marker(
 ) -> None:
     document = tmp_path / "inventory.md"
     document.write_text(f"{count_marker()}\n", encoding="utf-8")
-
     assert inventory_module.documented_counts(document) == {
         "total": 4,
         "harness_gpui_bdd": 1,
@@ -331,7 +323,6 @@ def test_documented_counts_rejects_invalid_fields(
 ) -> None:
     document = tmp_path / "inventory.md"
     document.write_text(f"{marker}\n", encoding="utf-8")
-
     with pytest.raises(ValueError, match=message):
         inventory_module.documented_counts(document)
 
@@ -344,11 +335,21 @@ def test_validate_documentation_rejects_a_target_list_mismatch(
     target_list_document.write_text(
         consolidation_map().replace("gpui_raw", "different_raw"), encoding="utf-8"
     )
-
     with pytest.raises(ValueError, match=r"actual \['gpui_raw'\]"):
         inventory_module.validate_documentation(
             target_inventory(), documents, target_list_document
         )
+
+
+def test_documented_targets_delimit_first_and_final_category_sections(
+    inventory_module: InventoryModule,
+    tmp_path: Path,
+) -> None:
+    document = tmp_path / "CONSOLIDATION_MAP.md"
+    document.write_text(consolidation_map(), encoding="utf-8")
+    targets = inventory_module.documented_targets(document)
+    assert targets["harness_gpui_bdd"] == ["gpui_bdd"]
+    assert targets["other_integration"] == ["other"]
 
 
 @pytest.mark.parametrize(
@@ -358,6 +359,12 @@ def test_validate_documentation_rejects_a_target_list_mismatch(
         (
             f"{consolidation_map()}\n### Harness-backed GPUI BDD targets (0)\n",
             "exactly one target list",
+        ),
+        (
+            consolidation_map().replace(
+                "### Other integration targets (1)", "### Missing (1)"
+            ),
+            "missing target list for other_integration",
         ),
     ),
 )
@@ -381,7 +388,6 @@ def test_main_prints_the_validated_inventory(
 ) -> None:
     monkeypatch.setattr(inventory_module, "inventory", target_inventory)
     monkeypatch.setattr(inventory_module, "validate_documentation", lambda _: None)
-
     inventory_module.main()
 
     assert capsys.readouterr().out == (
