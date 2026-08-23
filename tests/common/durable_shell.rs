@@ -1,16 +1,11 @@
 //! Durable GPUI handles that survive between BDD scenario steps.
 //!
-//! This module is included by `gpui_file_io_click_save_button`,
-//! `gpui_file_io_metadata_round_trip`, `gpui_file_io_open_dialog`,
-//! `gpui_file_io_save_dialog`, `gpui_selection_bbox_drag_requires_selection`,
-//! `gpui_selection_clear_selection`, `gpui_selection_multi_select`,
-//! `gpui_selection_multi_shape_drag`, `gpui_selection_select_shape_by_bbox`,
-//! and `gpui_selection_select_tool_noop_paths`; selection binaries include it
-//! transitively through `tests/selection_bdd/support.rs`.
-//!
-//! `DurableShell::new` and `with_visual_cx` are used by all ten consumers. The
-//! remaining file-I/O binaries read `entity` directly in their own crate, so no
-//! `dead_code` expectation is needed.
+//! File-I/O, selection, and history BDD binaries include this module by path,
+//! with selection scenarios doing so transitively through
+//! `tests/selection_bdd/support.rs`. `DurableShell::new` and
+//! `with_visual_cx` preserve the entity and window-handle pair needed to
+//! reconstruct each short-lived visual context, so no consumer needs a
+//! dead-code expectation.
 
 use gauss::ui::Phase0Shell;
 use gpui::{AnyWindowHandle, Entity, TestAppContext, VisualContext, VisualTestContext};

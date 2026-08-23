@@ -1,16 +1,24 @@
 //! GPUI headless integration tests for Phase 0 anchor dragging.
 
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
+
 #[path = "common/gpui_history_drag_anchor_undo.rs"]
 mod common;
+#[path = "gpui_history_bdd/drag_anchor.rs"]
+mod drag_anchor;
+#[path = "gpui_history_bdd/support.rs"]
+mod history_bdd_support;
+#[path = "gpui_history_bdd/support_open.rs"]
+mod history_bdd_support_open;
 
 use common::{
-    CanvasDragScenario, assert_vec2_close, canvas_drag_scenario, draw_point, ensure_initial_draw,
-    init_test_app, read_document, read_history_len, require_draw_shape, simulate_document_undo,
-    simulate_escape,
+    CanvasDragScenario, assert_vec2_close, canvas_drag_scenario, draw_point, read_document,
+    read_history_len, require_draw_shape, simulate_document_undo, simulate_escape,
 };
 use gauss::model::{Anchor, SelItem, Shape, ShapeId};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext};
+use gpui::{Modifiers, MouseButton, VisualTestContext};
 use test_support::{TestSupportError, TestSupportResult};
 
 fn draw_two_point_line_path(visual_cx: &mut VisualTestContext, scenario: CanvasDragScenario) {
@@ -99,51 +107,4 @@ fn verify_anchor_restored(shape: &Shape, originals: &(Anchor, Anchor)) -> TestSu
         originals.1.pos,
         "second anchor still stable after undo",
     )
-}
-
-#[gpui::test]
-fn dragging_anchor_moves_it_and_undo_restores(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
-
-    let scenario =
-        canvas_drag_scenario(visual_cx, 24.0, 12.0).expect("expected canvas drag scenario");
-    draw_two_point_line_path(visual_cx, scenario);
-
-    let doc_before = read_document(visual_cx, &view);
-    let original_shape = require_draw_shape(&doc_before, "after drawing two points")
-        .expect("expected draw shape after drawing")
-        .clone();
-    let original_anchors =
-        first_two_anchors(&original_shape).expect("expected two anchors in drawn shape");
-
-    simulate_escape(visual_cx);
-
-    let len_before = read_history_len(visual_cx, &view);
-
-    drag_first_anchor(visual_cx, &view, original_shape.id, scenario)
-        .expect("expected drag on first anchor");
-
-    let doc_after_drag = read_document(visual_cx, &view);
-    let moved_shape = require_draw_shape(&doc_after_drag, "after dragging anchor")
-        .expect("expected draw shape after dragging anchor");
-    verify_anchor_moved(moved_shape, &original_anchors, scenario.delta)
-        .expect("expected anchor drag result to be correct");
-
-    let len_after = read_history_len(visual_cx, &view);
-    assert_eq!(
-        len_after,
-        len_before + 1,
-        "expected exactly one undo entry for anchor drag"
-    );
-
-    simulate_document_undo(visual_cx);
-
-    let doc_after_undo = read_document(visual_cx, &view);
-    let restored_shape =
-        require_draw_shape(&doc_after_undo, "after undo").expect("expected draw shape after undo");
-    verify_anchor_restored(restored_shape, &original_anchors)
-        .expect("expected anchors to restore after undo");
 }

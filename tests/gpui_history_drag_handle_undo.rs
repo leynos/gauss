@@ -1,16 +1,24 @@
 //! GPUI headless integration tests for Phase 0 handle dragging.
 
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
+
 #[path = "common/gpui_history_drag_handle_undo.rs"]
 mod common;
+#[path = "gpui_history_bdd/drag_handle.rs"]
+mod drag_handle;
+#[path = "gpui_history_bdd/support.rs"]
+mod history_bdd_support;
+#[path = "gpui_history_bdd/support_open.rs"]
+mod history_bdd_support_open;
 
 use common::{
     CanvasDragScenario, anchor_to_canvas_point, assert_vec2_close, canvas_drag_scenario,
-    ensure_initial_draw, init_test_app, read_document, read_history_len, require_draw_shape,
-    simulate_document_undo, simulate_escape,
+    read_document, read_history_len, require_draw_shape, simulate_document_undo, simulate_escape,
 };
 use gauss::model::{SelItem, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
-use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
+use gpui::{Modifiers, VisualTestContext, point, px};
 use test_support::{TestSupportError, TestSupportResult};
 
 fn toggle_bezier_auto(visual_cx: &mut VisualTestContext) {
@@ -27,7 +35,7 @@ fn draw_two_point_bezier_path(visual_cx: &mut VisualTestContext, scenario: Canva
     visual_cx.run_until_parked();
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 struct HandleDragSetup {
     scenario: CanvasDragScenario,
     shape_id: ShapeId,
@@ -95,85 +103,4 @@ fn assert_handle_selection_includes_shape(
         )));
     }
     Ok(())
-}
-
-#[gpui::test]
-fn dragging_handle_moves_it_and_undo_restores(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
-
-    let setup = setup_handle_drag(visual_cx, &view).expect("expected handle drag setup");
-
-    let len_before = read_history_len(visual_cx, &view);
-
-    visual_cx.simulate_mouse_down(setup.handle_start, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
-
-    assert_handle_selection_includes_shape(visual_cx, &view, setup.shape_id)
-        .expect("expected handle selection to include shape");
-
-    visual_cx.simulate_mouse_move(setup.handle_end, MouseButton::Left, Modifiers::none());
-    visual_cx.simulate_mouse_up(setup.handle_end, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
-
-    let doc_after_drag = read_document(visual_cx, &view);
-    let moved_shape = require_draw_shape(&doc_after_drag, "after dragging handle")
-        .expect("expected draw shape after handle drag");
-    let moved_anchor = moved_shape
-        .path
-        .anchors
-        .first()
-        .expect("expected first anchor after drag");
-
-    assert_vec2_close(
-        moved_anchor.pos,
-        setup.first_anchor_pos,
-        "anchor position stable when dragging handle",
-    )
-    .expect("expected anchor position to remain stable");
-    let moved_handle_out = moved_anchor
-        .handle_out
-        .expect("expected handle_out to remain present after dragging");
-    assert_vec2_close(
-        moved_handle_out,
-        setup.original_handle_out.add(setup.scenario.delta),
-        "handle_out moved by delta",
-    )
-    .expect("expected handle_out to move by drag delta");
-
-    let len_after = read_history_len(visual_cx, &view);
-    assert_eq!(
-        len_after,
-        len_before + 1,
-        "expected exactly one undo entry for handle drag"
-    );
-
-    simulate_document_undo(visual_cx);
-
-    let doc_after_undo = read_document(visual_cx, &view);
-    let restored_shape =
-        require_draw_shape(&doc_after_undo, "after undo").expect("expected draw shape after undo");
-    let restored_anchor = restored_shape
-        .path
-        .anchors
-        .first()
-        .expect("expected first anchor after undo");
-    let restored_handle_out = restored_anchor
-        .handle_out
-        .expect("expected handle_out after undo");
-
-    assert_vec2_close(
-        restored_anchor.pos,
-        setup.first_anchor_pos,
-        "anchor restored",
-    )
-    .expect("expected anchor to be restored");
-    assert_vec2_close(
-        restored_handle_out,
-        setup.original_handle_out,
-        "handle_out restored",
-    )
-    .expect("expected handle_out to be restored");
 }

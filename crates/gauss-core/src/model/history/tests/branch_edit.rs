@@ -57,6 +57,28 @@ fn branch_edit_preserves_historical_undo(doc_with_one_shape: (Document, ShapeId)
     assert_eq!(doc, state_0);
 }
 
+/// Keep the test-history cursor aligned with the retained `undo_2` command index.
+#[cfg(feature = "test-support")]
+#[rstest]
+fn branch_edit_snapshot_reports_retained_cursor(doc_with_one_shape: (Document, ShapeId)) {
+    let (mut doc, id) = doc_with_one_shape;
+    let mut history = DocumentUndoHistory::new();
+
+    let (command_a, inverse_a) = apply_move(&mut doc, id, 1.0, 0.0).expect("move A should apply");
+    history.record(command_a, inverse_a);
+    let (command_b, inverse_b) = apply_move(&mut doc, id, 0.0, 2.0).expect("move B should apply");
+    history.record(command_b, inverse_b);
+    history.undo(&mut doc).expect("undo B should succeed");
+
+    let (command_c, inverse_c) =
+        apply_move(&mut doc, id, -3.0, 0.0).expect("branch move should apply");
+    history.record(command_c, inverse_c);
+
+    let state = history.state_for_tests();
+    assert_eq!(state.entry_count, 2);
+    assert_eq!(state.cursor, 4);
+}
+
 /// Do A, B, C then undo C, undo B, redo B, redo C — state matches
 /// the state after all three commands.
 #[rstest]

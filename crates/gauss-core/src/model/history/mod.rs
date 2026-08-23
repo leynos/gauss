@@ -15,6 +15,8 @@ use super::command::CommandInverse;
 use super::document::Document;
 
 mod error;
+#[cfg(feature = "test-support")]
+mod test_support;
 #[cfg(test)]
 mod tests;
 
@@ -22,6 +24,8 @@ pub use self::error::{
     GROUPING_ERROR_GROUP_ALREADY_ACTIVE, GROUPING_ERROR_NO_ACTIVE_GROUP,
     GROUPING_ERROR_REDO_WHILE_GROUP_ACTIVE, GROUPING_ERROR_UNDO_WHILE_GROUP_ACTIVE, HistoryError,
 };
+#[cfg(feature = "test-support")]
+pub use self::test_support::DocumentHistoryState;
 
 use self::error::ReplayDirection;
 

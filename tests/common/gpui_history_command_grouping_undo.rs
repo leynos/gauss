@@ -28,3 +28,17 @@ pub use init_app::init_test_app;
 pub use initial_draw::ensure_initial_draw;
 /// Checks that harness-observed vectors are within the helper's tolerance.
 pub use vec2_assertion::assert_vec2_close;
+
+use gauss::ui::Phase0Shell;
+use gpui::{Entity, VisualTestContext};
+
+/// Re-export the test-support document-history snapshot for BDD consumers.
+pub use gauss::ui::DocumentHistoryState;
+
+/// Returns the current entries and cursor availability in the document history.
+pub fn read_history_state(
+    visual_cx: &VisualTestContext,
+    view: &Entity<Phase0Shell>,
+) -> DocumentHistoryState {
+    visual_cx.read(|app| view.read(app).document_history_state_for_tests())
+}
