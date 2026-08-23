@@ -59,21 +59,25 @@ def _read_target_source(source_path: Path) -> str:
         ) from error
 
 
+def _read_document(document: Path) -> str:
+    try:
+        return document.read_text(encoding="utf-8")
+    except OSError as error:
+        raise ValueError(f"could not read documentation {document}") from error
+
+
 def cargo_metadata(
     runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
 ) -> dict[str, object]:
     """Read Cargo metadata for the repository's current workspace.
-
     Parameters
     ----------
     runner : Callable[..., subprocess.CompletedProcess[str]], optional
         Process runner. Defaults to :func:`subprocess.run` with the metadata command.
-
     Returns
     -------
     dict[str, object]
         Decoded JSON object emitted by Cargo metadata.
-
     Raises
     ------
     ValueError
@@ -100,17 +104,14 @@ def cargo_metadata(
 
 def root_gauss_package(metadata: dict[str, object]) -> dict[str, object]:
     """Select the root ``gauss`` package from Cargo metadata.
-
     Parameters
     ----------
     metadata : dict[str, object]
         Decoded Cargo metadata for the current workspace.
-
     Returns
     -------
     dict[str, object]
         The root-manifest package named ``gauss``.
-
     Raises
     ------
     ValueError
@@ -137,17 +138,14 @@ def root_gauss_package(metadata: dict[str, object]) -> dict[str, object]:
 
 def root_gauss_targets(metadata: dict[str, object]) -> Iterable[dict[str, object]]:
     """Yield integration-test targets declared by the root ``gauss`` package.
-
     Parameters
     ----------
     metadata : dict[str, object]
         Decoded Cargo metadata for the current workspace.
-
     Returns
     -------
     Iterable[dict[str, object]]
         Dictionary targets whose kind includes ``test``.
-
     Raises
     ------
     ValueError
@@ -165,12 +163,10 @@ def root_gauss_targets(metadata: dict[str, object]) -> Iterable[dict[str, object
 
 def category_for(source: str) -> str:
     """Classify one integration-test target using explicit source markers.
-
     Parameters
     ----------
     source : str
         UTF-8 source text for one Cargo integration-test target.
-
     Returns
     -------
     str
@@ -190,19 +186,16 @@ def inventory(
     source_reader: Callable[[Path], str] = _read_target_source,
 ) -> dict[str, list[str]]:
     """Group current root targets by their mutually exclusive category.
-
     Parameters
     ----------
     metadata_reader : Callable[[], dict[str, object]], optional
         Reader for the authoritative Cargo metadata object.
     source_reader : Callable[[Path], str], optional
         Reader for each target source path.
-
     Returns
     -------
     dict[str, list[str]]
         Sorted target names for every category in :data:`CATEGORY_ORDER`.
-
     Raises
     ------
     ValueError
@@ -226,12 +219,10 @@ def inventory(
 
 def counts(targets_by_category: dict[str, list[str]]) -> dict[str, int]:
     """Calculate documented totals from classified integration targets.
-
     Parameters
     ----------
     targets_by_category : dict[str, list[str]]
         Target names grouped under every category in :data:`CATEGORY_ORDER`.
-
     Returns
     -------
     dict[str, int]
@@ -245,13 +236,14 @@ def counts(targets_by_category: dict[str, list[str]]) -> dict[str, int]:
     return result
 
 
-def documented_counts(document: Path) -> dict[str, int]:
+def documented_counts(source: str, document: Path) -> dict[str, int]:
     """Read the single machine-checkable current-inventory marker.
-
     Parameters
     ----------
+    source : str
+        Inventory document text containing exactly one current-inventory marker.
     document : Path
-        Inventory document containing exactly one current-inventory marker.
+        Document path included in validation errors.
 
     Returns
     -------
@@ -263,7 +255,7 @@ def documented_counts(document: Path) -> dict[str, int]:
     ValueError
         If the document has the wrong marker count or marker fields.
     """
-    matches = MARKER_PATTERN.findall(document.read_text(encoding="utf-8"))
+    matches = MARKER_PATTERN.findall(source)
     if len(matches) != 1:
         raise ValueError(f"{document}: expected exactly one inventory marker")
     fields = list(FIELD_PATTERN.finditer(matches[0]))
@@ -307,13 +299,14 @@ def _target_list_section(
     return section
 
 
-def documented_targets(document: Path) -> dict[str, list[str]]:
+def documented_targets(source: str, document: Path) -> dict[str, list[str]]:
     """Read the category target lists documented in the consolidation map.
-
     Parameters
     ----------
+    source : str
+        Consolidation map text containing one headed target list per category.
     document : Path
-        Consolidation map containing one headed target list per category.
+        Document path included in validation errors.
 
     Returns
     -------
@@ -325,7 +318,6 @@ def documented_targets(document: Path) -> dict[str, list[str]]:
     ValueError
         If a category heading is missing or its count is incorrect.
     """
-    source = document.read_text(encoding="utf-8")
     targets_by_category: dict[str, list[str]] = {}
     for category, heading in TARGET_LIST_HEADINGS.items():
         section = _target_list_section(source, document, category, heading)
@@ -339,6 +331,7 @@ def validate_documentation(
     targets_by_category: dict[str, list[str]],
     documents: tuple[Path, ...] = INVENTORY_DOCUMENTS,
     target_list_document: Path = CONSOLIDATION_MAP,
+    document_reader: Callable[[Path], str] = _read_document,
 ) -> None:
     """Validate documented counts and exact target lists against Cargo metadata.
 
@@ -350,19 +343,26 @@ def validate_documentation(
         Documents that must carry a current-inventory count marker.
     target_list_document : Path, optional
         Consolidation map whose category lists must match the inventory.
+    document_reader : Callable[[Path], str], optional
+        Reader for documented inventory text.
 
     Raises
     ------
     ValueError
-        If a documented marker or target list differs from the inventory.
+        If a document cannot be read or its marker or target list differs.
     """
+    sources = {
+        document: document_reader(document)
+        for document in (*documents, target_list_document)
+    }
     actual = counts(targets_by_category)
     failures = [
-        f"{document}: documented {documented_counts(document)}, actual {actual}"
+        f"{document}: documented {documented_counts(sources[document], document)}, "
+        f"actual {actual}"
         for document in documents
-        if documented_counts(document) != actual
+        if documented_counts(sources[document], document) != actual
     ]
-    documented = documented_targets(target_list_document)
+    documented = documented_targets(sources[target_list_document], target_list_document)
     failures.extend(
         f"{target_list_document}: documented {documented[category]}, "
         f"actual {targets_by_category[category]} for {category}"

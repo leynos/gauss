@@ -46,15 +46,18 @@ class InventoryModule(Protocol):
 
     def counts(self, targets_by_category: dict[str, list[str]]) -> dict[str, int]: ...
 
-    def documented_counts(self, document: Path) -> dict[str, int]: ...
+    def documented_counts(self, source: str, document: Path) -> dict[str, int]: ...
 
-    def documented_targets(self, document: Path) -> dict[str, list[str]]: ...
+    def documented_targets(
+        self, source: str, document: Path
+    ) -> dict[str, list[str]]: ...
 
     def validate_documentation(
         self,
         targets_by_category: dict[str, list[str]],
         documents: tuple[Path, ...],
         target_list_document: Path,
+        document_reader: Callable[[Path], str],
     ) -> None: ...
 
     def main(self) -> None: ...
@@ -79,47 +82,37 @@ def root_package(module: InventoryModule, targets: object) -> dict[str, object]:
 
 
 def target_inventory() -> dict[str, list[str]]:
-    return {
-        "harness_gpui_bdd": ["gpui_bdd"],
-        "raw_structural_gpui": ["gpui_raw"],
-        "non_gpui_bdd": ["non_gpui_bdd"],
-        "other_integration": ["other"],
-    }
+    return dict(
+        zip(CATEGORY_ORDER, (["gpui_bdd"], ["gpui_raw"], ["non_gpui_bdd"], ["other"]))
+    )
 
 
 def count_marker() -> str:
     return (
-        "<!-- integration-test-inventory: total=4 harness_gpui_bdd=1 "
-        "raw_structural_gpui=1 non_gpui_bdd=1 other_integration=1 gpui_target=2 -->"
+        "<!-- integration-test-inventory: total=4 "
+        + " ".join(f"{category}=1" for category in CATEGORY_ORDER)
+        + " gpui_target=2 -->"
     )
 
 
 def consolidation_map() -> str:
-    return """### Harness-backed GPUI BDD targets (1)
-
-- `gpui_bdd`
-
-### Raw structural GPUI targets (1)
-
-- `gpui_raw`
-
-### Non-GPUI BDD targets (1)
-
-- `non_gpui_bdd`
-
-### Other integration targets (1)
-
-- `other`
-"""
+    return "\n\n".join(
+        f"### {heading} (1)\n\n- `{target}`"
+        for heading, target in (
+            ("Harness-backed GPUI BDD targets", "gpui_bdd"),
+            ("Raw structural GPUI targets", "gpui_raw"),
+            ("Non-GPUI BDD targets", "non_gpui_bdd"),
+            ("Other integration targets", "other"),
+        )
+    )
 
 
-def write_inventory_documents(tmp_path: Path) -> tuple[tuple[Path, ...], Path]:
+def inventory_docs(tmp_path: Path) -> tuple[tuple[Path, ...], Path, dict[Path, str]]:
     documents = tuple(tmp_path / f"inventory-{index}.md" for index in range(4))
-    for document in documents:
-        document.write_text(f"{count_marker()}\n", encoding="utf-8")
     target_list_document = tmp_path / "CONSOLIDATION_MAP.md"
-    target_list_document.write_text(consolidation_map(), encoding="utf-8")
-    return documents, target_list_document
+    sources = {document: count_marker() for document in documents}
+    sources[target_list_document] = consolidation_map()
+    return documents, target_list_document, sources
 
 
 def test_root_gauss_package_selects_the_root_manifest(
@@ -297,8 +290,8 @@ def test_documented_counts_parses_a_complete_marker(
     tmp_path: Path,
 ) -> None:
     document = tmp_path / "inventory.md"
-    document.write_text(f"{count_marker()}\n", encoding="utf-8")
-    assert inventory_module.documented_counts(document) == {
+    source = f"{count_marker()}\n"
+    assert inventory_module.documented_counts(source, document) == {
         "total": 4,
         "harness_gpui_bdd": 1,
         "raw_structural_gpui": 1,
@@ -322,22 +315,25 @@ def test_documented_counts_rejects_invalid_fields(
     message: str,
 ) -> None:
     document = tmp_path / "inventory.md"
-    document.write_text(f"{marker}\n", encoding="utf-8")
+    source = f"{marker}\n"
     with pytest.raises(ValueError, match=message):
-        inventory_module.documented_counts(document)
+        inventory_module.documented_counts(source, document)
 
 
 def test_validate_documentation_rejects_a_target_list_mismatch(
     inventory_module: InventoryModule,
     tmp_path: Path,
 ) -> None:
-    documents, target_list_document = write_inventory_documents(tmp_path)
-    target_list_document.write_text(
-        consolidation_map().replace("gpui_raw", "different_raw"), encoding="utf-8"
+    documents, target_document, sources = inventory_docs(tmp_path)
+    sources[target_document] = sources[target_document].replace(
+        "gpui_raw", "different_raw"
     )
     with pytest.raises(ValueError, match=r"actual \['gpui_raw'\]"):
         inventory_module.validate_documentation(
-            target_inventory(), documents, target_list_document
+            target_inventory(),
+            documents,
+            target_document,
+            sources.__getitem__,
         )
 
 
@@ -346,8 +342,7 @@ def test_documented_targets_delimit_first_and_final_category_sections(
     tmp_path: Path,
 ) -> None:
     document = tmp_path / "CONSOLIDATION_MAP.md"
-    document.write_text(consolidation_map(), encoding="utf-8")
-    targets = inventory_module.documented_targets(document)
+    targets = inventory_module.documented_targets(consolidation_map(), document)
     assert targets["harness_gpui_bdd"] == ["gpui_bdd"]
     assert targets["other_integration"] == ["other"]
 
@@ -375,10 +370,8 @@ def test_documented_targets_rejects_invalid_headings(
     message: str,
 ) -> None:
     document = tmp_path / "CONSOLIDATION_MAP.md"
-    document.write_text(contents, encoding="utf-8")
-
     with pytest.raises(ValueError, match=message):
-        inventory_module.documented_targets(document)
+        inventory_module.documented_targets(contents, document)
 
 
 def test_main_prints_the_validated_inventory(
@@ -389,7 +382,6 @@ def test_main_prints_the_validated_inventory(
     monkeypatch.setattr(inventory_module, "inventory", target_inventory)
     monkeypatch.setattr(inventory_module, "validate_documentation", lambda _: None)
     inventory_module.main()
-
     assert capsys.readouterr().out == (
         "harness_gpui_bdd: 1 (gpui_bdd)\n"
         "raw_structural_gpui: 1 (gpui_raw)\n"
