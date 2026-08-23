@@ -1,14 +1,16 @@
-//! Tests for window control actions and resize behaviour.
+//! Structural tests for window-control geometry and test override plumbing.
 //!
-//! This module tests the keyboard-accessible window controls and verifies
-//! that resize zones are properly disabled when the window is maximised.
+//! These remain raw GPUI tests because they inspect element presence, rendered
+//! dimensions, or the test-only maximized-state override rather than a user
+//! action. The GPUI test platform cannot drive native window maximize or resize
+//! operations, so this file retains that test-plumbing coverage.
 
 #[path = "common/gpui_shell_window_controls.rs"]
 mod common;
 
 use common::{ensure_initial_draw, init_test_app};
 use gauss::ui::Phase0Shell;
-use gpui::{Entity, Modifiers, MouseButton, Pixels, TestAppContext, VisualTestContext, point, px};
+use gpui::{Entity, Pixels, TestAppContext, VisualTestContext, px};
 
 /// Minimum expected width for icon buttons (28x28 nominal size).
 const MIN_BUTTON_SIZE: Pixels = px(20.0);
@@ -63,9 +65,9 @@ fn assert_element_has_size(
     );
 }
 
-/// Assert that the maximised state override returns the expected value.
+/// Assert that the maximized state override returns the expected value.
 ///
-/// This helper creates a window with the specified maximised override and
+/// This helper creates a window with the specified maximized override and
 /// verifies that `is_maximized_for_resize_borders_for_tests` returns the
 /// expected value.
 fn assert_maximised_override_matches(cx: &mut TestAppContext, expected_maximised: bool) {
@@ -112,7 +114,7 @@ fn window_control_buttons_are_present(cx: &mut TestAppContext) {
 /// Test that the titlebar drag region has appropriate dimensions.
 ///
 /// Note: Clicking the titlebar is not tested because GPUI's test platform
-/// does not implement `start_window_move()`. Double-click to toggle maximise
+/// does not implement `start_window_move()`. Double-click to toggle maximize
 /// also isn't testable as `zoom_window()` is similarly unimplemented.
 /// This test verifies the UI structure instead.
 #[gpui::test]
@@ -137,50 +139,60 @@ fn window_control_buttons_have_dimensions(cx: &mut TestAppContext) {
     }
 }
 
-/// Test that the maximised state override works in tests.
+/// Test that the maximized state override works in tests.
 ///
-/// This verifies the test infrastructure for simulating maximised state.
+/// This verifies the test infrastructure for simulating maximized state.
 #[gpui::test]
 fn maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
     assert_maximised_override_matches(cx, true);
 }
 
-/// Test that setting maximised to false via test override works.
+/// Test that setting maximized to false via test override works.
 #[gpui::test]
 fn non_maximized_override_is_applied_in_tests(cx: &mut TestAppContext) {
     assert_maximised_override_matches(cx, false);
 }
 
-/// Test that changing maximised state triggers a re-render.
+/// Test that changing the maximized override updates the titlebar render.
+///
+/// This verifies test-only state plumbing because GPUI's test window cannot
+/// exercise the native maximize action.
 #[gpui::test]
-fn maximized_state_change_triggers_rerender(cx: &mut TestAppContext) {
+fn maximized_override_changes_titlebar_render(cx: &mut TestAppContext) {
     let (view, visual_cx) = setup_window_with(cx, |shell| {
         shell.set_maximized_for_tests(Some(false));
     });
+    let before = visual_cx
+        .debug_bounds("#titlebar-drag-region")
+        .expect("titlebar drag region should exist before maximization");
 
-    // Change the maximised state
     visual_cx.update(|_window, app| {
-        view.update(app, |shell, view_cx| {
+        view.update(app, |shell, _view_cx| {
             shell.set_maximized_for_tests(Some(true));
-            view_cx.notify();
         });
     });
     ensure_initial_draw(visual_cx);
 
-    // Verify the change took effect
+    let after = visual_cx
+        .debug_bounds("#titlebar-drag-region")
+        .expect("titlebar drag region should exist after maximization");
+    assert_ne!(
+        after, before,
+        "maximized state should change the titlebar render bounds"
+    );
     visual_cx.update(|window, app| {
-        let is_maximised = view
-            .read(app)
-            .is_maximized_for_resize_borders_for_tests(window);
-        assert!(is_maximised, "expected maximised state to change");
+        assert!(
+            view.read(app)
+                .is_maximized_for_resize_borders_for_tests(window),
+            "expected shell to observe maximized state"
+        );
     });
 }
-
-/// Test that resize canvas is not present when window is maximised.
+/// Test that resize canvas is not present when window is maximized.
 ///
 /// This verifies the behavioural guard that prevents resize operations when
-/// the window is maximised. The resize canvas element is only added to the
-/// render tree when the window is NOT maximised, so its absence confirms
+/// the window is maximized. The resize canvas element is only added to the
+/// render tree when the window is NOT maximized, so its absence confirms
 /// that the resize handler cannot be triggered.
 ///
 /// Note: This test is skipped on non-Linux platforms because client-side
@@ -198,7 +210,7 @@ fn resize_canvas_not_present_when_maximised(cx: &mut TestAppContext) {
     );
 }
 
-/// Test that resize canvas IS present when window is not maximised.
+/// Test that resize canvas IS present when window is not maximized.
 ///
 /// This is the inverse of `resize_canvas_not_present_when_maximised` and
 /// verifies that resize functionality is available in normal window state.
@@ -206,9 +218,9 @@ fn resize_canvas_not_present_when_maximised(cx: &mut TestAppContext) {
 /// Note: This test is skipped because GPUI's test platform may not return
 /// `Decorations::Client` for window decorations. When the platform returns
 /// `Decorations::Server`, the resize canvas is never rendered regardless
-/// of maximised state, causing this test to fail spuriously. The maximised
+/// of maximized state, causing this test to fail spuriously. The maximized
 /// case still provides value as a regression test: if client decorations
-/// are ever used, the resize canvas should not be present when maximised.
+/// are ever used, the resize canvas should not be present when maximized.
 #[gpui::test]
 #[cfg(target_os = "linux")]
 #[ignore = "GPUI test platform may not use client-side decorations"]
@@ -220,48 +232,5 @@ fn resize_canvas_present_when_not_maximised(cx: &mut TestAppContext) {
     assert!(
         visual_cx.debug_bounds("#resize-canvas").is_some(),
         "resize canvas should be present when window is not maximised"
-    );
-}
-
-/// Test that dragging at a resize border does not resize when maximised.
-///
-/// This behavioural test verifies that the resize prevention guards work
-/// correctly: when the window is maximised, dragging from a position that
-/// would normally be a resize zone should not change the window bounds.
-///
-/// Note: This test runs only on Linux because client-side window decorations
-/// (and thus the resize zones in the shadow area) are only used on Linux.
-#[gpui::test]
-#[cfg(target_os = "linux")]
-fn resize_interaction_prevented_when_maximised(cx: &mut TestAppContext) {
-    let (_view, visual_cx) = setup_window_with(cx, |shell| {
-        shell.set_maximized_for_tests(Some(true));
-    });
-
-    // Capture initial window bounds
-    let bounds_before = visual_cx.update(|window, _app| window.window_bounds());
-
-    // Simulate mouse down at a position in the resize border zone.
-    // The shadow size is 12px on Linux, so (5, 5) is within the top-left
-    // corner resize zone.
-    let resize_zone_start = point(px(5.0), px(5.0));
-    let drag_target = point(px(50.0), px(50.0));
-
-    visual_cx.simulate_mouse_down(resize_zone_start, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
-
-    // Simulate drag by moving to a different position
-    visual_cx.simulate_mouse_move(drag_target, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
-
-    // Complete the drag by releasing at the target position
-    visual_cx.simulate_mouse_up(drag_target, MouseButton::Left, Modifiers::none());
-    visual_cx.run_until_parked();
-
-    // Verify window bounds are unchanged
-    let bounds_after = visual_cx.update(|window, _app| window.window_bounds());
-    assert_eq!(
-        bounds_before, bounds_after,
-        "window bounds should not change when dragging resize zone while maximised"
     );
 }

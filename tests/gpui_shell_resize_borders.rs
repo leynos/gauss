@@ -1,9 +1,10 @@
-//! Tests for resize border visibility based on window state.
+//! Structural GPUI tests for resize-border visibility based on window state.
 //!
 //! On Linux, resize hit regions are provided by `GaussWindowBorder` in the
 //! window shadow area, so the inner `resize_borders()` function returns empty.
 //! These tests only run on non-Linux platforms where the inner resize borders
-//! are used.
+//! are used. They remain raw tests because they inspect conditional render-tree
+//! presence rather than exercising a supported resize action.
 
 // The shared helpers are only referenced by the non-Linux tests below, so the
 // module declaration carries the same target gate as its uses.

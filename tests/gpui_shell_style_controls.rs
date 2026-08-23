@@ -1,112 +1,133 @@
-//! GPUI headless integration tests for Phase 0 stroke/fill controls.
+//! Structural GPUI coverage for Phase 0 shell style controls.
+//!
+//! These checks exercise test-only colour application helpers because the GPUI
+//! test platform cannot address the colour pickers reliably. They verify style
+//! command and undo plumbing rather than user-visible picker interaction.
 
 #[path = "common/gpui_shell_style_controls.rs"]
 mod common;
 
+#[path = "common/init_app.rs"]
+mod init_app;
+#[path = "common/initial_draw.rs"]
+mod initial_draw;
+
 use common::{
-    anchor_to_canvas_point, click_canvas_and_wait, ensure_initial_draw, init_test_app,
-    read_document, read_history_len, require_draw_shape, simulate_escape,
+    anchor_to_canvas_point, click_canvas_and_wait, read_document, read_history_len,
+    require_draw_shape, simulate_document_undo, simulate_escape,
 };
 use gauss::model::{Paint, Rgba, SelItem, ShapeId, Vec2};
 use gauss::ui::Phase0Shell;
 use gpui::{Hsla, Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
+use init_app::init_test_app;
+use initial_draw::ensure_initial_draw;
 use test_support::{TestSupportError, TestSupportResult};
 
-fn select_anchor0(
+fn select_first_anchor(
     visual_cx: &mut VisualTestContext,
     view: &gpui::Entity<Phase0Shell>,
-    select_point: gpui::Point<gpui::Pixels>,
+    position: gpui::Point<gpui::Pixels>,
     shape_id: ShapeId,
 ) -> TestSupportResult<()> {
-    visual_cx.simulate_mouse_down(select_point, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_down(position, MouseButton::Left, Modifiers::none());
     visual_cx.run_until_parked();
-
     let selection = visual_cx.read(|app| view.read(app).selection().clone());
-    let expected_anchor = SelItem::Anchor {
+    let expected = SelItem::Anchor {
         shape: shape_id,
         anchor: 0,
     };
-    if !selection.contains(&expected_anchor) {
+    if !selection.contains(&expected) {
         return Err(TestSupportError::expectation(format!(
-            "expected anchor selection; selection={selection:?}"
+            "expected first anchor selection; selection={selection:?}"
         )));
     }
-
-    visual_cx.simulate_mouse_up(select_point, MouseButton::Left, Modifiers::none());
+    visual_cx.simulate_mouse_up(position, MouseButton::Left, Modifiers::none());
     visual_cx.run_until_parked();
     Ok(())
+}
+
+fn apply_colour_changes(visual_cx: &mut VisualTestContext, view: &gpui::Entity<Phase0Shell>) {
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _cx| {
+            shell.apply_stroke_colour(Some(Hsla::red()));
+        });
+    });
+    visual_cx.run_until_parked();
+    visual_cx.update(|_window, app| {
+        view.update(app, |shell, _cx| {
+            shell.apply_fill_colour(Some(Hsla::blue()));
+        });
+    });
+    visual_cx.run_until_parked();
 }
 
 #[gpui::test]
 fn style_changes_apply_to_selected_shapes_and_are_undoable(cx: &mut TestAppContext) {
     init_test_app(cx);
-
     let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
     ensure_initial_draw(visual_cx);
 
     let bounds = common::canvas_bounds(visual_cx).expect("canvas bounds should be available");
-    let p1 = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));
-    let p2 = point(
+    let first = point(bounds.origin.x + px(2.0), bounds.origin.y + px(2.0));
+    let second = point(
         bounds.origin.x + bounds.size.width - px(2.0),
         bounds.origin.y + bounds.size.height - px(2.0),
     );
+    click_canvas_and_wait(visual_cx, first);
+    click_canvas_and_wait(visual_cx, second);
 
-    click_canvas_and_wait(visual_cx, p1);
-    click_canvas_and_wait(visual_cx, p2);
-
-    let doc_before = read_document(visual_cx, &view);
-    let shape_before = require_draw_shape(&doc_before, "after drawing")
-        .expect("expected draw shape after drawing")
-        .clone();
-    let anchor0 = shape_before
-        .path
-        .anchors
-        .first()
-        .map_or(Vec2::ZERO, |anchor| anchor.pos);
-
+    let document = read_document(visual_cx, &view);
+    let (shape_id, anchor, original_style) = {
+        let shape = require_draw_shape(&document, "after drawing")
+            .expect("expected draw shape after drawing");
+        (
+            shape.id,
+            shape
+                .path
+                .anchors
+                .first()
+                .map_or(Vec2::ZERO, |item| item.pos),
+            shape.style.clone(),
+        )
+    };
     simulate_escape(visual_cx);
+    select_first_anchor(
+        visual_cx,
+        &view,
+        anchor_to_canvas_point(&bounds, anchor, first),
+        shape_id,
+    )
+    .expect("expected first anchor selection");
 
-    let select_point = anchor_to_canvas_point(&bounds, anchor0, p1);
-    select_anchor0(visual_cx, &view, select_point, shape_before.id)
-        .expect("expected anchor selection");
+    let history_len_before_style = read_history_len(visual_cx, &view);
+    apply_colour_changes(visual_cx, &view);
 
-    let len_before_style = read_history_len(visual_cx, &view);
-
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.apply_stroke_colour(Some(Hsla::red()));
-            shell.apply_fill_colour(Some(Hsla::blue()));
-        });
-    });
-    visual_cx.run_until_parked();
-    assert_eq!(
-        read_history_len(visual_cx, &view),
-        len_before_style + 2,
-        "expected two undo entries for stroke + fill changes"
-    );
-
-    let doc_after = read_document(visual_cx, &view);
-    let shape_after = require_draw_shape(&doc_after, "after applying style")
+    let styled_document = read_document(visual_cx, &view);
+    let styled_shape = require_draw_shape(&styled_document, "after applying style")
         .expect("expected draw shape after applying style");
     assert_eq!(
-        shape_after.style.stroke,
+        styled_shape.style.stroke,
         Paint::Solid(Rgba::new(255, 0, 0, 255)),
         "expected stroke to be updated to red"
     );
     assert_eq!(
-        shape_after.style.fill,
+        styled_shape.style.fill,
         Paint::Solid(Rgba::new(0, 0, 255, 255)),
         "expected fill to be updated to blue"
     );
-
-    common::simulate_document_undo(visual_cx);
-    common::simulate_document_undo(visual_cx);
-
-    let doc_after_undo = read_document(visual_cx, &view);
-    let shape_after_undo =
-        require_draw_shape(&doc_after_undo, "after undo").expect("expected draw shape after undo");
     assert_eq!(
-        shape_after_undo.style, shape_before.style,
+        read_history_len(visual_cx, &view),
+        history_len_before_style + 2,
+        "expected two undo entries for stroke and fill changes"
+    );
+
+    simulate_document_undo(visual_cx);
+    simulate_document_undo(visual_cx);
+    let restored_document = read_document(visual_cx, &view);
+    let restored_shape = require_draw_shape(&restored_document, "after undo")
+        .expect("expected draw shape after undo");
+    assert_eq!(
+        restored_shape.style, original_style,
         "expected undo to restore the original style"
     );
 }

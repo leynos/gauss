@@ -20,8 +20,7 @@ After this change:
   literals.
 - The accessibility tree uses the same localized strings as the visual UI.
 - Tests verify that all expected messages exist in the catalogue and that
-  lookups
-  succeed.
+  lookups succeed.
 
 Observable success: Running `cargo test` shows all i18n, UI, and accessibility
 tests passing. Running the application shows identical UI labels as before, but

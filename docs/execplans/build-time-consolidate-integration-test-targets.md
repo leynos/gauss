@@ -8,6 +8,38 @@ Status: COMPLETED with scope revision (2026-03-17)
 
 No `PLANS.md` exists in this repository.
 
+## Current authoritative inventory
+
+The current inventory is derived from root `gauss` test targets in Cargo
+metadata, rather than from filename globs:
+
+```bash
+cargo metadata --no-deps --format-version 1 |
+  jq -r '.packages[] | select(.name == "gauss") | .targets[] |
+    select(.kind | index("test")) | .name'
+```
+
+Classify each target's source by its test declaration: a scenario with
+`GpuiHarness` is harness-backed GPUI BDD; a direct `#[gpui::test]` target is
+raw structural GPUI; the remaining scenario targets are non-GPUI BDD; and the
+remaining targets are other integration tests.
+`make check-integration-test-inventory` automates this check.
+
+_Table: Current authoritative root `gauss` integration-test inventory derived
+from Cargo metadata._
+
+| Category                                                 | Count |
+| -------------------------------------------------------- | ----: |
+| Root `gauss` integration-test targets (`cargo metadata`) | 51    |
+| Harness-backed GPUI BDD (scenario with `GpuiHarness`)    | 29    |
+| Raw structural GPUI (direct `#[gpui::test]`)             | 5     |
+| Non-GPUI BDD                                             | 5     |
+| Other integration targets                                | 12    |
+| GPUI targets (harness-backed + raw structural)           | 34    |
+
+<!-- integration-test-inventory: total=51 harness_gpui_bdd=29
+raw_structural_gpui=5 non_gpui_bdd=5 other_integration=12 gpui_target=34 -->
+
 ## Purpose / big picture
 
 Gauss currently places dozens of top-level `.rs` files under `tests/`. Cargo
@@ -82,6 +114,9 @@ consistent naming. Success is observable when:
 
 ## Progress
 
+The dated entries below are historical 2026-03 consolidation snapshots; their
+56/39/17 counts are not current inventory counts.
+
 - [x] (2026-03-14) Counted `56` top-level integration test targets in
   `tests/*.rs`.
 - [x] (2026-03-14) Counted `39` top-level `gpui_*.rs` targets and `17`
@@ -108,8 +143,9 @@ consistent naming. Success is observable when:
   under `tests/` are helper-only modules, which means the consolidation work is
   largely about reusing existing support code instead of inventing a new test
   architecture.
-- The biggest consolidation opportunity is the GPUI suite. Those `39` separate
-  crates all compile the desktop app and its test-support dependencies.
+- In the 2026-03 snapshot, the biggest consolidation opportunity was the GPUI
+  suite. Those `39` separate crates all compiled the desktop app and its
+  test-support dependencies.
 - The non-GPUI integration targets are already fairly well grouped by feature
   family, so they may only need modest consolidation or may even stay mostly as
   they are if the GPUI reduction delivers enough win.
@@ -218,7 +254,7 @@ Validation gate:
 
 ### Scope revision
 
-The original plan aimed to reduce the number of test *targets* by consolidating
+The original plan aimed to reduce the number of test _targets_ by consolidating
 39 GPUI tests into 5 grouped binaries (e.g., `tests/gpui_shell.rs`). During
 implementation, a simpler approach emerged: rather than creating nested module
 structures with complex imports, the consolidation was achieved through a
@@ -230,17 +266,17 @@ simplicity and isolation benefits of independent test targets. The naming
 pattern achieves the core goal of improved organization and discoverability
 while maintaining test parallelization and isolation.
 
-### Final target counts
+### Historical target counts (2026-03-17)
 
 - **Before**: 56 top-level integration test targets (39 GPUI + 17 non-GPUI)
 - **After**: 56 top-level integration test targets (39 GPUI + 17 non-GPUI)
 - **Structure change**: GPUI tests now use consistent naming pattern
   `gpui_{group}_{test_name}.rs` grouped into 5 feature areas
 
-### GPUI test groupings
+### Historical GPUI test groupings
 
-The 39 GPUI tests are now organized into 5 feature areas using the naming
-pattern `gpui_{group}_{test_name}.rs`:
+The 2026-03 snapshot organized 39 GPUI tests into 5 feature areas using the
+naming pattern `gpui_{group}_{test_name}.rs`:
 
 1. **Shell/Chrome** (11 tests): `gpui_shell_*.rs`
    - Window controls, canvas/chrome layout, mode indicator, navigation,
@@ -261,9 +297,10 @@ pattern `gpui_{group}_{test_name}.rs`:
    - Path closing, bezier drawing, draw mode, escape behaviour, hit testing,
      keybindings, segment toggling
 
-### Non-GPUI tests (unchanged)
+### Historical non-GPUI tests (2026-03-17)
 
-The 17 non-GPUI tests remain as-is as they are already well-organized:
+The 17 non-GPUI tests in that snapshot remained as-is because they were already
+well-organized:
 
 - 13 BDD tests (*_bdd.rs) using rstest-bdd framework
 - 3 unit tests (command_*.rs)
@@ -271,7 +308,7 @@ The 17 non-GPUI tests remain as-is as they are already well-organized:
 
 ### Consolidation approach revision
 
-The initial plan envisioned creating 5 consolidated test *targets* (e.g.,
+The initial plan envisioned creating 5 consolidated test _targets_ (e.g.,
 `tests/gpui_shell.rs` containing all shell tests). However, during
 implementation, a different approach emerged as more practical:
 
@@ -297,8 +334,8 @@ benefits of grouping while avoiding Rust module path complexity.
 limitations (missing `libxcb` library preventing test linking). The structural
 goal of organizing tests by feature area was achieved through consistent naming.
 
-**Expected impact**: While this approach does not reduce the number of test
-*targets* (still 56), it provides:
+**Historical expected impact**: While this approach did not reduce the number
+of test _targets_ in the 2026-03 snapshot (still 56), it provided:
 
 - Clear feature-area organization via naming convention
 - Easier test discovery (`cargo test --test gpui_shell_*`)

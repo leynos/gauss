@@ -120,6 +120,58 @@ For a new harness, add `tests/common/<harness>.rs` and include it with
 used by that harness and re-export only its helpers; do not recreate a global
 helper module.
 
+### Shell BDD support and test classification
+
+Shell tests describe a user-visible action or observable state transition as a
+Gherkin scenario under `tests/features/`. Keep render-tree presence, geometry,
+and test-plumbing assertions as raw `#[gpui::test]` tests: Given/When/Then
+language would hide that these checks depend on implementation structure rather
+than behaviour. The retained structural inventory and rationale are recorded in
+the
+[v0.6.0 migration guide](rstest-bdd-v0-6-0-migration-guide.md#retain-structural-gauss-shell-tests-as-raw-gpui-tests).
+
+The focused modules under `tests/shell_bdd/` provide shared support for the
+behavioural shell scenarios:
+
+- `support.rs` keeps shell-specific scenario state and rebuilds a
+  `VisualTestContext` for each step. It uses `DurableShell` from
+  `tests/common/durable_shell.rs` and the `scenario_state!` macro from
+  `tests/common/scenario_state.rs`.
+- `lifecycle.rs` re-exports the canonical, focused common helpers for
+  application initialization and the initial draw.
+- `click.rs` performs fallible selector-based clicks and drains pending GPUI
+  work.
+- `expect_equal.rs` and `expect_true.rs` return `TestSupportError` values from
+  step assertions instead of panicking.
+
+Include only the support modules that a test binary uses. Use a path attribute
+such as `#[path = "shell_bdd/support.rs"]`. Selective inclusion keeps
+unused-helper checks effective and avoids adding the complete shell support
+surface to every GPUI integration test. Each stateful scenario must accept the
+cleanup fixture and remain `#[serial]`.
+
+### Integration-test inventory validation
+
+The authoritative integration-test inventory comes from the root `gauss`
+package in Cargo metadata. The checker reads the target source markers,
+classifies each target, and verifies the documented inventory markers in the
+four inventory documents. Run it through the Make target:
+
+```sh
+make check-integration-test-inventory
+```
+
+This target invokes the repository script with `uv` using the following
+equivalent command:
+
+```sh
+UV_CACHE_DIR=.uv-cache UV_TOOL_DIR=.uv-tools uv run \
+  scripts/check_integration_test_inventory.py
+```
+
+`markdownlint` depends on this target, so documentation validation also fails
+when the documented inventory differs from the current Cargo metadata.
+
 ### Stateful history scenarios
 
 The `gpui_history_bdd` binaries combine rstest-bdd 0.6.0-beta3's injected
@@ -176,33 +228,32 @@ accept `#[from(rstest_bdd_harness_context)] cx: &mut TestAppContext` and call
 
 ### Stateful file I/O scenarios
 
-The `gpui_file_io_*` scenario binaries cover Save and export dialog
-behaviour, where a `Given` step opens a window that a later `When` or `Then`
-step must go on to drive. A `gpui::VisualTestContext` borrows from the
-`TestAppContext` it was built against, and the harness hands each step a
-fresh `&mut TestAppContext`, so a context saved from one step would be tied
-to a stale borrow by the time the next step runs: it cannot cross a step
-boundary. These binaries store a `DurableShell` in scenario state instead: a
-`gpui::Entity<Phase0Shell>` paired with the window's `AnyWindowHandle`, both
-of which are cheap to copy and remain valid across steps.
-`DurableShell::with_visual_cx` rebuilds a `VisualTestContext` from that
-handle for the lifetime of a closure, giving a subsequent step a live
-context to act on.
+The `gpui_file_io_*` scenario binaries cover Save and export dialog behaviour,
+where a `Given` step opens a window that a later `When` or `Then` step must go
+on to drive. A `gpui::VisualTestContext` borrows from the `TestAppContext` it
+was built against, and the harness hands each step a fresh
+`&mut TestAppContext`, so a context saved from one step would be tied to a
+stale borrow by the time the next step runs: it cannot cross a step boundary.
+These binaries store a `DurableShell` in scenario state instead: a
+`gpui::Entity<Phase0Shell>` paired with the window's `AnyWindowHandle`, both of
+which are cheap to copy and remain valid across steps.
+`DurableShell::with_visual_cx` rebuilds a `VisualTestContext` from that handle
+for the lifetime of a closure, giving a subsequent step a live context to act
+on.
 
 The `scenario_state!` macro lives in `tests/common/scenario_state.rs`, which
 each binary that needs it includes via
 `#[path = "common/scenario_state.rs"] mod scenario_state;`, the same pattern
-used for the file I/O helper modules described below. Because step
-functions cannot thread state through their arguments, each scenario
-binary keeps a thread-local state cell instead. Invoke
-`crate::scenario_state!(StateType)` once at the binary's
-crate root with any `Default`-implementing state type; the macro generates
-the `STATE` cell, `with_state` and `reset_state` helpers, the
+used for the file I/O helper modules described below. Because step functions
+cannot thread state through their arguments, each scenario binary keeps a
+thread-local state cell instead. Invoke `crate::scenario_state!(StateType)`
+once at the binary's crate root with any `Default`-implementing state type; the
+macro generates the `STATE` cell, `with_state` and `reset_state` helpers, the
 `ScenarioStateCleanup` drop guard, and the `scenario_state_cleanup` rstest
 fixture. Every `#[scenario]` function must accept
-`#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup` so the
-state is reset both before and after the scenario runs. The simplest case
-stores a bare `Option<DurableShell>`:
+`#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup` so the state
+is reset both before and after the scenario runs. The simplest case stores a
+bare `Option<DurableShell>`:
 
 ```rust,no_run
 crate::scenario_state!(Option<DurableShell>);
@@ -222,19 +273,18 @@ fn clicking_save_opens_prompt(#[from(scenario_state_cleanup)] _cleanup: Scenario
 ```
 
 Scenarios that also exercise the filesystem hold a `TempSvgFile`: a
-UUID-suffixed temporary SVG reached through a cap-std `Dir` capability
-rather than an ambient path. Its owned `TempFileGuard` removes the file on
-drop, so the scenario state owns the file's lifetime alongside the shell
-handle. Scenario cleanup calls `TempSvgFile::cleanup` so removal failures
-propagate, while `Drop` remains an idempotent best-effort fallback. File I/O
-must not run while the `with_state` borrow is held; the
-save-dialog binary therefore stores an `Option<Rc<TempSvgFile>>` and clones
-the `Rc` out of the cell before reading the file, releasing the `RefCell`
-borrow first.
+UUID-suffixed temporary SVG reached through a cap-std `Dir` capability rather
+than an ambient path. Its owned `TempFileGuard` removes the file on drop, so
+the scenario state owns the file's lifetime alongside the shell handle.
+Scenario cleanup calls `TempSvgFile::cleanup` so removal failures propagate,
+while `Drop` remains an idempotent best-effort fallback. File I/O must not run
+while the `with_state` borrow is held; the save-dialog binary therefore stores
+an `Option<Rc<TempSvgFile>>` and clones the `Rc` out of the cell before reading
+the file, releasing the `RefCell` borrow first.
 
-The file I/O helpers are deliberately not submodules of `common`. They live
-in six focused modules under `tests/common/`, each pulled in only by the
-binaries that use it, via `#[path = "common/<name>.rs"] mod <name>;`:
+The file I/O helpers are deliberately not submodules of `common`. They live in
+six focused modules under `tests/common/`, each pulled in only by the binaries
+that use it, via `#[path = "common/<name>.rs"] mod <name>;`:
 
 - `durable_shell.rs` — `DurableShell`, included by all four
   `gpui_file_io_*` binaries.
@@ -243,15 +293,15 @@ binaries that use it, via `#[path = "common/<name>.rs"] mod <name>;`:
 - `temp_svg.rs` — `TempSvgFile`, included by the open-dialog,
   metadata-round-trip and save-dialog binaries.
 - `temp_svg_write.rs`, `temp_svg_read.rs` and `temp_svg_exists.rs` — the
-  `write`, `read_to_string` and `exists` operations on `TempSvgFile`,
-  each included only by the binaries that perform that operation.
+  `write`, `read_to_string` and `exists` operations on `TempSvgFile`, each
+  included only by the binaries that perform that operation.
 
-Splitting the helpers this finely means every module is fully used by
-every binary that includes it, so the compiler still catches a genuinely
-unused helper instead of a blanket `dead_code` expectation hiding it. It
-also keeps these helpers out of the shared surface that every GPUI
-integration test otherwise compiles. `assert_no_path_prompt(cx, context)`
-and `assert_path_prompt(cx, context)` share the underlying
+Splitting the helpers this finely means every module is fully used by every
+binary that includes it, so the compiler still catches a genuinely unused
+helper instead of a blanket `dead_code` expectation hiding it. It also keeps
+these helpers out of the shared surface that every GPUI integration test
+otherwise compiles. `assert_no_path_prompt(cx, context)` and
+`assert_path_prompt(cx, context)` share the underlying
 `did_prompt_for_new_path` check, while each step binding supplies its own
 failure message via `context`.
 

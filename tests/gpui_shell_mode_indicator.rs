@@ -1,42 +1,76 @@
-//! GPUI headless integration tests for the Phase 0 mode indicator.
-//!
-//! The Phase 0 UI shows a mode indicator line (for example, `Mode: Draw (Line)`).
-//! This test asserts the indicator reflects:
-//! - initial draw mode state,
-//! - `Tab` toggling the draw edge mode label, and
-//! - manipulate mode not displaying an edge mode suffix.
+//! Behavioural coverage for the shell mode indicator through `GpuiHarness`.
 
-#[path = "common/gpui_shell_mode_indicator.rs"]
-mod common;
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
+#[path = "shell_bdd/expect_equal.rs"]
+mod expect_equal_support;
+#[path = "shell_bdd/lifecycle.rs"]
+mod lifecycle;
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
+#[path = "shell_bdd/support.rs"]
+mod support;
 
-use common::{ensure_initial_draw, init_test_app};
+use expect_equal_support::expect_equal;
 use gauss::ui::Phase0Shell;
 use gpui::TestAppContext;
+use rstest_bdd_macros::{given, scenario, then, when};
+use serial_test::serial;
+use support::{ScenarioStateCleanup, fresh_shell_with, with_shell};
+use test_support::TestSupportError;
 
-#[gpui::test]
-fn mode_indicator_reflects_tool_and_edge_mode(cx: &mut TestAppContext) {
-    init_test_app(cx);
+#[given("a fresh Phase 0 shell window")]
+fn fresh_phase0_shell_window(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    fresh_shell_with(cx, Phase0Shell::new)
+}
 
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
+#[when("the edge mode is cycled with Tab")]
+fn cycle_edge_mode(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, _view| {
+        visual_cx.simulate_keystrokes("tab");
+        visual_cx.run_until_parked();
+        Ok(())
+    })
+}
 
-    let initial = visual_cx.read(|app| view.read(app).mode_status_line_for_tests());
-    assert_eq!(initial, "Mode: Draw (Line)");
-
-    visual_cx.simulate_keystrokes("tab");
-    visual_cx.run_until_parked();
-
-    let after_tab = visual_cx.read(|app| view.read(app).mode_status_line_for_tests());
-    assert_eq!(after_tab, "Mode: Draw (Bezier (auto))");
-
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, view_cx| {
-            shell.enter_manipulate_mode_for_tests();
-            view_cx.notify();
+#[when("manipulate mode is entered")]
+fn enter_manipulate_mode(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, view| {
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell: &mut Phase0Shell, view_cx| {
+                shell.enter_manipulate_mode_for_tests();
+                view_cx.notify();
+            });
         });
-    });
-    visual_cx.run_until_parked();
+        visual_cx.run_until_parked();
+        Ok(())
+    })
+}
 
-    let after_switch = visual_cx.read(|app| view.read(app).mode_status_line_for_tests());
-    assert_eq!(after_switch, "Mode: Manipulate");
+#[then(r#"the mode indicator reads "{expected}""#)]
+fn mode_indicator_reads(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+    expected: String,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, view| {
+        let actual = visual_cx.read(|app| view.read(app).mode_status_line_for_tests());
+        expect_equal(&actual, &expected, "mode indicator")
+    })
+}
+
+#[scenario(
+    path = "tests/features/shell_mode_indicator.feature",
+    name = "Mode indicator follows tool and edge mode",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
+#[serial]
+fn mode_indicator_follows_tool_and_edge_mode(
+    #[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup,
+) {
 }

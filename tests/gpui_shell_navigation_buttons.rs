@@ -1,25 +1,57 @@
-//! GPUI headless integration tests for mouse navigation buttons.
-//!
-//! Phase 0 maps mouse "back/forward" navigation buttons to undo/redo. Holding
-//! Shift switches to the selection history stack.
+//! Behavioural mouse-navigation coverage through `GpuiHarness`.
 
 #[path = "common/gpui_shell_navigation_buttons.rs"]
 mod common;
 
+#[path = "common/durable_shell.rs"]
+mod durable_shell;
+#[path = "shell_bdd/expect_equal.rs"]
+mod expect_equal_support;
+#[path = "shell_bdd/expect_true.rs"]
+mod expect_true_support;
+
+#[path = "shell_bdd/lifecycle.rs"]
+mod lifecycle;
+
+#[path = "common/scenario_state.rs"]
+mod scenario_state;
+#[path = "shell_bdd/support.rs"]
+mod support;
+
+use std::cell::RefCell;
+
 use common::{
-    anchor_to_canvas_point, canvas_bounds, draw_point, ensure_initial_draw, init_test_app,
-    require_draw_shape, shift_secondary, simulate_escape,
+    anchor_to_canvas_point, canvas_bounds, draw_point, require_draw_shape, shift_secondary,
+    simulate_escape,
 };
-use gauss::model::{Document, Paint, PaintStyle, Rgba, Vec2};
-use gauss::ui::Phase0Shell;
+use expect_equal_support::expect_equal;
+use expect_true_support::expect_true;
+use gauss::model::{Document, Paint, PaintStyle, Rgba, Selection, Vec2};
 use gpui::{
-    Hsla, Modifiers, MouseButton, NavigationDirection, TestAppContext, VisualTestContext, point, px,
+    Bounds, Hsla, Modifiers, MouseButton, NavigationDirection, Pixels, Point, TestAppContext,
+    VisualTestContext, point, px,
 };
+use rstest_bdd_macros::{given, scenario, then, when};
+use serial_test::serial;
+use support::{ScenarioStateCleanup, fresh_shell_with, with_shell};
 use test_support::{TestSupportError, TestSupportResult};
+
+#[derive(Default)]
+struct NavigationState {
+    bounds: Option<Bounds<Pixels>>,
+    click_point: Option<Point<Pixels>>,
+    initial_style: Option<PaintStyle>,
+    selection_before_clear: Option<Selection>,
+    selection_after_clear: Option<Selection>,
+}
+
+thread_local! {
+    static NAVIGATION_STATE: RefCell<NavigationState> = RefCell::new(NavigationState::default());
+}
 
 fn click_button(
     visual_cx: &mut VisualTestContext,
-    position: gpui::Point<gpui::Pixels>,
+    position: Point<Pixels>,
     button: MouseButton,
     modifiers: Modifiers,
 ) {
@@ -28,205 +60,275 @@ fn click_button(
     visual_cx.run_until_parked();
 }
 
-fn canvas_points(
-    visual_cx: &mut VisualTestContext,
-) -> TestSupportResult<(gpui::Bounds<gpui::Pixels>, gpui::Point<gpui::Pixels>)> {
-    let bounds = canvas_bounds(visual_cx)?;
-    let p1 = point(
-        bounds.origin.x + px(common::CANVAS_PADDING_PX),
-        bounds.origin.y + px(common::CANVAS_PADDING_PX),
-    );
-    Ok((bounds, p1))
+#[expect(
+    clippy::float_arithmetic,
+    reason = "integration tests use floating point geometry inputs"
+)]
+fn second_point(bounds: &Bounds<Pixels>, first: Point<Pixels>) -> Point<Pixels> {
+    let dx = (f32::from(bounds.size.width) - 4.0).clamp(1.0, 40.0);
+    let dy = (f32::from(bounds.size.height) - 4.0).clamp(1.0, 24.0);
+    point(first.x + px(dx), first.y + px(dy))
 }
 
 #[expect(
     clippy::float_arithmetic,
     reason = "integration tests use floating point geometry inputs"
 )]
-fn second_point(
-    bounds: &gpui::Bounds<gpui::Pixels>,
-    p1: gpui::Point<gpui::Pixels>,
-) -> gpui::Point<gpui::Pixels> {
-    let width = f32::from(bounds.size.width);
-    let height = f32::from(bounds.size.height);
-
-    let dx = (width - 4.0).clamp(1.0, 40.0);
-    let dy = (height - 4.0).clamp(1.0, 24.0);
-    point(p1.x + px(dx), p1.y + px(dy))
-}
-
-#[expect(
-    clippy::float_arithmetic,
-    reason = "integration tests use floating point geometry inputs"
-)]
-fn clear_point(bounds: &gpui::Bounds<gpui::Pixels>) -> gpui::Point<gpui::Pixels> {
-    let width = f32::from(bounds.size.width);
-    let height = f32::from(bounds.size.height);
-
-    let clear_x = (width - 12.0).max(1.0);
-    let clear_y = (height - 12.0).max(1.0);
+fn clear_point(bounds: &Bounds<Pixels>) -> Point<Pixels> {
+    let clear_x = (f32::from(bounds.size.width) - 12.0).max(1.0);
+    let clear_y = (f32::from(bounds.size.height) - 12.0).max(1.0);
     point(bounds.origin.x + px(clear_x), bounds.origin.y + px(clear_y))
 }
 
-fn select_point_for_anchor0(
-    bounds: &gpui::Bounds<gpui::Pixels>,
-    anchor0: Vec2,
-    p1: gpui::Point<gpui::Pixels>,
-) -> gpui::Point<gpui::Pixels> {
-    anchor_to_canvas_point(bounds, anchor0, p1)
-}
-
-fn draw_two_points_and_select_anchor0(
+fn draw_and_select_first_anchor(
     visual_cx: &mut VisualTestContext,
-    view: &gpui::Entity<Phase0Shell>,
-) -> TestSupportResult<(
-    gpui::Bounds<gpui::Pixels>,
-    gpui::Point<gpui::Pixels>,
-    PaintStyle,
-)> {
-    let (bounds, p1) = canvas_points(visual_cx)?;
-    let p2 = second_point(&bounds, p1);
-
-    draw_point(visual_cx, p1);
-    draw_point(visual_cx, p2);
+    view: &gpui::Entity<gauss::ui::Phase0Shell>,
+) -> TestSupportResult<(Bounds<Pixels>, Point<Pixels>, PaintStyle)> {
+    let bounds = canvas_bounds(visual_cx)?;
+    let first = point(
+        bounds.origin.x + px(common::CANVAS_PADDING_PX),
+        bounds.origin.y + px(common::CANVAS_PADDING_PX),
+    );
+    draw_point(visual_cx, first);
+    draw_point(visual_cx, second_point(&bounds, first));
     visual_cx.run_until_parked();
 
-    let doc_before = visual_cx.read(|app| view.read(app).document().clone());
-    let draw_shape_before = require_draw_shape(&doc_before, "after drawing")?;
-    let initial_style = draw_shape_before.style.clone();
-
-    simulate_escape(visual_cx);
-
-    let anchor0 = draw_shape_before
+    let document = common::read_document(visual_cx, view);
+    let shape = require_draw_shape(&document, "after drawing")?;
+    let initial_style = shape.style.clone();
+    let anchor = shape
         .path
         .anchors
         .first()
-        .map_or(Vec2::ZERO, |anchor| anchor.pos);
-    let select_point = select_point_for_anchor0(&bounds, anchor0, p1);
+        .map_or(Vec2::ZERO, |item| item.pos);
+    simulate_escape(visual_cx);
     click_button(
         visual_cx,
-        select_point,
+        anchor_to_canvas_point(&bounds, anchor, first),
         MouseButton::Left,
         Modifiers::none(),
     );
-
-    Ok((bounds, p1, initial_style))
+    Ok((bounds, first, initial_style))
 }
 
-fn apply_red_stroke(visual_cx: &mut VisualTestContext, view: &gpui::Entity<Phase0Shell>) {
-    visual_cx.update(|_window, app| {
-        view.update(app, |shell, _cx| {
-            shell.apply_stroke_colour(Some(Hsla::red()));
+fn expect_stroke_is_red(document: &Document, context: &str) -> TestSupportResult<()> {
+    let shape = require_draw_shape(document, context)?;
+    expect_equal(
+        &shape.style.stroke,
+        &Paint::Solid(Rgba::new(255, 0, 0, 255)),
+        format!("stroke colour {context}"),
+    )
+}
+
+fn navigation_click(
+    cx: &mut TestAppContext,
+    direction: NavigationDirection,
+    modifiers: Modifiers,
+) -> TestSupportResult<()> {
+    let position = NAVIGATION_STATE
+        .with(|cell| cell.borrow().click_point)
+        .ok_or_else(|| TestSupportError::missing("navigation click point", "scenario setup"))?;
+    with_shell(cx, |visual_cx, _view| {
+        click_button(
+            visual_cx,
+            position,
+            MouseButton::Navigate(direction),
+            modifiers,
+        );
+        Ok(())
+    })
+}
+
+#[given("a selected anchor with a red stroke")]
+fn selected_anchor_with_red_stroke(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    NAVIGATION_STATE.with(|cell| *cell.borrow_mut() = NavigationState::default());
+    fresh_shell_with(cx, gauss::ui::Phase0Shell::new)?;
+    with_shell(cx, |visual_cx, view| {
+        let (bounds, click_point, initial_style) = draw_and_select_first_anchor(visual_cx, view)?;
+        visual_cx.update(|_window, app| {
+            view.update(app, |shell, _cx| {
+                shell.apply_stroke_colour(Some(Hsla::red()));
+            });
         });
-    });
-    visual_cx.run_until_parked();
+        visual_cx.run_until_parked();
+        let document = common::read_document(visual_cx, view);
+        expect_stroke_is_red(&document, "after applying style")?;
+        NAVIGATION_STATE.with(|cell| {
+            let mut state = cell.borrow_mut();
+            state.bounds = Some(bounds);
+            state.click_point = Some(click_point);
+            state.initial_style = Some(initial_style);
+        });
+        Ok(())
+    })
 }
 
-fn expect_stroke_is_red(doc: &Document, context: &str) -> TestSupportResult<()> {
-    let shape = require_draw_shape(doc, context)?;
-    if shape.style.stroke != Paint::Solid(Rgba::new(255, 0, 0, 255)) {
-        return Err(TestSupportError::expectation(format!(
-            "expected stroke to be red ({context})"
-        )));
-    }
-    Ok(())
+#[when("navigation Back is clicked")]
+fn click_navigation_back(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    navigation_click(cx, NavigationDirection::Back, Modifiers::none())
 }
 
-#[gpui::test]
-fn navigation_buttons_undo_redo_document_history(cx: &mut TestAppContext) {
-    init_test_app(cx);
-
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
-
-    let (_bounds, p1, initial_style) = draw_two_points_and_select_anchor0(visual_cx, &view)
-        .expect("expected to draw and select the first anchor");
-    apply_red_stroke(visual_cx, &view);
-
-    let doc_after_style = visual_cx.read(|app| view.read(app).document().clone());
-    expect_stroke_is_red(&doc_after_style, "after applying style")
-        .expect("expected red stroke after applying style");
-
-    click_button(
-        visual_cx,
-        p1,
-        MouseButton::Navigate(NavigationDirection::Back),
-        Modifiers::none(),
-    );
-
-    let doc_after_undo = visual_cx.read(|app| view.read(app).document().clone());
-    let shape_after_undo = require_draw_shape(&doc_after_undo, "after doc undo")
-        .expect("expected draw shape after undo");
-    assert_eq!(
-        shape_after_undo.style, initial_style,
-        "expected navigation back to undo the last document edit"
-    );
-
-    click_button(
-        visual_cx,
-        p1,
-        MouseButton::Navigate(NavigationDirection::Forward),
-        Modifiers::none(),
-    );
-
-    let doc_after_redo = visual_cx.read(|app| view.read(app).document().clone());
-    expect_stroke_is_red(&doc_after_redo, "after doc redo")
-        .expect("expected stroke to be red after redo");
+#[then("the original stroke is restored")]
+fn original_stroke_is_restored(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let expected = NAVIGATION_STATE
+        .with(|cell| cell.borrow().initial_style.clone())
+        .ok_or_else(|| TestSupportError::missing("initial style", "scenario setup"))?;
+    with_shell(cx, |visual_cx, view| {
+        let document = common::read_document(visual_cx, view);
+        let shape = require_draw_shape(&document, "after document undo")?;
+        expect_equal(&shape.style, &expected, "style after navigation Back")
+    })
 }
 
-#[gpui::test]
-fn navigation_buttons_undo_redo_selection_history_with_shift(cx: &mut TestAppContext) {
-    init_test_app(cx);
+#[when("navigation Forward is clicked")]
+fn click_navigation_forward(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    navigation_click(cx, NavigationDirection::Forward, Modifiers::none())
+}
 
-    let (view, visual_cx) = cx.add_window_view(|_window, view_cx| Phase0Shell::new(view_cx));
-    ensure_initial_draw(visual_cx);
+#[then("the stroke is red")]
+fn stroke_is_red(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, view| {
+        expect_stroke_is_red(
+            &common::read_document(visual_cx, view),
+            "after document redo",
+        )
+    })
+}
 
-    let (bounds, p1, _initial_style) = draw_two_points_and_select_anchor0(visual_cx, &view)
-        .expect("expected to draw and select the first anchor");
-    apply_red_stroke(visual_cx, &view);
+#[when("the selection is cleared")]
+fn clear_selection(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let bounds = NAVIGATION_STATE
+        .with(|cell| cell.borrow().bounds)
+        .ok_or_else(|| TestSupportError::missing("canvas bounds", "scenario setup"))?;
+    with_shell(cx, |visual_cx, view| {
+        click_button(
+            visual_cx,
+            clear_point(&bounds),
+            MouseButton::Left,
+            Modifiers::none(),
+        );
+        let after = visual_cx.read(|app| view.read(app).selection().clone());
+        NAVIGATION_STATE.with(|cell| {
+            let mut state = cell.borrow_mut();
+            state.selection_after_clear = Some(after);
+        });
+        Ok(())
+    })
+}
 
-    let selection_before_clear = visual_cx.read(|app| view.read(app).selection().clone());
-    assert!(
-        !selection_before_clear.items.is_empty(),
-        "expected selection to be non-empty after selecting anchor"
-    );
+#[given("the selection is non-empty")]
+fn selection_is_non_empty(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, view| {
+        let selection = visual_cx.read(|app| view.read(app).selection().clone());
+        expect_true(
+            !selection.items.is_empty(),
+            "expected selection before clearing",
+        )?;
+        NAVIGATION_STATE.with(|cell| cell.borrow_mut().selection_before_clear = Some(selection));
+        Ok(())
+    })
+}
 
-    let clear_point = clear_point(&bounds);
-    click_button(visual_cx, clear_point, MouseButton::Left, Modifiers::none());
-
-    let selection_after_clear = visual_cx.read(|app| view.read(app).selection().clone());
-    assert!(
-        selection_after_clear.items.is_empty(),
-        "expected selection to be cleared"
-    );
-
-    click_button(
-        visual_cx,
-        p1,
-        MouseButton::Navigate(NavigationDirection::Back),
+#[when("Shift-navigation Back is clicked")]
+fn click_shift_navigation_back(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    navigation_click(
+        cx,
+        NavigationDirection::Back,
         shift_secondary(Modifiers::none()),
-    );
+    )
+}
 
-    let selection_after_undo = visual_cx.read(|app| view.read(app).selection().clone());
-    assert_eq!(
-        selection_after_undo, selection_before_clear,
-        "expected Shift+navigation back to undo selection changes"
-    );
+#[then("the previous selection is restored")]
+fn previous_selection_is_restored(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let expected = NAVIGATION_STATE
+        .with(|cell| cell.borrow().selection_before_clear.clone())
+        .ok_or_else(|| TestSupportError::missing("selection before clearing", "clear step"))?;
+    with_shell(cx, |visual_cx, view| {
+        let actual = visual_cx.read(|app| view.read(app).selection().clone());
+        expect_equal(&actual, &expected, "selection after Shift-navigation Back")
+    })
+}
 
-    let doc_after_selection_undo = visual_cx.read(|app| view.read(app).document().clone());
-    expect_stroke_is_red(&doc_after_selection_undo, "after selection undo")
-        .expect("expected stroke to remain red after selection undo");
+#[then("the stroke remains red")]
+fn stroke_remains_red(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    with_shell(cx, |visual_cx, view| {
+        expect_stroke_is_red(
+            &common::read_document(visual_cx, view),
+            "after selection undo",
+        )
+    })
+}
 
-    click_button(
-        visual_cx,
-        p1,
-        MouseButton::Navigate(NavigationDirection::Forward),
+#[when("Shift-navigation Forward is clicked")]
+fn click_shift_navigation_forward(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    navigation_click(
+        cx,
+        NavigationDirection::Forward,
         shift_secondary(Modifiers::none()),
-    );
+    )
+}
 
-    let selection_after_redo = visual_cx.read(|app| view.read(app).selection().clone());
-    assert_eq!(
-        selection_after_redo, selection_after_clear,
-        "expected Shift+navigation forward to redo selection changes"
-    );
+#[then("the selection is cleared")]
+fn selection_is_cleared(
+    #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
+) -> Result<(), TestSupportError> {
+    let expected = NAVIGATION_STATE
+        .with(|cell| cell.borrow().selection_after_clear.clone())
+        .ok_or_else(|| TestSupportError::missing("cleared selection", "clear step"))?;
+    expect_true(
+        expected.items.is_empty(),
+        "expected selection to be cleared",
+    )?;
+    with_shell(cx, |visual_cx, view| {
+        let actual = visual_cx.read(|app| view.read(app).selection().clone());
+        expect_equal(
+            &actual,
+            &expected,
+            "selection after Shift-navigation Forward",
+        )
+    })
+}
+
+#[scenario(
+    path = "tests/features/shell_navigation.feature",
+    name = "Navigation buttons undo and redo document history",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
+#[serial]
+fn navigation_buttons_undo_and_redo_document_history(
+    #[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup,
+) {
+}
+
+#[scenario(
+    path = "tests/features/shell_navigation.feature",
+    name = "Shift navigation buttons undo and redo selection history",
+    harness = rstest_bdd_harness_gpui::GpuiHarness,
+)]
+#[serial]
+fn shift_navigation_buttons_undo_and_redo_selection_history(
+    #[from(support::scenario_state_cleanup)] _cleanup: ScenarioStateCleanup,
+) {
 }

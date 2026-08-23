@@ -1,8 +1,9 @@
-//! GPUI headless integration tests for Phase 0 layout behaviour.
+//! Structural GPUI integration coverage for the Phase 0 canvas layout.
 //!
 //! This regression test asserts that the canvas area expands to fill a
 //! meaningful portion of the window. We rely on debug bounds for the canvas
-//! container, not the inner `Canvas` element itself.
+//! container, not the inner `Canvas` element itself. It remains a raw GPUI test
+//! because it measures rendered geometry rather than user-facing behaviour.
 
 #[path = "common/gpui_shell_canvas_layout.rs"]
 mod common;

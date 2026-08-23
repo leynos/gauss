@@ -2,10 +2,47 @@
 
 ## Purpose
 
-This document classifies all current integration tests by their owning crate to
-guide the test move implementation in `build-time-move-model-and-svg-tests.md`.
+This document classifies the current root `gauss` integration-test targets by
+test style. It is the inventory used by the test move and consolidation plans.
 
-## Classification criteria
+### Current authoritative inventory
+
+The current inventory is derived from root `gauss` test targets in Cargo
+metadata, rather than from filename globs:
+
+```bash
+cargo metadata --no-deps --format-version 1 |
+  jq -r '.packages[] | select(.name == "gauss") | .targets[] |
+    select(.kind | index("test")) | .name'
+```
+
+Classify each target's source by its test declaration: a scenario with
+`GpuiHarness` is harness-backed GPUI BDD; a direct `#[gpui::test]` target is
+raw structural GPUI; the remaining scenario targets are non-GPUI BDD; and the
+remaining targets are other integration tests.
+`make check-integration-test-inventory` automates this check.
+
+_Table: Current authoritative root `gauss` integration-test inventory derived
+from Cargo metadata._
+
+| Category                                                 | Count |
+| -------------------------------------------------------- | ----: |
+| Root `gauss` integration-test targets (`cargo metadata`) | 51    |
+| Harness-backed GPUI BDD (scenario with `GpuiHarness`)    | 29    |
+| Raw structural GPUI (direct `#[gpui::test]`)             | 5     |
+| Non-GPUI BDD                                             | 5     |
+| Other integration targets                                | 12    |
+| GPUI targets (harness-backed + raw structural)           | 34    |
+
+<!-- integration-test-inventory: total=51 harness_gpui_bdd=29
+raw_structural_gpui=5 non_gpui_bdd=5 other_integration=12 gpui_target=34 -->
+
+## Historical test-move classification (2026-03)
+
+The remaining sections preserve the pre-move ownership classification. They do
+not supersede the current Cargo-target inventory above.
+
+### Classification criteria
 
 - **Pure model**: Tests that only exercise `gauss-core` functionality (document,
   commands, tools, history)  without GPUI
@@ -14,7 +51,7 @@ guide the test move implementation in `build-time-move-model-and-svg-tests.md`.
 - **App integration**: Tests that require GPUI, window interaction, or
   cross-crate integration
 
-## Test inventory
+### Test inventory
 
 ### Pure model tests → Move to `crates/gauss-core/tests/`
 
@@ -50,17 +87,21 @@ Supporting directories:
 
 ### App integration tests → Stay in `tests/`
 
-All GPUI-dependent tests stay in the app crate:
+All GPUI-dependent tests and the non-GPUI app-layer accessibility tests stay in
+the app crate:
 
-#### Accessibility tests
+#### GPUI accessibility tests
 
-- `tests/a11y_service_bdd.rs` - AccessKit service (requires GPUI)
-- `tests/a11y_service_routing_bdd.rs` - AccessKit routing (requires GPUI)
 - `tests/gpui_shell_a11y_service.rs` - Shell accessibility integration
 
 Supporting directories:
 
 - `tests/a11y_service_bdd/` - AccessKit BDD fixtures
+
+#### Non-GPUI accessibility tests
+
+- `tests/a11y_service_bdd.rs` - AccessKit service behaviour
+- `tests/a11y_service_routing_bdd.rs` - AccessKit routing behaviour
 
 #### File I/O tests
 
@@ -78,6 +119,7 @@ Supporting directories:
 - `tests/gpui_history_drag_handle_undo.rs` - Handle dragging with undo
 - `tests/gpui_history_drag_shape_undo.rs` - Shape dragging with undo
 - `tests/gpui_history_draw_undo.rs` - Drawing with undo
+- `tests/gpui_draw_undo_bdd.rs` - Draw-mode undo and redo behaviour
 - `tests/gpui_history_multi_shape_drag_undo.rs` - Multi-shape drag with undo
 - `tests/gpui_history_open_history_reset.rs` - History reset on open
 - `tests/gpui_history_reorder_undo.rs` - Shape reordering with undo
@@ -95,15 +137,23 @@ Supporting directories:
 #### Shell/UI tests
 
 - `tests/gpui_shell_canvas_layout.rs` - Canvas layout
+- `tests/gpui_shell_chrome_bdd.rs` - Shell chrome behaviour
 - `tests/gpui_shell_chrome_layout.rs` - Chrome layout
 - `tests/gpui_shell_mode_indicator.rs` - Mode indicator
 - `tests/gpui_shell_navigation_buttons.rs` - Navigation buttons
-- `tests/gpui_shell_quit_button.rs` - Quit button
 - `tests/gpui_shell_resize_borders.rs` - Resize borders
 - `tests/gpui_shell_style_controls.rs` - Style controls
 - `tests/gpui_shell_tool_rail.rs` - Tool rail
 - `tests/gpui_shell_viewport_input.rs` - Viewport input
 - `tests/gpui_shell_window_controls.rs` - Window controls
+
+#### Internationalization tests
+
+- `tests/gpui_i18n_module.rs` - Localized shell status text
+
+#### Test-support API tests
+
+- `tests/test_support_const_apis.rs` - Compile-time GPUI test-support APIs
 
 #### Tooling tests
 
@@ -123,7 +173,7 @@ Supporting directories:
 
 - `tests/undo_entry_count_bdd/` - BDD tests for undo entry counting (multi-file)
 
-## Summary
+### Historical test-move summary
 
 **To move:**
 
@@ -132,7 +182,7 @@ Supporting directories:
 
 **To stay:**
 
-- 41 GPUI-dependent tests → `tests/` (app crate)
+- App integration tests → `tests/` (app crate)
 
 ## Notes
 
