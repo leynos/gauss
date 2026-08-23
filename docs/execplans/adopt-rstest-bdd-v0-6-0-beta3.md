@@ -29,14 +29,14 @@ from Cargo metadata._
 | Category                                                 | Count |
 | -------------------------------------------------------- | ----: |
 | Root `gauss` integration-test targets (`cargo metadata`) | 51    |
-| Harness-backed GPUI BDD (scenario with `GpuiHarness`)    | 25    |
-| Raw structural GPUI (direct `#[gpui::test]`)             | 16    |
+| Harness-backed GPUI BDD (scenario with `GpuiHarness`)    | 29    |
+| Raw structural GPUI (direct `#[gpui::test]`)             | 5     |
 | Non-GPUI BDD                                             | 5     |
-| Other integration targets                                | 5     |
-| GPUI targets (harness-backed + raw structural)           | 41    |
+| Other integration targets                                | 12    |
+| GPUI targets (harness-backed + raw structural)           | 34    |
 
-<!-- integration-test-inventory: total=51 harness_gpui_bdd=25
-raw_structural_gpui=16 non_gpui_bdd=5 other_integration=5 gpui_target=41 -->
+<!-- integration-test-inventory: total=51 harness_gpui_bdd=29
+raw_structural_gpui=5 non_gpui_bdd=5 other_integration=12 gpui_target=34 -->
 
 ## Purpose / big picture
 
@@ -357,10 +357,10 @@ three manifests:
 
 The root crate's `tests/` directory now contains four target styles:
 
-- 25 harness-backed GPUI BDD targets registered with `GpuiHarness`;
-- 16 raw structural GPUI targets registered directly with `#[gpui::test]`;
+- 29 harness-backed GPUI BDD targets registered with `GpuiHarness`;
+- 5 raw structural GPUI targets registered directly with `#[gpui::test]`;
 - 5 non-GPUI BDD targets using plain `rstest` fixtures; and
-- 5 other integration targets.
+- 12 other integration targets.
 
 Thus `tests/gpui_*.rs` is not a BDD classification: the directory contains both
 direct raw GPUI tests and `GpuiHarness`-backed BDD tests. The retained

@@ -150,7 +150,6 @@ unused-helper checks effective and avoids adding the complete shell support
 surface to every GPUI integration test. Each stateful scenario must accept the
 cleanup fixture and remain `#[serial]`.
 
-
 ### Integration-test inventory validation
 
 The authoritative integration-test inventory comes from the root `gauss`

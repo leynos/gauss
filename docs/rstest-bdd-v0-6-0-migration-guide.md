@@ -399,7 +399,6 @@ For a worked-out example, see the regression suite at
 playbook][users-guide-playbook] subsection. The pattern's rationale lives in
 §§2.7.6.1–2.7.6.2 of the [rstest-bdd design](rstest-bdd-design.md).
 
-
 #### Retain structural Gauss shell tests as raw GPUI tests
 
 The Gauss shell migration in issue 119 applies the GPUI harness to user actions
