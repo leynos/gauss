@@ -27,15 +27,15 @@ from Cargo metadata._
 
 | Category                                                 | Count |
 | -------------------------------------------------------- | ----: |
-| Root `gauss` integration-test targets (`cargo metadata`) | 51    |
+| Root `gauss` integration-test targets (`cargo metadata`) | 52    |
 | Harness-backed GPUI BDD (scenario with `GpuiHarness`)    | 29    |
 | Raw structural GPUI (direct `#[gpui::test]`)             | 5     |
 | Non-GPUI BDD                                             | 5     |
-| Other integration targets                                | 12    |
+| Other integration targets                                | 13    |
 | GPUI targets (harness-backed + raw structural)           | 34    |
 
-<!-- integration-test-inventory: total=51 harness_gpui_bdd=29
-raw_structural_gpui=5 non_gpui_bdd=5 other_integration=12 gpui_target=34 -->
+<!-- integration-test-inventory: total=52 harness_gpui_bdd=29
+raw_structural_gpui=5 non_gpui_bdd=5 other_integration=13 gpui_target=34 -->
 
 ## Historical test-move classification (2026-03)
 
