@@ -5,12 +5,8 @@ const NAMESPACE_RUNNER: &str = "namespace-profile-default";
 /// Return the YAML block for one named workflow job.
 fn job_block<'workflow>(workflow: &'workflow str, job_name: &str) -> Option<&'workflow str> {
     let marker = format!("\n  {job_name}:\n");
-    let start = workflow.find(&marker)? + 1;
-    let body = &workflow[start..];
-    let end = body[1..]
-        .find("\n  ")
-        .map_or(body.len(), |offset| offset + 1);
-    Some(&body[..end])
+    let body = workflow.split_once(&marker)?.1;
+    Some(body.split_once("\n  ").map_or(body, |(job, _)| job))
 }
 
 #[test]
