@@ -45,6 +45,14 @@ supplying coverage configuration, sanitizer options, or other compiler flags,
 retain `-D warnings` in the override so doctests use the same build
 configuration and warning policy as the main suite.
 
+## Namespace GitHub Actions runners
+
+Gauss's repository-owned Linux CI and main-branch coverage jobs run on
+`namespace-profile-default`: the shared Ubuntu 22.04 Linux/amd64 profile with
+4 vCPU and 16 GB memory. Its Namespace cache volume is disabled for this
+baseline rollout. Existing workflow cache actions remain unchanged; they are
+not backed by a Namespace cache volume.
+
 ### Inject environment readers
 
 Clippy rejects direct calls to `std::env::var`, `var_os`, `vars`, and `vars_os`
