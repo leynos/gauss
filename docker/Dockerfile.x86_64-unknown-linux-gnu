@@ -1,0 +1,24 @@
+FROM ghcr.io/cross-rs/x86_64-unknown-linux-gnu:0.2.5
+
+# The cross-rs 0.2.5 base image uses Ubuntu 16.04 which does not include
+# libxcb-xinput-dev. We add Ubuntu 20.04 (focal) repositories to install
+# the missing packages required by x11rb with the xinput feature.
+
+RUN echo "deb http://archive.ubuntu.com/ubuntu focal main universe" >> /etc/apt/sources.list && \
+    echo "deb http://archive.ubuntu.com/ubuntu focal-updates main universe" >> /etc/apt/sources.list && \
+    dpkg --add-architecture amd64 && \
+    apt-get update && \
+    apt-get install --assume-yes --no-install-recommends \
+        libxcb1-dev:amd64 \
+        libxcb-randr0-dev:amd64 \
+        libxcb-render0-dev:amd64 \
+        libxcb-shape0-dev:amd64 \
+        libxcb-sync-dev:amd64 \
+        libxcb-xfixes0-dev:amd64 \
+        libxcb-xinput-dev:amd64 \
+        libxcb-xkb-dev:amd64 \
+        libxcb-cursor-dev:amd64 \
+        libxcb-shm0-dev:amd64 \
+        libxkbcommon-dev:amd64 \
+        libxkbcommon-x11-dev:amd64 && \
+    rm -rf /var/lib/apt/lists/*
