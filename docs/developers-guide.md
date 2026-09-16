@@ -50,9 +50,9 @@ configuration and warning policy as the main suite.
 Gauss's main-branch coverage job runs on `namespace-profile-default`: the
 shared Ubuntu 22.04 Linux/amd64 profile with 4 vCPU and 16 GB memory. Its
 Namespace cache volume is disabled for this baseline rollout. Existing workflow
-cache actions remain unchanged; they are not backed by a Namespace cache volume.
-CI remains on GitHub-hosted Linux because Whitaker's prebuilt `cargo-dylint`
-does not verify on the shared Ubuntu 22.04 profile.
+cache actions remain unchanged; they are not backed by a Namespace cache
+volume. CI remains on GitHub-hosted Linux because Whitaker's prebuilt
+`cargo-dylint` does not verify on the shared Ubuntu 22.04 profile.
 
 ### Inject environment readers
 
