@@ -5,10 +5,13 @@ https://deepwiki.com/leynos/gauss)
 
 ## Spelling policy
 
-Run `make spelling` to enforce en-GB-oxendict prose spelling. The generated
-`typos.toml` starts from the shared estate dictionary, refreshes its untracked
-local cache only when the authority is newer, and then applies the narrow
-repository policy in `typos.local.toml`.
+Run `make spelling` to enforce en-GB-oxendict prose spelling. The shared
+`typos-config-builder` gate regenerates `typos.toml` on every run from the live
+estate dictionary and the `typos.local.toml` overlay, so a word added to the
+shared dictionary needs no change here. Because the dictionary is live,
+`typos.toml` is never drift checked in continuous integration. Put narrow
+repository-specific exceptions in `typos.local.toml`; hand-editing `typos.toml`
+is not supported and any edits are overwritten on the next run.
 
 Gauss is a Phase 0 proof-of-concept vector editor built with GPUI. It provides
 Draw and Manipulate modes, SVG import/export, and undo/redo with a separate
