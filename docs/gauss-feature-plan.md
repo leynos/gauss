@@ -48,7 +48,7 @@ phases.
   scale, rotate (with optional numeric input or on-canvas handles). A
   bounding-box transform UI or separate Rotate/Scale tools can be used for
   intuitive manipulation. Implement object alignment and distribution controls
-  (e.g. align left, center vertically) – these are high-impact utilities for
+  (e.g. align left, centre vertically) – these are high-impact utilities for
   layouts. Also include **arrange** operations like send-to-back/front and
   grouping/ungrouping for layer ordering control.
 
@@ -169,7 +169,7 @@ challenge there) and scripting for text manipulation.
 
 - **Typography Controls:** Add UI for common text properties: font family
   selection (list system fonts), font size, basic styles (bold, italic,
-  underline), text alignment (left/center/right for paragraphs), and colour
+  underline), text alignment (left/centre/right for paragraphs), and colour
   (reusing the colour picker for fill colour of text). These can be in a
   dedicated **Text/Character panel** or options bar when text is selected. The
   goal is to cover what designers use daily for text styling. Advanced

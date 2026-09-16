@@ -6,10 +6,9 @@ schema = 1
 stems = []
 
 [words]
-# Official names, abbreviations, and repository-specific terms: "Azure
-# Architecture Center", the mold linker, Level of Detail (LOD), and a Spanish
-# Gherkin example.
-accepted = ["Center", "LOD", "Mold", "inventario", "mold"]
+# Abbreviations and repository-specific terms: the mold linker, Level of Detail
+# (LOD), and a Spanish Gherkin example.
+accepted = ["LOD", "Mold", "inventario", "mold"]
 
 [words.corrections]
 

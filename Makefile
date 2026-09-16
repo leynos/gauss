@@ -2,8 +2,7 @@
 	check-fmt check-integration-test-inventory integration-test-inventory-test \
 	integration-test-inventory-format integration-test-inventory-lint \
 	integration-test-inventory-pytest \
-	markdownlint nixie typecheck \
-	spelling spelling-helper-test
+	markdownlint nixie typecheck spelling
 
 
 TARGET ?= libgauss.rlib
@@ -32,8 +31,10 @@ NIXIE ?= nixie
 UV ?= uv
 UV_ENV = UV_CACHE_DIR=.uv-cache UV_TOOL_DIR=.uv-tools
 RUFF_VERSION ?= 0.15.12
-TYPOS_VERSION ?= 1.48.0
-TYPOS = $(UV) tool run typos@$(TYPOS_VERSION)
+TYPOS_CONFIG_BUILDER_VERSION ?= v0.1.1
+TYPOS_CONFIG_BUILDER = $(UV) tool run --from \
+	"git+https://github.com/leynos/typos-config-builder.git@$(TYPOS_CONFIG_BUILDER_VERSION)" \
+	typos-config-builder
 INTEGRATION_TEST_INVENTORY_FILES = \
 	scripts/check_integration_test_inventory.py \
 	scripts/tests/test_integration_test_inventory.py \
@@ -108,26 +109,8 @@ integration-test-inventory-pytest: ## Test the inventory checker
 		python -m pytest $(INTEGRATION_TEST_INVENTORY_TESTS) \
 		-c /dev/null --rootdir=. -p no:cacheprovider
 
-spelling: spelling-helper-test ## Enforce en-GB-oxendict spelling in Markdown prose
-	@$(UV_ENV) $(UV) run scripts/generate_typos_config.py
-	@git ls-files -z '*.md' | \
-		xargs -0 -r env $(UV_ENV) $(TYPOS) --config typos.toml --force-exclude
-
-spelling-helper-test: ## Validate the shared spelling-policy integration
-	@$(UV_ENV) $(UV) tool run ruff@$(RUFF_VERSION) format --isolated \
-		--target-version py313 --check scripts/generate_typos_config.py \
-		scripts/typos_rollout.py scripts/typos_rollout_cache.py \
-		scripts/tests/test_typos_rollout.py
-	@$(UV_ENV) $(UV) tool run ruff@$(RUFF_VERSION) check --isolated \
-		--target-version py313 scripts/generate_typos_config.py \
-		scripts/typos_rollout.py scripts/typos_rollout_cache.py \
-		scripts/tests/test_typos_rollout.py
-	@PYTHONPATH=scripts $(UV_ENV) $(UV) run --no-project --python 3.13 \
-		--with pytest==9.0.2 --with pytest-cov==7.0.0 \
-		python -m pytest scripts/tests/test_typos_rollout.py \
-		-c /dev/null --rootdir=. -p no:cacheprovider \
-		--cov=generate_typos_config --cov=typos_rollout \
-		--cov=typos_rollout_cache --cov-fail-under=90
+spelling: ## Enforce en-GB-oxendict spelling
+	$(TYPOS_CONFIG_BUILDER) gate --repository .
 
 nixie: ## Validate Mermaid diagrams
 	$(NIXIE) --no-sandbox
