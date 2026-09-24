@@ -38,8 +38,7 @@ jobs:
   coverage-upload:
     runs-on: ubicloud-standard-2
     # The estate left Namespace on 2026-09-03, so its label would queue
-    # forever. tests/runner_contract.rs holds this label, and reads it as the
-    # job's first line.
+    # forever. tests/runner_contract.rs holds this label.
     permissions:
       contents: read
     env:

@@ -9,10 +9,21 @@ use rstest::rstest;
 const PUBLISHER_RUNNER: &str = "ubicloud-standard-2";
 
 /// Return the YAML block for one named workflow job.
+///
+/// The block ends at the next sibling key, indented exactly two spaces;
+/// deeper-indented lines, including nested blocks before `runs-on`, belong to
+/// the job.
 fn job_block<'workflow>(workflow: &'workflow str, job_name: &str) -> Option<&'workflow str> {
     let marker = format!("\n  {job_name}:\n");
     let body = workflow.split_once(&marker)?.1;
-    Some(body.split_once("\n  ").map_or(body, |(job, _)| job))
+    let end = body
+        .match_indices("\n  ")
+        .find(|&(index, _)| {
+            body.get(index + 3..)
+                .is_some_and(|rest| !rest.starts_with(' '))
+        })
+        .map_or(body.len(), |(index, _)| index);
+    body.get(..end)
 }
 
 /// Return whether a job's `runs-on` is exactly one plain label.
@@ -47,6 +58,27 @@ fn publisher_label_is_matched_by_name(#[case] runs_on: &str) {
     assert!(
         !job_runs_on(&workflow, "coverage-upload", PUBLISHER_RUNNER),
         "{runs_on} was accepted as {PUBLISHER_RUNNER}"
+    );
+}
+
+/// Keys before `runs-on`, nested blocks included, stay inside the job, and the
+/// next job's keys stay outside it.
+#[rstest]
+#[case::name_first("    name: Publish\n    runs-on: ubicloud-standard-2\n", true)]
+#[case::nested_block_first(
+    "    permissions:\n      contents: read\n    runs-on: ubicloud-standard-2\n",
+    true
+)]
+#[case::label_in_next_job(
+    "    name: Publish\n  other:\n    runs-on: ubicloud-standard-2\n",
+    false
+)]
+fn job_block_ends_at_the_next_job(#[case] job: &str, #[case] expected: bool) {
+    let workflow = format!("jobs:\n  coverage-upload:\n{job}");
+    assert_eq!(
+        job_runs_on(&workflow, "coverage-upload", PUBLISHER_RUNNER),
+        expected,
+        "{job}"
     );
 }
 
