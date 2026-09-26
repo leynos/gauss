@@ -2,7 +2,7 @@
 //! Gherkin scenario driven through the first-party
 //! [`rstest_bdd_harness_gpui::GpuiHarness`].
 //!
-//! This is the migration proof-point for `rstest-bdd 0.6.0-beta3`: it replaces
+//! This is the migration proof-point for `rstest-bdd 0.6.0`: it replaces
 //! the raw `#[gpui::test]` `draw_click_adds_points_and_undo_removes` function
 //! that previously lived in `tests/gpui_history_draw_undo.rs`.
 //!
@@ -19,25 +19,23 @@
 //! explicit `Err`, rather than panicking. An `Err` returned from a step aborts
 //! the scenario and fails the test, so the `Then` steps are genuine assertions.
 //!
-//! IMPORTANT: every step signature spells out `Result<(), TestSupportError>`
-//! rather than the `TestSupportResult` type alias. The `rstest-bdd` step macro
-//! classifies the return type syntactically and does *not* see through a
-//! `Result` type alias: with the alias it treats the returned value as an
-//! opaque payload and silently discards the `Err`, producing a false green.
-//! Spelling out `Result<..>` makes the macro treat the step as fallible so
-//! failures actually fail the test. The scenario itself returns `()`, not a
-//! `Result`: a unit scenario still propagates step `Err`s (validated), whereas
-//! a fallible scenario return trips `unused_must_use` in the generated
-//! `#[gpui::test]` body under this beta. Both findings are recorded in the beta
-//! tester's log (`~/docs/rstest-bdd-v0-6-0-beta3-gauss-testers-log.md`).
+//! Step signatures spell out `Result<(), TestSupportError>` rather than the
+//! `TestSupportResult` type alias. That was originally a workaround for a
+//! `0.6.0-beta3` defect: the step macro classified the return type
+//! syntactically and did *not* see through a `Result` type alias, so with the
+//! alias it treated the returned value as an opaque payload and silently
+//! discarded the `Err`, producing a false green. `rstest-bdd` 0.6.0 resolves
+//! aliases by their concrete type at runtime, so the workaround is no longer
+//! needed and the alias would now be correct — and is pinned by
+//! `crates/gauss-core/tests/result_alias_bdd.rs`. The spelled-out form is kept
+//! here only to avoid churning signatures that no longer need a change.
 //!
-//! TODO(leynos/rstest-bdd#573): once the step macro resolves `Result` type
-//! aliases (or rejects unresolved return types instead of silently treating
-//! them as values), the step signatures below may use the
-//! `test_support::TestSupportResult<()>` alias for brevity.
-//! TODO(leynos/rstest-bdd#574): once the generated GPUI test body consumes the
-//! scenario `Result`, `draw_undo_scenario` may return
-//! `Result<(), TestSupportError>` and end with `Ok(())` instead of `()`.
+//! The scenario itself returns `()`, not a `Result`. A unit scenario still
+//! propagates step `Err`s (validated). A fallible scenario return also works
+//! under 0.6.0 — the generated GPUI boundary consumes it and panics on `Err` —
+//! but the macro rewrites the signature to unit and the resulting `Ok(())`
+//! needs an explicit `Ok::<(), TestSupportError>(())` turbofish for the
+//! dropped return type to infer, so the unit form stays simpler.
 //!
 //! API note: this crate consumes the *published* `gpui 0.2.2`, so
 //! `VisualTestContext::from_window` returns a `VisualTestContext` by value and
@@ -134,9 +132,10 @@ fn with_visual_cx<R>(
 }
 
 #[given("a fresh Phase 0 shell window")]
-// TODO(leynos/rstest-bdd#573): spelled-out `Result<..>` (not the
-// `TestSupportResult` alias) is required so the macro treats this as a fallible
-// step; the same applies to every step below.
+// Spelled out as `Result<..>` rather than the `TestSupportResult` alias; the
+// same applies to every step below. The alias is also correct under 0.6.0 (see
+// the module docs), so the explicit form is retained only to avoid churning
+// signatures that no longer need a change.
 fn fresh_phase0_shell_window(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
@@ -246,8 +245,8 @@ fn draw_shape_absent(
     harness = rstest_bdd_harness_gpui::GpuiHarness,
 )]
 #[serial]
-// TODO(leynos/rstest-bdd#574): keep this scenario unit-returning. A fallible
-// `-> Result<(), TestSupportError>` return trips `unused_must_use` in the
-// generated `#[gpui::test]` body under `-D warnings`; a unit scenario still
-// propagates step `Err`s.
+// Kept unit-returning: a fallible scenario return also works under 0.6.0 (the
+// generated GPUI boundary consumes it and panics on `Err`), but the macro
+// erases the declared return type, so the trailing `Ok(())` would need an
+// explicit `Ok::<(), TestSupportError>(())` turbofish. See the module docs.
 fn draw_undo_scenario(#[from(scenario_state_cleanup)] _cleanup: ScenarioStateCleanup) {}
