@@ -76,7 +76,7 @@ The root `Cargo.toml` declares the three supporting development dependencies:
 ```toml
 [dev-dependencies]
 proptest = "1.11.0"
-rstest-bdd-harness-gpui = "0.6.0-beta3"
+rstest-bdd-harness-gpui = "0.6.0"
 serial_test = "3"
 ```
 
@@ -183,7 +183,7 @@ when the documented inventory differs from the current Cargo metadata.
 
 ### Stateful history scenarios
 
-The `gpui_history_bdd` binaries combine rstest-bdd 0.6.0-beta3's injected
+The `gpui_history_bdd` binaries combine rstest-bdd 0.6.0's injected
 `&mut TestAppContext` with state that must survive BDD step boundaries. This
 combination requires a thread-local, resettable state workaround. Do not use
 `ScenarioState` or `Slot` fixture injection for these scenarios: the borrowed
