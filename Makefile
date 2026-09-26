@@ -2,7 +2,7 @@
 	check-fmt check-integration-test-inventory integration-test-inventory-test \
 	integration-test-inventory-format integration-test-inventory-lint \
 	integration-test-inventory-pytest \
-	markdownlint nixie typecheck spelling
+	markdownlint nixie typecheck spelling workflow-contracts
 
 
 TARGET ?= libgauss.rlib
@@ -39,6 +39,7 @@ INTEGRATION_TEST_INVENTORY_FILES = \
 	scripts/check_integration_test_inventory.py \
 	scripts/tests/test_integration_test_inventory.py \
 	scripts/tests/test_integration_test_inventory_cli.py
+WORKFLOW_CONTRACTS = tests/workflow_contracts
 INTEGRATION_TEST_INVENTORY_TESTS = $(filter scripts/tests/%, $(INTEGRATION_TEST_INVENTORY_FILES))
 
 build: target/debug/$(TARGET) ## Build debug binary
@@ -111,6 +112,16 @@ integration-test-inventory-pytest: ## Test the inventory checker
 
 spelling: ## Enforce en-GB-oxendict spelling
 	$(TYPOS_CONFIG_BUILDER) gate --repository .
+
+workflow-contracts: ## Check the CV-005 CodeScene workflow contract
+	$(UV_ENV) $(UV) tool run ruff@$(RUFF_VERSION) format --isolated \
+		--target-version py313 --check $(WORKFLOW_CONTRACTS)
+	$(UV_ENV) $(UV) tool run ruff@$(RUFF_VERSION) check --isolated \
+		--target-version py313 $(WORKFLOW_CONTRACTS)
+	PYTHONDONTWRITEBYTECODE=1 $(UV_ENV) $(UV) run --no-project --python 3.13 \
+		--with pytest==9.0.2 --with pyyaml==6.0.3 \
+		python -m pytest $(WORKFLOW_CONTRACTS) \
+		-c /dev/null --rootdir=. -p no:cacheprovider
 
 nixie: ## Validate Mermaid diagrams
 	$(NIXIE) --no-sandbox

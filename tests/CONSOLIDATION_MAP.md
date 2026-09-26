@@ -87,7 +87,7 @@ platform cannot exercise.
 - `gpui_history_multi_shape_drag_undo`
 - `gpui_history_reorder_undo`
 - `gpui_widget_audit_shell_seam`
-- `namespace_runner_contract`
+- `runner_contract`
 - `temp_file_cleanup`
 - `test_support_const_apis`
 - `vec2_assertion`
