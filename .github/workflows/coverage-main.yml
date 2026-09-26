@@ -37,6 +37,10 @@ concurrency:
 jobs:
   coverage-upload:
     runs-on: ubicloud-standard-2
+    # The CodeScene token lives in this environment, whose deployment policy
+    # admits `main` alone; the codescene environment rule holds it to
+    # this job.
+    environment: codescene
     # The estate left Namespace on 2026-09-03, so its label would queue
     # forever. tests/runner_contract.rs holds this label.
     permissions:
