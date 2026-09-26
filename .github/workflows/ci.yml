@@ -24,7 +24,7 @@ jobs:
         uses: rui314/setup-mold@10ca16bf91dc22e05ebdc935cad9c75ea248f621
       - name: Setup Rust
         uses: >-
-          leynos/shared-actions/.github/actions/setup-rust@a5765019912a8ab6882b12db049c7cde635f3a85
+          leynos/shared-actions/.github/actions/setup-rust@759da19f0379b6d2d7ddef93b7ad4c3b98154e41
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -33,7 +33,7 @@ jobs:
       - name: Install mdtablefix
         # `make check-fmt` runs `mdtablefix --check --git`; 0.6.0 is the
         # first release with `--check` and `--git`.
-        uses: leynos/shared-actions/.github/actions/install-mdtablefix@a5765019912a8ab6882b12db049c7cde635f3a85
+        uses: leynos/shared-actions/.github/actions/install-mdtablefix@759da19f0379b6d2d7ddef93b7ad4c3b98154e41
         with:
           version: "0.6.0"
       - name: Format
@@ -62,7 +62,7 @@ jobs:
       # the selection below must match that workflow's field for field.
       - name: Test and Measure Coverage
         uses: >-
-          leynos/shared-actions/.github/actions/generate-coverage@a5765019912a8ab6882b12db049c7cde635f3a85
+          leynos/shared-actions/.github/actions/generate-coverage@759da19f0379b6d2d7ddef93b7ad4c3b98154e41
         with:
           features: test-support
           output-path: lcov.info
