@@ -81,17 +81,23 @@ fn step_returning_ok_through_result_alias_succeeds(world: AliasWorld) {
     let _ = world;
 }
 
-// `#[should_panic]` is the assertion here: it fails if the scenario passes. The
-// expected substring comes from the `execution-error-handler-failed` message
-// template that `rstest-bdd` renders for its fixed `en-US` locale (the loader
-// does not read the environment, so this message is not locale-configurable).
-// Asserting on it pins that the scenario failed *because the aliased step
-// returned `Err`* rather than for any other reason.
+// `#[should_panic]` is the assertion here: it fails if the scenario passes.
+//
+// The expected substring is the failing step's own text, deliberately *not* the
+// template's fixed preamble. `rstest-bdd` renders this diagnostic from the
+// `execution-error-handler-failed` template under a fixed `en-US` locale (the
+// loader does not read the environment, so the message is not
+// locale-configurable), and it wraps every interpolated field in U+2068/U+2069
+// isolate characters — too brittle to match byte-exactly, and a preamble-only
+// assertion such as `"Step failed at index"` would also be satisfied by *any*
+// failing step, including a mis-attributed one. Pinning the step text instead
+// proves the scenario failed at the aliased `When` step, i.e. that the `Err`
+// returned through the alias propagated.
 #[scenario(
     path = "tests/features/result_alias_classification.feature",
     name = "A step returning Err through the result alias fails the scenario"
 )]
-#[should_panic(expected = "Step failed at index")]
+#[should_panic(expected = "a step returns Err through the result alias")]
 fn step_returning_err_through_result_alias_fails_scenario(world: AliasWorld) {
     let _ = world;
 }

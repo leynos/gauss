@@ -24,7 +24,7 @@ a migration of existing consumers; no new BDD suites are introduced.
 - The workspace already uses the canonical
   `harness = rstest_bdd_harness_gpui::GpuiHarness` path, so no harness path
   reshaping is required.
-- Necessary MSRV/nightly bumps are authorised, but must be validated and
+- Necessary MSRV/nightly bumps are authorized, but must be validated and
   recorded rather than assumed.
 
 ## 1. Imported documentation provenance
@@ -164,7 +164,7 @@ nightly repository, so no rustfmt/nightly pin work applies.
 ### 4.1 Step-return alias classification (the significant one)
 
 v0.6.0 classifies unhinted non-unit step returns by their **concrete type** at
-runtime (`rstest_bdd::step_return`), rather than only recognising syntactically
+runtime (`rstest_bdd::step_return`), rather than only recognizing syntactically
 spelled `Result` paths at macro-expansion time. Under beta3, an unhinted *local
 alias* of `Result<T, E>` was treated as an opaque value: the whole `Result` was
 boxed as a payload and any `Err` was silently discarded — the "former false
@@ -235,14 +235,37 @@ both directions of the contract using step returns written as the
 
 1. a step that returns `Ok(())` through the alias still injects its
    value and the scenario passes;
-2. a step that returns `Err` through the alias fails the scenario, run
-   under `#[should_panic(expected = "Step failed at index")]`.
+2. a step that returns `Err` through the alias fails the scenario, run under
+   `#[should_panic(expected = "a step returns Err through the result alias")]`.
 
 Direction 2 is the regression guard: under beta3's classification the `Err` was
 boxed as an opaque payload, the step appeared to succeed, the scenario passed,
 and the `#[should_panic]` would therefore have failed. The test asserts the
 *converse* of the old behaviour, so it cannot pass by accident if the defect
 returns.
+
+The expected substring is deliberately the failing step's own **text** rather
+than the template's fixed preamble. Observed ground truth for the rendered
+message is
+
+```text
+Step failed at index ⁨1⁩: ⁨When⁩ ⁨a step returns Err through the result alias⁩ -
+⁨Error executing step '⁨a step returns Err through the result alias⁩' via
+function '⁨step_returns_err_through_result_alias⁩': ⁨expectation failed:
+deliberate failure to prove the result alias propagates Err⁩⁩ (feature:
+⁨tests/features/result_alias_classification.feature⁩, scenario: ⁨A step returning
+Err through the result alias fails the scenario⁩)
+```
+
+Every interpolated field is wrapped in U+2068/U+2069 isolate characters, so the
+message cannot be matched byte-exactly without encoding invisible characters
+and the scenario-specific `feature_path`/`scenario_name`. More importantly, an
+earlier draft asserted only `"Step failed at index"`, which is satisfied by
+*any* failing step, including one that failed for an incidental reason (a
+missing fixture, a `Given`-step panic) — precisely the "assertion that cannot
+demonstrate what it claims" failure mode this migration exists to remove.
+Asserting the step text proves the failure was produced by the aliased `When`
+step itself.
 
 This target lives in `crates/gauss-core/tests/`. The integration-test inventory
 gate (`scripts/check_integration_test_inventory.py`) is scoped to the **root
@@ -255,8 +278,9 @@ execplans that mirror them.
 macro re-emits user attributes (`codegen/scenario/mod.rs`, which appends
 `#(#attrs)*` after the generated `#[rstest]` and harness attributes), `rstest`
 passes `#[should_panic]` through, and the observed panic message is the
-framework's own
-`Step failed at index 1: When a step returns Err through the result alias …`.
+framework's own, beginning
+`Step failed at index 1: When a step returns Err through the result alias …`
+(full rendering quoted in section 4.3).
 
 ### 4.4 Documentation drift corrected
 
@@ -372,7 +396,7 @@ is preserved.
 | `make test`         | 0    | nextest `954 tests run: 954 passed, 1 skipped` across 74 binaries; doctests green                                                              |
 
 `make check-fmt` needed one fix during validation: the ExecPlan itself was not
-mdtablefix-normalised. That is a fault in this document, not in the migration,
+mdtablefix-normalized. That is a fault in this document, not in the migration,
 and was repaired before the final run.
 
 ### 6.2 Test counts, baseline versus migrated
@@ -454,6 +478,21 @@ relaxed to make the build compile.
   guard-based `StepContext` borrowing as a *future* (v0.7.0) direction. This
   migration deliberately stops at the v0.6 contract, so the existing
   thread-local scenario-state pattern is retained unchanged.
+- **Several GPUI integration tests compile only with `--all-features`.**
+  `src/ui/phase0_shell/mod.rs:27` gates `mod test_helpers` (and
+  `mod test_history`) behind
+  `#[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]`.
+  Integration tests link `gauss` as an external dependency, so `cfg(test)` is
+  false for them and the accessors they call (`selection`,
+  `enter_manipulate_mode_for_tests`,
+  `begin_document_command_grouping_for_tests`, `viewport`, `is_dragging`, …)
+  vanish unless the `test-support` feature is on. Every gate in this repository
+  passes `--all-features`
+  (`Makefile:17 CARGO_FLAGS ?= --workspace --all-targets --all-features`), so
+  the gate result is correct. Compiling these targets *without* it fails with
+  `E0599`/`E0282` on those very methods, and that failure is an artefact of the
+  invocation, not a defect in the tree. This bit me once during final
+  validation; recorded so it does not bite a future reader.
 
 ### 7.3 Deliberately not done
 
@@ -501,3 +540,51 @@ relaxed to make the build compile.
   though the two templates are byte-identical and the assertion was unaffected.
   Corrected to name `en-US` and to record that the message is not
   locale-configurable.
+- **`#[should_panic]` expectation tightened to pin the step, not the
+  preamble.** An earlier draft matched `"Step failed at index"`, which any
+  failing step satisfies; that would have re-introduced, in the very test meant
+  to eliminate it, the class of assertion that cannot demonstrate what it
+  claims. The expectation now names the failing `When` step's text. The
+  replacement was verified to still fail-then-pass in both directions: with the
+  original substring the assertion is strictly weaker, and the matching case
+  was observed to pass against the real rendered message.
+- **Three British `-ise` spellings corrected in this document.** The
+  `make spelling` gate (estate `typos-config-builder`) flagged three British
+  `-ise` spellings in this ExecPlan, whose oxendict forms are `authorized`,
+  `recognizing` and `normalized`. These were checked against the shared
+  dictionary's `[default.extend-words]` table, which maps each `-ise` form to
+  its `-ize` counterpart, confirming the estate standard is en-GB-**oxendict**,
+  which prefers `-ize`. The gate is therefore enforcing a real subset rule
+  rather than reflecting a configuration fault, and the suffix was corrected
+  rather than the word reworded. The comments on lines 1–2 of `typos.toml`
+  ("Generated from the shared en-GB-oxendict dictionary") agree; the `Makefile`
+  target summary "Enforce en-GB-oxendict spelling" is the one that is slightly
+  loose, since oxendict `-ize` is what is actually enforced. A sweep of all
+  2981 dictionary keys against this document found no further offenders. Note
+  that `typos.toml` itself is not the cause: the pre-regeneration revision
+  (`fb4a097^`) already contained the same `-ise`→`-ize` table and the same
+  `locale = "en-gb"`, so commit `fb4a097` only *added* suppressions and changed
+  nothing about this rule.
+- **The spelling gate is a trap for prose that quotes its own findings.**
+  `typos-config-builder` excludes only *fenced* code blocks, via the
+  triple-backtick-fenced ignore pattern in `typos.toml`, not inline code spans.
+  The first revision of the bullet above wrote the three offending words
+  verbatim inside single backticks in order to explain them, and thereby
+  re-introduced exactly the failure it was documenting; the spelling gate then
+  failed a second time on the documentation of the fix. The bullet now
+  describes each word rather than quoting it. When a repository uses a spelling
+  gate, its own post-mortems must not spell the banned forms, even as examples.
+  Quoting the ignore pattern's literal form here was the same mistake twice
+  over: an inline span containing a triple backtick breaks the Markdown span,
+  and it also hides the surrounding prose from the table formatter, so a
+  documentation slip silently disables two gates at once. The pattern is
+  therefore described, not quoted.
+- **A concurrent `make` in a deleted foreign worktree was misattributed
+  as interference.** A long-running
+  `make --no-print-directory check-fmt lint typecheck` (PID 56302) was observed
+  on this machine and initially read as a competing run inside this worktree.
+  Inspection of `/proc/<pid>/cwd` showed it belongs to a *different
+  repository's* worktree that no longer exists
+  (`…/github---leynos---cuprum/worktrees/30bb8047… (deleted)`), launched by the
+  shared `post-turn-quality-stop-hook`. It never touched this tree or these
+  logs. No local mutation was concealed by it.
