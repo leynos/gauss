@@ -42,6 +42,14 @@ INTEGRATION_TEST_INVENTORY_FILES = \
 WORKFLOW_CONTRACTS = tests/workflow_contracts
 INTEGRATION_TEST_INVENTORY_TESTS = $(filter scripts/tests/%, $(INTEGRATION_TEST_INVENTORY_FILES))
 
+# The development build standard (concordat rule `rust-build-defaults`):
+# the mold linker on Linux. The pin is stable, so the nightly-only parallel
+# frontend flag is not used. An assigned RUSTFLAGS replaces every
+# `rustflags` table in .cargo/config.toml, so each recipe that sets it
+# composes this onto any inherited value (CI's setup-rust exports one),
+# except coverage, which stays on the platform linker.
+STANDARD_RUSTFLAGS := $(if $(filter Linux,$(shell uname -s)),-Clink-arg=-fuse-ld=mold)
+
 build: target/debug/$(TARGET) ## Build debug binary
 release: target/release/$(TARGET) ## Build release binary
 
@@ -51,30 +59,30 @@ clean: ## Remove build artifacts
 	$(CARGO) clean
 
 test: ## Run tests (nextest if available, otherwise cargo test)
-	@if $(CARGO) nextest --version >/dev/null 2>&1; then \
-		RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile default $(TEST_FLAGS) $(BUILD_JOBS); \
+	@if RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) nextest --version >/dev/null 2>&1; then \
+		RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(CARGO) nextest run --profile default $(TEST_FLAGS) $(BUILD_JOBS); \
 	else \
 		echo "cargo-nextest not installed, falling back to cargo test"; \
-		RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) test $(TEST_FLAGS) $(BUILD_JOBS); \
+		RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(CARGO) test $(TEST_FLAGS) $(BUILD_JOBS); \
 	fi
-	RUSTFLAGS="$(RUST_FLAGS)" RUSTDOCFLAGS="$(RUSTDOC_FLAGS)" $(CARGO) test --workspace --doc --all-features $(BUILD_JOBS)
+	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" RUSTDOCFLAGS="$(RUSTDOC_FLAGS)" $(CARGO) test --workspace --doc --all-features $(BUILD_JOBS)
 
 test-ci: ## Run tests with CI profile (stricter settings)
-	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile ci $(TEST_FLAGS) $(BUILD_JOBS)
+	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(CARGO) nextest run --profile ci $(TEST_FLAGS) $(BUILD_JOBS)
 
 test-quick: ## Run unit tests only (skip GPUI integration tests)
-	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) nextest run --profile default --lib $(TEST_FLAGS) $(BUILD_JOBS)
+	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(CARGO) nextest run --profile default --lib $(TEST_FLAGS) $(BUILD_JOBS)
 
 target/%/$(TARGET): ## Build binary in debug or release mode
-	$(CARGO) build $(BUILD_JOBS) $(if $(findstring release,$(@)),--release)
+	$(if $(findstring release,$(@)),RUSTFLAGS="$${RUSTFLAGS-}",RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)") $(CARGO) build $(BUILD_JOBS) $(if $(findstring release,$(@)),--release)
 
 lint: ## Run Clippy with warnings denied
-	RUSTDOCFLAGS="$(RUSTDOC_FLAGS)" $(CARGO) doc --workspace --no-deps
-	$(CARGO) clippy $(CLIPPY_FLAGS)
-	RUSTFLAGS="$(RUST_FLAGS)" $(WHITAKER) --all -- $(CARGO_FLAGS)
+	RUSTDOCFLAGS="$(RUSTDOC_FLAGS)" RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) doc --workspace --no-deps
+	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) clippy $(CLIPPY_FLAGS)
+	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(WHITAKER) --all -- $(CARGO_FLAGS)
 
 typecheck:
-	RUSTFLAGS="$(RUST_FLAGS)" $(CARGO) check $(CARGO_FLAGS)
+	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(CARGO) check $(CARGO_FLAGS)
 
 fmt: ## Format Rust and Markdown sources
 	$(CARGO) fmt --all
