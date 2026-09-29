@@ -53,12 +53,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Setup mold linker
-        if: runner.os == 'Linux'
-        uses: rui314/setup-mold@10ca16bf91dc22e05ebdc935cad9c75ea248f621
       - name: Setup Rust
         uses: >-
-          leynos/shared-actions/.github/actions/setup-rust@759da19f0379b6d2d7ddef93b7ad4c3b98154e41
+          leynos/shared-actions/.github/actions/setup-rust@8a83824b29dfe8f861714b544dc85fb925ed010c
+        with:
+          install-mold: 'true'
       - name: Install system dependencies
         run: |
           sudo apt-get update
