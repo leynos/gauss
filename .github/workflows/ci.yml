@@ -62,7 +62,7 @@ jobs:
       # the selection below must match that workflow's field for field.
       - name: Test and Measure Coverage
         uses: >-
-          leynos/shared-actions/.github/actions/generate-coverage@759da19f0379b6d2d7ddef93b7ad4c3b98154e41
+          leynos/shared-actions/.github/actions/generate-coverage@6cec89bac47a21cf756d68d638a9a510998e57f8
         with:
           features: test-support
           output-path: lcov.info
