@@ -91,7 +91,7 @@ impl KeyContext {
     /// - Accessibility labels
     /// - Documentation
     ///
-    /// Note: These names will be replaced with localised strings when the i18n
+    /// Note: These names will be replaced with localized strings when the i18n
     /// scaffolding (task 0.7) is implemented.
     ///
     /// # Returns

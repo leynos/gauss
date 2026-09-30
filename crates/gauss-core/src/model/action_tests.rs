@@ -3,7 +3,7 @@
 use rstest::rstest;
 
 use super::{
-    Action, ActionKind, Color, Degrees, Dimensions, Opacity, Point, Points, Position, Rgb8,
+    Action, ActionKind, Colour, Degrees, Dimensions, Opacity, Point, Points, Position, Rgb8,
     Rotation, Size, StrokeWidth, UnitF32,
 };
 
@@ -14,10 +14,10 @@ use super::{
 #[case(Action::RaiseSelection, ActionKind::Document)]
 #[case(Action::LowerSelection, ActionKind::Document)]
 #[case(Action::ToggleSegmentKind, ActionKind::Document)]
-#[case(Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })), ActionKind::Document)]
+#[case(Action::SetStrokeColour(Colour::new(Rgb8 { r: 0, g: 0, b: 0 })), ActionKind::Document)]
 #[case(Action::SetStrokeWidth(StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth")), ActionKind::Document)]
 #[case(Action::SetStrokeOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")), ActionKind::Document)]
-#[case(Action::SetFillColor(Color::new(Rgb8 { r: 255, g: 255, b: 255 })), ActionKind::Document)]
+#[case(Action::SetFillColour(Colour::new(Rgb8 { r: 255, g: 255, b: 255 })), ActionKind::Document)]
 #[case(Action::SetFillOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")), ActionKind::Document)]
 #[case(Action::ToggleNoFill, ActionKind::Document)]
 #[case(
@@ -65,10 +65,10 @@ fn action_kind_is_correct(#[case] action: Action, #[case] expected: ActionKind) 
 #[case(Action::Redo, "Redo")]
 #[case(Action::SelectionUndo, "Selection Undo")]
 #[case(Action::SelectionRedo, "Selection Redo")]
-#[case(Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })), "Set Stroke Colour")]
+#[case(Action::SetStrokeColour(Colour::new(Rgb8 { r: 0, g: 0, b: 0 })), "Set Stroke Colour")]
 #[case(Action::SetStrokeWidth(StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth")), "Set Stroke Width")]
 #[case(Action::SetStrokeOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")), "Set Stroke Opacity")]
-#[case(Action::SetFillColor(Color::new(Rgb8 { r: 255, g: 255, b: 255 })), "Set Fill Colour")]
+#[case(Action::SetFillColour(Colour::new(Rgb8 { r: 255, g: 255, b: 255 })), "Set Fill Colour")]
 #[case(Action::SetFillOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")), "Set Fill Opacity")]
 #[case(Action::ToggleNoFill, "Toggle No Fill")]
 #[case(
@@ -108,10 +108,10 @@ fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {
 #[case(Action::Redo)]
 #[case(Action::SelectionUndo)]
 #[case(Action::SelectionRedo)]
-#[case(Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })))]
+#[case(Action::SetStrokeColour(Colour::new(Rgb8 { r: 0, g: 0, b: 0 })))]
 #[case(Action::SetStrokeWidth(StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth")))]
 #[case(Action::SetStrokeOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")))]
-#[case(Action::SetFillColor(Color::new(Rgb8 { r: 255, g: 255, b: 255 })))]
+#[case(Action::SetFillColour(Colour::new(Rgb8 { r: 255, g: 255, b: 255 })))]
 #[case(Action::SetFillOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")))]
 #[case(Action::ToggleNoFill)]
 #[case(Action::SetObjectPosition(Position::new(Point { x: 0.0, y: 0.0 }).expect("failed to construct Position")))]
@@ -128,10 +128,10 @@ fn actions_have_nonempty_names(#[case] action: Action) {
 #[case(Action::RaiseSelection)]
 #[case(Action::LowerSelection)]
 #[case(Action::ToggleSegmentKind)]
-#[case(Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })))]
+#[case(Action::SetStrokeColour(Colour::new(Rgb8 { r: 0, g: 0, b: 0 })))]
 #[case(Action::SetStrokeWidth(StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth")))]
 #[case(Action::SetStrokeOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")))]
-#[case(Action::SetFillColor(Color::new(Rgb8 { r: 255, g: 255, b: 255 })))]
+#[case(Action::SetFillColour(Colour::new(Rgb8 { r: 255, g: 255, b: 255 })))]
 #[case(Action::SetFillOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")))]
 #[case(Action::ToggleNoFill)]
 #[case(Action::SetObjectPosition(Position::new(Point { x: 0.0, y: 0.0 }).expect("failed to construct Position")))]
@@ -170,7 +170,7 @@ fn document_actions_are_all_accounted_for() {
         Action::RaiseSelection,
         Action::LowerSelection,
         Action::ToggleSegmentKind,
-        Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })),
+        Action::SetStrokeColour(Colour::new(Rgb8 { r: 0, g: 0, b: 0 })),
         Action::SetStrokeWidth(
             StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth"),
         ),
@@ -178,7 +178,7 @@ fn document_actions_are_all_accounted_for() {
             Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32"))
                 .expect("failed to construct Opacity"),
         ),
-        Action::SetFillColor(Color::new(Rgb8 {
+        Action::SetFillColour(Colour::new(Rgb8 {
             r: 255,
             g: 255,
             b: 255,
@@ -237,10 +237,10 @@ fn document_actions_are_all_accounted_for() {
 #[case(Action::Redo, "Redo")]
 #[case(Action::SelectionUndo, "SelectionUndo")]
 #[case(Action::SelectionRedo, "SelectionRedo")]
-#[case(Action::SetStrokeColor(Color::new(Rgb8 { r: 0, g: 0, b: 0 })), "SetStrokeColor")]
+#[case(Action::SetStrokeColour(Colour::new(Rgb8 { r: 0, g: 0, b: 0 })), "SetStrokeColor")]
 #[case(Action::SetStrokeWidth(StrokeWidth::new(Points(1.0)).expect("failed to construct StrokeWidth")), "SetStrokeWidth")]
 #[case(Action::SetStrokeOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")), "SetStrokeOpacity")]
-#[case(Action::SetFillColor(Color::new(Rgb8 { r: 255, g: 255, b: 255 })), "SetFillColor")]
+#[case(Action::SetFillColour(Colour::new(Rgb8 { r: 255, g: 255, b: 255 })), "SetFillColor")]
 #[case(Action::SetFillOpacity(Opacity::new(UnitF32::try_from(1.0).expect("failed to construct UnitF32")).expect("failed to construct Opacity")), "SetFillOpacity")]
 #[case(Action::ToggleNoFill, "ToggleNoFill")]
 #[case(
@@ -263,6 +263,19 @@ fn document_actions_are_all_accounted_for() {
 )]
 fn action_identifier_is_correct(#[case] action: Action, #[case] expected: &str) {
     assert_eq!(action.identifier(), expected);
+}
+
+#[test]
+fn colour_action_identifiers_preserve_recorded_names() {
+    let stroke = Action::SetStrokeColour(Colour::new(Rgb8 { r: 0, g: 0, b: 0 }));
+    let fill = Action::SetFillColour(Colour::new(Rgb8 {
+        r: 255,
+        g: 255,
+        b: 255,
+    }));
+
+    assert_eq!(stroke.identifier(), "SetStrokeColor");
+    assert_eq!(fill.identifier(), "SetFillColor");
 }
 
 #[test]

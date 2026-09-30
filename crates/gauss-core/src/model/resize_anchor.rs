@@ -26,7 +26,7 @@ pub enum ResizeAnchor {
 }
 
 impl ResizeAnchor {
-    /// Returns the anchor point as a normalised factor (0..1) for each axis.
+    /// Returns the anchor point as a normalized factor (0..1) for each axis.
     ///
     /// (0, 0) = top-left, (1, 1) = bottom-right.
     #[must_use]
@@ -41,7 +41,7 @@ impl ResizeAnchor {
 
 #[cfg(test)]
 mod tests {
-    //! Tests for resize anchor normalisation.
+    //! Tests for resize anchor normalization.
 
     use super::*;
     use rstest::rstest;
