@@ -2,7 +2,7 @@
 
 /// RGB colour value for action payloads.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Color {
+pub struct Colour {
     /// Red channel.
     pub r: u8,
     /// Green channel.
@@ -11,10 +11,10 @@ pub struct Color {
     pub b: u8,
 }
 
-/// Construction helper for [`Color`].
+/// Construction helper for [`Colour`].
 ///
-/// `Rgb8` provides named fields for constructing a `Color` via `.into()`
-/// or `Color::from`. It exists solely to make colour construction more
+/// `Rgb8` provides named fields for constructing a `Colour` via `.into()`
+/// or `Colour::from`. It exists solely to make colour construction more
 /// explicit at call sites.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Rgb8 {
@@ -26,7 +26,7 @@ pub struct Rgb8 {
     pub b: u8,
 }
 
-impl From<Rgb8> for Color {
+impl From<Rgb8> for Colour {
     fn from(rgb: Rgb8) -> Self {
         Self {
             r: rgb.r,
@@ -36,8 +36,17 @@ impl From<Rgb8> for Color {
     }
 }
 
-impl Color {
+impl Colour {
     /// Construct a new colour from RGB components.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gauss_core::model::action::{Colour, Rgb8};
+    ///
+    /// let colour = Colour::new(Rgb8 { r: 12, g: 34, b: 56 });
+    /// assert_eq!((colour.r, colour.g, colour.b), (12, 34, 56));
+    /// ```
     #[must_use]
     pub const fn new(rgb: Rgb8) -> Self {
         Self {

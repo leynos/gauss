@@ -48,7 +48,7 @@
 mod action_payloads;
 
 pub use action_payloads::{
-    Color, Degrees, Dimensions, Opacity, Point, Points, Position, Rgb8, Rotation, Size,
+    Colour, Degrees, Dimensions, Opacity, Point, Points, Position, Rgb8, Rotation, Size,
     StrokeWidth, UnitF32, UnitF32Error,
 };
 
@@ -135,7 +135,7 @@ pub enum Action {
     ///
     /// Requires segments to be selected. Toggles each selected segment
     /// between Line and Cubic kinds. When converting Line to Cubic,
-    /// Catmull-Rom handles are synthesised. When converting Cubic to Line,
+    /// Catmull-Rom handles are synthesized. When converting Cubic to Line,
     /// handles are cleared.
     ToggleSegmentKind,
 
@@ -190,7 +190,7 @@ pub enum Action {
 
     // === Style mutations ===
     /// Set the stroke colour of the selected shapes.
-    SetStrokeColor(Color),
+    SetStrokeColour(Colour),
 
     /// Set the stroke width of the selected shapes.
     SetStrokeWidth(StrokeWidth),
@@ -199,7 +199,7 @@ pub enum Action {
     SetStrokeOpacity(Opacity),
 
     /// Set the fill colour of the selected shapes.
-    SetFillColor(Color),
+    SetFillColour(Colour),
 
     /// Set the fill opacity of the selected shapes.
     SetFillOpacity(Opacity),
