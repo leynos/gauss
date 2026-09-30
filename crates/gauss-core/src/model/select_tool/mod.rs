@@ -182,6 +182,10 @@ pub fn restore_select_drag_preview(document: &mut Document, state: &SelectToolSt
     restore_drag_preview(document, drag_state)
 }
 
+/// Resolve pointer-down selection and start a drag when the gesture permits it.
+///
+/// Shift-click toggles selection and leaves the FSM idle; an ordinary hit may
+/// emit selection commands followed by a new drag state.
 fn on_pointer_down(input: &SelectPointerDownInput) -> ToolTransition {
     let mut commands = Vec::new();
 
@@ -217,6 +221,8 @@ fn on_pointer_down(input: &SelectPointerDownInput) -> ToolTransition {
     ToolTransition::with_commands(commands)
 }
 
+/// Request a preview update only while the primary button holds an active drag.
+/// Without the primary button, the transition contains no commands.
 fn on_pointer_move(input: &SelectPointerMoveInput) -> ToolTransition {
     if !input.has_primary_button {
         return ToolTransition::default();
@@ -231,6 +237,8 @@ fn on_pointer_move(input: &SelectPointerMoveInput) -> ToolTransition {
     }])
 }
 
+/// Restore preview geometry, end the drag, and emit its final command if moved.
+/// Releasing without movement returns to idle without applying a document command.
 fn on_pointer_up(input: &SelectPointerUpInput) -> ToolTransition {
     if !input.is_primary_button {
         return ToolTransition::default();

@@ -14,6 +14,8 @@ use super::types::{
     ShapeReplacement,
 };
 
+/// Prepare an insertion command while retaining both shapes for undo.
+/// A selected segment yields a command whose inverse restores its original path.
 pub(super) fn prepare_insert_anchor_on_segment(state: &EngineState) -> Result<Command, UserError> {
     if state.selection.is_empty() {
         return Err(UserError::EmptySelection);
@@ -121,10 +123,14 @@ fn insert_anchor_into_shape(shape: &Shape, seg_index: usize) -> Option<Shape> {
     Some(new_shape)
 }
 
+/// Return the component-wise midpoint used when splitting a cubic segment.
+/// For points `(0, 0)` and `(2, 4)`, the result is `(1, 2)`.
 const fn midpoint(a: Vec2, b: Vec2) -> Vec2 {
     Vec2::new(f32::midpoint(a.x, b.x), f32::midpoint(a.y, b.y))
 }
 
+/// Group selected anchors by shape and remove shapes left with fewer than two.
+/// Deleting two anchors from a three-anchor shape therefore schedules its removal.
 pub(super) fn prepare_delete_selected_anchors(state: &EngineState) -> Result<Command, UserError> {
     if state.selection.is_empty() {
         return Err(UserError::EmptySelection);
@@ -198,6 +204,8 @@ fn remove_anchor_from_path(path: &mut PathGeom, idx: usize) {
     }
 }
 
+/// Replace a document shape at its recorded index, or report an invalid index.
+/// A stale index returns `InvalidOperation` without replacing another shape.
 fn apply_shape_replacement(
     doc: &mut Document,
     replacement: &ShapeReplacement,
@@ -213,6 +221,8 @@ fn apply_shape_replacement(
     Ok(())
 }
 
+/// Swap the old and new shapes to form the replacement needed for undo.
+/// A prepared replacement from A to B becomes a replacement from B to A.
 fn create_swapped_replacement(replacement: &ShapeReplacement) -> ShapeReplacement {
     ShapeReplacement {
         shape_index: replacement.shape_index,
@@ -221,6 +231,8 @@ fn create_swapped_replacement(replacement: &ShapeReplacement) -> ShapeReplacemen
     }
 }
 
+/// Apply a prepared replacement and build its inverse, propagating index errors.
+/// Applying A-to-B returns an inverse that restores B-to-A.
 fn apply_shape_replacement_with_inverse(
     doc: &mut Document,
     replacement: &ShapeReplacement,
@@ -258,6 +270,8 @@ macro_rules! shape_replacement_command {
 shape_replacement_command!(apply_insert_anchor, RemoveAnchor);
 shape_replacement_command!(apply_insert_anchor_on_segment, RemoveAnchorFromSegment);
 
+/// Restore the saved shape when undoing an anchor insertion.
+/// Undoing an insertion therefore restores the path from before the split.
 pub(super) fn apply_remove_anchor(
     doc: &mut Document,
     replacement: &ShapeReplacement,

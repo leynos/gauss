@@ -193,11 +193,17 @@ impl SymbolResource {
 /// Storage for shared document resources.
 #[derive(Clone, Debug, Default)]
 pub struct ResourceStore {
+    /// Gradient payloads indexed by stable typed identifiers.
     gradients: SlotMap<GradientId, Gradient>,
+    /// Pattern payloads indexed by stable typed identifiers.
     patterns: SlotMap<PatternId, PatternResource>,
+    /// Symbol payloads indexed by stable typed identifiers.
     symbols: SlotMap<SymbolId, SymbolResource>,
+    /// SVG gradient identifiers mapped back to their typed keys.
     gradient_svg_ids: HashMap<String, GradientId>,
+    /// SVG pattern identifiers mapped back to their typed keys.
     pattern_svg_ids: HashMap<String, PatternId>,
+    /// SVG symbol identifiers mapped back to their typed keys.
     symbol_svg_ids: HashMap<String, SymbolId>,
 }
 
@@ -341,6 +347,8 @@ impl ResourceStore {
         self.symbols.iter()
     }
 
+    /// Compare gradient slots by key and payload, independent of iteration order.
+    /// Equal keys with different gradient data make the comparison return `false`.
     fn gradients_match(&self, other: &Self) -> bool {
         if self.gradients.len() != other.gradients.len() {
             return false;
@@ -350,6 +358,8 @@ impl ResourceStore {
             .all(|(id, gradient)| other.gradients.get(id) == Some(gradient))
     }
 
+    /// Compare pattern slots by key and payload, independent of iteration order.
+    /// Equal keys with different pattern data make the comparison return `false`.
     fn patterns_match(&self, other: &Self) -> bool {
         if self.patterns.len() != other.patterns.len() {
             return false;
@@ -359,6 +369,8 @@ impl ResourceStore {
             .all(|(id, pattern)| other.patterns.get(id) == Some(pattern))
     }
 
+    /// Compare symbol slots by key and payload, independent of iteration order.
+    /// Equal keys with different symbol data make the comparison return `false`.
     fn symbols_match(&self, other: &Self) -> bool {
         if self.symbols.len() != other.symbols.len() {
             return false;
@@ -368,6 +380,8 @@ impl ResourceStore {
             .all(|(id, symbol)| other.symbols.get(id) == Some(symbol))
     }
 
+    /// Ensure each SVG lookup map agrees with the other store's map.
+    /// A missing or remapped `url(#id)` entry makes the comparison return `false`.
     fn svg_id_maps_match(&self, other: &Self) -> bool {
         self.gradient_svg_ids == other.gradient_svg_ids
             && self.pattern_svg_ids == other.pattern_svg_ids

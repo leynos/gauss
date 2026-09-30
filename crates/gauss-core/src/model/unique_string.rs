@@ -5,8 +5,15 @@
 
 use std::collections::HashMap;
 
+/// Bound suffix probing so a corrupted or exhausted namespace cannot loop forever.
 const MAX_UNIQUE_SUFFIX: u32 = 10_000;
 
+/// Trim a requested name, choose a fallback for blank input, and avoid collisions.
+///
+/// If the base already exists, the first available `{base}{separator}{n}` name
+/// is returned. The function panics only if all 10,000 suffixes are occupied.
+/// For `requested = "Primary"` and `separator = "-"`, an occupied `Primary`
+/// and free `Primary-1` produce `Primary-1`.
 pub(super) fn make_unique_string<T>(
     requested: &str,
     default_base: &str,

@@ -10,6 +10,10 @@ use super::{EdgeMode, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolTransitio
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ToolModeFsm;
 
+/// Emit mode and optional edge-mode changes needed to enter draw mode.
+///
+/// Re-activating the current mode without a changed edge mode produces an
+/// empty transition.
 fn activate_draw_transition(
     current_mode: ToolMode,
     current_edge_mode: EdgeMode,
@@ -27,6 +31,8 @@ fn activate_draw_transition(
     ToolTransition::with_commands(commands)
 }
 
+/// Leave the current interaction mode and clear the active path when drawing.
+/// Escape in draw mode returns to manipulate mode and clears the path identity.
 fn escape_transition(current_mode: ToolMode) -> ToolTransition {
     match current_mode {
         ToolMode::Draw => ToolTransition::with_commands([

@@ -42,7 +42,9 @@ enum HistoryEntry {
     /// Both sides are retained so that `undo_2` can instruct the adapter to
     /// apply either the forward or reverse operation without recomputing.
     Single {
+        /// The command that re-applies this history entry.
         command: Box<Command>,
+        /// The inverse that reverses the command during undo.
         inverse: Box<CommandInverse>,
     },
     /// A grouped batch of entries recorded inside one begin/end transaction.
@@ -50,6 +52,8 @@ enum HistoryEntry {
 }
 
 impl HistoryEntry {
+    /// Store a command and its already-computed inverse as one history entry.
+    /// For example, one command and its inverse become one undoable item.
     fn single(command: Command, inverse: CommandInverse) -> Self {
         Self::Single {
             command: Box::new(command),
@@ -79,8 +83,11 @@ impl HistoryEntry {
 /// assert!(history.can_undo());
 /// ```
 pub struct DocumentUndoHistory {
+    /// Recorded entries and the current undo/redo position.
     commands: undo_2::Commands<HistoryEntry>,
+    /// Maximum number of realized entries retained after recording.
     max_depth: usize,
+    /// Entries being collected for the current grouped transaction.
     active_group: Option<Vec<HistoryEntry>>,
 }
 
@@ -311,6 +318,8 @@ impl DocumentUndoHistory {
         }
     }
 
+    /// Apply one command/inverse pair in the requested undo or redo direction.
+    /// For example, `Do` reapplies the command and `Undo` applies its inverse.
     fn apply_single(
         doc: &mut Document,
         action: Action,
@@ -334,6 +343,8 @@ impl DocumentUndoHistory {
         }
     }
 
+    /// Replay grouped entries in reverse order for undo and forward order for redo.
+    /// For a group `[A, B]`, undo runs `B` then `A`, while redo runs `A` then `B`.
     fn apply_group(
         doc: &mut Document,
         action: Action,
@@ -362,6 +373,8 @@ impl DocumentUndoHistory {
         first_error.map_or(Ok(()), Err)
     }
 
+    /// Keep the first replay error while allowing the rest of a group to run.
+    /// For example, a later error does not replace an earlier captured error.
     fn capture_first_error(
         first_error: &mut Option<HistoryError>,
         result: Result<(), HistoryError>,

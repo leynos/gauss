@@ -48,6 +48,8 @@ pub(super) fn selected_shape_ids_for_drag(selection: &Selection) -> Vec<ShapeId>
         .collect()
 }
 
+/// Toggle the selectable item represented by a hit, preserving empty hits.
+/// An empty-space hit therefore returns the existing selection unchanged.
 fn toggle_selection_for_hit(current: &Selection, hit: SelectPointerHit) -> Selection {
     let Some(item) = toggle_item_for_hit(hit) else {
         return current.clone();
@@ -56,6 +58,8 @@ fn toggle_selection_for_hit(current: &Selection, hit: SelectPointerHit) -> Selec
     toggle_item_with_parent(current, item)
 }
 
+/// Apply item toggling while keeping shape selection and details consistent.
+/// Toggling a handle also keeps its owning shape selected.
 fn toggle_item_with_parent(current: &Selection, item: SelItem) -> Selection {
     match item {
         SelItem::Shape(shape_id) => toggle_shape_with_children(current, shape_id),
@@ -63,6 +67,8 @@ fn toggle_item_with_parent(current: &Selection, item: SelItem) -> Selection {
     }
 }
 
+/// Toggle a shape and remove its detail items when deselecting it.
+/// Deselecting a shape also drops its selected anchors and handles.
 fn toggle_shape_with_children(current: &Selection, shape_id: ShapeId) -> Selection {
     if current.contains(&SelItem::Shape(shape_id)) {
         Selection {
@@ -80,6 +86,8 @@ fn toggle_shape_with_children(current: &Selection, shape_id: ShapeId) -> Selecti
     }
 }
 
+/// Toggle a detail item while ensuring its owning shape remains selected.
+/// Toggling an anchor on an unselected shape selects both the shape and anchor.
 fn toggle_detail_item(current: &Selection, item: SelItem) -> Selection {
     let mut selection = current.clone();
 
@@ -101,6 +109,8 @@ fn toggle_detail_item(current: &Selection, item: SelItem) -> Selection {
     selection
 }
 
+/// Replace or refine selection according to a hit when Shift is not held.
+/// An empty-space hit clears the selection.
 fn selection_for_non_shift_hit(previous_selection: &Selection, hit: SelectPointerHit) -> Selection {
     match hit {
         SelectPointerHit::None => Selection::empty(),
@@ -137,6 +147,8 @@ fn selection_for_non_shift_hit(previous_selection: &Selection, hit: SelectPointe
     }
 }
 
+/// Keep selected shapes and add the hit detail, or focus on its shape first.
+/// A handle hit on an unselected shape selects that shape and handle.
 fn selection_for_shape_detail_hit(
     previous_selection: &Selection,
     shape_id: ShapeId,
@@ -164,6 +176,8 @@ fn selection_for_shape_detail_hit(
     Selection { items }
 }
 
+/// Convert a hit into its selection item; empty-space hits have no item.
+/// For example, an anchor hit becomes `SelItem::Anchor` with its shape and index.
 const fn toggle_item_for_hit(hit: SelectPointerHit) -> Option<SelItem> {
     match hit {
         SelectPointerHit::Handle(handle_hit) => Some(sel_item_for_handle_hit(handle_hit)),
@@ -180,6 +194,8 @@ const fn toggle_item_for_hit(hit: SelectPointerHit) -> Option<SelItem> {
     }
 }
 
+/// Map a handle hit to the corresponding incoming or outgoing selection item.
+/// An incoming hit becomes `SelItem::HandleIn` for that anchor.
 const fn sel_item_for_handle_hit(hit: SelectHandleHit) -> SelItem {
     match hit.kind {
         SelectHandleHitKind::In => SelItem::HandleIn {
@@ -193,6 +209,8 @@ const fn sel_item_for_handle_hit(hit: SelectHandleHit) -> SelItem {
     }
 }
 
+/// Return the owning shape identity for a shape or detail selection item.
+/// An anchor item returns the shape that owns the anchor.
 const fn shape_id_of_item(item: &SelItem) -> ShapeId {
     match item {
         SelItem::Shape(id) => *id,

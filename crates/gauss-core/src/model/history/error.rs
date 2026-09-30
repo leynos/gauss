@@ -52,11 +52,15 @@ pub enum HistoryError {
 
 #[derive(Clone, Copy)]
 pub(super) enum ReplayDirection {
+    /// Build an error for a failed reverse application.
     Undo,
+    /// Build an error for a failed forward application.
     Redo,
 }
 
 impl ReplayDirection {
+    /// Preserve the failed command's name and reason in the direction-specific error.
+    /// For example, an undo failure becomes `HistoryError::UndoReplayFailed`.
     pub(super) fn replay_failed(self, command_name: &str, reason: &str) -> HistoryError {
         let owned_command_name = command_name.to_owned();
         let owned_reason = reason.to_owned();

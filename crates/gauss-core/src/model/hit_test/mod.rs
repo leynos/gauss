@@ -94,7 +94,9 @@ pub enum HitTarget {
 
 #[derive(Clone, Copy, Debug)]
 struct IndexedShape<'a> {
+    /// Position in the document's draw order, used to preserve hit priority.
     shape_index: usize,
+    /// Borrowed geometry for the shape at `shape_index`.
     shape: &'a Shape,
 }
 
@@ -106,7 +108,9 @@ struct IndexedShape<'a> {
 /// `Phase0Shell` before a real spatial index exists.
 #[derive(Clone, Debug)]
 pub struct HitTestIndex<'a> {
+    /// Strategy used for the index's shape traversal.
     backend: HitTestBackend,
+    /// Document whose shapes are queried.
     doc: &'a Document,
 }
 
@@ -126,6 +130,8 @@ impl<'a> HitTestIndex<'a> {
         self.backend
     }
 
+    /// Visit shapes from front to back, returning the first result produced by `f`.
+    /// Later draw-order shapes are offered to `f` before earlier shapes.
     fn scan_shapes_rev<T, F>(&self, f: F) -> Option<T>
     where
         F: Fn(&IndexedShape<'_>) -> Option<T>,
@@ -137,6 +143,8 @@ impl<'a> HitTestIndex<'a> {
         })
     }
 
+    /// Normalize the tolerance, then apply `f` in draw order until it finds a hit.
+    /// A non-finite tolerance returns `None` without visiting any shapes.
     fn topmost_in_shapes<T, F>(&self, tolerance_world: f32, f: F) -> Option<T>
     where
         F: Fn(&IndexedShape<'_>, f32) -> Option<T>,
@@ -210,12 +218,16 @@ impl<'a> HitTestIndex<'a> {
         })
     }
 
+    /// Convert the topmost model hit into the selection tool's result type.
+    /// No matching target becomes `SelectPointerHit::None`.
     fn select_pointer_hit(&self, cursor_world: Vec2, tolerance_world: f32) -> SelectPointerHit {
         self.topmost_target(cursor_world, tolerance_world)
             .map_or(SelectPointerHit::None, map_target)
     }
 }
 
+/// Convert a public hit-test result to the matching selection-tool variant.
+/// For example, an anchor hit keeps its shape and anchor identifiers.
 const fn map_target(target: HitTarget) -> SelectPointerHit {
     match target {
         HitTarget::Handle(handle_hit) => SelectPointerHit::Handle(SelectHandleHit {
@@ -241,6 +253,8 @@ const fn map_target(target: HitTarget) -> SelectPointerHit {
     }
 }
 
+/// Convert the model handle direction to the selection tool's equivalent kind.
+/// `HandleHitKind::Out` becomes `SelectHandleHitKind::Out`.
 const fn map_handle_kind(kind: HandleHitKind) -> SelectHandleHitKind {
     match kind {
         HandleHitKind::In => SelectHandleHitKind::In,
@@ -248,6 +262,8 @@ const fn map_handle_kind(kind: HandleHitKind) -> SelectHandleHitKind {
     }
 }
 
+/// Reject non-finite tolerances and clamp finite negative values to zero.
+/// For example, `-1.0` becomes `Some(0.0)` and `f32::NAN` becomes `None`.
 fn normalize_tolerance(tolerance_world: f32) -> Option<f32> {
     tolerance_world
         .is_finite()
@@ -284,6 +300,8 @@ fn topmost_handle_in_shape(
     None
 }
 
+/// Attach shape and anchor identity to a handle endpoint hit.
+/// An outgoing endpoint keeps the `Out` kind alongside its shape and anchor IDs.
 const fn build_handle_hit(
     indexed: &IndexedShape<'_>,
     anchor_index: usize,
@@ -297,6 +315,8 @@ const fn build_handle_hit(
     }
 }
 
+/// Find the first anchor within squared tolerance in one shape.
+/// If several anchors qualify, the earliest anchor in path order wins.
 fn topmost_anchor_in_shape(
     indexed: &IndexedShape<'_>,
     cursor_world: Vec2,
@@ -315,6 +335,8 @@ fn topmost_anchor_in_shape(
     None
 }
 
+/// Return the closest matching segment in one shape with its document identity.
+/// The result carries the chosen segment index and its owning shape's identity.
 fn segment_hit_in_shape(
     indexed: &IndexedShape<'_>,
     cursor_world: Vec2,
@@ -329,6 +351,8 @@ fn segment_hit_in_shape(
     )
 }
 
+/// Return a bounding-box hit for one shape with its document identity.
+/// A hit carries the shape index and stable ID used by selection.
 fn shape_hit_in_shape(
     indexed: &IndexedShape<'_>,
     cursor_world: Vec2,

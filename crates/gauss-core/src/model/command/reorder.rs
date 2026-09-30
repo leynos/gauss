@@ -9,6 +9,13 @@ use super::error::UserError;
 use super::inverse::CommandInverse;
 use super::types::ReorderOp;
 
+/// Build reorder operations for the selected shapes in the requested direction.
+///
+/// # Errors
+///
+/// Returns an error for an empty selection, missing shape, or selection already
+/// at the requested document boundary.
+/// A movable selection returns `Command::Reorder` with its adjacent moves.
 fn prepare_reorder_selection(
     state: &EngineState,
     direction: ReorderDirection,
@@ -38,20 +45,37 @@ fn prepare_reorder_selection(
     Ok(Command::Reorder { operations })
 }
 
+/// Prepare a command that raises the selected shapes by one layer.
+///
+/// # Errors
+///
+/// Returns an error when no shape can be raised or a selected shape is missing.
+/// A selected shape below the top receives one upward move.
 pub(super) fn prepare_raise_selection(state: &EngineState) -> Result<Command, UserError> {
     prepare_reorder_selection(state, ReorderDirection::Raise, "Already at top")
 }
 
+/// Prepare a command that lowers the selected shapes by one layer.
+///
+/// # Errors
+///
+/// Returns an error when no shape can be lowered or a selected shape is missing.
+/// A selected shape above the bottom receives one downward move.
 pub(super) fn prepare_lower_selection(state: &EngineState) -> Result<Command, UserError> {
     prepare_reorder_selection(state, ReorderDirection::Lower, "Already at bottom")
 }
 
+/// Direction in which selected shapes move through the document's stacking order.
 #[derive(Clone, Copy, Debug)]
 enum ReorderDirection {
+    /// Move selected shapes towards the end of the document.
     Raise,
+    /// Move selected shapes towards the start of the document.
     Lower,
 }
 
+/// Collect selected shape IDs once, preserving their first-seen order.
+/// Selecting the same shape by both anchor and segment yields one ID.
 fn selected_shape_ids_for_reorder(selection: &Selection) -> Vec<ShapeId> {
     let mut seen = HashSet::new();
     let mut shapes = Vec::new();
@@ -71,6 +95,8 @@ fn selected_shape_ids_for_reorder(selection: &Selection) -> Vec<ShapeId> {
     shapes
 }
 
+/// Plan adjacent moves for selected shapes without mutating the source document.
+/// A selected shape at index 0 can produce a move to index 1.
 fn reorder_ops(
     doc: &Document,
     selected: &[ShapeId],
@@ -98,6 +124,8 @@ fn reorder_ops(
     ops
 }
 
+/// Walk backwards so each selected shape moves up one position without skipping peers.
+/// In `[A, B, C]`, selecting `A` plans a move in front of `B`.
 fn reorder_raise(planner: &mut ReorderPlanner) {
     let Some(last_movable) = planner.working.len().checked_sub(1) else {
         return;
@@ -109,6 +137,8 @@ fn reorder_raise(planner: &mut ReorderPlanner) {
     }
 }
 
+/// Walk forwards so each selected shape moves down one position without skipping peers.
+/// In `[A, B, C]`, selecting `C` plans a move before `B`.
 fn reorder_lower(planner: &mut ReorderPlanner) {
     let shape_count = planner.working.len();
     for index in 1..shape_count {
@@ -118,13 +148,19 @@ fn reorder_lower(planner: &mut ReorderPlanner) {
     }
 }
 
+/// Applies planned adjacent moves to a working copy and records successful operations.
 struct ReorderPlanner<'a> {
+    /// Mutable document copy whose order is used to plan subsequent moves.
     working: &'a mut Document,
+    /// Shape IDs that may move across unselected neighbours.
     selected: &'a HashSet<ShapeId>,
+    /// Operations emitted in the order they must be applied.
     ops: &'a mut Vec<ReorderOp>,
 }
 
 impl ReorderPlanner<'_> {
+    /// Move a selected shape by one position, or report that planning must stop.
+    /// A selected `from` shape crossing an unselected `to` shape records one move.
     fn try_reorder(&mut self, from: usize, to: usize) -> bool {
         let Some(shape) = self.working.shape_at(from) else {
             return false;
@@ -153,6 +189,8 @@ impl ReorderPlanner<'_> {
     }
 }
 
+/// Check that an operation changes the order and both indices address the document.
+/// In a three-shape document, a move from index 1 to 2 passes this check.
 fn is_valid_reorder_op(op: &ReorderOp, doc: &Document) -> bool {
     if op.from_index == op.to_index {
         return false;
@@ -161,6 +199,8 @@ fn is_valid_reorder_op(op: &ReorderOp, doc: &Document) -> bool {
     op.from_index < doc.len() && op.to_index < doc.len()
 }
 
+/// Apply an operation only when its shape still occupies the expected source index.
+/// If that shape moved since planning, this helper leaves the document unchanged.
 fn try_move_shape(doc: &mut Document, op: &ReorderOp) -> bool {
     match doc.find_index(op.shape_id) {
         Some(actual_from) if actual_from == op.from_index => {
@@ -204,6 +244,8 @@ pub(super) fn apply_reorder(
     })
 }
 
+/// Reverse each operation's source and destination indices for undo.
+/// An operation from index 1 to 2 becomes one from 2 to 1.
 fn create_inverse_operations(operations: &[ReorderOp]) -> Vec<ReorderOp> {
     operations
         .iter()

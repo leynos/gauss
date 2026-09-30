@@ -98,6 +98,8 @@ impl Viewport {
     }
 }
 
+/// Keep zoom values within the supported range so inverse transforms stay finite.
+/// For example, `0.01` clamps to `0.05`, while `80.0` clamps to `64.0`.
 const fn clamp_zoom(zoom: f32) -> f32 {
     const MIN_ZOOM: f32 = 0.05;
     const MAX_ZOOM: f32 = 64.0;

@@ -207,14 +207,20 @@ impl DocOp {
     }
 }
 
+/// Insert a cloned shape at the requested index, ignoring an invalid insertion.
+/// Inserting at index 1 places the clone before the former second shape.
 fn apply_insert_shape(doc: &mut Document, index: usize, shape: &Shape) {
     let _ = doc.insert_shape(index, shape.clone());
 }
 
+/// Remove the shape at an index, leaving the document unchanged when it is invalid.
+/// Removing index 1 from `[A, B, C]` leaves `[A, C]`.
 fn apply_remove_shape(doc: &mut Document, index: usize) {
     let _ = doc.remove_shape(index);
 }
 
+/// Set an anchor's position when both its shape and index exist.
+/// An anchor at `(1, 2)` takes the operation's supplied destination.
 fn apply_move_anchor(doc: &mut Document, shape: ShapeId, anchor: usize, to: Vec2) {
     let Some(target) = doc.shape_mut(shape) else {
         return;
@@ -225,6 +231,8 @@ fn apply_move_anchor(doc: &mut Document, shape: ShapeId, anchor: usize, to: Vec2
     item.pos = to;
 }
 
+/// Set an anchor's incoming handle when its shape and index exist.
+/// A `Some(point)` destination adds or replaces that incoming handle.
 fn apply_move_handle_in(doc: &mut Document, shape: ShapeId, anchor: usize, to: Option<Vec2>) {
     let Some(target) = doc.shape_mut(shape) else {
         return;
@@ -235,6 +243,8 @@ fn apply_move_handle_in(doc: &mut Document, shape: ShapeId, anchor: usize, to: O
     item.handle_in = to;
 }
 
+/// Set an anchor's outgoing handle when its shape and index exist.
+/// A `Some(point)` destination adds or replaces that outgoing handle.
 fn apply_move_handle_out(doc: &mut Document, shape: ShapeId, anchor: usize, to: Option<Vec2>) {
     let Some(target) = doc.shape_mut(shape) else {
         return;
@@ -245,6 +255,8 @@ fn apply_move_handle_out(doc: &mut Document, shape: ShapeId, anchor: usize, to: 
     item.handle_out = to;
 }
 
+/// Translate every anchor and handle of a shape by the same delta.
+/// With delta `(2, 0)`, each x-coordinate increases by two.
 fn apply_move_shape(doc: &mut Document, shape: ShapeId, delta: Vec2) {
     let Some(target) = doc.shape_mut(shape) else {
         return;
@@ -255,6 +267,8 @@ fn apply_move_shape(doc: &mut Document, shape: ShapeId, delta: Vec2) {
     }
 }
 
+/// Translate an anchor and each present handle by the same delta.
+/// A position `(1, 2)` becomes `(3, 2)` for delta `(2, 0)`.
 #[expect(
     clippy::missing_const_for_fn,
     reason = "anchor mutation is runtime-only and clearer as a non-const helper"
@@ -270,6 +284,8 @@ fn translate_anchor(anchor: &mut crate::model::Anchor, delta: Vec2) {
     }
 }
 
+/// Replace a shape's style when the shape exists.
+/// Applying a new fill style changes the target shape's style in place.
 fn apply_set_style(doc: &mut Document, shape: ShapeId, to: &PaintStyle) {
     let Some(target) = doc.shape_mut(shape) else {
         return;
@@ -277,6 +293,8 @@ fn apply_set_style(doc: &mut Document, shape: ShapeId, to: &PaintStyle) {
     target.style = to.clone();
 }
 
+/// Set a segment's kind when its shape and index exist.
+/// A cubic segment becomes a line when the destination kind is `Line`.
 fn apply_set_segment_kind(doc: &mut Document, shape: ShapeId, seg: usize, to: SegmentKind) {
     let Some(target) = doc.shape_mut(shape) else {
         return;
@@ -287,6 +305,8 @@ fn apply_set_segment_kind(doc: &mut Document, shape: ShapeId, seg: usize, to: Se
     *kind = to;
 }
 
+/// Reorder a shape only when it still occupies the recorded source index.
+/// A shape at index 0 can move to index 2 when those indices remain valid.
 fn apply_reorder(doc: &mut Document, shape: ShapeId, from: usize, to: usize) {
     if from == to {
         return;

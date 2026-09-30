@@ -12,6 +12,8 @@ use crate::model::{
     Anchor, CubicSegment, SegmentKind, Shape, Vec2, cubic_point, shape_world_bounds,
 };
 
+/// Test whether the cursor falls inside a shape's world-space bounds plus tolerance.
+/// A point just outside the bounds still hits when it falls within that tolerance.
 pub(super) fn hit_test_shape_bbox(shape: &Shape, cursor_world: Vec2, tolerance_world: f32) -> bool {
     let Some(bounds) = shape_world_bounds(shape) else {
         return false;
@@ -20,6 +22,8 @@ pub(super) fn hit_test_shape_bbox(shape: &Shape, cursor_world: Vec2, tolerance_w
     bounds.contains_with_tolerance(cursor_world, tolerance_world)
 }
 
+/// Return the closest segment within the squared world-space tolerance, if any.
+/// When two segments qualify, the returned index belongs to the nearer one.
 pub(super) fn find_best_segment_hit(
     shape: &Shape,
     cursor_world: Vec2,
@@ -52,6 +56,8 @@ pub(super) fn find_best_segment_hit(
     best_segment.map(|(seg_index, _)| seg_index)
 }
 
+/// Measure cursor distance to a line or cubic segment using its endpoint data.
+/// A cubic with missing handles uses the corresponding endpoint as its control point.
 fn segment_distance_squared(
     cursor_world: Vec2,
     kind: SegmentKind,
@@ -68,6 +74,8 @@ fn segment_distance_squared(
     }
 }
 
+/// Find squared distance to the nearest point on the closed segment from `a` to `b`.
+/// A point beyond either endpoint is measured to that endpoint.
 fn point_segment_distance_squared(p: Vec2, a: Vec2, b: Vec2) -> f32 {
     let ab = b.sub(a);
     let ap = p.sub(a);
@@ -82,6 +90,8 @@ fn point_segment_distance_squared(p: Vec2, a: Vec2, b: Vec2) -> f32 {
     p.distance_squared(closest)
 }
 
+/// Approximate squared distance to a cubic by sampling it as short line segments.
+/// The result is the minimum distance across the curve's 16 sampled sections.
 fn cubic_distance_squared(p: Vec2, cubic: CubicSegment) -> f32 {
     // `cubic_distance_squared` uses `STEPS = 16` as a practical balance
     // between hit-test accuracy and pointer-move performance. Increase
