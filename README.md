@@ -13,6 +13,10 @@ shared dictionary needs no change here. Because the dictionary is live,
 repository-specific exceptions in `typos.local.toml`; hand-editing `typos.toml`
 is not supported and any edits are overwritten on the next run.
 
+`TYPOS_CONFIG_BUILDER_VERSION` in the `Makefile` pins the
+`typos-config-builder` release the gate runs (currently `v0.1.3`). Raise it
+together with the regenerated `typos.toml`, never on its own.
+
 Gauss is a Phase 0 proof-of-concept vector editor built with GPUI. It provides
 Draw and Manipulate modes, SVG import/export, and undo/redo with a separate
 selection history.
