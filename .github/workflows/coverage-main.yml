@@ -68,7 +68,7 @@ jobs:
       # against, so ci.yml's must match it field for field.
       - name: Generate coverage
         uses: >-
-          leynos/shared-actions/.github/actions/generate-coverage@759da19f0379b6d2d7ddef93b7ad4c3b98154e41
+          leynos/shared-actions/.github/actions/generate-coverage@013346ccfd37bd1e02eb430525233f1a4cd942b8
         with:
           features: test-support
           output-path: lcov.info
