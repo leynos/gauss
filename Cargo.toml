@@ -92,7 +92,7 @@ invalid_codeblock_attributes = "deny"
 unescaped_backticks = "deny"
 
 [dependencies]
-accesskit = "0.24.0"
+accesskit = "0.25.0"
 camino = "1.2.2"
 cap-std = { version = "4.0.2", features = ["fs_utf8"] }
 futures = "0.3.31"
