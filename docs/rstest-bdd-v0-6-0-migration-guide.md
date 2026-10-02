@@ -19,6 +19,44 @@ that need a new testing practice to be useful.
   must return `HarnessResult<T>` from `run`. This affects projects that adopted
   the harness API from the `v0.6.0` development branch before the final release.
 
+- Feature paths in diagnostics and reports are now manifest-relative
+  (`ScenarioMetadata::feature_path`, the JSON reporter, the JUnit `classname`
+  attribute and `cargo bdd --dump-steps`). A feature file outside the crate's
+  manifest directory keeps its absolute path.
+- `StepContext::insert_value` now returns `InsertOutcome` instead of
+  `Option<Box<dyn Any>>`. Only code that calls `insert_value` directly is
+  affected; generated scenario code is updated by the macros.
+- Scenarios that previously passed may now correctly fail when a step's local
+  alias of `Result<T, E>` returns `Err`. Successful aliases now inject `T`
+  rather than boxing the whole `Result<T, E>` as a payload, and their error
+  type must implement `Display`.
+- Rust indexing entry points now return `RustStepIndexResult` on successful
+  reads and parses. Update callers of `index_rust_file` and `index_rust_source`
+  to consume the owned `.index` and inspect its recoverable `.diagnostics`;
+  only file-read and whole-source parse failures remain `RustStepIndexError`
+  values. Language-server state retains the file index, not the per-function
+  diagnostics. The former public `index_feature_file` entry point has also been
+  removed: disk-backed feature reads are managed by the server and stay inside
+  the validated workspace root, while direct callers should use
+  `index_feature_source` for source text.
+- The public `publish_rust_diagnostics` entry point has been removed. Save
+  handling now publishes Rust indexing diagnostics as part of the Rust save
+  path. Callers that index directly should use the supported
+  `RustStepIndexResult::diagnostics` contract instead of calling the removed
+  publisher.
+- `record_bypassed_steps` now takes a `BypassedScenario` descriptor and the
+  bypassed steps, replacing the six-parameter form and the separate
+  `record_bypassed_steps_with_tags` entry point. Only code that calls it
+  directly is affected; generated scenario code is updated by the macros.
+- `rstest_bdd_server::discovery::find_feature_files` now returns
+  `Result<Vec<PathBuf>, ServerError>`. Callers must propagate the result and
+  handle `ServerError::Io`; do not turn discovery failures into empty or
+  partial feature lists.
+- The minimum supported Rust version (MSRV) is now 1.88. The `gherkin 0.16`
+  parser dependency requires Rust 1.88, so `workspace.package.rust-version` and
+  every standalone fixture manifest declare `rust-version = "1.88"`; `cargo`
+  refuses to compile the workspace on older compilers.
+
 ### Update underscore-prefixed implicit fixtures
 
 If a scenario or step parameter used a leading underscore only to silence the
@@ -102,6 +140,119 @@ Harnesses selected by `#[scenario(..., harness = ...)]` or
 harness types used through the macros must implement both `HarnessAdapter` and
 `Default`.
 
+### Audit step return aliases
+
+Step wrappers now classify unhinted non-unit returns by their concrete type. An
+alias of `Result<T, E>` propagates `Err` and uses the `T` from `Ok(T)` as the
+fixture override. This corrects the former false green where an `Err` was boxed
+as an unused value and the scenario passed. It can reveal an assertion failure
+in a scenario that used to appear green.
+
+The migration also changes the successful payload shape: code that depended on
+a dropped `Result<T, E>` payload now receives `T` and can override a matching
+fixture. The `E` type must implement `Display`; implement `Display` for the
+error type. That is the only supported remedy, because the framework renders
+step errors through that trait.
+
+### Update direct `insert_value` callers
+
+`StepContext::insert_value` previously returned `Option<Box<dyn Any>>`, where
+`None` conflated three outcomes: the value was recorded and displaced nothing,
+no fixture matched its type, or several fixtures matched and the value was
+dropped. It now returns `InsertOutcome`, which names all three.
+
+Where the old `Option` was used only to recover the displaced override, call
+`into_previous()`:
+
+```rust,no_run
+// Before:
+let previous = ctx.insert_value(Box::new(7_u32));
+
+// After:
+let previous = ctx.insert_value(Box::new(7_u32)).into_previous();
+```
+
+Where the distinction matters, match the outcome instead:
+
+```rust,no_run
+match ctx.insert_value(Box::new(7_u32)) {
+    InsertOutcome::Inserted(previous) => { /* recorded; `previous` displaced */ }
+    InsertOutcome::NoMatch => { /* no fixture has this type; value dropped */ }
+    InsertOutcome::AmbiguousIgnored => { /* several match; value dropped */ }
+}
+```
+
+`InsertOutcome` is `#[must_use]`, so discarding it implicitly now warns. Use
+`is_inserted()` for a boolean check that does not consume the outcome.
+
+### Propagate feature-file discovery errors
+
+Update callers of the public `find_feature_files` API to return its
+`ServerError` rather than treating a failed traversal as an empty result:
+
+```rust,no_run
+use std::path::{Path, PathBuf};
+
+use rstest_bdd_server::discovery::find_feature_files;
+use rstest_bdd_server::error::ServerError;
+
+fn discover_features(root: &Path) -> Result<Vec<PathBuf>, ServerError> {
+    let feature_files = find_feature_files(root)?;
+    Ok(feature_files)
+}
+```
+
+When the caller needs to distinguish filesystem failures, handle
+`ServerError::Io` explicitly. Do not use an empty fallback or discard failed
+directory reads while retaining successful entries: either approach can hide
+missing feature files and produce an incomplete discovery result.
+
+### Update direct `record_bypassed_steps` callers
+
+`record_bypassed_steps` previously took the feature path, scenario name,
+scenario line, tags, skip reason, and the bypassed steps as six positional
+parameters. A second entry point, `record_bypassed_steps_with_tags`, existed
+only so callers that already owned a `Vec<String>` could pass the tags by
+reference instead of cloning.
+
+Both are replaced by a single function taking a `BypassedScenario` descriptor
+plus the steps. The descriptor borrows its tags, so the reason the second entry
+point existed no longer applies:
+
+```rust,ignore
+// Before:
+record_bypassed_steps(
+    "tests/features/skip.feature",
+    "skips",
+    7,
+    tags.clone(),
+    Some("fixture forced skip"),
+    [(StepKeyword::Given, "a bypassed step")],
+);
+
+// After:
+record_bypassed_steps(
+    BypassedScenario::new("tests/features/skip.feature", "skips", 7)
+        .with_tags(&tags)
+        .with_reason(Some("fixture forced skip")),
+    [(StepKeyword::Given, "a bypassed step")],
+);
+```
+
+`with_tags` and `with_reason` are optional. A scenario with neither needs only
+the constructor:
+
+```rust,no_run
+record_bypassed_steps(
+    BypassedScenario::new("tests/features/skip.feature", "skips", 7),
+    [(StepKeyword::Given, "a bypassed step")],
+);
+```
+
+Callers of `record_bypassed_steps_with_tags` migrate to the same form; the
+descriptor already borrows the tag slice, so drop the `_with_tags` suffix and
+pass `&tags` to `with_tags`.
+
 ## New features available by extending existing practice
 
 - `rstest-bdd-harness` provides shared harness adapter and attribute-policy
@@ -182,6 +333,12 @@ omit that direct dependency and compile as workspace proof points.
 > first-party adapter and falls back to resolving base API types through
 > `rstest-bdd-harness`. In those cases, add `rstest-bdd-harness` as a
 > direct dev-dependency.
+>
+> **Fallback warning:** a non-canonical first-party adapter path now emits one
+> fallback warning. On stable Rust this is a deprecation warning; adding
+> `#![deny(deprecated)]` escalates it to an error. Use the canonical Tokio or
+> GPUI path above, or add the direct `rstest-bdd-harness` dev-dependency when a
+> re-exported path is required.
 
 Adapter-only manifests work when macro arguments use first-party crate-root
 paths, such as `rstest_bdd_harness::StdHarness`,
@@ -283,6 +440,28 @@ fn starts_at(
 }
 ```
 
+#### Use the harness-context marker (v0.6.1 beta)
+
+The v0.6.1 beta adds `#[harness_context]` as a readable way to request the
+harness-provided context. Replace the legacy spelling above with:
+
+```rust,no_run
+#[given("the app counter starts at {n}")]
+fn starts_at(
+    #[harness_context] app: &AppContext,
+    n: usize,
+) {
+    assert_eq!(app.counter, n);
+}
+```
+
+The marker, `#[from(rstest_bdd_harness_context)] app: &AppContext`, and a
+parameter named `rstest_bdd_harness_context` all request the same reserved
+fixture key. Existing `#[from(rstest_bdd_harness_context)]` code remains
+supported. The marker is bare, takes no arguments, and may appear only once per
+parameter. Do not combine it with `#[from]`, `#[datatable]`, or `#[step_args]`,
+or use it on a parameter bound to a step-pattern placeholder.
+
 Harnesses that do not inject context should keep `type Context = ()` and call
 `request.run_without_context()`.
 
@@ -357,17 +536,18 @@ interim thread-local pattern documented under
 
 > **Note: this is a v0.6 interim shape.**
 >
-> The thread-local scenario-state pattern below works around the current
-> `StepContext::borrow_mut` contract ([ADR-007][adr-007]); §2.7.6.5 of the
-> [rstest-bdd design](rstest-bdd-design.md) and roadmap items 12.1.x track
-> the v0.7.0 redesign that will replace it.
+> The thread-local scenario-state pattern below works around the v0.6
+> `StepContext::borrow_mut` contract ([ADR-007][adr-007]). The guard-based
+> redesign recorded in [ADR-012][adr-012] shipped in v0.7.0 and supersedes
+> this workaround; see [Adopt guard-based `StepContext` borrowing
+> (v0.7.0)](#adopt-guard-based-stepcontext-borrowing-v070) for the migration
+> mapping.
 
 Apply this migration when an existing scenario stored a `VisualTestContext`
 between steps or relied on a non-thread-local mutable world together with
 `#[from(rstest_bdd_harness_context)]`. The
 [Stateful GPUI scenarios with durable handles][users-guide-playbook] subsection
-of the user's guide is the in-depth reference; the steps below mirror its
-outline:
+of the user guide is the in-depth reference; the steps below mirror its outline:
 
 1. **Update the dev-dependency.** In `Cargo.toml`, depend on
    `rstest-bdd-harness-gpui = "0.6.0"` and add `serial_test` and `rstest` as
@@ -391,39 +571,50 @@ outline:
 5. **Rebuild `VisualTestContext` per step.** Replace any stored
    `VisualTestContext` field with the durable handles, and in each subsequent
    step reconstruct the visual context with
-   `gpui::VisualTestContext::from_window(window, cx)`. The return is
-   `Option<VisualTestContext>`; treat `None` as an invariant violation (for
-   example, with `let Some(visual_cx) = ... else { panic!(...) };`).
+   `gpui::VisualTestContext::from_window(window, cx)`. The vendored gpui return
+   is `Option<VisualTestContext>`; treat `None` as an invariant violation:
+
+   ```rust,ignore
+   let Some(visual_cx) = gpui::VisualTestContext::from_window(window, cx) else {
+       panic!("stored window handle should reconstruct visual context");
+   };
+   ```
+
+   Published `gpui 0.2.2` returns `VisualTestContext` by value instead, so no
+   `Option` unwrapping is needed there.
+
+For a downstream crate using published `gpui 0.2.2`, translate the `#[given]`
+and later step call sites as follows. The view type must implement `Render`,
+and its constructor receives the published view context:
+
+```rust,ignore
+use gpui::{AppContext as _, VisualContext as _};
+
+let (entity, visual_cx) =
+    cx.add_window_view(|_window, view_cx| View::new(view_cx));
+let window = visual_cx.window_handle();
+
+let mut visual_cx = gpui::VisualTestContext::from_window(window, cx);
+visual_cx.update_entity(&entity, |view, _view_cx| view.value += 1);
+let value = visual_cx.read_entity(&entity, |view, _app| view.value);
+assert_eq!(value, 1);
+```
+
+Published `add_window_view` returns the visual context by mutable reference,
+`window_handle` comes from `VisualContext`, and the entity methods come from
+`AppContext`. The entity methods take `&Entity<T>` and two-argument callbacks,
+then return the callback value directly. The user guide provides complete
+[published step variants][published-variants] alongside the vendored
+regression-suite snippets.
 
 For a worked-out example, see the regression suite at
 `crates/rstest-bdd-harness-gpui/tests/stateful_window.rs` and the
 [stateful playbook][users-guide-playbook] subsection. The pattern's rationale
 lives in §§2.7.6.1–2.7.6.2 of the [rstest-bdd design](rstest-bdd-design.md).
 
-#### Retain structural Gauss shell tests as raw GPUI tests
-
-The Gauss shell migration in issue 119 applies the GPUI harness to user actions
-and observable state transitions. Pure render-tree, geometry, and test-plumbing
-assertions stay as raw `#[gpui::test]` tests: forcing these checks into
-Given/When/Then language would obscure that they validate implementation
-structure rather than user behaviour.
-
-Table 1 records 15 retained raw test functions, rather than an assertion count.
-Fourteen run normally; one remains ignored because the GPUI test platform may
-not use client-side decorations.
-
-| File                            | Retained raw tests                                                                                                                                                                                                                                                                                                                                                                         | Ignored                                    | Rationale                                                                                                                                  |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `gpui_shell_canvas_layout.rs`   | `canvas_is_not_collapsed_to_a_tiny_height`                                                                                                                                                                                                                                                                                                                                                 | No                                         | Asserts a rendered height threshold.                                                                                                       |
-| `gpui_shell_chrome_layout.rs`   | `chrome_layout_exposes_core_controls`                                                                                                                                                                                                                                                                                                                                                      | No                                         | Asserts debug-bound presence for render-tree selectors.                                                                                    |
-| `gpui_shell_resize_borders.rs`  | `resize_borders_hidden_when_maximized`, `resize_borders_visible_when_not_maximized`, and `resize_borders_appear_when_restoring_from_maximized`                                                                                                                                                                                                                                             | No                                         | Asserts platform-specific resize-border presence and visibility.                                                                           |
-| `gpui_shell_style_controls.rs`  | `style_changes_apply_to_selected_shapes_and_are_undoable`                                                                                                                                                                                                                                                                                                                                  | No                                         | Exercises style command and history checks through test-only APIs.                                                                         |
-| `gpui_shell_window_controls.rs` | `titlebar_drag_region_is_present`, `window_control_buttons_are_present`, `titlebar_drag_region_has_dimensions`, `window_control_buttons_have_dimensions`, `maximized_override_is_applied_in_tests`, `non_maximized_override_is_applied_in_tests`, `maximized_override_changes_titlebar_render`, `resize_canvas_not_present_when_maximised`, and `resize_canvas_present_when_not_maximised` | `resize_canvas_present_when_not_maximised` | Asserts render-tree geometry, test plumbing, platform-dependent element presence, or rerendering after a test-only maximized-state change. |
-
-_Table 1: Fifteen structural Gauss shell test functions retained outside the
-BDD harness._
-
 [adr-007]: adr-007-harness-context-injection.md
+
+[adr-012]: adr-012-guard-based-stepcontext-borrowing.md
 
 [design-beta2-quick-wins]: rstest-bdd-design.md#2763-v060-beta2-quick-wins
 
@@ -442,7 +633,180 @@ rstest-bdd-design.md#2761-borrow-constraint-exposed-by-gpui-adoption
 https://doc.rust-lang.org/nomicon/borrow-splitting.html
 
 [users-guide-playbook]:
-rstest-bdd-users-guide.md#stateful-gpui-scenarios-with-durable-handles
+users-guide.md#stateful-gpui-scenarios-with-durable-handles
+
+[published-variants]:
+users-guide.md#published-gpui-022-stateful-step-variants
+
+### Adopt guard-based `StepContext` borrowing (v0.7.0)
+
+> This subsection describes v0.7.0 behaviour, not a v0.6.0 change. It is
+> included here so readers upgrading off 0.6.x can plan the move in one
+> place. [ADR-012][adr-012] is the authoritative record.
+
+`StepContext` borrow methods now take `&self` instead of `&mut self`. Guards
+for distinct fixtures — including multiple mutable guards — can be held
+concurrently, so a step may declare
+`#[from(rstest_bdd_harness_context)] cx: &mut gpui::TestAppContext` alongside
+`world: &mut UiWorld` without the v0.6 `E0499`/`E0502` failure described in
+[Two mutable fixtures trigger `E0499` or `E0502`](#two-mutable-fixtures-trigger-e0499-or-e0502).
+A conflicting borrow of the *same* fixture still fails, but as a typed error
+rather than a compile-time rejection.
+
+New `try_borrow` and `try_borrow_mut` methods return
+`Result<_, FixtureBorrowError>`, with variants `NotFound`, `TypeMismatch`,
+`AlreadyBorrowed`, and `NotMutable`. A conflicting borrow of the same fixture
+now reports `AlreadyBorrowed` instead of panicking. The existing
+`Option`-returning `borrow_ref` and `borrow_mut` methods remain as conveniences
+that delegate to the `try_*` APIs.
+
+`FixtureRef` and `FixtureRefMut` are now opaque structs. They implement `Deref`/
+`DerefMut`, `AsRef`/`AsMut`, and `Debug`, and keep the existing accessor
+methods. Code that relied on their previous transparent shape should go through
+`Deref`/`DerefMut` (or the accessors) instead.
+
+`StepContext::get::<T>` now serves shared fixture storage only and deliberately
+ignores step-returned override values, because overrides moved behind `RefCell`
+when they became interiorly mutable. Read overrides through the guard API
+(`try_borrow`/`try_borrow_mut`, or the `Option`-returning conveniences) instead.
+
+#### Retire the thread-local workaround
+
+The framework — not caller discipline — now guarantees scenario-boundary reset:
+it builds a fresh `StepContext` for each scenario and drops its owned,
+scenario-scoped cells on success, on failure (including unwinding), and on
+skip. There are no public lifecycle hooks and no caller-managed reset API.
+`rstest` fixture scopes are unchanged by this guarantee: an `#[once]` fixture
+is still shared exactly as `rstest` defines it, because per-scenario freshness
+applies to framework-owned storage, not to every fixture.
+
+To migrate off the v0.6
+[thread-local workaround](#migrate-a-stateful-gpui-test):
+
+- Move the `thread_local! { RefCell<World> }` state into an ordinary
+  `rstest` `#[fixture]`.
+- Declare `world: &mut UiWorld` directly on the steps that need it, instead
+  of `WORLD.with(|w| w.borrow_mut())`.
+- Delete both the `reset_state_before_assignment()` calls and the
+  `Drop`-based `ScenarioStateCleanup` fixture.
+
+Before (v0.6 interim shape):
+
+```rust,ignore
+thread_local! {
+    static WORLD: RefCell<Option<World>> = RefCell::new(None);
+}
+
+#[given("the shell is open")]
+fn given_shell_open(
+    #[from(rstest_bdd_harness_context)] cx: &mut gpui::TestAppContext,
+) -> StepResult<()> {
+    WORLD.with(|w| {
+        let mut world = w.borrow_mut();
+        // ...update world using `cx`...
+    });
+    Ok(())
+}
+```
+
+After (v0.7.0 guard-based borrowing):
+
+```rust,ignore
+#[given("the shell is open")]
+fn given_shell_open(
+    #[from(rstest_bdd_harness_context)] cx: &mut gpui::TestAppContext,
+    world: &mut UiWorld,
+) -> StepResult<()> {
+    let (shell, visual_cx) = cx.add_window_view(|_context| Shell::default());
+    world.shell = Some(shell);
+    world.window = Some(visual_cx.window_handle());
+    Ok(())
+}
+
+#[when("the shell receives input")]
+fn when_shell_receives_input(
+    #[from(rstest_bdd_harness_context)] cx: &mut gpui::TestAppContext,
+    world: &mut UiWorld,
+) -> StepResult<()> {
+    let Some(window) = world.window else {
+        panic!("the given step should have stored a window handle");
+    };
+    let Some(mut visual_cx) = gpui::VisualTestContext::from_window(window, cx)
+    else {
+        panic!("stored window handle should reconstruct visual context");
+    };
+    // ...drive the shell through `visual_cx`...
+    Ok(())
+}
+```
+
+Guard-based borrowing removes the `E0499`/`E0502` obstacle to holding `cx` and
+`world` at once, but it does not make a stored `VisualTestContext` valid. That
+value is tied to the `TestAppContext` it was built against, and each step
+receives a fresh one, so `UiWorld` still keeps only the durable `Entity<T>` and
+`AnyWindowHandle` and rebuilds the visual context per step, as
+[Rebuild `VisualTestContext` per step](#migrate-a-stateful-gpui-test) requires.
+
+### Feature paths in diagnostics and reports are now manifest-relative
+
+`ScenarioMetadata::feature_path` and every surface that displays it — the JSON
+reporter's `feature_path` field, the JUnit `classname` attribute, and
+`cargo bdd --dump-steps` output — now carry the path of the feature file
+*relative to the consuming crate's manifest directory* when the file lies
+within it, and the absolute path otherwise. Previously the value was always an
+absolute path.
+
+Before:
+
+```json
+{ "feature_path": "/home/alice/project/tests/features/login.feature" }
+```
+
+After:
+
+```json
+{ "feature_path": "tests/features/login.feature" }
+```
+
+This brings the implementation into line with the JSON contract already
+documented at `docs/roadmap.md:316`. Four surfaces are affected:
+`ScenarioMetadata::feature_path`, the JSON reporter, the JUnit `classname`
+attribute, and `cargo bdd --dump-steps` output.
+
+Two consequences to plan for:
+
+- **JUnit-consumers key test history, ownership rules and quarantine lists
+  on `classname` + `name`.** The `classname` discontinuity above is a
+  *one-time* break on upgrade: no action prevents it, and no action is needed,
+  because the previous value was an absolute build-machine path that already
+  differed between a developer's machine and Continuous Integration (CI). The
+  trade is a single discontinuity for a value that is stable thereafter.
+- **Workspace-wide uniqueness is lost.** When several crates in one workspace
+  use the same conventional feature layout, merged `cargo bdd` output (and
+  `format_location`) now collides on the identical relative path. Qualify
+  entries by package name in your reporting layer if you merge dumps.
+
+### Feature-file rebuild invalidation
+
+Since v0.6.0, `#[scenario]` and `scenarios!` register every bound `.feature`
+file as a Cargo rebuild dependency, so editing only a `.feature` file
+recompiles the scenario binary and the tests reflect the new text immediately.
+The previous caveat that "editing only a `.feature` file does not trigger a
+rebuild" is removed; no `touch` workaround is needed.
+
+One compile-time error may appear after upgrading. A feature-file path that
+shares **no filesystem root** with its crate's manifest directory — a different
+Windows drive, a UNC prefix, a non-UTF-8 path, or an empty path — cannot be
+registered as a rebuild dependency and now fails to compile with a clear
+`compile_error!` naming the file. This is a deliberate, overwhelmingly rare
+exception (such a path is non-portable anyway). Remedy: use a manifest-relative
+path, or a path on the same filesystem root.
+
+**Hermetic build systems** — Bazel, Buck2, Nix sandboxes — parse dep-info and
+require every listed input to be declared. They will need `.feature` files
+added to their declared input sets; that is correct behaviour and the point of
+the change, but it surfaces as an "undeclared dependency" failure until the
+input set is updated.
 
 ## Migration checklist
 
@@ -457,6 +821,10 @@ rstest-bdd-users-guide.md#stateful-gpui-scenarios-with-durable-handles
   `request.run_without_context()` for unit-context harnesses.
 - [ ] Make scenarios return `Result` or `StepResult` before passing
   `Result<T, E>` or `StepResult<T, E>` fixtures by value.
+- [ ] Audit named step return aliases. Confirm fallible aliases return errors
+  that implement `Display`, and confirm `Ok(T)` overrides a matching `T`
+  fixture only when exactly one matching `TypeId` exists; missing or ambiguous
+  matches leave fixtures unchanged.
 - [ ] Add `rstest-bdd-harness-tokio` or `rstest-bdd-harness-gpui` only to test
   targets that need those framework integrations.
 - [ ] Remove redundant paired first-party `attributes = ...` arguments from
@@ -467,6 +835,15 @@ rstest-bdd-users-guide.md#stateful-gpui-scenarios-with-durable-handles
   [Migrate a stateful GPUI test](#migrate-a-stateful-gpui-test): wire
   `scenario_state_cleanup` into every stateful `#[scenario]`, mark the scenario
   `#[serial]`, and reset the thread-local state before assigning fresh handles.
+- [ ] Replace direct `record_bypassed_steps` and
+  `record_bypassed_steps_with_tags` calls with the `BypassedScenario`
+  descriptor form.
+- [ ] Re-baseline JUnit history, ownership and quarantine rules after the
+  one-time `classname` discontinuity (feature paths are now manifest-relative).
+- [ ] Replace any feature-file path with a manifest-relative path when the
+  file is inside the crate, or an absolute path on the same filesystem root
+  when the file is external; the D4 `compile_error!` names an offending file.
+- [ ] Update hermetic build inputs to declare the bound `.feature` files.
 - [ ] Run feature-gated downstream tests before assuming v0.6.0 broke the API:
   use `cargo test --workspace --all-features`, or the project's Continuous
   Integration (CI)-equivalent gate such as `make test` when a Make-based gate
@@ -489,6 +866,10 @@ rstest-bdd-users-guide.md#stateful-gpui-scenarios-with-durable-handles
 - **Error:** fixture parameter borrows a result-like type
   - **Fix:** Pass the fixture as owned `Result<T, E>` or `StepResult<T, E>`,
     and make the scenario return a compatible fallible type.
+- **Error:** `a step's error type \`MyError\` must implement
+  \`std::fmt::Display\``
+  - **Fix:** Implement `Display` for `MyError`. Step errors are rendered through
+    `Display`; do not try to restore the old boxed-payload behaviour.
 - **Error:** an underscore-prefixed parameter no longer resolves to the
   expected fixture
   - **Fix:** Use `#[from(_fixture_name)]` when the literal fixture key starts
@@ -496,10 +877,15 @@ rstest-bdd-users-guide.md#stateful-gpui-scenarios-with-durable-handles
 
 ### Two mutable fixtures trigger `E0499` or `E0502`
 
-> This is a v0.6 interim workaround. The limitation is recorded in
-> [rstest-bdd design §2.7.6.1][design-borrow-constraint]; the replacement
-> borrow model is tracked in [§2.7.6.5][design-redesign] and roadmap items
-> 12.1.x.
+> This is a v0.6 interim workaround, superseded from v0.7.0. The limitation
+> is recorded in [rstest-bdd design §2.7.6.1][design-borrow-constraint]; the
+> replacement guard-based borrow model shipped with [ADR-012][adr-012],
+> which lets one step borrow distinct mutable fixtures concurrently. Apply
+> the workarounds below only while staying on 0.6.x; on upgrade, declare
+> ordinary `&mut` fixture parameters and delete the thread-local reset
+> discipline. See [Adopt guard-based `StepContext` borrowing
+> (v0.7.0)](#adopt-guard-based-stepcontext-borrowing-v070) for the migration
+> mapping.
 
 The symptom is a rustc borrow-checker error in generated wrapper code, not in
 the step body itself. Two mutable fixture parameters usually produce
@@ -509,7 +895,7 @@ fixture plus one immutable fixture can produce [`E0502`][rustc-e0502],
 ``cannot borrow `*ctx` as mutable because it is also borrowed as immutable``.
 
 This GPUI-shaped snippet is intentionally rejected by the v0.6 generated
-wrapper; see _Why this happens_ below.
+wrapper; see *Why this happens* below.
 
 ```rust,ignore
 #[given("the shell is open")]
@@ -519,10 +905,13 @@ fn given_shell_open(
 ) -> StepResult<()> {
     let (shell, visual_cx) = cx.add_window_view(|_context| Shell::default());
     world.shell = Some(shell);
-    world.visual_cx = Some(visual_cx);
+    world.window = Some(visual_cx.window_handle());
     Ok(())
 }
 ```
+
+The rejection here comes from the two `&mut` fixture parameters, not from the
+body: the snippet already stores only durable handles, as the playbook requires.
 
 The same constraint is not GPUI-specific. This non-GPUI shape is also rejected
 when both parameters come from the same `StepContext`.
@@ -590,40 +979,15 @@ the playbook redirect instead.
   constraint.
 - [rstest-bdd design §2.7.6.2][design-interim-gpui] records the interim GPUI
   state pattern.
-- [rstest-bdd design §2.7.6.5][design-redesign] tracks the v0.7.0 redesign
-  target.
+- [rstest-bdd design §2.7.6.5][design-redesign] records the guard-based redesign
+  shipped in v0.7.0.
 - [ADR-007][adr-007] records the harness-context injection contract.
+- [ADR-012][adr-012] records the guard-based `StepContext` borrowing redesign;
+  see also
+  [Adopt guard-based `StepContext` borrowing (v0.7.0)](#adopt-guard-based-stepcontext-borrowing-v070)
+  in this guide.
 - [Stateful GPUI scenarios with durable handles][users-guide-playbook] is the
-  playbook in the user's guide.
-
-### Feature-file edits do not trigger a rebuild
-
-> **This caveat applies until roadmap item 11.3.1 lands.** Once the
-> rebuild-invalidation fix ships, this section can be removed.
-
-`#[scenario(path = "...")]` and `scenarios!` read `.feature` files with
-ordinary filesystem I/O at macro-expansion time. Cargo does not track those
-reads, so editing only a `.feature` file does not cause Cargo to recompile the
-scenario binary. The stale binary and all its compiled expectations are reused
-from the build cache until an unrelated `.rs` file in the crate changes.
-
-**Symptom:** a corrupted or changed expectation in a `.feature` file appears to
-pass after the edit, as if the change were not picked up.
-
-**Fix:** force a rebuild by touching a `.rs` file in the same crate, or run:
-
-```bash
-cargo clean -p <your-crate-name>
-```
-
-before re-running tests whenever you edit a `.feature` file without also
-editing any `.rs` file.
-
-**Root cause and roadmap:** see design-document
-[§2.7.6.6](rstest-bdd-design.md#2766-feature-file-rebuild-invalidation) and
-[ADR-010](adr-010-feature-file-change-detection.md) for the analysis and the
-chosen fix mechanism. Roadmap item 11.3.1 tracks the implementation, approved
-for v0.6.0 final.
+  user-guide playbook.
 
 ## Further reading
 
