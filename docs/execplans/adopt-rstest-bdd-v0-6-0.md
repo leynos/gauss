@@ -506,6 +506,101 @@ relaxed to make the build compile.
   borrowing.
 - Not merged, and no release published.
 
+## 8. Rebase onto `main`
+
+After the migration was pushed and PR #184 opened, the branch was rebased onto
+its PR target, `origin/main`.
+
+### 8.1 Identities
+
+| Item                                   | Value                                      |
+| -------------------------------------- | ------------------------------------------ |
+| Exclusive replay boundary (`OLD_BASE`) | `c8c4a89bc1ede8e45068b9c97d459897035cab69` |
+| Pre-rebase branch tip (`OLD_HEAD`)     | `8f0befb7709bb9506d4480070e9fd19d9a4540fd` |
+| Target (`origin/main`)                 | `199fb4ff99431a7859b8f1a536bf512bad213e2a` |
+| Replayed series tip                    | `a7ee7069a3d553288a10f521048e74a266ec334c` |
+
+`git merge-base OLD_HEAD TARGET` is exactly `OLD_BASE`, so the boundary needed
+no squash-parent recovery: `main` had advanced linearly and the whole
+`OLD_BASE..OLD_HEAD` series was branch-owned. The series is linear (no merge
+commits), so the linear replay procedure applies.
+
+The replay concluded at `a7ee706`. Recording this section in the plan added a
+further commit on top, which touches only this document and so carries no code
+or lockfile change. The replayed code and lockfile are therefore identical at
+`a7ee706` and at the branch tip.
+
+That recording commit is deliberately not named by SHA: it is this document's
+own commit, so its identifier changes whenever the document is edited, and any
+hard-coded identifier would be stale the moment the next correction landed.
+Only immutable ancestors are cited by SHA.
+
+### 8.2 Overlap
+
+Only two files were changed by both sides:
+
+- `Cargo.lock` — the branch restructured the `rstest-bdd` family's dependency
+  lists for the beta3 to 0.6.0 API change; `main` bumped `camino` 1.2.5 to
+  1.2.6 and `thiserror` 2.0.20 to 2.0.21.
+- `docs/developers-guide.md` — disjoint regions (the branch edited the version
+  strings at lines ~120 and ~227; `main` replaced the Namespace-runners section
+  with new coverage-ownership and coverage-publisher sections at lines ~45-98).
+
+All ten `main`-only paths were required to be byte-identical at the new tip,
+and were verified so.
+
+### 8.3 Conflict and resolution
+
+One conflict, in `Cargo.lock`, at the commit that introduces the manifest
+change. Both sides modified the same dependency lines in opposite,
+non-overlapping ways, so a hand-merge would have been a guess about which
+entries the manifests actually resolve to.
+
+Resolution follows the standing instruction for lockfiles: **take `main`'s
+lock, then rebuild it from the merged manifests.** `main`'s blob was installed
+verbatim (verified byte-identical to `TARGET:Cargo.lock`), the replay
+continued, and then `cargo metadata` was allowed to re-resolve the lock at
+HEAD. Because no commit after the manifest change touches any manifest or lock,
+the rebuilt lock was amended into that same commit, keeping every commit
+self-consistent rather than adding a trailing "fix the lock" commit.
+
+The rebuilt lock was verified stable across three consecutive resolves
+(`sha256 3fbd80c9bcb536995ad20f17a0fe10fde994ad2b534ddcc8737dc0a2eaeead94`) and
+introduces no new source hosts: every added `source` line is
+`registry+https://github.com/rust-lang/crates.io-index`, the same source set as
+before. The result is the commutative outcome — `rstest-bdd* 0.6.0` from the
+branch **and** `camino 1.2.6` / `thiserror 2.0.21` from `main`. The rebuild
+also dropped an incidental `itertools 0.13.0 to 0.11.0` downgrade that the
+branch's original lock had carried; that was a side effect of the prior
+resolution, not an intended change, and its removal is an improvement.
+
+### 8.4 Merge-driver decision
+
+Weave did **not** participate. The host is reconciled to the estate baseline
+(`weave` and `weave-driver` both `0.5.1`; the global attributes file is empty;
+there is no tracked `.gitattributes` and no `.git/info/attributes`).
+`git check-attr merge` reports `unspecified` for every representative path,
+including both overlap files, so the global `merge.weave.driver` registration
+never selected the driver. The replay used Git's built-in merge machinery with
+`merge.conflictStyle=zdiff3`.
+
+### 8.5 Post-rebase audit
+
+- `range-diff` reports six of the seven commits byte-identical; only the
+  manifest commit differs, by the added re-resolution note and the rebuilt lock
+  described above.
+- All target-only paths byte-identical to `TARGET`.
+- Every deletion against `TARGET` in a branch-touched file is explained: the
+  guide's two changed lines are the intended `0.6.0-beta3` to `0.6.0` edits,
+  and all of `main`'s new coverage sections survived.
+- All twelve branch-only files byte-identical to `OLD_HEAD`.
+- The three imported upstream documents still match their pinned-tag SHA-256
+  digests byte for byte, so the "imported text kept byte-for-byte intact"
+  requirement survived the rebase.
+
+No conflict markers were committed, `git diff --check` is clean, and the new
+series contains no merge commits.
+
 ## Decision log
 
 - **Branch name reuse.** The name `adopt-rstest-bdd-v0-6-0` was already
@@ -588,3 +683,76 @@ relaxed to make the build compile.
   (`…/github---leynos---cuprum/worktrees/30bb8047… (deleted)`), launched by the
   shared `post-turn-quality-stop-hook`. It never touched this tree or these
   logs. No local mutation was concealed by it.
+- **Lockfile taken from `main`, then rebuilt, not hand-merged.** The
+  `Cargo.lock` conflict presented as two ordinary three-way hunks, and it was
+  tempting to union them: keep the branch's new `tokio`/`tracing`/`syn 3.0.3`
+  entries and `main`'s `thiserror 2.0.21`. That would have been guesswork. A
+  lockfile records what the resolver *actually produced* for a given manifest
+  set, so editing it by hand asserts a resolution nobody computed. The
+  instructed procedure (take `main`'s lock, rebuild after the merge) was
+  followed, and the rebuilt result proved to be exactly the union one would
+  have guessed — but it was computed, and its stability across three resolves
+  is what establishes that, not inspection.
+- **The rebuilt lock was amended into the manifest commit, not appended.**
+  Amending rewrites a commit, which is normally avoided. It is safe here for a
+  specific, checkable reason: no commit in the series after the manifest change
+  touches any `Cargo.toml` or the lock, so the manifests at that commit and at
+  HEAD are identical, and a lock resolved at HEAD is therefore the correct lock
+  for that commit too. The alternative — a trailing "rebuild the lock" commit —
+  would leave the manifest commit internally inconsistent, and would be
+  flattened away on the eventual squash-merge regardless.
+- **A wrong replay range was caught before it could do damage.** The first
+  attempt to replay the post-manifest commits passed `56f3cb3` as the upstream
+  limit, which makes the range *exclusive* of that commit — the very commit
+  that introduces the regression feature file. Git reported a modify/delete
+  conflict on `result_alias_bdd.rs` and left the file "deleted", which reads
+  like a real merge problem but was purely an artefact of the wrong base. It
+  was aborted, the range corrected to `5d51959..e853b33`, and the replay then
+  completed with no conflicts at all. Lesson: a conflict that makes no sense
+  given what the branch changed is more often a wrong comparison than a genuine
+  disagreement.
+- **The rebase was performed against a fetched, frozen target commit.**
+  `origin/main` was fetched once and frozen to `199fb4f` before the rewrite,
+  and every recovery ref and retry used that commit rather than the mutable
+  remote ref, so a concurrent push to `main` cannot silently change what was
+  audited.
+- **Weave was deliberately not used.** It is installed and globally
+  registered, but `git check-attr merge` reports `unspecified` for every path
+  in this repository, so nothing selected it. The estate baseline requires an
+  explicit per-repository opt-in, and this repository has none. The documented
+  unattended-bypass posture therefore applies by default here; no override was
+  needed, and none was applied.
+- **A gate failure was diagnosed before it was retried.** `make typecheck`
+  failed with exit 2 and no rustc diagnostic anywhere in its log. Every failing
+  crate was a dependency under `--cap-lints allow` (`cfg-if`, `memchr`,
+  `once_cell`, `libc` and similar), no workspace crate was reached, and the
+  only error class present was `sccache: error: failed to execute compile`.
+  That signature identifies a dead cache daemon, not a defect in the tree, so
+  the gate was re-run rather than the code being changed. The re-run reached
+  every workspace crate and exited 0 with zero diagnostics. Had the failure
+  been read as a code verdict, the resolution would have been an unnecessary
+  change to working code.
+- **The four requested gates did not cover everything this change touched.**
+  `make markdownlint` transitively runs `make spelling`, and it failed on a
+  hyphenated compound in this document: the typos dictionary does not contain
+  it, and it reads the leading fragment as a misspelling of a common word. The
+  sentence was reworded rather than the fragment being added to an ignore list.
+  Quoting the offending word here re-triggers the same failure, so it is
+  described rather than repeated. The requested gate set — `check-fmt`, `test`,
+  `typecheck`, `lint` — contains no spell check, so prose added while
+  documenting the rebase was unvalidated until this run. Treat the documented
+  gate set as a minimum for a change that touches Markdown, not as sufficient.
+- **`typos.toml` drift was committed rather than left dirty.** It is
+  regenerated on every `make spelling` from a dictionary floating on
+  `refs/heads/main` upstream, so it drifts without any local edit. Because
+  regeneration is deterministic and the drift is unrelated to the rebase, it
+  was committed on its own to keep the tree clean and to avoid attributing the
+  change to the rebase. The commit message says plainly that the drift is
+  pre-existing.
+- **Recovery refs retained under `refs/recovery/4be5dc07/`.** `old-base`,
+  `old-head`, `pre-fetch-origin-main`, `target`, `rebase-tip-before-lock-amend`,
+  `new-head` and `new-head-92be131` are kept until the force-push is
+  confirmed, so the pre-rebase state and the intermediate replay results remain
+  recoverable. `new-head` predates the final documentation amend and is
+  retained deliberately: it is the replayed series tip, which the branch
+  history still contains as an immutable ancestor.
