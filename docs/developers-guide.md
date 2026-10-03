@@ -45,6 +45,18 @@ supplying coverage configuration, sanitizer options, or other compiler flags,
 retain `-D warnings` in the override so doctests use the same build
 configuration and warning policy as the main suite.
 
+## Spelling gate
+
+`make spelling` enforces en-GB-oxendict spelling with the shared
+`typos-config-builder gate`, which regenerates `typos.toml` from the shared
+dictionary and `typos.local.toml`, then checks spelling and the shared phrase
+corrections. `TYPOS_CONFIG_BUILDER_VERSION` in the `Makefile` pins the release
+the gate runs (currently `v0.1.3`); raise it together with the regenerated
+`typos.toml`, never on its own. The builder requires Python 3.14 or newer, so
+the target passes `--python 3.14` and `uv` fetches that interpreter when the
+host lacks one. Keep repository-specific exceptions in `typos.local.toml`, as
+narrow patterns rather than bare accepted words.
+
 ## Coverage ownership
 
 The trunk owns both persistent coverage outputs. On a push to `main`,
