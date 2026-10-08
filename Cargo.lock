@@ -488,7 +488,7 @@ dependencies = [
  "num-traits",
  "pastey",
  "rayon",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "v_frame",
  "y4m",
 ]
@@ -1086,7 +1086,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f849b92c694fe237ecd8fafd1ba0df7ae0d45c1df6daeb7f68ed4220d51640bd"
 dependencies = [
  "nix 0.30.1",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -1907,7 +1907,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54f0d287c53ffd184d04d8677f590f4ac5379785529e5e08b1c8083acdd5c198"
 dependencies = [
  "memchr",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -2214,7 +2214,7 @@ dependencies = [
  "rstest-bdd-macros",
  "serial_test",
  "test_support",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "uuid",
 ]
 
@@ -2228,7 +2228,7 @@ dependencies = [
  "rstest-bdd-macros",
  "slotmap",
  "test_support",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "undo_2",
 ]
 
@@ -2245,7 +2245,7 @@ dependencies = [
  "rstest-bdd-macros",
  "slotmap",
  "test_support",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -2514,7 +2514,7 @@ dependencies = [
  "stacksafe",
  "strum 0.27.2",
  "taffy",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "usvg",
  "uuid",
  "waker-fn",
@@ -3915,7 +3915,7 @@ dependencies = [
  "rustc-hash 1.1.0",
  "spirv",
  "strum 0.26.3",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "unicode-ident",
 ]
 
@@ -4846,7 +4846,7 @@ dependencies = [
  "rustc-hash 2.1.1",
  "rustls",
  "socket2",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "tokio",
  "tracing",
  "web-time",
@@ -4867,7 +4867,7 @@ dependencies = [
  "rustls",
  "rustls-pki-types",
  "slab",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "tinyvec",
  "tracing",
  "web-time",
@@ -5006,7 +5006,7 @@ dependencies = [
  "rand 0.9.2",
  "rand_chacha 0.9.0",
  "simd_helpers",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "v_frame",
  "wasm-bindgen",
 ]
@@ -5259,7 +5259,7 @@ dependencies = [
  "rust-embed",
  "serde",
  "serde_json",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "unic-langid",
 ]
 
@@ -5270,7 +5270,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4f2994169999c2037287129466b9c576cf51add440bb7d30ee16f712d4e2edf5"
 dependencies = [
  "cargo_metadata",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "tracing",
 ]
 
@@ -5307,7 +5307,7 @@ dependencies = [
  "rstest-bdd-patterns",
  "rstest-bdd-policy",
  "syn 2.0.111",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "walkdir",
 ]
 
@@ -5319,7 +5319,7 @@ checksum = "9773a23087aa9d460f11a982232758e9438f9b09bf297eb1dac748b745a324bd"
 dependencies = [
  "gherkin",
  "regex",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -6461,7 +6461,7 @@ version = "0.1.0"
 dependencies = [
  "gauss-core",
  "rstest",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "trybuild",
 ]
 
@@ -6487,11 +6487,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.20"
+version = "2.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec86235f5fcc2a73650310756d2ac5b138a5780bbbdfae3eeccec992c435ba4f"
+checksum = "09e52cb86a36cede5cb101bf8908837b3e4c6e5e59fe7fd85c23fb56200d189e"
 dependencies = [
- "thiserror-impl 2.0.20",
+ "thiserror-impl 2.0.21",
 ]
 
 [[package]]
@@ -6507,9 +6507,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.20"
+version = "2.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc04cd3e1236dd4a98afca4569f2deb3f120e5422a4023be2cb683f8486292af"
+checksum = "fe5197923287db20a58125f0bc85c062f7f2c892de97b18c356f9efb14b28524"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7622,7 +7622,7 @@ checksum = "3a4df73e95feddb9ec1a7e9c2ca6323b8c97d5eeeff78d28f1eccdf19c882b24"
 dependencies = [
  "parking_lot",
  "rayon",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "windows 0.61.3",
  "windows-future",
 ]

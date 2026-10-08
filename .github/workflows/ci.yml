@@ -14,7 +14,6 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
       BUILD_PROFILE: debug
-      WHITAKER_INSTALLER_REV: 764d5a3199fa2999ae979255e467c9d96fd65780
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -32,7 +31,7 @@ jobs:
       - name: Install mdtablefix
         # `make check-fmt` runs `mdtablefix --check --git`; 0.6.0 is the
         # first release with `--check` and `--git`.
-        uses: leynos/shared-actions/.github/actions/install-mdtablefix@8901b50fda116a1a33304809b8767809dc17c203
+        uses: leynos/shared-actions/.github/actions/install-mdtablefix@7d751eded578e48dacf43ab173d5820e6437c474
         with:
           version: "0.6.0"
       - name: Format
@@ -47,12 +46,7 @@ jobs:
       - name: Workflow contracts
         run: make workflow-contracts
       - name: Install Whitaker
-        run: |
-          cargo install --locked \
-            --git https://github.com/leynos/whitaker \
-            --rev "${WHITAKER_INSTALLER_REV}" \
-            whitaker-installer
-          whitaker-installer
+        uses: leynos/shared-actions/.github/actions/install-whitaker@7d751eded578e48dacf43ab173d5820e6437c474
       - name: Lint
         run: make lint
       # Coverage here serves the local ratchet and nothing else: the report is
