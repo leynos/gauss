@@ -32,10 +32,15 @@ locale = "en-gb"
 extend-ignore-re = [
     "(?s)```.*?```",
     "--[a-zA-Z0-9-]*color[a-zA-Z0-9*-]*",
+    "-fuse-ld=mold",
     "Azure\\s+Architecture\\s+Center\\s*\\|\\s*Microsoft\\s+Learn\\b",
+    "Dado un inventario vacío",
     "GitHub\\s+Flavored\\s+Markdown\\b(?:\\s\\(GFM\\))?",
     "HashiCorp",
     "How to organise your Rust tests",
+    "Setup mold linker",
+    "The mold linker looks for",
+    "\\*\\*LOD \\(Level of Detail\\)\\*\\*",
     "\\b(?:background|theme)_color\\b",
     "\\b(?:carousel|dropdown|footer|indicator|items|navbar|toast)-center\\b",
     "\\bAppFactory<Ser\\b",
@@ -53,14 +58,17 @@ extend-ignore-re = [
     "`resize_canvas_present_when_not_maximised`",
     "`var\\.iamge_id` instead of `var\\.image_id`",
     "currentColor",
+    "el inventario contiene una calabaza",
+    "especially after Mold is",
     "flavor = \"current_thread\"",
+    "mold: fatal: library not found: xcb",
+    "once Mold is already in place",
     "rust-analyzer",
+    "switch from mold to lld or ld",
 ]
 
 [default.extend-words]
 "ASO" = "ASO"
-"LOD" = "LOD"
-"Mold" = "Mold"
 "absolutisable" = "absolutizable"
 "absolutisably" = "absolutizably"
 "absolutisation" = "absolutization"
@@ -1148,7 +1156,6 @@ extend-ignore-re = [
 "internationalizers" = "internationalizers"
 "internationalizes" = "internationalizes"
 "internationalizing" = "internationalizing"
-"inventario" = "inventario"
 "italicisable" = "italicizable"
 "italicisably" = "italicizably"
 "italicisation" = "italicization"
@@ -1509,7 +1516,6 @@ extend-ignore-re = [
 "modularizers" = "modularizers"
 "modularizes" = "modularizes"
 "modularizing" = "modularizing"
-"mold" = "mold"
 "monetisable" = "monetizable"
 "monetisably" = "monetizably"
 "monetisation" = "monetization"

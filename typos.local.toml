@@ -6,9 +6,9 @@ schema = 1
 stems = []
 
 [words]
-# Abbreviations and repository-specific terms: the mold linker, Level of Detail
-# (LOD), and a Spanish Gherkin example.
-accepted = ["LOD", "Mold", "inventario", "mold"]
+# Repository-specific terms are exempted as exact patterns below, not as bare
+# accepted words.
+accepted = []
 
 [words.corrections]
 
@@ -24,6 +24,19 @@ ignore = [
     "`resize_canvas_present_when_not_maximised`",
     "flavor = \"current_thread\"",
     "rust-analyzer",
+    # The mold linker, named in flags, workflow steps and build notes.
+    "-fuse-ld=mold",
+    "Setup mold linker",
+    "mold: fatal: library not found: xcb",
+    "The mold linker looks for",
+    "switch from mold to lld or ld",
+    "once Mold is already in place",
+    "especially after Mold is",
+    # Level of Detail, as written in the feature plan.
+    "\\*\\*LOD \\(Level of Detail\\)\\*\\*",
+    # The Spanish Gherkin example.
+    "Dado un inventario vac\u00edo",
+    "el inventario contiene una calabaza",
 ]
 
 [files]
