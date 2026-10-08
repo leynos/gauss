@@ -2,7 +2,7 @@
 	check-fmt check-integration-test-inventory integration-test-inventory-test \
 	integration-test-inventory-format integration-test-inventory-lint \
 	integration-test-inventory-pytest \
-	markdownlint nixie typecheck spelling workflow-contracts
+	markdownlint nixie typecheck spelling workflow-contracts spelling-exceptions-test
 
 
 TARGET ?= libgauss.rlib
@@ -67,7 +67,7 @@ all: check-fmt lint test spelling workflow-contracts ## Perform a comprehensive 
 clean: ## Remove build artifacts
 	$(CARGO) clean
 
-test: ## Run tests (nextest if available, otherwise cargo test)
+test: spelling-exceptions-test ## Run tests (nextest if available, otherwise cargo test)
 	@if RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) nextest --version >/dev/null 2>&1; then \
 		RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(CARGO) nextest run --profile default $(TEST_FLAGS) $(BUILD_JOBS); \
 	else \
@@ -125,6 +125,12 @@ integration-test-inventory-pytest: ## Test the inventory checker
 		$(UV_ENV) $(UV) run --no-project --python 3.13 \
 		--with pytest==9.0.2 --with hypothesis==6.151.9 \
 		python -m pytest $(INTEGRATION_TEST_INVENTORY_TESTS) \
+		-c /dev/null --rootdir=. -p no:cacheprovider
+
+spelling-exceptions-test: ## Test that local spelling exceptions are exact patterns
+	@PYTHONPATH=scripts $(UV_ENV) $(UV) run --no-project --python 3.13 \
+		--with pytest==9.0.2 \
+		python -m pytest scripts/tests/test_spelling_exceptions.py \
 		-c /dev/null --rootdir=. -p no:cacheprovider
 
 spelling: ## Enforce en-GB-oxendict spelling
