@@ -31,15 +31,13 @@ extend-exclude = [
 locale = "en-gb"
 extend-ignore-re = [
     "(?s)```.*?```",
-    "--[a-zA-Z0-9-]*color[a-zA-Z0-9*-]*",
+    "--[A-Za-z0-9_-]*color(?:ed|s|ing|ize[ds]?|izing)?(?:\\b|_)",
     "-fuse-ld=mold",
     "Azure\\s+Architecture\\s+Center\\s*\\|\\s*Microsoft\\s+Learn\\b",
     "Dado un inventario vacío",
     "GitHub\\s+Flavored\\s+Markdown\\b(?:\\s\\(GFM\\))?",
     "HashiCorp",
     "How to organise your Rust tests",
-    "Setup mold linker",
-    "The mold linker looks for",
     "\\*\\*LOD \\(Level of Detail\\)\\*\\*",
     "\\b(?:background|theme)_color\\b",
     "\\b(?:carousel|dropdown|footer|indicator|items|navbar|toast)-center\\b",
@@ -54,6 +52,8 @@ extend-ignore-re = [
     "`Catalog(?:::[^`]+)?`",
     "`catalog\\.rs`",
     "`color`",
+    "`install-mold`",
+    "`mold`",
     "`resize_canvas_not_present_when_maximised`",
     "`resize_canvas_present_when_not_maximised`",
     "`var\\.iamge_id` instead of `var\\.image_id`",
@@ -61,9 +61,11 @@ extend-ignore-re = [
     "el inventario contiene una calabaza",
     "especially after Mold is",
     "flavor = \"current_thread\"",
+    "mold linker",
     "mold: fatal: library not found: xcb",
     "once Mold is already in place",
     "rust-analyzer",
+    "sudo apt-get install mold",
     "switch from mold to lld or ld",
 ]
 

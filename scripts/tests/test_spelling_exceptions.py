@@ -21,7 +21,13 @@ TERMS = ("mold", "Mold", "LOD", "inventario")
 #: Terms as prose words. A term joined to a hyphenated identifier, such as the
 #: `setup-mold` action reference, is a name rather than prose.
 TERM_PATTERN = re.compile(r"(?<![-\w])(?:mold|Mold|LOD|inventario)\b")
-GENERATED_OR_OVERLAY = {"typos.toml", "typos.local.toml"}
+#: Files that legitimately name the terms: the configuration itself and this
+#: module, whose own source lists them.
+EXCLUDED_FILES = {
+    "typos.toml",
+    "typos.local.toml",
+    "scripts/tests/test_spelling_exceptions.py",
+}
 
 
 def ignore_patterns() -> list[re.Pattern[str]]:
@@ -40,7 +46,7 @@ def is_covered(line: str, start: int, end: int) -> bool:
 
 
 def tracked_text_files() -> list[Path]:
-    """Return tracked UTF-8 text files, excluding the spelling configuration."""
+    """Return tracked Markdown files, which are the files the gate scans."""
     listing = subprocess.run(
         ["git", "ls-files", "-z"],
         cwd=REPOSITORY_ROOT,
@@ -50,7 +56,7 @@ def tracked_text_files() -> list[Path]:
     return [
         REPOSITORY_ROOT / name
         for name in listing.split("\0")
-        if name and name not in GENERATED_OR_OVERLAY
+        if name.endswith(".md") and name not in EXCLUDED_FILES
     ]
 
 
@@ -62,19 +68,33 @@ def test_no_term_is_accepted_as_a_bare_word() -> None:
     assert not accepted & set(TERMS), f"bare accepted words: {sorted(accepted)}"
 
 
+def uncovered_in_line(line: str) -> bool:
+    """Return whether the line holds a term that no ignore pattern covers."""
+    return any(
+        not is_covered(line, found.start(), found.end())
+        for found in TERM_PATTERN.finditer(line)
+    )
+
+
+def uncovered_lines(path: Path) -> list[str]:
+    """Return the `path:line: text` entries of uncovered uses in one file."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        return []
+    name = path.relative_to(REPOSITORY_ROOT)
+    return [
+        f"{name}:{number}: {line.strip()}"
+        for number, line in enumerate(text.splitlines(), start=1)
+        if uncovered_in_line(line)
+    ]
+
+
 def test_every_current_occurrence_is_covered_by_a_pattern() -> None:
     """Each use of a term in a tracked file sits inside an ignore pattern."""
-    uncovered: list[str] = []
-    for path in tracked_text_files():
-        try:
-            text = path.read_text(encoding="utf-8")
-        except (UnicodeDecodeError, OSError):
-            continue
-        for number, line in enumerate(text.splitlines(), start=1):
-            for found in TERM_PATTERN.finditer(line):
-                if not is_covered(line, found.start(), found.end()):
-                    name = path.relative_to(REPOSITORY_ROOT)
-                    uncovered.append(f"{name}:{number}: {line.strip()}")
+    uncovered = [
+        entry for path in tracked_text_files() for entry in uncovered_lines(path)
+    ]
 
     assert not uncovered, "occurrences outside any ignore pattern:\n" + "\n".join(
         uncovered
