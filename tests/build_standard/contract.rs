@@ -19,12 +19,16 @@ mod command_reader;
 mod config;
 #[path = "cranelift.rs"]
 mod cranelift;
+#[path = "development.rs"]
+mod development;
 #[path = "exhaustive.rs"]
 mod exhaustive;
 #[path = "fixtures.rs"]
 mod fixtures;
 #[path = "injected.rs"]
 mod injected;
+#[path = "injected_held_out.rs"]
+mod injected_held_out;
 #[path = "make.rs"]
 mod make;
 #[path = "process.rs"]
@@ -37,7 +41,8 @@ mod shell;
 mod workflow_exhaustive;
 use ci_steps::workflow_problems;
 use config::{CONFIG, Pin, Problems, TOOLCHAIN, config_problems};
-use make::{Host, development_problems, held_out_problems, held_out_target_count};
+use development::development_problems;
+use make::{Host, held_out_problems, held_out_target_count};
 use process::real_make;
 
 /// Turns a list of complaints into a test result.
