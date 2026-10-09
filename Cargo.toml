@@ -108,9 +108,9 @@ gauss-core = { version = "0.1.0", path = "crates/gauss-core", features = ["test-
 gpui = { version = "0.2.2", features = ["test-support"] }
 proptest = "1.11.0"
 rstest = "0.27.0"
-rstest-bdd = "0.6.0-beta3"
-rstest-bdd-macros = "0.6.0-beta3"
-rstest-bdd-harness-gpui = "0.6.0-beta3"
+rstest-bdd = "0.6.0"
+rstest-bdd-macros = "0.6.0"
+rstest-bdd-harness-gpui = "0.6.0"
 serial_test = "3"
 test_support = { path = "crates/test_support" }
 uuid = { version = "1.21.0", features = ["v4"] }

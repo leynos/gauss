@@ -62,8 +62,10 @@ injected via fixtures or slots.
 ### 2) Use explicit `Result`/`StepResult` in scenario signatures
 
 Scenario return classification does not resolve type aliases. When using an
-alias like `type MyResult<T> = Result<T, MyError>`, the scenario signature must
-spell out `Result<(), MyError>` or use `rstest_bdd::StepResult<(), MyError>`.
+alias like `type MyResult<T> = Result<T, MyError>`, the `#[scenario]` signature
+must spell out `Result<(), MyError>` or use
+`rstest_bdd::StepResult<(), MyError>`; this constraint does not apply to step
+return aliases.
 
 ```rust
 # use rstest_bdd::StepResult;
@@ -106,31 +108,27 @@ Fixtures are the replacement for Cucumber's shared `World` object.
 The flow below shows a recommended decision path for migrating shared mutable
 state to fixture-based scenario isolation.
 
-Screen reader description: This flowchart starts at migration kickoff, checks
-for cross-scenario mutable state, and then routes teams toward per-scenario
-fixtures with optional `#[once]` infrastructure before documentation updates.
-
 ```mermaid
 flowchart TD
-    A[Start migration] --> B{Does the suite rely on shared mutable state across scenarios?}
+    A["Start migration"] --> B{"Does the suite rely on<br/>shared mutable state<br/>across scenarios?"}
 
-    B -- Yes --> C[Identify global World like structures and cross-scenario mutation]
-    C --> D[Move shared mutable data into scenario-local fixtures using &mut FixtureType or Slot]
-    D --> E{Is any expensive, mostly read-only infrastructure used?}
+    B -- Yes --> C["Identify global World like structures<br/>and cross-scenario mutation"]
+    C --> D["Move shared mutable data into<br/>scenario-local fixtures<br/>using &mut FixtureType or Slot"]
+    D --> E{"Is any expensive, mostly<br/>read-only infrastructure used?"}
 
-    E -- Yes --> F[Wrap expensive, read-only infra in #once fixtures for reuse across scenarios]
-    E -- No --> G[Keep all fixtures per-scenario without #once]
+    E -- Yes --> F["Wrap expensive, read-only infra<br/>in #[once] fixtures<br/>for reuse across scenarios"]
+    E -- No --> G["Keep all fixtures per-scenario<br/>without #[once]"]
 
-    F --> H[Ensure scenario data is recreated per scenario and does not depend on execution order]
+    F --> H["Ensure scenario data is recreated<br/>per scenario and does not<br/>depend on execution order"]
     G --> H
 
-    B -- No --> I[Keep existing fixtures but verify they follow per-scenario isolation]
+    B -- No --> I["Keep existing fixtures<br/>but verify they follow<br/>per-scenario isolation"]
 
-    H --> J[Reserve StepContext::insert_owned for custom plumbing only]
+    H --> J["Reserve StepContext::insert_owned<br/>for custom plumbing only"]
     I --> J
 
-    J --> K[Update docs and templates around state sharing and fixtures]
-    K --> L[End migration]
+    J --> K["Update docs and templates<br/>around state sharing and fixtures"]
+    K --> L["End migration"]
 ```
 
 *Figure: Decision flow for migrating from shared mutable state to scenario-
@@ -205,5 +203,7 @@ end-user wrapper code.
   `rstest_bdd::sync_to_async`
   - **Fix:** Update imports to `rstest_bdd::async_step::sync_to_async`.
 
-For migration issues not covered here, see the
-[`rstest-bdd` user's guide](rstest-bdd-users-guide.md).
+For migration issues not covered here, see
+[ADR-006](adr-006-fallible-scenario-functions.md).[^adr]
+
+[^adr]: docs/adr-006-fallible-scenario-functions.md
