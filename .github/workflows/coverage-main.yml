@@ -73,7 +73,7 @@ jobs:
           # .cargo/config.toml.
           RUSTFLAGS: -D warnings
         uses: >-
-          leynos/shared-actions/.github/actions/generate-coverage@759da19f0379b6d2d7ddef93b7ad4c3b98154e41
+          leynos/shared-actions/.github/actions/generate-coverage@0606ca899ce2995a0c4bc78e660e80832e6e8855
         with:
           features: test-support
           output-path: lcov.info
@@ -91,7 +91,7 @@ jobs:
       - name: Upload coverage data to CodeScene
         if: steps.codescene-token.outputs.available == 'true' && github.ref == 'refs/heads/main'
         uses: >-
-          leynos/shared-actions/.github/actions/upload-codescene-coverage@759da19f0379b6d2d7ddef93b7ad4c3b98154e41
+          leynos/shared-actions/.github/actions/upload-codescene-coverage@0606ca899ce2995a0c4bc78e660e80832e6e8855
         with:
           path: lcov.info
           format: lcov
