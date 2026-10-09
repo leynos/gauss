@@ -30,17 +30,24 @@ EXCLUDED_FILES = {
 }
 
 
-def ignore_patterns() -> list[re.Pattern[str]]:
-    """Return the compiled `[patterns] ignore` entries of the local overlay."""
+@pytest.fixture(scope="module")
+def patterns() -> list[re.Pattern[str]]:
+    """Load and compile the `[patterns] ignore` entries of the local overlay once.
+
+    File reading and TOML parsing happen here, at the setup boundary, so a
+    malformed overlay fails the test run instead of hiding inside a query.
+    """
     document = tomllib.loads(LOCAL_OVERLAY.read_text(encoding="utf-8"))
     return [re.compile(pattern) for pattern in document["patterns"]["ignore"]]
 
 
-def is_covered(line: str, start: int, end: int) -> bool:
+def is_covered(
+    patterns: list[re.Pattern[str]], line: str, start: int, end: int
+) -> bool:
     """Return whether an ignore pattern matches a span containing the term."""
     return any(
         match.start() <= start and end <= match.end()
-        for pattern in ignore_patterns()
+        for pattern in patterns
         for match in pattern.finditer(line)
     )
 
@@ -68,15 +75,15 @@ def test_no_term_is_accepted_as_a_bare_word() -> None:
     assert not accepted & set(TERMS), f"bare accepted words: {sorted(accepted)}"
 
 
-def uncovered_in_line(line: str) -> bool:
+def uncovered_in_line(patterns: list[re.Pattern[str]], line: str) -> bool:
     """Return whether the line holds a term that no ignore pattern covers."""
     return any(
-        not is_covered(line, found.start(), found.end())
+        not is_covered(patterns, line, found.start(), found.end())
         for found in TERM_PATTERN.finditer(line)
     )
 
 
-def uncovered_lines(path: Path) -> list[str]:
+def uncovered_lines(patterns: list[re.Pattern[str]], path: Path) -> list[str]:
     """Return the `path:line: text` entries of uncovered uses in one file."""
     try:
         text = path.read_text(encoding="utf-8")
@@ -86,14 +93,18 @@ def uncovered_lines(path: Path) -> list[str]:
     return [
         f"{name}:{number}: {line.strip()}"
         for number, line in enumerate(text.splitlines(), start=1)
-        if uncovered_in_line(line)
+        if uncovered_in_line(patterns, line)
     ]
 
 
-def test_every_current_occurrence_is_covered_by_a_pattern() -> None:
+def test_every_current_occurrence_is_covered_by_a_pattern(
+    patterns: list[re.Pattern[str]],
+) -> None:
     """Each use of a term in a tracked file sits inside an ignore pattern."""
     uncovered = [
-        entry for path in tracked_text_files() for entry in uncovered_lines(path)
+        entry
+        for path in tracked_text_files()
+        for entry in uncovered_lines(patterns, path)
     ]
 
     assert not uncovered, "occurrences outside any ignore pattern:\n" + "\n".join(
@@ -102,11 +113,13 @@ def test_every_current_occurrence_is_covered_by_a_pattern() -> None:
 
 
 @pytest.mark.parametrize("term", TERMS)
-def test_an_unrelated_use_of_each_term_is_not_covered(term: str) -> None:
+def test_an_unrelated_use_of_each_term_is_not_covered(
+    patterns: list[re.Pattern[str]], term: str
+) -> None:
     """A term in prose that no approved phrase contains is still checked."""
     line = f"Prose that merely mentions {term} in passing."
     start = line.index(term)
 
-    assert not is_covered(line, start, start + len(term)), (
+    assert not is_covered(patterns, line, start, start + len(term)), (
         f"an ignore pattern hides an unrelated use of {term!r}"
     )
