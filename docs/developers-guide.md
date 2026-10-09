@@ -403,17 +403,12 @@ development target on a Linux host and a macOS host (each keeping the caller's
 own `RUSTFLAGS`) and for the release target (the coverage exclusion is checked
 in the workflow steps) on a Linux host, and the `setup-rust` steps of the CI
 workflows (each must pass `install-mold`), so a flag lost through a recipe or
-workflow edit fails there. The decision is recorded in
+workflow edit fails there. `tests/build_standard/rust_flags.rs` checks that a
+`RUST_FLAGS` override on the `make` command line reaches every recipe that
+composes it. The decision is recorded in
 [ADR 006](adr-006-rust-build-standard.md). The contract runs `make -n`, so a
 direct `cargo test` needs GNU make on the `PATH`. It fails when `make` is
 missing instead of skipping, so a missing tool cannot read as a pass.
-
-On Linux, install `mold` before building: the configuration names it, so a
-build without it fails at link time. CI installs it through `setup-rust`'s
-`install-mold` input. `tests/build_standard_contract.rs` holds the standard. It
-reads the configuration sources, and the commands `make -n` prints for each
-development, coverage and release target on a Linux host and a macOS host, so a
-flag lost through a recipe edit fails there.
 
 ### Cranelift
 

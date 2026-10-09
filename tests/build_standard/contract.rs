@@ -39,6 +39,8 @@ mod policy_cases;
 mod process;
 #[path = "reader_cases.rs"]
 mod reader_cases;
+#[path = "rust_flags.rs"]
+mod rust_flags;
 #[path = "shell.rs"]
 mod shell;
 #[path = "workflow_exhaustive.rs"]
