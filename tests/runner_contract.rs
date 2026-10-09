@@ -2,6 +2,12 @@
 
 use rstest::rstest;
 
+// The build standard's contract lives beside this one rather than in a target of
+// its own: `make check-integration-test-inventory` counts the integration-test
+// targets, and this repository consolidates them.
+#[path = "build_standard/contract.rs"]
+mod build_standard_contract;
+
 /// The coverage publisher's runner. The estate left Namespace on 2026-09-03,
 /// so the former `namespace-profile-default` label would queue the publisher
 /// forever; the job is single-process coverage, so the smallest Ubicloud size
