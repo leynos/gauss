@@ -57,6 +57,19 @@ the target passes `--python 3.14` and `uv` fetches that interpreter when the
 host lacks one. Keep repository-specific exceptions in `typos.local.toml`, as
 narrow patterns rather than bare accepted words.
 
+`make spelling-exceptions-test` is the regression test for that rule. It is a
+prerequisite of `make test`, and runs
+`scripts/tests/test_spelling_exceptions.py` under Python 3.13 with
+`pytest==9.0.2` through `uv`, so it needs no project environment. The test
+module lists the four exempted terms (the linker name, the level-of-detail
+abbreviation and the Spanish example word). It fails if one of them is accepted
+as a bare word, if a current use in tracked Markdown lies outside an exact
+ignore pattern, or if a pattern hides an unrelated use. Add a pattern for each
+new legitimate use rather than accepting the word. The test also runs the pinned
+`typos-config-builder gate` over a scratch repository with a copy of the
+overlay, so it needs network access to fetch the shared dictionary and the
+builder, as `make spelling` does.
+
 ## Coverage ownership
 
 The trunk owns both persistent coverage outputs. On a push to `main`,
