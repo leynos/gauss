@@ -8,11 +8,13 @@
 //! was silently discarded, so a failing step still produced a green scenario.
 //!
 //! Both directions of that contract are pinned below. The first scenario
-//! proves the alias still injects `Ok`; the second, run under
-//! `#[should_panic]`, proves a step returning `Err` through the same alias
-//! actually fails the scenario. Under the old classification the second test
-//! would have failed — the discarded `Err` would leave the scenario green and
-//! leave `#[should_panic]` unsatisfied.
+//! proves the alias injects the `Ok` payload: the step returns a sentinel
+//! through the alias and a later step reads that sentinel back out of fixture
+//! injection, so neither a discarded nor a boxed payload can satisfy it. The
+//! second, run under `#[should_panic]`, proves a step returning `Err` through
+//! the same alias actually fails the scenario. Under the old classification
+//! the second test would have failed — the discarded `Err` would leave the
+//! scenario green and leave `#[should_panic]` unsatisfied.
 
 use gauss_core::model::Document;
 use rstest::fixture;
@@ -31,6 +33,29 @@ fn world() -> AliasWorld {
     AliasWorld::default()
 }
 
+/// A payload type that exists only to make step-return injection observable.
+///
+/// Deliberately *not* carried on [`AliasWorld`]: if the value reached the
+/// assertion through a world field, the assertion would still pass when the
+/// framework never injected the step's `Ok` payload.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct AliasSentinel(&'static str);
+
+/// The value the aliased `Ok` step returns, and therefore the value the
+/// asserting step must observe.
+const RETURNED_SENTINEL: &str = "returned through the alias";
+
+/// The value the asserting step must *not* observe. Failed injection leaves
+/// the fixture at this default, so the assertion cannot pass by accident.
+const FIXTURE_SENTINEL: &str = "fixture default";
+
+/// The single fixture of type [`AliasSentinel`], giving the framework's
+/// `TypeId` scan exactly one candidate to override.
+#[fixture]
+fn alias_sentinel() -> AliasSentinel {
+    AliasSentinel(FIXTURE_SENTINEL)
+}
+
 #[given("an empty document for alias classification")]
 fn empty_document_for_alias_classification(world: &mut AliasWorld) {
     world.doc = Document::new();
@@ -39,14 +64,33 @@ fn empty_document_for_alias_classification(world: &mut AliasWorld) {
 
 /// A step that succeeds while returning through the `Result` alias.
 ///
-/// The `Ok(())` must be unwrapped and injected as the step's value; the alias
-/// must not be treated as an opaque payload.
-#[when("a step returns Ok through the result alias")]
-fn step_returns_ok_through_result_alias(world: &mut AliasWorld) -> TestSupportResult<()> {
+/// The `Ok` payload must be unwrapped and injected as the step's value; the
+/// alias must not be treated as an opaque payload. Returning a non-unit
+/// sentinel is what makes that observable: `Ok(())` would carry nothing a
+/// later step could distinguish from a discarded value.
+#[when("a step returns a sentinel through the result alias")]
+fn step_returns_sentinel_through_result_alias(
+    world: &mut AliasWorld,
+) -> TestSupportResult<AliasSentinel> {
     if !world.doc.visually_eq(&Document::new()) {
         return Err(TestSupportError::expectation(
             "expected a freshly constructed document to match an empty document",
         ));
+    }
+    Ok(AliasSentinel(RETURNED_SENTINEL))
+}
+
+/// Reads the sentinel back from fixture injection.
+///
+/// The fixture is always resolvable — absent an override it falls back to the
+/// `#[fixture]` default — so a failed injection reaches this assertion's own
+/// diagnostic rather than an unrelated resolution error.
+#[then("the returned sentinel is injected as the step value")]
+fn returned_sentinel_is_injected(alias_sentinel: AliasSentinel) -> TestSupportResult<()> {
+    if alias_sentinel != AliasSentinel(RETURNED_SENTINEL) {
+        return Err(TestSupportError::expectation(format!(
+            "the Ok payload was not injected; the fixture still holds {alias_sentinel:?}"
+        )));
     }
     Ok(())
 }
@@ -63,8 +107,8 @@ fn step_returns_err_through_result_alias(world: &mut AliasWorld) -> TestSupportR
     ))
 }
 
-#[then("the alias step is recorded as having succeeded")]
-fn alias_step_recorded_as_succeeded(world: &AliasWorld) -> TestSupportResult<()> {
+#[then("the failing step is not reached")]
+fn failing_step_is_not_reached(world: &AliasWorld) -> TestSupportResult<()> {
     if world.reached_failure {
         return Err(TestSupportError::expectation(
             "the failing step should not have run in the success scenario",
@@ -77,8 +121,13 @@ fn alias_step_recorded_as_succeeded(world: &AliasWorld) -> TestSupportResult<()>
     path = "tests/features/result_alias_classification.feature",
     name = "A step returning Ok through the result alias succeeds"
 )]
-fn step_returning_ok_through_result_alias_succeeds(world: AliasWorld) {
-    let _ = world;
+fn step_returning_ok_through_result_alias_succeeds(
+    world: AliasWorld,
+    alias_sentinel: AliasSentinel,
+) {
+    // Both fixtures must be declared here, not only on the steps: the scenario
+    // function is what seeds them into `StepContext` for the steps to resolve.
+    let _ = (world, alias_sentinel);
 }
 
 // `#[should_panic]` is the assertion here: it fails if the scenario passes.
@@ -98,6 +147,11 @@ fn step_returning_ok_through_result_alias_succeeds(world: AliasWorld) {
     name = "A step returning Err through the result alias fails the scenario"
 )]
 #[should_panic(expected = "a step returns Err through the result alias")]
-fn step_returning_err_through_result_alias_fails_scenario(world: AliasWorld) {
-    let _ = world;
+fn step_returning_err_through_result_alias_fails_scenario(
+    world: AliasWorld,
+    alias_sentinel: AliasSentinel,
+) {
+    // The `Then` step in this scenario still names `alias_sentinel`, so the
+    // fixture must be seeded even though the scenario fails before reaching it.
+    let _ = (world, alias_sentinel);
 }

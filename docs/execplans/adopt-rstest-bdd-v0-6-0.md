@@ -233,8 +233,8 @@ cannot regress silently".
 both directions of the contract using step returns written as the
 `test_support::TestSupportResult` alias:
 
-1. a step that returns `Ok(())` through the alias still injects its
-   value and the scenario passes;
+1. a step that returns a sentinel through the alias injects that sentinel, and
+   a later step reads it back out of fixture injection and the scenario passes;
 2. a step that returns `Err` through the alias fails the scenario, run under
    `#[should_panic(expected = "a step returns Err through the result alias")]`.
 
@@ -243,6 +243,35 @@ boxed as an opaque payload, the step appeared to succeed, the scenario passed,
 and the `#[should_panic]` would therefore have failed. The test asserts the
 *converse* of the old behaviour, so it cannot pass by accident if the defect
 returns.
+
+Direction 1 needed a payload to observe. An earlier draft returned `Ok(())` and
+asserted only that a separate world flag had not been set by the *other*
+scenario's step — which an opaque boxed `Result` satisfies just as well as a
+correctly injected one, so that draft asserted the contract without
+demonstrating it. The step now returns
+`Ok(AliasSentinel("returned through the alias"))`, a type carried by exactly
+one fixture whose default is the distinct value `"fixture default"`; the
+asserting `Then` step compares what injection handed it against the returned
+constant, and reports the value it actually saw. The sentinel deliberately does
+**not** live on `AliasWorld`: routing it through a world field would satisfy
+the assertion even if the framework never injected anything.
+
+Both fixtures must be declared on the `#[scenario]` function, not only on the
+steps. The scenario function is what seeds them into `StepContext`; a fixture
+named only by a step panics with
+`requires fixtures … but the following are missing`. That is how this file's
+first draft of the rework failed.
+
+Falsification evidence for direction 1, from two throwaway builds (neither
+retained):
+
+- returning a payload that differs from the expected constant fails the `Ok`
+  scenario, with the diagnostic naming the different value it actually saw.
+  That proves the assertion reads the injected value rather than merely passing;
+- returning a payload whose type matches no fixture — the "no override
+  recorded" shape that beta3's boxed payload produces — fails it with
+  `the fixture still holds AliasSentinel("fixture default")`, proving the
+  scenario cannot pass when injection does not happen.
 
 The expected substring is deliberately the failing step's own **text** rather
 than the template's fixed preamble. Observed ground truth for the rendered
