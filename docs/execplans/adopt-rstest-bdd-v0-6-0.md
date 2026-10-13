@@ -534,8 +534,8 @@ relaxed to make the build compile.
   (`Makefile:17 CARGO_FLAGS ?= --workspace --all-targets --all-features`), so
   the gate result is correct. Compiling these targets *without* it fails with
   `E0599`/`E0282` on those very methods, and that failure is an artefact of the
-  invocation, not a defect in the tree. This bit me once during final
-  validation; recorded so it does not bite a future reader.
+  invocation, not a defect in the tree. This was encountered once during final
+  validation; recorded so it does not mislead a future reader.
 
 ### 7.3 Deliberately not done
 
