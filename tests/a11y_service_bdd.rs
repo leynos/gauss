@@ -21,6 +21,17 @@ fn shape_snapshot(raw_id: u64) -> A11yShapeSnapshot {
     }
 }
 
+/// The AccessKit node ID that `raw_id` actually publishes.
+///
+/// `ShapeId::from_accesskit_node_id` decodes with `KeyData::from_ffi`, which
+/// masks the seed to the low 32 bits and forces the version field odd. A seed
+/// whose upper bits are not already a valid encoding therefore does not survive
+/// the round trip, so assertions must compare against the re-encoded value
+/// rather than the seed itself.
+fn published_node_id(raw_id: u64) -> u64 {
+    ShapeId::from_accesskit_node_id(raw_id).to_accesskit_node_id()
+}
+
 fn chrome_node<'a>(
     world: &'a A11yWorld,
     node_id: u64,
@@ -254,9 +265,10 @@ fn inserted_node_list_contains_appended_shape_id(world: &A11yWorld) -> TestSuppo
         .update_records()
         .last()
         .ok_or_else(|| TestSupportError::missing("incremental update", "insert assertion"))?;
-    if !last.inserted_node_ids.contains(&APPENDED_SHAPE_ID) {
+    let expected = published_node_id(APPENDED_SHAPE_ID);
+    if !last.inserted_node_ids.contains(&expected) {
         return Err(TestSupportError::expectation(format!(
-            "expected inserted node IDs {:?} to contain {APPENDED_SHAPE_ID:#x}",
+            "expected inserted node IDs {:?} to contain {expected:#x}",
             last.inserted_node_ids
         )));
     }
