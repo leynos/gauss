@@ -717,6 +717,81 @@ the version field odd, so the raw seed does not survive the round trip and the
 old form could not have been a correct expectation. The change tightens the
 assertion.
 
+### 9.6 Gate validation, and one non-obvious test
+
+Five of the six commit gates passed unamended. The sixth, `make test`, failed
+repeatedly on a single test before the cause was established. The finding is
+recorded here because it costs an hour to rediscover and does not announce
+itself.
+
+The failure presented as a nextest timeout:
+
+```text
+TRY 1 TMT [ 180.011s] test_support::scenario_state_macro_ui visibility_form_compiles
+    (test timed out)
+Summary [ 363.537s] 1098 tests run: 1097 passed, 1 timed out, 1 skipped
+```
+
+The test is `crates/test_support`'s trybuild compile-pass fixture. It is
+byte-identical to `TARGET` and was last touched by `de63b56` (2026-08-15), so
+it was inherited rather than introduced by this branch. Measured across every
+local log that reports on it, it passes in ten and timed out in exactly one —
+the contended run above.
+
+Three plausible explanations were tested and two were wrong:
+
+- **Not a code defect.** Zero real `error[E…]` diagnostics appear anywhere in
+  the failure output, and the tree around the test is unchanged from the target.
+- **Not a deadlocked package-cache lock.** `make test` does print
+  `Blocking waiting for file lock on package cache`, but that is a notice on
+  the nested cargo's stderr, not a hang. Direct probe:
+  `cargo metadata --offline` acquires the lock in 158 ms to 2.6 s even while
+  fourteen cargo processes hold it.
+- **It is elapsed time, not a stall.** trybuild shells out to a nested
+  `cargo build` of the whole dev-dependency graph. Under this host's shared
+  compile admission, with the managed sccache unreachable (so cold and
+  uncached), that nested graph took 23 minutes to compile once and was
+  re-requested on every attempt. nextest's
+  `slow-timeout = { period = "60s", terminate-after = 3 }` kills it at 180 s.
+  The failed attempts were not wasted work; they were paying down a cold cache
+  that the ceiling prevented them from ever finishing.
+
+The decisive step is to run the test binary with no nextest ceiling. Its own
+output then separates the two phases cleanly and the failure text changes from
+a timeout to a trybuild report:
+
+```text
+Finished `dev` profile [unoptimized + debuginfo] target(s) in 16.04s
+test tests/ui/scenario_state_visibility.rs ...
+    (test timed out)
+```
+
+With that nested build complete, the same binary passes in 605 s and reports
+`1 passed; 0 failed`. Once the target directory is warm, it passes inside
+nextest in 29.99 s and the gate is green:
+
+```text
+PASS [  29.990s] test_support::scenario_state_macro_ui visibility_form_compiles
+Summary [  33.041s] 1098 tests run: 1098 passed, 1 skipped
+```
+
+Two operational notes for anyone re-running this:
+
+- **Run it from the package directory.** nextest sets the test binary's working
+  directory to the crate root, so `tests/ui/scenario_state_visibility.rs`
+  resolves under `crates/test_support/`. Invoking the binary from the workspace
+  root fails with `No such file or directory (os error 2)` *after* a successful
+  build, which reads like a source defect and is not one.
+- **Warm the directory trybuild actually uses.** trybuild sets
+  `CARGO_TARGET_DIR` to `<target-dir>/tests/trybuild` and calls
+  `cargo build --offline` with `RUSTFLAGS` removed and `CARGO_INCREMENTAL=0`.
+  Building the scratch project by hand from its own directory populates
+  `…/tests/trybuild/test_support/target`, which trybuild never reads. Run the
+  test binary itself to warm the right path.
+
+No code, test, or configuration change was made for this. The gate passes
+unmodified once the cache is warm.
+
 ## Decision log
 
 - **Branch name reuse.** The name `adopt-rstest-bdd-v0-6-0` was already
