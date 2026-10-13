@@ -511,6 +511,9 @@ relaxed to make the build compile.
 After the migration was pushed and PR #184 opened, the branch was rebased onto
 its PR target, `origin/main`.
 
+**These identities are historical.** A second replay superseded them once
+`main` advanced again; section 9 records the current accepted boundary and tip.
+
 ### 8.1 Identities
 
 | Item                                   | Value                                      |
@@ -600,6 +603,119 @@ never selected the driver. The replay used Git's built-in merge machinery with
 
 No conflict markers were committed, `git diff --check` is clean, and the new
 series contains no merge commits.
+
+## 9. Second rebase onto `main`
+
+After the first rebase was validated and pushed, `main` advanced again and the
+PR became `CONFLICTING`. A second replay brought the branch onto the new
+target. The operation was run from the same exclusively owned linked worktree,
+with a clean tree, no active Git operation, and no other owner of the branch.
+
+### 9.1 Identities
+
+| Item                                   | Value                                      |
+| -------------------------------------- | ------------------------------------------ |
+| Exclusive replay boundary (`OLD_BASE`) | `199fb4ff99431a7859b8f1a536bf512bad213e2a` |
+| Pre-rebase branch tip (`OLD_HEAD`)     | `a173a0cd4d8b0d7c2956190310a0ac805a40ee6a` |
+| Target (`origin/main`)                 | `1b4db0c9cdd767efa26638362139146d0eec5bea` |
+| Replayed series tip (`NEW_HEAD`)       | `6148cce9d539d429ab7af7a37e85218393992143` |
+
+The exclusive boundary is the **first** rebase's target, not the merge-base
+against the new target. `main` advanced linearly, so `199fb4f` is an ancestor
+of both `a173a0c` and `1b4db0c`; using it keeps the replay range to the nine
+branch-owned commits and excludes the commits `main` gained. The series is
+linear, so the linear replay path applies. Recovery refs were taken before any
+rewrite under `refs/recovery/rb2-20261012T200307/`.
+
+### 9.2 Overlap
+
+Three files were changed by both sides:
+
+- `Cargo.lock` — the branch restructured the `rstest-bdd` family's dependency
+  lists for the beta3 to 0.6.0 API change; the new target bumped `uuid` 1.26.1
+  to 1.27.0.
+- `docs/developers-guide.md` — disjoint regions: the branch corrects two
+  `0.6.0-beta3` version strings; the target appends a "Spelling gate" section
+  and a "The build standard" section.
+- `typos.toml` — both sides independently regenerated a **generated** file.
+
+The remaining thirty-two target-changed paths were touched by the branch
+nowhere, so they had to end byte-identical to the target.
+
+### 9.3 Conflict and resolution
+
+One conflict, in `typos.toml`, at the branch's own regeneration commit.
+`typos.toml` is not hand-maintained: `make spelling` regenerates it from a
+shared dictionary and the repository's `typos.local.toml` overlay, so a
+conflict here is two independent generations of the same file, not two
+competing edits.
+
+The new target had changed the generation *policy* as well as the content: the
+overlay's `accepted` list was emptied and each exemption rewritten as an exact
+pattern. The retired bare words — the four covering the level-of-detail
+initialism, the mold linker, and the Spanish Gherkin fixture — no longer appear
+in the generated file. The branch's side still carried them.
+
+**Resolution: take the target's generation wholesale.** Both sides were
+regenerations, but the target's is strictly newer and embodies the current
+policy; keeping the branch's side would have reverted a target decision and
+resurrected bare-word acceptances the overlay no longer declares. The
+target-side blob was installed verbatim (verified byte-identical to
+`TARGET:typos.toml` before staging), and `typos.toml` was confirmed to parse as
+TOML.
+
+`Cargo.lock` auto-merged correctly, retaining the target's `uuid 1.27.0`
+alongside the branch's `rstest-bdd 0.6.0` family, so no lockfile intervention
+was needed. This is the commutative outcome the standing lockfile instruction
+asks for: the manifests already agreed and Git resolved them without a guess.
+
+### 9.4 Commits that became empty
+
+Two of the nine replayed commits were dropped as empty, both named "Regenerate
+typos.toml from the shared estate dictionary":
+
+- The first was superseded by the resolution above, which reproduces the
+  target's regeneration exactly.
+- The second was the branch tip. Its entire content was replacing one ignore
+  pattern for a narrower form of the same reader-visible field-name typo — the
+  original matched a bare `var.` prefix plus the misspelled identifier, the
+  narrower form pins the whole assignment phrase. The target's regeneration
+  already carries the narrower pattern and omits the broad one, so the tip's
+  intent was already satisfied.
+
+Both were verified empty rather than assumed so: after resolution the worktree
+`typos.toml` was byte-identical to the target's, and the dropped tip's specific
+edit was confirmed present (new pattern) and absent (old pattern) in the
+resolved file. The remaining seven commits were preserved with `--keep-empty`,
+which is why `--empty=stop` reported them rather than dropping them silently.
+
+### 9.5 Post-rebase audit
+
+- **`range-diff`**: seven of nine commits replay byte-identically (`=`); the
+  two departures are exactly the empty regenerations above. **No** commit shows
+  a content difference (`!`), so nothing else changed.
+- **Target-only paths byte-identical**: all 32 paths the target changed and the
+  branch did not are byte-identical to `TARGET` at the new tip.
+- **Deletions explained**: every deletion against `TARGET` in a branch-touched
+  file maps to branch intent — the `0.6.0-beta3` to `0.6.0` manifest and guide
+  edits, the regeneration, and one test *strengthening* (below). None is an
+  unexplained loss.
+- **Repeated-block scan**: two files gained a duplicated example block, both
+  upstream-imported documentation. Their SHA-256 digests still match the
+  recorded pinned-tag imports byte for byte, so the repetition is authored
+  upstream text, not a reconstruction artefact.
+- **No conflict markers**, `git diff --check` clean, no merge commits, and the
+  lockfile resolves consistently (`cargo metadata --offline` succeeds and does
+  not mutate it).
+
+The accessibility scenario deserves note because a diff against `TARGET` can
+make it look like a removed assertion. It is the opposite: the branch replaces
+a check against the raw node-ID seed with a check against the *published* ID,
+via a new `published_node_id` helper that round-trips through
+`ShapeId::from_accesskit_node_id` and back. `ShapeId` masks the seed and forces
+the version field odd, so the raw seed does not survive the round trip and the
+old form could not have been a correct expectation. The change tightens the
+assertion.
 
 ## Decision log
 
