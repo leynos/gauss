@@ -337,6 +337,11 @@ make lint
 make test
 ```
 
+Those five were the migration's validation set. The repository also defines
+`make typecheck`, which predates this branch but was not one of them; the
+rebase validation added it, which is why section 9.6 counts six commit gates
+rather than five.
+
 `make test` runs the full nextest suite, then the doctest equivalent
 `cargo test --workspace --doc --all-features` with `RUSTFLAGS="-D warnings"` and
 `RUSTDOCFLAGS="--cfg docsrs -D warnings"`.
@@ -386,6 +391,15 @@ that baseline and migrated runs could not contaminate each other.
 All five gates pass on the migrated tree. Each was run sequentially from the
 worktree root with output teed to a log under `/tmp`, so the real exit status
 is preserved.
+
+**These counts are migration-time.** They were measured before either rebase,
+against the target as it stood then. The test total here (954) is lower than at
+the current tip (1098) chiefly because `main` advanced: the two replays brought
+in 32 further commits, 22 of them touching test files. The branch itself
+contributes +2 over the pre-migration baseline in both cases. The gate set here
+is likewise the five above rather than the six of section 9.6. Kept as recorded
+because these are the evidence for the migrated tree as such; section 9.6
+carries the rebase-time equivalents.
 
 | Gate                | Exit | Evidence                                                                                                                                       |
 | ------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -719,10 +733,11 @@ assertion.
 
 ### 9.6 Gate validation, and one non-obvious test
 
-Five of the six commit gates passed unamended. The sixth, `make test`, failed
-repeatedly on a single test before the cause was established. The finding is
-recorded here because it costs an hour to rediscover and does not announce
-itself.
+Five of the six commit gates — `make check-fmt`, `make markdownlint`,
+`make nixie`, `make typecheck`, and `make lint` — passed unamended. The sixth,
+`make test`, failed repeatedly on a single test before the cause was
+established. The finding is recorded here because it costs an hour to
+rediscover and does not announce itself.
 
 The failure presented as a nextest timeout:
 
