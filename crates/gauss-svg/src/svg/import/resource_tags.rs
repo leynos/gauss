@@ -221,6 +221,8 @@ fn parse_gradient_stops(block: SvgContent<'_>) -> Result<Vec<GradientStop>, SvgI
     Ok(stops)
 }
 
+/// Parse `none`, a solid colour or a resource reference into `Paint`.
+/// Known IDs resolve to paints; unknown IDs return `MissingReferencedResource`.
 fn parse_colour_with_resources(
     value: &str,
     resources: &ResourceStore,
@@ -245,6 +247,8 @@ fn parse_colour_with_resources(
     parse_colour(trimmed)
 }
 
+/// Match the literal `url(#` prefix and `)` suffix after trimming the value.
+/// Blank inner text returns `None`; `url(# sky)` yields `Some(" sky")` unchanged.
 fn parse_url_reference(value: &str) -> Option<String> {
     let trimmed = value.trim();
     let prefix = "url(#";
@@ -257,6 +261,8 @@ fn parse_url_reference(value: &str) -> Option<String> {
     }
 }
 
+/// Parse a solid hexadecimal colour or the case-insensitive value `none`.
+/// Hex colours become `Paint::Solid`; `none` becomes `Paint::None`.
 fn parse_colour(value: &str) -> Result<Paint, SvgImportError> {
     let trimmed = value.trim();
     if trimmed.eq_ignore_ascii_case("none") {
@@ -272,6 +278,8 @@ fn parse_colour(value: &str) -> Result<Paint, SvgImportError> {
         .map_err(|_| SvgImportError::InvalidColour)
 }
 
+/// Convert normalized SVG opacity to an eight-bit alpha channel.
+/// For example, `0.5` rounds to `128`; out-of-range values return `InvalidOpacity`.
 fn parse_opacity_to_alpha(value: &str) -> Result<u8, SvgImportError> {
     let s = value.trim();
     if s.is_empty() {
@@ -298,6 +306,8 @@ fn parse_opacity_to_alpha(value: &str) -> Result<u8, SvgImportError> {
     Ok(alpha)
 }
 
+/// Parse an optional floating-point attribute or use its default.
+/// Missing input returns `default`; malformed text returns `InvalidNumber`.
 fn parse_optional_f32(value: Option<String>, default: f32) -> Result<f32, SvgImportError> {
     value.map_or(Ok(default), |raw| {
         raw.parse::<f32>()
@@ -305,6 +315,8 @@ fn parse_optional_f32(value: Option<String>, default: f32) -> Result<f32, SvgImp
     })
 }
 
+/// Parse a gradient-stop offset as a number or percentage.
+/// For example, `50%` becomes `0.5`; malformed text returns `InvalidNumber`.
 fn parse_offset(value: &str) -> Result<f32, SvgImportError> {
     let trimmed = value.trim();
     if trimmed.is_empty() {
