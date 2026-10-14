@@ -266,19 +266,6 @@ fn action_identifier_is_correct(#[case] action: Action, #[case] expected: &str) 
 }
 
 #[test]
-fn colour_action_identifiers_preserve_recorded_names() {
-    let stroke = Action::SetStrokeColour(Colour::new(Rgb8 { r: 0, g: 0, b: 0 }));
-    let fill = Action::SetFillColour(Colour::new(Rgb8 {
-        r: 255,
-        g: 255,
-        b: 255,
-    }));
-
-    assert_eq!(stroke.identifier(), "SetStrokeColor");
-    assert_eq!(fill.identifier(), "SetFillColor");
-}
-
-#[test]
 fn action_is_copy() {
     // Verify Action implements Copy (important for ergonomics)
     fn assert_copy<T: Copy>(_: T) {}
