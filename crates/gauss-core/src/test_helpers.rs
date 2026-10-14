@@ -33,6 +33,34 @@ pub const fn sample_style() -> PaintStyle {
     }
 }
 
+/// Create the two-anchor shape used by model operation round-trip tests.
+///
+/// For example, passing `ShapeId::default()` and `2` creates a shape whose
+/// z-order is `2`, with two anchors connected by a line segment.
+#[cfg(test)]
+#[must_use]
+pub(crate) fn sample_shape(id: ShapeId, z: i32) -> Shape {
+    let mut path = PathGeom::new();
+    path.anchors.push(Anchor::new(Vec2::new(10.0, 20.0)));
+    path.anchors.push(Anchor {
+        pos: Vec2::new(30.0, 40.0),
+        handle_in: Some(Vec2::new(25.0, 35.0)),
+        handle_out: None,
+    });
+    path.segments.push(SegmentKind::Line);
+
+    Shape {
+        id,
+        z,
+        style: PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), 2.0, None),
+        path,
+        name: None,
+        locked: false,
+        hidden: false,
+        gauss_metadata: Vec::new(),
+    }
+}
+
 /// Create a test shape with shared default metadata and style values.
 #[must_use]
 pub const fn test_shape(id: ShapeId, path: PathGeom) -> Shape {
