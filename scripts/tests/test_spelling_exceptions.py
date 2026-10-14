@@ -15,6 +15,17 @@ import tomllib
 from pathlib import Path
 
 import pytest
+from hypothesis import given, strategies as st
+from spelling_migration_cases import (
+    MIGRATION_CONTEXTS,
+    NEAR_MISS_CATEGORIES,
+    STATEMENT_PARTS,
+    SpellingMigrationContext,
+    make_near_miss,
+    render_migration_context,
+    separator_strategy,
+    token_bounds,
+)
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 LOCAL_OVERLAY = REPOSITORY_ROOT / "typos.local.toml"
@@ -123,12 +134,112 @@ def test_an_unrelated_use_of_each_term_is_not_covered(
     )
 
 
+@pytest.fixture(scope="module")
+def migration_patterns(
+    patterns: list[re.Pattern[str]],
+) -> dict[str, re.Pattern[str]]:
+    """Bind each canonical context to its unique rule from the local overlay."""
+    selected: dict[str, re.Pattern[str]] = {}
+    for context in MIGRATION_CONTEXTS:
+        separator_count = 4 if context.layout == "table" else len(STATEMENT_PARTS) - 1
+        separators = [" "] * separator_count
+        assert render_migration_context(context, separators) == context.canonical, (
+            f"{context.case_id}: generated example differs from its documented text"
+        )
+        matches = [
+            pattern for pattern in patterns if pattern.fullmatch(context.canonical)
+        ]
+        assert len(matches) == 1, (
+            f"{context.case_id}: expected exactly one local overlay pattern, "
+            f"found {len(matches)}"
+        )
+        selected[context.case_id] = matches[0]
+
+    assert len({id(pattern) for pattern in selected.values()}) == len(
+        MIGRATION_CONTEXTS
+    ), "migration contexts must use four distinct local overlay patterns"
+    return selected
+
+
+@pytest.mark.parametrize(
+    "context", MIGRATION_CONTEXTS, ids=lambda context: context.case_id
+)
+@given(data=st.data())
+def test_migration_exceptions_cover_generated_whitespace(
+    context: SpellingMigrationContext,
+    migration_patterns: dict[str, re.Pattern[str]],
+    data,
+) -> None:
+    """Each approved migration token stays inside its actual local rule."""
+    separators = data.draw(
+        separator_strategy(context), label="approved-context-whitespace"
+    )
+    line = render_migration_context(context, separators)
+    pattern = migration_patterns[context.case_id]
+
+    for token in context.legacy_tokens:
+        start = line.index(token)
+        end = start + len(token)
+        assert is_covered([pattern], line, start, end), (
+            f"{context.case_id}: local rule did not cover {token!r} in {line!r}"
+        )
+
+
+@pytest.mark.parametrize(
+    "context", MIGRATION_CONTEXTS, ids=lambda context: context.case_id
+)
+@given(data=st.data())
+def test_migration_exceptions_leave_generated_near_misses_uncovered(
+    context: SpellingMigrationContext,
+    migration_patterns: dict[str, re.Pattern[str]],
+    patterns: list[re.Pattern[str]],
+    data,
+) -> None:
+    """Every near-miss keeps its complete forbidden token span visible."""
+    pattern = migration_patterns[context.case_id]
+    for category in NEAR_MISS_CATEGORIES:
+        separators = data.draw(
+            separator_strategy(context),
+            label=f"{context.case_id}-{category} whitespace",
+        )
+        approved = render_migration_context(context, separators)
+        line, token, last_occurrence = make_near_miss(
+            context, approved, separators, category
+        )
+        if category == "unrelated old name beside an approved context":
+            for approved_token in context.legacy_tokens:
+                start, end = token_bounds(approved, approved_token)
+                assert is_covered([pattern], line, start, end), (
+                    f"{context.case_id}: approved context lost coverage for "
+                    f"{approved_token!r}"
+                )
+
+        start, end = token_bounds(line, token, last_occurrence)
+        assert not is_covered(patterns, line, start, end), (
+            f"{context.case_id} {category} hides {token!r} in {line!r}"
+        )
+        if category == "unrelated old name beside an approved context":
+            colour_starts = [start + token.rfind("Color")]
+        else:
+            colour_starts = [match.start() for match in re.finditer("Color", line)]
+        assert colour_starts and all(start >= 0 for start in colour_starts), (
+            f"{context.case_id} {category} has no Color diagnostic span in {line!r}"
+        )
+        for colour_start in colour_starts:
+            colour_end = colour_start + len("Color")
+            assert not is_covered(patterns, line, colour_start, colour_end), (
+                f"{context.case_id} {category} hides the Color diagnostic span "
+                f"at {colour_start} in {line!r}"
+            )
+
+
 #: Prose that the approved exact patterns exempt, one phrase per term.
 APPROVED_PROSE = (
     "The `mold` linker is configured for Linux.",
     "Pass -fuse-ld=mold to the linker.",
     "Implement a simple **LOD (Level of Detail)** scheme.",
     "Dado un inventario vac\u00edo",
+    *(context.canonical for context in MIGRATION_CONTEXTS),
 )
 
 
@@ -193,9 +304,25 @@ def run_gate(repository: Path, prose: str) -> subprocess.CompletedProcess[str]:
 
 def test_the_gate_accepts_the_approved_phrases(tmp_path: Path) -> None:
     """The real gate passes prose that uses only the approved exact phrases."""
+    assert {context.case_id for context in MIGRATION_CONTEXTS} == {
+        "colour-type",
+        "stroke-action",
+        "fill-action",
+        "recorded-identifiers",
+    }
     result = run_gate(tmp_path, "\n\n".join(APPROVED_PROSE))
 
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_the_gate_reports_an_unrelated_colour_type_name(tmp_path: Path) -> None:
+    """The real gate diagnoses Color outside every approved migration phrase."""
+    result = run_gate(tmp_path, "The legacy `Color` type is named here.")
+    output = result.stdout + result.stderr
+
+    assert result.returncode == 2, output
+    assert "guide.md:1" in output, output
+    assert re.search(r"`Color` should be `Colour`", output), output
 
 
 @pytest.mark.parametrize("term", TERMS)

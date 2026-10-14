@@ -105,6 +105,33 @@ pub enum ActionKind {
 /// assert_eq!(stroke.identifier(), "SetStrokeColor");
 /// assert_eq!(fill.identifier(), "SetFillColor");
 /// ```
+///
+/// ## Current colour API boundary
+///
+/// The former `Color` type and `Action::SetStrokeColor`/`Action::SetFillColor`
+/// names are not aliases in the current API. These examples document the
+/// present API and should be revisited if a future change introduces aliases.
+///
+/// ```compile_fail
+/// use gauss_core::model::action::{Color, Colour, Rgb8};
+///
+/// let colour = Colour::new(Rgb8 { r: 12, g: 34, b: 56 });
+/// let _legacy_colour: Color = colour;
+/// ```
+///
+/// ```compile_fail
+/// use gauss_core::model::action::{Action, Colour, Rgb8};
+///
+/// let colour = Colour::new(Rgb8 { r: 12, g: 34, b: 56 });
+/// let _action = Action::SetStrokeColor(colour);
+/// ```
+///
+/// ```compile_fail
+/// use gauss_core::model::action::{Action, Colour, Rgb8};
+///
+/// let colour = Colour::new(Rgb8 { r: 12, g: 34, b: 56 });
+/// let _action = Action::SetFillColor(colour);
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Action {

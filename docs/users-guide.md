@@ -294,3 +294,9 @@ still reach recursive Make through `MAKEFLAGS`.
 `NEXTEST_FLAGS` applies only to direct Nextest runs in `make test`,
 `make test-ci` and `make test-quick`. It does not affect the availability
 probe, the `cargo test` fallback or doctests.
+
+## Rust library consumers
+
+Rust library consumers should follow the
+[Colour API migration section in the developers' guide](developers-guide.md#colour-api-migration)
+when updating source references. Recorded action identifiers remain unchanged.
