@@ -183,8 +183,10 @@ pub(crate) fn cubic_point(cubic: CubicSegment, t: f32) -> Vec2 {
 
 /// Compute axis-aligned world-space bounds for a shape.
 ///
-/// The bounds include cubic Bézier extrema, so the result is suitable for UI
-/// overlays and hit-test broad phases that need to match the visible curve.
+/// Cubic extrema found by a coefficient-tolerance solver extend the bounds, but
+/// the solver may omit interior extrema, so exact curve containment is not
+/// guaranteed. When both quadratic and linear derivative coefficients are near
+/// zero, no candidate parameters are added from that axis.
 ///
 /// Returns `None` for shapes with no anchors.
 #[must_use]
@@ -236,8 +238,10 @@ pub fn shape_world_bounds(shape: &Shape) -> Option<ShapeWorldBounds> {
     Some(ShapeWorldBounds::new(min, max))
 }
 
-/// Include a cubic's endpoints and every interior x- or y-extremum in `bounds`.
-/// This keeps a curve whose controls overshoot its anchors inside its bounds.
+/// Extend bounds with cubic endpoints and extrema found using a coefficient tolerance.
+/// The solver may omit interior extrema, so exact curve containment is not guaranteed.
+/// When quadratic and linear derivative coefficients are near zero, no candidate
+/// parameters are added from that axis.
 fn extend_bounds_with_cubic(bounds: &mut Bounds, cubic: CubicSegment) {
     bounds.update(cubic.start);
     bounds.update(cubic.end);

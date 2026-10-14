@@ -204,8 +204,9 @@ fn remove_anchor_from_path(path: &mut PathGeom, idx: usize) {
     }
 }
 
-/// Replace a document shape at its recorded index, or report an invalid index.
-/// A stale index returns `InvalidOperation` without replacing another shape.
+/// Replace the shape currently at the recorded document index.
+/// An out-of-range index returns `InvalidOperation`; the old shape's identity
+/// is not checked, so a saved index addresses its current occupant after reordering.
 fn apply_shape_replacement(
     doc: &mut Document,
     replacement: &ShapeReplacement,

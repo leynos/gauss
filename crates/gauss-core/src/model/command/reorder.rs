@@ -45,22 +45,30 @@ fn prepare_reorder_selection(
     Ok(Command::Reorder { operations })
 }
 
-/// Prepare a command that raises the selected shapes by one layer.
+/// Prepare adjacent reorder operations for selected shapes that can move one
+/// layer in the requested direction.
+///
+/// Selected neighbours and boundary positions may produce no operation for a
+/// shape. For example, raising `[A, B, C]` with A and C selected can move A past
+/// B while C remains at the top.
 ///
 /// # Errors
 ///
 /// Returns an error when no shape can be raised or a selected shape is missing.
-/// A selected shape below the top receives one upward move.
 pub(super) fn prepare_raise_selection(state: &EngineState) -> Result<Command, UserError> {
     prepare_reorder_selection(state, ReorderDirection::Raise, "Already at top")
 }
 
-/// Prepare a command that lowers the selected shapes by one layer.
+/// Prepare adjacent reorder operations for selected shapes that can move one
+/// layer in the requested direction.
+///
+/// Selected neighbours and boundary positions may produce no operation for a
+/// shape. For example, lowering `[A, B, C]` with A and C selected can move C
+/// past B while A remains at the bottom.
 ///
 /// # Errors
 ///
 /// Returns an error when no shape can be lowered or a selected shape is missing.
-/// A selected shape above the bottom receives one downward move.
 pub(super) fn prepare_lower_selection(state: &EngineState) -> Result<Command, UserError> {
     prepare_reorder_selection(state, ReorderDirection::Lower, "Already at bottom")
 }
