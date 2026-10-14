@@ -77,10 +77,20 @@ mod tests {
     //! Tests explicit cleanup, error propagation, and the drop-time fallback.
 
     use super::*;
+    use rstest::{fixture, rstest};
 
-    #[test]
-    fn cleanup_is_idempotent() -> TestSupportResult<()> {
-        let guard = temp_guard("gauss-test-explicit-cleanup")?;
+    /// Provides an isolated temporary-file guard for cleanup tests.
+    #[fixture]
+    fn temporary_file_guard() -> TestSupportResult<TempFileGuard> {
+        temp_guard("gauss-test-cleanup")
+    }
+
+    #[rstest]
+    fn cleanup_is_idempotent(
+        temporary_file_guard: TestSupportResult<TempFileGuard>,
+    ) -> TestSupportResult<()> {
+        let guard_result = temporary_file_guard;
+        let guard = guard_result?;
         guard
             .dir
             .write(guard.file_name.as_path(), b"temporary")
@@ -90,9 +100,12 @@ mod tests {
         guard.cleanup()
     }
 
-    #[test]
-    fn cleanup_propagates_removal_errors() -> TestSupportResult<()> {
-        let guard = temp_guard("gauss-test-cleanup-error")?;
+    #[rstest]
+    fn cleanup_propagates_removal_errors(
+        temporary_file_guard: TestSupportResult<TempFileGuard>,
+    ) -> TestSupportResult<()> {
+        let guard_result = temporary_file_guard;
+        let guard = guard_result?;
         guard
             .dir
             .create_dir(guard.file_name.as_path())
@@ -114,9 +127,12 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn drop_removes_the_guarded_file() -> TestSupportResult<()> {
-        let guard = temp_guard("gauss-test-drop-cleanup")?;
+    #[rstest]
+    fn drop_removes_the_guarded_file(
+        temporary_file_guard: TestSupportResult<TempFileGuard>,
+    ) -> TestSupportResult<()> {
+        let guard_result = temporary_file_guard;
+        let guard = guard_result?;
         let file_name = guard.file_name.clone();
         let dir = guard
             .dir
