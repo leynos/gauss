@@ -245,6 +245,8 @@ fn write_metadata_block(out: &mut String, metadata_block: Option<&str>) {
     }
     out.push_str("</metadata>\n");
 }
+/// Write a shape as an SVG path with geometry and paint resources.
+/// A shape without anchors adds no output.
 fn write_shape_path(
     out: &mut String,
     resources: &ResourceStore,
@@ -270,6 +272,8 @@ fn write_shape_path(
     }
     out.push_str(" />\n");
 }
+/// Build SVG path data from a shape’s anchors and segments.
+/// An empty path returns `None`; a closed path ends with `Z`.
 fn build_path_data(shape: &Shape) -> Option<String> {
     let mut d = String::new();
     let first = shape.path.anchors.first()?;
@@ -317,6 +321,8 @@ fn build_path_data(shape: &Shape) -> Option<String> {
     }
     Some(d)
 }
+/// Format a paint value as SVG text and opacity.
+/// Missing gradients or patterns become `none` with opacity one.
 fn format_paint(paint: Paint, resources: &ResourceStore) -> (String, f32) {
     match paint {
         Paint::None => ("none".to_owned(), 1.0),
@@ -341,6 +347,8 @@ fn format_paint(paint: Paint, resources: &ResourceStore) -> (String, f32) {
         ),
     }
 }
+/// Append an opacity attribute unless the paint is `none` or nearly opaque.
+/// For example, `none` or opacity near one adds no attribute.
 fn write_optional_opacity(out: &mut String, attr: &str, paint: &str, opacity: f32) {
     const OPACITY_EPSILON: f32 = 1.0e-6;
     if paint == "none" {
