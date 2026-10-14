@@ -247,8 +247,8 @@ fn parse_colour_with_resources(
     parse_colour(trimmed)
 }
 
-/// Extract an ID from a trimmed `url(#id)` paint reference.
-/// For example, `url(#sky)` yields `sky`; other forms return `None`.
+/// Match the literal `url(#` prefix and `)` suffix after trimming the value.
+/// Blank inner text returns `None`; `url(# sky)` yields `Some(" sky")` unchanged.
 fn parse_url_reference(value: &str) -> Option<String> {
     let trimmed = value.trim();
     let prefix = "url(#";
