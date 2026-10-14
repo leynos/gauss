@@ -13,6 +13,7 @@ use crate::model::{
     Anchor, EdgeMode, Paint, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2,
 };
 
+/// Scale Catmull–Rom tangents before converting them to Bézier controls.
 const CATMULL_ROM_TENSION: f32 = 1.0;
 
 /// Build a new open shape from the first clicked anchor.
@@ -98,6 +99,8 @@ pub const fn segment_kind_for_edge_mode(edge_mode: EdgeMode) -> SegmentKind {
     }
 }
 
+/// Remove controls from the line segment immediately before a new anchor.
+/// After a line-mode append, both handles on that edge are absent.
 fn clear_line_segment_handles(path: &mut PathGeom, new_anchor_index: usize) {
     let Some(start_index) = new_anchor_index.checked_sub(1) else {
         return;
@@ -111,6 +114,8 @@ fn clear_line_segment_handles(path: &mut PathGeom, new_anchor_index: usize) {
     end.handle_in = None;
 }
 
+/// Recompute cubic handles adjacent to the newly appended anchor.
+/// Appending to two cubic edges refreshes both edges using the new neighbours.
 fn update_catmull_rom_handles(path: &mut PathGeom, new_anchor_index: usize) {
     let Some(last_seg_index) = new_anchor_index.checked_sub(1) else {
         return;
@@ -129,6 +134,8 @@ fn update_catmull_rom_handles(path: &mut PathGeom, new_anchor_index: usize) {
     }
 }
 
+/// Set one open-path cubic's handles from its neighbouring anchor positions.
+/// For anchors A–D, segment B–C receives controls computed from all four.
 fn update_segment_catmull_rom_handles(path: &mut PathGeom, seg_index: usize) {
     let Some(p1) = path.anchors.get(seg_index).map(|a| a.pos) else {
         return;
@@ -152,6 +159,8 @@ fn update_segment_catmull_rom_handles(path: &mut PathGeom, seg_index: usize) {
     end.handle_in = Some(c2);
 }
 
+/// Convert four neighbouring points into the two Bézier controls for `p1..p2`.
+/// The returned pair is the outgoing control at `p1` and incoming control at `p2`.
 fn catmull_rom_controls(p0: Vec2, p1: Vec2, p2: Vec2, p3: Vec2) -> (Vec2, Vec2) {
     let t = CATMULL_ROM_TENSION / 6.0;
     let c1 = p1.add(p2.sub(p0).mul(t));
@@ -159,6 +168,8 @@ fn catmull_rom_controls(p0: Vec2, p1: Vec2, p2: Vec2, p3: Vec2) -> (Vec2, Vec2) 
     (c1, c2)
 }
 
+/// Borrow consecutive anchors at `start_index` and its successor.
+/// In a four-anchor path, index `1` returns anchors `1` and `2`.
 fn anchor_pair_mut(path: &mut PathGeom, start_index: usize) -> Option<(&mut Anchor, &mut Anchor)> {
     let end_index = start_index.checked_add(1)?;
     let (head, tail) = path.anchors.split_at_mut(end_index);
@@ -167,6 +178,8 @@ fn anchor_pair_mut(path: &mut PathGeom, start_index: usize) -> Option<(&mut Anch
     Some((start, end))
 }
 
+/// Clear the handles that would otherwise shape a closed path's line edge.
+/// For a multi-anchor path, this clears the last outgoing and first incoming handles.
 fn clear_closing_line_handles(path: &mut PathGeom) {
     match path.anchors.as_mut_slice() {
         [] => {}
@@ -187,6 +200,11 @@ fn clear_closing_line_handles(path: &mut PathGeom) {
     }
 }
 
+/// Recompute cubic handles at both ends of a closed Catmull–Rom path.
+///
+/// Paths with fewer than three anchors cannot form a closed curve, so their
+/// closing segment is converted to a line.
+/// A three-anchor closed path instead receives handles across its wraparound edge.
 fn update_closed_catmull_rom_handles(path: &mut PathGeom) {
     if path.anchors.len() < 3 {
         clear_closing_line_handles(path);
@@ -225,6 +243,8 @@ fn update_closed_catmull_rom_handles(path: &mut PathGeom) {
     }
 }
 
+/// Recompute handles for one cubic segment, wrapping neighbours at path ends.
+/// Segment zero uses the final anchor as its preceding neighbour.
 fn update_closed_segment_catmull_rom_handles(path: &mut PathGeom, seg_index: usize) {
     let anchor_len = path.anchors.len();
     if anchor_len < 2 {

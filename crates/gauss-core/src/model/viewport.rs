@@ -32,7 +32,8 @@ impl Viewport {
         self.zoom
     }
 
-    /// Set the zoom scale factor, clamping it to a safe range.
+    /// Set the zoom scale, clamping values below or above the supported range.
+    /// NaN is preserved because neither clamp comparison succeeds.
     pub const fn set_zoom(&mut self, zoom: f32) {
         self.zoom = clamp_zoom(zoom);
     }
@@ -98,6 +99,9 @@ impl Viewport {
     }
 }
 
+/// Clamp zoom values below or above the supported range.
+/// For example, `0.01` becomes `0.05` and `80.0` becomes `64.0`; NaN passes
+/// through because both comparisons are false.
 const fn clamp_zoom(zoom: f32) -> f32 {
     const MIN_ZOOM: f32 = 0.05;
     const MAX_ZOOM: f32 = 64.0;

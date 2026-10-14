@@ -36,6 +36,11 @@ pub fn parse_hex_rgb(hex: &str) -> Result<Rgba, HexColourParseError> {
     parse_hex_colour(hex, false)
 }
 
+/// Parse RGB text and, when requested, accept a trailing alpha byte as well.
+///
+/// A six-digit value defaults to fully opaque; malformed lengths and digits
+/// remain distinguishable through [`HexColourParseError`].
+/// For example, `#336699` becomes RGB `(51, 102, 153)` with alpha `255`.
 fn parse_hex_colour(hex: &str, allow_alpha: bool) -> Result<Rgba, HexColourParseError> {
     let without_hash = hex.strip_prefix('#').unwrap_or(hex);
     let len = without_hash.len();
@@ -58,12 +63,16 @@ fn parse_hex_colour(hex: &str, allow_alpha: bool) -> Result<Rgba, HexColourParse
     Ok(Rgba::new(r, g, b, a))
 }
 
+/// Consume two hexadecimal digits and combine them into one colour channel.
+/// For example, the digits `3` and `F` produce the byte value `63`.
 fn parse_hex_byte(iter: &mut impl Iterator<Item = u8>) -> Result<u8, HexColourParseError> {
     let high_digit = parse_hex_nibble(iter.next().ok_or(HexColourParseError::InvalidLength)?)?;
     let low_digit = parse_hex_nibble(iter.next().ok_or(HexColourParseError::InvalidLength)?)?;
     Ok((high_digit << 4) | low_digit)
 }
 
+/// Convert one ASCII hexadecimal digit to its numeric value.
+/// For example, `b'F'` produces `15`; non-hexadecimal bytes return an error.
 const fn parse_hex_nibble(byte: u8) -> Result<u8, HexColourParseError> {
     match byte {
         b'0'..=b'9' => Ok(byte - b'0'),

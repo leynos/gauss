@@ -14,7 +14,9 @@ pub struct Point {
 /// 2D position in document coordinates.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Position {
+    /// Finite x coordinate, with negative zero normalised to positive zero.
     x: f32,
+    /// Finite y coordinate, with negative zero normalised to positive zero.
     y: f32,
 }
 
@@ -64,7 +66,9 @@ pub struct Dimensions {
 /// 2D size in document units.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Size {
+    /// Finite, non-negative width with negative zero normalised.
     width: f32,
+    /// Finite, non-negative height with negative zero normalised.
     height: f32,
 }
 

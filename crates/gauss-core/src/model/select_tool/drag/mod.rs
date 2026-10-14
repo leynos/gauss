@@ -15,9 +15,12 @@ use super::{
 
 mod preview;
 
+/// Minimal geometry retained for validating a drag against its starting document.
 #[derive(Clone, Debug, PartialEq)]
 struct SelectDragShapeSnapshot {
+    /// Stable identity used to reject stale draw-order indices.
     id: ShapeId,
+    /// Anchor geometry from drag start, used to make previews reversible.
     anchors: Vec<Anchor>,
 }
 
@@ -27,6 +30,7 @@ struct SelectDragShapeSnapshot {
 /// so this snapshot avoids carrying full style/metadata document state.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SelectDragDocumentSnapshot {
+    /// Shapes in draw order, matching indices supplied by pointer hit testing.
     shapes: Vec<SelectDragShapeSnapshot>,
 }
 
@@ -44,10 +48,17 @@ impl SelectDragDocumentSnapshot {
         Self { shapes }
     }
 
+    /// Find the drag-start draw-order index for a stable shape identity.
+    ///
+    /// Returns `None` when the shape was absent from the drag-start document.
     fn find_index(&self, id: ShapeId) -> Option<usize> {
         self.shapes.iter().position(|shape| shape.id == id)
     }
 
+    /// Look up a shape snapshot by its draw-order index.
+    ///
+    /// An out-of-range hit-test index produces `None`, so callers can abandon
+    /// a stale drag start without indexing the snapshot directly.
     fn shape_at(&self, index: usize) -> Option<&SelectDragShapeSnapshot> {
         self.shapes.get(index)
     }
@@ -118,10 +129,16 @@ pub struct HandleDragState {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct SelectDragStartParams {
+    /// Cursor position that anchors the gesture's movement delta.
     pub cursor_world: Vec2,
+    /// Whether a shape-body hit is allowed to move the shape selection.
     pub can_drag_shape_bbox: bool,
 }
 
+/// Create the drag state appropriate to a pointer hit and selection snapshot.
+///
+/// Detail hits start anchor or handle drags; segment and eligible shape hits
+/// start shape drags. A missing or stale snapshot target returns `None`.
 pub(super) fn start_drag(
     snapshot: &SelectDragDocumentSnapshot,
     selection: &crate::model::Selection,
@@ -167,6 +184,10 @@ pub(super) fn start_drag(
     }
 }
 
+/// Convert the final cursor position into one undoable document command.
+///
+/// A gesture that ends at its start position returns `None`; for example,
+/// clicking a selected shape without moving it creates no history entry.
 pub(super) fn finish_drag_command(
     drag_state: &SelectDragState,
     cursor_world: Vec2,
@@ -190,6 +211,11 @@ pub(super) fn finish_drag_command(
     })
 }
 
+/// Apply a drag's current displacement to the document for interactive preview.
+///
+/// The stored drag-start geometry is the source for each update, so repeated
+/// cursor events do not accumulate rounding or movement error.
+/// Moving the cursor 5 units right of the start applies a +5 x preview delta.
 pub(super) fn apply_drag_preview(
     doc: &mut Document,
     drag_state: &SelectDragState,
@@ -198,10 +224,20 @@ pub(super) fn apply_drag_preview(
     preview::apply_drag_preview(doc, drag_state, cursor_world)
 }
 
+/// Restore the affected geometry to its captured drag-start positions.
+///
+/// Returns whether any target geometry was restored; stale shape or anchor
+/// indices are skipped safely.
+/// For example, a previewed anchor returns to its original position.
 pub(super) fn restore_drag_preview(doc: &mut Document, drag_state: &SelectDragState) -> bool {
     preview::restore_drag_preview(doc, drag_state)
 }
 
+/// Capture the selected shapes, or only the hit shape, for a body drag.
+///
+/// The selection moves as a group when it contains the hit shape; otherwise
+/// the hit shape alone is captured. Missing or mismatched snapshot entries
+/// prevent creation of a partial drag state.
 fn start_shapes_drag(
     snapshot: &SelectDragDocumentSnapshot,
     selection: &crate::model::Selection,
@@ -249,6 +285,10 @@ fn start_shapes_drag(
     })
 }
 
+/// Capture an anchor and its attached handles for a detail drag.
+///
+/// The hit's identity and indices must still match the drag-start snapshot;
+/// otherwise the stale hit returns `None`.
 fn start_anchor_drag(
     snapshot: &SelectDragDocumentSnapshot,
     hit: SelectAnchorHit,
@@ -269,6 +309,9 @@ fn start_anchor_drag(
     })
 }
 
+/// Capture the selected endpoint of an anchor handle for dragging.
+///
+/// A handle without a stored endpoint cannot begin a drag and returns `None`.
 fn start_handle_drag(
     snapshot: &SelectDragDocumentSnapshot,
     hit: SelectHandleHit,
@@ -295,6 +338,8 @@ fn start_handle_drag(
     })
 }
 
+/// Build one movement command covering every shape in a group drag.
+/// A +5 x drag records that same delta for each captured shape.
 fn finish_shapes_drag_command(drag: &ShapesDragState, delta: Vec2) -> Command {
     let movements = drag
         .shapes
@@ -308,6 +353,8 @@ fn finish_shapes_drag_command(drag: &ShapesDragState, delta: Vec2) -> Command {
     Command::MoveShapes { movements }
 }
 
+/// Build an anchor movement command retaining the original anchor for undo.
+/// The command pairs the captured anchor with the delta that moved it.
 fn finish_anchor_drag_command(drag: &AnchorDragState, delta: Vec2) -> Command {
     Command::MoveAnchor {
         movement: AnchorMovement {
@@ -319,6 +366,8 @@ fn finish_anchor_drag_command(drag: &AnchorDragState, delta: Vec2) -> Command {
     }
 }
 
+/// Describe the handle endpoint movement needed by the document command.
+/// An incoming-handle drag records its old and new positions as `HandleKind::In`.
 const fn finish_handle_drag_command(drag: &HandleDragState, delta: Vec2) -> HandleMovement {
     let to = drag.original_handle.add(delta);
     HandleMovement {
@@ -333,10 +382,14 @@ const fn finish_handle_drag_command(drag: &HandleDragState, delta: Vec2) -> Hand
     }
 }
 
+/// Return the world-space displacement from the gesture start to the cursor.
+/// Moving from `(2, 3)` to `(5, 7)` yields a delta of `(3, 4)`.
 const fn drag_delta(start_cursor_world: Vec2, cursor_world: Vec2) -> Vec2 {
     cursor_world.sub(start_cursor_world)
 }
 
+/// Treat movement within floating-point epsilon as an unchanged gesture.
+/// `Vec2::ZERO` therefore skips document-command creation.
 const fn is_zero_delta(delta: Vec2) -> bool {
     delta.x.abs() <= f32::EPSILON && delta.y.abs() <= f32::EPSILON
 }

@@ -9,7 +9,9 @@ use crate::model::{Shape, ShapeId};
 /// A vector document consisting of an ordered list of shapes.
 #[derive(Clone, Debug)]
 pub struct Document {
+    /// Shapes stored in their current draw order.
     shapes: Vec<Shape>,
+    /// `SlotMap` allocator that issues stable, generation-checked shape identifiers.
     id_registry: SlotMap<ShapeId, ()>,
     /// IDs currently assigned to shapes in this document.
     active_ids: HashSet<ShapeId>,

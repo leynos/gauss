@@ -42,8 +42,11 @@ impl NamedStyle {
 /// Storage for named style definitions.
 #[derive(Clone, Debug, Default)]
 pub struct StyleStore {
+    /// Style payloads indexed by stable typed identifiers.
     styles: SlotMap<StyleId, NamedStyle>,
+    /// Unique style names mapped back to their typed identifiers.
     names: HashMap<String, StyleId>,
+    /// Optional identifier used as the document's default style.
     default_style: Option<StyleId>,
 }
 

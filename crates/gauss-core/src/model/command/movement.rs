@@ -18,9 +18,12 @@ fn translate_anchor(anchor: &mut Anchor, delta: Vec2) {
     }
 }
 
+/// Identifies the anchor that a movement helper must mutate.
 #[derive(Clone, Copy)]
 struct AnchorTarget {
+    /// Shape containing the target anchor.
     shape_id: crate::model::ShapeId,
+    /// Zero-based index of the target anchor within its path.
     anchor_index: usize,
 }
 

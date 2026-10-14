@@ -11,6 +11,7 @@
 
 use crate::model::{SegmentKind, Shape, Vec2};
 
+/// Treat derivative coefficients below this magnitude as numerically zero.
 const CUBIC_EXTREMA_EPSILON: f32 = 1.0e-6;
 
 /// Axis-aligned world-space bounds for a shape.
@@ -70,11 +71,15 @@ impl ShapeWorldBounds {
 /// Axis-aligned bounds in world space.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Bounds {
+    /// Smallest coordinate seen so far on each axis, if any point was added.
     min: Option<Vec2>,
+    /// Largest coordinate seen so far on each axis, if any point was added.
     max: Option<Vec2>,
 }
 
 impl Bounds {
+    /// Start an empty accumulator; its first point establishes both corners.
+    /// For example, `to_tuple()` returns `None` until an update adds a point.
     pub(crate) const fn new() -> Self {
         Self {
             min: None,
@@ -82,6 +87,8 @@ impl Bounds {
         }
     }
 
+    /// Expand the accumulated rectangle to include `point`.
+    /// Adding `(2, 3)` to bounds containing `(0, 1)` moves the maximum corner.
     pub(crate) fn update(&mut self, point: Vec2) {
         let min = self.min.unwrap_or(point);
         let max = self.max.unwrap_or(point);
@@ -90,6 +97,8 @@ impl Bounds {
         self.max = Some(Vec2::new(max.x.max(point.x), max.y.max(point.y)));
     }
 
+    /// Return the minimum and maximum corners once at least one point exists.
+    /// For example, an empty accumulator yields `None` rather than zero bounds.
     pub(crate) const fn to_tuple(self) -> Option<(Vec2, Vec2)> {
         match (self.min, self.max) {
             (Some(min), Some(max)) => Some((min, max)),
@@ -101,13 +110,19 @@ impl Bounds {
 /// A cubic Bézier segment in world space.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct CubicSegment {
+    /// Start anchor of the curve.
     pub(crate) start: Vec2,
+    /// Control point leaving the start anchor.
     pub(crate) control_a: Vec2,
+    /// Control point approaching the end anchor.
     pub(crate) control_b: Vec2,
+    /// End anchor of the curve.
     pub(crate) end: Vec2,
 }
 
 impl CubicSegment {
+    /// Assemble the four points that define a cubic Bézier curve.
+    /// The first and last arguments remain the curve endpoints when evaluated.
     pub(crate) const fn new(start: Vec2, control_a: Vec2, control_b: Vec2, end: Vec2) -> Self {
         Self {
             start,
@@ -118,15 +133,22 @@ impl CubicSegment {
     }
 }
 
+/// The four scalar coordinates of a cubic curve along one axis.
 #[derive(Clone, Copy, Debug)]
 struct CubicAxis {
+    /// Coordinate at the start anchor.
     start: f32,
+    /// Coordinate at the first control point.
     control_a: f32,
+    /// Coordinate at the second control point.
     control_b: f32,
+    /// Coordinate at the end anchor.
     end: f32,
 }
 
 impl CubicAxis {
+    /// Store the scalar control values used to solve one-axis extrema.
+    /// For example, the x coordinates of a segment form one `CubicAxis`.
     const fn new(start: f32, control_a: f32, control_b: f32, end: f32) -> Self {
         Self {
             start,
@@ -161,8 +183,10 @@ pub(crate) fn cubic_point(cubic: CubicSegment, t: f32) -> Vec2 {
 
 /// Compute axis-aligned world-space bounds for a shape.
 ///
-/// The bounds include cubic Bézier extrema, so the result is suitable for UI
-/// overlays and hit-test broad phases that need to match the visible curve.
+/// Cubic extrema found by a coefficient-tolerance solver extend the bounds, but
+/// the solver may omit interior extrema, so exact curve containment is not
+/// guaranteed. When both quadratic and linear derivative coefficients are near
+/// zero, no candidate parameters are added from that axis.
 ///
 /// Returns `None` for shapes with no anchors.
 #[must_use]
@@ -214,6 +238,10 @@ pub fn shape_world_bounds(shape: &Shape) -> Option<ShapeWorldBounds> {
     Some(ShapeWorldBounds::new(min, max))
 }
 
+/// Extend bounds with cubic endpoints and extrema found using a coefficient tolerance.
+/// The solver may omit interior extrema, so exact curve containment is not guaranteed.
+/// When quadratic and linear derivative coefficients are near zero, no candidate
+/// parameters are added from that axis.
 fn extend_bounds_with_cubic(bounds: &mut Bounds, cubic: CubicSegment) {
     bounds.update(cubic.start);
     bounds.update(cubic.end);
@@ -244,6 +272,11 @@ fn extend_bounds_with_cubic(bounds: &mut Bounds, cubic: CubicSegment) {
     }
 }
 
+/// Append parameter values in `(0, 1)` where this axis reaches an extremum.
+///
+/// Near-linear derivatives are handled with a small coefficient tolerance;
+/// roots outside the curve interval do not affect its visible bounds.
+/// For example, endpoint roots are omitted because the caller adds endpoints.
 fn add_cubic_extrema_ts(axis: CubicAxis, out: &mut Vec<f32>) {
     let coeff_a = -axis.start + (3.0 * axis.control_a) - (3.0 * axis.control_b) + axis.end;
     let coeff_b = 2.0 * (axis.start - (2.0 * axis.control_a) + axis.control_b);

@@ -327,6 +327,8 @@ impl Keystroke {
         out
     }
 
+    /// Format modifiers as names joined with the uppercased key (for example, `Ctrl+Z`).
+    /// For example, secondary plus shift on `z` displays as `Ctrl+Shift+Z`.
     #[cfg(not(target_os = "macos"))]
     fn display_name_other(&self) -> String {
         let mut parts: Vec<String> = self

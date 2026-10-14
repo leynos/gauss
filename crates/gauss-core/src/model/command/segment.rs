@@ -11,6 +11,11 @@ use super::error::UserError;
 use super::inverse::CommandInverse;
 use super::types::SegmentChange;
 
+/// Prepare changes that toggle each selected segment between line and cubic form.
+///
+/// Newly created cubic handles follow the original line; switching back clears
+/// the affected handles.
+/// A selected line gains straight handles when changed to cubic form.
 pub(super) fn prepare_toggle_segment_kind(state: &EngineState) -> Result<Command, UserError> {
     if state.selection.is_empty() {
         return Err(UserError::EmptySelection);

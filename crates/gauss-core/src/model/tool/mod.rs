@@ -234,6 +234,12 @@ impl PenToolClickInput {
 pub struct PenTool;
 
 impl PenTool {
+    /// Interpret one draw-mode click as starting, extending, or closing a path.
+    ///
+    /// A missing or stale active-path snapshot starts a fresh shape; a click
+    /// within the close-path snap radius emits the close command and switches
+    /// to manipulate mode.
+    /// A click outside that radius appends an anchor to the active path.
     fn on_canvas_click(input: &PenToolClickInput, current_edge_mode: EdgeMode) -> ToolTransition {
         let Some(active_path) = input.active_path else {
             return ToolTransition::with_commands(start_new_shape_commands(input));
@@ -303,12 +309,16 @@ impl Tool for PenTool {
     }
 }
 
+/// Clear an active-path identity that no longer matches the document snapshot,
+/// then begin a new shape at the current cursor position.
 fn recover_stale_active_path_commands(input: &PenToolClickInput) -> Vec<ToolCommand> {
     let mut commands = vec![ToolCommand::SetActivePath(None)];
     commands.extend(start_new_shape_commands(input));
     commands
 }
 
+/// Emit insertion and active-path commands for the first click of a new shape.
+/// The insertion uses `document_len`, then marks `next_shape_id` as active.
 fn start_new_shape_commands(input: &PenToolClickInput) -> Vec<ToolCommand> {
     let shape = new_open_shape(
         input.next_shape_id,
