@@ -94,6 +94,17 @@ pub enum ActionKind {
 /// let name = action.name();
 /// assert_eq!(name, "Undo");
 /// ```
+///
+/// ```rust
+/// use gauss_core::model::action::{Action, Colour, Rgb8};
+///
+/// let colour = Colour::new(Rgb8 { r: 12, g: 34, b: 56 });
+/// let stroke = Action::SetStrokeColour(colour);
+/// let fill = Action::SetFillColour(colour);
+///
+/// assert_eq!(stroke.identifier(), "SetStrokeColor");
+/// assert_eq!(fill.identifier(), "SetFillColor");
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Action {

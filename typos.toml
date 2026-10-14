@@ -30,6 +30,10 @@ extend-exclude = [
 [default]
 locale = "en-gb"
 extend-ignore-re = [
+    "(?m)^\\|[ \\t]*`Action::SetFillColor`[ \\t]*\\|[ \\t]*`Action::SetFillColour`[ \\t]*\\|[ \\t]*$",
+    "(?m)^\\|[ \\t]*`Action::SetStrokeColor`[ \\t]*\\|[ \\t]*`Action::SetStrokeColour`[ \\t]*\\|[ \\t]*$",
+    "(?m)^\\|[ \\t]*`Color`[ \\t]*\\|[ \\t]*`Colour`[ \\t]*\\|[ \\t]*$",
+    "(?m)^`Action::identifier\\(\\)`[ \\t\\r\\n]+intentionally[ \\t\\r\\n]+retains[ \\t\\r\\n]+the[ \\t\\r\\n]+recorded[ \\t\\r\\n]+strings[ \\t\\r\\n]+`SetStrokeColor`[ \\t\\r\\n]+and[ \\t\\r\\n]+`SetFillColor`;[ \\t\\r\\n]+persisted[ \\t\\r\\n]+identifiers[ \\t\\r\\n]+are[ \\t\\r\\n]+unchanged\\.[ \\t]*$",
     "(?s)```.*?```",
     "--[A-Za-z0-9_-]*color(?:ed|s|ing|ize[ds]?|izing)?(?:\\b|_)",
     "-fuse-ld=mold",

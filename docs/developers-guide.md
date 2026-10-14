@@ -51,6 +51,21 @@ supplying coverage configuration, sanitizer options, or other compiler flags,
 retain `-D warnings` in the override so doctests use the same build
 configuration and warning policy as the main suite.
 
+## Colour API migration
+
+The paint type and action variants use British spelling in Rust. Update crate
+callers to these names:
+
+| Previous Rust name       | Current Rust name         |
+| ------------------------ | ------------------------- |
+| `Color`                  | `Colour`                  |
+| `Action::SetStrokeColor` | `Action::SetStrokeColour` |
+| `Action::SetFillColor`   | `Action::SetFillColour`   |
+
+There are no compatibility aliases, so source callers must update these names.
+`Action::identifier()` intentionally retains the recorded strings
+`SetStrokeColor` and `SetFillColor`; persisted identifiers are unchanged.
+
 ## Spelling gate
 
 `make spelling` enforces en-GB-oxendict spelling with the shared
