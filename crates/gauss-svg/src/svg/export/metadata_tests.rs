@@ -3,7 +3,7 @@
 use super::*;
 use crate::model::{
     Anchor, GaussAttribute, Gradient, GradientKind, GradientStop, LinearGradient, Paint,
-    PaintStyle, PathGeom, PatternResource, Rgba, Shape, Vec2,
+    PaintStyle, PathGeom, PatternResource, Rgba, SegmentKind, Shape, Vec2,
 };
 use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::{fixture, rstest};
