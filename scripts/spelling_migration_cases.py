@@ -7,6 +7,7 @@ those patterns.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import NamedTuple
 
 from hypothesis import strategies as st
@@ -21,6 +22,12 @@ class SpellingMigrationContext(NamedTuple):
     legacy_tokens: tuple[str, ...]
     mismatched_pair_from: str
     mismatched_pair_to: str
+
+
+NearMissResult = tuple[str, str, bool]
+NearMissBuilder = Callable[
+    [SpellingMigrationContext, str, str, list[str]], NearMissResult
+]
 
 
 MIGRATION_CONTEXTS = (
@@ -132,6 +139,131 @@ def separator_strategy(context: SpellingMigrationContext):
     return st.lists(whitespace, min_size=separator_count, max_size=separator_count)
 
 
+def _mismatched_current_pair(
+    context: SpellingMigrationContext,
+    legacy: str,
+    approved: str,
+    _separators: list[str],
+) -> NearMissResult:
+    """Replace the current-name cell with its specified mismatched name.
+
+    Example: the stroke row uses ``Action::SetFillColour`` as its current name.
+    """
+    return (
+        approved.replace(context.mismatched_pair_from, context.mismatched_pair_to, 1),
+        legacy,
+        True,
+    )
+
+
+def _altered_legacy_identifier(
+    _context: SpellingMigrationContext,
+    legacy: str,
+    approved: str,
+    _separators: list[str],
+) -> NearMissResult:
+    """Append ``X`` to the legacy token inside its code span.
+
+    Example: ``Action::SetStrokeColor`` becomes ``Action::SetStrokeColorX``.
+    """
+    altered = legacy + "X"
+    return approved.replace(f"`{legacy}`", f"`{altered}`", 1), altered, False
+
+
+def _malformed_backtick_boundary(
+    _context: SpellingMigrationContext,
+    legacy: str,
+    approved: str,
+    _separators: list[str],
+) -> NearMissResult:
+    """Remove the opening backtick while retaining the closing delimiter.
+
+    Example: `` `Color` `` becomes `` Color` ``.
+    """
+    return approved.replace(f"`{legacy}`", f"{legacy}`", 1), legacy, False
+
+
+def _nonapproved_line_break(
+    context: SpellingMigrationContext,
+    legacy: str,
+    approved: str,
+    _separators: list[str],
+) -> NearMissResult:
+    """Insert a line break inside the legacy token's code span.
+
+    Example: a table token becomes `` `Color\\n` ``; a statement splits
+    ``SetStrokeColor`` between ``SetStroke`` and ``Color``.
+    """
+    if context.layout == "table":
+        malformed = f"`{legacy}\n`"
+        return approved.replace(f"`{legacy}`", malformed, 1), legacy, False
+    broken_identifier = "SetStroke\nColor"
+    return (
+        approved.replace(f"`{legacy}`", f"`{broken_identifier}`", 1),
+        broken_identifier,
+        False,
+    )
+
+
+def _source_reference(context: SpellingMigrationContext, legacy: str) -> str:
+    """Name the old spelling as it appears in a table or statement.
+
+    Example: a table uses ``Color`` and the recorded-identifier statement uses
+    ``Action::SetStrokeColor``.
+    """
+    if context.layout == "table":
+        return context.previous_cell
+    return f"Action::{legacy}"
+
+
+def _ordinary_prose_or_source_use(
+    context: SpellingMigrationContext,
+    legacy: str,
+    _approved: str,
+    separators: list[str],
+) -> NearMissResult:
+    """Place the old name in prose outside any approved migration context.
+
+    Example: ``Source code mentions `Color` outside the migration context.``
+    """
+    name = _source_reference(context, legacy)
+    before, after = separators[:2]
+    return (
+        f"Source code mentions{before}`{name}`{after}outside the migration context.",
+        name,
+        False,
+    )
+
+
+def _unrelated_old_name_beside_context(
+    context: SpellingMigrationContext,
+    legacy: str,
+    approved: str,
+    separators: list[str],
+) -> NearMissResult:
+    """Append an exposed old name after a still-valid approved context.
+
+    Example: the approved row remains on its line before a separate ``Color`` use.
+    """
+    name = _source_reference(context, legacy)
+    before, after = separators[:2]
+    return (
+        f"{approved}\nSource code mentions{before}`{name}`{after}outside it.",
+        name,
+        True,
+    )
+
+
+_NEAR_MISS_BUILDERS: dict[str, NearMissBuilder] = {
+    "mismatched current-name pair": _mismatched_current_pair,
+    "altered legacy identifier": _altered_legacy_identifier,
+    "malformed backtick boundary": _malformed_backtick_boundary,
+    "nonapproved line break": _nonapproved_line_break,
+    "ordinary prose or source use": _ordinary_prose_or_source_use,
+    "unrelated old name beside an approved context": _unrelated_old_name_beside_context,
+}
+
+
 def make_near_miss(
     context: SpellingMigrationContext,
     approved: str,
@@ -144,51 +276,10 @@ def make_near_miss(
     ``Action::SetStrokeColor`` to ``Action::SetStrokeColorX``.
     """
     legacy = context.legacy_tokens[0]
-    if category == "mismatched current-name pair":
-        return (
-            approved.replace(
-                context.mismatched_pair_from, context.mismatched_pair_to, 1
-            ),
-            legacy,
-            True,
-        )
-    if category == "altered legacy identifier":
-        altered = legacy + "X"
-        return approved.replace(f"`{legacy}`", f"`{altered}`", 1), altered, False
-    if category == "malformed backtick boundary":
-        return approved.replace(f"`{legacy}`", f"{legacy}`", 1), legacy, False
-    if category == "nonapproved line break":
-        if context.layout == "table":
-            malformed = f"`{legacy}\n`"
-            return approved.replace(f"`{legacy}`", malformed, 1), legacy, False
-        broken_identifier = "SetStroke\nColor"
-        return (
-            approved.replace(f"`{legacy}`", f"`{broken_identifier}`", 1),
-            broken_identifier,
-            False,
-        )
-    if category == "ordinary prose or source use":
-        name = (
-            context.previous_cell if context.layout == "table" else f"Action::{legacy}"
-        )
-        before, after = separators[:2]
-        return (
-            f"Source code mentions{before}`{name}`"
-            f"{after}outside the migration context.",
-            name,
-            False,
-        )
-    if category == "unrelated old name beside an approved context":
-        name = (
-            context.previous_cell if context.layout == "table" else f"Action::{legacy}"
-        )
-        before, after = separators[:2]
-        return (
-            f"{approved}\nSource code mentions{before}`{name}`{after}outside it.",
-            name,
-            True,
-        )
-    raise ValueError(f"unknown migration near-miss category: {category}")
+    builder = _NEAR_MISS_BUILDERS.get(category)
+    if builder is None:
+        raise ValueError(f"unknown migration near-miss category: {category}")
+    return builder(context, legacy, approved, separators)
 
 
 def token_bounds(
