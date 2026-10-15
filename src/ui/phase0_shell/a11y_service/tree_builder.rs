@@ -10,11 +10,16 @@ use crate::ui::phase0_shell::i18n_helpers::localized_status_label;
 
 use super::{A11yServiceError, A11ySnapshot};
 
+/// AccessKit ID assigned to the snapshot's window node.
 pub(super) const ROOT_NODE_ID: NodeId = NodeId(0x1000);
+/// AccessKit ID assigned to the drawing canvas node.
 pub(super) const CANVAS_NODE_ID: NodeId = NodeId(0x1007);
+/// AccessKit ID assigned to the list containing shape nodes.
 pub(super) const SHAPE_LIST_NODE_ID: NodeId = NodeId(0x1008);
+/// AccessKit ID assigned to the current tool and edge-mode status node.
 pub(super) const STATUS_NODE_ID: NodeId = NodeId(0x1009);
 
+/// IDs reserved for window chrome and fixed snapshot nodes, never for shapes.
 const RESERVED_NODE_IDS: [u64; 10] = [
     ROOT_NODE_ID.0,
     accessibility::node_ids::MINIMIZE_BUTTON,
@@ -33,6 +38,7 @@ const RESERVED_NODE_IDS: [u64; 10] = [
 /// The returned map contains window chrome, canvas, status, and shape-list
 /// nodes. The focus node is selected from the current shape selection when
 /// possible, falling back to the canvas node.
+/// With no shapes, the map still contains an empty shape list and focuses the canvas.
 pub(super) fn build_node_map(
     snapshot: &A11ySnapshot,
 ) -> Result<(BTreeMap<NodeId, Node>, NodeId), A11yServiceError> {
@@ -45,6 +51,7 @@ pub(super) fn build_node_map(
     Ok((nodes, focus))
 }
 
+/// Add the title bar and its accessible window-control buttons to the node map.
 fn insert_chrome_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot) {
     let chrome_buttons = accessibility::chrome_button_semantics(snapshot.is_maximized);
     let mut titlebar = Node::new(Role::TitleBar);
@@ -67,6 +74,7 @@ fn insert_chrome_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapsh
     }
 }
 
+/// Add canvas and status nodes, using localized labels with existing fallbacks.
 fn insert_canvas_and_status_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot) {
     let mut canvas = Node::new(Role::Canvas);
     let canvas_label = snapshot
@@ -93,6 +101,8 @@ fn insert_canvas_and_status_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: 
     nodes.insert(STATUS_NODE_ID, status);
 }
 
+/// Add a multiselectable shape list; return an error if a shape ID is reserved or duplicated.
+/// An empty snapshot produces a list with no children.
 fn insert_shape_list_nodes(
     nodes: &mut BTreeMap<NodeId, Node>,
     snapshot: &A11ySnapshot,
@@ -139,6 +149,8 @@ fn insert_shape_list_nodes(
     Ok(())
 }
 
+/// Use a shape's name, or a one-based index in the unnamed-shape template.
+/// For example, no name at index 0 with `Shape {index}` yields `Shape 1`.
 fn shape_label(name: Option<&str>, index: usize, unnamed_shape_template: &str) -> String {
     name.map_or_else(
         || unnamed_shape_template.replace("{index}", &(index + 1).to_string()),
@@ -146,6 +158,7 @@ fn shape_label(name: Option<&str>, index: usize, unnamed_shape_template: &str) -
     )
 }
 
+/// Reject IDs used by fixed nodes or already inserted shapes; accept all other IDs.
 fn validate_shape_node_id(
     shape_node_id: NodeId,
     nodes: &BTreeMap<NodeId, Node>,
@@ -163,6 +176,7 @@ fn validate_shape_node_id(
     Ok(())
 }
 
+/// Add the window node with children for the title bar, status, canvas, and shape list.
 fn insert_root_node(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot) {
     let mut root = Node::new(Role::Window);
     let window_title = snapshot
@@ -185,6 +199,7 @@ fn insert_root_node(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot)
     nodes.insert(ROOT_NODE_ID, root);
 }
 
+/// Focus the first selected shape that has a node, or the canvas when none does.
 fn resolve_focus_node(snapshot: &A11ySnapshot, nodes: &BTreeMap<NodeId, Node>) -> NodeId {
     let shape_node_ids = snapshot
         .shapes
@@ -199,6 +214,7 @@ fn resolve_focus_node(snapshot: &A11ySnapshot, nodes: &BTreeMap<NodeId, Node>) -
         .unwrap_or(CANVAS_NODE_ID)
 }
 
+/// Build a clickable window-control node with its accessible label and shortcut hint.
 fn chrome_button_node(label: String, shortcut_hint: &'static str) -> Node {
     let mut node = Node::new(Role::Button);
     node.set_label(label);
@@ -208,6 +224,8 @@ fn chrome_button_node(label: String, shortcut_hint: &'static str) -> Node {
     node
 }
 
+/// Choose a localized window-control label, respecting the maximized state.
+/// The maximize control is labelled `Restore` when the window is already maximized.
 fn localized_chrome_button_label(
     snapshot: &A11ySnapshot,
     chrome_button: accessibility::ChromeButtonSemantics,
@@ -242,6 +260,7 @@ fn localized_chrome_button_label(
     localized_a11y_label(snapshot, &message_id, fallback)
 }
 
+/// Look up an accessibility label and use its supplied fallback when translation is unavailable.
 fn localized_a11y_label(snapshot: &A11ySnapshot, id: &MessageId, fallback: &str) -> String {
     snapshot
         .localizer
