@@ -8,6 +8,10 @@ use crate::model::{Action, SelItem, SelectToolState, Selection, ShapeId, prepare
 use super::{Phase0Shell, draw::ToolMode};
 
 impl Phase0Shell {
+    /// Insert an anchor on the first selected segment in manipulate mode.
+    ///
+    /// Returns `true` when the command applies and the new anchor is selected.
+    /// For example, inserting after segment index `n` selects anchor `n + 1`.
     pub(super) fn insert_anchor_on_selected_segment(&mut self) -> bool {
         if self.state.tool_mode != ToolMode::Manipulate {
             return false;
@@ -44,6 +48,10 @@ impl Phase0Shell {
         true
     }
 
+    /// Delete selected anchors in manipulate mode and clear the selection.
+    ///
+    /// Returns `true` when the command applies successfully.
+    /// For example, a successful deletion leaves the selection empty.
     pub(super) fn delete_selected_anchors(&mut self) -> bool {
         if self.state.tool_mode != ToolMode::Manipulate {
             return false;
@@ -71,6 +79,9 @@ impl Phase0Shell {
     }
 }
 
+/// Find the first selected segment, returning its shape and segment index.
+///
+/// For example, non-segment items before the first segment are skipped.
 fn first_selected_segment(items: &[SelItem]) -> Option<(ShapeId, usize)> {
     items.iter().find_map(|item| match item {
         SelItem::Segment { shape, seg } => Some((*shape, *seg)),
