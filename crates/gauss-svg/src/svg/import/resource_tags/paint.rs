@@ -1,4 +1,14 @@
-//! Paint references, colours, opacity, and numeric SVG attributes.
+//! Attribute-to-model parsing for the private child of resource-tag import.
+//!
+//! The parent `resource_tags` module uses these helpers to interpret paint and
+//! numeric SVG attributes while building resources and shapes. Inputs are raw
+//! attribute values and, for references, an existing `ResourceStore`; outputs
+//! are `Paint` values, alpha channels, numeric values or `SvgImportError`.
+//!
+//! Supported paint forms are `none`, hexadecimal colours and known gradient or
+//! pattern references. Missing referenced resources and malformed colours,
+//! opacity or numbers return the corresponding import error. Resource traversal
+//! and gradient, pattern and symbol construction remain with the parent.
 
 use crate::model::{Paint, ResourceStore, parse_hex_rgb};
 

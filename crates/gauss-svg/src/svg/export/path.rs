@@ -1,4 +1,13 @@
-//! SVG shape path and paint serialization.
+//! Shape-path serialization for the private child of the SVG exporter.
+//!
+//! The parent exporter supplies each `Shape`, its `ResourceStore`, the metadata
+//! policy and a mutable output string. This module appends path geometry, paint
+//! references, optional opacity attributes and, when requested, shape metadata.
+//! Header, shared definitions and document traversal remain with the parent.
+//!
+//! Empty paths append nothing. These helpers return no export error; unresolved
+//! gradient or pattern references serialize as `none`. Checked public export
+//! entry points validate resource references before calling this serializer.
 
 use crate::model::{Paint, ResourceStore, SegmentKind, Shape, format_hex_rgb};
 
