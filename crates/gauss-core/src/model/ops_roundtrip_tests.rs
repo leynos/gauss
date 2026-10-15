@@ -3,38 +3,13 @@
 //! These tests validate the core undo/redo invariant for the model layer:
 //! applying an operation and then applying its inverse restores the document.
 
-use crate::model::{
-    Anchor, DocChange, DocOp, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId,
-    Vec2,
-};
+use crate::model::{DocChange, DocOp, Document, PaintStyle, Rgba, SegmentKind, ShapeId, Vec2};
+use crate::test_helpers::sample_shape;
 use rstest::rstest;
 
 struct SampleDoc {
     doc: Document,
     ids: [ShapeId; 2],
-}
-
-#[must_use]
-fn sample_shape(id: ShapeId, z: i32) -> Shape {
-    let mut path = PathGeom::new();
-    path.anchors.push(Anchor::new(Vec2::new(10.0, 20.0)));
-    path.anchors.push(Anchor {
-        pos: Vec2::new(30.0, 40.0),
-        handle_in: Some(Vec2::new(25.0, 35.0)),
-        handle_out: None,
-    });
-    path.segments.push(SegmentKind::Line);
-
-    Shape {
-        id,
-        z,
-        style: PaintStyle::new(Some(Rgba::new(255, 0, 0, 255)), 2.0, None),
-        path,
-        name: None,
-        locked: false,
-        hidden: false,
-        gauss_metadata: Vec::new(),
-    }
 }
 
 #[must_use]
