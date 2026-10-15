@@ -40,9 +40,9 @@ impl GradientStop {
 /// Parameters for a linear gradient.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LinearGradient {
-    /// Start point in normalised object space.
+    /// Start point in normalized object space.
     pub start: Vec2,
-    /// End point in normalised object space.
+    /// End point in normalized object space.
     pub end: Vec2,
     /// Ordered colour stops.
     pub stops: Vec<GradientStop>,
@@ -59,9 +59,9 @@ impl LinearGradient {
 /// Parameters for a radial gradient.
 #[derive(Clone, Debug, PartialEq)]
 pub struct RadialGradient {
-    /// Circle centre in normalised object space.
+    /// Circle centre in normalized object space.
     pub centre: Vec2,
-    /// Radius in normalised object space.
+    /// Radius in normalized object space.
     pub radius: f32,
     /// Optional focal point for non-uniform radial gradients.
     pub focal: Option<Vec2>,
@@ -247,7 +247,7 @@ impl ResourceStore {
         self.symbols.len()
     }
 
-    /// Insert a gradient, normalising duplicate SVG IDs.
+    /// Insert a gradient, normalizing duplicate SVG IDs.
     pub fn insert_gradient(&mut self, mut gradient: Gradient) -> GradientId {
         gradient.svg_id =
             make_unique_string(&gradient.svg_id, "gradient", "-", &self.gradient_svg_ids);
@@ -281,7 +281,7 @@ impl ResourceStore {
         self.gradients.iter()
     }
 
-    /// Insert a pattern, normalising duplicate SVG IDs.
+    /// Insert a pattern, normalizing duplicate SVG IDs.
     pub fn insert_pattern(&mut self, mut pattern: PatternResource) -> PatternId {
         pattern.svg_id = make_unique_string(&pattern.svg_id, "pattern", "-", &self.pattern_svg_ids);
         let svg_id = pattern.svg_id.clone();
@@ -314,7 +314,7 @@ impl ResourceStore {
         self.patterns.iter()
     }
 
-    /// Insert a symbol, normalising duplicate SVG IDs.
+    /// Insert a symbol, normalizing duplicate SVG IDs.
     pub fn insert_symbol(&mut self, mut symbol: SymbolResource) -> SymbolId {
         symbol.svg_id = make_unique_string(&symbol.svg_id, "symbol", "-", &self.symbol_svg_ids);
         let svg_id = symbol.svg_id.clone();

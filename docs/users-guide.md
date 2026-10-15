@@ -302,3 +302,9 @@ the configuration's flags unless `RUSTFLAGS` is assigned, for example
 
 Cranelift is not adopted; the developers' guide records the reason. See
 [ADR 006](adr-006-rust-build-standard.md) for the reasoning.
+
+## Rust library consumers
+
+Rust library consumers should follow the
+[Colour API migration section in the developers' guide](developers-guide.md#colour-api-migration)
+when updating source references. Recorded action identifiers remain unchanged.

@@ -73,10 +73,10 @@ pub fn prepare_command(action: Action, state: &EngineState) -> Result<Command, U
         Action::LowerSelection => prepare_lower_selection(state),
         Action::ToggleSegmentKind => prepare_toggle_segment_kind(state),
         // Style actions are not yet implemented in the command system.
-        Action::SetStrokeColor(_)
+        Action::SetStrokeColour(_)
         | Action::SetStrokeWidth(_)
         | Action::SetStrokeOpacity(_)
-        | Action::SetFillColor(_)
+        | Action::SetFillColour(_)
         | Action::SetFillOpacity(_)
         | Action::ToggleNoFill
         | Action::SetObjectPosition(_)

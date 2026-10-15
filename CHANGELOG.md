@@ -39,3 +39,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `UserError::InvalidOperation` must update their code to pass a `String`
   instead of `&'static str`. The simplest migration is to append `.into()` or
   `.to_string()` to existing string literals.
+
+- **Breaking:** The paint type and action variants now use British spelling.
+  Existing source callers must update these names; no compatibility aliases are
+  provided. See [Colour API migration][colour-migration] and [PR #240][pr-240].
+
+| Previous Rust name       | Current Rust name         |
+| ------------------------ | ------------------------- |
+| `Color`                  | `Colour`                  |
+| `Action::SetStrokeColor` | `Action::SetStrokeColour` |
+| `Action::SetFillColor`   | `Action::SetFillColour`   |
+
+`Action::identifier()` intentionally retains the recorded strings
+`SetStrokeColor` and `SetFillColor`; persisted identifiers are unchanged.
+
+[colour-migration]: docs/developers-guide.md#colour-api-migration
+[pr-240]: https://github.com/leynos/gauss/pull/240

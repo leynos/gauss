@@ -48,7 +48,7 @@
 mod action_payloads;
 
 pub use action_payloads::{
-    Color, Degrees, Dimensions, Opacity, Point, Points, Position, Rgb8, Rotation, Size,
+    Colour, Degrees, Dimensions, Opacity, Point, Points, Position, Rgb8, Rotation, Size,
     StrokeWidth, UnitF32, UnitF32Error,
 };
 
@@ -94,6 +94,44 @@ pub enum ActionKind {
 /// let name = action.name();
 /// assert_eq!(name, "Undo");
 /// ```
+///
+/// ```rust
+/// use gauss_core::model::action::{Action, Colour, Rgb8};
+///
+/// let colour = Colour::new(Rgb8 { r: 12, g: 34, b: 56 });
+/// let stroke = Action::SetStrokeColour(colour);
+/// let fill = Action::SetFillColour(colour);
+///
+/// assert_eq!(stroke.identifier(), "SetStrokeColor");
+/// assert_eq!(fill.identifier(), "SetFillColor");
+/// ```
+///
+/// ## Current colour API boundary
+///
+/// The former `Color` type and `Action::SetStrokeColor`/`Action::SetFillColor`
+/// names are not aliases in the current API. These examples document the
+/// present API and should be revisited if a future change introduces aliases.
+///
+/// ```compile_fail
+/// use gauss_core::model::action::{Color, Colour, Rgb8};
+///
+/// let colour = Colour::new(Rgb8 { r: 12, g: 34, b: 56 });
+/// let _legacy_colour: Color = colour;
+/// ```
+///
+/// ```compile_fail
+/// use gauss_core::model::action::{Action, Colour, Rgb8};
+///
+/// let colour = Colour::new(Rgb8 { r: 12, g: 34, b: 56 });
+/// let _action = Action::SetStrokeColor(colour);
+/// ```
+///
+/// ```compile_fail
+/// use gauss_core::model::action::{Action, Colour, Rgb8};
+///
+/// let colour = Colour::new(Rgb8 { r: 12, g: 34, b: 56 });
+/// let _action = Action::SetFillColor(colour);
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Action {
@@ -135,7 +173,7 @@ pub enum Action {
     ///
     /// Requires segments to be selected. Toggles each selected segment
     /// between Line and Cubic kinds. When converting Line to Cubic,
-    /// Catmull-Rom handles are synthesised. When converting Cubic to Line,
+    /// Catmull-Rom handles are synthesized. When converting Cubic to Line,
     /// handles are cleared.
     ToggleSegmentKind,
 
@@ -190,7 +228,7 @@ pub enum Action {
 
     // === Style mutations ===
     /// Set the stroke colour of the selected shapes.
-    SetStrokeColor(Color),
+    SetStrokeColour(Colour),
 
     /// Set the stroke width of the selected shapes.
     SetStrokeWidth(StrokeWidth),
@@ -199,7 +237,7 @@ pub enum Action {
     SetStrokeOpacity(Opacity),
 
     /// Set the fill colour of the selected shapes.
-    SetFillColor(Color),
+    SetFillColour(Colour),
 
     /// Set the fill opacity of the selected shapes.
     SetFillOpacity(Opacity),

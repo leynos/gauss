@@ -1,6 +1,6 @@
 //! Segment toggle command helpers.
 //!
-//! Converts selected segments between line and cubic forms, synthesising
+//! Converts selected segments between line and cubic forms, synthesizing
 //! handles for line-to-cubic transitions and clearing handles when switching
 //! back to lines.
 
@@ -46,7 +46,7 @@ pub(super) fn prepare_toggle_segment_kind(state: &EngineState) -> Result<Command
 
         let (new_kind, new_start_handle_out, new_end_handle_in) = match old_kind {
             SegmentKind::Line => {
-                // Convert Line to Cubic: synthesise linear handles
+                // Convert Line to Cubic: synthesize linear handles
                 let (h_out, h_in) = if let (Some(start), Some(end)) = (start_anchor, end_anchor) {
                     // Simple handle synthesis: 1/3 of the way along the segment
                     let dx = end.pos.x - start.pos.x;
