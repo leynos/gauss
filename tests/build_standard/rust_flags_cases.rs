@@ -14,33 +14,74 @@ mod expected;
 /// Re-exports the expected-row query through the established cases module.
 pub(crate) use expected::expected_calls;
 
+/// The finite source mutations supported by the copied-Makefile contracts.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum Mutation {
+    Unexport,
+    NextestOption,
+    FallbackLeak,
+    Restatement,
+    FailureMask,
+}
+
+impl std::fmt::Display for Mutation {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(match self {
+            Self::Unexport => "unexport",
+            Self::NextestOption => "nextest-option",
+            Self::FallbackLeak => "fallback-leak",
+            Self::Restatement => "restatement",
+            Self::FailureMask => "failure-mask",
+        })
+    }
+}
+
+/// The fake command failures understood by the recorder protocol.
+#[derive(Clone, Copy)]
+pub(super) enum FailureCase {
+    NextestRun,
+    CargoTest,
+    Doctest,
+}
+
+impl FailureCase {
+    /// Returns the recorder protocol token; for example, `Self::Doctest` yields `"doctest"`.
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::NextestRun => "nextest-run",
+            Self::CargoTest => "cargo-test",
+            Self::Doctest => "doctest",
+        }
+    }
+}
+
 /// Requires Make to fail after the named fake leaf command returns non-zero.
-fn failure_contract(observation: &Observation, failure: &str) -> Result<(), String> {
+fn failure_contract(observation: &Observation, failure: FailureCase) -> Result<(), String> {
     if !observation.status.success() && reached_failure(observation, failure) {
         Ok(())
     } else {
         Err(format!(
-            "make did not propagate the controlled {failure} failure"
+            "make did not propagate the controlled {} failure",
+            failure.as_str()
         ))
     }
 }
 
 /// Reports whether the named fake failing leaf was recorded.
-fn reached_failure(observation: &Observation, failure: &str) -> bool {
+fn reached_failure(observation: &Observation, failure: FailureCase) -> bool {
     observation.calls.iter().any(|call| match failure {
-        "nextest-run" => {
+        FailureCase::NextestRun => {
             call.arguments.first().map(String::as_str) == Some("nextest")
                 && call.arguments.get(1).map(String::as_str) == Some("run")
         }
-        "cargo-test" => {
+        FailureCase::CargoTest => {
             call.arguments.first().map(String::as_str) == Some("test")
                 && !call.arguments.iter().any(|argument| argument == "--doc")
         }
-        "doctest" => {
+        FailureCase::Doctest => {
             call.arguments.first().map(String::as_str) == Some("test")
                 && call.arguments.iter().any(|argument| argument == "--doc")
         }
-        _ => false,
     })
 }
 
@@ -159,15 +200,15 @@ fn make_test_inputs_are_unexported_and_restate_recipe_flags(
 
 /// Requires controlled Nextest, fallback Cargo and doctest failures to fail Make.
 #[rstest]
-#[case::make_test_nextest_failure("test", true, "nextest-run")]
-#[case::make_test_fallback_failure("test", false, "cargo-test")]
-#[case::make_test_doctest_failure("test", true, "doctest")]
-#[case::make_test_ci_failure("test-ci", true, "nextest-run")]
-#[case::make_test_quick_failure("test-quick", true, "nextest-run")]
+#[case::make_test_nextest_failure("test", true, FailureCase::NextestRun)]
+#[case::make_test_fallback_failure("test", false, FailureCase::CargoTest)]
+#[case::make_test_doctest_failure("test", true, FailureCase::Doctest)]
+#[case::make_test_ci_failure("test-ci", true, FailureCase::NextestRun)]
+#[case::make_test_quick_failure("test-quick", true, FailureCase::NextestRun)]
 fn make_test_propagates_each_leaf_failure(
     #[case] target: &'static str,
     #[case] nextest_available: bool,
-    #[case] failure: &'static str,
+    #[case] failure: FailureCase,
 ) -> Result<(), String> {
     make_input::with_scratch(|scratch| {
         let observation = scratch.run(&RunRequest {
@@ -176,7 +217,7 @@ fn make_test_propagates_each_leaf_failure(
             rust_flags: RustFlagsInput::CommandLine,
             nextest_available,
             nextest_flags: NEXTEST_OPTIONS,
-            failure,
+            failure: failure.as_str(),
         })?;
         failure_contract(&observation, failure)
     })
@@ -184,99 +225,96 @@ fn make_test_propagates_each_leaf_failure(
 
 /// Proves the source-copy contract rejects representative Makefile mutations.
 #[rstest]
-#[case::mutation_unexport("unexport")]
-#[case::mutation_nextest_option("nextest-option")]
-#[case::mutation_fallback_leak("fallback-leak")]
-#[case::mutation_restatement("restatement")]
-#[case::mutation_failure_mask("failure-mask")]
-fn make_test_contract_detects_source_mutations(
-    #[case] mutation: &'static str,
-) -> Result<(), String> {
+#[case::mutation_unexport(Mutation::Unexport)]
+#[case::mutation_nextest_option(Mutation::NextestOption)]
+#[case::mutation_fallback_leak(Mutation::FallbackLeak)]
+#[case::mutation_restatement(Mutation::Restatement)]
+#[case::mutation_failure_mask(Mutation::FailureMask)]
+fn make_test_contract_detects_source_mutations(#[case] mutation: Mutation) -> Result<(), String> {
     make_input::with_scratch(|scratch| check_source_mutation(scratch, mutation))
 }
 
 /// Runs one source mutation only after its unmodified production route passes.
-fn check_source_mutation(scratch: &make_input::Scratch, mutation: &str) -> Result<(), String> {
-    let baseline = mutation_request(mutation, "")?;
+fn check_source_mutation(scratch: &make_input::Scratch, mutation: Mutation) -> Result<(), String> {
+    let baseline = mutation_request(mutation, None);
     make_input::check_target(scratch, &baseline)?;
     let expected = expected_calls(&baseline)?;
-    if mutation == "failure-mask" {
+    if mutation == Mutation::FailureMask {
         check_failure_mask_baseline(scratch)?;
     }
     let changed = mutated_makefile(mutation, &scratch.read_makefile()?)?;
     scratch.write_makefile(&changed)?;
-    let failure = if mutation == "failure-mask" {
-        "nextest-run"
+    let failure = if mutation == Mutation::FailureMask {
+        Some(FailureCase::NextestRun)
     } else {
-        ""
+        None
     };
-    let observation = scratch.run(&mutation_request(mutation, failure)?)?;
+    let observation = scratch.run(&mutation_request(mutation, failure))?;
     check_mutated_route(mutation, &expected, &observation)
 }
 
 /// Selects the literal Make route and Nextest branch for one finite mutation name.
-fn mutation_request<'a>(mutation: &str, failure: &'a str) -> Result<RunRequest<'a>, String> {
+fn mutation_request(mutation: Mutation, failure: Option<FailureCase>) -> RunRequest<'static> {
     let (target, nextest_available) = match mutation {
-        "unexport" | "nextest-option" => ("test-ci", true),
-        "fallback-leak" => ("test", false),
-        "restatement" => ("typecheck", true),
-        "failure-mask" => ("test", true),
-        _ => return Err(format!("unknown Makefile mutation {mutation}")),
+        Mutation::Unexport | Mutation::NextestOption => ("test-ci", true),
+        Mutation::FallbackLeak => ("test", false),
+        Mutation::Restatement => ("typecheck", true),
+        Mutation::FailureMask => ("test", true),
     };
-    Ok(RunRequest {
+    RunRequest {
         target,
         host: Host::Linux,
         rust_flags: RustFlagsInput::CommandLine,
         nextest_available,
         nextest_flags: NEXTEST_OPTIONS,
-        failure,
-    })
+        failure: failure.map_or("", FailureCase::as_str),
+    }
 }
 
 /// Applies exactly one uniquely located mutation to the copied candidate Makefile.
-fn mutated_makefile(mutation: &str, original: &str) -> Result<String, String> {
+fn mutated_makefile(mutation: Mutation, original: &str) -> Result<String, String> {
     match mutation {
-        "unexport" => replace_once(original, "unexport RUST_FLAGS\n", ""),
-        "nextest-option" => replace_once(
+        Mutation::Unexport => replace_once(original, "unexport RUST_FLAGS\n", ""),
+        Mutation::NextestOption => replace_once(
             original,
             "nextest run --profile ci $(TEST_FLAGS) $(NEXTEST_FLAGS) $(BUILD_JOBS)",
             "nextest run --profile ci $(TEST_FLAGS) $(BUILD_JOBS)",
         ),
-        "fallback-leak" => replace_once(
+        Mutation::FallbackLeak => replace_once(
             original,
             "$(CARGO) test $(TEST_FLAGS) $(BUILD_JOBS); \\",
             "$(CARGO) test $(TEST_FLAGS) $(NEXTEST_FLAGS) $(BUILD_JOBS); \\",
         ),
-        "restatement" => replace_once(
+        Mutation::Restatement => replace_once(
             original,
             "$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)\" $(CARGO) check",
             "$(STANDARD_RUSTFLAGS)\" $(CARGO) check",
         ),
-        "failure-mask" => replace_once(
+        Mutation::FailureMask => replace_once(
             original,
             "$(CARGO) nextest run --profile default $(TEST_FLAGS) $(NEXTEST_FLAGS) $(BUILD_JOBS); \\",
             "$(CARGO) nextest run --profile default $(TEST_FLAGS) $(NEXTEST_FLAGS) $(BUILD_JOBS) || true; \\",
         ),
-        _ => Err(format!("unknown Makefile mutation {mutation}")),
     }
 }
 
 /// Confirms the original recipe propagates the named failing Nextest leaf.
 fn check_failure_mask_baseline(scratch: &make_input::Scratch) -> Result<(), String> {
-    let observation = scratch.run(&mutation_request("failure-mask", "nextest-run")?)?;
-    failure_contract(&observation, "nextest-run")
+    let request = mutation_request(Mutation::FailureMask, Some(FailureCase::NextestRun));
+    let observation = scratch.run(&request)?;
+    failure_contract(&observation, FailureCase::NextestRun)
 }
 
 /// Rejects an unsuccessful mutated route before checking its one intended contract difference.
 fn check_mutated_route(
-    mutation: &str,
+    mutation: Mutation,
     expected: &[Invocation],
     observation: &Observation,
 ) -> Result<(), String> {
     if !observation.status.success() {
         return Err(format!("{mutation} mutation made its route fail"));
     }
-    if mutation == "failure-mask" {
+    if mutation == Mutation::FailureMask {
         check_failure_mask_mutation(expected, observation)
     } else {
         check_ordinary_mutation(mutation, expected, observation)
@@ -289,10 +327,10 @@ fn check_failure_mask_mutation(
     observation: &Observation,
 ) -> Result<(), String> {
     super::require_calls(expected, &observation.calls, "failure-mask route")?;
-    if !reached_failure(observation, "nextest-run") {
+    if !reached_failure(observation, FailureCase::NextestRun) {
         return Err("failure-mask mutation missed the failing Nextest leaf".to_owned());
     }
-    match failure_contract(observation, "nextest-run") {
+    match failure_contract(observation, FailureCase::NextestRun) {
         Err(error) if error == "make did not propagate the controlled nextest-run failure" => {
             Ok(())
         }
@@ -305,12 +343,12 @@ fn check_failure_mask_mutation(
 
 /// Requires only the exact baseline-row mismatch assigned to a non-failure mutation.
 fn check_ordinary_mutation(
-    mutation: &str,
+    mutation: Mutation,
     expected: &[Invocation],
     observation: &Observation,
 ) -> Result<(), String> {
     let diagnostic = super::mutation_diagnostic(mutation, expected, &observation.calls)?;
-    match super::require_calls(expected, &observation.calls, mutation) {
+    match super::require_calls(expected, &observation.calls, &mutation.to_string()) {
         Err(error) if error == diagnostic => {
             super::exact_mutation_delta(mutation, expected, &observation.calls)
         }

@@ -178,17 +178,19 @@ fn same_compiler_flag_tokens(expected: &str, actual: &str) -> bool {
 }
 
 /// Builds the one precise baseline-check diagnostic a named mutation may produce.
-pub(super) fn mutation_diagnostic(
-    mutation: &str,
+fn mutation_diagnostic(
+    mutation: cases::Mutation,
     baseline: &[Invocation],
     observed: &[Invocation],
 ) -> Result<String, String> {
     let (index, field) = match mutation {
-        "unexport" => (0, "presence"),
-        "nextest-option" => (0, "argv"),
-        "fallback-leak" => (1, "argv"),
-        "restatement" => (0, "rustflags"),
-        _ => return Err(format!("unknown diagnostic for mutation {mutation}")),
+        cases::Mutation::Unexport => (0, "presence"),
+        cases::Mutation::NextestOption => (0, "argv"),
+        cases::Mutation::FallbackLeak => (1, "argv"),
+        cases::Mutation::Restatement => (0, "rustflags"),
+        cases::Mutation::FailureMask => {
+            return Err(format!("unknown diagnostic for mutation {mutation}"));
+        }
     };
     let expected = baseline
         .get(index)
@@ -268,18 +270,18 @@ fn restatement_mutation_delta(expected: &mut [Invocation]) -> Result<(), String>
 }
 
 /// Confirms the baseline mismatch contains only the named source mutation's exact recorder delta.
-pub(super) fn exact_mutation_delta(
-    mutation: &str,
+fn exact_mutation_delta(
+    mutation: cases::Mutation,
     baseline: &[Invocation],
     observed: &[Invocation],
 ) -> Result<(), String> {
     let mut expected = baseline.to_vec();
     match mutation {
-        "unexport" => unexport_mutation_delta(&mut expected)?,
-        "nextest-option" => nextest_option_mutation_delta(&mut expected)?,
-        "fallback-leak" => fallback_leak_mutation_delta(&mut expected)?,
-        "restatement" => restatement_mutation_delta(&mut expected)?,
-        _ => return Err(format!("unknown mutation {mutation}")),
+        cases::Mutation::Unexport => unexport_mutation_delta(&mut expected)?,
+        cases::Mutation::NextestOption => nextest_option_mutation_delta(&mut expected)?,
+        cases::Mutation::FallbackLeak => fallback_leak_mutation_delta(&mut expected)?,
+        cases::Mutation::Restatement => restatement_mutation_delta(&mut expected)?,
+        cases::Mutation::FailureMask => return Err(format!("unknown mutation {mutation}")),
     }
     require_calls(&expected, observed, &format!("{mutation} mutation delta"))
 }
