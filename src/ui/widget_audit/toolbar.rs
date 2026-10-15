@@ -26,20 +26,35 @@ use super::types::{
 /// customization for tools with unique state requirements.
 #[derive(Clone, Copy)]
 struct ToolbarControlSpec {
+    /// Human-readable control name, also used as its accessibility label.
     name: &'static str,
+    /// Roadmap phase in which the control is required.
     phase: Phase,
+    /// User task supported by the control.
     description: &'static str,
+    /// Keyboard shortcut used to activate the control.
     shortcut: &'static str,
+    /// State names the control must expose.
     states: &'static [&'static str],
+    /// Accessibility announcement and state requirements.
     a11y_notes: &'static str,
+    /// Action-system name associated with activating the control.
     action_name: &'static str,
+    /// Identifier of the roadmap requirement for this control.
     roadmap_ref: &'static str,
+    /// Feature-plan source that details the requirement.
     feature_plan: &'static str,
+    /// Whether current shell implementation evidence exists.
     evidence_exists: bool,
+    /// Location of the evidence when one is available.
     evidence_path: Option<&'static str>,
+    /// Qualification or absence note for the current shell evidence.
     evidence_notes: &'static str,
 }
 
+/// Convert a toolbar specification into its audit record.
+/// For example, Selection Tool produces a toolbar record with shortcut `V` and
+/// action `ActivateSelectionTool`.
 fn make_toolbar_tool(spec: ToolbarControlSpec) -> RequiredControl {
     RequiredControl {
         name: spec.name,
@@ -87,6 +102,7 @@ pub(super) fn controls() -> Vec<RequiredControl> {
     TOOL_SPECS.iter().copied().map(make_toolbar_tool).collect()
 }
 
+/// Specifications for the seven Phase 1 and Phase 2 toolbar tools.
 const TOOL_SPECS: &[ToolbarControlSpec] = &[
     ToolbarControlSpec {
         name: "Selection Tool",

@@ -17,6 +17,10 @@ pub(super) fn controls() -> Vec<RequiredControl> {
     ]
 }
 
+/// Describe the field for spacing before and after paragraphs.
+///
+/// For example, its audit entry links edits to `SetParagraphSpacing` and
+/// requires the change to be undoable.
 fn paragraph_spacing_field() -> RequiredControl {
     RequiredControl {
         name: "Paragraph Spacing Field",
@@ -56,6 +60,10 @@ fn paragraph_spacing_field() -> RequiredControl {
     }
 }
 
+/// Describe the field for text leading, or line height.
+///
+/// For example, its audit entry links edits to `SetLineSpacing` and requires
+/// the current line-height value to be announced.
 fn line_spacing_field() -> RequiredControl {
     RequiredControl {
         name: "Line Spacing Field",
@@ -95,6 +103,10 @@ fn line_spacing_field() -> RequiredControl {
     }
 }
 
+/// Describe the fields for left, right, and first-line indentation.
+///
+/// For example, its audit entry links edits to `SetParagraphIndent` and
+/// requires the current indent type and value to be announced.
 fn indentation_controls() -> RequiredControl {
     RequiredControl {
         name: "Indentation Controls",
