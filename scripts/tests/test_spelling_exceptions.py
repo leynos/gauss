@@ -64,6 +64,62 @@ def is_covered(
     )
 
 
+def _approved_context_spans(
+    category: str, context: SpellingMigrationContext, approved: str
+) -> list[tuple[str, int, int]]:
+    """Select original migration spans retained by the adjacent case.
+
+    Example: the type row yields ``[("Color", 3, 8)]`` for its approved token.
+    """
+    if category != "unrelated old name beside an approved context":
+        return []
+    return [(token, *token_bounds(approved, token)) for token in context.legacy_tokens]
+
+
+def _diagnostic_colour_spans(
+    category: str, line: str, token: str, token_start: int
+) -> list[tuple[int, int]]:
+    """Select the Color diagnostic spans to check in a near-miss line.
+
+    Example: adjacent cases select the added token's ``Color`` span; others
+    select every literal ``Color`` occurrence.
+    """
+    if category == "unrelated old name beside an approved context":
+        start = token_start + token.rfind("Color")
+        return [(start, start + len("Color"))]
+    return [(match.start(), match.end()) for match in re.finditer("Color", line)]
+
+
+def _assert_approved_context_coverage(
+    case_id: str,
+    pattern: re.Pattern[str],
+    line: str,
+    labelled_spans: list[tuple[str, int, int]],
+) -> None:
+    """Assert each labelled approved token stays covered by its local rule."""
+    for token, start, end in labelled_spans:
+        assert is_covered([pattern], line, start, end), (
+            f"{case_id}: approved context lost coverage for {token!r}"
+        )
+
+
+def _assert_diagnostic_spans_uncovered(
+    case_category_label: str,
+    patterns: list[re.Pattern[str]],
+    line: str,
+    spans: list[tuple[int, int]],
+) -> None:
+    """Assert every selected Color diagnostic span remains visible."""
+    assert spans and all(start >= 0 for start, _ in spans), (
+        f"{case_category_label} has no Color diagnostic span in {line!r}"
+    )
+    for start, end in spans:
+        assert not is_covered(patterns, line, start, end), (
+            f"{case_category_label} hides the Color diagnostic span "
+            f"at {start} in {line!r}"
+        )
+
+
 def tracked_text_files() -> list[Path]:
     """Return tracked Markdown files, which are the files the gate scans."""
     listing = subprocess.run(
@@ -206,31 +262,19 @@ def test_migration_exceptions_leave_generated_near_misses_uncovered(
         line, token, last_occurrence = make_near_miss(
             context, approved, separators, category
         )
-        if category == "unrelated old name beside an approved context":
-            for approved_token in context.legacy_tokens:
-                start, end = token_bounds(approved, approved_token)
-                assert is_covered([pattern], line, start, end), (
-                    f"{context.case_id}: approved context lost coverage for "
-                    f"{approved_token!r}"
-                )
+        approved_spans = _approved_context_spans(category, context, approved)
+        _assert_approved_context_coverage(
+            context.case_id, pattern, line, approved_spans
+        )
 
         start, end = token_bounds(line, token, last_occurrence)
         assert not is_covered(patterns, line, start, end), (
             f"{context.case_id} {category} hides {token!r} in {line!r}"
         )
-        if category == "unrelated old name beside an approved context":
-            colour_starts = [start + token.rfind("Color")]
-        else:
-            colour_starts = [match.start() for match in re.finditer("Color", line)]
-        assert colour_starts and all(start >= 0 for start in colour_starts), (
-            f"{context.case_id} {category} has no Color diagnostic span in {line!r}"
+        colour_spans = _diagnostic_colour_spans(category, line, token, start)
+        _assert_diagnostic_spans_uncovered(
+            f"{context.case_id} {category}", patterns, line, colour_spans
         )
-        for colour_start in colour_starts:
-            colour_end = colour_start + len("Color")
-            assert not is_covered(patterns, line, colour_start, colour_end), (
-                f"{context.case_id} {category} hides the Color diagnostic span "
-                f"at {colour_start} in {line!r}"
-            )
 
 
 #: Prose that the approved exact patterns exempt, one phrase per term.
