@@ -33,6 +33,8 @@ mod injected;
 mod injected_held_out;
 #[path = "make.rs"]
 mod make;
+#[path = "make_input_env.rs"]
+mod make_input_env;
 #[path = "policy_cases.rs"]
 mod policy_cases;
 #[path = "process.rs"]
