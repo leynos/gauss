@@ -7,6 +7,9 @@ use crate::model::{Action, prepare_command};
 use super::Phase0Shell;
 
 impl Phase0Shell {
+    /// Toggle the selected segments' kind through the undoable command path.
+    /// A prepared command is applied once and reports success; if preparation
+    /// fails, the shell remains unchanged and the method returns `false`.
     pub(super) fn toggle_selected_segments_kind(&mut self) -> bool {
         let Ok(command) = prepare_command(Action::ToggleSegmentKind, &self.state) else {
             return false;

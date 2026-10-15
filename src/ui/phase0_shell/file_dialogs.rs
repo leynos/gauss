@@ -22,24 +22,36 @@ use crate::svg::export::{
 
 use super::Phase0Shell;
 
+/// Receives the result of a prompt for one save or export path.
 type SavePathPromptReceiver = oneshot::Receiver<gpui::Result<Option<PathBuf>>>;
+/// Receives the result of a prompt that may return several existing paths.
 type OpenPathsPromptReceiver = oneshot::Receiver<gpui::Result<Option<Vec<PathBuf>>>>;
+/// Reuses the save-path result shape for the test platform's new-path prompt.
 #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
 type OpenPathPromptReceiver = SavePathPromptReceiver;
 
+/// Holds the result from either the native picker or the test-only path prompt.
 enum OpenPromptReceiver {
+    /// Result from the native picker for existing paths.
     Paths(OpenPathsPromptReceiver),
+    /// Result from the test platform's prompt for one path.
     #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     NewPath(OpenPathPromptReceiver),
 }
 
+/// Selects which SVG export behaviour a save prompt will invoke.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum SaveIntent {
+    /// Save SVG while retaining the document's Gauss metadata.
     PreserveMetadata,
+    /// Export SVG without Gauss metadata for web use.
     WebReady,
 }
 
 impl SaveIntent {
+    /// Return the filename suggested by the matching export action.
+    ///
+    /// For example, `WebReady` suggests `gauss.web.svg`.
     const fn suggested_name(self) -> &'static str {
         match self {
             Self::PreserveMetadata => "gauss.svg",
@@ -48,6 +60,7 @@ impl SaveIntent {
     }
 }
 
+/// Selects the native path picker or the test platform's single-path prompt.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum OpenPromptMode {
     /// Use the platform file picker for selecting existing paths.
@@ -64,6 +77,9 @@ pub(super) enum OpenPromptMode {
 }
 
 impl OpenPromptMode {
+    /// Start the platform prompt selected for this execution mode.
+    ///
+    /// For example, `Native` opens the picker for an existing SVG path.
     fn prompt(self, cx: &mut Context<Phase0Shell>) -> OpenPromptReceiver {
         match self {
             Self::Native => OpenPromptReceiver::Paths(cx.prompt_for_paths(PathPromptOptions {
@@ -80,6 +96,9 @@ impl OpenPromptMode {
     }
 }
 
+/// Prompt for an SVG path, then load the first selected file asynchronously.
+///
+/// For example, selecting one SVG in the native picker loads that path.
 pub(super) fn request_open(
     mode: OpenPromptMode,
     window: &mut Window,
@@ -97,14 +116,23 @@ pub(super) fn request_open(
     .detach();
 }
 
+/// Prompt for a destination and save the document with its Gauss metadata.
+///
+/// For example, the suggested `gauss.svg` destination retains Gauss metadata.
 pub(super) fn request_save(window: &mut Window, cx: &mut Context<Phase0Shell>) {
     request_save_for_intent(window, cx, SaveIntent::PreserveMetadata);
 }
 
+/// Prompt for a destination and export SVG without Gauss metadata.
+///
+/// For example, the suggested `gauss.web.svg` destination uses web-ready export.
 pub(super) fn request_web_ready_export(window: &mut Window, cx: &mut Context<Phase0Shell>) {
     request_save_for_intent(window, cx, SaveIntent::WebReady);
 }
 
+/// Prompt for the intent's suggested filename and start its asynchronous export.
+///
+/// For example, `WebReady` prompts with `gauss.web.svg` before exporting.
 fn request_save_for_intent(window: &mut Window, cx: &mut Context<Phase0Shell>, intent: SaveIntent) {
     // Use a trivial initial directory for Phase 0. Once we have document state,
     // this can be "current document directory" or similar.
@@ -120,16 +148,25 @@ fn request_save_for_intent(window: &mut Window, cx: &mut Context<Phase0Shell>, i
     .detach();
 }
 
+/// Resolve a save prompt, treating cancellation and prompt errors as no path.
+///
+/// For example, closing the save dialog produces `None`.
 async fn receive_save_path(rx: SavePathPromptReceiver) -> Option<PathBuf> {
     let prompt_result = rx.await.ok()?;
     prompt_result.ok()?
 }
 
+/// Resolve an existing-path prompt, treating cancellation and errors as no paths.
+///
+/// For example, a successful picker result preserves its selected paths.
 async fn receive_open_paths(rx: OpenPathsPromptReceiver) -> Option<Vec<PathBuf>> {
     let prompt_result = rx.await.ok()?;
     prompt_result.ok()?
 }
 
+/// Return the first selected path, or the single path from the test prompt.
+///
+/// For example, selections `[a.svg, b.svg]` resolve to `a.svg`.
 async fn receive_open_path(receiver: OpenPromptReceiver) -> Option<PathBuf> {
     match receiver {
         OpenPromptReceiver::Paths(paths_rx) => {
@@ -140,6 +177,9 @@ async fn receive_open_path(receiver: OpenPromptReceiver) -> Option<PathBuf> {
     }
 }
 
+/// Export the current document to the chosen path and update its save status.
+///
+/// For example, a successful write records the destination as `last_saved_path`.
 async fn apply_save_path(
     this: WeakEntity<Phase0Shell>,
     mut cx: AsyncWindowContext,
@@ -184,6 +224,10 @@ async fn apply_save_path(
     });
 }
 
+/// Load the chosen document and replace the shell's document state on success.
+///
+/// For example, a parse error leaves the current document in place and records
+/// the error as `last_open_error`.
 async fn apply_open_prompt(
     this: WeakEntity<Phase0Shell>,
     mut cx: AsyncWindowContext,

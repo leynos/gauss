@@ -70,6 +70,12 @@ impl Phase0Shell {
         did_change
     }
 
+    /// Apply one state-transition command and report whether it changed state.
+    ///
+    /// Document commands can fail; the caller records that error while
+    /// preserving changes already made by earlier commands in the sequence.
+    /// For example, a selection command can be a no-op while a document command
+    /// returns an error to the enclosing command sequence.
     fn apply_tool_command(&mut self, command: ToolCommand) -> Result<bool, UserError> {
         Ok(match command {
             ToolCommand::ApplyDocumentCommand(document_command) => {
@@ -105,17 +111,24 @@ impl Phase0Shell {
         })
     }
 
+    /// Apply a document command and invalidate cached hover results.
+    /// For example, moving a shape makes the cached hit-test result stale.
     fn apply_document_tool_command(&mut self, command: Command) -> Result<bool, UserError> {
         self.apply_command(command)?;
         self.invalidate_hover_cache();
         Ok(true)
     }
 
+    /// Mark document-derived hover results stale after a document change.
+    /// The next hover query then rebuilds its result for the new generation.
     const fn invalidate_hover_cache(&mut self) {
         self.document_generation = self.document_generation.wrapping_add(1);
         self.hover_cache = None;
     }
 
+    /// Set the active tool mode and clear manipulation-only state when leaving it.
+    /// For example, switching to draw mode restores a drag preview and clears
+    /// the hovered selection target.
     fn set_tool_mode_if_changed(&mut self, mode: ToolMode) -> bool {
         let mut did_change = false;
 
@@ -143,6 +156,8 @@ impl Phase0Shell {
         did_change
     }
 
+    /// Update the draw edge mode, reporting whether it changed.
+    /// Selecting the already active edge mode returns `false`.
     fn set_edge_mode_if_changed(&mut self, mode: DrawEdgeMode) -> bool {
         if self.state.edge_mode == mode {
             return false;
@@ -151,6 +166,8 @@ impl Phase0Shell {
         true
     }
 
+    /// Update the active path, reporting whether it changed.
+    /// Passing the current path, including `None`, leaves state unchanged.
     fn set_active_path_if_changed(&mut self, path: Option<ShapeId>) -> bool {
         if self.state.active_path == path {
             return false;
@@ -159,6 +176,8 @@ impl Phase0Shell {
         true
     }
 
+    /// Replace the current selection, reporting whether it changed.
+    /// Passing an equal selection returns `false` without replacing it.
     fn set_selection_if_changed(&mut self, selection: Selection) -> bool {
         if self.state.selection == selection {
             return false;
@@ -167,6 +186,8 @@ impl Phase0Shell {
         true
     }
 
+    /// Record a history entry only when the selection actually differs.
+    /// For example, a drag that ends with its original selection adds no entry.
     fn record_selection_change_if_needed(&mut self, from: Selection, to: Selection) -> bool {
         if from == to {
             return false;
@@ -175,6 +196,8 @@ impl Phase0Shell {
         true
     }
 
+    /// Update the select-tool runtime state, reporting whether it changed.
+    /// Reapplying the current dragging or idle state returns `false`.
     fn set_select_tool_state_if_changed(&mut self, state: SelectToolState) -> bool {
         if self.select_tool_state == state {
             return false;

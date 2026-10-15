@@ -7,7 +7,9 @@ use crate::ui::{UiIcon, icon_element};
 
 use super::chrome_palette::{chrome_active, chrome_border, chrome_muted_text, chrome_text};
 
+/// Icon dimensions used by the shell's icon-button helper, in pixels.
 const ICON_SIZE: f32 = 16.0;
+/// Square dimensions used by the shell's icon-button helper, in pixels.
 const BUTTON_SIZE: f32 = 28.0;
 
 /// Visual and interactive states for an icon button.

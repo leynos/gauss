@@ -33,6 +33,9 @@ pub(super) fn tool_rail(
         .child(tool_rail_buttons(shell_state, cx))
 }
 
+/// Assemble the select, draw and placeholder controls in rail order.
+/// For example, the select control comes first, followed by configured draw
+/// controls and then the square and circle placeholders.
 fn tool_rail_buttons(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
@@ -62,21 +65,33 @@ fn tool_rail_buttons(
     ))
 }
 
+/// Data needed to build a mode button with state and click behaviour.
 struct ToolModeButtonSpec<F, S> {
+    /// Stable GPUI element identifier.
     id: &'static str,
+    /// Icon shown on the button.
     icon: UiIcon,
+    /// Localized text exposed as the button tooltip.
     tooltip: String,
+    /// Computes the button state from the current shell.
     state_fn: S,
+    /// Applies the requested mode change to the shell.
     on_click: F,
 }
 
+/// Configuration for one draw-mode button in the rail.
 struct ToolDrawButtonSpec {
+    /// Stable GPUI element identifier.
     id: &'static str,
+    /// Icon shown on the button.
     icon: UiIcon,
+    /// Selects the message used to localize the tooltip.
     message_id: fn() -> MessageId,
+    /// Draw mode selected when the button is activated.
     edge_mode: DrawEdgeMode,
 }
 
+/// Draw-mode buttons shown after the select control.
 const DRAW_BUTTON_SPECS: &[ToolDrawButtonSpec] = &[
     ToolDrawButtonSpec {
         id: "tool-draw-line",
@@ -118,6 +133,9 @@ where
     ))
 }
 
+/// Build a draw control whose active state follows its configured edge mode.
+/// For example, the curve control is active only in draw mode with the
+/// `BezierAuto` edge mode selected.
 fn tool_draw_button(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
@@ -142,6 +160,8 @@ fn tool_draw_button(
     )
 }
 
+/// Build the control that switches the shell to manipulate mode.
+/// Activating it changes the mode used by subsequent canvas pointer events.
 fn tool_select_button(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
@@ -162,6 +182,9 @@ fn tool_select_button(
     )
 }
 
+/// Build a disabled placeholder control with its localized tooltip.
+/// For example, the square and circle entries remain visible without handling
+/// clicks as implemented tools.
 fn tool_placeholder_button(
     shell_state: &Phase0Shell,
     id: &'static str,
@@ -172,6 +195,8 @@ fn tool_placeholder_button(
     icon_button(id, icon, IconButtonState::Placeholder, Some(tooltip))
 }
 
+/// Show the select control as active only while manipulate mode is selected.
+/// A draw-mode shell therefore renders this control as enabled.
 fn select_button_state(tool_mode: ToolMode) -> IconButtonState {
     if tool_mode == ToolMode::Manipulate {
         IconButtonState::Active
@@ -180,6 +205,8 @@ fn select_button_state(tool_mode: ToolMode) -> IconButtonState {
     }
 }
 
+/// Show a draw control as active only for its current tool and edge mode.
+/// A line control is enabled while drawing curves, and while manipulating.
 fn draw_button_state(
     tool_mode: ToolMode,
     current_edge_mode: DrawEdgeMode,

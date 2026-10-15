@@ -8,6 +8,13 @@ use crate::model::{Action, Selection, prepare_command};
 use super::Phase0Shell;
 
 impl Phase0Shell {
+    /// Delete the selected shapes and clear the selection after the command succeeds.
+    ///
+    /// The previous and empty selections are recorded separately from document
+    /// history so the selection can be restored independently.
+    ///
+    /// For example, a successful deletion leaves the selection empty and returns
+    /// `true`.
     pub(super) fn delete_selected_shapes(&mut self) -> bool {
         let command = match prepare_command(Action::DeleteSelection, &self.state) {
             Ok(command) => command,
