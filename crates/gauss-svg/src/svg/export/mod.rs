@@ -103,6 +103,9 @@ pub enum ExportMode {
     WebReady,
 }
 impl ExportMode {
+    /// Return whether this mode preserves Gauss metadata and namespace output.
+    ///
+    /// Example: `GaussWithMetadata` returns `true`; `WebReady` returns `false`.
     #[must_use]
     const fn includes_gauss_metadata(self) -> bool {
         matches!(self, Self::GaussWithMetadata)
@@ -180,6 +183,11 @@ pub fn export_svg_with_metadata(options: ExportOptions<'_>) -> String {
         ..options
     })
 }
+/// Render the header, definitions, optional metadata, draw-order shapes, and
+/// closing root tag.
+///
+/// Resource validation belongs to the checked wrapper, not this renderer.
+/// Example: Web-ready output omits the Gauss namespace and metadata block.
 fn export_svg_inner(options: ExportOptions<'_>) -> String {
     let preserve_gauss_metadata = options.mode.includes_gauss_metadata();
     let mut out = String::new();
@@ -210,10 +218,17 @@ pub fn export_svg_with_metadata_checked(
         ..options
     })
 }
+/// Convert alpha from `0`–`255` to SVG opacity on the `0.0`–`1.0` scale.
+///
+/// Example: `255` produces `1.0`; `0` produces `0.0`.
 #[must_use]
 pub(super) const fn opacity_from_alpha(alpha: u8) -> f32 {
     (alpha as f32) / 255.0
 }
+/// Write the XML declaration and SVG root with canvas dimensions.
+///
+/// The canonical Gauss namespace is included only when requested.
+/// Example: `false` omits `xmlns:gauss` from the root element.
 fn write_svg_header(out: &mut String, canvas_size: CanvasSize, include_gauss_namespace: bool) {
     out.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
     out.push('\n');
@@ -234,6 +249,10 @@ fn write_svg_header(out: &mut String, canvas_size: CanvasSize, include_gauss_nam
     );
     out.push('\n');
 }
+/// Wrap present metadata content; `None` writes nothing.
+///
+/// Content is copied as supplied, with a newline added when needed.
+/// Example: `"..."` becomes `<metadata>...\n</metadata>\n`.
 fn write_metadata_block(out: &mut String, metadata_block: Option<&str>) {
     let Some(content) = metadata_block else {
         return;
@@ -245,6 +264,12 @@ fn write_metadata_block(out: &mut String, metadata_block: Option<&str>) {
     }
     out.push_str("</metadata>\n");
 }
+/// Check both paints on each shape in draw order, stopping at the first
+/// missing reference.
+///
+/// Missing gradients and patterns return their corresponding error; solid and
+/// no-paint values pass.
+/// Example: A missing fill pattern returns `MissingPatternReference`.
 fn validate_resource_references(
     doc: &Document,
     resources: &ResourceStore,
@@ -255,6 +280,10 @@ fn validate_resource_references(
     }
     Ok(())
 }
+/// Check a gradient or pattern paint against the resource store.
+///
+/// Solid and no-paint values pass without a lookup.
+/// Example: A missing pattern ID returns `MissingPatternReference`.
 fn validate_paint_reference(paint: Paint, resources: &ResourceStore) -> Result<(), SvgExportError> {
     match paint {
         Paint::Gradient { id, .. } if resources.gradient(id).is_none() => {
@@ -266,6 +295,11 @@ fn validate_paint_reference(paint: Paint, resources: &ResourceStore) -> Result<(
         Paint::None | Paint::Solid(_) | Paint::Gradient { .. } | Paint::Pattern { .. } => Ok(()),
     }
 }
+/// Append formatted arguments to the SVG output string.
+///
+/// String writes are infallible in practice, so this helper discards the
+/// result.
+/// Example: Formatting `width="12"` appends that attribute text.
 pub(super) fn write_fmt(out: &mut String, args: Arguments<'_>) {
     if out.write_fmt(args).is_err() {
         // `String` implements `fmt::Write` without failing, so this is

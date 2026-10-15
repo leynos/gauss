@@ -19,6 +19,11 @@ pub(super) fn collect_extra_attributes(
     .unwrap_or_default()
 }
 
+/// Apply `map` to the first element available in an XML fragment.
+///
+/// A complete `<pattern/>` is mapped directly. A fragment such as
+/// `<path/> <circle/>` is retried in a wrapper and maps only its first child;
+/// failure to parse either form, or finding no child element, returns `None`.
 fn with_first_element<T>(
     fragment: &str,
     map: impl FnOnce(roxmltree::Node<'_, '_>) -> T,

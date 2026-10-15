@@ -33,6 +33,10 @@ pub(super) fn write_defs(
     out.push_str("</defs>\n");
 }
 
+/// Dispatch a gradient to its linear or radial SVG writer.
+///
+/// Example: A linear gradient starts with `<linearGradient>`; a radial one
+/// starts with `<radialGradient>`.
 fn write_gradient(out: &mut String, gradient: &crate::model::Gradient) {
     match &gradient.kind {
         GradientKind::Linear(data) => write_linear_gradient(out, gradient.svg_id.as_str(), data),
@@ -40,6 +44,10 @@ fn write_gradient(out: &mut String, gradient: &crate::model::Gradient) {
     }
 }
 
+/// Emit a linear gradient with its endpoint coordinates and stop elements.
+///
+/// Example: The `start` and `end` points supply the `x1`/`y1` and `x2`/`y2`
+/// attributes on `<linearGradient>`.
 fn write_linear_gradient(out: &mut String, svg_id: &str, data: &crate::model::LinearGradient) {
     write_fmt(
         out,
@@ -57,6 +65,10 @@ fn write_linear_gradient(out: &mut String, svg_id: &str, data: &crate::model::Li
     out.push_str("</linearGradient>\n");
 }
 
+/// Emit a radial gradient with its centre, radius, optional focal point, and
+/// stops.
+///
+/// Example: When `focal` is `None`, the element has no `fx` or `fy` attributes.
 fn write_radial_gradient(out: &mut String, svg_id: &str, data: &crate::model::RadialGradient) {
     write_fmt(
         out,
@@ -79,6 +91,9 @@ fn write_radial_gradient(out: &mut String, svg_id: &str, data: &crate::model::Ra
     out.push_str("</radialGradient>\n");
 }
 
+/// Emit a stop's offset, RGB colour, and alpha-derived opacity.
+///
+/// Example: Alpha `255` is written as `stop-opacity="1.0000"`.
 fn write_gradient_stop(out: &mut String, stop: crate::model::GradientStop) {
     let stop_colour = format_hex_rgb(stop.colour);
     write_fmt(
@@ -93,6 +108,9 @@ fn write_gradient_stop(out: &mut String, stop: crate::model::GradientStop) {
     out.push('\n');
 }
 
+/// Append a pattern and its stored body with the selected attributes.
+///
+/// Example: An empty body leaves no text between its start and closing tag.
 fn write_pattern(out: &mut String, pattern: &PatternResource, preserve_gauss_metadata: bool) {
     write_fmt(out, format_args!(r#"<pattern id="{}""#, pattern.svg_id));
     write_extra_attributes_filtered(out, &pattern.extra_attributes, preserve_gauss_metadata);
@@ -103,6 +121,10 @@ fn write_pattern(out: &mut String, pattern: &PatternResource, preserve_gauss_met
     out.push_str("</pattern>\n");
 }
 
+/// Append a symbol with its optional `viewBox`, stored body, and selected
+/// attributes.
+///
+/// Example: `view_box: None` omits `viewBox` from the `<symbol>` start tag.
 fn write_symbol(out: &mut String, symbol: &SymbolResource, preserve_gauss_metadata: bool) {
     write_fmt(out, format_args!(r#"<symbol id="{}""#, symbol.svg_id));
     if let Some(view_box) = symbol.view_box.as_deref() {
@@ -116,12 +138,19 @@ fn write_symbol(out: &mut String, symbol: &SymbolResource, preserve_gauss_metada
     out.push_str("</symbol>\n");
 }
 
+/// Append every stored attribute name and value without escaping.
+///
+/// Example: `("data-kind", "rough")` adds ` data-kind="rough"` as written.
 fn write_extra_attributes(out: &mut String, attributes: &[(String, String)]) {
     for (name, value) in attributes {
         write_fmt(out, format_args!(r#" {name}="{value}""#));
     }
 }
 
+/// Append stored attributes, omitting `gauss:` names when metadata is not
+/// preserved.
+///
+/// Example: With preservation disabled, `gauss:hint` is omitted.
 fn write_extra_attributes_filtered(
     out: &mut String,
     attributes: &[(String, String)],

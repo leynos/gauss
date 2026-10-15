@@ -66,6 +66,12 @@ pub(super) fn extract_metadata_block(svg: &str) -> Option<String> {
     svg.get(range).map(ToOwned::to_owned)
 }
 
+/// Read Gauss metadata attributes from one already parsed node.
+///
+/// Only attributes in the canonical Gauss namespace are considered. The
+/// exact value `"true"` sets `locked` or `hidden`; for example, `"TRUE"`
+/// leaves either flag false. Other namespaced attributes are retained as
+/// opaque metadata.
 fn extract_gauss_metadata_from_node(node: roxmltree::Node<'_, '_>) -> ShapeGaussMetadata {
     let mut meta = ShapeGaussMetadata {
         gauss_id: None,
@@ -98,6 +104,11 @@ fn extract_gauss_metadata_from_node(node: roxmltree::Node<'_, '_>) -> ShapeGauss
     meta
 }
 
+/// Return whether a node is nested inside an excluded resource container.
+///
+/// The node itself is not checked: an ancestor element named `defs`,
+/// `pattern`, or `symbol` returns true, while a path directly under `svg`
+/// returns false.
 fn has_resource_ancestor(node: roxmltree::Node<'_, '_>) -> bool {
     node.ancestors().skip(1).any(|ancestor| {
         ancestor.is_element() && matches!(ancestor.tag_name().name(), "defs" | "pattern" | "symbol")

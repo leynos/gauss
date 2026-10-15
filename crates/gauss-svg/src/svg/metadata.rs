@@ -14,6 +14,11 @@ pub const GAUSS_METADATA_PREFIX: &str = "gauss";
 /// Canonical namespace URI for Gauss metadata.
 pub const GAUSS_METADATA_NAMESPACE: &str = "https://gauss.dev/ns/metadata/1";
 
+/// Lazily render the canonical `xmlns:gauss` declaration once for reuse.
+///
+/// With the constants above, the value is
+/// `xmlns:gauss="https://gauss.dev/ns/metadata/1"`;
+/// [`gauss_namespace_declaration`] returns it as a static string slice.
 static GAUSS_NAMESPACE_DECLARATION: LazyLock<String> =
     LazyLock::new(|| format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#));
 
@@ -92,6 +97,10 @@ pub fn validate_namespace_policy(svg: &str) -> Result<(), NamespacePolicyError> 
     Ok(())
 }
 
+/// Return whether an element or one of its attributes uses the canonical URI.
+///
+/// An element with a canonical `gauss:id` attribute returns true even if
+/// the element itself is unnamespaced; a text node returns false.
 fn node_uses_gauss_namespace(node: roxmltree::Node<'_, '_>) -> bool {
     node.is_element()
         && (node.tag_name().namespace() == Some(GAUSS_METADATA_NAMESPACE)
@@ -100,6 +109,11 @@ fn node_uses_gauss_namespace(node: roxmltree::Node<'_, '_>) -> bool {
                 .any(|attribute| attribute.namespace() == Some(GAUSS_METADATA_NAMESPACE)))
 }
 
+/// Find the first element whose in-scope `gauss` prefix has another URI.
+///
+/// A non-canonical binding returns its URI, while absent or canonical
+/// bindings yield `None`. This helper reports the binding;
+/// [`validate_namespace_policy`] enforces the root declaration rule.
 fn first_non_canonical_gauss_binding(document: &roxmltree::Document<'_>) -> Option<String> {
     document
         .descendants()
