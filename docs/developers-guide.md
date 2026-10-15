@@ -86,15 +86,24 @@ narrow patterns rather than bare accepted words.
 
 `make spelling-exceptions-test` is the regression test for that rule. It is a
 prerequisite of `make test`, and runs
-`scripts/tests/test_spelling_exceptions.py` under Python 3.13 with
-`pytest==9.0.2` through `uv`, so it needs no project environment. The test
-module lists the four exempted terms (the linker name, the level-of-detail
+`scripts/tests/test_spelling_exceptions.py` with
+`uv run --no-project --python 3.13 --with pytest==9.0.2 --with
+hypothesis==6.151.9`.
+The `--with` options provision both test dependencies ephemerally, without a
+project environment. The target sets
+`HYPOTHESIS_STORAGE_DIRECTORY=/tmp/gauss-hypothesis` so Hypothesis stores its
+example database in temporary storage outside the repository. The test module
+lists the four exempted terms (the linker name, the level-of-detail
 abbreviation and the Spanish example word). It fails if one of them is accepted
 as a bare word, if a current use in tracked Markdown lies outside an exact
 ignore pattern, or if a pattern hides an unrelated use. Add a pattern for each
-new legitimate use rather than accepting the word. The test also runs the pinned
-`typos-config-builder gate` over a scratch repository with a copy of the
-overlay, so it needs network access to fetch the shared dictionary and the
+new legitimate use rather than accepting the word. Property tests vary
+whitespace in the four approved migration contexts and generate near misses,
+including mismatched pairs, altered identifiers, malformed backtick boundaries,
+line breaks and unrelated prose or source references. They check that approved
+contexts remain covered and unrelated tokens remain visible. The test also runs
+the pinned `typos-config-builder gate` over a scratch repository with a copy of
+the overlay, so it needs network access to fetch the shared dictionary and the
 builder, as `make spelling` does.
 
 ## Coverage ownership

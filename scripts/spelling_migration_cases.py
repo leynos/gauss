@@ -14,6 +14,28 @@ from hypothesis import strategies as st
 
 
 class SpellingMigrationContext(NamedTuple):
+    """Describe an approved spelling-migration phrase for generated tests.
+
+    Attributes
+    ----------
+    case_id : str
+        Identifier used to select the overlay pattern and label test cases.
+    layout : str
+        Phrase layout: ``"table"`` for a migration row or ``"statement"``.
+    canonical : str
+        Fixed approved phrase rendered with single-space separators.
+    previous_cell : str
+        Previous spelling in a table row; empty for a statement.
+    current_cell : str
+        Current spelling in a table row; empty for a statement.
+    legacy_tokens : tuple[str, ...]
+        Previous-spelling tokens whose spans the approved rule must cover.
+    mismatched_pair_from : str
+        Exact fragment replaced once to make a mismatched-name near miss.
+    mismatched_pair_to : str
+        Replacement fragment inserted for that mismatched-name near miss.
+    """
+
     case_id: str
     layout: str
     canonical: str
