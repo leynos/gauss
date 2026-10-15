@@ -9,6 +9,7 @@ pub mod accessibility;
 
 mod action_dispatch;
 mod anchor_edit;
+mod canvas_view;
 mod chrome;
 mod chrome_palette;
 mod chrome_panels;
