@@ -5,7 +5,7 @@ mod resource_export;
 use super::*;
 use crate::model::{
     Anchor, Gradient, GradientId, GradientKind, GradientStop, LinearGradient, PaintStyle, PathGeom,
-    PatternId, PatternResource, Rgba, Shape, SymbolResource, Vec2,
+    PatternId, PatternResource, Rgba, SegmentKind, Shape, SymbolResource, Vec2,
 };
 use crate::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
 use crate::test_helpers::shape_id_from_seed as shape_id;
