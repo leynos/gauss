@@ -23,7 +23,9 @@ mod tree_builder;
 
 pub use self::action_routing::{A11yActionRequestError, A11yRequestedAction, A11yWindowAction};
 
+/// Maximum number of queued updates before they are rebased to a full tree.
 const MAX_PENDING_UPDATES: usize = 128;
+/// Maximum number of recent update records retained for diagnostics.
 const MAX_UPDATE_RECORDS: usize = 512;
 
 /// A compact description of an emitted tree update for tests and diagnostics.
@@ -108,15 +110,23 @@ pub struct A11yShapeSnapshot {
 /// Builds and tracks AccessKit tree updates from shell/document state.
 #[derive(Default)]
 pub struct A11yService {
+    /// Input used to build the last accepted tree projection.
     previous_snapshot: Option<A11ySnapshot>,
+    /// Last projected nodes, used to calculate the next incremental update.
     previous_nodes: BTreeMap<NodeId, Node>,
+    /// Focus published with the last accepted tree projection.
     previous_focus: Option<NodeId>,
+    /// Updates waiting for delivery to the accessibility adapter.
     pending_updates: Vec<TreeUpdate>,
+    /// Bounded history of queued updates for tests and diagnostics.
     update_records: Vec<A11yUpdateRecord>,
 }
 
+/// Current tree data needed to replace an overfull delta queue with a full update.
 struct RebaseContext<'a> {
+    /// Nodes for the current full tree.
     nodes: &'a BTreeMap<NodeId, Node>,
+    /// Focus to include in the replacement full-tree update.
     focus: NodeId,
 }
 
@@ -193,6 +203,8 @@ impl A11yService {
         Ok(self.emit_incremental_snapshot(snapshot, nodes, focus))
     }
 
+    /// Queue the initial full tree and cache its snapshot as the diff baseline.
+    /// A subsequent identical snapshot produces no additional update.
     fn emit_initial_snapshot(
         &mut self,
         snapshot: A11ySnapshot,
@@ -223,6 +235,8 @@ impl A11yService {
         self.set_previous_state(snapshot, nodes, focus);
     }
 
+    /// Queue changed nodes, or a focus-only update, against the cached tree.
+    /// Returns `false` when the projected nodes and focus are unchanged.
     fn emit_incremental_snapshot(
         &mut self,
         snapshot: A11ySnapshot,
@@ -266,6 +280,8 @@ impl A11yService {
         true
     }
 
+    /// Retain an update and record; replace an overfull queue with the full tree.
+    /// The replacement preserves the latest state when intermediate deltas accumulate.
     fn store_emitted_update(
         &mut self,
         update: TreeUpdate,
@@ -289,6 +305,8 @@ impl A11yService {
         truncate_oldest(&mut self.update_records, MAX_UPDATE_RECORDS);
     }
 
+    /// Cache the accepted input, node map, and focus for the next comparison.
+    /// The cached node map is the baseline from which incremental changes are derived.
     fn set_previous_state(
         &mut self,
         snapshot: A11ySnapshot,
@@ -306,6 +324,8 @@ impl A11yService {
     }
 }
 
+/// Capture all document shapes for tree projection, discarding selection IDs absent from them.
+/// For example, a stale selection ID is omitted from the snapshot.
 fn snapshot_from_shell(shell: &Phase0Shell) -> A11ySnapshot {
     let shapes = shell
         .state
@@ -339,6 +359,8 @@ fn snapshot_from_shell(shell: &Phase0Shell) -> A11ySnapshot {
     }
 }
 
+/// Keep the newest `max_len` entries in a history vector.
+/// For example, a four-entry history truncated to two retains its latest two entries.
 fn truncate_oldest<T>(items: &mut Vec<T>, max_len: usize) {
     let overflow = items.len().saturating_sub(max_len);
     if overflow > 0 {

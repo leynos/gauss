@@ -4,10 +4,13 @@ use std::collections::BTreeMap;
 
 use accesskit::{Node, NodeId};
 
+/// Clone each node in ascending ID order.
+/// For IDs 2 and 9, the returned pairs remain ordered as 2 then 9.
 pub(super) fn clone_nodes_in_order(nodes: &BTreeMap<NodeId, Node>) -> Vec<(NodeId, Node)> {
     nodes.iter().map(|(id, node)| (*id, node.clone())).collect()
 }
 
+/// Return old IDs missing from the new map; old `{1, 2}` and new `{2, 3}` yield `[1]`.
 pub(super) fn removed_node_ids(
     old_nodes: &BTreeMap<NodeId, Node>,
     new_nodes: &BTreeMap<NodeId, Node>,
@@ -19,6 +22,7 @@ pub(super) fn removed_node_ids(
         .collect()
 }
 
+/// Return IDs newly present in the new map; old `{1, 2}` and new `{2, 3}` yield `[3]`.
 pub(super) fn inserted_node_ids(
     old_nodes: &BTreeMap<NodeId, Node>,
     new_nodes: &BTreeMap<NodeId, Node>,
@@ -30,6 +34,7 @@ pub(super) fn inserted_node_ids(
         .collect()
 }
 
+/// Return IDs present in both maps whose AccessKit node data changed.
 pub(super) fn updated_node_ids(
     old_nodes: &BTreeMap<NodeId, Node>,
     new_nodes: &BTreeMap<NodeId, Node>,
@@ -45,6 +50,7 @@ pub(super) fn updated_node_ids(
         .collect()
 }
 
+/// Return inserted or changed nodes from the new map; removed nodes have no returned payload.
 pub(super) fn changed_nodes(
     old_nodes: &BTreeMap<NodeId, Node>,
     new_nodes: &BTreeMap<NodeId, Node>,
