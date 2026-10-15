@@ -134,6 +134,12 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
     })
 }
 
+/// Parse one path tag into a shape, using its position as the z-index.
+///
+/// The tag must provide `d`; an absent stroke width defaults to `1.0`, and
+/// an index that cannot fit the z-index returns `ShapeIndexOverflow`. An
+/// invalid Gauss ID becomes the default null ID. For example, omitting
+/// `stroke-width` produces a shape with width `1.0`.
 fn parse_shape_from_tag(
     raw_tag: &str,
     index: usize,
@@ -193,6 +199,12 @@ fn parse_shape_from_tag(
     })
 }
 
+/// Map each namespace preflight failure to its import error counterpart.
+///
+/// Invalid XML becomes `MalformedSvg`; a wrong `gauss` binding retains its
+/// URI in `InvalidGaussNamespaceBinding`, and a missing declaration remains
+/// `MissingGaussNamespaceDeclaration`. For example, the mapping preserves
+/// the distinction between malformed XML and a missing declaration.
 fn map_namespace_policy_error(error: NamespacePolicyError) -> SvgImportError {
     match error {
         NamespacePolicyError::InvalidXml => SvgImportError::MalformedSvg,

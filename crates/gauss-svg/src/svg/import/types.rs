@@ -1,5 +1,10 @@
 //! Domain-specific string wrappers for SVG import parsing.
 
+/// Define a borrowed string wrapper for an SVG import domain value.
+///
+/// Each wrapper exposes `new`, `as_str`, `From<&str>`, and `AsRef<str>`
+/// while retaining the input slice without validation or allocation. For
+/// example, `TagName::from("path")` still borrows the text `"path"`.
 macro_rules! string_wrapper {
     ($name:ident) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq)]

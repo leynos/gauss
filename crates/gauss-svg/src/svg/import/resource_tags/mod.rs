@@ -32,6 +32,11 @@ pub(super) fn parse_resources(
     Ok(())
 }
 
+/// Store each linear-gradient block with its parsed endpoints and stops.
+///
+/// Missing coordinates default to `(x1, y1) = (0, 0)` and `(x2, y2) = (1, 0)`;
+/// for example, `<linearGradient/>` stores those endpoints and no stops.
+/// Missing IDs become empty strings, and numeric or stop errors propagate.
 fn parse_linear_gradients(
     svg: SvgContent<'_>,
     resources: &mut ResourceStore,
@@ -69,6 +74,12 @@ fn parse_linear_gradients(
     Ok(())
 }
 
+/// Store each radial-gradient block with its parsed centre, radius, and stops.
+///
+/// Missing centre coordinates and radius default to `0.5`; a focal point equal
+/// to the centre is omitted. For example, `<radialGradient/>` stores centre
+/// `(0.5, 0.5)`, radius `0.5`, and no focal point. Missing IDs become empty
+/// strings, and numeric or stop errors propagate.
 fn parse_radial_gradients(
     svg: SvgContent<'_>,
     resources: &mut ResourceStore,
@@ -102,6 +113,10 @@ fn parse_radial_gradients(
     Ok(())
 }
 
+/// Store pattern blocks with their inner body and non-ID attributes.
+///
+/// For example, a pattern with `id="p"` and `data-kind="tile"` stores the
+/// body and `data-kind`; `id` is stored separately by the resource store.
 fn parse_patterns(svg: SvgContent<'_>, resources: &mut ResourceStore) {
     parse_resource_blocks(
         svg,
@@ -117,6 +132,10 @@ fn parse_patterns(svg: SvgContent<'_>, resources: &mut ResourceStore) {
     );
 }
 
+/// Store symbol blocks with their body, view box, and remaining attributes.
+///
+/// For example, a symbol's `viewBox` is stored separately while attributes
+/// such as `data-kind` remain attached to the resource.
 fn parse_symbols(svg: SvgContent<'_>, resources: &mut ResourceStore) {
     parse_resource_blocks(
         svg,
@@ -134,6 +153,11 @@ fn parse_symbols(svg: SvgContent<'_>, resources: &mut ResourceStore) {
     );
 }
 
+/// Pass each matching resource block's fields to `insert_fn`.
+///
+/// The callback receives the ID (empty when absent), inner body, attributes
+/// other than `excluded_attributes`, and the original block. For example,
+/// excluding `id` passes it separately and leaves `data-kind` in the list.
 fn parse_resource_blocks<F>(
     svg: SvgContent<'_>,
     tag_name: TagName<'_>,
@@ -196,6 +220,12 @@ pub(super) fn attribute_value(tag: SvgContent<'_>, name: AttributeName<'_>) -> O
     .flatten()
 }
 
+/// Parse a gradient's stops into solid colours with resolved alpha values.
+///
+/// Missing offsets default to `0`, missing colours to opaque black, and
+/// missing opacity to `255`. For example, `<stop/>` becomes an opaque black
+/// stop at offset `0`; invalid numeric values and non-solid colours return an
+/// import error.
 fn parse_gradient_stops(block: SvgContent<'_>) -> Result<Vec<GradientStop>, SvgImportError> {
     let mut stops = Vec::new();
 
@@ -232,6 +262,11 @@ pub(super) fn extract_block_tags(svg: SvgContent<'_>, tag_name: TagName<'_>) -> 
     extract_matching_tags(svg, |node| node.tag_name().name() == tag_name.as_str())
 }
 
+/// Return source slices for element nodes accepted by `is_match`.
+///
+/// Matches are collected in document order; for example, a predicate selecting
+/// `path` returns each matching path's original XML slice. Parse failure yields
+/// an empty vector.
 fn extract_matching_tags(
     svg: SvgContent<'_>,
     is_match: impl Fn(roxmltree::Node<'_, '_>) -> bool,
@@ -247,6 +282,10 @@ fn extract_matching_tags(
     .unwrap_or_default()
 }
 
+/// Return the source span between a block element's opening and closing tags.
+///
+/// For example, `<pattern><rect/></pattern>` yields `<rect/>`; an element with
+/// no children, or a fragment that cannot be parsed, yields an empty string.
 fn inner_tag_body(block: SvgContent<'_>) -> String {
     with_parsed_document(block.as_str(), |source, document| {
         let root = document.root_element();
@@ -267,12 +306,21 @@ fn inner_tag_body(block: SvgContent<'_>) -> String {
     .unwrap_or_default()
 }
 
+/// Check whether an element is nested beneath `defs`, `pattern`, or `symbol`.
+///
+/// The node itself is excluded, so a root-level `<path>` returns `false`, while
+/// a `<path>` inside `<defs>` returns `true`.
 fn has_resource_ancestor(node: roxmltree::Node<'_, '_>) -> bool {
     node.ancestors().skip(1).any(|ancestor| {
         ancestor.is_element() && matches!(ancestor.tag_name().name(), "defs" | "pattern" | "symbol")
     })
 }
 
+/// Parse a document or retry a fragment inside the canonical Gauss wrapper.
+///
+/// An unbound `gauss` prefix in a fragment can use the wrapper's declaration.
+/// The callback receives the source used for the successful parse; `None` means
+/// both the direct and wrapped parse failed.
 fn with_parsed_document<T>(
     fragment: &str,
     map: impl FnOnce(&str, &roxmltree::Document<'_>) -> T,
