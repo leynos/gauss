@@ -10,6 +10,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Breaking:** Stop exporting Make's `RUST_FLAGS` input; callers that need
+  compiler flags for child tools must set `RUSTFLAGS` or pass
+  `RUST_FLAGS=value` to recursive Make. Add `NEXTEST_FLAGS` for direct Nextest
+  runs in `test`, `test-ci` and `test-quick`; it does not affect the
+  availability probe, Cargo fallback or doctests
+  ([#245](https://github.com/leynos/gauss/pull/245)).
+
 - **Breaking:** `UserError::InvalidOperation` now accepts `String` instead of
   `&'static str`. This enables dynamic error messages with contextual
   information such as indices and lengths for better debugging.

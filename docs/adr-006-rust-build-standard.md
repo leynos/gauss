@@ -52,6 +52,14 @@ guide records the measurement and the reason.
 the commands `make -n` prints for each target, and the `setup-rust` steps of
 the workflows, so a flag lost through a recipe or workflow edit fails there.
 
+The Make-only `RUST_FLAGS` input is unexported from child processes. Recipes
+that need its value compose it into `RUSTFLAGS`, while command-line values
+continue to reach recursive Make through `MAKEFLAGS`. `NEXTEST_FLAGS` is
+limited to direct Nextest suite runs in `test`, `test-ci` and `test-quick`; it
+does not change the availability probe, Cargo fallback or doctests. This keeps
+Make configuration distinct from the environment read by Cargo and from
+Nextest-only options.
+
 ## Consequences
 
 - Linux builds require `mold`. For `x86_64-unknown-linux-gnu`,
