@@ -40,6 +40,12 @@ command, so examples compile with all workspace features:
 RUSTFLAGS="-D warnings" RUSTDOCFLAGS="--cfg docsrs -D warnings" cargo test --workspace --doc --all-features
 ```
 
+Nextest gives `visibility_form_compiles`, in the `test_support` package's
+`scenario_state_macro_ui` binary, a 60-second slow-test warning threshold. This
+override has no `terminate-after` limit, so a queued nested compilation is not
+terminated by that threshold. The default-profile override also applies to the
+CI profile; other tests keep their configured deadlines and execution policy.
+
 The target passes the configured `RUST_FLAGS` value to both test stages. When
 supplying coverage configuration, sanitizer options, or other compiler flags,
 retain `-D warnings` in the override so doctests use the same build
@@ -153,6 +159,13 @@ Use `proptest` for property-based tests where helper contracts must hold across
 generated inputs, such as non-finite vector values and repeated temporary-file
 cleanup. Keep those properties focused on the invariant under test, with
 example-based tests covering representative scenario behaviour.
+
+The fallible `temp_guard` helper is exposed as `pub(super)` from
+`tests/common/temp_file.rs`; ordinary cleanup tests share it through a `rstest`
+fixture. The helper opens the process temporary directory as a
+`cap_std::fs_utf8::Dir` capability and uses a UUID-suffixed relative filename.
+The property tests call the helper directly for each generated case; setup
+errors remain fallible in both routes.
 
 Use the harness only for integration tests that need a GPUI test context. A
 scenario selects it through the canonical path, so the macro supplies the GPUI

@@ -53,6 +53,14 @@ gpui = { max-threads = 1 }
 bdd = { max-threads = 4 }
 
 [[profile.default.overrides]]
+# This trybuild fixture compiles dependencies while running. A cold build can
+# wait on the shared Cargo cache and compiler admission for longer than the
+# ordinary test deadline. Keep slow warnings without terminating queued builds;
+# the default-profile override also applies to the CI profile.
+filter = 'package(=test_support) and binary(=scenario_state_macro_ui) and test(=visibility_form_compiles)'
+slow-timeout = { period = "60s" }
+
+[[profile.default.overrides]]
 # GPUI tests need more time and serial execution
 filter = 'test(gpui)'
 test-group = 'gpui'
