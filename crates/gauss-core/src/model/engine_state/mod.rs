@@ -35,7 +35,6 @@ use crate::model::{
 
 use super::{DocumentUndoHistory, HistoryError, ResourceStore, StyleStore};
 #[cfg(feature = "test-support")]
-#[path = "engine_state/test_history.rs"]
 mod test_history;
 
 /// Unified state for the Gauss editor.
