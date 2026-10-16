@@ -36,6 +36,7 @@ pub use types::{
 
 /// Complete inventory of required controls for Phase 1-2.
 pub struct ControlInventory {
+    /// Required controls gathered from each audited Phase 1-2 surface.
     controls: Vec<RequiredControl>,
 }
 
