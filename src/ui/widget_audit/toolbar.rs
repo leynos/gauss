@@ -53,8 +53,8 @@ struct ToolbarControlSpec {
 }
 
 /// Convert a toolbar specification into its audit record.
-/// For example, Selection Tool produces a toolbar record with shortcut `V` and
-/// action `ActivateSelectionTool`.
+/// For example, a spec with shortcut `V` and action name
+/// `ActivateSelectTool` retains both values in the toolbar record.
 fn make_toolbar_tool(spec: ToolbarControlSpec) -> RequiredControl {
     RequiredControl {
         name: spec.name,
