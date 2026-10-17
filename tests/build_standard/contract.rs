@@ -11,6 +11,8 @@
 
 #[path = "chain_exhaustive.rs"]
 mod chain_exhaustive;
+#[path = "ci_reachability.rs"]
+mod ci_reachability;
 #[path = "ci_steps.rs"]
 mod ci_steps;
 #[path = "command_reader.rs"]
