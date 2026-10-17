@@ -6,7 +6,7 @@ use super::{Catalog, I18nError, Locale, MessageId};
 
 /// Service for looking up localized messages with fallback behaviour.
 ///
-/// The `Localizer` holds multiple locale-specific catalogs and provides
+/// The `Localizer` holds multiple locale-specific catalogues and provides
 /// lookup with automatic fallback to the default locale (en-GB) when a
 /// requested locale is unavailable.
 ///
@@ -30,12 +30,12 @@ pub struct Localizer {
 }
 
 impl Localizer {
-    /// Create a new localizer with the given catalogs and default locale.
+    /// Create a new localizer with the given catalogues and default locale.
     ///
     /// # Panics
     ///
     /// Panics if the `default_locale` is not present in the `catalogs` `HashMap`.
-    /// The default locale must have a corresponding catalog for fallback to work.
+    /// The default locale must have a corresponding catalogue for fallback to work.
     ///
     /// # Examples
     ///
@@ -60,7 +60,7 @@ impl Localizer {
         }
     }
 
-    /// Create a default localizer with only the en-GB catalog.
+    /// Create a default localizer with only the en-GB catalogue.
     ///
     /// # Examples
     ///
@@ -78,16 +78,16 @@ impl Localizer {
         Self::with_catalogs(catalogs, Locale::en_gb())
     }
 
-    /// Add or replace a catalog for a specific locale.
+    /// Add or replace a catalogue for a specific locale.
     ///
     /// This method is primarily used for testing.
     pub fn add_catalog(&mut self, locale: Locale, catalog: Catalog) {
         self.catalogs.insert(locale, catalog);
     }
 
-    /// Check if a specific locale's catalog contains a message.
+    /// Check if a specific locale's catalogue contains a message.
     ///
-    /// Returns `true` if the locale has a catalog and that catalog contains
+    /// Returns `true` if the locale has a catalogue and that catalogue contains
     /// the message, `false` otherwise (including if the locale doesn't exist).
     #[must_use]
     pub fn catalog_contains(&self, locale: &Locale, message_id: &MessageId) -> bool {
@@ -99,14 +99,14 @@ impl Localizer {
     /// Look up a message for the given locale and message identifier.
     ///
     /// If the requested locale is not available, falls back to the default
-    /// locale. Returns an error if the message is not found in either catalog.
+    /// locale. Returns an error if the message is not found in either catalogue.
     ///
     /// # Errors
     ///
-    /// Returns [`I18nError::UnsupportedLocale`] if neither the requested locale
-    /// nor the default locale are available. Returns
-    /// [`I18nError::MessageNotFound`] if the message identifier is not found in
-    /// the catalog.
+    /// Returns [`I18nError::MessageNotFound`] when the requested catalogue and,
+    /// if needed, the fallback catalogue do not contain the message identifier.
+    /// The error reports the effective locale: the default locale when lookup
+    /// falls back.
     ///
     /// # Examples
     ///
@@ -117,14 +117,6 @@ impl Localizer {
     /// let msg = localizer.lookup(&Locale::en_gb(), &MessageId::tool_mode_draw());
     /// assert_eq!(msg.unwrap(), "Draw");
     /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the message is not found in the requested locale or
-    /// the fallback locale, or if the locale is not supported.
-    ///
-    /// When falling back to the default locale, errors report the effective
-    /// catalog's locale (i.e. the locale that was actually queried).
     pub fn lookup(&self, locale: &Locale, message_id: &MessageId) -> Result<String, I18nError> {
         // First, try the requested locale's catalog if it exists
         if let Some(catalog) = self.catalogs.get(locale)

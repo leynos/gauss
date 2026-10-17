@@ -1479,12 +1479,22 @@ Localizability must be designed in from day one:
 - Number/date formatting uses locale-aware formatting
 - UI layout must tolerate string expansion (German, Finnish, etc.)
 
-Suggested approach:
+The current implementation is GPUI-independent and exposes `Catalog`,
+`Localizer`, `Locale`, `MessageId`, and `I18nError` through `gauss::i18n`. The
+facade re-exports `Catalog` and `Localizer`; `src/i18n/catalog/mod.rs`
+re-exports `Localizer` from its private child module.
 
-- `i18n` module with a message catalogue (e.g., Fluent, ICU-based, or a simple
-  keyed system)
-- Keep i18n independent of GPUI; views request localized strings from the
-  service
+`Catalog` stores the messages for one locale and provides the default en-GB
+translations. The private `src/i18n/catalog/localizer.rs` module owns the
+locale-to-catalogue map, default locale, and lookup fallback. Keeping
+single-locale storage and population apart from locale selection and fallback
+keeps each focused module within the 400-line source-file budget.
+
+Construction from a locale-to-catalogue map asserts that the default locale's
+catalogue is present. Adding a catalogue only inserts or replaces the catalogue
+for its locale. Lookup checks the requested locale before falling back to the
+default. If neither has the message, it returns `I18nError::MessageNotFound`
+with the effective locale.
 
 ______________________________________________________________________
 
