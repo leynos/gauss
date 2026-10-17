@@ -1,0 +1,4 @@
+on: push
+jobs:
+  caller:
+    uses: ./.github/workflows/discovery-linux-installed.yaml
