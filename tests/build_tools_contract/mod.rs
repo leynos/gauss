@@ -14,6 +14,8 @@ mod model;
 mod observation_oracles;
 /// Exercises preflight and toolchain input contracts.
 mod preflight;
+/// Holds documented literal fixtures for preflight input cases.
+mod preflight_cases;
 /// Holds preflight trace helpers and missing-tool scenario setup.
 mod preflight_oracles;
 mod process;

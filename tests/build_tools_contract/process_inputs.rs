@@ -71,7 +71,7 @@ fn validate_input_value(scratch: &Scratch, name: &str, value: &str) -> Result<()
     let relative_path = below_root.strip_suffix('/').unwrap_or(below_root);
     if relative_path
         .split('/')
-        .any(|part| part.is_empty() || part == "." || part == "..")
+        .any(|part| matches!(part, "" | "." | ".."))
     {
         return Err(format!("path fixture escapes owned scratch: {name}"));
     }

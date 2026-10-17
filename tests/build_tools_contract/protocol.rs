@@ -33,6 +33,19 @@ fn normalize_comparison_inputs(
     }
     let sha_text = std::str::from_utf8(sha_stdin)
         .map_err(|error| format!("sha256sum stdin is not UTF-8: {error}"))?;
+    let root = discover_download_root(invocations, sha_text, tmpdir)?;
+
+    let compared = normalize_invocations(invocations, root.as_deref());
+    let compared_sha = normalized_text(sha_text, root.as_deref()).into_bytes();
+    Ok((compared, compared_sha))
+}
+
+/// Finds the one validated download root shared by calls and checksum input.
+fn discover_download_root(
+    invocations: &[Invocation],
+    sha_text: &str,
+    tmpdir: &Utf8Path,
+) -> Result<Option<String>, String> {
     let mut root = None;
     for invocation in invocations {
         for argument in &invocation.argv {
@@ -40,15 +53,18 @@ fn normalize_comparison_inputs(
         }
     }
     collect_download_root(sha_text, tmpdir, &mut root)?;
+    Ok(root)
+}
 
+/// Builds normalized call records while preserving the caller's raw records.
+fn normalize_invocations(invocations: &[Invocation], root: Option<&str>) -> Vec<Invocation> {
     let mut compared = invocations.to_vec();
     for invocation in &mut compared {
         for argument in &mut invocation.argv {
-            *argument = normalized_text(argument, root.as_deref());
+            *argument = normalized_text(argument, root);
         }
     }
-    let compared_sha = normalized_text(sha_text, root.as_deref()).into_bytes();
-    Ok((compared, compared_sha))
+    compared
 }
 
 fn collect_download_root(

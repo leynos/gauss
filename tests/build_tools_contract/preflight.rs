@@ -6,187 +6,81 @@ use rstest::rstest;
 
 use super::{
     Entry, EnvironmentChange, Failure, Host, Request, install_oracles as oracle,
+    preflight_cases as cases,
     preflight_oracles::{
-        set_call_status, skip_component_query, verify_boot_failure, verify_host_failure,
-        verify_install_then_check, verify_missing_requirements, verify_missing_rustup,
-        verify_stable_discovery_failure,
+        CallOccurrence, InvocationSelection, MissingRequirement, set_call_status,
+        skip_component_query, verify_boot_failure, verify_host_failure, verify_install_then_check,
+        verify_missing_requirements, verify_missing_rustup, verify_stable_discovery_failure,
     },
     support::with_scratch,
 };
 
 #[rstest]
-#[case::install_missing_mold(Entry::Install, "tools/mold/VERSION", None, "missing version pin")]
-#[case::install_missing_stable(
-    Entry::Install,
-    "tools/rust-stable/VERSION",
-    None,
-    "missing version pin"
-)]
-#[case::install_empty(Entry::Install, "tools/mold/VERSION", Some("\n"), "empty version pin")]
-#[case::install_whitespace_only(
-    Entry::Install,
-    "tools/mold/VERSION",
-    Some(" \t \n"),
-    "empty version pin"
-)]
-#[case::install_multiline(
-    Entry::Install,
-    "tools/mold/VERSION",
-    Some("2.41.0\n2.41.0\n"),
-    "expected one line in version pin"
-)]
-#[case::install_embedded_whitespace(
-    Entry::Install,
-    "tools/mold/VERSION",
-    Some("2.41. 0\n"),
-    "version pin contains whitespace"
-)]
-#[case::install_non_version_mold(
-    Entry::Install,
-    "tools/mold/VERSION",
-    Some("stable\n"),
-    "invalid version pin"
-)]
-#[case::install_non_version_stable(
-    Entry::Install,
-    "tools/rust-stable/VERSION",
-    Some("nightly\n"),
-    "invalid version pin"
-)]
-#[case::check_missing_mold(Entry::Check, "tools/mold/VERSION", None, "missing version pin")]
-#[case::check_missing_stable(
-    Entry::Check,
-    "tools/rust-stable/VERSION",
-    None,
-    "missing version pin"
-)]
-#[case::check_empty(Entry::Check, "tools/mold/VERSION", Some("\n"), "empty version pin")]
-#[case::check_whitespace_only(
-    Entry::Check,
-    "tools/mold/VERSION",
-    Some(" \t \n"),
-    "empty version pin"
-)]
-#[case::check_multiline(
-    Entry::Check,
-    "tools/mold/VERSION",
-    Some("2.41.0\n2.41.0\n"),
-    "expected one line in version pin"
-)]
-#[case::check_embedded_whitespace(
-    Entry::Check,
-    "tools/mold/VERSION",
-    Some("2.41. 0\n"),
-    "version pin contains whitespace"
-)]
-#[case::check_non_version_mold(
-    Entry::Check,
-    "tools/mold/VERSION",
-    Some("stable\n"),
-    "invalid version pin"
-)]
-#[case::check_non_version_stable(
-    Entry::Check,
-    "tools/rust-stable/VERSION",
-    Some("nightly\n"),
-    "invalid version pin"
-)]
-fn pins_fail_before_side_effects(
-    #[case] entry: Entry,
-    #[case] path: &str,
-    #[case] contents: Option<&str>,
-    #[case] diagnostic: &str,
-) -> Result<(), String> {
+#[case::install_missing_mold(cases::INSTALL_MISSING_MOLD)]
+#[case::install_missing_stable(cases::INSTALL_MISSING_STABLE)]
+#[case::install_empty(cases::INSTALL_EMPTY)]
+#[case::install_whitespace_only(cases::INSTALL_WHITESPACE_ONLY)]
+#[case::install_multiline(cases::INSTALL_MULTILINE)]
+#[case::install_embedded_whitespace(cases::INSTALL_EMBEDDED_WHITESPACE)]
+#[case::install_non_version_mold(cases::INSTALL_NON_VERSION_MOLD)]
+#[case::install_non_version_stable(cases::INSTALL_NON_VERSION_STABLE)]
+#[case::check_missing_mold(cases::CHECK_MISSING_MOLD)]
+#[case::check_missing_stable(cases::CHECK_MISSING_STABLE)]
+#[case::check_empty(cases::CHECK_EMPTY)]
+#[case::check_whitespace_only(cases::CHECK_WHITESPACE_ONLY)]
+#[case::check_multiline(cases::CHECK_MULTILINE)]
+#[case::check_embedded_whitespace(cases::CHECK_EMBEDDED_WHITESPACE)]
+#[case::check_non_version_mold(cases::CHECK_NON_VERSION_MOLD)]
+#[case::check_non_version_stable(cases::CHECK_NON_VERSION_STABLE)]
+fn pins_fail_before_side_effects(#[case] case: cases::PinCase) -> Result<(), String> {
     with_scratch(|scratch| {
-        let relative_path = format!("candidate/{path}");
-        match contents {
+        let relative_path = format!("candidate/{}", case.path);
+        match case.contents {
             Some(text) => scratch.write_relative(&relative_path, text.as_bytes())?,
             None => scratch.remove_relative(&relative_path)?,
         }
-        verify_boot_failure(scratch, entry, diagnostic)
+        verify_boot_failure(scratch, case.entry, case.diagnostic)
     })
 }
 
 #[rstest]
-#[case::missing_channel("[toolchain]\ncomponents=[]\n", "expected one valid channel")]
-#[case::duplicate_channel(
-    "[toolchain]\nchannel = \"1.92.0\"\nchannel=\"1.92.0\"\n",
-    "expected one valid channel"
-)]
-#[case::unquoted_channel("[toolchain]\nchannel=1.92.0\n", "expected one valid channel")]
-#[case::non_version_channel("[toolchain]\nchannel=\"stable\"\n", "expected one valid channel")]
-#[case::duplicate_components(
-    "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[]\ncomponents=[]\n",
-    "could not read components"
-)]
-#[case::stray_prefix(
-    "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[prefix \"rustfmt\"]\n",
-    "could not read components"
-)]
-#[case::adjacent_strings(
-    "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\"rustfmt\" \"clippy\"]\n",
-    "could not read components"
-)]
-#[case::missing_comma(
-    "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\n\"rustfmt\"\n\"clippy\"\n]\n",
-    "could not read components"
-)]
-#[case::double_comma(
-    "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\"rustfmt\",,\"clippy\"]\n",
-    "could not read components"
-)]
-#[case::invalid_component(
-    "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\"rust src\"]\n",
-    "could not read components"
-)]
-#[case::unterminated_array(
-    "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\"rustfmt\",\n",
-    "could not read components"
-)]
-#[case::bad_close_tail(
-    "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\"rustfmt\"] garbage\n",
-    "could not read components"
-)]
-#[case::duplicate_toolchain_table(
-    "[toolchain]\nchannel = \"1.92.0\"\n[toolchain]\n",
-    "expected one valid channel"
-)]
-#[case::later_header_missing_close(
-    "[toolchain]\nchannel = \"1.92.0\"\n[toolchain\n",
-    "expected one valid channel"
-)]
-#[case::later_header_trailing_garbage(
-    "[toolchain]\nchannel = \"1.92.0\"\n[toolchain] trailing\n",
-    "expected one valid channel"
-)]
-fn strict_toolchain_input_rejected(
-    #[case] contents: &str,
-    #[case] diagnostic: &str,
-) -> Result<(), String> {
+#[case::missing_channel(cases::MISSING_CHANNEL)]
+#[case::duplicate_channel(cases::DUPLICATE_CHANNEL)]
+#[case::unquoted_channel(cases::UNQUOTED_CHANNEL)]
+#[case::non_version_channel(cases::NON_VERSION_CHANNEL)]
+#[case::duplicate_components(cases::DUPLICATE_COMPONENTS)]
+#[case::stray_prefix(cases::STRAY_PREFIX)]
+#[case::adjacent_strings(cases::ADJACENT_STRINGS)]
+#[case::missing_comma(cases::MISSING_COMMA)]
+#[case::double_comma(cases::DOUBLE_COMMA)]
+#[case::invalid_component(cases::INVALID_COMPONENT)]
+#[case::unterminated_array(cases::UNTERMINATED_ARRAY)]
+#[case::bad_close_tail(cases::BAD_CLOSE_TAIL)]
+#[case::duplicate_toolchain_table(cases::DUPLICATE_TOOLCHAIN_TABLE)]
+#[case::later_header_missing_close(cases::LATER_HEADER_MISSING_CLOSE)]
+#[case::later_header_trailing_garbage(cases::LATER_HEADER_TRAILING_GARBAGE)]
+fn strict_toolchain_input_rejected(#[case] case: cases::ToolchainRejection) -> Result<(), String> {
     with_scratch(|scratch| {
-        scratch.write_relative("candidate/rust-toolchain.toml", contents.as_bytes())?;
-        verify_boot_failure(scratch, Entry::Check, diagnostic)
+        scratch.write_relative("candidate/rust-toolchain.toml", case.contents.as_bytes())?;
+        verify_boot_failure(scratch, Entry::Check, case.diagnostic)
     })
 }
 
 #[rstest]
-#[case::empty_array("[toolchain]\nchannel = \"1.92.0\"\ncomponents=[]\n", "1.92.0", &[], "rustfmt (installed)\nclippy (installed)\nrust-analyzer (installed)\n")]
-#[case::inline_duplicates("[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\"rust-analyzer\", \"rustfmt\", \"clippy\", \"rustfmt\"]\n", "1.92.0", &[], "rustfmt (installed)\nclippy (installed)\nrust-analyzer (installed)\n")]
-#[case::multiline_trailing_comma("[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\n\"rustfmt\",\n\"rust-src\",\n]\n", "1.92.0", &["rust-src"], "rustfmt (installed)\nclippy (installed)\nrust-analyzer (installed)\nrust-src (installed)\n")]
-#[case::extra_and_llvm_alias("[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\"rust-src\", \"llvm-tools-preview\", \"rust-src\"]\n", "1.92.0", &["rust-src", "llvm-tools-preview"], "rustfmt (installed)\nclippy (installed)\nrust-analyzer (installed)\nrust-src (installed)\nllvm-tools (installed)\n")]
-#[case::valid_unrelated_table_after_toolchain("[toolchain]\nchannel = \"1.92.0\"\ncomponents=[]\n[package.metadata]\nchannel=\"ignored\"\n[[targets.windows]]\nname=\"ignored\"\n", "1.92.0", &[], "rustfmt (installed)\nclippy (installed)\nrust-analyzer (installed)\n")]
+#[case::empty_array(cases::EMPTY_ARRAY)]
+#[case::inline_duplicates(cases::INLINE_DUPLICATES)]
+#[case::multiline_trailing_comma(cases::MULTILINE_TRAILING_COMMA)]
+#[case::extra_and_llvm_alias(cases::EXTRA_AND_LLVM_ALIAS)]
+#[case::valid_unrelated_table_after_toolchain(cases::VALID_UNRELATED_TABLE_AFTER_TOOLCHAIN)]
 fn valid_components_are_deduplicated_and_preserved(
-    #[case] contents: &str,
-    #[case] channel: &str,
-    #[case] extras: &[&str],
-    #[case] component_output: &str,
+    #[case] case: cases::InstalledToolchainCase,
 ) -> Result<(), String> {
     with_scratch(|scratch| {
-        scratch.write_relative("candidate/rust-toolchain.toml", contents.as_bytes())?;
+        scratch.write_relative("candidate/rust-toolchain.toml", case.contents.as_bytes())?;
         let mut request = Request::new(Entry::Install);
         let [declared, _stable] = &mut request.controls.rustup.component_output;
-        *declared = component_output.to_owned();
-        verify_install_then_check(scratch, &mut request, channel, extras)
+        *declared = case.component_output.to_owned();
+        verify_install_then_check(scratch, &mut request, case.channel, case.extras)
     })
 }
 
@@ -245,19 +139,25 @@ fn valid_preflight_checks_expected_tools(#[case] host: Host) -> Result<(), Strin
 }
 
 #[rstest]
-#[case::mold_absent("mold_absent", "mold not found on PATH")]
-#[case::mold_unusable("mold_unusable", "is unusable or cannot report its version")]
-#[case::mold_wrong_pin("mold_wrong_pin", "does not match the pin")]
-#[case::clang_absent("clang_absent", "clang not found on PATH")]
-#[case::declared_toolchain_absent("declared_toolchain_absent", "is not installed")]
+#[case::mold_absent(MissingRequirement::MoldAbsent, "mold not found on PATH")]
+#[case::mold_unusable(
+    MissingRequirement::MoldUnusable,
+    "is unusable or cannot report its version"
+)]
+#[case::mold_wrong_pin(MissingRequirement::MoldWrongPin, "does not match the pin")]
+#[case::clang_absent(MissingRequirement::ClangAbsent, "clang not found on PATH")]
+#[case::declared_toolchain_absent(MissingRequirement::DeclaredToolchainAbsent, "is not installed")]
 #[case::declared_component_absent(
-    "declared_component_absent",
+    MissingRequirement::DeclaredComponentAbsent,
     "is missing required component rust-analyzer"
 )]
-#[case::stable_toolchain_absent("stable_toolchain_absent", "is not installed")]
-#[case::stable_rustfmt_absent("stable_rustfmt_absent", "is missing required component rustfmt")]
+#[case::stable_toolchain_absent(MissingRequirement::StableToolchainAbsent, "is not installed")]
+#[case::stable_rustfmt_absent(
+    MissingRequirement::StableRustfmtAbsent,
+    "is missing required component rustfmt"
+)]
 fn preflight_missing_requirements_fail(
-    #[case] scenario: &str,
+    #[case] scenario: MissingRequirement,
     #[case] diagnostic: &str,
 ) -> Result<(), String> {
     verify_missing_requirements(scenario, diagnostic)
@@ -285,7 +185,15 @@ fn clang_failure_is_observable(
                     .map(String::as_str)
                     .eq(arguments.iter().copied())
         });
-        set_call_status(&mut calls, "clang", arguments, 97)?;
+        set_call_status(
+            &mut calls,
+            &InvocationSelection {
+                tool: "clang",
+                arguments,
+                occurrence: CallOccurrence::First,
+            },
+            97,
+        )?;
         let mut expected = oracle::expected(
             1,
             calls,
@@ -315,7 +223,15 @@ fn rustup_discovery_failure_propagates(
         if skip_declared_component {
             skip_component_query(&mut calls, 1)?;
         }
-        set_call_status(&mut calls, "rustup", arguments, 97)?;
+        set_call_status(
+            &mut calls,
+            &InvocationSelection {
+                tool: "rustup",
+                arguments,
+                occurrence: CallOccurrence::First,
+            },
+            97,
+        )?;
         let mut expected = oracle::expected(
             1,
             calls,
