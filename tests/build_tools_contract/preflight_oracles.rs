@@ -26,6 +26,30 @@ pub(super) struct InvocationSelection<'a> {
     pub(super) occurrence: CallOccurrence,
 }
 
+/// Describes which independently expected later preflight stages are reached.
+pub(super) enum FailureTrace {
+    /// Clang's version query fails before its syntax probe.
+    ClangVersionOnly,
+    /// The complete expected preflight trace is reached.
+    Complete,
+    /// The declared toolchain-list query fails before its component query.
+    MissingDeclaredComponentQuery,
+    /// The stable toolchain-list query fails before its component query.
+    MissingStableComponentQuery,
+}
+
+/// Binds an independent failure, exact process selection, trace, and diagnostic.
+pub(super) struct CheckFailureCase {
+    /// The controlled production stage that must fail.
+    pub(super) failure: Failure,
+    /// The exact process invocation whose fake status is changed.
+    pub(super) selection: InvocationSelection<'static>,
+    /// Which later stages are omitted from the independently built trace.
+    pub(super) trace: FailureTrace,
+    /// The exact diagnostic expected from the failed stage.
+    pub(super) diagnostic: &'static str,
+}
+
 /// Describes one named missing-requirement scenario without string dispatch.
 #[derive(Clone, Copy)]
 pub(super) enum MissingRequirement {
@@ -108,6 +132,50 @@ pub(super) fn skip_component_query(
         return Err(format!("expected component query ordinal {ordinal}"));
     }
     Ok(())
+}
+
+/// Applies the explicitly named stage omission to an independent expected trace.
+fn prepare_failure_trace(
+    calls: &mut Vec<Invocation>,
+    case: &CheckFailureCase,
+) -> Result<(), String> {
+    match &case.trace {
+        FailureTrace::ClangVersionOnly => calls.retain(|call| {
+            call.tool != "clang"
+                || call
+                    .argv
+                    .iter()
+                    .map(String::as_str)
+                    .eq(case.selection.arguments.iter().copied())
+        }),
+        FailureTrace::Complete => {}
+        FailureTrace::MissingDeclaredComponentQuery => skip_component_query(calls, 1)?,
+        FailureTrace::MissingStableComponentQuery => skip_component_query(calls, 2)?,
+    }
+    Ok(())
+}
+
+/// Verifies a named controlled preflight failure against its complete trace.
+pub(super) fn verify_check_failure(case: &CheckFailureCase) -> Result<(), String> {
+    with_scratch(|scratch| {
+        let mut request = Request::new(Entry::Check);
+        request.controls.failure = Some(case.failure);
+        let mut calls = oracle::check_calls(scratch, &request, oracle::STABLE);
+        prepare_failure_trace(&mut calls, case)?;
+        set_call_status(&mut calls, &case.selection, 97)?;
+
+        let mut expected = oracle::expected(
+            1,
+            calls,
+            Some(case.diagnostic.to_owned()),
+            oracle::prefix_state(false, false),
+        );
+        if !matches!(&case.trace, FailureTrace::ClangVersionOnly) {
+            expected.clang_stdin = oracle::CLANG_SOURCE.to_vec();
+        }
+        let observation = scratch.run(&request)?;
+        oracle::verify_observation(scratch, &observation, expected)
+    })
 }
 
 /// Verifies a pin or toolchain parse failure before host probes.
@@ -236,41 +304,6 @@ pub(super) fn verify_missing_requirements(
         if !matches!(scenario, MissingRequirement::ClangAbsent) {
             expected.clang_stdin = oracle::CLANG_SOURCE.to_vec();
         }
-        oracle::verify_observation(scratch, &scratch.run(&request)?, expected)
-    })
-}
-
-/// Verifies the second stable Rustup query failure against its full trace.
-pub(super) fn verify_stable_discovery_failure(
-    failure: Failure,
-    arguments: &[&str],
-    skip_stable_component: bool,
-    diagnostic: &str,
-) -> Result<(), String> {
-    with_scratch(|scratch| {
-        let mut request = Request::new(Entry::Check);
-        request.controls.failure = Some(failure);
-        let mut calls = oracle::check_calls(scratch, &request, oracle::STABLE);
-        if skip_stable_component {
-            skip_component_query(&mut calls, 2)?;
-        }
-        set_call_status(
-            &mut calls,
-            &InvocationSelection {
-                tool: "rustup",
-                arguments,
-                occurrence: CallOccurrence::Second,
-            },
-            97,
-        )?;
-
-        let mut expected = oracle::expected(
-            1,
-            calls,
-            Some(diagnostic.to_owned()),
-            oracle::prefix_state(false, false),
-        );
-        expected.clang_stdin = oracle::CLANG_SOURCE.to_vec();
         oracle::verify_observation(scratch, &scratch.run(&request)?, expected)
     })
 }

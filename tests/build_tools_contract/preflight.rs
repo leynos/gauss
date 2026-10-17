@@ -5,12 +5,11 @@
 use rstest::rstest;
 
 use super::{
-    Entry, EnvironmentChange, Failure, Host, Request, install_oracles as oracle,
-    preflight_cases as cases,
+    Entry, EnvironmentChange, Host, Request, install_oracles as oracle, preflight_cases as cases,
     preflight_oracles::{
-        CallOccurrence, InvocationSelection, MissingRequirement, set_call_status,
-        skip_component_query, verify_boot_failure, verify_host_failure, verify_install_then_check,
-        verify_missing_requirements, verify_missing_rustup, verify_stable_discovery_failure,
+        CheckFailureCase, MissingRequirement, verify_boot_failure, verify_check_failure,
+        verify_host_failure, verify_install_then_check, verify_missing_requirements,
+        verify_missing_rustup,
     },
     support::with_scratch,
 };
@@ -164,83 +163,17 @@ fn preflight_missing_requirements_fail(
 }
 
 #[rstest]
-#[case::version(Failure::ClangVersion, &["--version"], false, "cannot report its version")]
-#[case::syntax(Failure::ClangSyntax, &["-x", "c", "-fsyntax-only", "-"], true, "cannot compile a basic C translation unit")]
-fn clang_failure_is_observable(
-    #[case] failure: Failure,
-    #[case] arguments: &[&str],
-    #[case] syntax_reached: bool,
-    #[case] diagnostic: &str,
-) -> Result<(), String> {
-    with_scratch(|scratch| {
-        let mut request = Request::new(Entry::Check);
-        request.controls.failure = Some(failure);
-        let mut calls = oracle::check_calls(scratch, &request, oracle::STABLE);
-        calls.retain(|call| {
-            call.tool != "clang"
-                || syntax_reached
-                || call
-                    .argv
-                    .iter()
-                    .map(String::as_str)
-                    .eq(arguments.iter().copied())
-        });
-        set_call_status(
-            &mut calls,
-            &InvocationSelection {
-                tool: "clang",
-                arguments,
-                occurrence: CallOccurrence::First,
-            },
-            97,
-        )?;
-        let mut expected = oracle::expected(
-            1,
-            calls,
-            Some(diagnostic.to_owned()),
-            oracle::prefix_state(false, false),
-        );
-        if syntax_reached {
-            expected.clang_stdin = oracle::CLANG_SOURCE.to_vec();
-        }
-        oracle::verify_observation(scratch, &scratch.run(&request)?, expected)
-    })
+#[case::version(&cases::CLANG_VERSION_FAILURE)]
+#[case::syntax(&cases::CLANG_SYNTAX_FAILURE)]
+fn clang_failure_is_observable(#[case] case: &CheckFailureCase) -> Result<(), String> {
+    verify_check_failure(case)
 }
 
 #[rstest]
-#[case::toolchain_list(Failure::DeclaredToolchainList, &["toolchain", "list"], true, "could not list installed Rust toolchains")]
-#[case::component_list(Failure::DeclaredComponentList, &["component", "list", "--toolchain", oracle::STABLE, "--installed"], false, "could not list components for toolchain")]
-fn rustup_discovery_failure_propagates(
-    #[case] failure: Failure,
-    #[case] arguments: &[&str],
-    #[case] skip_declared_component: bool,
-    #[case] diagnostic: &str,
-) -> Result<(), String> {
-    with_scratch(|scratch| {
-        let mut request = Request::new(Entry::Check);
-        request.controls.failure = Some(failure);
-        let mut calls = oracle::check_calls(scratch, &request, oracle::STABLE);
-        if skip_declared_component {
-            skip_component_query(&mut calls, 1)?;
-        }
-        set_call_status(
-            &mut calls,
-            &InvocationSelection {
-                tool: "rustup",
-                arguments,
-                occurrence: CallOccurrence::First,
-            },
-            97,
-        )?;
-        let mut expected = oracle::expected(
-            1,
-            calls,
-            Some(diagnostic.to_owned()),
-            oracle::prefix_state(false, false),
-        );
-        expected.clang_stdin = oracle::CLANG_SOURCE.to_vec();
-        oracle::verify_observation(scratch, &scratch.run(&request)?, expected)
-    })
+#[case::toolchain_list(&cases::DECLARED_TOOLCHAIN_LIST_FAILURE)]
+#[case::component_list(&cases::DECLARED_COMPONENT_LIST_FAILURE)]
+fn rustup_discovery_failure_propagates(#[case] case: &CheckFailureCase) -> Result<(), String> {
+    verify_check_failure(case)
 }
 
 #[rstest]
@@ -257,25 +190,12 @@ fn dated_channel_remains_pinned(#[case] channel: &str) -> Result<(), String> {
 }
 
 #[rstest]
-#[case::toolchain_list(
-    Failure::StableToolchainList,
-    &["toolchain", "list"],
-    true,
-    "could not list installed Rust toolchains",
-)]
-#[case::component_list(
-    Failure::StableComponentList,
-    &["component", "list", "--toolchain", oracle::STABLE, "--installed"],
-    false,
-    "could not list components for toolchain",
-)]
+#[case::toolchain_list(&cases::STABLE_TOOLCHAIN_LIST_FAILURE)]
+#[case::component_list(&cases::STABLE_COMPONENT_LIST_FAILURE)]
 fn stable_rustup_discovery_failure_propagates(
-    #[case] failure: Failure,
-    #[case] arguments: &[&str],
-    #[case] skip_stable_component: bool,
-    #[case] diagnostic: &str,
+    #[case] case: &CheckFailureCase,
 ) -> Result<(), String> {
-    verify_stable_discovery_failure(failure, arguments, skip_stable_component, diagnostic)
+    verify_check_failure(case)
 }
 
 #[test]
