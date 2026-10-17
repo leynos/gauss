@@ -15,11 +15,11 @@ from Cargo metadata._
 | Harness-backed GPUI BDD          | Contains a `#[scenario]` registration with `harness = rstest_bdd_harness_gpui::GpuiHarness`. | 29              |
 | Raw structural GPUI              | Uses a direct `#[gpui::test]` registration rather than the BDD harness.                      | 5               |
 | Non-GPUI BDD                     | Contains `#[scenario]` but no `GpuiHarness` registration.                                    | 5               |
-| Other integration test           | Has none of the preceding registrations.                                                     | 13              |
-| **All integration test targets** | **The four mutually exclusive classifications above.**                                       | **52**          |
+| Other integration test           | Has none of the preceding registrations.                                                     | 14              |
+| **All integration test targets** | **The four mutually exclusive classifications above.**                                       | **53**          |
 
-<!-- integration-test-inventory: total=52 harness_gpui_bdd=29
-raw_structural_gpui=5 non_gpui_bdd=5 other_integration=13 gpui_target=34 -->
+<!-- integration-test-inventory: total=53 harness_gpui_bdd=29
+raw_structural_gpui=5 non_gpui_bdd=5 other_integration=14 gpui_target=34 -->
 
 Run `make check-integration-test-inventory` to derive these counts from Cargo
 metadata and fail if this document or the linked inventories drift.
@@ -77,7 +77,7 @@ platform cannot exercise.
 - `undo_entry_count_bdd`
 - `widget_capability_audit_bdd`
 
-### Other integration targets (13)
+### Other integration targets (14)
 
 - `gpui_history_anchor_edit_undo`
 - `gpui_history_close_path_undo`
@@ -92,6 +92,7 @@ platform cannot exercise.
 - `test_support_const_apis`
 - `vec2_assertion`
 - `widget_audit_test`
+- `localizer_api`
 
 ## Historical consolidation snapshot (2026-03-17)
 
