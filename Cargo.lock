@@ -2237,6 +2237,7 @@ dependencies = [
  "serial_test",
  "test_support",
  "thiserror 2.0.21",
+ "trybuild",
  "uuid",
 ]
 
