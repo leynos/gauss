@@ -1,8 +1,8 @@
-//! Exercises fail-closed Make source parsing against unsafe source mutations.
+//! Exercises fail-closed Make source mutations and source-bound GNU Make trace evidence.
 
 use rstest::rstest;
 
-use super::super::make_source;
+use super::super::{Route, make_output, make_source};
 
 /// The current source baseline used before each Make safety mutation.
 const CURRENT_MAKE_SOURCE: &str = include_str!("../../Makefile");
@@ -109,4 +109,113 @@ fn source_rules_that_could_remake_makefile_are_gaps(
         syntax_gap(addition).expect("Makefile source hazard must be reported"),
         expected
     );
+}
+
+/// A target with no prerequisites, matching GNU Make 4.3's missing-target trace.
+const MISSING_TARGET_SOURCE: &str = ".PHONY: test\ntest:\n\tcargo test --workspace\n";
+/// A target whose phony prerequisite gives the changed-prerequisite trace its reason.
+const PREREQUISITE_SOURCE: &str =
+    ".PHONY: test force\ntest: force\n\tcargo test --workspace\nforce:\n";
+
+/// Resolves a synthetic trace through the real source-binding and command classifier.
+/// For example, an unbound source line returns its existing location diagnostic.
+fn trace_fixture(header: &str, source: &str) -> Result<make_output::Evaluation, String> {
+    let output = format!("{header}\ncargo test --workspace\n");
+    make_output::classify_traced(&output, source, false, |invocation, controlled| {
+        make_output::resolve(invocation, controlled, None)
+    })
+}
+
+/// Both source-supported GNU Make 4.3 headers retain the complete suite evidence.
+#[rstest]
+#[case::make_43_missing_target("Makefile:3: target 'test' does not exist", MISSING_TARGET_SOURCE)]
+#[case::make_43_prerequisites(
+    "Makefile:3: update target 'test' due to: force",
+    PREREQUISITE_SOURCE
+)]
+fn supported_trace_header_formats_keep_bound_suite_evidence(
+    #[case] header: &str,
+    #[case] source: &str,
+) {
+    let evidence = trace_fixture(header, source).expect("supported trace must remain source-bound");
+    assert_eq!(evidence.route, Route::Suite);
+    assert_eq!(
+        evidence.blocks,
+        vec![make_output::TraceBlock {
+            file: "Makefile".to_owned(),
+            line: 3,
+            target: "test".to_owned(),
+            command: "cargo test --workspace".to_owned(),
+        }],
+    );
+    let arguments: Vec<_> = evidence
+        .invocations
+        .into_iter()
+        .map(|item| item.words)
+        .collect();
+    assert_eq!(arguments, vec![vec!["cargo", "test", "--workspace"]]);
+}
+
+/// Malformed and foreign trace headers fail before any source or command evidence is omitted.
+#[test]
+fn trace_header_forms_reject_malformed_or_unbound_evidence() {
+    let baseline = trace_fixture(
+        "Makefile:3: update target 'test' due to: force",
+        PREREQUISITE_SOURCE,
+    )
+    .expect("prerequisite trace baseline must pass before negative controls");
+    assert_eq!(baseline.route, Route::Suite);
+    let arguments: Vec<_> = baseline
+        .invocations
+        .into_iter()
+        .map(|item| item.words)
+        .collect();
+    assert_eq!(arguments, vec![vec!["cargo", "test", "--workspace"]]);
+
+    let unbound = "GNU Make trace target or prerequisite is unbound";
+    let empty = "GNU Make trace has an empty location, target, or reason";
+    let numeric = "GNU Make trace line is not numeric";
+    let foreign = "GNU Make trace names an unreviewed source file";
+    let failures = [
+        ("Makefile:3: target 'test' does not exist trailing", unbound),
+        ("Makefile:3: target 'test' does not exists", unbound),
+        ("Makefile:3: target '' does not exist", empty),
+        ("Makefile:0: target 'test' does not exist", empty),
+        ("Makefile:bad: target 'test' does not exist", numeric),
+        ("Makefile:bad: target 'broken", numeric),
+        ("Makefile:bad: update target 'broken", numeric),
+        ("Makefile:3: update target 'test' due to: ", empty),
+        ("Makefile:3: update target 'test' due to:   ", empty),
+        (
+            "Makefile:3: rebuilding test",
+            "unrecognized GNU Make trace header",
+        ),
+        ("other.mk:3: update target 'test' due to: force", foreign),
+        ("other.mk:3: target 'test' does not exist", foreign),
+        (
+            "Makefile:99: target 'test' does not exist",
+            "GNU Make trace line is outside Makefile: 99",
+        ),
+        (
+            "Makefile:3: target 'other' does not exist",
+            "GNU Make trace target is not a literal source target: other",
+        ),
+        (
+            concat!(
+                "Makefile:3: target 'test' does not exist\n",
+                "cargo test --workspace\n",
+                "other.mk:3: target 'test' does not exist",
+            ),
+            foreign,
+        ),
+    ];
+    for (header, expected) in failures {
+        assert_eq!(
+            trace_fixture(header, MISSING_TARGET_SOURCE)
+                .err()
+                .as_deref(),
+            Some(expected),
+            "wrong source-bound trace diagnostic for {header:?}",
+        );
+    }
 }
