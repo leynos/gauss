@@ -1,0 +1,8 @@
+on: pull_request
+jobs:
+  build:
+    runs-on:
+      group: linux-pool
+      labels: [self-hosted, ubuntu-24.04, x64]
+    steps:
+      - run: make test-ci
