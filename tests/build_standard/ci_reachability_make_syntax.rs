@@ -19,19 +19,89 @@ pub(super) enum Token {
     Redirect(String),
 }
 
+/// Records whether a shell word is outside quotes, inside one, or closed after quoted text.
+/// For example, `Closed` keeps later unquoted text from merging into an accepted quoted word.
+#[derive(Clone, Copy, Debug, Default)]
+enum QuoteState {
+    /// No quote has opened for the current word.
+    #[default]
+    Plain,
+    /// A quote delimiter is active and records whether its word has content.
+    Open {
+        /// The shell quote delimiter currently open for this word.
+        delimiter: char,
+        /// Whether the open quote has consumed any word content.
+        has_content: bool,
+    },
+    /// Quoted text has closed but the current word has not yet been flushed.
+    Closed,
+}
+
+impl QuoteState {
+    /// Reports whether a delimiter is active.
+    /// For example, `Open` returns `true` and `Closed` returns `false`.
+    const fn is_open(self) -> bool {
+        matches!(self, Self::Open { .. })
+    }
+
+    /// Reports whether the active delimiter is a single quote.
+    /// For example, an open `'` delimiter returns `true`.
+    const fn is_single_quoted(self) -> bool {
+        matches!(
+            self,
+            Self::Open {
+                delimiter: '\'',
+                ..
+            }
+        )
+    }
+
+    /// Reports whether this word has opened or closed a quote.
+    /// For example, both `Open` and `Closed` return `true`.
+    const fn is_quoted(self) -> bool {
+        matches!(self, Self::Open { .. } | Self::Closed)
+    }
+
+    /// Checks whether an active delimiter matches one character.
+    /// For example, an open `"` delimiter matches `"` but not `'`.
+    const fn matches_delimiter(self, character: char) -> bool {
+        match self {
+            Self::Open { delimiter, .. } => delimiter == character,
+            Self::Plain | Self::Closed => false,
+        }
+    }
+
+    /// Marks content supplied to an active quoted word.
+    /// For example, an escaped character makes an open quote nonempty.
+    const fn mark_content(&mut self) {
+        if let Self::Open { has_content, .. } = self {
+            *has_content = true;
+        }
+    }
+
+    /// Computes a closed quote state only after its content has been validated.
+    /// For example, a populated `Open` yields `Closed`; an empty quote returns its gap.
+    fn closed_after_content(self) -> Result<Self, String> {
+        let Self::Open { has_content, .. } = self else {
+            return Err("unbalanced shell quote or escape".to_owned());
+        };
+        if !has_content {
+            return Err("empty quoted shell word is unsupported".to_owned());
+        }
+        Ok(Self::Closed)
+    }
+}
+
 /// Carries quote and escape state while one bounded shell command is tokenized.
+/// For example, `Closed` prevents a quoted word from accepting an unquoted suffix.
 #[derive(Default)]
 struct Tokenizer {
     /// Completed shell words and control delimiters.
     tokens: Vec<Token>,
     /// Word currently being assembled after quote removal.
     word: String,
-    /// Active single or double quote, when present.
-    quote: Option<char>,
-    /// Whether any portion of the current word was quoted.
-    word_quoted: bool,
-    /// Whether the active quote has supplied content.
-    quote_content: bool,
+    /// Quote lifecycle for the current word.
+    quote_state: QuoteState,
     /// Whether the preceding character escaped the current one.
     escaped: bool,
 }
@@ -76,7 +146,7 @@ impl Tokenizer {
         let Some((token, length)) = operator(source) else {
             return Ok(false);
         };
-        if self.quote.is_some() {
+        if self.quote_state.is_open() {
             return Ok(false);
         }
         self.flush_word()?;
@@ -88,7 +158,7 @@ impl Tokenizer {
     /// Reports whether opening a quote would create an unsupported mixed fragment.
     /// For example, `command` is rejected while an assignment prefix `NAME=` is allowed.
     fn has_unsupported_quote_prefix(&self) -> bool {
-        self.word_quoted || (!self.word.is_empty() && !assignment_prefix(&self.word))
+        self.quote_state.is_quoted() || (!self.word.is_empty() && !assignment_prefix(&self.word))
     }
 
     /// Applies one character to quote, escape, or current-word state.
@@ -101,7 +171,7 @@ impl Tokenizer {
             return Ok(());
         }
         self.word.push(character);
-        self.quote_content |= self.quote.is_some();
+        self.quote_state.mark_content();
         Ok(())
     }
 
@@ -110,50 +180,56 @@ impl Tokenizer {
     fn consume_escape_or_start(&mut self, character: char) -> bool {
         if self.escaped {
             self.word.push(character);
-            self.quote_content |= self.quote.is_some();
+            self.quote_state.mark_content();
             self.escaped = false;
             return true;
         }
-        if character == '\\' && self.quote != Some('\'') {
+        if character == '\\' && !self.quote_state.is_single_quoted() {
             self.escaped = true;
             return true;
         }
         false
     }
 
-    /// Opens or closes a quote while refusing empty and mixed quoted fragments.
-    /// For example, `"word"` closes cleanly and `""` returns an error.
+    /// Classifies a validated quote transition without changing the current word or state.
+    /// For example, the active closing delimiter yields `Some(Closed)` after content validation.
+    fn next_quote_state(&self, character: char) -> Result<Option<QuoteState>, String> {
+        if self.quote_state.matches_delimiter(character) {
+            return self.quote_state.closed_after_content().map(Some);
+        }
+        if self.quote_state.is_open() || !matches!(character, '\'' | '"') {
+            return Ok(None);
+        }
+        if self.has_unsupported_quote_prefix() {
+            return Err("mixed quoted shell fragments are unsupported".to_owned());
+        }
+        Ok(Some(QuoteState::Open {
+            delimiter: character,
+            has_content: false,
+        }))
+    }
+
+    /// Applies a successful quote transition without consuming an ordinary word character.
+    /// For example, a literal inside the opposite quote returns `false` without mutation.
     fn consume_quote(&mut self, character: char) -> Result<bool, String> {
-        if self.quote == Some(character) {
-            if !self.quote_content {
-                return Err("empty quoted shell word is unsupported".to_owned());
-            }
-            self.quote = None;
-            return Ok(true);
-        }
-        if self.quote.is_none() && matches!(character, '\'' | '"') {
-            if self.has_unsupported_quote_prefix() {
-                return Err("mixed quoted shell fragments are unsupported".to_owned());
-            }
-            self.quote = Some(character);
-            self.word_quoted = true;
-            self.quote_content = false;
-            return Ok(true);
-        }
-        Ok(false)
+        let Some(next) = self.next_quote_state(character)? else {
+            return Ok(false);
+        };
+        self.quote_state = next;
+        Ok(true)
     }
 
     /// Flushes whitespace only outside quotes and rejects text after a closed quoted fragment.
     /// For example, `"word" tail` is split while `"word"tail` is rejected.
     fn consume_unquoted_separator(&mut self, character: char) -> Result<bool, String> {
-        if self.quote.is_some() {
+        if self.quote_state.is_open() {
             return Ok(false);
         }
         if character.is_whitespace() {
             self.flush_word()?;
             return Ok(true);
         }
-        if self.word_quoted {
+        if self.quote_state.is_quoted() {
             return Err("mixed quoted shell fragments are unsupported".to_owned());
         }
         Ok(false)
@@ -162,7 +238,7 @@ impl Tokenizer {
     /// Flushes the final word or rejects an unfinished quote or escape.
     /// For example, a trailing backslash returns an unbalanced-input error.
     fn finish(mut self) -> Result<Vec<Token>, String> {
-        if self.escaped || self.quote.is_some() {
+        if self.escaped || self.quote_state.is_open() {
             return Err("unbalanced shell quote or escape".to_owned());
         }
         self.flush_word()?;
@@ -172,15 +248,16 @@ impl Tokenizer {
     /// Adds a shell word only when quote removal produced content.
     /// For example, a nonempty buffer becomes one `Word` token.
     fn flush_word(&mut self) -> Result<(), String> {
-        if self.word.is_empty() {
-            if self.word_quoted {
-                return Err("empty quoted shell word is unsupported".to_owned());
-            }
-        } else {
-            if self.word_quoted && matches!(self.word.as_str(), "if" | "then" | "else" | "fi") {
+        if self.word.is_empty() && self.quote_state.is_quoted() {
+            return Err("empty quoted shell word is unsupported".to_owned());
+        }
+        if !self.word.is_empty() {
+            if self.quote_state.is_quoted()
+                && matches!(self.word.as_str(), "if" | "then" | "else" | "fi")
+            {
                 return Err("quoted shell control word is unsupported".to_owned());
             }
-            self.word_quoted = false;
+            self.quote_state = QuoteState::Plain;
             self.tokens
                 .push(Token::Word(std::mem::take(&mut self.word)));
         }

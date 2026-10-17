@@ -1,7 +1,6 @@
 //! Evaluates the repository Makefile and classifies every reached command.
 
-use std::collections::BTreeSet;
-use std::process::Command;
+use std::{collections::BTreeSet, process::Command};
 
 use super::{
     Host, Invocation, Route, Workspace, make_output, make_source, make_syntax, make_tools,
@@ -148,15 +147,19 @@ fn accept_mode_assignment(
 
 /// Ensures all source conditions are selected by the observed host or a literal caller value.
 fn require_explicit_selectors(
-    selectors: &BTreeSet<String>,
+    selectors: &BTreeSet<make_source::MakeSelector>,
     mode: Option<&str>,
 ) -> Result<(), String> {
     for selector in selectors {
-        match selector.as_str() {
-            "BUILD_HOST_OS" => {}
-            "MODE" if mode.is_some() => {}
-            "MODE" => return Err("Make selector MODE has no explicit workflow value".to_owned()),
-            other => return Err(format!("unresolved Make selector: {other}")),
+        match selector {
+            make_source::MakeSelector::BuildHostOs => {}
+            make_source::MakeSelector::Mode if mode.is_some() => {}
+            make_source::MakeSelector::Mode => {
+                return Err(format!(
+                    "Make selector {} has no explicit workflow value",
+                    selector.name(),
+                ));
+            }
         }
     }
     Ok(())

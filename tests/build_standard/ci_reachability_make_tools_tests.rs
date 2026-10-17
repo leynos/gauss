@@ -3,7 +3,7 @@
 use rstest::rstest;
 
 use super::super::tests as shared_tests;
-use super::super::{Route, make_syntax};
+use super::super::{GitBlobId, Route, make_syntax};
 use super::{
     LineEnding, REVIEWED_PYTHON_BODIES, classify_words, classify_workspace_words,
     stage_python_bodies, verify_reviewed_python_sources,
@@ -139,4 +139,29 @@ fn reviewed_python_source_content_drift_is_a_specific_gap() {
         4,
         "the reviewed source boundary is finite"
     );
+}
+
+/// Accepts only the complete lowercase hexadecimal form emitted by Git.
+#[test]
+fn git_blob_id_requires_complete_lowercase_hex() {
+    let valid = "0123456789abcdef0123456789abcdef01234567";
+    assert!(
+        GitBlobId::parse(valid).is_ok(),
+        "a complete lowercase hexadecimal ID must parse"
+    );
+
+    let invalid = [
+        "0123456789ABCDEF0123456789abcdef01234567",
+        "0123456789abcdef0123456789abcdef0123456g",
+        "0123456789abcdef0123456789abcdef0123456",
+        "0123456789abcdef0123456789abcdef012345670",
+        "0123456789abcdef0123456789abcdef0123456\n",
+    ];
+    for text in invalid {
+        assert_eq!(
+            GitBlobId::parse(text),
+            Err("git hash-object returned an invalid blob identifier".to_owned()),
+            "invalid blob ID should fail exactly: {text:?}"
+        );
+    }
 }

@@ -29,8 +29,12 @@ mod matrix;
 mod parser;
 #[path = "ci_reachability_runner.rs"]
 mod runner;
+#[path = "ci_reachability_source_identity.rs"]
+mod source_identity;
 #[path = "ci_reachability_workflows.rs"]
 mod workflows;
+
+use source_identity::{GitBlobId, ReviewedSource};
 
 /// The currently adopted shared-action revision whose consumed sources were inspected.
 const ACTION_REVISION: &str = "e693d81d176d2305e2b736a0be0f9038085dec7f";
@@ -213,17 +217,20 @@ impl Invocation {
 }
 
 impl Workspace<'_> {
-    /// Verifies one reviewed source body through this capability, never its filename alone.
+    /// Verifies one reviewed source pair through this capability, never its filename alone.
     /// For example, changing a known module's body produces its identity-change error.
-    fn verify_source(&self, path: &str, expected: &str) -> Result<(), String> {
+    fn verify_source(&self, reviewed: &ReviewedSource<'_>) -> Result<(), String> {
+        let path = reviewed.path();
         let source = self
             .directory
-            .read_to_string(Utf8Path::new(path))
+            .read_to_string(path)
             .map_err(|error| format!("reading reviewed Python source {path}: {error}"))?;
         let normalized = Self::normalize_source(&source);
         let observed = self
             .git_blob_id(&normalized)
             .map_err(|error| format!("hashing reviewed Python source {path}: {error}"))?;
+        let expected = GitBlobId::parse(reviewed.expected_blob)
+            .map_err(|_| format!("reviewed Python source identity changed: {path}"))?;
         if observed == expected {
             Ok(())
         } else {
@@ -239,7 +246,7 @@ impl Workspace<'_> {
 
     /// Hashes stdin without writing Git objects, filters, paths or network access.
     /// For example, a failed Git exit returns its status and stderr as an error.
-    fn git_blob_id(&self, source: &str) -> Result<String, String> {
+    fn git_blob_id(&self, source: &str) -> Result<GitBlobId, String> {
         let mut child = Command::new("/usr/bin/git")
             .args(["hash-object", "--stdin"])
             .current_dir(self.path)
@@ -287,15 +294,7 @@ impl Workspace<'_> {
             .ok_or_else(|| "git hash-object output has no terminal newline".to_owned())?;
         let hash_text = std::str::from_utf8(hash_bytes)
             .map_err(|error| format!("git hash-object returned non-UTF-8 output: {error}"))?;
-        if hash_text.len() == 40
-            && hash_text
-                .bytes()
-                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-        {
-            Ok(hash_text.to_owned())
-        } else {
-            Err("git hash-object returned an invalid blob identifier".to_owned())
-        }
+        GitBlobId::parse(hash_text)
     }
 }
 
