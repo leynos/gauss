@@ -2,7 +2,10 @@
 //!
 //! Values are kept separate from test operations so each case retains an explicit input record.
 
-use super::Entry;
+use super::{
+    Entry, Failure, install_oracles as oracle,
+    preflight_oracles::{CallOccurrence, CheckFailureCase, FailureTrace, InvocationSelection},
+};
 
 /// Inputs for one missing or malformed version-pin case.
 #[derive(Clone, Copy)]
@@ -297,3 +300,87 @@ pub(super) const VALID_UNRELATED_TABLE_AFTER_TOOLCHAIN: InstalledToolchainCase =
         extras: &[],
         component_output: "rustfmt (installed)\nclippy (installed)\nrust-analyzer (installed)\n",
     };
+
+/// Clang fails while reporting its version.
+pub(super) const CLANG_VERSION_FAILURE: CheckFailureCase = CheckFailureCase {
+    failure: Failure::ClangVersion,
+    selection: InvocationSelection {
+        tool: "clang",
+        arguments: &["--version"],
+        occurrence: CallOccurrence::First,
+    },
+    trace: FailureTrace::ClangVersionOnly,
+    diagnostic: "cannot report its version",
+};
+
+/// Clang fails to compile the basic C syntax probe.
+pub(super) const CLANG_SYNTAX_FAILURE: CheckFailureCase = CheckFailureCase {
+    failure: Failure::ClangSyntax,
+    selection: InvocationSelection {
+        tool: "clang",
+        arguments: &["-x", "c", "-fsyntax-only", "-"],
+        occurrence: CallOccurrence::First,
+    },
+    trace: FailureTrace::Complete,
+    diagnostic: "cannot compile a basic C translation unit",
+};
+
+/// The declared Rustup toolchain-list query fails before its component query.
+pub(super) const DECLARED_TOOLCHAIN_LIST_FAILURE: CheckFailureCase = CheckFailureCase {
+    failure: Failure::DeclaredToolchainList,
+    selection: InvocationSelection {
+        tool: "rustup",
+        arguments: &["toolchain", "list"],
+        occurrence: CallOccurrence::First,
+    },
+    trace: FailureTrace::MissingDeclaredComponentQuery,
+    diagnostic: "could not list installed Rust toolchains",
+};
+
+/// The declared Rustup component query fails after listing toolchains.
+pub(super) const DECLARED_COMPONENT_LIST_FAILURE: CheckFailureCase = CheckFailureCase {
+    failure: Failure::DeclaredComponentList,
+    selection: InvocationSelection {
+        tool: "rustup",
+        arguments: &[
+            "component",
+            "list",
+            "--toolchain",
+            oracle::STABLE,
+            "--installed",
+        ],
+        occurrence: CallOccurrence::First,
+    },
+    trace: FailureTrace::Complete,
+    diagnostic: "could not list components for toolchain",
+};
+
+/// The second Rustup toolchain-list query fails before its component query.
+pub(super) const STABLE_TOOLCHAIN_LIST_FAILURE: CheckFailureCase = CheckFailureCase {
+    failure: Failure::StableToolchainList,
+    selection: InvocationSelection {
+        tool: "rustup",
+        arguments: &["toolchain", "list"],
+        occurrence: CallOccurrence::Second,
+    },
+    trace: FailureTrace::MissingStableComponentQuery,
+    diagnostic: "could not list installed Rust toolchains",
+};
+
+/// The second Rustup component query fails after listing stable toolchains.
+pub(super) const STABLE_COMPONENT_LIST_FAILURE: CheckFailureCase = CheckFailureCase {
+    failure: Failure::StableComponentList,
+    selection: InvocationSelection {
+        tool: "rustup",
+        arguments: &[
+            "component",
+            "list",
+            "--toolchain",
+            oracle::STABLE,
+            "--installed",
+        ],
+        occurrence: CallOccurrence::Second,
+    },
+    trace: FailureTrace::Complete,
+    diagnostic: "could not list components for toolchain",
+};
