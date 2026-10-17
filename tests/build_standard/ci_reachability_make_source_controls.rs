@@ -3,7 +3,7 @@
 use std::collections::BTreeSet;
 
 use super::super::make_syntax::{rule_separator, without_comment};
-use super::assignment_name;
+use super::{MakeSelector, assignment_name, values::ParsedCondition};
 
 /// Rejects global controls and recipe prefixes while preserving source encounter order.
 pub(super) fn validate_controls(lines: &[String]) -> Result<(), String> {
@@ -110,7 +110,7 @@ struct ConditionalState {
     /// One flag per open conditional, recording whether its else has been seen.
     stack: Vec<bool>,
     /// Literal selectors required from the workflow caller.
-    selectors: BTreeSet<String>,
+    selectors: BTreeSet<MakeSelector>,
 }
 
 impl ConditionalState {
@@ -136,14 +136,8 @@ impl ConditionalState {
     /// Validates the selector before recording a new branch frame.
     /// For example, a literal MODE equality records MODE and opens one frame.
     fn open(&mut self, plain: &str) -> Result<(), String> {
-        let (name, expected) = condition(plain)?;
-        if !matches!(name, "MODE" | "BUILD_HOST_OS") {
-            return Err(format!("tool-dependent or unknown Make selector: {name}"));
-        }
-        if expected.is_empty() {
-            return Err("Make conditional has an empty comparison value".to_owned());
-        }
-        self.selectors.insert(name.to_owned());
+        let parsed_condition = condition(plain)?;
+        self.selectors.insert(parsed_condition.selector);
         self.stack.push(false);
         Ok(())
     }
@@ -173,7 +167,7 @@ impl ConditionalState {
 
     /// Returns selectors only after every branch frame has closed.
     /// For example, an open MODE frame reports the missing-endif diagnostic.
-    fn finish(self) -> Result<BTreeSet<String>, String> {
+    fn finish(self) -> Result<BTreeSet<MakeSelector>, String> {
         if self.stack.is_empty() {
             Ok(self.selectors)
         } else {
@@ -183,7 +177,7 @@ impl ConditionalState {
 }
 
 /// Validates conditional shape and returns only explicitly supported selector names.
-pub(super) fn validate_conditionals(lines: &[String]) -> Result<BTreeSet<String>, String> {
+pub(super) fn validate_conditionals(lines: &[String]) -> Result<BTreeSet<MakeSelector>, String> {
     let mut state = ConditionalState::default();
     for line in lines {
         state.observe(without_comment(line.trim()))?;
@@ -200,7 +194,7 @@ fn unsupported_conditional(plain: &str) -> bool {
 }
 
 /// Parses only parenthesized equality checks against a literal scalar.
-fn condition(line: &str) -> Result<(&str, &str), String> {
+pub(super) fn condition(line: &str) -> Result<ParsedCondition<'_>, String> {
     let body = line
         .strip_prefix("ifeq")
         .or_else(|| line.strip_prefix("ifneq"))
@@ -222,7 +216,14 @@ fn condition(line: &str) -> Result<(&str, &str), String> {
     {
         return Err(format!("computed Make condition value: {line}"));
     }
-    Ok((name, comparison))
+    let parsed_selector = MakeSelector::parse(name)?;
+    if comparison.is_empty() {
+        return Err("Make conditional has an empty comparison value".to_owned());
+    }
+    Ok(ParsedCondition {
+        selector: parsed_selector,
+        comparison,
+    })
 }
 
 /// Recognizes all Make include directive spellings.

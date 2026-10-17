@@ -1,28 +1,26 @@
 //! Checks reviewed Python source identities and exact UV routes.
 
+use super::super::ReviewedSource;
 use super::{Route, Workspace, exact_words};
 
-#[cfg(test)]
-use camino::Utf8Path;
-
 /// Content identities that authorize the exact current Python inventory and spelling routes.
-pub(in super::super) const REVIEWED_PYTHON_BODIES: &[(&str, &str)] = &[
-    (
-        "scripts/check_integration_test_inventory.py",
-        "d5691f3985e588617e986959738fbbbc7f3dc31f",
-    ),
-    (
-        "scripts/tests/test_integration_test_inventory.py",
-        "2eef53e6f542fe5731e72721ba6cec1b1dd30be6",
-    ),
-    (
-        "scripts/tests/test_integration_test_inventory_cli.py",
-        "f9bc11b560144de122b79ce5affc3081b293c0a6",
-    ),
-    (
-        "scripts/tests/test_spelling_exceptions.py",
-        "14c1f91c4dc7c523c5a95d4ce942a504885e889f",
-    ),
+pub(in super::super) const REVIEWED_PYTHON_BODIES: &[ReviewedSource<'static>] = &[
+    ReviewedSource {
+        path: "scripts/check_integration_test_inventory.py",
+        expected_blob: "d5691f3985e588617e986959738fbbbc7f3dc31f",
+    },
+    ReviewedSource {
+        path: "scripts/tests/test_integration_test_inventory.py",
+        expected_blob: "2eef53e6f542fe5731e72721ba6cec1b1dd30be6",
+    },
+    ReviewedSource {
+        path: "scripts/tests/test_integration_test_inventory_cli.py",
+        expected_blob: "f9bc11b560144de122b79ce5affc3081b293c0a6",
+    },
+    ReviewedSource {
+        path: "scripts/tests/test_spelling_exceptions.py",
+        expected_blob: "14c1f91c4dc7c523c5a95d4ce942a504885e889f",
+    },
 ];
 
 /// Line endings used to prove universal-newline identity equivalence in owned fixtures.
@@ -42,17 +40,17 @@ pub(in super::super) fn stage_python_bodies(
     ending: LineEnding,
 ) -> Result<(), String> {
     let project = super::super::tests::project_directory()?;
-    for (path, _) in REVIEWED_PYTHON_BODIES {
+    for reviewed in REVIEWED_PYTHON_BODIES {
+        let path = reviewed.path();
         let body = project
-            .read_to_string(Utf8Path::new(path))
+            .read_to_string(path)
             .map_err(|error| format!("reading reviewed Python source {path}: {error}"))?;
         let normalized = Workspace::normalize_source(&body);
         let staged = match ending {
             LineEnding::Lf => normalized,
             LineEnding::CrLf => normalized.replace('\n', "\r\n"),
         };
-        let source_path = Utf8Path::new(path);
-        let parent = source_path
+        let parent = path
             .parent()
             .ok_or_else(|| format!("reviewed source has no parent directory: {path}"))?;
         workspace
@@ -61,7 +59,7 @@ pub(in super::super) fn stage_python_bodies(
             .map_err(|error| format!("creating reviewed source directory: {error}"))?;
         workspace
             .directory
-            .write(source_path, staged)
+            .write(path, staged)
             .map_err(|error| format!("staging reviewed Python source {path}: {error}"))?;
     }
     Ok(())
@@ -71,8 +69,8 @@ pub(in super::super) fn stage_python_bodies(
 pub(in super::super) fn verify_reviewed_python_sources(
     workspace: &Workspace<'_>,
 ) -> Result<(), String> {
-    for (path, blob) in REVIEWED_PYTHON_BODIES {
-        workspace.verify_source(path, blob)?;
+    for reviewed in REVIEWED_PYTHON_BODIES {
+        workspace.verify_source(reviewed)?;
     }
     Ok(())
 }

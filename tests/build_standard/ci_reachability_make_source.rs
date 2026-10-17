@@ -2,6 +2,12 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+#[path = "ci_reachability_make_source_values.rs"]
+mod values;
+
+pub(super) use values::MakeSelector;
+use values::{AssignmentOperator, MakeAssignment};
+
 /// Owns recipe-control and conditional-state validation.
 #[path = "ci_reachability_make_source_controls.rs"]
 mod controls;
@@ -20,7 +26,7 @@ pub(super) fn validate(source: &str) -> Result<(), String> {
 }
 
 /// Returns supported literal selectors without choosing a branch locally.
-pub(super) fn required_selectors(source: &str) -> Result<BTreeSet<String>, String> {
+pub(super) fn required_selectors(source: &str) -> Result<BTreeSet<MakeSelector>, String> {
     controls::validate_conditionals(&make_lines(source)?)
 }
 
@@ -159,29 +165,33 @@ fn could_match_makefile(target: &str) -> bool {
 
 /// Identifies an assignment name before its value is interpreted by Make.
 fn assignment_name(line: &str) -> Option<&str> {
-    assignment_parts(line).map(|(name, _, _)| name)
+    assignment_parts(line).map(|assignment| assignment.name)
 }
 
 /// Parses a simple variable assignment without mistaking rule recipes for assignments.
-fn assignment_parts(line: &str) -> Option<(&str, &str, &str)> {
+fn assignment_parts(line: &str) -> Option<MakeAssignment<'_>> {
     let trimmed = line.trim();
     let text = trimmed.strip_prefix("export ").unwrap_or(trimmed);
     let equals = text.find('=')?;
     let through_equals = text.get(..equals.saturating_add(1))?;
     let after = text.get(equals.saturating_add(1)..)?;
-    let (raw_name, operator) = ["?=", ":=", "+=", "!="]
+    let (raw_name, operator) = AssignmentOperator::ALL
         .into_iter()
         .find_map(|operator| {
             through_equals
-                .strip_suffix(operator)
+                .strip_suffix(operator.spelling())
                 .map(|name| (name, operator))
         })
-        .unwrap_or((text.get(..equals)?, "="));
+        .unwrap_or((text.get(..equals)?, AssignmentOperator::Recursive));
     let variable_name = raw_name.trim();
     if !valid_variable_name(variable_name) {
         return None;
     }
-    Some((variable_name, operator, after.trim()))
+    Some(MakeAssignment {
+        name: variable_name,
+        operator,
+        value: after.trim(),
+    })
 }
 
 /// Counts canonical target definitions while tracking their source conditional depth.
@@ -287,7 +297,7 @@ fn collect_tool_defaults<'a>(
 }
 
 /// Retains all definitions of each observed tool so duplicate assignments remain detectable.
-type ToolDefinitions<'a> = BTreeMap<&'a str, Vec<(&'a str, &'a str)>>;
+type ToolDefinitions<'a> = BTreeMap<&'a str, Vec<(AssignmentOperator, &'a str)>>;
 
 /// Excludes recipes, comments and empty lines from source tool assignment collection.
 /// For example, a tab-prefixed `CARGO ?=` is recipe text, not a tool default.
@@ -304,14 +314,18 @@ fn record_tool_default<'a>(
     definitions: &mut ToolDefinitions<'a>,
 ) -> Result<(), String> {
     let assignment_text = text.strip_prefix("export ").unwrap_or(text);
-    let Some((name, operator, value)) = source_assignment(assignment_text) else {
+    let Some(assignment) = source_assignment(assignment_text) else {
         return Ok(());
     };
-    let variable = name.rsplit(':').next().map_or(name, str::trim);
+    let variable = assignment
+        .name
+        .rsplit(':')
+        .next()
+        .map_or(assignment.name, str::trim);
     let Some(canonical) = expected.get(variable) else {
         return Ok(());
     };
-    if conditional_depth > 0 || name != variable {
+    if conditional_depth > 0 || assignment.name != variable {
         return Err(format!(
             "conditional or target-specific tool default: {variable}"
         ));
@@ -319,22 +333,24 @@ fn record_tool_default<'a>(
     definitions
         .entry(variable)
         .or_default()
-        .push((operator, value));
-    if value != *canonical || operator != "?=" {
+        .push((assignment.operator, assignment.value));
+    if assignment.value != *canonical || assignment.operator != AssignmentOperator::Conditional {
         return Err(format!("unreviewed Make tool default: {variable}"));
     }
     Ok(())
 }
 
 /// Reads a plain Make assignment without interpreting its value or conditional context.
-fn source_assignment(text: &str) -> Option<(&str, &str, &str)> {
-    ["?=", ":=", "+=", "!=", "="]
-        .into_iter()
-        .find_map(|operator| {
-            let (raw_name, value) = text.split_once(operator)?;
-            let name = raw_name.trim();
-            (!name.is_empty()).then_some((name, operator, value.trim()))
+fn source_assignment(text: &str) -> Option<MakeAssignment<'_>> {
+    AssignmentOperator::ALL.into_iter().find_map(|operator| {
+        let (raw_name, value) = text.split_once(operator.spelling())?;
+        let name = raw_name.trim();
+        (!name.is_empty()).then_some(MakeAssignment {
+            name,
+            operator,
+            value: value.trim(),
         })
+    })
 }
 
 /// Exercises the Make source guard with focused, source-backed mutations.

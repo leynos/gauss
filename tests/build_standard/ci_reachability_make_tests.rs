@@ -309,6 +309,27 @@ fn shell_quotes_and_short_circuit_expansions_are_gaps() {
         error,
         "Cargo fallback branch contains a failure-masking command"
     );
+
+    let word = |value: &str| make_syntax::Token::Word(value.to_owned());
+    let empty_quote = "empty quoted shell word is unsupported".to_owned();
+    let mixed_quote = "mixed quoted shell fragments are unsupported".to_owned();
+    let unbalanced = "unbalanced shell quote or escape".to_owned();
+    let quote_transitions: [(&str, Result<Vec<make_syntax::Token>, String>); 7] = [
+        (r#"NAME="""#, Err(empty_quote.clone())),
+        (r#"NAME="value""#, Ok(vec![word("NAME=value")])),
+        (r#"echo "a\"b""#, Ok(vec![word("echo"), word(r#"a"b"#)])),
+        (r#"echo 'a&&"b'"#, Ok(vec![word("echo"), word(r#"a&&"b"#)])),
+        (r#"echo "word"tail"#, Err(mixed_quote)),
+        (r"echo \", Err(unbalanced.clone())),
+        (r#"echo "word"#, Err(unbalanced)),
+    ];
+    for (source, expected) in quote_transitions {
+        assert_eq!(
+            make_syntax::tokenize(source),
+            expected,
+            "wrong transition for {source:?}"
+        );
+    }
 }
 
 /// A goal available only through Make builtin implicit rules remains a failed reader route.

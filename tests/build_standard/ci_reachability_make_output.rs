@@ -134,35 +134,76 @@ fn append_trace_line(line: &str, active: &mut Option<TraceBlock>) -> Result<(), 
     Ok(())
 }
 
-/// Parses only the exact `Makefile:N: update target 'X' due to: Y` trace header.
+/// Distinguishes GNU Make's prerequisite trace from its empty-prerequisite trace.
+/// Both forms still require a literal source target and recipe binding.
+enum TraceHeaderTail<'a> {
+    /// Target and changed prerequisites printed after `update target`.
+    Prerequisites(&'a str),
+    /// Target with the exact missing-target suffix and no prerequisite text.
+    MissingTarget(&'a str),
+}
+
+impl<'a> TraceHeaderTail<'a> {
+    /// Recognizes the two reviewed alternatives, with prerequisite syntax taking priority.
+    /// For example, an unsupported header returns the existing unrecognized-header gap.
+    fn recognize(rest: &'a str) -> Result<(&'a str, Self), String> {
+        rest.split_once(": update target '")
+            .map(|(number, tail)| (number, Self::Prerequisites(tail)))
+            .or_else(|| {
+                rest.split_once(": target '")
+                    .map(|(number, tail)| (number, Self::MissingTarget(tail)))
+            })
+            .ok_or_else(|| "unrecognized GNU Make trace header".to_owned())
+    }
+
+    /// Extracts the target and optional prerequisites without inventing a reason.
+    /// For example, `MissingTarget("test' does not exist")` yields `("test", None)`.
+    fn parts(self) -> Result<(&'a str, Option<&'a str>), String> {
+        let parts = match self {
+            Self::Prerequisites(tail) => tail
+                .split_once("' due to: ")
+                .map(|(target, reason)| (target, Some(reason))),
+            Self::MissingTarget(tail) => tail
+                .strip_suffix("' does not exist")
+                .map(|target| (target, None)),
+        };
+        parts.ok_or_else(|| "GNU Make trace target or prerequisite is unbound".to_owned())
+    }
+
+    /// Validates printed location fields before constructing a block for later source binding.
+    /// For example, a nonnumeric line fails before malformed target or reason text is checked.
+    fn into_block(self, number: &str) -> Result<TraceBlock, String> {
+        let line_number = number
+            .parse::<usize>()
+            .map_err(|_| "GNU Make trace line is not numeric".to_owned())?;
+        let (target, reason) = self.parts()?;
+        let is_incomplete_trace_location = line_number == 0
+            || target.is_empty()
+            || reason.is_some_and(|text| text.trim().is_empty());
+        if is_incomplete_trace_location {
+            return Err("GNU Make trace has an empty location, target, or reason".to_owned());
+        }
+        Ok(TraceBlock {
+            file: "Makefile".to_owned(),
+            line: line_number,
+            target: target.to_owned(),
+            command: String::new(),
+        })
+    }
+}
+
+/// Parses the two exact GNU Make 4.3 target trace forms before source binding.
 fn trace_header(line: &str) -> Result<Option<TraceBlock>, String> {
     let Some(rest) = line.strip_prefix("Makefile:") else {
-        return if line.contains(": update target ") {
+        let names_foreign_source = line.contains(": update target ") || line.contains(": target '");
+        return if names_foreign_source {
             Err("GNU Make trace names an unreviewed source file".to_owned())
         } else {
             Ok(None)
         };
     };
-    let (number, header_tail) = rest
-        .split_once(": update target '")
-        .ok_or_else(|| "unrecognized GNU Make trace header".to_owned())?;
-    let line_number = number
-        .parse::<usize>()
-        .map_err(|_| "GNU Make trace line is not numeric".to_owned())?;
-    let (target, reason) = header_tail
-        .split_once("' due to: ")
-        .ok_or_else(|| "GNU Make trace target or prerequisite is unbound".to_owned())?;
-    let is_incomplete_trace_location =
-        line_number == 0 || target.is_empty() || reason.trim().is_empty();
-    if is_incomplete_trace_location {
-        return Err("GNU Make trace has an empty location, target, or reason".to_owned());
-    }
-    Ok(Some(TraceBlock {
-        file: "Makefile".to_owned(),
-        line: line_number,
-        target: target.to_owned(),
-        command: String::new(),
-    }))
+    let (number, header_tail) = TraceHeaderTail::recognize(rest)?;
+    header_tail.into_block(number).map(Some)
 }
 
 /// Classifies a complete shell line, checking both availability branches of the current wrapper.
