@@ -93,6 +93,7 @@ platform cannot exercise.
 - `test_support_const_apis`
 - `vec2_assertion`
 - `widget_audit_test`
+- `localizer_api`
 
 ## Historical consolidation snapshot (2026-03-17)
 
