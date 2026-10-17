@@ -8,6 +8,11 @@ use rstest::rstest;
 #[path = "build_standard/contract.rs"]
 mod build_standard_contract;
 
+/// Exercises Unix build-tool scripts using capability-owned fake executables.
+#[cfg(unix)]
+#[path = "build_tools_contract/mod.rs"]
+mod build_tools_contract;
+
 /// The coverage publisher's runner. The estate left Namespace on 2026-09-03,
 /// so the former `namespace-profile-default` label would queue the publisher
 /// forever; the job is single-process coverage, so the smallest Ubicloud size
