@@ -7,24 +7,77 @@ use super::{
     support::{Scratch, with_scratch},
 };
 
+/// Selects the first or second exact invocation matching a tool and argv.
+#[derive(Clone, Copy)]
+pub(super) enum CallOccurrence {
+    /// Selects the first matching invocation.
+    First,
+    /// Selects the second matching invocation.
+    Second,
+}
+
+/// Describes an invocation by its complete tool, argument vector, and ordinal.
+pub(super) struct InvocationSelection<'a> {
+    /// The executable recorded by the fake process trace.
+    pub(super) tool: &'a str,
+    /// The complete argv recorded by the fake process trace.
+    pub(super) arguments: &'a [&'a str],
+    /// Which exact matching invocation to select.
+    pub(super) occurrence: CallOccurrence,
+}
+
+/// Describes one named missing-requirement scenario without string dispatch.
+#[derive(Clone, Copy)]
+pub(super) enum MissingRequirement {
+    /// The pinned mold executable is absent.
+    MoldAbsent,
+    /// The pinned mold executable cannot report its version.
+    MoldUnusable,
+    /// The installed mold version does not match its pin.
+    MoldWrongPin,
+    /// The configured clang executable is absent.
+    ClangAbsent,
+    /// The declared Rust toolchain is absent.
+    DeclaredToolchainAbsent,
+    /// A required component is absent from the declared toolchain.
+    DeclaredComponentAbsent,
+    /// The stable toolchain is absent.
+    StableToolchainAbsent,
+    /// Rustfmt is absent from the stable toolchain.
+    StableRustfmtAbsent,
+}
+
 /// Replaces one independently selected invocation status without changing its argv.
 pub(super) fn set_call_status(
     calls: &mut [Invocation],
-    tool: &str,
-    arguments: &[&str],
+    selection: &InvocationSelection<'_>,
     status: i32,
 ) -> Result<(), String> {
+    let ordinal = match selection.occurrence {
+        CallOccurrence::First => 0,
+        CallOccurrence::Second => 1,
+    };
     let call = calls
         .iter_mut()
-        .find(|call| {
-            call.tool == tool
+        .filter(|call| {
+            call.tool == selection.tool
                 && call
                     .argv
                     .iter()
                     .map(String::as_str)
-                    .eq(arguments.iter().copied())
+                    .eq(selection.arguments.iter().copied())
         })
-        .ok_or_else(|| format!("expected {tool} call with argv {arguments:?}"))?;
+        .nth(ordinal)
+        .ok_or_else(|| match selection.occurrence {
+            CallOccurrence::First => format!(
+                "expected {} call with argv {:?}",
+                selection.tool, selection.arguments
+            ),
+            CallOccurrence::Second => format!(
+                "expected second {} call with argv {:?}",
+                selection.tool, selection.arguments
+            ),
+        })?;
     call.status = status;
     Ok(())
 }
@@ -63,13 +116,9 @@ pub(super) fn verify_boot_failure(
     entry: Entry,
     diagnostic: &str,
 ) -> Result<(), String> {
-    let expected = oracle::expected(
-        1,
-        oracle::boot(scratch, entry),
-        Some(diagnostic.to_owned()),
-        oracle::prefix_state(false, false),
-    );
-    oracle::verify_observation(scratch, &scratch.run(&Request::new(entry))?, expected)
+    let request = Request::new(entry);
+    let calls = oracle::boot(scratch, entry);
+    verify_input_failure(scratch, &request, calls, diagnostic)
 }
 
 /// Verifies a host-input failure before any compiler or Rustup process.
@@ -78,9 +127,20 @@ pub(super) fn verify_host_failure(
     request: &Request,
     diagnostic: &str,
 ) -> Result<(), String> {
+    let calls = oracle::host_calls(scratch, request);
+    verify_input_failure(scratch, request, calls, diagnostic)
+}
+
+/// Verifies an input failure before compiler or Rustup work and its full trace.
+fn verify_input_failure(
+    scratch: &Scratch,
+    request: &Request,
+    calls: Vec<Invocation>,
+    diagnostic: &str,
+) -> Result<(), String> {
     let expected = oracle::expected(
         1,
-        oracle::host_calls(scratch, request),
+        calls,
         Some(diagnostic.to_owned()),
         oracle::prefix_state(false, false),
     );
@@ -116,46 +176,56 @@ pub(super) fn verify_install_then_check(
     oracle::verify_observation(scratch, &scratch.run(request)?, expected_check)
 }
 
-/// Runs independently specified missing-tool scenarios and checks their complete traces.
-pub(super) fn verify_missing_requirements(scenario: &str, diagnostic: &str) -> Result<(), String> {
+/// Runs one named missing-tool scenario and checks its complete trace.
+pub(super) fn verify_missing_requirements(
+    scenario: MissingRequirement,
+    diagnostic: &str,
+) -> Result<(), String> {
     with_scratch(|scratch| {
         let mut request = Request::new(Entry::Check);
         let mut calls = oracle::check_calls(scratch, &request, oracle::STABLE);
         match scenario {
-            "mold_absent" => {
+            MissingRequirement::MoldAbsent => {
                 request.controls.unavailable.push(Program::Mold);
                 calls.retain(|call| call.tool != "mold");
             }
-            "mold_unusable" => {
+            MissingRequirement::MoldUnusable => {
                 request.controls.failure = Some(Failure::MoldVersion);
-                set_call_status(&mut calls, "mold", &["--version"], 97)?;
+                set_call_status(
+                    &mut calls,
+                    &InvocationSelection {
+                        tool: "mold",
+                        arguments: &["--version"],
+                        occurrence: CallOccurrence::First,
+                    },
+                    97,
+                )?;
             }
-            "mold_wrong_pin" => {
+            MissingRequirement::MoldWrongPin => {
                 request.controls.mold_version_output = Some("mold 0.0.0".to_owned());
             }
-            "clang_absent" => {
+            MissingRequirement::ClangAbsent => {
                 request.controls.unavailable.push(Program::Clang);
                 calls.retain(|call| call.tool != "clang");
             }
-            "declared_toolchain_absent" => {
+            MissingRequirement::DeclaredToolchainAbsent => {
                 let [declared, _stable] = &mut request.controls.rustup.list_output;
                 declared.clear();
                 skip_component_query(&mut calls, 1)?;
             }
-            "declared_component_absent" => {
+            MissingRequirement::DeclaredComponentAbsent => {
                 let [declared, _stable] = &mut request.controls.rustup.component_output;
                 "rustfmt (installed)\nclippy (installed)\n".clone_into(declared);
             }
-            "stable_toolchain_absent" => {
+            MissingRequirement::StableToolchainAbsent => {
                 let [_declared, stable] = &mut request.controls.rustup.list_output;
                 stable.clear();
                 skip_component_query(&mut calls, 2)?;
             }
-            "stable_rustfmt_absent" => {
+            MissingRequirement::StableRustfmtAbsent => {
                 let [_declared, stable] = &mut request.controls.rustup.component_output;
                 stable.clear();
             }
-            _ => return Err(format!("unknown preflight scenario {scenario}")),
         }
         let mut expected = oracle::expected(
             1,
@@ -163,34 +233,11 @@ pub(super) fn verify_missing_requirements(scenario: &str, diagnostic: &str) -> R
             Some(diagnostic.to_owned()),
             oracle::prefix_state(false, false),
         );
-        if scenario != "clang_absent" {
+        if !matches!(scenario, MissingRequirement::ClangAbsent) {
             expected.clang_stdin = oracle::CLANG_SOURCE.to_vec();
         }
         oracle::verify_observation(scratch, &scratch.run(&request)?, expected)
     })
-}
-
-/// Marks the second exact matching call without changing its argument vector.
-pub(super) fn set_second_matching_call_status(
-    calls: &mut [Invocation],
-    tool: &str,
-    arguments: &[&str],
-    status: i32,
-) -> Result<(), String> {
-    let call = calls
-        .iter_mut()
-        .filter(|call| {
-            call.tool == tool
-                && call
-                    .argv
-                    .iter()
-                    .map(String::as_str)
-                    .eq(arguments.iter().copied())
-        })
-        .nth(1)
-        .ok_or_else(|| format!("expected second {tool} call with argv {arguments:?}"))?;
-    call.status = status;
-    Ok(())
 }
 
 /// Verifies the second stable Rustup query failure against its full trace.
@@ -207,7 +254,15 @@ pub(super) fn verify_stable_discovery_failure(
         if skip_stable_component {
             skip_component_query(&mut calls, 2)?;
         }
-        set_second_matching_call_status(&mut calls, "rustup", arguments, 97)?;
+        set_call_status(
+            &mut calls,
+            &InvocationSelection {
+                tool: "rustup",
+                arguments,
+                occurrence: CallOccurrence::Second,
+            },
+            97,
+        )?;
 
         let mut expected = oracle::expected(
             1,

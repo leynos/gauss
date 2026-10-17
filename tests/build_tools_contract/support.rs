@@ -289,19 +289,7 @@ impl Scratch {
             if hidden.contains(program) {
                 continue;
             }
-            let source = format!("bin/{}", program.name());
-            let target = format!("state/hidden-{}", program.name());
-            let directory = self.directory()?;
-            if let Err(error) = directory.rename(&source, directory, &target) {
-                let restore = self.restore_tools(&hidden);
-                return match restore {
-                    Ok(()) => Err(format!("hiding fake {}: {error}", program.name())),
-                    Err(cleanup) => Err(format!(
-                        "hiding fake {}: {error}; restoring fakes: {cleanup}",
-                        program.name()
-                    )),
-                };
-            }
+            self.hide_tool(*program, &hidden)?;
             hidden.push(*program);
         }
         let outcome = operation();
@@ -311,6 +299,24 @@ impl Scratch {
             (Err(error), Ok(())) | (Ok(_), Err(error)) => Err(error),
             (Err(primary), Err(cleanup)) => Err(format!("{primary}; restoring fakes: {cleanup}")),
         }
+    }
+
+    /// Hides one fake, restoring earlier fakes if this rename fails.
+    fn hide_tool(&self, program: Program, hidden: &[Program]) -> Result<(), String> {
+        let source = format!("bin/{}", program.name());
+        let target = format!("state/hidden-{}", program.name());
+        let directory = self.directory()?;
+        if let Err(error) = directory.rename(&source, directory, &target) {
+            let restore = self.restore_tools(hidden);
+            return match restore {
+                Ok(()) => Err(format!("hiding fake {}: {error}", program.name())),
+                Err(cleanup) => Err(format!(
+                    "hiding fake {}: {error}; restoring fakes: {cleanup}",
+                    program.name()
+                )),
+            };
+        }
+        Ok(())
     }
 
     fn restore_tools(&self, hidden: &[Program]) -> Result<(), String> {
