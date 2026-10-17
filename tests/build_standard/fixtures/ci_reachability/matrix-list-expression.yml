@@ -1,0 +1,9 @@
+on: pull_request
+jobs:
+  build:
+    runs-on: [self-hosted, ${{ matrix.os }}, x64]
+    strategy:
+      matrix:
+        os: [linux, windows-2022]
+    steps:
+      - run: make test-ci

@@ -1,0 +1,6 @@
+on: push
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    steps:
+      - run: cargo nextest run --workspace

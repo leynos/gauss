@@ -1,0 +1,6 @@
+on: pull_request
+jobs:
+  build:
+    runs-on: [self-hosted, macos-15, arm64]
+    steps:
+      - run: make test-ci
