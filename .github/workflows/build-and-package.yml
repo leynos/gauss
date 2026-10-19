@@ -115,7 +115,7 @@ jobs:
 
       - name: Build release binary
         uses: >-
-          leynos/shared-actions/.github/actions/rust-build-release@df81280dcc1d6e66134114dbc924313328b15f05
+          leynos/shared-actions/.github/actions/rust-build-release@81374b6f183e59f0570ad36217ded90d3240fda6
         with:
           target: ${{ inputs.target }}
           bin-name: ${{ inputs['bin-name'] }}
@@ -123,7 +123,7 @@ jobs:
       - name: Package Linux artefacts
         if: inputs.platform == 'linux'
         uses: >-
-          leynos/shared-actions/.github/actions/linux-packages@df81280dcc1d6e66134114dbc924313328b15f05
+          leynos/shared-actions/.github/actions/linux-packages@81374b6f183e59f0570ad36217ded90d3240fda6
         with:
           project-dir: .
           package-name: ${{ inputs['bin-name'] }}
@@ -143,7 +143,7 @@ jobs:
         if: inputs.platform != 'linux'
         id: stage
         uses: >-
-          leynos/shared-actions/.github/actions/stage-release-artefacts@df81280dcc1d6e66134114dbc924313328b15f05
+          leynos/shared-actions/.github/actions/stage-release-artefacts@81374b6f183e59f0570ad36217ded90d3240fda6
         with:
           config-file: .github/release-staging.toml
           target: ${{ inputs['stage-target'] }}
@@ -165,7 +165,7 @@ jobs:
         if: inputs.platform == 'windows'
         id: package_windows
         uses: >-
-          leynos/shared-actions/.github/actions/windows-package@df81280dcc1d6e66134114dbc924313328b15f05
+          leynos/shared-actions/.github/actions/windows-package@81374b6f183e59f0570ad36217ded90d3240fda6
         with:
           product-name: ${{ inputs['bin-name'] }}
           manufacturer: df12 Productions
@@ -184,7 +184,7 @@ jobs:
         if: inputs.platform == 'macos'
         id: package_macos
         uses: >-
-          leynos/shared-actions/.github/actions/macos-package@df81280dcc1d6e66134114dbc924313328b15f05
+          leynos/shared-actions/.github/actions/macos-package@81374b6f183e59f0570ad36217ded90d3240fda6
         with:
           name: ${{ inputs['bin-name'] }}
           identifier: net.df12.${{ inputs['bin-name'] }}
