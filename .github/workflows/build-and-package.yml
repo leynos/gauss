@@ -159,7 +159,6 @@ jobs:
             echo "binary_path=${{ steps.stage.outputs['binary-path'] }}"
             echo "man_path=${{ steps.stage.outputs['man-path'] }}"
             echo "license_path=${{ steps.stage.outputs['license-path'] }}"
-            echo "artifact_dir=${{ steps.stage.outputs['artifact-dir'] }}"
           } >>"$GITHUB_OUTPUT"
 
       - name: Build Windows installer package
@@ -215,15 +214,18 @@ jobs:
           name: ${{ inputs['artifact-name'] }}
           path: dist
 
+      # Both installers are written to `dist`, and staging also places its
+      # directory there (see `dist_dir` in `.github/release-staging.toml`).
+      # A literal `dist` path also lets the CV-005 contract prove the upload
+      # cannot select a coverage report; an `${{ steps.*.outputs.* }}` path
+      # is unresolvable, so the contract refuses it.
       - name: Upload Windows artefacts
         if: inputs.platform == 'windows' && inputs['should-upload-workflow-artifacts']
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         # v4
         with:
           name: ${{ inputs['artifact-name'] }}
-          path: |
-            ${{ steps.stage_paths.outputs.artifact_dir }}
-            ${{ steps.package_windows.outputs['msi-path'] }}
+          path: dist
 
       - name: Upload macOS artefacts
         if: inputs.platform == 'macos' && inputs['should-upload-workflow-artifacts']
@@ -231,6 +233,4 @@ jobs:
         # v4
         with:
           name: ${{ inputs['artifact-name'] }}
-          path: |
-            ${{ steps.stage_paths.outputs.artifact_dir }}
-            dist/${{ inputs['bin-name'] }}-${{ inputs.version }}-${{ inputs['artifact-suffix'] }}.pkg
+          path: dist
