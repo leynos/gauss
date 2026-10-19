@@ -46,10 +46,16 @@ override has no `terminate-after` limit, so a queued nested compilation is not
 terminated by that threshold. The default-profile override also applies to the
 CI profile; other tests keep their configured deadlines and execution policy.
 
-The target passes the configured `RUST_FLAGS` value to both test stages. When
-supplying coverage configuration, sanitizer options, or other compiler flags,
-retain `-D warnings` in the override so doctests use the same build
-configuration and warning policy as the main suite.
+`RUST_FLAGS` is a Make-only input and is unexported from child processes.
+Recipes that use it compose its value into `RUSTFLAGS`; it is not applied by
+every recipe. Command-line values still reach recursive Make through
+`MAKEFLAGS`. When supplying coverage configuration, sanitizer options, or other
+compiler flags, retain `-D warnings` so doctests keep the suite's warning
+policy.
+
+`NEXTEST_FLAGS` is appended only to direct `cargo nextest run` commands in
+`make test`, `make test-ci` and `make test-quick`. It does not affect the
+Nextest availability probe, the `cargo test` fallback or doctests.
 
 ## Spelling gate
 
@@ -422,19 +428,20 @@ configuration). Cargo has no per-profile `rustflags`, so a direct
 assigned too.
 
 On Linux, install `mold` before building: the configuration names it, so a
-build without it fails at link time. CI installs it through `setup-rust`'s
-`install-mold` input. `tests/build_standard/contract.rs` holds the standard. It
-reads the configuration sources, the commands `make -n` prints for each
-development target on a Linux host and a macOS host (each keeping the caller's
-own `RUSTFLAGS`) and for the release target (the coverage exclusion is checked
-in the workflow steps) on a Linux host, and the `setup-rust` steps of the CI
-workflows (each must pass `install-mold`), so a flag lost through a recipe or
-workflow edit fails there. `tests/build_standard/rust_flags.rs` checks that a
-`RUST_FLAGS` override on the `make` command line reaches every recipe that
-composes it. The decision is recorded in
-[ADR 006](adr-006-rust-build-standard.md). The contract runs `make -n`, so a
-direct `cargo test` needs GNU make on the `PATH`. It fails when `make` is
-missing instead of skipping, so a missing tool cannot read as a pass.
+build without it fails at link time. For `x86_64-unknown-linux-gnu` and
+`aarch64-unknown-linux-gnu`, install `clang` too; `.cargo/config.toml` selects
+it as the linker. CI installs `mold` through `setup-rust`'s `install-mold`
+input. `tests/build_standard/contract.rs` holds the standard. It reads the
+configuration sources, the `make -n` output for development targets on Linux
+and macOS (each keeping the caller's own `RUSTFLAGS`) and for the release
+target on Linux. A workflow check covers the coverage exclusion. It also reads
+the `setup-rust` steps of CI workflows (each must pass `install-mold`), so a
+flag lost through a recipe or workflow edit fails there.
+`tests/build_standard/rust_flags.rs` checks that a `RUST_FLAGS` override on the
+`make` command line reaches every recipe that composes it. The decision is
+recorded in [ADR 006](adr-006-rust-build-standard.md). The contract runs
+`make -n`, so a direct `cargo test` needs GNU make on the `PATH`. It fails when
+`make` is missing instead of skipping, so a missing tool cannot read as a pass.
 
 ### Cranelift
 

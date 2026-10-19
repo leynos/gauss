@@ -280,25 +280,17 @@ automatically use Ctrl on other platforms.
 
 ### Build standard
 
-Development builds (`make test`, `make lint`, `make typecheck` and the debug
-build) use the `mold` linker on Linux (the parallel frontend flag is
-nightly-only, and this repository pins a stable toolchain). Install `mold`
-before building on Linux, and `clang`, which `.cargo/config.toml` selects as
-the linker for `x86_64-unknown-linux-gnu`: the configuration names it, so a
-build without it fails at link time (on Debian or Ubuntu,
-`sudo apt-get install mold`). macOS keeps its platform linker, because `mold`
-ships for Linux only.
+To build Gauss from source, install the pinned Rust toolchain and the platform
+prerequisites described in the
+[developer's guide](developers-guide.md#the-build-standard). That guide
+explains the development build defaults, Make inputs and the coverage and
+release routes. See [ADR 006](adr-006-rust-build-standard.md) for the decision
+rationale.
 
-The flags live in `.cargo/config.toml`, but Cargo applies exactly one
-`rustflags` source and an assigned `RUSTFLAGS` replaces every configuration
-source. The Makefile therefore restates the flags in each recipe and keeps any
-`RUSTFLAGS` already in the environment, appending the standard flags after it.
-Two builds are held out deliberately. The coverage build assigns its own flags,
-because a measurement should not depend on the fast flags. `make release` keeps
-the environment's `RUSTFLAGS` and names neither fast flag, so a shipped
-artefact links with the platform linker. A bare `cargo build --release` takes
-the configuration's flags unless `RUSTFLAGS` is assigned, for example
-`RUSTFLAGS="" cargo build --release`.
+`RUST_FLAGS` is a Make-only input: recipes that use it compose its value into
+`RUSTFLAGS`, and it is not exported to child processes. Command-line values
+still reach recursive Make through `MAKEFLAGS`.
 
-Cranelift is not adopted; the developers' guide records the reason. See
-[ADR 006](adr-006-rust-build-standard.md) for the reasoning.
+`NEXTEST_FLAGS` applies only to direct Nextest runs in `make test`,
+`make test-ci` and `make test-quick`. It does not affect the availability
+probe, the `cargo test` fallback or doctests.
