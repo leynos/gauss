@@ -7,7 +7,10 @@ name: Release Dry Run
 
 jobs:
   release:
+    # No `secrets: inherit`: a called workflow already receives
+    # `secrets.GITHUB_TOKEN`, and inheriting every secret would expose
+    # credentials such as `CS_ACCESS_TOKEN` to a pull-request run. The
+    # CV-005 contract (`make workflow-contracts`) refuses `inherit` here.
     uses: ./.github/workflows/release.yml
     with:
       dry-run: true
-    secrets: inherit
