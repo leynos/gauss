@@ -143,6 +143,14 @@ def test_no_term_is_accepted_as_a_bare_word() -> None:
     assert not accepted & set(TERMS), f"bare accepted words: {sorted(accepted)}"
 
 
+def test_token_bounds_requires_keyword_for_last_occurrence() -> None:
+    """Keep the selection flag keyword-only to avoid positional booleans."""
+    positional_arguments = ("Color then Color", "Color", True)
+
+    with pytest.raises(TypeError, match="positional"):
+        token_bounds(*positional_arguments)
+
+
 def uncovered_in_line(patterns: list[re.Pattern[str]], line: str) -> bool:
     """Return whether the line holds a term that no ignore pattern covers."""
     return any(
@@ -267,7 +275,9 @@ def test_migration_exceptions_leave_generated_near_misses_uncovered(
             context.case_id, pattern, line, approved_spans
         )
 
-        start, end = token_bounds(line, token, last_occurrence)
+        start, end = token_bounds(
+            line, token, last_occurrence=last_occurrence
+        )
         assert not is_covered(patterns, line, start, end), (
             f"{context.case_id} {category} hides {token!r} in {line!r}"
         )

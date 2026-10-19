@@ -124,11 +124,25 @@ NEAR_MISS_CATEGORIES = (
 def render_migration_context(
     context: SpellingMigrationContext, separators: list[str]
 ) -> str:
-    """Render one approved migration context with generated whitespace.
+    """Render an approved migration context with generated whitespace.
 
-    Example:
-        ``render_migration_context(MIGRATION_CONTEXTS[0], [" ", " ", " ", " "])``
-        returns ``| `Color` | `Colour` |``.
+    Parameters
+    ----------
+    context : SpellingMigrationContext
+        Approved table row or recorded-identifier statement to render.
+    separators : list[str]
+        Whitespace between the recorded words, as drawn by
+        :func:`separator_strategy`.
+
+    Returns
+    -------
+    str
+        The selected migration phrase with its supplied whitespace.
+
+    Examples
+    --------
+    ``render_migration_context(MIGRATION_CONTEXTS[0], [" ", " ", " ", " "])``
+    returns ``| `Color` | `Colour` |``.
     """
     if context.layout == "table":
         before_previous, after_previous, before_current, after_current = separators
@@ -145,12 +159,28 @@ def render_migration_context(
     )
 
 
-def separator_strategy(context: SpellingMigrationContext):
-    """Return independent bounded whitespace for this context.
+def separator_strategy(
+    context: SpellingMigrationContext,
+) -> st.SearchStrategy[list[str]]:
+    """Build a strategy for independently generated context whitespace.
 
-    A table draw contains four strings of spaces and tabs, each up to 16
-    characters. A statement draw has one nonempty whitespace string between
-    each adjacent pair of recorded words and may include CR or LF.
+    Parameters
+    ----------
+    context : SpellingMigrationContext
+        Approved table row or recorded-identifier statement to generate.
+
+    Returns
+    -------
+    st.SearchStrategy[list[str]]
+        A strategy whose table draws contain four strings of spaces and tabs,
+        each up to 16 characters. Statement draws contain one nonempty
+        whitespace string between each adjacent pair of recorded words and
+        may include CR or LF.
+
+    Examples
+    --------
+    A table draw contains four separators; a statement draw contains one
+    separator between each adjacent pair of recorded words.
     """
     if context.layout == "table":
         whitespace = st.text(alphabet=" \t", min_size=0, max_size=16)
@@ -294,8 +324,32 @@ def make_near_miss(
 ) -> tuple[str, str, bool]:
     """Create one malformed input and identify its forbidden token.
 
-    For example, an altered stroke identifier changes
-    ``Action::SetStrokeColor`` to ``Action::SetStrokeColorX``.
+    Parameters
+    ----------
+    context : SpellingMigrationContext
+        Approved context whose legacy token is changed.
+    approved : str
+        Rendered approved context used as the starting input.
+    separators : list[str]
+        Generated whitespace retained by near-miss builders that need it.
+    category : str
+        One of :data:`NEAR_MISS_CATEGORIES`.
+
+    Returns
+    -------
+    tuple[str, str, bool]
+        Malformed input, forbidden token, and whether an approved context
+        remains in the input.
+
+    Raises
+    ------
+    ValueError
+        If ``category`` does not name a supported near-miss case.
+
+    Examples
+    --------
+    An altered stroke identifier changes ``Action::SetStrokeColor`` to
+    ``Action::SetStrokeColorX``.
     """
     legacy = context.legacy_tokens[0]
     builder = _NEAR_MISS_BUILDERS.get(category)
@@ -305,12 +359,28 @@ def make_near_miss(
 
 
 def token_bounds(
-    line: str, token: str, last_occurrence: bool = False
+    line: str, token: str, *, last_occurrence: bool = False
 ) -> tuple[int, int]:
-    """Return the full token span, selecting its last occurrence when asked.
+    """Return the token span, optionally selecting its last occurrence.
 
-    Example:
-        ``token_bounds("Color then Color", "Color", True)`` returns ``(11, 16)``.
+    Parameters
+    ----------
+    line : str
+        Text containing the token.
+    token : str
+        Token whose character offsets are returned.
+    last_occurrence : bool, keyword-only
+        Select the final occurrence instead of the first one.
+
+    Returns
+    -------
+    tuple[int, int]
+        Start and end offsets delimiting the complete token.
+
+    Examples
+    --------
+    ``token_bounds("Color then Color", "Color", last_occurrence=True)``
+    returns ``(11, 16)``.
     """
     start = line.rindex(token) if last_occurrence else line.index(token)
     return start, start + len(token)
