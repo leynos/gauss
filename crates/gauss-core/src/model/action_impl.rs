@@ -32,10 +32,10 @@ impl Action {
             | Self::RaiseSelection
             | Self::LowerSelection
             | Self::ToggleSegmentKind
-            | Self::SetStrokeColor(_)
+            | Self::SetStrokeColour(_)
             | Self::SetStrokeWidth(_)
             | Self::SetStrokeOpacity(_)
-            | Self::SetFillColor(_)
+            | Self::SetFillColour(_)
             | Self::SetFillOpacity(_)
             | Self::ToggleNoFill
             | Self::SetObjectPosition(_)
@@ -95,10 +95,10 @@ impl Action {
             Self::Redo => "Redo",
             Self::SelectionUndo => "Selection Undo",
             Self::SelectionRedo => "Selection Redo",
-            Self::SetStrokeColor(_) => "Set Stroke Colour",
+            Self::SetStrokeColour(_) => "Set Stroke Colour",
             Self::SetStrokeWidth(_) => "Set Stroke Width",
             Self::SetStrokeOpacity(_) => "Set Stroke Opacity",
-            Self::SetFillColor(_) => "Set Fill Colour",
+            Self::SetFillColour(_) => "Set Fill Colour",
             Self::SetFillOpacity(_) => "Set Fill Opacity",
             Self::ToggleNoFill => "Toggle No Fill",
             Self::SetObjectPosition(_) => "Set Position",
@@ -109,11 +109,14 @@ impl Action {
 
     /// Return the internal identifier for this action.
     ///
-    /// The identifier is the enum variant name and is suitable for:
+    /// The identifier is a stable action name suitable for:
     ///
     /// - Command linkage metadata
     /// - Serialization and dispatch tables
     /// - Log and telemetry labels
+    ///
+    /// The colour action identifiers retain their historical spelling because
+    /// recorded action names must survive source-level renames.
     ///
     /// # Returns
     ///
@@ -144,10 +147,10 @@ impl Action {
             Self::Redo => "Redo",
             Self::SelectionUndo => "SelectionUndo",
             Self::SelectionRedo => "SelectionRedo",
-            Self::SetStrokeColor(_) => "SetStrokeColor",
+            Self::SetStrokeColour(_) => "SetStrokeColor",
             Self::SetStrokeWidth(_) => "SetStrokeWidth",
             Self::SetStrokeOpacity(_) => "SetStrokeOpacity",
-            Self::SetFillColor(_) => "SetFillColor",
+            Self::SetFillColour(_) => "SetFillColor",
             Self::SetFillOpacity(_) => "SetFillOpacity",
             Self::ToggleNoFill => "ToggleNoFill",
             Self::SetObjectPosition(_) => "SetObjectPosition",
@@ -184,10 +187,10 @@ impl Action {
                 | Self::RaiseSelection
                 | Self::LowerSelection
                 | Self::ToggleSegmentKind
-                | Self::SetStrokeColor(_)
+                | Self::SetStrokeColour(_)
                 | Self::SetStrokeWidth(_)
                 | Self::SetStrokeOpacity(_)
-                | Self::SetFillColor(_)
+                | Self::SetFillColour(_)
                 | Self::SetFillOpacity(_)
                 | Self::ToggleNoFill
                 | Self::SetObjectPosition(_)

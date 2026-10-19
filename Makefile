@@ -134,8 +134,9 @@ integration-test-inventory-pytest: ## Test the inventory checker
 		-c /dev/null --rootdir=. -p no:cacheprovider
 
 spelling-exceptions-test: ## Test that local spelling exceptions are exact patterns
-	@PYTHONPATH=scripts $(UV_ENV) $(UV) run --no-project --python 3.13 \
-		--with pytest==9.0.2 \
+	@PYTHONPATH=scripts HYPOTHESIS_STORAGE_DIRECTORY=/tmp/gauss-hypothesis \
+		$(UV_ENV) $(UV) run --no-project --python 3.13 \
+		--with pytest==9.0.2 --with hypothesis==6.151.9 \
 		python -m pytest scripts/tests/test_spelling_exceptions.py \
 		-c /dev/null --rootdir=. -p no:cacheprovider
 

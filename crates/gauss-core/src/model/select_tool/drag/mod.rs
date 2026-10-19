@@ -24,7 +24,7 @@ struct SelectDragShapeSnapshot {
     anchors: Vec<Anchor>,
 }
 
-/// Lightweight document snapshot used to initialise select-tool drags.
+/// Lightweight document snapshot used to initialize select-tool drags.
 ///
 /// Drag-start logic only needs shape identity, ordering, and anchor geometry,
 /// so this snapshot avoids carrying full style/metadata document state.

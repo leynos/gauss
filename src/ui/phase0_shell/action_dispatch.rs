@@ -74,10 +74,10 @@ impl Phase0Shell {
             | GaussAction::SelectionUndo
             | GaussAction::SelectionRedo => self.execute_history_action(action, cx),
             // Style and Transform actions - not yet implemented, report as unsupported
-            unsupported_action @ (GaussAction::SetStrokeColor(_)
+            unsupported_action @ (GaussAction::SetStrokeColour(_)
             | GaussAction::SetStrokeWidth(_)
             | GaussAction::SetStrokeOpacity(_)
-            | GaussAction::SetFillColor(_)
+            | GaussAction::SetFillColour(_)
             | GaussAction::SetFillOpacity(_)
             | GaussAction::ToggleNoFill
             | GaussAction::SetObjectPosition(_)

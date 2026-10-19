@@ -1,7 +1,7 @@
 //! Test-only snapshots for complete document-history assertions.
 //!
 //! The public projection keeps `HistoryEntry` private while preserving the
-//! ordered `undo_2` representation and its realised cursor position.
+//! ordered `undo_2` representation and its realized cursor position.
 
 use super::DocumentUndoHistory;
 
@@ -10,9 +10,9 @@ use super::DocumentUndoHistory;
 pub struct DocumentHistoryState {
     /// Complete ordered command and undo-marker representation.
     pub entries: Vec<String>,
-    /// Number of realised entries at the current undo/redo cursor.
+    /// Number of realized entries at the current undo/redo cursor.
     pub cursor: usize,
-    /// Number of realised entries currently available to undo.
+    /// Number of realized entries currently available to undo.
     pub entry_count: usize,
     /// Whether the current history position can be undone.
     pub can_undo: bool,
@@ -24,7 +24,7 @@ impl DocumentUndoHistory {
     /// Return a complete history snapshot for headless test assertions.
     ///
     /// The snapshot records every ordered command and undo marker, together
-    /// with the currently realised cursor position.
+    /// with the currently realized cursor position.
     #[must_use]
     pub fn state_for_tests(&self) -> DocumentHistoryState {
         let entry_count = self.len();

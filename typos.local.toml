@@ -39,6 +39,11 @@ ignore = [
     # The Spanish Gherkin example.
     "Dado un inventario vac\u00edo",
     "el inventario contiene una calabaza",
+    # Preserve documented old-to-new migration pairs and fixed recorded identifiers.
+    "(?m)^\\|[ \\t]*`Color`[ \\t]*\\|[ \\t]*`Colour`[ \\t]*\\|[ \\t]*$",
+    "(?m)^\\|[ \\t]*`Action::SetStrokeColor`[ \\t]*\\|[ \\t]*`Action::SetStrokeColour`[ \\t]*\\|[ \\t]*$",
+    "(?m)^\\|[ \\t]*`Action::SetFillColor`[ \\t]*\\|[ \\t]*`Action::SetFillColour`[ \\t]*\\|[ \\t]*$",
+    "(?m)^`Action::identifier\\(\\)`[ \\t\\r\\n]+intentionally[ \\t\\r\\n]+retains[ \\t\\r\\n]+the[ \\t\\r\\n]+recorded[ \\t\\r\\n]+strings[ \\t\\r\\n]+`SetStrokeColor`[ \\t\\r\\n]+and[ \\t\\r\\n]+`SetFillColor`;[ \\t\\r\\n]+persisted[ \\t\\r\\n]+identifiers[ \\t\\r\\n]+are[ \\t\\r\\n]+unchanged\\.[ \\t]*$",
 ]
 
 [files]
