@@ -71,6 +71,10 @@ pub(super) fn compute_selection_overlays(
     overlays
 }
 
+/// Adds a padded bounding box and anchor/handle markers when shape bounds exist.
+///
+/// A shape with a screen-space box from `(10, 10)` to `(30, 20)` gets box edges
+/// spanning `(7, 7)` to `(33, 23)`, followed by its anchor and handle overlays.
 fn add_shape_overlays(overlays: &mut SelectionOverlays, shape: &Shape, viewport: Viewport) {
     let Some((bbox_min, bbox_max)) = shape_screen_bbox(shape, viewport) else {
         return;
@@ -84,6 +88,11 @@ fn add_shape_overlays(overlays: &mut SelectionOverlays, shape: &Shape, viewport:
     add_anchor_and_handle_overlays(overlays, shape, viewport);
 }
 
+/// Converts a shape's world-space bounds into screen-space minimum and maximum
+/// points, or returns `None` when the shape has no world-space bounds.
+///
+/// For example, world bounds `(1, 2)` to `(4, 6)` are returned after both
+/// corners pass through the viewport's world-to-screen transform.
 fn shape_screen_bbox(shape: &Shape, viewport: Viewport) -> Option<(Vec2, Vec2)> {
     let bounds = shape_world_bounds(shape)?;
     let screen_min = viewport.world_to_screen(bounds.min());
@@ -91,6 +100,10 @@ fn shape_screen_bbox(shape: &Shape, viewport: Viewport) -> Option<(Vec2, Vec2)> 
     Some((screen_min, screen_max))
 }
 
+/// Appends the four perimeter edges of a screen-space bounding box.
+///
+/// Given corners `(0, 0)` and `(8, 5)`, the added edges run across the top,
+/// down the right side, across the bottom, and up the left side.
 fn add_bbox_edges(overlays: &mut SelectionOverlays, min: Vec2, max: Vec2) {
     let top_left = min;
     let top_right = Vec2::new(max.x, min.y);
@@ -117,6 +130,9 @@ fn add_bbox_edges(overlays: &mut SelectionOverlays, min: Vec2, max: Vec2) {
     ]);
 }
 
+/// Adds a seven-pixel marker for each anchor and six-pixel markers for handles.
+///
+/// Each present handle also gets a connector from its anchor to the handle.
 fn add_anchor_and_handle_overlays(
     overlays: &mut SelectionOverlays,
     shape: &Shape,

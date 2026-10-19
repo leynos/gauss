@@ -5,12 +5,19 @@ use super::{
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
 
+/// Accessibility text used to describe one numeric field.
 #[derive(Clone, Copy)]
 struct A11ySpec {
+    /// Label announced for the field.
     label: &'static str,
+    /// Guidance about the field's accessible interaction and state.
     notes: &'static str,
 }
 
+/// Build a Phase 1 numeric-field requirement with its action and accessible text.
+///
+/// For example, an X-position entry uses `SetObjectPosition` and requires
+/// keyboard input, arrow-key nudging, and Enter to commit.
 fn make_numeric_field(
     name: &'static str,
     description: &'static str,

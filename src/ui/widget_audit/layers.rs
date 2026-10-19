@@ -15,6 +15,10 @@ use super::types::{
     CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
 };
 
+/// Return the five controls required by the Phase 1 layer-panel audit.
+///
+/// For example, the returned entries cover row selection, visibility, lock,
+/// rename, and reordering.
 pub(super) fn controls() -> Vec<RequiredControl> {
     vec![
         layer_row(),
@@ -25,6 +29,10 @@ pub(super) fn controls() -> Vec<RequiredControl> {
     ]
 }
 
+/// Describe the required row for a layer in the document hierarchy.
+///
+/// For example, its record links selection to `SelectLayer` and requires the
+/// layer name, visibility, and lock state to be announced.
 fn layer_row() -> RequiredControl {
     RequiredControl {
         name: "Layer Row",
@@ -64,6 +72,10 @@ fn layer_row() -> RequiredControl {
     }
 }
 
+/// Describe the visibility toggle and its checked or unchecked states.
+///
+/// For example, its audit entry links the toggle to `ToggleLayerVisibility`
+/// and requires the state change to be announced and undoable.
 fn layer_visibility_toggle() -> RequiredControl {
     RequiredControl {
         name: "Layer Visibility Toggle",
@@ -103,6 +115,10 @@ fn layer_visibility_toggle() -> RequiredControl {
     }
 }
 
+/// Describe the lock toggle and its locked or unlocked states.
+///
+/// For example, its audit entry links the toggle to `ToggleLayerLock` and
+/// requires the lock change to be announced and undoable.
 fn layer_lock_toggle() -> RequiredControl {
     RequiredControl {
         name: "Layer Lock Toggle",
@@ -142,6 +158,10 @@ fn layer_lock_toggle() -> RequiredControl {
     }
 }
 
+/// Describe the inline field for changing a layer name.
+///
+/// For example, its audit entry links edits to `RenameLayer` and requires
+/// Enter to commit the name and Escape to cancel.
 fn layer_rename_field() -> RequiredControl {
     RequiredControl {
         name: "Layer Rename Field",
@@ -181,6 +201,10 @@ fn layer_rename_field() -> RequiredControl {
     }
 }
 
+/// Describe the control for changing a layer's stacking position.
+///
+/// For example, its audit entry links moves to `ReorderLayer` and requires
+/// position changes to be announced.
 fn layer_reorder_handle() -> RequiredControl {
     RequiredControl {
         name: "Layer Reorder Handle",

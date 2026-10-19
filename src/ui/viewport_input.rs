@@ -17,6 +17,9 @@ use gpui::{Pixels, ScrollWheelEvent};
 
 use crate::model::{Vec2, Viewport};
 
+/// Exponential zoom-rate multiplier applied to each vertical scroll pixel.
+///
+/// A positive 100-pixel vertical delta contributes `exp(0.1)` before the zoom clamp.
 const ZOOM_FACTOR_PER_PIXEL: f32 = 0.001;
 
 /// Detects shift-scroll intended for horizontal panning.
@@ -27,6 +30,11 @@ fn is_shift_vertical_scroll(event: &ScrollWheelEvent, dx: f32, dy: f32) -> bool 
     event.shift && dx.abs() <= f32::EPSILON && dy.abs() > f32::EPSILON
 }
 
+/// Applies a scroll event as cursor-centred zoom or viewport panning.
+///
+/// Secondary-modified scroll zooms at the cursor when the factor changes; shift
+/// plus a purely vertical delta pans horizontally. Other non-negligible deltas
+/// pan directly; a zero or negligible delta returns `false`.
 pub(super) fn apply_scroll_wheel_event(
     viewport: &mut Viewport,
     event: &ScrollWheelEvent,
@@ -60,6 +68,11 @@ pub(super) fn apply_scroll_wheel_event(
     true
 }
 
+/// Converts a vertical pixel delta to an exponential zoom factor clamped to
+/// `0.5..=2.0`.
+///
+/// A delta of 100 pixels produces `exp(0.1)` (about `1.105`); larger deltas
+/// cannot zoom beyond the clamp.
 fn zoom_factor_from_scroll(delta_y_pixels: f32) -> f32 {
     let raw = (delta_y_pixels * ZOOM_FACTOR_PER_PIXEL).exp();
     raw.clamp(0.5, 2.0)
