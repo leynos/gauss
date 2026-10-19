@@ -63,15 +63,14 @@ fn insert_shape_inverts() {
 }
 
 #[rstest]
-fn remove_shape_inverts() -> Result<(), Box<dyn std::error::Error>> {
+fn remove_shape_inverts() {
     let sample = sample_doc();
     let found_shape = sample
         .doc
         .shape_at(0)
-        .ok_or("expected sample document to contain a shape")?;
+        .expect("expected sample document to contain a shape");
     let shape = found_shape.clone();
     assert_round_trip(sample.doc, &DocOp::RemoveShape { index: 0, shape });
-    Ok(())
 }
 
 #[rstest]

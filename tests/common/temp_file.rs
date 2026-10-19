@@ -1,8 +1,9 @@
 //! Temporary-file cleanup for GPUI integration tests.
 
 use camino::{Utf8Path, Utf8PathBuf};
-use cap_std::fs_utf8::Dir;
+use cap_std::{ambient_authority, fs_utf8::Dir};
 use test_support::{TestSupportError, TestSupportResult};
+use uuid::Uuid;
 
 /// Owns a temporary file and removes it when the guard is dropped.
 pub struct TempFileGuard {
@@ -53,32 +54,43 @@ impl Drop for TempFileGuard {
     }
 }
 
+/// Creates a guard for a uniquely named file in the process temporary directory.
+///
+/// For example, a `"gauss-test"` prefix yields a guard whose file name begins
+/// with `gauss-test-`; callers can then write through its directory capability.
+pub(super) fn temp_guard(prefix: &str) -> TestSupportResult<TempFileGuard> {
+    let temp_dir = Utf8PathBuf::from_path_buf(std::env::temp_dir()).map_err(|path| {
+        TestSupportError::expectation(format!(
+            "temporary directory path is not valid UTF-8: {}",
+            path.display()
+        ))
+    })?;
+    let dir = Dir::open_ambient_dir(&temp_dir, ambient_authority())
+        .map_err(|error| TestSupportError::io("opening the temporary directory", error))?;
+    let file_name = Utf8PathBuf::from(format!("{prefix}-{}", Uuid::new_v4()));
+    let path = temp_dir.join(&file_name);
+    Ok(TempFileGuard::new(dir, file_name, path))
+}
+
 #[cfg(test)]
 mod tests {
     //! Tests explicit cleanup, error propagation, and the drop-time fallback.
 
-    use cap_std::ambient_authority;
-    use uuid::Uuid;
-
     use super::*;
+    use rstest::{fixture, rstest};
 
-    fn temp_guard(prefix: &str) -> TestSupportResult<TempFileGuard> {
-        let temp_dir = Utf8PathBuf::from_path_buf(std::env::temp_dir()).map_err(|path| {
-            TestSupportError::expectation(format!(
-                "temporary directory path is not valid UTF-8: {}",
-                path.display()
-            ))
-        })?;
-        let dir = Dir::open_ambient_dir(&temp_dir, ambient_authority())
-            .map_err(|error| TestSupportError::io("opening the temporary directory", error))?;
-        let file_name = Utf8PathBuf::from(format!("{prefix}-{}", Uuid::new_v4()));
-        let path = temp_dir.join(&file_name);
-        Ok(TempFileGuard::new(dir, file_name, path))
+    /// Provides an isolated temporary-file guard for cleanup tests.
+    #[fixture]
+    fn temporary_file_guard() -> TestSupportResult<TempFileGuard> {
+        temp_guard("gauss-test-cleanup")
     }
 
-    #[test]
-    fn cleanup_is_idempotent() -> TestSupportResult<()> {
-        let guard = temp_guard("gauss-test-explicit-cleanup")?;
+    #[rstest]
+    fn cleanup_is_idempotent(
+        temporary_file_guard: TestSupportResult<TempFileGuard>,
+    ) -> TestSupportResult<()> {
+        let guard_result = temporary_file_guard;
+        let guard = guard_result?;
         guard
             .dir
             .write(guard.file_name.as_path(), b"temporary")
@@ -88,9 +100,12 @@ mod tests {
         guard.cleanup()
     }
 
-    #[test]
-    fn cleanup_propagates_removal_errors() -> TestSupportResult<()> {
-        let guard = temp_guard("gauss-test-cleanup-error")?;
+    #[rstest]
+    fn cleanup_propagates_removal_errors(
+        temporary_file_guard: TestSupportResult<TempFileGuard>,
+    ) -> TestSupportResult<()> {
+        let guard_result = temporary_file_guard;
+        let guard = guard_result?;
         guard
             .dir
             .create_dir(guard.file_name.as_path())
@@ -112,9 +127,12 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn drop_removes_the_guarded_file() -> TestSupportResult<()> {
-        let guard = temp_guard("gauss-test-drop-cleanup")?;
+    #[rstest]
+    fn drop_removes_the_guarded_file(
+        temporary_file_guard: TestSupportResult<TempFileGuard>,
+    ) -> TestSupportResult<()> {
+        let guard_result = temporary_file_guard;
+        let guard = guard_result?;
         let file_name = guard.file_name.clone();
         let dir = guard
             .dir

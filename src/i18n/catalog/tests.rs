@@ -44,7 +44,6 @@ fn catalog_default_en_gb_contains_edge_modes() {
 fn localizer_new_creates_with_default_catalog() {
     let localizer = Localizer::new();
     let result = localizer.lookup(&Locale::en_gb(), &MessageId::tool_mode_draw());
-    assert!(result.is_ok());
     assert_eq!(result.expect("Should have found message"), "Draw");
 }
 
@@ -66,7 +65,6 @@ fn fr_test_localizer(fr_test_catalog: Catalog) -> Localizer {
 #[rstest]
 fn localizer_lookup_succeeds_for_available_locale(fr_test_localizer: Localizer) {
     let result = fr_test_localizer.lookup(&Locale::fr_fr(), &MessageId::from("test"));
-    assert!(result.is_ok());
     assert_eq!(result.expect("Should have found message"), "test_fr");
 }
 
@@ -77,7 +75,6 @@ fn localizer_lookup_falls_back_to_default_locale() {
 
     let localizer = Localizer::with_catalogs(catalogs, Locale::en_gb());
     let result = localizer.lookup(&Locale::fr_fr(), &MessageId::tool_mode_draw());
-    assert!(result.is_ok());
     assert_eq!(result.expect("Should have found message"), "Draw");
 }
 
@@ -85,7 +82,6 @@ fn localizer_lookup_falls_back_to_default_locale() {
 fn localizer_lookup_returns_error_for_missing_message() {
     let localizer = Localizer::new();
     let result = localizer.lookup(&Locale::en_gb(), &MessageId::from("nonexistent"));
-    assert!(result.is_err());
     match result.expect_err("Should have returned error") {
         I18nError::MessageNotFound { message_id, .. } => {
             assert_eq!(message_id, "nonexistent");
@@ -101,7 +97,6 @@ fn localizer_add_catalog_works(fr_test_catalog: Catalog) {
     let mut localizer = Localizer::new();
     localizer.add_catalog(Locale::fr_fr(), fr_test_catalog);
     let result = localizer.lookup(&Locale::fr_fr(), &MessageId::from("test"));
-    assert!(result.is_ok());
     assert_eq!(result.expect("Should have found message"), "test_fr");
 }
 

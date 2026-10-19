@@ -5,26 +5,9 @@ mod temp_file;
 
 use std::fmt::Display;
 
-use camino::Utf8PathBuf;
-use cap_std::{ambient_authority, fs_utf8::Dir};
 use proptest::{prelude::*, test_runner::TestCaseError};
-use temp_file::TempFileGuard;
-use test_support::{TestSupportError, TestSupportResult};
-use uuid::Uuid;
-
-fn temp_guard(prefix: &str) -> TestSupportResult<TempFileGuard> {
-    let temp_dir = Utf8PathBuf::from_path_buf(std::env::temp_dir()).map_err(|path| {
-        TestSupportError::expectation(format!(
-            "temporary directory path is not valid UTF-8: {}",
-            path.display()
-        ))
-    })?;
-    let dir = Dir::open_ambient_dir(&temp_dir, ambient_authority())
-        .map_err(|error| TestSupportError::io("opening the temporary directory", error))?;
-    let file_name = Utf8PathBuf::from(format!("{prefix}-{}", Uuid::new_v4()));
-    let path = temp_dir.join(&file_name);
-    Ok(TempFileGuard::new(dir, file_name, path))
-}
+use temp_file::temp_guard;
+use test_support::TestSupportError;
 
 fn test_case<T, E: Display>(result: Result<T, E>) -> Result<T, TestCaseError> {
     result.map_err(|error| TestCaseError::fail(error.to_string()))
