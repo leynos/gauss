@@ -21,6 +21,12 @@ use super::{HoverCache, Phase0Shell, draw::ToolMode};
 const HIT_TOLERANCE_PX: f32 = 4.0;
 
 impl Phase0Shell {
+    /// Route a primary-button press through hit testing and the select-tool FSM.
+    ///
+    /// A press outside manipulate mode or from another mouse button leaves the
+    /// shell unchanged. A valid press captures the document state for dragging.
+    /// For example, a right-button press returns `false` without sending a
+    /// select-tool event.
     pub(super) fn handle_canvas_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
         if self.state.tool_mode != ToolMode::Manipulate {
             return false;
@@ -54,6 +60,9 @@ impl Phase0Shell {
         self.apply_tool_commands(transition.commands)
     }
 
+    /// Update hover feedback and route a valid primary-button move to the FSM.
+    /// With no left button held, movement can update hover without dispatching
+    /// a drag event.
     pub(super) fn handle_canvas_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
         let did_update_hover = event.pressed_button != Some(MouseButton::Left)
             && self.update_hover_hit(event.position);
@@ -73,6 +82,8 @@ impl Phase0Shell {
         did_update_hover || did_apply_pointer_move
     }
 
+    /// Route a primary-button release with the current select-tool state.
+    /// A non-primary release is rejected by the shared pointer-event handler.
     pub(super) fn handle_canvas_mouse_up(&mut self, event: &MouseUpEvent) -> bool {
         let select_tool_state = self.select_tool_state.clone();
         self.handle_pointer_event(
@@ -88,10 +99,16 @@ impl Phase0Shell {
         )
     }
 
+    /// Borrow a hit-test index over the current document.
+    /// Mouse-down and hover queries use this view before applying their
+    /// respective hit-test operation.
     const fn hit_test_index(&self) -> HitTestIndex<'_> {
         HitTestIndex::from_document(&self.state.document)
     }
 
+    /// Refresh the hovered target, reusing a cache valid for this document generation.
+    /// Repeating a query with the same cached target returns `false` because
+    /// no redraw-relevant hover state changed.
     fn update_hover_hit(&mut self, position: gpui::Point<Pixels>) -> bool {
         if self.state.tool_mode != ToolMode::Manipulate {
             return false;
@@ -130,6 +147,9 @@ impl Phase0Shell {
         true
     }
 
+    /// Convert an accepted pointer position into one select-tool input event.
+    /// For example, mouse-up supplies a closure that wraps the world position
+    /// in a pointer-up event.
     fn handle_pointer_event<F>(
         &mut self,
         position: gpui::Point<Pixels>,
@@ -159,6 +179,9 @@ impl Phase0Shell {
     }
 }
 
+/// Convert a screen-space pointer position into document coordinates.
+/// A canvas event's pixel coordinates are scaled and offset through the
+/// viewport before hit testing or FSM dispatch.
 fn cursor_world(viewport: &crate::model::Viewport, position: gpui::Point<Pixels>) -> Vec2 {
     let cursor_screen = Vec2::new(f32::from(position.x), f32::from(position.y));
     viewport.screen_to_world(cursor_screen)
