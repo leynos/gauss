@@ -431,6 +431,29 @@ combining a `DurableShell`, a shared `TempSvgFile`, and multiple export
 scenarios, and `tests/features/file_io_*.feature` for the corresponding
 specifications.
 
+## Internationalization module boundary
+
+The public localization API is re-exported from `gauss::i18n`: `Catalog`,
+`Localizer`, `Locale`, `MessageId`, and `I18nError`. The private catalogue
+module stores messages for one locale; its private `localizer` child owns the
+locale-to-catalogue map, default locale, and lookup fallback. The parent
+re-exports `Localizer`, and the public i18n facade re-exports it alongside the
+other public types.
+
+`Catalog` owns message storage and the default en-GB translations. `Localizer`
+owns lookup: it checks the requested locale, then the default locale.
+Construction from a locale-to-catalogue map asserts that the default locale's
+catalogue is present. Adding a catalogue only inserts or replaces the catalogue
+for its locale. If neither catalogue contains the requested message, lookup
+returns `I18nError::MessageNotFound` with the effective locale. The
+construction invariant keeps the fallback catalogue available.
+
+Keep storage and translation population separate from lookup and fallback. The
+focused modules keep the implementation within the 400-line source-file budget
+while making each responsibility easier to maintain. The boundary is
+implemented in `src/i18n/mod.rs`, `src/i18n/catalog/mod.rs`, and
+`src/i18n/catalog/localizer.rs`.
+
 ## The build standard
 
 Development, test, lint, and typecheck builds use the `mold` linker on Linux;
