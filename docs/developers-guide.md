@@ -170,6 +170,29 @@ Clippy also rejects `std::env::set_var` and `remove_var`. Do not mutate the
 process environment in tests; configure the stub reader with the values needed
 by each case.
 
+## SVG import and export
+
+The public entry points are in `svg::export` and `svg::import`. The export
+orchestrator writes the header, shared definitions and optional metadata, then
+delegates each shape to the private `export::path` module. That module
+serializes path and paint attributes and calls `export::shape_metadata` when
+shape metadata is requested. The private `export::defs` module owns shared
+resource definitions; `export::shape_metadata` owns Gauss shape metadata.
+
+Import parses resources before shapes through its private
+`import::resource_tags` module. That module's private `paint` child owns colour
+and resource-reference parsing, opacity conversion, optional floats and
+gradient offsets. These child modules are private, with parent-facing helpers
+exposed only through `pub(super)`.
+
+`export_svg` and `export_svg_with_resources` return SVG text. Checked export
+entry points return `Result<String, SvgExportError>` and reject missing
+gradient or pattern references. `import_svg` returns
+`Result<Document, SvgImportError>`; `import_svg_with_resources` returns
+`Result<ImportedSvg, SvgImportError>`, including resources and any raw Gauss
+metadata block. Import errors describe invalid SVG, path data, styles, resource
+references or namespace bindings.
+
 ## GPUI harness behavioural tests
 
 The root package owns the GPUI integration tests under `tests/`. The GPUI
