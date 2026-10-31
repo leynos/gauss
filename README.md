@@ -30,9 +30,11 @@ selection history.
 ## Build performance
 
 Gauss uses a custom Cargo profile configuration to reduce dependency
-compilation time. The `dev` and `test` profiles disable debuginfo for all
-dependencies (`debug = 0` for `package."*"`), while first-party Gauss crates
-retain full debuginfo.
+compilation time and the size of `target/`. The `dev` profile keeps no
+incremental state and no debuginfo at all (`incremental = false`, `debug = 0`),
+first-party Gauss crates included. The `test` profile disables debuginfo for
+all dependencies (`debug = 0` for `package."*"`), while first-party Gauss
+crates retain full debuginfo there.
 
 ### Trade-offs
 
@@ -40,8 +42,12 @@ retain full debuginfo.
   build).
 - **Limited third-party debugging**: Stack traces and debugger symbols for
   dependencies (GPUI, ash, naga, etc.) are reduced.
-- **Gauss code remains debuggable**: First-party crates (gauss, gauss-core,
-  gauss-svg) retain full debuginfo.
+- **Debugging Gauss code needs an override**: a default `dev` build carries no
+  debuginfo for first-party crates (gauss, gauss-core, gauss-svg) either. Run
+  Cargo with `CARGO_PROFILE_DEV_DEBUG=true` for the workspace crates (or
+  `--config 'profile.dev.package.gauss.debug=true'` per package), and
+  `CARGO_INCREMENTAL=1` to rebuild incrementally. The `test` profile keeps
+  first-party debuginfo.
 
 ### Temporary escape hatch
 

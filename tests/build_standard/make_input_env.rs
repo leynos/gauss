@@ -300,7 +300,7 @@ pub(super) fn with_scratch<T>(
         (Ok(value), Ok(())) => Ok(value),
         (Err(error), Ok(())) | (Ok(_), Err(error)) => Err(error),
         (Err(primary), Err(cleanup_error)) => {
-            Err(format!("{primary}; cleanup failed: {cleanup_error}",))
+            Err(format!("{primary}; cleanup failed: {cleanup_error}"))
         }
     }
 }

@@ -244,10 +244,6 @@ fn rotation_normalizes_negative_zero() {
 }
 
 #[test]
-#[expect(
-    clippy::float_cmp,
-    reason = "exact float equality is intentional in tests for -0.0 normalization"
-)]
 fn normalize_float_converts_negative_zero() {
     assert_normalizes!(-0.0, 0.0);
     assert_normalizes!(0.0, 0.0);

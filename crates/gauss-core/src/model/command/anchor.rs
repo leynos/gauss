@@ -292,7 +292,7 @@ pub(super) fn apply_delete_anchors(
 ) -> Result<CommandInverse, UserError> {
     // Sort by index in reverse order for safe removal
     let mut sorted_deletions: Vec<_> = deletions.iter().collect();
-    sorted_deletions.sort_by(|a, b| b.shape_index.cmp(&a.shape_index));
+    sorted_deletions.sort_by_key(|deletion| std::cmp::Reverse(deletion.shape_index));
 
     for deletion in &sorted_deletions {
         let shapes_len = doc.len();

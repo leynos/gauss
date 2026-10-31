@@ -51,7 +51,7 @@ fn edge_mode_is_copy() {
 fn tool_transition_default_has_no_commands() {
     let transition = ToolTransition::default();
 
-    assert!(transition.commands.is_empty());
+    assert_eq!(transition.commands.len(), 0);
 }
 
 #[rstest]

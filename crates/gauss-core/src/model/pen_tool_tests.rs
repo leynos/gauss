@@ -334,5 +334,5 @@ fn pen_tool_ignores_canvas_click_when_not_in_draw_mode() {
         },
     );
 
-    assert!(transition.commands.is_empty());
+    assert_eq!(transition.commands.len(), 0);
 }

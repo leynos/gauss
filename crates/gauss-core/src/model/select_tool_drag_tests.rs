@@ -93,7 +93,7 @@ fn assert_pointer_event_is_noop(state: SelectToolState, event: ToolInputEvent) {
         EdgeMode::Line,
         normalized_event,
     );
-    assert!(transition.commands.is_empty());
+    assert_eq!(transition.commands.len(), 0);
 }
 
 fn pointer_move_without_primary_event() -> ToolInputEvent {
@@ -156,7 +156,7 @@ fn select_tool_pointer_up_is_noop_for_reserved_states(#[case] state: SelectToolS
         },
     );
 
-    assert!(transition.commands.is_empty());
+    assert_eq!(transition.commands.len(), 0);
 }
 
 #[rstest]
