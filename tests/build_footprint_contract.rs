@@ -179,7 +179,7 @@ fn write_fixture(root: &Utf8PathBuf) -> Result<(), String> {
     dir.create_dir_all(".cargo")
         .map_err(fail("creating .cargo"))?;
     let manifest = format!(
-        "[package]\nname = \"footprint\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n{}",
+        "[package]\nname = \"footprint\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n[workspace]\n\n{}",
         dev_profile()?
     );
     dir.write("Cargo.toml", manifest)
