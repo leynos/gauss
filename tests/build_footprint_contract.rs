@@ -192,14 +192,13 @@ fn write_fixture(root: &Utf8PathBuf) -> Result<(), String> {
 /// Builds the fixture crate in a directory of its own, so two test processes cannot share one,
 /// removes it afterwards, and returns the rustc command line Cargo ran.
 fn compile_fixture(case: &Fixture) -> Result<String, String> {
-    let root = Utf8PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(format!(
-        "{}-{}",
-        case.name,
-        std::process::id()
-    ));
-    let built = build_fixture(&root, case);
+    let parent = Utf8PathBuf::from(env!("CARGO_TARGET_TMPDIR"));
+    let name = format!("{}-{}", case.name, std::process::id());
+    let built = build_fixture(&parent.join(&name), case);
     // The build's result matters more than tidying up after it.
-    std::fs::remove_dir_all(root.as_std_path()).ok();
+    if let Ok(directory) = Dir::open_ambient_dir(&parent, ambient_authority()) {
+        directory.remove_dir_all(&name).ok();
+    }
     built
 }
 
