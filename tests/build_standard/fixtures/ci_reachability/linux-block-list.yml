@@ -1,0 +1,9 @@
+on: pull_request
+jobs:
+  build:
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+    steps:
+      - run: make test-ci
