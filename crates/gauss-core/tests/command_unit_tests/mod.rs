@@ -20,6 +20,7 @@ use test_support::shapes::{sample_shape, shape_id};
 
 #[fixture]
 pub fn empty_doc() -> Document {
+    // Keep this block multiline: rstest 0.27 nests it; Rust 1.92 flags compact braces.
     Document::default()
 }
 
