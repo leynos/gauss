@@ -1,6 +1,16 @@
 # Nextest configuration for Gauss
 # See https://nexte.st/book/configuration.html for complete documentation
 
+# Fetch the locked dependencies before any test starts, so a nested Cargo build in a
+# test does not resolve them while holding the shared package-cache lock (the
+# Concordat `nested-cargo-offline-tests` rule, NC-008).
+[scripts.setup.fetch-locked]
+command = "cargo fetch --locked"
+
+[[profile.default.scripts]]
+filter = "all()"
+setup = "fetch-locked"
+
 [profile.default]
 # Run tests in parallel with reasonable resource limits
 test-threads = "num-cpus"
