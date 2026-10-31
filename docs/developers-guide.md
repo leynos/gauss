@@ -479,9 +479,8 @@ set `CARGO_PROFILE_DEV_DEBUG=true`; to rebuild incrementally, set
 incremental builds). The `test` profile keeps first-party debug information.
 The pin is stable, so the native Cargo metadata key
 (`[unstable] embed-metadata`) does not apply and the configuration must not
-carry it. `tests/build_footprint_contract.rs` holds the settings and proves
-them, with both overrides, at the Cargo boundary by building a one-file crate
-under the repository's own `[profile.dev]` table and Cargo configuration.
+carry it. `tests/build_footprint_contract.rs` holds the settings by parsing the
+repository's own configuration. It starts no Cargo process.
 
 ### Cranelift
 

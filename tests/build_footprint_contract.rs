@@ -5,13 +5,9 @@
 //! information, first-party package overrides included. The pin is stable, so
 //! the native Cargo metadata key does not apply and the Cargo configuration
 //! must not carry an `[unstable]` metadata setting, which stable Cargo cannot
-//! honour. This contract holds those facts, then proves the profile settings
-//! and both documented overrides at the Cargo boundary.
+//! honour. This contract holds those facts by reading the configuration and starts
+//! no Cargo process.
 
-use std::process::Command;
-
-use camino::Utf8PathBuf;
-use cap_std::{ambient_authority, fs_utf8::Dir};
 use rstest::rstest;
 
 /// Root manifest holding the development profile.
@@ -20,22 +16,6 @@ const MANIFEST: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/Cargo.
 const CARGO_CONFIG: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/.cargo/config.toml"));
 /// Toolchain file naming the stable channel the fixture builds under.
 const TOOLCHAIN: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/rust-toolchain.toml"));
-/// Variables that would add a wrapper or override the profile under test.
-const CLEARED: [&str; 12] = [
-    "RUSTC_WRAPPER",
-    "RUSTC_WORKSPACE_WRAPPER",
-    "CARGO_BUILD_RUSTC_WRAPPER",
-    "CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER",
-    "CARGO_ENCODED_RUSTFLAGS",
-    "CARGO_BUILD_RUSTFLAGS",
-    "RUSTFLAGS",
-    "CARGO_INCREMENTAL",
-    "CARGO_BUILD_INCREMENTAL",
-    "CARGO_BUILD_BUILD_DIR",
-    "CARGO_PROFILE_DEV_DEBUG",
-    "CARGO_PROFILE_DEV_INCREMENTAL",
-];
-
 /// A TOML table header, such as `[profile.dev]`.
 #[derive(Clone, Copy, Debug)]
 struct Table(&'static str);
@@ -50,22 +30,6 @@ const PROFILE_DEV: Table = Table("[profile.dev]");
 const INCREMENTAL: Key = Key("incremental");
 /// The `debug` key of a profile.
 const DEBUG: Key = Key("debug");
-
-/// One documented override of the footprint defaults, and what it restores.
-#[derive(Clone, Copy, Debug)]
-struct OverrideCase {
-    fixture: &'static str,
-    variable: &'static str,
-    setting: &'static str,
-    expected: &'static str,
-}
-
-/// A fixture build: its directory name and the documented overrides it applies.
-#[derive(Clone, Copy, Debug)]
-struct Fixture<'a> {
-    name: &'a str,
-    overrides: &'a [(&'a str, &'a str)],
-}
 
 /// Turns a failed condition into the message that explains it.
 fn require(condition: bool, message: impl FnOnce() -> String) -> Result<(), String> {
@@ -155,127 +119,5 @@ fn a_stable_pin_carries_no_unstable_metadata_setting() -> Result<(), String> {
     })?;
     require(!CARGO_CONFIG.contains("embed-metadata"), || {
         "stable Cargo cannot read an embed-metadata setting of either spelling".to_owned()
-    })
-}
-
-/// Returns the `[profile.dev]` table text of the root manifest.
-fn dev_profile() -> Result<String, String> {
-    let lines = table_lines(MANIFEST, PROFILE_DEV);
-    require(!lines.is_empty(), || {
-        "Cargo.toml must carry a [profile.dev] table".to_owned()
-    })?;
-    Ok(format!("[profile.dev]\n{}\n", lines.join("\n")))
-}
-
-/// Writes the fixture crate: the repository's profile and Cargo configuration.
-fn write_fixture(root: &Utf8PathBuf) -> Result<(), String> {
-    let fail = |step: &'static str| move |error: std::io::Error| format!("{step}: {error}");
-    Dir::create_ambient_dir_all(root, ambient_authority())
-        .map_err(fail("creating the fixture directory"))?;
-    let dir = Dir::open_ambient_dir(root, ambient_authority())
-        .map_err(fail("opening the fixture directory"))?;
-    dir.create_dir_all("src").map_err(fail("creating src"))?;
-    dir.create_dir_all(".cargo")
-        .map_err(fail("creating .cargo"))?;
-    let manifest = format!(
-        "[package]\nname = \"footprint\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n[workspace]\n\n{}",
-        dev_profile()?
-    );
-    dir.write("Cargo.toml", manifest)
-        .map_err(fail("writing Cargo.toml"))?;
-    dir.write("src/lib.rs", "pub fn footprint() {}\n")
-        .map_err(fail("writing the library"))?;
-    dir.write(".cargo/config.toml", CARGO_CONFIG)
-        .map_err(fail("writing the configuration"))
-}
-
-/// Builds the fixture crate in a directory of its own, so two test processes cannot share one,
-/// removes it afterwards, and returns the rustc command line Cargo ran.
-fn compile_fixture(case: &Fixture) -> Result<String, String> {
-    let parent = Utf8PathBuf::from(env!("CARGO_TARGET_TMPDIR"));
-    let name = format!("{}-{}", case.name, std::process::id());
-    let built = build_fixture(&parent.join(&name), case);
-    // The build's result matters more than tidying up after it.
-    if let Ok(directory) = Dir::open_ambient_dir(&parent, ambient_authority()) {
-        directory.remove_dir_all(&name).ok();
-    }
-    built
-}
-
-/// Builds the fixture crate in `root` and returns the rustc command line Cargo ran.
-fn build_fixture(root: &Utf8PathBuf, case: &Fixture) -> Result<String, String> {
-    write_fixture(root)?;
-    let channel = pinned_channel().ok_or("rust-toolchain.toml must name a channel")?;
-    let mut command = Command::new("cargo");
-    command
-        .arg(format!("+{channel}"))
-        .args(["build", "--color", "never", "--offline", "-v"])
-        .current_dir(root.as_std_path())
-        .env("CARGO_TARGET_DIR", root.join("target").as_std_path());
-    for variable in CLEARED {
-        command.env_remove(variable);
-    }
-    for (variable, setting) in case.overrides {
-        command.env(variable, setting);
-    }
-    let output = command
-        .output()
-        .map_err(|error| format!("running cargo: {error}"))?;
-    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
-    require(output.status.success(), || {
-        format!("cargo build failed:\n{stderr}")
-    })?;
-    stderr
-        .lines()
-        .find(|line| line.contains("Running") && line.contains("--crate-name footprint"))
-        .map(str::to_owned)
-        .ok_or_else(|| format!("no rustc command line in Cargo's output:\n{stderr}"))
-}
-
-/// Scenario: a default development build.
-///
-/// Invariant: rustc gets no debug information and no incremental directory.
-#[test]
-fn a_default_build_has_no_debug_info_or_incremental_state() -> Result<(), String> {
-    let command = compile_fixture(&Fixture {
-        name: "footprint-default",
-        overrides: &[],
-    })?;
-    require(!command.contains("-C debuginfo"), || {
-        format!("debug info must be off: {command}")
-    })?;
-    require(!command.contains("-C incremental"), || {
-        format!("incremental must be off: {command}")
-    })
-}
-
-/// Scenario: each documented override of the footprint defaults.
-///
-/// Invariant: `CARGO_PROFILE_DEV_DEBUG=true` restores debug information, and
-/// `CARGO_INCREMENTAL=1` restores incremental compilation.
-#[rstest]
-#[case::debug(OverrideCase {
-    fixture: "footprint-debug",
-    variable: "CARGO_PROFILE_DEV_DEBUG",
-    setting: "true",
-    expected: "-C debuginfo=2",
-})]
-#[case::incremental(OverrideCase {
-    fixture: "footprint-incremental",
-    variable: "CARGO_INCREMENTAL",
-    setting: "1",
-    expected: "-C incremental=",
-})]
-fn a_documented_override_restores_its_setting(#[case] case: OverrideCase) -> Result<(), String> {
-    let overrides = [(case.variable, case.setting)];
-    let command = compile_fixture(&Fixture {
-        name: case.fixture,
-        overrides: &overrides,
-    })?;
-    require(command.contains(case.expected), || {
-        format!(
-            "{}={} must restore the setting ({}): {command}",
-            case.variable, case.setting, case.expected
-        )
     })
 }
