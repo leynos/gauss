@@ -118,7 +118,7 @@ fn action_name_is_correct(#[case] action: Action, #[case] expected: &str) {
 #[case(Action::SetObjectSize(Size::new(Dimensions { width: 100.0, height: 100.0 }).expect("failed to construct Size")))]
 #[case(Action::SetObjectRotation(Rotation::new(Degrees(0.0)).expect("failed to construct Rotation")))]
 fn actions_have_nonempty_names(#[case] action: Action) {
-    assert!(!action.name().is_empty());
+    assert_ne!(action.name().len(), 0);
 }
 
 #[rstest]

@@ -256,7 +256,7 @@ fn select_tool_pointer_move_noop_scenarios(
         pointer_input(state, cursor, true, PointerInputKind::Move),
     );
 
-    assert!(transition.commands.is_empty());
+    assert_eq!(transition.commands.len(), 0);
 }
 
 #[rstest]

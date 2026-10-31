@@ -180,7 +180,7 @@ fn anchor_pair_mut(path: &mut PathGeom, start_index: usize) -> Option<(&mut Anch
 
 /// Clear the handles that would otherwise shape a closed path's line edge.
 /// For a multi-anchor path, this clears the last outgoing and first incoming handles.
-fn clear_closing_line_handles(path: &mut PathGeom) {
+const fn clear_closing_line_handles(path: &mut PathGeom) {
     match path.anchors.as_mut_slice() {
         [] => {}
         [only] => {

@@ -434,7 +434,7 @@ specifications.
 ## The build standard
 
 Development, test, lint, and typecheck builds use the `mold` linker on Linux;
-the parallel frontend flag is nightly-only, and the pinned `1.92.0` is stable,
+the parallel frontend flag is nightly-only, and the pinned `1.99.1` is stable,
 so it is not used. These are defaults in `.cargo/config.toml`, which Cargo
 discovers on its own, so a bare `cargo build` gets them. `mold` ships for Linux
 only, so the linker flag lives in a Linux-only table and macOS and Windows keep
@@ -467,9 +467,26 @@ recorded in [ADR 006](adr-006-rust-build-standard.md). The contract runs
 `make -n`, so a direct `cargo test` needs GNU make on the `PATH`. It fails when
 `make` is missing instead of skipping, so a missing tool cannot read as a pass.
 
+### Development build footprint
+
+The `dev` profile sets `incremental = false` and `debug = 0` in the root
+`Cargo.toml`, and no named `dev` package override pins debug information for
+`gauss`, `gauss-core` or `gauss-svg` (a package table outranks the profile and
+the environment, so one would defeat `CARGO_PROFILE_DEV_DEBUG`), so a dev build
+keeps no incremental state or debug information. To debug the workspace crates,
+set `CARGO_PROFILE_DEV_DEBUG=true`; to rebuild incrementally, set
+`CARGO_INCREMENTAL=1` (unset any `sccache` wrapper first, which refuses
+incremental builds). The `test` profile keeps first-party debug information.
+The pin is stable, so the native Cargo metadata key
+(`[unstable] embed-metadata`) does not apply and the configuration must not
+carry it. `tests/build_footprint_contract.rs` holds the settings and proves
+them, with both overrides, at the Cargo boundary by building a one-file crate
+under the repository's own `[profile.dev]` table and Cargo configuration.
+
 ### Cranelift
 
 Exception: Cranelift is not the development-profile backend, because Cranelift
-requires a nightly toolchain and this repository pins the stable `1.92.0`
-(recorded 2026-09-29). Revisit if the repository moves to a nightly pin;
-leynos/gauss#186 is investigating the toolchain.
+requires a nightly toolchain and this repository pins the stable `1.99.1`
+(recorded 2026-09-29 on `1.92.0`; the reason, a stable pin, has not changed,
+and no measurement was taken on `1.99.1`). Revisit if the repository moves to a
+nightly pin; leynos/gauss#186 is investigating the toolchain.

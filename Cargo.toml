@@ -118,17 +118,18 @@ uuid = { version = "1.21.0", features = ["v4"] }
 [features]
 test-support = ["gauss-core/test-support"]
 
-[profile.dev.package."*"]
+# Development builds keep neither incremental state nor debug information (rule
+# `rust-dev-build-footprint`, DF-001 and DF-002), first-party crates included.
+# No named `dev` package override pins debug info: a package table outranks the
+# profile and the environment, so one would defeat CARGO_PROFILE_DEV_DEBUG=true.
+# Set that variable to debug, or CARGO_INCREMENTAL=1 to rebuild incrementally.
+# The test profile below still keeps first-party debug info.
+[profile.dev]
+incremental = false
 debug = 0
 
-[profile.dev.package.gauss]
-debug = 2
-
-[profile.dev.package.gauss-core]
-debug = 2
-
-[profile.dev.package.gauss-svg]
-debug = 2
+[profile.dev.package."*"]
+debug = 0
 
 [profile.test.package."*"]
 debug = 0

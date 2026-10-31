@@ -43,7 +43,7 @@ fn modifiers_builder_is_chainable() {
 fn active_in_order_empty_for_no_modifiers() {
     let mods = Modifiers::default();
     let active: Vec<_> = mods.active_in_order().collect();
-    assert!(active.is_empty());
+    assert_eq!(active.len(), 0);
 }
 
 #[test]
