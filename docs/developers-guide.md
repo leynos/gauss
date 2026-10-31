@@ -46,6 +46,12 @@ override has no `terminate-after` limit, so a queued nested compilation is not
 terminated by that threshold. The default-profile override also applies to the
 CI profile; other tests keep their configured deadlines and execution policy.
 
+A nextest setup script, `fetch-locked`, runs `cargo fetch --locked` once before
+any test starts, so a test that starts its own Cargo build does not resolve
+dependencies while holding the shared package-cache lock. Run the suite online
+once (or through the gate slot, which fetches first) so the fetch has a warm
+cache.
+
 `RUST_FLAGS` is a Make-only input and is unexported from child processes.
 Recipes that use it compose its value into `RUSTFLAGS`; it is not applied by
 every recipe. Command-line values still reach recursive Make through
@@ -479,9 +485,8 @@ set `CARGO_PROFILE_DEV_DEBUG=true`; to rebuild incrementally, set
 incremental builds). The `test` profile keeps first-party debug information.
 The pin is stable, so the native Cargo metadata key
 (`[unstable] embed-metadata`) does not apply and the configuration must not
-carry it. `tests/build_footprint_contract.rs` holds the settings and proves
-them, with both overrides, at the Cargo boundary by building a one-file crate
-under the repository's own `[profile.dev]` table and Cargo configuration.
+carry it. `tests/build_footprint_contract.rs` holds the settings by parsing the
+repository's own configuration. It starts no Cargo process.
 
 ### Cranelift
 
