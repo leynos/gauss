@@ -35,13 +35,45 @@ const CLEARED: [&str; 11] = [
     "CARGO_PROFILE_DEV_INCREMENTAL",
 ];
 
+/// A TOML table header, such as `[profile.dev]`.
+#[derive(Clone, Copy, Debug)]
+struct Table(&'static str);
+
+/// A key within a TOML table.
+#[derive(Clone, Copy, Debug)]
+struct Key(&'static str);
+
+/// The default development profile.
+const PROFILE_DEV: Table = Table("[profile.dev]");
+/// The `incremental` key of a profile.
+const INCREMENTAL: Key = Key("incremental");
+/// The `debug` key of a profile.
+const DEBUG: Key = Key("debug");
+
+/// One documented override of the footprint defaults, and what it restores.
+#[derive(Clone, Copy, Debug)]
+struct OverrideCase {
+    fixture: &'static str,
+    variable: &'static str,
+    setting: &'static str,
+    expected: &'static str,
+}
+
+/// A fixture build: its directory name and the documented overrides it applies.
+#[derive(Clone, Copy, Debug)]
+struct Fixture<'a> {
+    name: &'a str,
+    overrides: &'a [(&'a str, &'a str)],
+}
+
 /// Turns a failed condition into the message that explains it.
 fn require(condition: bool, message: impl FnOnce() -> String) -> Result<(), String> {
     if condition { Ok(()) } else { Err(message()) }
 }
 
 /// Returns the non-comment lines of the named TOML table.
-fn table_lines<'a>(document: &'a str, header: &str) -> Vec<&'a str> {
+fn table_lines(document: &str, table: Table) -> Vec<&str> {
+    let header = table.0;
     document
         .lines()
         .map(|line| line.split('#').next().unwrap_or("").trim())
@@ -53,10 +85,10 @@ fn table_lines<'a>(document: &'a str, header: &str) -> Vec<&'a str> {
 }
 
 /// Returns the value assigned to `key` in a table's lines.
-fn value<'a>(lines: &[&'a str], key: &str) -> Option<&'a str> {
+fn value<'a>(lines: &[&'a str], key: Key) -> Option<&'a str> {
     lines.iter().find_map(|line| {
         let (name, assigned) = line.split_once('=')?;
-        (name.trim() == key).then_some(assigned.trim())
+        (name.trim() == key.0).then_some(assigned.trim())
     })
 }
 
@@ -78,14 +110,14 @@ fn disables_debug(setting: Option<&str>) -> bool {
 /// Invariant: it keeps no incremental state and no debug information.
 #[test]
 fn the_development_profile_keeps_the_build_footprint_settings() -> Result<(), String> {
-    let profile = table_lines(MANIFEST, "[profile.dev]");
-    require(value(&profile, "incremental") == Some("false"), || {
+    let profile = table_lines(MANIFEST, PROFILE_DEV);
+    require(value(&profile, INCREMENTAL) == Some("false"), || {
         "profile.dev must set incremental = false".to_owned()
     })?;
-    require(disables_debug(value(&profile, "debug")), || {
+    require(disables_debug(value(&profile, DEBUG)), || {
         format!(
             "profile.dev must set debug = 0 or false, found {:?}",
-            value(&profile, "debug")
+            value(&profile, DEBUG)
         )
     })
 }
@@ -95,18 +127,19 @@ fn the_development_profile_keeps_the_build_footprint_settings() -> Result<(), St
 /// Invariant: first-party packages keep no debug information either, because a
 /// package override replaces the profile default for that package.
 #[rstest]
-#[case::dependencies("[profile.dev.package.\"*\"]")]
-#[case::gauss("[profile.dev.package.gauss]")]
-#[case::gauss_core("[profile.dev.package.gauss-core]")]
-#[case::gauss_svg("[profile.dev.package.gauss-svg]")]
+#[case::dependencies(Table("[profile.dev.package.\"*\"]"))]
+#[case::gauss(Table("[profile.dev.package.gauss]"))]
+#[case::gauss_core(Table("[profile.dev.package.gauss-core]"))]
+#[case::gauss_svg(Table("[profile.dev.package.gauss-svg]"))]
 fn every_development_package_override_disables_debug_info(
-    #[case] header: &str,
+    #[case] table: Table,
 ) -> Result<(), String> {
-    let lines = table_lines(MANIFEST, header);
-    require(disables_debug(value(&lines, "debug")), || {
+    let lines = table_lines(MANIFEST, table);
+    require(disables_debug(value(&lines, DEBUG)), || {
         format!(
-            "{header} must set debug = 0 or false, found {:?}",
-            value(&lines, "debug")
+            "{} must set debug = 0 or false, found {:?}",
+            table.0,
+            value(&lines, DEBUG)
         )
     })
 }
@@ -128,7 +161,7 @@ fn a_stable_pin_carries_no_unstable_metadata_setting() -> Result<(), String> {
 
 /// Returns the `[profile.dev]` table text of the root manifest.
 fn dev_profile() -> Result<String, String> {
-    let lines = table_lines(MANIFEST, "[profile.dev]");
+    let lines = table_lines(MANIFEST, PROFILE_DEV);
     require(!lines.is_empty(), || {
         "Cargo.toml must carry a [profile.dev] table".to_owned()
     })?;
@@ -158,8 +191,8 @@ fn write_fixture(root: &Utf8PathBuf) -> Result<(), String> {
 }
 
 /// Builds the fixture crate and returns the rustc command line Cargo ran.
-fn compile_fixture(name: &str, extra_env: &[(&str, &str)]) -> Result<String, String> {
-    let root = Utf8PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(name);
+fn compile_fixture(case: &Fixture) -> Result<String, String> {
+    let root = Utf8PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(case.name);
     write_fixture(&root)?;
     let channel = pinned_channel().ok_or("rust-toolchain.toml must name a channel")?;
     let mut command = Command::new("cargo");
@@ -171,7 +204,7 @@ fn compile_fixture(name: &str, extra_env: &[(&str, &str)]) -> Result<String, Str
     for variable in CLEARED {
         command.env_remove(variable);
     }
-    for (variable, setting) in extra_env {
+    for (variable, setting) in case.overrides {
         command.env(variable, setting);
     }
     let output = command
@@ -193,7 +226,10 @@ fn compile_fixture(name: &str, extra_env: &[(&str, &str)]) -> Result<String, Str
 /// Invariant: rustc gets no debug information and no incremental directory.
 #[test]
 fn a_default_build_has_no_debug_info_or_incremental_state() -> Result<(), String> {
-    let command = compile_fixture("footprint-default", &[])?;
+    let command = compile_fixture(&Fixture {
+        name: "footprint-default",
+        overrides: &[],
+    })?;
     require(!command.contains("-C debuginfo"), || {
         format!("debug info must be off: {command}")
     })?;
@@ -207,16 +243,28 @@ fn a_default_build_has_no_debug_info_or_incremental_state() -> Result<(), String
 /// Invariant: `CARGO_PROFILE_DEV_DEBUG=true` restores debug information, and
 /// `CARGO_INCREMENTAL=1` restores incremental compilation.
 #[rstest]
-#[case::debug("footprint-debug", "CARGO_PROFILE_DEV_DEBUG", "true", "-C debuginfo=2")]
-#[case::incremental("footprint-incremental", "CARGO_INCREMENTAL", "1", "-C incremental=")]
-fn a_documented_override_restores_its_setting(
-    #[case] name: &str,
-    #[case] variable: &str,
-    #[case] setting: &str,
-    #[case] expected: &str,
-) -> Result<(), String> {
-    let command = compile_fixture(name, &[(variable, setting)])?;
-    require(command.contains(expected), || {
-        format!("{variable}={setting} must restore the setting ({expected}): {command}")
+#[case::debug(OverrideCase {
+    fixture: "footprint-debug",
+    variable: "CARGO_PROFILE_DEV_DEBUG",
+    setting: "true",
+    expected: "-C debuginfo=2",
+})]
+#[case::incremental(OverrideCase {
+    fixture: "footprint-incremental",
+    variable: "CARGO_INCREMENTAL",
+    setting: "1",
+    expected: "-C incremental=",
+})]
+fn a_documented_override_restores_its_setting(#[case] case: OverrideCase) -> Result<(), String> {
+    let overrides = [(case.variable, case.setting)];
+    let command = compile_fixture(&Fixture {
+        name: case.fixture,
+        overrides: &overrides,
+    })?;
+    require(command.contains(case.expected), || {
+        format!(
+            "{}={} must restore the setting ({}): {command}",
+            case.variable, case.setting, case.expected
+        )
     })
 }
