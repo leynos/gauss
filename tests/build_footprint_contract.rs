@@ -21,7 +21,7 @@ const CARGO_CONFIG: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/.c
 /// Toolchain file naming the stable channel the fixture builds under.
 const TOOLCHAIN: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/rust-toolchain.toml"));
 /// Variables that would add a wrapper or override the profile under test.
-const CLEARED: [&str; 11] = [
+const CLEARED: [&str; 12] = [
     "RUSTC_WRAPPER",
     "RUSTC_WORKSPACE_WRAPPER",
     "CARGO_BUILD_RUSTC_WRAPPER",
@@ -31,6 +31,7 @@ const CLEARED: [&str; 11] = [
     "RUSTFLAGS",
     "CARGO_INCREMENTAL",
     "CARGO_BUILD_INCREMENTAL",
+    "CARGO_BUILD_BUILD_DIR",
     "CARGO_PROFILE_DEV_DEBUG",
     "CARGO_PROFILE_DEV_INCREMENTAL",
 ];
@@ -124,20 +125,18 @@ fn the_development_profile_keeps_the_build_footprint_settings() -> Result<(), St
 
 /// Scenario: the per-package overrides of the development profile.
 ///
-/// Invariant: first-party packages keep no debug information either, because a
-/// package override replaces the profile default for that package.
+/// Invariant: no named first-party package table pins debug information, because a package
+/// table outranks the profile and the environment and would defeat
+/// `CARGO_PROFILE_DEV_DEBUG=true` for that crate.
 #[rstest]
-#[case::dependencies(Table("[profile.dev.package.\"*\"]"))]
 #[case::gauss(Table("[profile.dev.package.gauss]"))]
 #[case::gauss_core(Table("[profile.dev.package.gauss-core]"))]
 #[case::gauss_svg(Table("[profile.dev.package.gauss-svg]"))]
-fn every_development_package_override_disables_debug_info(
-    #[case] table: Table,
-) -> Result<(), String> {
+fn no_development_package_override_pins_debug_info(#[case] table: Table) -> Result<(), String> {
     let lines = table_lines(MANIFEST, table);
-    require(disables_debug(value(&lines, DEBUG)), || {
+    require(value(&lines, DEBUG).is_none(), || {
         format!(
-            "{} must set debug = 0 or false, found {:?}",
+            "{} must not set debug, found {:?}: the environment override could not reach it",
             table.0,
             value(&lines, DEBUG)
         )
@@ -190,10 +189,23 @@ fn write_fixture(root: &Utf8PathBuf) -> Result<(), String> {
         .map_err(fail("writing the configuration"))
 }
 
-/// Builds the fixture crate and returns the rustc command line Cargo ran.
+/// Builds the fixture crate in a directory of its own, so two test processes cannot share one,
+/// removes it afterwards, and returns the rustc command line Cargo ran.
 fn compile_fixture(case: &Fixture) -> Result<String, String> {
-    let root = Utf8PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(case.name);
-    write_fixture(&root)?;
+    let root = Utf8PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(format!(
+        "{}-{}",
+        case.name,
+        std::process::id()
+    ));
+    let built = build_fixture(&root, case);
+    // The build's result matters more than tidying up after it.
+    std::fs::remove_dir_all(root.as_std_path()).ok();
+    built
+}
+
+/// Builds the fixture crate in `root` and returns the rustc command line Cargo ran.
+fn build_fixture(root: &Utf8PathBuf, case: &Fixture) -> Result<String, String> {
+    write_fixture(root)?;
     let channel = pinned_channel().ok_or("rust-toolchain.toml must name a channel")?;
     let mut command = Command::new("cargo");
     command

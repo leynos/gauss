@@ -470,14 +470,15 @@ recorded in [ADR 006](adr-006-rust-build-standard.md). The contract runs
 ### Development build footprint
 
 The `dev` profile sets `incremental = false` and `debug = 0` in the root
-`Cargo.toml`, and the per-package `dev` overrides for `gauss`, `gauss-core` and
-`gauss-svg` set `debug = 0` too (a package override replaces the profile
-default for that package), so a dev build keeps no incremental state or debug
-information. To debug the workspace crates, set `CARGO_PROFILE_DEV_DEBUG=true`;
-to rebuild incrementally, set `CARGO_INCREMENTAL=1` (unset any `sccache`
-wrapper first, which refuses incremental builds). The `test` profile keeps
-first-party debug information. The pin is stable, so the native Cargo metadata
-key (`[unstable] embed-metadata`) does not apply and the configuration must not
+`Cargo.toml`, and no named `dev` package override pins debug information for
+`gauss`, `gauss-core` or `gauss-svg` (a package table outranks the profile and
+the environment, so one would defeat `CARGO_PROFILE_DEV_DEBUG`), so a dev build
+keeps no incremental state or debug information. To debug the workspace crates,
+set `CARGO_PROFILE_DEV_DEBUG=true`; to rebuild incrementally, set
+`CARGO_INCREMENTAL=1` (unset any `sccache` wrapper first, which refuses
+incremental builds). The `test` profile keeps first-party debug information.
+The pin is stable, so the native Cargo metadata key
+(`[unstable] embed-metadata`) does not apply and the configuration must not
 carry it. `tests/build_footprint_contract.rs` holds the settings and proves
 them, with both overrides, at the Cargo boundary by building a one-file crate
 under the repository's own `[profile.dev]` table and Cargo configuration.
