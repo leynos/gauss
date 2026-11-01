@@ -47,6 +47,7 @@ pub(super) fn evaluate_make(
     make_source::verify_tool_defaults(&source)?;
     let selectors = make_source::required_selectors(&source)?;
     require_explicit_selectors(&selectors, request.mode)?;
+    require_literal_mode(request.mode)?;
     validate_goals(request.goals)?;
     Invocation {
         words: Vec::new(),
@@ -143,6 +144,22 @@ fn accept_mode_assignment(
     }
     *mode = Some(value.to_owned());
     Ok(())
+}
+
+/// Rejects a supplied MODE value that the workflow adapter would already refuse.
+///
+/// `classify_invocation` reaches `evaluate_make` through `accept_mode_assignment`,
+/// but the fixture caller constructs `MakeRequest` directly and bypasses that
+/// check. Validating here keeps one lexical invariant before GNU Make starts,
+/// including when the Make source has no MODE condition to trigger it.
+/// For example, `Some("")` fails but `Some("release")` passes.
+fn require_literal_mode(mode: Option<&str>) -> Result<(), String> {
+    match mode {
+        Some(value) if !literal_selector(value) => Err(format!(
+            "Make selector MODE has an unresolved value: {value}"
+        )),
+        _ => Ok(()),
+    }
 }
 
 /// Ensures all source conditions are selected by the observed host or a literal caller value.

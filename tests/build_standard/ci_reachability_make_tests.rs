@@ -389,3 +389,8 @@ fn cargo_nonexecution_modifiers_are_gaps(#[case] words: &[&str], #[case] diagnos
 #[cfg(test)]
 #[path = "ci_reachability_make_route_tests.rs"]
 mod route_tests;
+
+/// Keeps the direct-evaluation MODE invariant beside its fixture callers.
+#[cfg(test)]
+#[path = "ci_reachability_make_mode_tests.rs"]
+mod mode_tests;
