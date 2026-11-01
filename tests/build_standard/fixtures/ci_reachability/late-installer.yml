@@ -4,6 +4,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: cargo nextest run --workspace
-      - uses: leynos/shared-actions/.github/actions/setup-rust@e693d81d176d2305e2b736a0be0f9038085dec7f
+      - uses: leynos/shared-actions/.github/actions/setup-rust@6e99f225cb06684f9e6f89b63a7ca4a04095c067
         with:
           install-mold: true

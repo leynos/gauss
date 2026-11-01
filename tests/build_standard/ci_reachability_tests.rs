@@ -23,7 +23,7 @@ const INSTALLED: &str = include_str!("fixtures/ci_reachability/discovery-ci.yml"
 /// The exact step removed or moved by installation-order mutations.
 const INSTALLER: &str = concat!(
     "      - uses: leynos/shared-actions/.github/actions/setup-rust@",
-    "e693d81d176d2305e2b736a0be0f9038085dec7f\n",
+    "6e99f225cb06684f9e6f89b63a7ca4a04095c067\n",
     "        with:\n          install-mold: true\n"
 );
 
@@ -137,7 +137,7 @@ fn repository_suite_jobs_install_pinned_mold_before_execution() -> Result<(), St
     "no unconditional pinned `mold` installer"
 )]
 #[case::wrong_installer_pin(
-    "setup-rust@e693d81d176d2305e2b736a0be0f9038085dec7f",
+    "setup-rust@6e99f225cb06684f9e6f89b63a7ca4a04095c067",
     "setup-rust@0000000000000000000000000000000000000000",
     "unprovable action reference"
 )]

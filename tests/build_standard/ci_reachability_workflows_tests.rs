@@ -312,7 +312,7 @@ fn current_workflows_preserve_block_and_token_text() {
     let uses = parser_step_scalars(ci_job, "uses").expect("CI step actions must parse");
     let setup_rust = concat!(
         "leynos/shared-actions/.github/actions/setup-rust@",
-        "e693d81d176d2305e2b736a0be0f9038085dec7f"
+        "6e99f225cb06684f9e6f89b63a7ca4a04095c067"
     );
     assert!(
         uses.iter().any(|value| value == setup_rust),

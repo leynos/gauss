@@ -19,7 +19,7 @@ pub(in super::super) const REVIEWED_PYTHON_BODIES: &[ReviewedSource<'static>] = 
     },
     ReviewedSource {
         path: "scripts/tests/test_spelling_exceptions.py",
-        expected_blob: "14c1f91c4dc7c523c5a95d4ce942a504885e889f",
+        expected_blob: "92253b245f7de1a1808dc4f78da346b32d67f356",
     },
 ];
 
@@ -138,25 +138,11 @@ fn is_checker(arguments: &[String]) -> bool {
 }
 
 /// Recognizes only the two repository-pinned pytest routes and their complete selectors.
+///
+/// Both routes share one pinned dependency set; only the reviewed script list
+/// differs, so a new or unpinned dependency changes both routes at once.
 fn is_python_test(arguments: &[String]) -> bool {
-    let spelling = [
-        "run",
-        "--no-project",
-        "--python",
-        "3.13",
-        "--with",
-        "pytest==9.0.2",
-        "python",
-        "-m",
-        "pytest",
-        "scripts/tests/test_spelling_exceptions.py",
-        "-c",
-        "/dev/null",
-        "--rootdir=.",
-        "-p",
-        "no:cacheprovider",
-    ];
-    let inventory = [
+    let head = [
         "run",
         "--no-project",
         "--python",
@@ -168,15 +154,22 @@ fn is_python_test(arguments: &[String]) -> bool {
         "python",
         "-m",
         "pytest",
-        "scripts/tests/test_integration_test_inventory.py",
-        "scripts/tests/test_integration_test_inventory_cli.py",
-        "-c",
-        "/dev/null",
-        "--rootdir=.",
-        "-p",
-        "no:cacheprovider",
     ];
-    exact_words(arguments, &spelling) || exact_words(arguments, &inventory)
+    let tail = ["-c", "/dev/null", "--rootdir=.", "-p", "no:cacheprovider"];
+    let reviewed_routes = [
+        ["scripts/tests/test_spelling_exceptions.py"].as_slice(),
+        [
+            "scripts/tests/test_integration_test_inventory.py",
+            "scripts/tests/test_integration_test_inventory_cli.py",
+        ]
+        .as_slice(),
+    ];
+    reviewed_routes.into_iter().any(|scripts| {
+        exact_words(
+            arguments,
+            &[head.as_slice(), scripts, tail.as_slice()].concat(),
+        )
+    })
 }
 
 /// Matches only isolated Ruff format and lint commands over the reviewed inventory sources.

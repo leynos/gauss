@@ -37,7 +37,10 @@ mod workflows;
 use source_identity::{GitBlobId, ReviewedSource};
 
 /// The currently adopted shared-action revision whose consumed sources were inspected.
-const ACTION_REVISION: &str = "e693d81d176d2305e2b736a0be0f9038085dec7f";
+const ACTION_REVISION: &str = "6e99f225cb06684f9e6f89b63a7ca4a04095c067";
+
+/// The Whitaker installer revision, which the Dependabot group does not advance with the rest.
+const WHITAKER_ACTION_REVISION: &str = "5a99aed78ce68dcebd3052b75c31e6f173162b1e";
 
 /// A strict YAML subset retaining every mapping entry before semantic inspection.
 #[derive(Clone, Debug, PartialEq, Eq)]

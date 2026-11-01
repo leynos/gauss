@@ -126,7 +126,7 @@ fn installer_in_other_job_does_not_count() {
     let setup_job = concat!(
         "  setup-only:\n    runs-on: ubuntu-latest\n    steps:\n",
         "      - uses: leynos/shared-actions/.github/actions/setup-rust@",
-        "e693d81d176d2305e2b736a0be0f9038085dec7f\n",
+        "6e99f225cb06684f9e6f89b63a7ca4a04095c067\n",
         "        with:\n          install-mold: true\n"
     );
     let mutated = format!("{no_installer}{setup_job}");

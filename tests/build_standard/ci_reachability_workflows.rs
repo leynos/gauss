@@ -4,7 +4,8 @@ use camino::Utf8PathBuf;
 use std::collections::BTreeSet;
 
 use super::{
-    ACTION_REVISION, Coverage, Host, Route, Value, Workflow, Workspace, make_routes, parser, runner,
+    ACTION_REVISION, Coverage, Host, Route, Value, WHITAKER_ACTION_REVISION, Workflow, Workspace,
+    make_routes, parser, runner,
 };
 
 /// Groups trigger and execution-context checks for this workflow reader.
@@ -154,24 +155,42 @@ fn action_route(reference: &str) -> Result<Route, String> {
     {
         return Ok(Route::Suite);
     }
-    let shared = [
-        "setup-rust",
-        "install-mdtablefix",
-        "install-whitaker",
-        "upload-codescene-coverage",
-    ];
-    let pinned_shared = shared.iter().any(|name| {
-        reference == format!("leynos/shared-actions/.github/actions/{name}@{ACTION_REVISION}")
-    });
-    let external = [
-        "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
-        "DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff",
-    ];
-    if pinned_shared || external.contains(&reference) {
+    if is_reviewed_non_suite_action(reference) {
         Ok(Route::NonSuite)
     } else {
         Err(format!("unprovable action reference: {reference}"))
     }
+}
+
+/// Recognizes the exact shared, Whitaker, and third-party action pins under review.
+///
+/// Each pinned route is checked separately so one release cadence can advance
+/// without silently widening the set of accepted references.
+fn is_reviewed_non_suite_action(reference: &str) -> bool {
+    // The Whitaker installer advances on its own release cadence, so its reviewed
+    // revision is tracked separately from the Dependabot group's shared revision.
+    if reference
+        == format!(
+            "leynos/shared-actions/.github/actions/install-whitaker@{WHITAKER_ACTION_REVISION}"
+        )
+    {
+        return true;
+    }
+    let shared = [
+        "setup-rust",
+        "install-mdtablefix",
+        "upload-codescene-coverage",
+    ];
+    if shared.iter().any(|name| {
+        reference == format!("leynos/shared-actions/.github/actions/{name}@{ACTION_REVISION}")
+    }) {
+        return true;
+    }
+    [
+        "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+        "DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff",
+    ]
+    .contains(&reference)
 }
 
 /// Rejects soft or conditional execution where the installation or suite must bind its job.
