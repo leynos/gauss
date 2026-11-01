@@ -346,7 +346,7 @@ pub(super) const DECLARED_COMPONENT_LIST_FAILURE: CheckFailureCase = CheckFailur
             "component",
             "list",
             "--toolchain",
-            oracle::STABLE,
+            oracle::DECLARED,
             "--installed",
         ],
         occurrence: CallOccurrence::First,
@@ -367,7 +367,11 @@ pub(super) const STABLE_TOOLCHAIN_LIST_FAILURE: CheckFailureCase = CheckFailureC
     diagnostic: "could not list installed Rust toolchains",
 };
 
-/// The second Rustup component query fails after listing stable toolchains.
+/// The stable-channel Rustup component query fails after listing its toolchain.
+///
+/// The declared channel differs from the stable pin, so exactly one expected
+/// component query names the stable toolchain even though it is the second one
+/// issued in source order.
 pub(super) const STABLE_COMPONENT_LIST_FAILURE: CheckFailureCase = CheckFailureCase {
     failure: Failure::StableComponentList,
     selection: InvocationSelection {
@@ -379,7 +383,7 @@ pub(super) const STABLE_COMPONENT_LIST_FAILURE: CheckFailureCase = CheckFailureC
             oracle::STABLE,
             "--installed",
         ],
-        occurrence: CallOccurrence::Second,
+        occurrence: CallOccurrence::First,
     },
     trace: FailureTrace::Complete,
     diagnostic: "could not list components for toolchain",

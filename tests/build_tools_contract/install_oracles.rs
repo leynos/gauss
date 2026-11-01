@@ -15,7 +15,13 @@ pub(super) use super::observation_oracles::{
 
 /// Pinned mold release version used in independent archive expectations.
 const MOLD: &str = "2.41.0";
-/// Pinned stable Rust toolchain used by install and preflight expectations.
+/// Rust channel declared by the candidate `rust-toolchain.toml` for this case.
+///
+/// This is deliberately independent of [`STABLE`]: the declared channel
+/// follows the repository toolchain file, while the stable pin follows
+/// `tools/rust-stable/VERSION`, and the two may name different releases.
+pub(super) const DECLARED: &str = "1.99.1";
+/// Pinned stable Rust toolchain used to verify the declared channel and run rustfmt.
 pub(super) const STABLE: &str = "1.92.0";
 /// Harmless archive payload written by the direct fake-curl probe.
 pub(super) const INERT_ARCHIVE: &[u8] = b"inert archive fixture\n";
@@ -275,7 +281,7 @@ fn successful_install_expectation(
     scratch: &Scratch,
     request: &Request,
 ) -> Result<ExpectedObservation, String> {
-    let install = install_expectation(&request.machine, STABLE)?;
+    let install = install_expectation(&request.machine, DECLARED)?;
     let linux = request.host == Host::Linux;
     let mut expected = expected(
         0,
@@ -294,7 +300,7 @@ fn successful_check_expectation(scratch: &Scratch, request: &Request) -> Expecte
     let linux = request.host == Host::Linux;
     let mut expected = expected(
         0,
-        check_calls(scratch, request, STABLE),
+        check_calls(scratch, request, DECLARED),
         Some(success_diagnostic(request.entry, request.host).to_owned()),
         prefix_state(false, false),
     );
@@ -325,7 +331,7 @@ pub(super) fn verify_missing_installer_tool(
         let mut request = Request::new(Entry::Install);
         request.controls.unavailable.push(unavailable);
 
-        let installation = install_expectation("x86_64", STABLE)?;
+        let installation = install_expectation("x86_64", DECLARED)?;
         let mut calls = if after_mold {
             install_calls(scratch, &request, &installation)
         } else {

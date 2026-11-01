@@ -310,7 +310,7 @@ impl Default for RustupFixture {
         Self {
             install_status: [0, 0],
             list_status: [0, 0],
-            list_output: ["1.92.0\n".to_owned(), "1.92.0\n".to_owned()],
+            list_output: ["1.99.1\n".to_owned(), "1.92.0\n".to_owned()],
             component_status: [0, 0],
             component_output: [
                 "rustfmt (installed)\nclippy (installed)\nrust-analyzer (installed)\n".to_owned(),

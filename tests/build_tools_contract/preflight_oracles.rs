@@ -160,7 +160,7 @@ pub(super) fn verify_check_failure(case: &CheckFailureCase) -> Result<(), String
     with_scratch(|scratch| {
         let mut request = Request::new(Entry::Check);
         request.controls.failure = Some(case.failure);
-        let mut calls = oracle::check_calls(scratch, &request, oracle::STABLE);
+        let mut calls = oracle::check_calls(scratch, &request, oracle::DECLARED);
         prepare_failure_trace(&mut calls, case)?;
         set_call_status(&mut calls, &case.selection, 97)?;
 
@@ -251,7 +251,7 @@ pub(super) fn verify_missing_requirements(
 ) -> Result<(), String> {
     with_scratch(|scratch| {
         let mut request = Request::new(Entry::Check);
-        let mut calls = oracle::check_calls(scratch, &request, oracle::STABLE);
+        let mut calls = oracle::check_calls(scratch, &request, oracle::DECLARED);
         match scenario {
             MissingRequirement::MoldAbsent => {
                 request.controls.unavailable.push(Program::Mold);
@@ -313,7 +313,7 @@ pub(super) fn verify_missing_rustup() -> Result<(), String> {
     with_scratch(|scratch| {
         let mut request = Request::new(Entry::Check);
         request.controls.unavailable.push(Program::Rustup);
-        let mut calls = oracle::check_calls(scratch, &request, oracle::STABLE);
+        let mut calls = oracle::check_calls(scratch, &request, oracle::DECLARED);
         calls.retain(|call| call.tool != "rustup");
         let diagnostic = "rustup not found on PATH; install it from https://rustup.rs";
         let mut expected = oracle::expected(

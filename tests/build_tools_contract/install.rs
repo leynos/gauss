@@ -201,7 +201,7 @@ fn checksum_rows_fail_before_curl(
 #[case::declared_rustup(
     Failure::DeclaredInstall,
     9,
-    "failed to install toolchain 1.92.0 and its components",
+    "failed to install toolchain 1.99.1 and its components",
     true
 )]
 #[case::stable_rustup(
@@ -219,7 +219,7 @@ fn install_stage_failure_stops_and_cleans(
     with_scratch(|scratch| {
         let mut request = Request::new(Entry::Install);
         request.controls.failure = Some(failure);
-        let install = oracle::install_expectation("x86_64", oracle::STABLE)?;
+        let install = oracle::install_expectation("x86_64", oracle::DECLARED)?;
         let mut calls = oracle::install_calls(scratch, &request, &install);
         calls.truncate(call_count);
         calls
@@ -268,7 +268,7 @@ fn extracted_binary_is_checked_at_actual_prefix(
         request.controls.payload = payload;
         request.controls.failure = failure;
         request.controls.mold_version_output = version.map(str::to_owned);
-        let install = oracle::install_expectation("x86_64", oracle::STABLE)?;
+        let install = oracle::install_expectation("x86_64", oracle::DECLARED)?;
         let executable = payload == PayloadMode::Installed;
         let mut calls = oracle::install_calls(scratch, &request, &install);
         calls.truncate(if executable { 8 } else { 7 });

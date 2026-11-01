@@ -79,6 +79,10 @@ fn valid_components_are_deduplicated_and_preserved(
         let mut request = Request::new(Entry::Install);
         let [declared, _stable] = &mut request.controls.rustup.component_output;
         *declared = case.component_output.to_owned();
+        // The staged toolchain file, not the repository pin, names the channel
+        // the fake inventory must report as installed.
+        let [declared_list, _stable_list] = &mut request.controls.rustup.list_output;
+        *declared_list = format!("{}\n", case.channel);
         verify_install_then_check(scratch, &mut request, case.channel, case.extras)
     })
 }
