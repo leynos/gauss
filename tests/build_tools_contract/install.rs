@@ -210,6 +210,12 @@ fn checksum_rows_fail_before_curl(
     "failed to install stable toolchain 1.92.0 with rustfmt",
     true
 )]
+#[case::nightly_rustup(
+    Failure::NightlyInstall,
+    11,
+    "failed to install formatter toolchain nightly-2026-08-07 with rustfmt",
+    true
+)]
 fn install_stage_failure_stops_and_cleans(
     #[case] failure: Failure,
     #[case] call_count: usize,

@@ -257,6 +257,7 @@ const MAKE_ENVIRONMENT_TO_CLEAR: &[&str] = &[
     "RUST_FLAGS",
     "RUSTFLAGS",
     "RUSTDOCFLAGS",
+    "RUSTFMT_TOOLCHAIN",
     "SHELL",
     "TARGET",
     "TEST_FLAGS",

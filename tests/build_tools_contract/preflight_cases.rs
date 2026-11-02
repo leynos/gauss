@@ -3,7 +3,7 @@
 //! Values are kept separate from test operations so each case retains an explicit input record.
 
 use super::{
-    Entry, Failure, install_oracles as oracle,
+    Entry, Failure,
     preflight_oracles::{CallOccurrence, CheckFailureCase, FailureTrace, InvocationSelection},
 };
 
@@ -325,66 +325,11 @@ pub(super) const CLANG_SYNTAX_FAILURE: CheckFailureCase = CheckFailureCase {
     diagnostic: "cannot compile a basic C translation unit",
 };
 
-/// The declared Rustup toolchain-list query fails before its component query.
-pub(super) const DECLARED_TOOLCHAIN_LIST_FAILURE: CheckFailureCase = CheckFailureCase {
-    failure: Failure::DeclaredToolchainList,
-    selection: InvocationSelection {
-        tool: "rustup",
-        arguments: &["toolchain", "list"],
-        occurrence: CallOccurrence::First,
-    },
-    trace: FailureTrace::MissingDeclaredComponentQuery,
-    diagnostic: "could not list installed Rust toolchains",
-};
-
-/// The declared Rustup component query fails after listing toolchains.
-pub(super) const DECLARED_COMPONENT_LIST_FAILURE: CheckFailureCase = CheckFailureCase {
-    failure: Failure::DeclaredComponentList,
-    selection: InvocationSelection {
-        tool: "rustup",
-        arguments: &[
-            "component",
-            "list",
-            "--toolchain",
-            oracle::DECLARED,
-            "--installed",
-        ],
-        occurrence: CallOccurrence::First,
-    },
-    trace: FailureTrace::Complete,
-    diagnostic: "could not list components for toolchain",
-};
-
-/// The second Rustup toolchain-list query fails before its component query.
-pub(super) const STABLE_TOOLCHAIN_LIST_FAILURE: CheckFailureCase = CheckFailureCase {
-    failure: Failure::StableToolchainList,
-    selection: InvocationSelection {
-        tool: "rustup",
-        arguments: &["toolchain", "list"],
-        occurrence: CallOccurrence::Second,
-    },
-    trace: FailureTrace::MissingStableComponentQuery,
-    diagnostic: "could not list installed Rust toolchains",
-};
-
-/// The stable-channel Rustup component query fails after listing its toolchain.
-///
-/// The declared channel differs from the stable pin, so exactly one expected
-/// component query names the stable toolchain even though it is the second one
-/// issued in source order.
-pub(super) const STABLE_COMPONENT_LIST_FAILURE: CheckFailureCase = CheckFailureCase {
-    failure: Failure::StableComponentList,
-    selection: InvocationSelection {
-        tool: "rustup",
-        arguments: &[
-            "component",
-            "list",
-            "--toolchain",
-            oracle::STABLE,
-            "--installed",
-        ],
-        occurrence: CallOccurrence::First,
-    },
-    trace: FailureTrace::Complete,
-    diagnostic: "could not list components for toolchain",
+/// Rustup discovery-failure inputs for the declared, stable and nightly checks.
+#[path = "preflight_rustup_cases.rs"]
+mod rustup;
+pub(super) use rustup::{
+    DECLARED_COMPONENT_LIST_FAILURE, DECLARED_TOOLCHAIN_LIST_FAILURE,
+    NIGHTLY_COMPONENT_LIST_FAILURE, NIGHTLY_TOOLCHAIN_LIST_FAILURE, STABLE_COMPONENT_LIST_FAILURE,
+    STABLE_TOOLCHAIN_LIST_FAILURE,
 };

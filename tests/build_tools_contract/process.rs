@@ -226,28 +226,48 @@ fn configure_rustup(
     fixture: &RustupFixture,
     failure: Option<Failure>,
 ) -> Result<(), String> {
-    let [mut declared_install, mut stable_install] = fixture.install_status;
-    let [mut declared_list, mut stable_list] = fixture.list_status;
-    let [mut declared_components, mut stable_components] = fixture.component_status;
+    let [
+        mut declared_install,
+        mut stable_install,
+        mut nightly_install,
+    ] = fixture.install_status;
+    let [mut declared_list, mut stable_list, mut nightly_list] = fixture.list_status;
+    let [
+        mut declared_components,
+        mut stable_components,
+        mut nightly_components,
+    ] = fixture.component_status;
     match failure {
         Some(Failure::DeclaredInstall) => declared_install = 97,
         Some(Failure::StableInstall) => stable_install = 97,
+        Some(Failure::NightlyInstall) => nightly_install = 97,
         Some(Failure::DeclaredToolchainList) => declared_list = 97,
         Some(Failure::StableToolchainList) => stable_list = 97,
+        Some(Failure::NightlyToolchainList) => nightly_list = 97,
         Some(Failure::DeclaredComponentList) => declared_components = 97,
         Some(Failure::StableComponentList) => stable_components = 97,
+        Some(Failure::NightlyComponentList) => nightly_components = 97,
         _ => {}
     }
-    for (ordinal, status) in [(1, declared_install), (2, stable_install)] {
+    for (ordinal, status) in [
+        (1, declared_install),
+        (2, stable_install),
+        (3, nightly_install),
+    ] {
         command.env(
             format!("GAUSS_RUSTUP_INSTALL_STATUS_{ordinal}"),
             exit_value(status)?,
         );
     }
-    let [declared_list_output, stable_list_output] = &fixture.list_output;
+    let [
+        declared_list_output,
+        stable_list_output,
+        nightly_list_output,
+    ] = &fixture.list_output;
     for (ordinal, status, output) in [
         (1, declared_list, declared_list_output),
         (2, stable_list, stable_list_output),
+        (3, nightly_list, nightly_list_output),
     ] {
         command.env(
             format!("GAUSS_RUSTUP_LIST_STATUS_{ordinal}"),
@@ -255,10 +275,15 @@ fn configure_rustup(
         );
         command.env(format!("GAUSS_RUSTUP_LIST_OUTPUT_{ordinal}"), output);
     }
-    let [declared_component_output, stable_component_output] = &fixture.component_output;
+    let [
+        declared_component_output,
+        stable_component_output,
+        nightly_component_output,
+    ] = &fixture.component_output;
     for (ordinal, status, output) in [
         (1, declared_components, declared_component_output),
         (2, stable_components, stable_component_output),
+        (3, nightly_components, nightly_component_output),
     ] {
         command.env(
             format!("GAUSS_RUSTUP_COMPONENT_STATUS_{ordinal}"),

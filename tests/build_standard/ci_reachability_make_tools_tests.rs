@@ -6,8 +6,8 @@ use rstest::rstest;
 use super::super::tests as shared_tests;
 use super::super::{GitBlobId, Route, make_syntax};
 use super::{
-    LineEnding, REVIEWED_PYTHON_BODIES, classify_words, classify_workspace_words,
-    stage_python_bodies, verify_reviewed_python_sources,
+    LineEnding, REVIEWED_PYTHON_BODIES, RUSTFMT_TOOLCHAIN, classify_words,
+    classify_workspace_words, stage_python_bodies, verify_reviewed_python_sources,
 };
 
 /// The exact historical contract route whose production script is missing.
@@ -237,6 +237,19 @@ fn rustup_accepts_only_the_pinned_formatter_install() {
             "only the reviewed formatter install is admissible: {command:?}"
         );
     }
+}
+
+/// The formatter pin has one source of truth shared by Make and the scripts.
+///
+/// For example, bumping `tools/rustfmt-nightly/VERSION` without updating
+/// `RUSTFMT_TOOLCHAIN` fails here before either gate runs.
+#[test]
+fn formatter_pin_matches_the_provisioning_version_file() {
+    let pinned = include_str!("../../tools/rustfmt-nightly/VERSION").trim();
+    assert_eq!(
+        pinned, RUSTFMT_TOOLCHAIN,
+        "tools/rustfmt-nightly/VERSION must match the Makefile formatter pin"
+    );
 }
 
 /// Accepts only the complete lowercase hexadecimal form emitted by Git.

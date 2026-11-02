@@ -13,6 +13,7 @@ MOLD_VERSION_FILE=${MOLD_VERSION_FILE-$BUILD_TOOLS_REPO_ROOT/tools/mold/VERSION}
 MOLD_SHA256SUMS_FILE=${MOLD_SHA256SUMS_FILE-$BUILD_TOOLS_REPO_ROOT/tools/mold/SHA256SUMS}
 RUST_TOOLCHAIN_FILE=${RUST_TOOLCHAIN_FILE-$BUILD_TOOLS_REPO_ROOT/rust-toolchain.toml}
 RUST_STABLE_VERSION_FILE=$BUILD_TOOLS_REPO_ROOT/tools/rust-stable/VERSION
+RUSTFMT_NIGHTLY_VERSION_FILE=$BUILD_TOOLS_REPO_ROOT/tools/rustfmt-nightly/VERSION
 if [[ ${BUILD_TOOLS_PREFIX+x} ]]; then
   : # Preserve an explicit value so installation can reject an empty prefix.
 elif [[ -n ${HOME:-} ]]; then
@@ -61,6 +62,9 @@ read_numeric_pin() {
 mold_version() { read_numeric_pin "$MOLD_VERSION_FILE"; }
 
 stable_toolchain_version() { read_numeric_pin "$RUST_STABLE_VERSION_FILE"; }
+
+# The formatter pin is a dated nightly channel, so it is not a numeric version.
+rustfmt_nightly_version() { read_pin "$RUSTFMT_NIGHTLY_VERSION_FILE"; }
 
 channel_is_valid() {
   local channel=$1 month day

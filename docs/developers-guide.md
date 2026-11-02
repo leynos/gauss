@@ -2,17 +2,23 @@
 
 ## Validate lint and documentation policy
 
-Install the pinned Rust toolchain from the repository root before running the
+Install the pinned build tools from the repository root before running the
 validation targets:
 
 ```sh
-rustup install
+bash scripts/install-build-tools.sh
 ```
 
-The `rust-toolchain.toml` manifest installs `rustfmt`, `clippy`, and
-`rust-analyzer` for the pinned compiler. Keep all three components in the
-manifest so formatting, linting, and Language Server Protocol (LSP) analysis
-use the same Rust release.
+The script installs the mold linker, the toolchain declared by
+`rust-toolchain.toml` with `rustfmt`, `clippy` and `rust-analyzer`, the stable
+verification toolchain, and the nightly formatter pinned by
+`tools/rustfmt-nightly/VERSION`. `make check-fmt` runs that nightly formatter
+because `.rustfmt.toml` uses unstable options, so `rustup install` alone does
+not satisfy the first commit gate. Verify the result with
+`bash scripts/check-build-tools.sh`.
+
+Keep all three components in the `rust-toolchain.toml` manifest so formatting,
+linting, and Language Server Protocol (LSP) analysis use the same Rust release.
 
 Run the required commit gates sequentially:
 

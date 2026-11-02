@@ -61,14 +61,20 @@ pub(super) enum Failure {
     DeclaredInstall,
     /// Fails rustup install call two for the stable channel.
     StableInstall,
+    /// Fails rustup install call three for the pinned formatter nightly.
+    NightlyInstall,
     /// Fails toolchain discovery call one for the declared channel.
     DeclaredToolchainList,
     /// Fails toolchain discovery call two for the stable channel.
     StableToolchainList,
+    /// Fails toolchain discovery call three for the pinned formatter nightly.
+    NightlyToolchainList,
     /// Fails component discovery call one for the declared channel.
     DeclaredComponentList,
     /// Fails component discovery call two for the stable channel.
     StableComponentList,
+    /// Fails component discovery call three for the pinned formatter nightly.
+    NightlyComponentList,
     /// Fails the PATH-resolved mold version check.
     MoldVersion,
     /// Fails the extracted prefix mold version check.
@@ -291,29 +297,34 @@ pub(super) struct EnvironmentChange {
     pub(super) value: Option<String>,
 }
 
-/// Exact output and status fixtures for declared and stable call ordinals.
+/// Exact output and status fixtures for declared, stable and nightly call ordinals.
 pub(super) struct RustupFixture {
-    /// Statuses for declared-channel then stable install call ordinals.
-    pub(super) install_status: [i32; 2],
-    /// Statuses for declared-channel then stable list call ordinals.
-    pub(super) list_status: [i32; 2],
-    /// Toolchain inventory bytes returned for the two list ordinals.
-    pub(super) list_output: [String; 2],
-    /// Statuses for declared-channel then stable component queries.
-    pub(super) component_status: [i32; 2],
-    /// Component inventory bytes returned for the two queries.
-    pub(super) component_output: [String; 2],
+    /// Statuses for declared-channel, stable then nightly install call ordinals.
+    pub(super) install_status: [i32; 3],
+    /// Statuses for declared-channel, stable then nightly list call ordinals.
+    pub(super) list_status: [i32; 3],
+    /// Toolchain inventory bytes returned for the three list ordinals.
+    pub(super) list_output: [String; 3],
+    /// Statuses for declared-channel, stable then nightly component queries.
+    pub(super) component_status: [i32; 3],
+    /// Component inventory bytes returned for the three queries.
+    pub(super) component_output: [String; 3],
 }
 
 impl Default for RustupFixture {
     fn default() -> Self {
         Self {
-            install_status: [0, 0],
-            list_status: [0, 0],
-            list_output: ["1.99.1\n".to_owned(), "1.92.0\n".to_owned()],
-            component_status: [0, 0],
+            install_status: [0, 0, 0],
+            list_status: [0, 0, 0],
+            list_output: [
+                "1.99.1\n".to_owned(),
+                "1.92.0\n".to_owned(),
+                "nightly-2026-08-07\n".to_owned(),
+            ],
+            component_status: [0, 0, 0],
             component_output: [
                 "rustfmt (installed)\nclippy (installed)\nrust-analyzer (installed)\n".to_owned(),
+                "rustfmt (installed)\n".to_owned(),
                 "rustfmt (installed)\n".to_owned(),
             ],
         }

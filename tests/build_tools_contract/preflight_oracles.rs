@@ -7,13 +7,15 @@ use super::{
     support::{Scratch, with_scratch},
 };
 
-/// Selects the first or second exact invocation matching a tool and argv.
+/// Selects the first, second or third exact invocation matching a tool and argv.
 #[derive(Clone, Copy)]
 pub(super) enum CallOccurrence {
     /// Selects the first matching invocation.
     First,
     /// Selects the second matching invocation.
     Second,
+    /// Selects the third matching invocation.
+    Third,
 }
 
 /// Describes an invocation by its complete tool, argument vector, and ordinal.
@@ -36,6 +38,8 @@ pub(super) enum FailureTrace {
     MissingDeclaredComponentQuery,
     /// The stable toolchain-list query fails before its component query.
     MissingStableComponentQuery,
+    /// The nightly toolchain-list query fails before its component query.
+    MissingNightlyComponentQuery,
 }
 
 /// Binds an independent failure, exact process selection, trace, and diagnostic.
@@ -80,6 +84,7 @@ pub(super) fn set_call_status(
     let ordinal = match selection.occurrence {
         CallOccurrence::First => 0,
         CallOccurrence::Second => 1,
+        CallOccurrence::Third => 2,
     };
     let call = calls
         .iter_mut()
@@ -99,6 +104,10 @@ pub(super) fn set_call_status(
             ),
             CallOccurrence::Second => format!(
                 "expected second {} call with argv {:?}",
+                selection.tool, selection.arguments
+            ),
+            CallOccurrence::Third => format!(
+                "expected third {} call with argv {:?}",
                 selection.tool, selection.arguments
             ),
         })?;
@@ -151,6 +160,7 @@ fn prepare_failure_trace(
         FailureTrace::Complete => {}
         FailureTrace::MissingDeclaredComponentQuery => skip_component_query(calls, 1)?,
         FailureTrace::MissingStableComponentQuery => skip_component_query(calls, 2)?,
+        FailureTrace::MissingNightlyComponentQuery => skip_component_query(calls, 3)?,
     }
     Ok(())
 }
@@ -277,21 +287,21 @@ pub(super) fn verify_missing_requirements(
                 calls.retain(|call| call.tool != "clang");
             }
             MissingRequirement::DeclaredToolchainAbsent => {
-                let [declared, _stable] = &mut request.controls.rustup.list_output;
+                let [declared, ..] = &mut request.controls.rustup.list_output;
                 declared.clear();
                 skip_component_query(&mut calls, 1)?;
             }
             MissingRequirement::DeclaredComponentAbsent => {
-                let [declared, _stable] = &mut request.controls.rustup.component_output;
+                let [declared, ..] = &mut request.controls.rustup.component_output;
                 "rustfmt (installed)\nclippy (installed)\n".clone_into(declared);
             }
             MissingRequirement::StableToolchainAbsent => {
-                let [_declared, stable] = &mut request.controls.rustup.list_output;
+                let [_, stable, _] = &mut request.controls.rustup.list_output;
                 stable.clear();
                 skip_component_query(&mut calls, 2)?;
             }
             MissingRequirement::StableRustfmtAbsent => {
-                let [_declared, stable] = &mut request.controls.rustup.component_output;
+                let [_, stable, _] = &mut request.controls.rustup.component_output;
                 stable.clear();
             }
         }
@@ -308,7 +318,7 @@ pub(super) fn verify_missing_requirements(
     })
 }
 
-/// Verifies both independent Rustup availability checks when the fake is absent.
+/// Verifies all three independent Rustup availability checks when the fake is absent.
 pub(super) fn verify_missing_rustup() -> Result<(), String> {
     with_scratch(|scratch| {
         let mut request = Request::new(Entry::Check);
@@ -329,9 +339,9 @@ pub(super) fn verify_missing_rustup() -> Result<(), String> {
             .matches(diagnostic)
             .count();
         oracle::require(
-            diagnostic_count == 2,
+            diagnostic_count == 3,
             "missing Rustup diagnostic count",
-            "2",
+            "3",
             &diagnostic_count.to_string(),
         )?;
         oracle::verify_observation(scratch, &observation, expected)

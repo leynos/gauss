@@ -101,6 +101,8 @@ typecheck:
 
 # `.rustfmt.toml` uses nightly-only options, so the formatter runs on a pinned
 # nightly that is installed beside the build toolchain rather than replacing it.
+# Keep this default equal to `tools/rustfmt-nightly/VERSION`, which the
+# provisioning scripts read; a contract test enforces the match.
 RUSTFMT_TOOLCHAIN ?= nightly-2026-08-07
 
 fmt: ## Format Rust and Markdown sources

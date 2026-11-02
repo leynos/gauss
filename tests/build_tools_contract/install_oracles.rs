@@ -23,6 +23,12 @@ const MOLD: &str = "2.41.0";
 pub(super) const DECLARED: &str = "1.99.1";
 /// Pinned stable Rust toolchain used to verify the declared channel and run rustfmt.
 pub(super) const STABLE: &str = "1.92.0";
+/// Pinned nightly formatter toolchain read from `tools/rustfmt-nightly/VERSION`.
+///
+/// This is deliberately independent of [`DECLARED`] and [`STABLE`]: the
+/// formatter pin is a dated nightly channel installed beside the build
+/// toolchain, not a replacement for it.
+pub(super) const NIGHTLY: &str = "nightly-2026-08-07";
 /// Harmless archive payload written by the direct fake-curl probe.
 pub(super) const INERT_ARCHIVE: &[u8] = b"inert archive fixture\n";
 /// Minimal C translation unit expected on Linux preflight.
@@ -137,6 +143,7 @@ pub(super) fn install_calls(
     }
     calls.push(rustup_install(expected.channel, &components));
     calls.push(rustup_install(STABLE, &["rustfmt"]));
+    calls.push(rustup_install(NIGHTLY, &["rustfmt"]));
     calls
 }
 
@@ -148,7 +155,7 @@ pub(super) fn check_calls(scratch: &Scratch, request: &Request, channel: &str) -
         calls.push(call("clang", &["--version"], 0));
         calls.push(call("clang", &["-x", "c", "-fsyntax-only", "-"], 0));
     }
-    for toolchain in [channel, STABLE] {
+    for toolchain in [channel, STABLE, NIGHTLY] {
         calls.push(call("rustup", &["toolchain", "list"], 0));
         calls.push(call(
             "rustup",

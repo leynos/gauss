@@ -153,6 +153,10 @@ fn after_pinned_formatter_toolchain(arguments: &[String]) -> &[String] {
 }
 
 /// Accepts only the exact pinned formatter installation performed by CI.
+///
+/// For example, `toolchain install nightly-2026-08-07 --profile minimal
+/// --component rustfmt` returns [`Route::NonSuite`], while the same arguments
+/// with `nightly` in place of the pin are rejected.
 fn classify_rustup(arguments: &[String]) -> Result<Route, String> {
     exact_non_suite(
         arguments,

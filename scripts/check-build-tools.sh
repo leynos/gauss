@@ -14,6 +14,7 @@ script_dir=$(cd -- "$(dirname -- "$script_path")" && pwd)
 
 BUILD_TOOLS_MOLD_PIN=
 BUILD_TOOLS_STABLE_PIN=
+BUILD_TOOLS_RUSTFMT_NIGHTLY_PIN=
 
 check_supported_host_target() {
   local target=${BUILD_TOOLS_TARGET:-${CARGO_BUILD_TARGET:-}}
@@ -126,9 +127,16 @@ check_stable_toolchain() {
   check_toolchain "$toolchain"
 }
 
+check_rustfmt_nightly_toolchain() {
+  local toolchain=$1
+  local -a BUILD_TOOLS_COMPONENTS=(rustfmt)
+  check_toolchain "$toolchain"
+}
+
 prepare_check_inputs() {
   BUILD_TOOLS_MOLD_PIN=$(mold_version) || return 1
   BUILD_TOOLS_STABLE_PIN=$(stable_toolchain_version) || return 1
+  BUILD_TOOLS_RUSTFMT_NIGHTLY_PIN=$(rustfmt_nightly_version) || return 1
   load_toolchain_configuration || return 1
   detect_host || return 1
   check_supported_host_target || return 1
@@ -142,6 +150,7 @@ main() {
   check_clang || status=1
   check_toolchain "$BUILD_TOOLS_CHANNEL" || status=1
   check_stable_toolchain "$BUILD_TOOLS_STABLE_PIN" || status=1
+  check_rustfmt_nightly_toolchain "$BUILD_TOOLS_RUSTFMT_NIGHTLY_PIN" || status=1
   if [[ $status != 0 ]]; then
     note 'build-tool check failed; resolve the messages above before running Cargo'
   fi
