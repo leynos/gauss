@@ -17,8 +17,18 @@ because `.rustfmt.toml` uses unstable options, so `rustup install` alone does
 not satisfy the first commit gate. Verify the result with
 `bash scripts/check-build-tools.sh`.
 
-Keep all three components in the `rust-toolchain.toml` manifest so formatting,
-linting, and Language Server Protocol (LSP) analysis use the same Rust release.
+`rust-toolchain.toml` remains the stable build toolchain: compilation, Clippy,
+and Language Server Protocol (LSP) analysis all use that release. Formatting is
+the deliberate exception. `.rustfmt.toml` requires the formatter pinned by
+`tools/rustfmt-nightly/VERSION`, so `make fmt` and `make check-fmt` select
+`+nightly-2026-08-07` through the fixed `RUSTFMT_TOOLCHAIN` Make variable. The
+reachability contract refuses any workflow-level override of that variable, so
+a stale or ambient value cannot change the gate. Install the formatter on its
+own with:
+
+```sh
+rustup toolchain install nightly-2026-08-07 --profile minimal --component rustfmt
+```
 
 Run the required commit gates sequentially:
 

@@ -46,20 +46,7 @@ pub(super) fn classify_words(words: &[String], controlled: bool) -> Result<Route
             ],
             "Whitaker",
         ),
-        "mdtablefix" => exact_non_suite(
-            arguments,
-            &[
-                "--check",
-                "--git",
-                "--include-untracked",
-                "--wrap",
-                "--renumber",
-                "--breaks",
-                "--ellipsis",
-                "--fences",
-            ],
-            "mdtablefix",
-        ),
+        "mdtablefix" => classify_mdtablefix(arguments),
         "markdownlint-cli2" => classify_markdownlint(arguments),
         "nixie" => exact_non_suite(arguments, &["--no-sandbox"], "nixie"),
         "rustup" => classify_rustup(arguments),
@@ -188,6 +175,30 @@ fn executing_suite(arguments: &[String]) -> Result<Route, String> {
                 "Cargo suite invocation does not execute tests: {control}"
             ))
         })
+}
+
+/// Accepts the reviewed mdtablefix check and in-place rewrite forms only.
+///
+/// For example, `--check --git …` proves the `check-fmt` target, while
+/// `--in-place --git …` proves the `fmt` target; any other flag is unresolved.
+fn classify_mdtablefix(arguments: &[String]) -> Result<Route, String> {
+    let rules = [
+        "--git",
+        "--include-untracked",
+        "--wrap",
+        "--renumber",
+        "--breaks",
+        "--ellipsis",
+        "--fences",
+    ];
+    for mode in ["--check", "--in-place"] {
+        let mut expected = vec![mode];
+        expected.extend_from_slice(&rules);
+        if exact_words(arguments, &expected) {
+            return Ok(Route::NonSuite);
+        }
+    }
+    Err("unresolved mdtablefix arguments".to_owned())
 }
 
 /// Recognizes current Markdown lint commands without admitting extra input globs.
