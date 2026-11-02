@@ -1,10 +1,11 @@
 //! Step definitions for draw-mode path-closing scenarios.
 
-use crate::{common, state};
 use gauss::model::{Document, SegmentKind, ShapeId};
 use gpui::{Bounds, Pixels, Point, TestAppContext, VisualTestContext, point, px};
 use rstest_bdd_macros::{given, then, when};
 use test_support::{TestSupportError, TestSupportResult};
+
+use crate::{common, state};
 
 pub(crate) struct ClosePathState {
     bounds: Bounds<Pixels>,

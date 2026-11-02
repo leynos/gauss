@@ -5,16 +5,23 @@
 //! binary runs the feature scenario with `GpuiHarness`; common document,
 //! canvas, history, and durable-shell helpers provide the shared setup.
 
-use crate::common::{
-    add_square, assert_shape_translated_by_delta, canvas_bounds, read_document, read_history_len,
-    simulate_document_undo,
-};
-use crate::history_bdd_support::{DurableShell, missing};
 use gauss::model::{Document, SelItem, Shape, ShapeId, Vec2};
 use gpui::{Modifiers, MouseButton, TestAppContext, px};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use test_support::{TestSupportError, TestSupportResult, math};
+
+use crate::{
+    common::{
+        add_square,
+        assert_shape_translated_by_delta,
+        canvas_bounds,
+        read_document,
+        read_history_len,
+        simulate_document_undo,
+    },
+    history_bdd_support::{DurableShell, missing},
+};
 
 #[derive(Default)]
 struct MultiDragState {
@@ -183,7 +190,8 @@ fn history_gained_one(
         let actual = read_history_len(visual_cx, view);
         if actual != before + 1 {
             return Err(TestSupportError::expectation(format!(
-                "expected exactly one undo entry for multi-shape drag; before={before}, after={actual}"
+                "expected exactly one undo entry for multi-shape drag; before={before}, \
+                 after={actual}"
             )));
         }
         Ok(())

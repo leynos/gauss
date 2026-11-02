@@ -10,13 +10,13 @@
 //!
 //! Actions are implemented as an enum rather than a trait for several reasons:
 //!
-//! - **Exhaustive matching**: All action variants can be matched exhaustively,
-//!   making dispatch tables complete and verifiable at compile time.
-//! - **Serialization**: Enums are trivially serializable, enabling future macro
-//!   recording and playback (see roadmap §0.1.2).
+//! - **Exhaustive matching**: All action variants can be matched exhaustively, making dispatch
+//!   tables complete and verifiable at compile time.
+//! - **Serialization**: Enums are trivially serializable, enabling future macro recording and
+//!   playback (see roadmap §0.1.2).
 //! - **Simplicity**: No type erasure or dynamic dispatch complexity.
-//! - **Hashable**: Both [`Action`] and [`ActionKind`] derive `Hash`, enabling
-//!   use as map keys for dispatch table caching and keybinding lookups.
+//! - **Hashable**: Both [`Action`] and [`ActionKind`] derive `Hash`, enabling use as map keys for
+//!   dispatch table caching and keybinding lookups.
 //!
 //! # Relationship to Commands
 //!
@@ -48,8 +48,19 @@
 mod action_payloads;
 
 pub use action_payloads::{
-    Colour, Degrees, Dimensions, Opacity, Point, Points, Position, Rgb8, Rotation, Size,
-    StrokeWidth, UnitF32, UnitF32Error,
+    Colour,
+    Degrees,
+    Dimensions,
+    Opacity,
+    Point,
+    Points,
+    Position,
+    Rgb8,
+    Rotation,
+    Size,
+    StrokeWidth,
+    UnitF32,
+    UnitF32Error,
 };
 
 /// Categorization of actions for dispatch routing.
@@ -98,7 +109,11 @@ pub enum ActionKind {
 /// ```rust
 /// use gauss_core::model::action::{Action, Colour, Rgb8};
 ///
-/// let colour = Colour::new(Rgb8 { r: 12, g: 34, b: 56 });
+/// let colour = Colour::new(Rgb8 {
+///     r: 12,
+///     g: 34,
+///     b: 56,
+/// });
 /// let stroke = Action::SetStrokeColour(colour);
 /// let fill = Action::SetFillColour(colour);
 ///

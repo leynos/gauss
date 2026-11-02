@@ -247,9 +247,7 @@ fn scalar_text(value: &Value, context: &str) -> Result<String, String> {
 /// Detects either boundary of a GitHub expression in a literal value.
 ///
 /// For example, `ubuntu-latest` has no marker, while `${{ matrix.os }}` does.
-fn contains_expression_marker(text: &str) -> bool {
-    text.contains("${{") || text.contains("}}")
-}
+fn contains_expression_marker(text: &str) -> bool { text.contains("${{") || text.contains("}}") }
 
 /// Resolves a scalar only when it is one exact matrix field expression.
 fn substitute_scalar(text: &str, row: &BTreeMap<String, String>) -> Result<Value, String> {

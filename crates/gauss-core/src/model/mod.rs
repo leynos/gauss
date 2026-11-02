@@ -34,9 +34,24 @@ pub mod viewport;
 pub use action::{Action, ActionKind};
 pub use colour::{HexColourParseError, format_hex_rgb, parse_hex_rgb};
 pub use command::{
-    AnchorDeletion, AnchorDeletionResult, AnchorMovement, AnchorRestoration, AnchorRestorationKind,
-    Command, CommandInverse, DeletedShape, HandleKind, HandleMovement, ReorderOp, SegmentChange,
-    ShapeInsertion, ShapeMovement, ShapeReplacement, StyleChange, UserError, prepare_command,
+    AnchorDeletion,
+    AnchorDeletionResult,
+    AnchorMovement,
+    AnchorRestoration,
+    AnchorRestorationKind,
+    Command,
+    CommandInverse,
+    DeletedShape,
+    HandleKind,
+    HandleMovement,
+    ReorderOp,
+    SegmentChange,
+    ShapeInsertion,
+    ShapeMovement,
+    ShapeReplacement,
+    StyleChange,
+    UserError,
+    prepare_command,
 };
 pub use document::Document;
 pub use engine_state::EngineState;
@@ -46,29 +61,69 @@ pub use history::{DocumentUndoHistory, HistoryError};
 pub use hit_test::{HitTestBackend, HitTestIndex};
 pub use key_context::KeyContext;
 pub use keybinding::{
-    ActionBinding, bindings_for_action, bindings_for_context, default_bindings, primary_keystroke,
+    ActionBinding,
+    bindings_for_action,
+    bindings_for_context,
+    default_bindings,
+    primary_keystroke,
 };
 pub use keystroke::{Keystroke, Modifier, Modifiers};
 pub use ops::{DocChange, DocOp};
 pub use path::{
-    Anchor, GaussAttribute, Paint, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2,
+    Anchor,
+    GaussAttribute,
+    Paint,
+    PaintStyle,
+    PathGeom,
+    Rgba,
+    SegmentKind,
+    Shape,
+    ShapeId,
+    Vec2,
 };
 pub use resize_anchor::ResizeAnchor;
 pub use resource_store::{
-    Gradient, GradientId, GradientKind, GradientStop, LinearGradient, PatternId, PatternResource,
-    RadialGradient, ResourceStore, SymbolId, SymbolResource,
+    Gradient,
+    GradientId,
+    GradientKind,
+    GradientStop,
+    LinearGradient,
+    PatternId,
+    PatternResource,
+    RadialGradient,
+    ResourceStore,
+    SymbolId,
+    SymbolResource,
 };
 pub use select_tool::{
-    SelectAnchorHit, SelectDragDocumentSnapshot, SelectHandleHit, SelectHandleHitKind,
-    SelectPointerDownInput, SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput,
-    SelectSegmentHit, SelectShapeHit, SelectTool, SelectToolState, apply_select_drag_preview,
+    SelectAnchorHit,
+    SelectDragDocumentSnapshot,
+    SelectHandleHit,
+    SelectHandleHitKind,
+    SelectPointerDownInput,
+    SelectPointerHit,
+    SelectPointerMoveInput,
+    SelectPointerUpInput,
+    SelectSegmentHit,
+    SelectShapeHit,
+    SelectTool,
+    SelectToolState,
+    apply_select_drag_preview,
     restore_select_drag_preview,
 };
 pub use selection::{SelItem, Selection};
 pub use style_store::{NamedStyle, StyleId, StyleStore};
 pub use tool::{
-    EdgeMode, PenTool, PenToolActiveShape, PenToolClickInput, Tool, ToolCommand, ToolInputEvent,
-    ToolMode, ToolModeFsm, ToolTransition,
+    EdgeMode,
+    PenTool,
+    PenToolActiveShape,
+    PenToolClickInput,
+    Tool,
+    ToolCommand,
+    ToolInputEvent,
+    ToolMode,
+    ToolModeFsm,
+    ToolTransition,
 };
 pub use viewport::Viewport;
 

@@ -4,22 +4,24 @@ use accesskit::{Action, ActionRequest, NodeId, Role, TreeId};
 use rstest::rstest;
 use uuid::Uuid;
 
-use crate::model::ShapeId;
-use crate::ui::phase0_shell::accessibility;
-
-use super::tree_builder::{CANVAS_NODE_ID, SHAPE_LIST_NODE_ID, build_node_map};
 use super::{
-    A11yActionRequestError, A11yRequestedAction, A11yService, A11yServiceError, A11yShapeSnapshot,
-    A11ySnapshot, A11yUpdateKind, A11yWindowAction,
+    A11yActionRequestError,
+    A11yRequestedAction,
+    A11yService,
+    A11yServiceError,
+    A11yShapeSnapshot,
+    A11ySnapshot,
+    A11yUpdateKind,
+    A11yWindowAction,
+    tree_builder::{CANVAS_NODE_ID, SHAPE_LIST_NODE_ID, build_node_map},
 };
+use crate::{model::ShapeId, ui::phase0_shell::accessibility};
 
 // i18n-specific tests are in the i18n_tests submodule
 #[cfg(test)]
 mod i18n_tests;
 
-fn shape_id(raw: u64) -> ShapeId {
-    ShapeId::from_accesskit_node_id(raw)
-}
+fn shape_id(raw: u64) -> ShapeId { ShapeId::from_accesskit_node_id(raw) }
 
 fn snapshot(shape_ids: &[u64], selected_ids: &[u64]) -> A11ySnapshot {
     snapshot_with_state(shape_ids, selected_ids, false)

@@ -3,7 +3,12 @@
 //! These helpers retain literal expectations for the named cases in `preflight.rs`.
 
 use super::{
-    Entry, Failure, Invocation, Program, Request, install_oracles as oracle,
+    Entry,
+    Failure,
+    Invocation,
+    Program,
+    Request,
+    install_oracles as oracle,
     support::{Scratch, with_scratch},
 };
 

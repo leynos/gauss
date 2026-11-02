@@ -3,7 +3,8 @@
 //! Values are kept separate from test operations so each case retains an explicit input record.
 
 use super::{
-    Entry, Failure,
+    Entry,
+    Failure,
     preflight_oracles::{CallOccurrence, CheckFailureCase, FailureTrace, InvocationSelection},
 };
 
@@ -270,7 +271,8 @@ pub(super) const EMPTY_ARRAY: InstalledToolchainCase = InstalledToolchainCase {
 
 /// A valid component list with duplicate standard entries.
 pub(super) const INLINE_DUPLICATES: InstalledToolchainCase = InstalledToolchainCase {
-    contents: "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\"rust-analyzer\", \"rustfmt\", \"clippy\", \"rustfmt\"]\n",
+    contents: "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\"rust-analyzer\", \"rustfmt\", \
+               \"clippy\", \"rustfmt\"]\n",
     channel: "1.92.0",
     extras: &[],
     component_output: "rustfmt (installed)\nclippy (installed)\nrust-analyzer (installed)\n",
@@ -281,21 +283,26 @@ pub(super) const MULTILINE_TRAILING_COMMA: InstalledToolchainCase = InstalledToo
     contents: "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\n\"rustfmt\",\n\"rust-src\",\n]\n",
     channel: "1.92.0",
     extras: &["rust-src"],
-    component_output: "rustfmt (installed)\nclippy (installed)\nrust-analyzer (installed)\nrust-src (installed)\n",
+    component_output: "rustfmt (installed)\nclippy (installed)\nrust-analyzer \
+                       (installed)\nrust-src (installed)\n",
 };
 
 /// A valid component list containing the LLVM tools preview alias.
 pub(super) const EXTRA_AND_LLVM_ALIAS: InstalledToolchainCase = InstalledToolchainCase {
-    contents: "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\"rust-src\", \"llvm-tools-preview\", \"rust-src\"]\n",
+    contents: "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[\"rust-src\", \
+               \"llvm-tools-preview\", \"rust-src\"]\n",
     channel: "1.92.0",
     extras: &["rust-src", "llvm-tools-preview"],
-    component_output: "rustfmt (installed)\nclippy (installed)\nrust-analyzer (installed)\nrust-src (installed)\nllvm-tools (installed)\n",
+    component_output: "rustfmt (installed)\nclippy (installed)\nrust-analyzer \
+                       (installed)\nrust-src (installed)\nllvm-tools (installed)\n",
 };
 
 /// A valid toolchain file with unrelated later tables ignored.
 pub(super) const VALID_UNRELATED_TABLE_AFTER_TOOLCHAIN: InstalledToolchainCase =
     InstalledToolchainCase {
-        contents: "[toolchain]\nchannel = \"1.92.0\"\ncomponents=[]\n[package.metadata]\nchannel=\"ignored\"\n[[targets.windows]]\nname=\"ignored\"\n",
+        contents: "[toolchain]\nchannel = \
+                   \"1.92.0\"\ncomponents=[]\n[package.metadata]\nchannel=\"ignored\"\n[[targets.\
+                   windows]]\nname=\"ignored\"\n",
         channel: "1.92.0",
         extras: &[],
         component_output: "rustfmt (installed)\nclippy (installed)\nrust-analyzer (installed)\n",
@@ -329,7 +336,10 @@ pub(super) const CLANG_SYNTAX_FAILURE: CheckFailureCase = CheckFailureCase {
 #[path = "preflight_rustup_cases.rs"]
 mod rustup;
 pub(super) use rustup::{
-    DECLARED_COMPONENT_LIST_FAILURE, DECLARED_TOOLCHAIN_LIST_FAILURE,
-    NIGHTLY_COMPONENT_LIST_FAILURE, NIGHTLY_TOOLCHAIN_LIST_FAILURE, STABLE_COMPONENT_LIST_FAILURE,
+    DECLARED_COMPONENT_LIST_FAILURE,
+    DECLARED_TOOLCHAIN_LIST_FAILURE,
+    NIGHTLY_COMPONENT_LIST_FAILURE,
+    NIGHTLY_TOOLCHAIN_LIST_FAILURE,
+    STABLE_COMPONENT_LIST_FAILURE,
     STABLE_TOOLCHAIN_LIST_FAILURE,
 };

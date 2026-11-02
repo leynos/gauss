@@ -1,12 +1,21 @@
 //! Resource-related export tests: gradients, patterns, paint server opacity,
 //! and checked export validation.
 
+use rstest::rstest;
+
 use super::*;
 use crate::model::{
-    Gradient, GradientId, GradientKind, GradientStop, PaintStyle, PatternId, RadialGradient, Rgba,
-    Shape, Vec2,
+    Gradient,
+    GradientId,
+    GradientKind,
+    GradientStop,
+    PaintStyle,
+    PatternId,
+    RadialGradient,
+    Rgba,
+    Shape,
+    Vec2,
 };
-use rstest::rstest;
 
 #[rstest]
 fn exports_gradient_and_pattern_defs_and_references(

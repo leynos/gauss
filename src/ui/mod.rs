@@ -16,8 +16,15 @@ mod viewport_input;
 pub mod widget_audit;
 
 pub use action_bridge::{
-    GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeleteSelection, GpuiDeselectAll, GpuiRedo,
-    GpuiSelectAll, GpuiSelectionRedo, GpuiSelectionUndo, GpuiUndo,
+    GpuiActivatePenTool,
+    GpuiActivateSelectTool,
+    GpuiDeleteSelection,
+    GpuiDeselectAll,
+    GpuiRedo,
+    GpuiSelectAll,
+    GpuiSelectionRedo,
+    GpuiSelectionUndo,
+    GpuiUndo,
 };
 pub use gauss_window_border::GaussRoot;
 pub(crate) use icon_assets::{UiIcon, icon_element};

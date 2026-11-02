@@ -48,9 +48,7 @@ impl TempSvgFile {
     }
 
     /// Returns the full path of the temporary file, whether or not it has been written yet.
-    pub fn path(&self) -> &Utf8Path {
-        self.cleanup.path()
-    }
+    pub fn path(&self) -> &Utf8Path { self.cleanup.path() }
 
     /// Consumes the temporary SVG and removes it through its directory capability.
     ///
@@ -58,9 +56,7 @@ impl TempSvgFile {
     ///
     /// Returns `Err` if removing the temporary SVG fails. The inner guard's
     /// later drop-time cleanup is an idempotent best-effort fallback.
-    pub fn cleanup(self) -> TestSupportResult<()> {
-        self.cleanup.cleanup()
-    }
+    pub fn cleanup(self) -> TestSupportResult<()> { self.cleanup.cleanup() }
 }
 
 #[cfg(test)]

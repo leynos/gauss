@@ -1,10 +1,7 @@
 //! Style command helpers.
 
+use super::{error::UserError, inverse::CommandInverse, types::StyleChange};
 use crate::model::Document;
-
-use super::error::UserError;
-use super::inverse::CommandInverse;
-use super::types::StyleChange;
 
 /// Apply style changes, returning the inverse command for undo.
 ///

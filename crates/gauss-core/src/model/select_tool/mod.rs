@@ -6,16 +6,24 @@
 mod drag;
 mod selection;
 
-use crate::model::tool::{EdgeMode, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolTransition};
-use crate::model::{Document, Selection, ShapeId, Vec2};
-
-use self::drag::{
-    SelectDragStartParams, apply_drag_preview, finish_drag_command, restore_drag_preview,
-    start_drag,
-};
-use self::selection::{can_drag_shape_bbox, selection_for_hit};
-
 pub use self::drag::{SelectDragDocumentSnapshot, SelectDragState};
+use self::{
+    drag::{
+        SelectDragStartParams,
+        apply_drag_preview,
+        finish_drag_command,
+        restore_drag_preview,
+        start_drag,
+    },
+    selection::{can_drag_shape_bbox, selection_for_hit},
+};
+use crate::model::{
+    Document,
+    Selection,
+    ShapeId,
+    Vec2,
+    tool::{EdgeMode, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolTransition},
+};
 
 /// FSM state for manipulate interactions.
 #[derive(Clone, Debug, Default, PartialEq)]

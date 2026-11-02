@@ -5,15 +5,19 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::model::{EdgeMode, ShapeId, ToolMode};
 use accesskit::{Node, NodeId, Tree, TreeId, TreeUpdate};
+use diff::{
+    changed_nodes,
+    clone_nodes_in_order,
+    inserted_node_ids,
+    removed_node_ids,
+    updated_node_ids,
+};
 use thiserror::Error;
+use tree_builder::{ROOT_NODE_ID, build_node_map};
 
 use super::Phase0Shell;
-use diff::{
-    changed_nodes, clone_nodes_in_order, inserted_node_ids, removed_node_ids, updated_node_ids,
-};
-use tree_builder::{ROOT_NODE_ID, build_node_map};
+use crate::model::{EdgeMode, ShapeId, ToolMode};
 
 mod action_routing;
 mod diff;
@@ -123,9 +127,7 @@ struct RebaseContext<'a> {
 impl A11yService {
     /// Create a new service with no baseline tree.
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
+    pub fn new() -> Self { Self::default() }
 
     /// Return pending serialized updates that should be pushed to adapters.
     pub fn drain_pending_updates(&mut self) -> Vec<TreeUpdate> {
@@ -134,25 +136,17 @@ impl A11yService {
 
     /// Return the number of queued updates awaiting adapter delivery.
     #[must_use]
-    pub const fn pending_update_count(&self) -> usize {
-        self.pending_updates.len()
-    }
+    pub const fn pending_update_count(&self) -> usize { self.pending_updates.len() }
 
     /// Clear queued updates that have not yet been delivered to adapters.
-    pub fn clear_pending_updates(&mut self) {
-        self.pending_updates.clear();
-    }
+    pub fn clear_pending_updates(&mut self) { self.pending_updates.clear(); }
 
     /// Return diagnostic records for already-queued updates.
     #[must_use]
-    pub fn update_records(&self) -> &[A11yUpdateRecord] {
-        &self.update_records
-    }
+    pub fn update_records(&self) -> &[A11yUpdateRecord] { &self.update_records }
 
     /// Clear diagnostic update records.
-    pub fn clear_update_records(&mut self) {
-        self.update_records.clear();
-    }
+    pub fn clear_update_records(&mut self) { self.update_records.clear(); }
 
     /// Build and queue an update from the latest shell snapshot.
     ///

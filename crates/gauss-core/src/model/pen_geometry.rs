@@ -10,7 +10,16 @@
 )]
 
 use crate::model::{
-    Anchor, EdgeMode, Paint, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2,
+    Anchor,
+    EdgeMode,
+    Paint,
+    PaintStyle,
+    PathGeom,
+    Rgba,
+    SegmentKind,
+    Shape,
+    ShapeId,
+    Vec2,
 };
 
 /// Scale Catmull–Rom tangents before converting them to Bézier controls.

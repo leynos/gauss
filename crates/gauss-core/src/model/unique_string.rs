@@ -39,6 +39,7 @@ pub(super) fn make_unique_string<T>(
     }
 
     panic!(
-        "failed to generate a unique identifier for base '{base}' within {MAX_UNIQUE_SUFFIX} attempts"
+        "failed to generate a unique identifier for base '{base}' within {MAX_UNIQUE_SUFFIX} \
+         attempts"
     );
 }

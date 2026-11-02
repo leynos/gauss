@@ -13,7 +13,13 @@ mod success_tests;
 use std::any::Any;
 
 use gauss_core::model::{
-    Command, CommandInverse, Document, SelItem, Selection, ShapeId, UserError,
+    Command,
+    CommandInverse,
+    Document,
+    SelItem,
+    Selection,
+    ShapeId,
+    UserError,
 };
 use rstest::fixture;
 use test_support::shapes::{sample_shape, shape_id};
@@ -52,7 +58,8 @@ where
 }
 
 /// Helper function to assert that an inverse returns a specific error and validate its fields.
-/// This reduces duplication across inverse error-condition tests whilst preserving field-level assertions.
+/// This reduces duplication across inverse error-condition tests whilst preserving field-level
+/// assertions.
 pub fn assert_inverse_error<F>(mut doc: Document, inverse: &CommandInverse, error_validator: F)
 where
     F: FnOnce(UserError),

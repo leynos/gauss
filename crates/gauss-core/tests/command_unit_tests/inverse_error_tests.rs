@@ -4,13 +4,20 @@
 //! when operating on missing shapes or invalid indices.
 
 use gauss_core::model::{
-    CommandInverse, Document, PaintStyle, SegmentChange, SegmentKind, ShapeReplacement, StyleChange,
+    CommandInverse,
+    Document,
+    PaintStyle,
+    SegmentChange,
+    SegmentKind,
+    ShapeReplacement,
+    StyleChange,
 };
 use rstest::rstest;
 use test_support::shapes::{sample_shape, shape_id};
 
 use super::{
-    assert_inverse_fails_with_invalid_operation, assert_inverse_fails_with_shape_not_found,
+    assert_inverse_fails_with_invalid_operation,
+    assert_inverse_fails_with_shape_not_found,
     empty_doc,
 };
 

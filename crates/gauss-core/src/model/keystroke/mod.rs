@@ -123,15 +123,11 @@ impl Modifiers {
 
     /// Check if any modifier is set.
     #[must_use]
-    pub const fn any(&self) -> bool {
-        self.control || self.alt || self.shift || self.secondary
-    }
+    pub const fn any(&self) -> bool { self.control || self.alt || self.shift || self.secondary }
 
     /// Check if no modifiers are set.
     #[must_use]
-    pub const fn none(&self) -> bool {
-        !self.any()
-    }
+    pub const fn none(&self) -> bool { !self.any() }
 
     /// Return an iterator of active modifiers in canonical order.
     ///
@@ -144,7 +140,7 @@ impl Modifiers {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use gauss_core::model::{Modifiers, Modifier};
+    /// use gauss_core::model::{Modifier, Modifiers};
     ///
     /// let mods = Modifiers::default().with_secondary().with_shift();
     /// let active: Vec<_> = mods.active_in_order().collect();

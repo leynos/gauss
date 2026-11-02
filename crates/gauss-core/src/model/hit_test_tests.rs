@@ -1,11 +1,23 @@
 //! Unit tests for shared hit-testing.
 
-use super::hit_test::{HitTestBackend, HitTestIndex};
-use super::{Document, SelItem, SelectHandleHitKind, SelectPointerHit, Selection, ShapeId, Vec2};
-use crate::test_helpers::{
-    cubic_shape, handle_in_only_shape, square_shape, square_shape_with_out_handle,
-};
 use rstest::rstest;
+
+use super::{
+    Document,
+    SelItem,
+    SelectHandleHitKind,
+    SelectPointerHit,
+    Selection,
+    ShapeId,
+    Vec2,
+    hit_test::{HitTestBackend, HitTestIndex},
+};
+use crate::test_helpers::{
+    cubic_shape,
+    handle_in_only_shape,
+    square_shape,
+    square_shape_with_out_handle,
+};
 
 #[derive(Debug)]
 enum ExpectedHit {
@@ -23,9 +35,7 @@ enum ExpectedHit {
     None,
 }
 
-fn shape_id(raw: u64) -> ShapeId {
-    ShapeId::from_accesskit_node_id(raw)
-}
+fn shape_id(raw: u64) -> ShapeId { ShapeId::from_accesskit_node_id(raw) }
 
 fn is_expected_handle_hit(
     hit: &SelectPointerHit,

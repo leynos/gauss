@@ -1,13 +1,14 @@
 //! Action-to-command preparation.
 
+use super::{
+    Command,
+    anchor::{prepare_delete_selected_anchors, prepare_insert_anchor_on_segment},
+    delete_shapes::prepare_delete_selection,
+    error::UserError,
+    reorder::{prepare_lower_selection, prepare_raise_selection},
+    segment::prepare_toggle_segment_kind,
+};
 use crate::model::{Action, EngineState};
-
-use super::Command;
-use super::anchor::{prepare_delete_selected_anchors, prepare_insert_anchor_on_segment};
-use super::delete_shapes::prepare_delete_selection;
-use super::error::UserError;
-use super::reorder::{prepare_lower_selection, prepare_raise_selection};
-use super::segment::prepare_toggle_segment_kind;
 
 /// Panic message for dispatcher bugs where editor actions reach `prepare_command`.
 ///
@@ -61,8 +62,8 @@ const DISPATCHER_BUG_MSG: &str = concat!(
 /// ```
 #[expect(
     clippy::panic_in_result_fn,
-    reason = "Panic is intentional fail-fast for dispatcher bugs; editor actions \
-              should never reach this function in correct code"
+    reason = "Panic is intentional fail-fast for dispatcher bugs; editor actions should never \
+              reach this function in correct code"
 )]
 pub fn prepare_command(action: Action, state: &EngineState) -> Result<Command, UserError> {
     match action {

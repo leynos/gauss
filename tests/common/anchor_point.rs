@@ -1,8 +1,9 @@
 //! Anchor-to-canvas conversion for GPUI integration tests.
 
-use super::canvas::CANVAS_PADDING_PX;
 use gauss::model::Vec2;
 use gpui::{Bounds, Pixels, Point, point, px};
+
+use super::canvas::CANVAS_PADDING_PX;
 
 /// Maps an anchor from document or absolute coordinates into a canvas point.
 ///

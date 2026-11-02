@@ -3,9 +3,8 @@
 //! Phase 0 keeps anchor edits minimal while routing the mutations through the
 //! Command pipeline so undo/redo stays consistent.
 
-use crate::model::{Action, SelItem, SelectToolState, Selection, ShapeId, prepare_command};
-
 use super::{Phase0Shell, draw::ToolMode};
+use crate::model::{Action, SelItem, SelectToolState, Selection, ShapeId, prepare_command};
 
 impl Phase0Shell {
     pub(super) fn insert_anchor_on_selected_segment(&mut self) -> bool {

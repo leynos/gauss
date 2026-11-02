@@ -8,14 +8,23 @@
 //!
 //! These types are GPUI-independent for testability and scripting.
 
-use crate::model::Selection;
-use crate::model::command::{Command, ShapeInsertion, ShapeReplacement};
-use crate::model::path::{PaintStyle, Shape, ShapeId, Vec2};
-use crate::model::pen_geometry::{
-    append_anchor, close_shape, new_open_shape, segment_kind_for_edge_mode, should_close_path,
-};
-use crate::model::select_tool::{
-    SelectPointerDownInput, SelectPointerMoveInput, SelectPointerUpInput, SelectToolState,
+use crate::model::{
+    Selection,
+    command::{Command, ShapeInsertion, ShapeReplacement},
+    path::{PaintStyle, Shape, ShapeId, Vec2},
+    pen_geometry::{
+        append_anchor,
+        close_shape,
+        new_open_shape,
+        segment_kind_for_edge_mode,
+        should_close_path,
+    },
+    select_tool::{
+        SelectPointerDownInput,
+        SelectPointerMoveInput,
+        SelectPointerUpInput,
+        SelectToolState,
+    },
 };
 
 mod mode_fsm;

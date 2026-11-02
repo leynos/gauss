@@ -1,11 +1,21 @@
 //! Inventories local workflows and requires same-job installation before resolved Linux suites.
 
-use camino::Utf8PathBuf;
 use std::collections::BTreeSet;
 
+use camino::Utf8PathBuf;
+
 use super::{
-    ACTION_REVISION, Coverage, Host, Route, Value, WHITAKER_ACTION_REVISION, Workflow, Workspace,
-    make_routes, parser, runner,
+    ACTION_REVISION,
+    Coverage,
+    Host,
+    Route,
+    Value,
+    WHITAKER_ACTION_REVISION,
+    Workflow,
+    Workspace,
+    make_routes,
+    parser,
+    runner,
 };
 
 /// Groups trigger and execution-context checks for this workflow reader.
@@ -258,7 +268,8 @@ fn require_suite_binding(step: &Value, job: &Value, state: Provisioning) -> Resu
     Ok(())
 }
 
-/// Checks one runner row in source order; an installer in another job or after a suite never counts.
+/// Checks one runner row in source order; an installer in another job or after a suite never
+/// counts.
 fn inspect_row(job: &Value, workspace: &Workspace<'_>, host: Host) -> Result<Route, String> {
     let steps = job.required("steps", "job")?.sequence("steps")?;
     if steps.is_empty() {
@@ -280,7 +291,8 @@ fn inspect_row(job: &Value, workspace: &Workspace<'_>, host: Host) -> Result<Rou
     Ok(route)
 }
 
-/// Measures each resolved row of an ordinary job; reusable declarations are checked via their edges.
+/// Measures each resolved row of an ordinary job; reusable declarations are checked via their
+/// edges.
 fn inspect_job(job: &Value, context: &str, workspace: &Workspace<'_>) -> Result<Coverage, String> {
     require_execution_context(job)?;
     if job.field("container").is_some() || job.field("services").is_some() {

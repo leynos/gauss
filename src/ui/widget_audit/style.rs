@@ -1,8 +1,17 @@
 //! Style panel control definitions (stroke and fill).
 
 use super::{
-    AccessibilityRequirements, ActionCommandLinkage, AuditAction, ControlStates, ControlSurface,
-    CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
+    AccessibilityRequirements,
+    ActionCommandLinkage,
+    AuditAction,
+    ControlStates,
+    ControlSurface,
+    CurrentShellEvidence,
+    KeyboardRequirements,
+    Phase,
+    RequiredControl,
+    RequirementSource,
+    UserJob,
 };
 
 /// Specification for a style panel control.

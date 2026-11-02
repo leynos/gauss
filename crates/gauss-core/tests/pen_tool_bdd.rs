@@ -3,11 +3,26 @@
 //! These scenarios lock draw-mode command-emission parity while Pen behaviour
 //! is routed through the Tool trait boundary.
 
-use gauss_core::model::{
-    Anchor, EdgeMode, PathGeom, PenTool, PenToolActiveShape, PenToolClickInput, SegmentKind, Shape,
-    ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolTransition, Vec2,
+use gauss_core::{
+    model::{
+        Anchor,
+        EdgeMode,
+        PathGeom,
+        PenTool,
+        PenToolActiveShape,
+        PenToolClickInput,
+        SegmentKind,
+        Shape,
+        ShapeId,
+        Tool,
+        ToolCommand,
+        ToolInputEvent,
+        ToolMode,
+        ToolTransition,
+        Vec2,
+    },
+    test_helpers::sample_style,
 };
-use gauss_core::test_helpers::sample_style;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};
@@ -34,9 +49,7 @@ fn world() -> PenToolWorld {
     }
 }
 
-fn shape_id(raw: u64) -> ShapeId {
-    ShapeId::from_accesskit_node_id(raw)
-}
+fn shape_id(raw: u64) -> ShapeId { ShapeId::from_accesskit_node_id(raw) }
 
 fn open_shape(id: ShapeId, anchors: Vec<Vec2>, edge_mode: EdgeMode) -> Shape {
     let segment_kind = match edge_mode {
@@ -83,24 +96,16 @@ fn assert_command_emitted(
 }
 
 #[given("the pen tool mode is Draw")]
-fn given_tool_mode_draw(world: &mut PenToolWorld) {
-    world.mode = ToolMode::Draw;
-}
+fn given_tool_mode_draw(world: &mut PenToolWorld) { world.mode = ToolMode::Draw; }
 
 #[given("the pen tool mode is Manipulate")]
-fn given_tool_mode_manipulate(world: &mut PenToolWorld) {
-    world.mode = ToolMode::Manipulate;
-}
+fn given_tool_mode_manipulate(world: &mut PenToolWorld) { world.mode = ToolMode::Manipulate; }
 
 #[given("the pen edge mode is Line")]
-fn given_edge_mode_line(world: &mut PenToolWorld) {
-    world.edge_mode = EdgeMode::Line;
-}
+fn given_edge_mode_line(world: &mut PenToolWorld) { world.edge_mode = EdgeMode::Line; }
 
 #[given("the pen edge mode is BezierAuto")]
-fn given_edge_mode_bezier(world: &mut PenToolWorld) {
-    world.edge_mode = EdgeMode::BezierAuto;
-}
+fn given_edge_mode_bezier(world: &mut PenToolWorld) { world.edge_mode = EdgeMode::BezierAuto; }
 
 #[given("no pen active path exists")]
 fn given_no_active_path(world: &mut PenToolWorld) {
@@ -279,46 +284,34 @@ fn then_emit_exactly_n_command(world: &PenToolWorld, count: usize) -> TestSuppor
     path = "tests/features/pen_tool.feature",
     name = "Click with no active path starts a new open shape"
 )]
-fn click_no_active_path_starts_new_open_shape(world: PenToolWorld) {
-    let _ = world;
-}
+fn click_no_active_path_starts_new_open_shape(world: PenToolWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/pen_tool.feature",
     name = "Click with active open path appends anchor"
 )]
-fn click_with_active_path_appends_anchor(world: PenToolWorld) {
-    let _ = world;
-}
+fn click_with_active_path_appends_anchor(world: PenToolWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/pen_tool.feature",
     name = "Click near first anchor closes path and exits draw mode"
 )]
-fn click_near_first_anchor_closes_path(world: PenToolWorld) {
-    let _ = world;
-}
+fn click_near_first_anchor_closes_path(world: PenToolWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/pen_tool.feature",
     name = "Stale active path is cleared then new shape starts"
 )]
-fn stale_active_path_recovers_and_starts_shape(world: PenToolWorld) {
-    let _ = world;
-}
+fn stale_active_path_recovers_and_starts_shape(world: PenToolWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/pen_tool.feature",
     name = "Click while in manipulate mode is ignored"
 )]
-fn click_in_manipulate_mode_is_ignored(world: PenToolWorld) {
-    let _ = world;
-}
+fn click_in_manipulate_mode_is_ignored(world: PenToolWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/pen_tool.feature",
     name = "Close attempt with two anchors appends instead of closing"
 )]
-fn close_attempt_with_two_anchors_appends(world: PenToolWorld) {
-    let _ = world;
-}
+fn close_attempt_with_two_anchors_appends(world: PenToolWorld) { let _ = world; }

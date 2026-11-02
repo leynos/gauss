@@ -1,10 +1,11 @@
 //! Step definitions for Escape transitions out of manipulate mode.
 
-use crate::{common, state};
 use gauss::model::Anchor;
 use gpui::{Modifiers, MouseButton, Pixels, Point, TestAppContext, point, px};
 use rstest_bdd_macros::{given, then, when};
 use test_support::{TestSupportError, math};
+
+use crate::{common, state};
 
 pub(crate) enum EscapeState {
     Click {
@@ -191,7 +192,7 @@ fn start_drag_preview(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     state::with_visual_cx(cx, |visual_cx, _view, data: &mut EscapeState| {
-        let (drag_start, drag_preview, _, _) = data.as_drag("drag-preview scenario")?;
+        let (drag_start, drag_preview, ..) = data.as_drag("drag-preview scenario")?;
         visual_cx.simulate_mouse_down(*drag_start, MouseButton::Left, Modifiers::none());
         visual_cx.run_until_parked();
         visual_cx.simulate_mouse_move(*drag_preview, MouseButton::Left, Modifiers::none());

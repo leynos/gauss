@@ -1,15 +1,28 @@
 //! Unit tests for `PenTool` draw-click transitions.
 
-use super::{
-    Anchor, Command, EdgeMode, Paint, PaintStyle, PathGeom, PenTool, PenToolActiveShape,
-    PenToolClickInput, SegmentKind, Shape, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode,
-    Vec2,
-};
 use rstest::rstest;
 
-fn shape_id(raw: u64) -> ShapeId {
-    ShapeId::from_accesskit_node_id(raw)
-}
+use super::{
+    Anchor,
+    Command,
+    EdgeMode,
+    Paint,
+    PaintStyle,
+    PathGeom,
+    PenTool,
+    PenToolActiveShape,
+    PenToolClickInput,
+    SegmentKind,
+    Shape,
+    ShapeId,
+    Tool,
+    ToolCommand,
+    ToolInputEvent,
+    ToolMode,
+    Vec2,
+};
+
+fn shape_id(raw: u64) -> ShapeId { ShapeId::from_accesskit_node_id(raw) }
 
 fn default_style(fill: Paint) -> PaintStyle {
     PaintStyle {

@@ -2,15 +2,13 @@
 
 use gpui::{div, prelude::*};
 
-use crate::i18n::MessageId;
-use crate::ui::UiIcon;
-
 use super::{
     Phase0Shell,
     chrome_palette::{chrome_border, chrome_panel},
     draw::{DrawEdgeMode, ToolMode},
     icon_button::{IconButtonState, icon_button},
 };
+use crate::{i18n::MessageId, ui::UiIcon};
 
 /// Build the vertical tool rail for the chrome shell.
 ///
@@ -196,8 +194,7 @@ fn draw_button_state(
 mod tests {
     //! Tests for tool rail button state helpers.
 
-    use super::{DrawEdgeMode, IconButtonState, ToolMode};
-    use super::{draw_button_state, select_button_state};
+    use super::{DrawEdgeMode, IconButtonState, ToolMode, draw_button_state, select_button_state};
 
     #[test]
     fn select_button_state_tracks_tool_mode() {

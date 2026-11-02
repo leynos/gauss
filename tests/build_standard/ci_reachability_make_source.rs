@@ -13,7 +13,10 @@ use values::{AssignmentOperator, MakeAssignment};
 mod controls;
 
 use super::make_syntax::{
-    rule_separator, trailing_backslash, valid_variable_name, without_comment,
+    rule_separator,
+    trailing_backslash,
+    valid_variable_name,
+    without_comment,
 };
 
 /// Rejects parse-time execution, Makefile remaking and global failure-policy changes.

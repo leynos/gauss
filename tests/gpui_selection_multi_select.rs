@@ -18,7 +18,11 @@ mod scenario_state;
 mod support;
 
 use common::{
-    anchor_to_canvas_point, canvas_bounds, draw_point, read_document, require_draw_shape,
+    anchor_to_canvas_point,
+    canvas_bounds,
+    draw_point,
+    read_document,
+    require_draw_shape,
     shift_secondary,
 };
 use gauss::model::{SelItem, Selection, ShapeId};
@@ -27,8 +31,15 @@ use mutable_scenario_data::with_mut_scenario_data;
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
 use support::{
-    NoDragPress, ScenarioContext, ScenarioStateCleanup, assert_no_drag_after_press, require_point,
-    set_scenario_data, with_scenario_data, with_state, with_visual_cx,
+    NoDragPress,
+    ScenarioContext,
+    ScenarioStateCleanup,
+    assert_no_drag_after_press,
+    require_point,
+    set_scenario_data,
+    with_scenario_data,
+    with_state,
+    with_visual_cx,
 };
 use test_support::TestSupportError;
 

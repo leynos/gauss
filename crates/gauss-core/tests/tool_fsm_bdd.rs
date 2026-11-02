@@ -4,8 +4,19 @@
 //! paths using `rstest-bdd` scenarios.
 
 use gauss_core::model::{
-    Command, Document, EdgeMode, EngineState, ShapeId, ShapeMovement, Tool, ToolCommand,
-    ToolInputEvent, ToolMode, ToolModeFsm, ToolTransition, Vec2,
+    Command,
+    Document,
+    EdgeMode,
+    EngineState,
+    ShapeId,
+    ShapeMovement,
+    Tool,
+    ToolCommand,
+    ToolInputEvent,
+    ToolMode,
+    ToolModeFsm,
+    ToolTransition,
+    Vec2,
 };
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
@@ -41,9 +52,7 @@ mod tool_test_support {
             }
         }
 
-        pub fn last_history_error(&self) -> Option<&str> {
-            self.last_history_error.as_deref()
-        }
+        pub fn last_history_error(&self) -> Option<&str> { self.last_history_error.as_deref() }
     }
 
     /// Construct a harness backed by an empty document so move commands fail.
@@ -94,30 +103,23 @@ struct ToolCommandWorld {
 
 #[fixture]
 fn tool_command_world() -> ToolCommandWorld {
+    // Each scenario starts with an empty tool-command world.
     ToolCommandWorld::default()
 }
 
 // === Given steps ===
 
 #[given("the current tool mode is Draw")]
-fn given_tool_mode_draw(world: &mut ToolFsmWorld) {
-    world.mode = ToolMode::Draw;
-}
+fn given_tool_mode_draw(world: &mut ToolFsmWorld) { world.mode = ToolMode::Draw; }
 
 #[given("the current tool mode is Manipulate")]
-fn given_tool_mode_manipulate(world: &mut ToolFsmWorld) {
-    world.mode = ToolMode::Manipulate;
-}
+fn given_tool_mode_manipulate(world: &mut ToolFsmWorld) { world.mode = ToolMode::Manipulate; }
 
 #[given("the current edge mode is Line")]
-fn given_edge_mode_line(world: &mut ToolFsmWorld) {
-    world.edge_mode = EdgeMode::Line;
-}
+fn given_edge_mode_line(world: &mut ToolFsmWorld) { world.edge_mode = EdgeMode::Line; }
 
 #[given("the current edge mode is BezierAuto")]
-fn given_edge_mode_bezier(world: &mut ToolFsmWorld) {
-    world.edge_mode = EdgeMode::BezierAuto;
-}
+fn given_edge_mode_bezier(world: &mut ToolFsmWorld) { world.edge_mode = EdgeMode::BezierAuto; }
 
 #[given("the input event is EscapePressed")]
 fn given_input_escape(world: &mut ToolFsmWorld) {
@@ -283,7 +285,8 @@ fn then_error_is_exposed_via_last_history_error(
     }
 
     Err(TestSupportError::expectation(format!(
-        "expected last_history_error to contain apply error; apply error: {apply_error}; last_history_error: {history_error}"
+        "expected last_history_error to contain apply error; apply error: {apply_error}; \
+         last_history_error: {history_error}"
     )))
 }
 
@@ -293,57 +296,43 @@ fn then_error_is_exposed_via_last_history_error(
     path = "tests/features/tool_fsm.feature",
     name = "Escape from draw enters manipulate and clears active path"
 )]
-fn escape_from_draw_transitions_to_manipulate(world: ToolFsmWorld) {
-    let _ = world;
-}
+fn escape_from_draw_transitions_to_manipulate(world: ToolFsmWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/tool_fsm.feature",
     name = "Escape from manipulate enters draw"
 )]
-fn escape_from_manipulate_transitions_to_draw(world: ToolFsmWorld) {
-    let _ = world;
-}
+fn escape_from_manipulate_transitions_to_draw(world: ToolFsmWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/tool_fsm.feature",
     name = "Toggle edge mode in draw emits edge command"
 )]
-fn toggle_edge_in_draw_emits_command(world: ToolFsmWorld) {
-    let _ = world;
-}
+fn toggle_edge_in_draw_emits_command(world: ToolFsmWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/tool_fsm.feature",
     name = "Toggle edge mode in manipulate emits nothing"
 )]
-fn toggle_edge_in_manipulate_emits_no_commands(world: ToolFsmWorld) {
-    let _ = world;
-}
+fn toggle_edge_in_manipulate_emits_no_commands(world: ToolFsmWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/tool_fsm.feature",
     name = "Activate draw from manipulate with explicit edge mode"
 )]
-fn activate_draw_from_manipulate_emits_mode_and_edge(world: ToolFsmWorld) {
-    let _ = world;
-}
+fn activate_draw_from_manipulate_emits_mode_and_edge(world: ToolFsmWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/tool_fsm.feature",
     name = "Activate draw from manipulate without explicit edge mode"
 )]
-fn activate_draw_without_edge_from_manipulate_emits_mode(world: ToolFsmWorld) {
-    let _ = world;
-}
+fn activate_draw_without_edge_from_manipulate_emits_mode(world: ToolFsmWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/tool_fsm.feature",
     name = "Activate draw in draw with explicit edge mode only changes edge"
 )]
-fn activate_draw_in_draw_with_edge_only_emits_edge(world: ToolFsmWorld) {
-    let _ = world;
-}
+fn activate_draw_in_draw_with_edge_only_emits_edge(world: ToolFsmWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/tool_fsm.feature",
@@ -357,9 +346,7 @@ fn close_path_committed_from_draw_emits_mode_and_path_commands(world: ToolFsmWor
     path = "tests/features/tool_fsm.feature",
     name = "Close path committed in manipulate emits nothing"
 )]
-fn close_path_committed_outside_draw_emits_no_commands(world: ToolFsmWorld) {
-    let _ = world;
-}
+fn close_path_committed_outside_draw_emits_no_commands(world: ToolFsmWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/tool_fsm.feature",

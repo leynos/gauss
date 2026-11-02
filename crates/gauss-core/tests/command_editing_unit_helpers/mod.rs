@@ -6,8 +6,17 @@
 use std::sync::Arc;
 
 use gauss_core::model::{
-    Action, Command, CommandInverse, Document, EngineState, SelItem, Shape, ShapeId,
-    ShapeReplacement, UserError, prepare_command,
+    Action,
+    Command,
+    CommandInverse,
+    Document,
+    EngineState,
+    SelItem,
+    Shape,
+    ShapeId,
+    ShapeReplacement,
+    UserError,
+    prepare_command,
 };
 
 use crate::command_editing_helpers::{shape_at, shape_with_handles};
@@ -33,7 +42,8 @@ pub(super) enum CommandEditingTestError {
         actual: Arc<Shape>,
     },
     #[error(
-        "unexpected anchor/segment counts: expected anchors {expected_anchors}, segments {expected_segments}, got anchors {actual_anchors}, segments {actual_segments}"
+        "unexpected anchor/segment counts: expected anchors {expected_anchors}, segments \
+         {expected_segments}, got anchors {actual_anchors}, segments {actual_segments}"
     )]
     UnexpectedShapeCounts {
         expected_anchors: usize,

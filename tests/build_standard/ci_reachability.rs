@@ -4,9 +4,11 @@
 //! prerequisites. Its deliberately bounded grammar reports an unmeasured route as an error.
 //! The complete build-tool preflight belongs to the later provisioning layer.
 
-use std::collections::BTreeMap;
-use std::io::Write;
-use std::process::{Command, Stdio};
+use std::{
+    collections::BTreeMap,
+    io::Write,
+    process::{Command, Stdio},
+};
 
 use camino::{Utf8Path, Utf8PathBuf};
 use cap_std::fs_utf8::Dir;
@@ -243,9 +245,7 @@ impl Workspace<'_> {
 
     /// Mirrors Python text mode: CRLF and lone carriage returns become LF.
     /// For example, `"a\r\nb\r"` becomes `"a\nb\n"`.
-    fn normalize_source(source: &str) -> String {
-        source.replace("\r\n", "\n").replace('\r', "\n")
-    }
+    fn normalize_source(source: &str) -> String { source.replace("\r\n", "\n").replace('\r', "\n") }
 
     /// Hashes stdin without writing Git objects, filters, paths or network access.
     /// For example, a failed Git exit returns its status and stderr as an error.

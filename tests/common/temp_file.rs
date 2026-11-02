@@ -26,9 +26,7 @@ impl TempFileGuard {
     }
 
     /// Returns the guarded file's full path by reference.
-    pub fn path(&self) -> &Utf8Path {
-        self.path.as_path()
-    }
+    pub fn path(&self) -> &Utf8Path { self.path.as_path() }
 
     /// Removes the guarded file through its directory capability.
     ///
@@ -49,9 +47,7 @@ impl TempFileGuard {
 }
 
 impl Drop for TempFileGuard {
-    fn drop(&mut self) {
-        let _cleanup = self.cleanup();
-    }
+    fn drop(&mut self) { let _cleanup = self.cleanup(); }
 }
 
 /// Creates a guard for a uniquely named file in the process temporary directory.
@@ -76,8 +72,9 @@ pub(super) fn temp_guard(prefix: &str) -> TestSupportResult<TempFileGuard> {
 mod tests {
     //! Tests explicit cleanup, error propagation, and the drop-time fallback.
 
-    use super::*;
     use rstest::{fixture, rstest};
+
+    use super::*;
 
     /// Provides an isolated temporary-file guard for cleanup tests.
     #[fixture]

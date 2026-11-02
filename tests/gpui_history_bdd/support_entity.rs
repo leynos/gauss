@@ -26,7 +26,5 @@ impl DurableShell {
     /// let _: &Entity<Phase0Shell> = shell.entity();
     /// # }
     /// ```
-    pub const fn entity(&self) -> &Entity<Phase0Shell> {
-        &self.entity
-    }
+    pub const fn entity(&self) -> &Entity<Phase0Shell> { &self.entity }
 }

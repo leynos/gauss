@@ -50,21 +50,15 @@ pub struct Selection {
 impl Selection {
     /// Construct an empty selection.
     #[must_use]
-    pub const fn empty() -> Self {
-        Self { items: Vec::new() }
-    }
+    pub const fn empty() -> Self { Self { items: Vec::new() } }
 
     /// Return whether the selection is empty.
     #[must_use]
-    pub const fn is_empty(&self) -> bool {
-        self.items.is_empty()
-    }
+    pub const fn is_empty(&self) -> bool { self.items.is_empty() }
 
     /// Return whether the selection contains `item`.
     #[must_use]
-    pub fn contains(&self, item: &SelItem) -> bool {
-        self.items.iter().any(|i| i == item)
-    }
+    pub fn contains(&self, item: &SelItem) -> bool { self.items.iter().any(|i| i == item) }
 
     /// Toggle the presence of `item` in the selection.
     ///
@@ -90,7 +84,5 @@ impl Selection {
 }
 
 impl Default for Selection {
-    fn default() -> Self {
-        Self::empty()
-    }
+    fn default() -> Self { Self::empty() }
 }

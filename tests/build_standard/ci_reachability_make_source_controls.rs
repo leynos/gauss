@@ -2,8 +2,12 @@
 
 use std::collections::BTreeSet;
 
-use super::super::make_syntax::{rule_separator, without_comment};
-use super::{MakeSelector, assignment_name, values::ParsedCondition};
+use super::{
+    super::make_syntax::{rule_separator, without_comment},
+    MakeSelector,
+    assignment_name,
+    values::ParsedCondition,
+};
 
 /// Rejects global controls and recipe prefixes while preserving source encounter order.
 pub(super) fn validate_controls(lines: &[String]) -> Result<(), String> {
@@ -234,6 +238,4 @@ fn is_include(line: &str) -> bool {
 }
 
 /// Detects recursive Make references in either supported delimiter spelling.
-fn recursive_make(text: &str) -> bool {
-    text.contains("$(MAKE)") || text.contains("${MAKE}")
-}
+fn recursive_make(text: &str) -> bool { text.contains("$(MAKE)") || text.contains("${MAKE}") }

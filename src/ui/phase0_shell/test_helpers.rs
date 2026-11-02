@@ -8,15 +8,26 @@ use std::path::Path;
 
 use accesskit::{ActionRequest, TreeUpdate};
 
-use crate::model::history::HistoryError;
-use crate::model::{
-    Command, Document, ResourceStore, SelectPointerHit, SelectToolState, Selection, ShapeId,
-    UserError, Vec2, Viewport,
-};
-
 use super::{
-    A11yActionRequestError, A11yRequestedAction, A11yUpdateRecord, Phase0Shell, draw,
+    A11yActionRequestError,
+    A11yRequestedAction,
+    A11yUpdateRecord,
+    Phase0Shell,
+    draw,
     file_dialogs::OpenPromptMode,
+};
+use crate::model::{
+    Command,
+    Document,
+    ResourceStore,
+    SelectPointerHit,
+    SelectToolState,
+    Selection,
+    ShapeId,
+    UserError,
+    Vec2,
+    Viewport,
+    history::HistoryError,
 };
 
 impl Phase0Shell {
@@ -34,68 +45,50 @@ impl Phase0Shell {
 
     /// Return the last path selected by the platform save prompt, if any.
     #[must_use]
-    pub fn last_saved_path(&self) -> Option<&Path> {
-        self.last_saved_path.as_deref()
-    }
+    pub fn last_saved_path(&self) -> Option<&Path> { self.last_saved_path.as_deref() }
 
     /// Return the last path selected by the platform open prompt, if any.
     #[must_use]
-    pub fn last_opened_path(&self) -> Option<&Path> {
-        self.last_opened_path.as_deref()
-    }
+    pub fn last_opened_path(&self) -> Option<&Path> { self.last_opened_path.as_deref() }
 
     /// Return the latest open error, if any.
     #[must_use]
-    pub fn last_open_error(&self) -> Option<&str> {
-        self.last_open_error.as_deref()
-    }
+    pub fn last_open_error(&self) -> Option<&str> { self.last_open_error.as_deref() }
 
     /// Return the latest save error, if any.
     #[must_use]
-    pub fn last_save_error(&self) -> Option<&str> {
-        self.last_save_error.as_deref()
-    }
+    pub fn last_save_error(&self) -> Option<&str> { self.last_save_error.as_deref() }
 
     /// Return the current document.
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real UI.
     #[must_use]
-    pub const fn document(&self) -> &Document {
-        &self.state.document
-    }
+    pub const fn document(&self) -> &Document { &self.state.document }
 
     /// Return the current shared resource store.
     #[must_use]
-    pub const fn resources(&self) -> &ResourceStore {
-        &self.state.resources
-    }
+    pub const fn resources(&self) -> &ResourceStore { &self.state.resources }
 
     /// Return the current viewport.
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
     #[must_use]
-    pub const fn viewport(&self) -> Viewport {
-        self.state.viewport
-    }
+    pub const fn viewport(&self) -> Viewport { self.state.viewport }
 
     /// Return the current selection.
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
     #[must_use]
-    pub const fn selection(&self) -> &Selection {
-        &self.state.selection
-    }
+    pub const fn selection(&self) -> &Selection { &self.state.selection }
 
     /// Return the active shape identifier, if any.
     ///
     /// This is intended for headless tests that validate tool mode switches.
     #[must_use]
-    pub const fn draw_active_shape_for_tests(&self) -> Option<ShapeId> {
-        self.state.active_path
-    }
+    pub const fn draw_active_shape_for_tests(&self) -> Option<ShapeId> { self.state.active_path }
 
     /// Override the active shape during tests.
     ///
@@ -150,27 +143,21 @@ impl Phase0Shell {
 
     /// Return the latest manipulate hover hit snapshot.
     #[must_use]
-    pub const fn hover_hit_for_tests(&self) -> SelectPointerHit {
-        self.hover_hit
-    }
+    pub const fn hover_hit_for_tests(&self) -> SelectPointerHit { self.hover_hit }
 
     /// Return whether a quit request has been triggered from the UI.
     ///
     /// This exists to keep `#[gpui::test]` assertions stable on the test
     /// platform, which does not necessarily exit when `App::quit()` is invoked.
     #[must_use]
-    pub const fn did_request_quit(&self) -> bool {
-        self.did_request_quit
-    }
+    pub const fn did_request_quit(&self) -> bool { self.did_request_quit }
 
     /// Return the current mode indicator line as shown in the UI.
     ///
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
     #[must_use]
-    pub fn mode_status_line_for_tests(&self) -> String {
-        self.mode_status_line()
-    }
+    pub fn mode_status_line_for_tests(&self) -> String { self.mode_status_line() }
 
     /// Force manipulate mode for headless tests.
     ///
@@ -178,9 +165,7 @@ impl Phase0Shell {
     /// established before the test sends synthetic key events. This helper
     /// allows tests to set the tool mode explicitly without relying on
     /// `Escape` dispatch.
-    pub fn enter_manipulate_mode_for_tests(&mut self) {
-        let _ = self.activate_select_tool();
-    }
+    pub fn enter_manipulate_mode_for_tests(&mut self) { let _ = self.activate_select_tool(); }
 
     /// Set the tool mode directly for tests.
     ///
@@ -195,9 +180,7 @@ impl Phase0Shell {
     /// This is intended for tests and debugging while Phase 0 is still
     /// assembling the real editor UI.
     #[must_use]
-    pub const fn last_canvas_click_screen(&self) -> Option<Vec2> {
-        self.last_canvas_click_screen
-    }
+    pub const fn last_canvas_click_screen(&self) -> Option<Vec2> { self.last_canvas_click_screen }
 
     /// Check if the window should be treated as maximized for resize border visibility.
     ///
@@ -273,9 +256,7 @@ impl Phase0Shell {
     ///
     /// Unlike [`Self::replace_document_for_tests`], this preserves the history stack,
     /// allowing tests to create invalid states that trigger history errors.
-    pub const fn document_mut_for_tests(&mut self) -> &mut Document {
-        &mut self.state.document
-    }
+    pub const fn document_mut_for_tests(&mut self) -> &mut Document { &mut self.state.document }
 
     /// Return a mutable reference to shared resources for direct mutation.
     ///
@@ -339,26 +320,20 @@ impl Phase0Shell {
     ///
     /// This exercises the full error propagation path through
     /// `apply_history_operation` → `apply_history_group`.
-    pub fn undo_document_for_tests(&mut self) {
-        self.undo_document();
-    }
+    pub fn undo_document_for_tests(&mut self) { self.undo_document(); }
 
     /// Trigger a redo operation through the shell's history system.
     ///
     /// This exercises the full error propagation path through
     /// `apply_history_operation` → `apply_history_group`.
-    pub fn redo_document_for_tests(&mut self) {
-        self.redo_document();
-    }
+    pub fn redo_document_for_tests(&mut self) { self.redo_document(); }
 
     /// Return the number of realised entries in the document undo history.
     ///
     /// This exposes `DocumentUndoHistory::len()` for headless GPUI tests
     /// that verify the single-entry-per-gesture invariant.
     #[must_use]
-    pub fn document_history_len_for_tests(&self) -> usize {
-        self.state.document_history_len()
-    }
+    pub fn document_history_len_for_tests(&self) -> usize { self.state.document_history_len() }
 
     /// Return the last history error display string, if any.
     ///
@@ -388,7 +363,5 @@ impl Phase0Shell {
     /// Set the current locale for tests.
     ///
     /// This allows tests to verify that UI strings respond to locale changes.
-    pub fn set_locale(&mut self, locale: crate::i18n::Locale) {
-        self.locale = locale;
-    }
+    pub fn set_locale(&mut self, locale: crate::i18n::Locale) { self.locale = locale; }
 }

@@ -21,7 +21,7 @@
 //! # Examples
 //!
 //! ```rust,no_run
-//! use gauss_core::model::{Action, KeyContext, default_bindings, bindings_for_action};
+//! use gauss_core::model::{Action, KeyContext, bindings_for_action, default_bindings};
 //!
 //! // Get all default bindings
 //! let all_bindings = default_bindings();
@@ -36,9 +36,7 @@ mod tests;
 
 use std::sync::LazyLock;
 
-use super::action::Action;
-use super::key_context::KeyContext;
-use super::keystroke::Keystroke;
+use super::{action::Action, key_context::KeyContext, keystroke::Keystroke};
 
 /// A binding between an [`Action`] and a keyboard shortcut.
 ///
@@ -50,10 +48,9 @@ use super::keystroke::Keystroke;
 ///
 /// The `contexts` field determines when the binding is active:
 ///
-/// - If `contexts` contains [`KeyContext::Global`], the binding is always
-///   active.
-/// - If `contexts` contains mode-specific contexts (e.g., `ManipulateMode`),
-///   the binding is only active in those modes.
+/// - If `contexts` contains [`KeyContext::Global`], the binding is always active.
+/// - If `contexts` contains mode-specific contexts (e.g., `ManipulateMode`), the binding is only
+///   active in those modes.
 ///
 /// # Examples
 ///
@@ -135,14 +132,14 @@ impl ActionBinding {
     /// ```rust,no_run
     /// use gauss_core::model::{Action, ActionBinding, KeyContext};
     ///
-    /// let global_binding = ActionBinding::secondary(
-    ///     Action::Undo, "z", &[KeyContext::Global]
-    /// );
+    /// let global_binding = ActionBinding::secondary(Action::Undo, "z", &[KeyContext::Global]);
     /// assert!(global_binding.is_active_in(KeyContext::DrawMode));
     /// assert!(global_binding.is_active_in(KeyContext::ManipulateMode));
     ///
     /// let mode_binding = ActionBinding::new(
-    ///     Action::DeleteSelection, "backspace", &[KeyContext::ManipulateMode]
+    ///     Action::DeleteSelection,
+    ///     "backspace",
+    ///     &[KeyContext::ManipulateMode],
     /// );
     /// assert!(mode_binding.is_active_in(KeyContext::ManipulateMode));
     /// assert!(!mode_binding.is_active_in(KeyContext::DrawMode));
@@ -213,12 +210,12 @@ static DEFAULT_BINDINGS: LazyLock<Vec<ActionBinding>> = LazyLock::new(|| {
 /// These bindings follow platform conventions where possible:
 ///
 /// - **Document History**: Cmd/Ctrl+Z for Undo, Cmd/Ctrl+Y for Redo
-/// - **Selection History**: Cmd/Ctrl+Shift+Z for Selection Undo,
-///   Cmd/Ctrl+Shift+Y for Selection Redo
+/// - **Selection History**: Cmd/Ctrl+Shift+Z for Selection Undo, Cmd/Ctrl+Shift+Y for Selection
+///   Redo
 /// - **Selection**: Cmd/Ctrl+A for Select All, Cmd/Ctrl+Shift+A for Deselect
 /// - **Tools**: Single letter keys (P for Pen, V for Selection)
-/// - **Editing**: Backspace/Delete for deletion, I for insert anchor, Tab for
-///   segment toggling, Cmd/Ctrl+[ and Cmd/Ctrl+] for z-order (Manipulate only)
+/// - **Editing**: Backspace/Delete for deletion, I for insert anchor, Tab for segment toggling,
+///   Cmd/Ctrl+[ and Cmd/Ctrl+] for z-order (Manipulate only)
 ///
 /// Note: Gauss maintains separate undo/redo stacks for document edits and
 /// selection changes, enabling independent traversal of edit and selection
@@ -238,9 +235,7 @@ static DEFAULT_BINDINGS: LazyLock<Vec<ActionBinding>> = LazyLock::new(|| {
 /// assert!(!bindings.is_empty());
 /// ```
 #[must_use]
-pub fn default_bindings() -> &'static [ActionBinding] {
-    &DEFAULT_BINDINGS
-}
+pub fn default_bindings() -> &'static [ActionBinding] { &DEFAULT_BINDINGS }
 
 /// Find all bindings for a specific action.
 ///
@@ -322,7 +317,8 @@ pub fn bindings_for_context(context: KeyContext) -> Vec<ActionBinding> {
 ///
 /// let undo_key = primary_keystroke(Action::Undo);
 /// assert!(undo_key.is_some());
-/// let undo_key = undo_key.expect("expected primary_keystroke(Action::Undo) to be Some(...) in doc example");
+/// let undo_key =
+///     undo_key.expect("expected primary_keystroke(Action::Undo) to be Some(...) in doc example");
 /// assert_eq!(undo_key.key, "z");
 /// assert!(undo_key.modifiers.secondary);
 /// ```

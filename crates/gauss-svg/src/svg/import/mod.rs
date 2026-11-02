@@ -11,9 +11,10 @@
 
 use std::{error::Error, fmt};
 
-use crate::model::{Document, PaintStyle, Shape};
-use crate::svg::metadata;
-use crate::svg::metadata::NamespacePolicyError;
+use crate::{
+    model::{Document, PaintStyle, Shape},
+    svg::{metadata, metadata::NamespacePolicyError},
+};
 
 mod gauss_attrs;
 mod path_data;

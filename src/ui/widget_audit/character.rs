@@ -1,8 +1,16 @@
 //! Character panel control definitions.
 
 use super::types::{
-    AccessibilityRequirements, ActionCommandLinkage, ControlStates, ControlSurface,
-    CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
+    AccessibilityRequirements,
+    ActionCommandLinkage,
+    ControlStates,
+    ControlSurface,
+    CurrentShellEvidence,
+    KeyboardRequirements,
+    Phase,
+    RequiredControl,
+    RequirementSource,
+    UserJob,
 };
 
 #[derive(Clone, Copy)]
@@ -156,7 +164,8 @@ fn text_style_controls() -> Vec<RequiredControl> {
             a11y_role: "ColorPicker",
             a11y_label: "Text Colour",
             a11y_states: &["focusable", "expanded", "collapsed"],
-            a11y_notes: "Must announce current colour value; reuses fill/stroke colour infrastructure per roadmap 2.2",
+            a11y_notes: "Must announce current colour value; reuses fill/stroke colour \
+                         infrastructure per roadmap 2.2",
             action_name: "SetTextColor",
             action_notes: "Colour change must be undoable",
             evidence_notes: "Phase 2 feature; will reuse colour picker infrastructure",

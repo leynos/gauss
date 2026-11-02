@@ -1,8 +1,9 @@
 //! Tests for keybinding module.
 
+use rstest::rstest;
+
 use super::*;
 use crate::model::Modifiers;
-use rstest::rstest;
 
 fn assert_keystroke_eq(keystroke: &Keystroke, key: &str, expected_modifiers: Modifiers) {
     assert_eq!(

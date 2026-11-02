@@ -14,13 +14,16 @@ use futures::channel::oneshot;
 use gpui::{AsyncWindowContext, Context, PathPromptOptions, WeakEntity, Window};
 use gpui_component::history::History;
 
-use crate::model::{SelectToolState, Selection};
-use crate::svg::export::{
-    CanvasSize, ExportOptions, export_svg_with_metadata_checked,
-    export_svg_with_resources_web_ready_checked,
-};
-
 use super::Phase0Shell;
+use crate::{
+    model::{SelectToolState, Selection},
+    svg::export::{
+        CanvasSize,
+        ExportOptions,
+        export_svg_with_metadata_checked,
+        export_svg_with_resources_web_ready_checked,
+    },
+};
 
 type SavePathPromptReceiver = oneshot::Receiver<gpui::Result<Option<PathBuf>>>;
 type OpenPathsPromptReceiver = oneshot::Receiver<gpui::Result<Option<Vec<PathBuf>>>>;
@@ -151,7 +154,8 @@ async fn apply_save_path(
     };
 
     let Ok(save_result) = this.update(&mut cx, |view, _view_cx| {
-        // FIXME: derive canvas size from document bounds or viewport state - TRACKER-WEB-CANVAS-SIZE.
+        // FIXME: derive canvas size from document bounds or viewport state -
+        // TRACKER-WEB-CANVAS-SIZE.
         let canvas_size = CanvasSize::new(100.0, 100.0);
         match intent {
             SaveIntent::PreserveMetadata => {

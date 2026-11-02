@@ -9,12 +9,11 @@ mod geometry;
 mod stroke;
 
 pub use colour::{Colour, Rgb8};
+#[cfg(test)]
+pub use float::normalize_float;
 pub use float::{Degrees, Opacity, Points, UnitF32, UnitF32Error};
 pub use geometry::{Dimensions, Point, Position, Size};
 pub use stroke::{Rotation, StrokeWidth};
-
-#[cfg(test)]
-pub use float::normalize_float;
 
 #[cfg(test)]
 mod tests;

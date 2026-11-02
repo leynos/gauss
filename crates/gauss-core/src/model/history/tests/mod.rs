@@ -6,10 +6,18 @@ mod grouping;
 
 use rstest::{fixture, rstest};
 
-use crate::model::command::Command;
-use crate::model::document::Document;
-use crate::model::history::{DocumentUndoHistory, HistoryError};
-use crate::model::{Anchor, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, Vec2};
+use crate::model::{
+    Anchor,
+    PaintStyle,
+    PathGeom,
+    SegmentKind,
+    Shape,
+    ShapeId,
+    Vec2,
+    command::Command,
+    document::Document,
+    history::{DocumentUndoHistory, HistoryError},
+};
 
 // ---------------------------------------------------------------------------
 // Fixtures

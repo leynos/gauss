@@ -3,12 +3,13 @@
 #[path = "a11y_service_bdd/support.rs"]
 mod a11y_service_bdd_support;
 
-use accesskit::{Action, Role};
-use gauss::model::ShapeId;
-use gauss::ui::phase0_shell::{A11yServiceError, A11yShapeSnapshot, A11yUpdateKind, accessibility};
-use rstest_bdd_macros::{given, scenario, then, when};
-
 use a11y_service_bdd_support::*;
+use accesskit::{Action, Role};
+use gauss::{
+    model::ShapeId,
+    ui::phase0_shell::{A11yServiceError, A11yShapeSnapshot, A11yUpdateKind, accessibility},
+};
+use rstest_bdd_macros::{given, scenario, then, when};
 
 const APPENDED_SHAPE_ID: u64 = 0x2_0000_0001;
 
@@ -67,9 +68,7 @@ fn initialized_accessibility_service_baseline(world: &mut A11yWorld) -> TestSupp
 }
 
 #[given("the snapshot marks the window as maximized")]
-fn snapshot_marks_window_as_maximized(world: &mut A11yWorld) {
-    world.snapshot.is_maximized = true;
-}
+fn snapshot_marks_window_as_maximized(world: &mut A11yWorld) { world.snapshot.is_maximized = true; }
 
 #[when("I publish the initial accessibility snapshot")]
 fn publish_initial_accessibility_snapshot(world: &mut A11yWorld) -> TestSupportResult<()> {
@@ -365,22 +364,16 @@ fn maximized_window_exposes_restore_semantics_on_the_maximize_node(world: A11yWo
     path = "tests/features/a11y_service.feature",
     name = "Adding a shape emits one inserted accessibility node update"
 )]
-fn adding_a_shape_emits_one_inserted_accessibility_node_update(world: A11yWorld) {
-    let _ = world;
-}
+fn adding_a_shape_emits_one_inserted_accessibility_node_update(world: A11yWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/a11y_service.feature",
     name = "Unchanged state emits no accessibility updates"
 )]
-fn unchanged_state_emits_no_accessibility_updates(world: A11yWorld) {
-    let _ = world;
-}
+fn unchanged_state_emits_no_accessibility_updates(world: A11yWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/a11y_service.feature",
     name = "Duplicate node ID is reported and update is aborted"
 )]
-fn duplicate_node_id_is_reported_and_update_is_aborted(world: A11yWorld) {
-    let _ = world;
-}
+fn duplicate_node_id_is_reported_and_update_is_aborted(world: A11yWorld) { let _ = world; }

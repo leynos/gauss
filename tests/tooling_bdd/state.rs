@@ -31,9 +31,7 @@ fn reset_state_before_assignment() {
 pub struct ScenarioStateCleanup;
 
 impl Drop for ScenarioStateCleanup {
-    fn drop(&mut self) {
-        reset_state_after_scenario();
-    }
+    fn drop(&mut self) { reset_state_after_scenario(); }
 }
 
 /// Provides two-sided cleanup for a stateful GPUI scenario.

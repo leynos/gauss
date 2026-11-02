@@ -4,7 +4,6 @@
 //! stacks with the same entry count but different undo or redo positions.
 
 use super::Phase0Shell;
-
 pub use crate::model::history::DocumentHistoryState;
 
 impl Phase0Shell {

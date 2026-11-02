@@ -1,10 +1,11 @@
 //! Step definitions for Bezier-auto drawing scenarios.
 
-use crate::{common, state};
 use gauss::model::{SegmentKind, Shape, Vec2};
 use gpui::{Point, TestAppContext, point, px};
 use rstest_bdd_macros::{given, then, when};
 use test_support::{TestSupportError, TestSupportResult};
+
+use crate::{common, state};
 
 const CATMULL_ROM_TENSION: f32 = 1.0;
 

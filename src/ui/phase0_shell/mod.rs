@@ -40,16 +40,27 @@ use std::path::PathBuf;
 use gpui::prelude::*;
 use gpui_component::history::History;
 
-use crate::model::history::HistoryError;
-use crate::model::{EngineState, KeyContext, SelectPointerHit, SelectToolState, Vec2};
-
-use super::phase0_support::demo_document;
-
 pub use self::a11y_service::{
-    A11yActionRequestError, A11yRequestedAction, A11yService, A11yServiceError, A11yShapeSnapshot,
-    A11ySnapshot, A11yUpdateKind, A11yUpdateRecord, A11yWindowAction,
+    A11yActionRequestError,
+    A11yRequestedAction,
+    A11yService,
+    A11yServiceError,
+    A11yShapeSnapshot,
+    A11ySnapshot,
+    A11yUpdateKind,
+    A11yUpdateRecord,
+    A11yWindowAction,
 };
 use self::file_dialogs::OpenPromptMode;
+use super::phase0_support::demo_document;
+use crate::model::{
+    EngineState,
+    KeyContext,
+    SelectPointerHit,
+    SelectToolState,
+    Vec2,
+    history::HistoryError,
+};
 
 struct HoverCache {
     cursor_world: Vec2,

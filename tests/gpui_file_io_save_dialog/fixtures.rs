@@ -2,7 +2,14 @@
 
 use gauss::{
     model::{
-        Gradient, GradientKind, GradientStop, LinearGradient, Paint, PatternResource, Rgba, Vec2,
+        Gradient,
+        GradientKind,
+        GradientStop,
+        LinearGradient,
+        Paint,
+        PatternResource,
+        Rgba,
+        Vec2,
     },
     ui::Phase0Shell,
 };

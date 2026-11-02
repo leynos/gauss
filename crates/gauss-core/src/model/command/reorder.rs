@@ -2,12 +2,8 @@
 
 use std::collections::HashSet;
 
+use super::{Command, error::UserError, inverse::CommandInverse, types::ReorderOp};
 use crate::model::{Document, EngineState, SelItem, Selection, ShapeId};
-
-use super::Command;
-use super::error::UserError;
-use super::inverse::CommandInverse;
-use super::types::ReorderOp;
 
 /// Build reorder operations for the selected shapes in the requested direction.
 ///

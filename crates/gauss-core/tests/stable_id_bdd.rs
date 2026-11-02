@@ -17,6 +17,7 @@ struct IdWorld {
 
 #[fixture]
 fn world() -> IdWorld {
+    // Each scenario starts with an empty identifier world.
     IdWorld::default()
 }
 
@@ -49,9 +50,7 @@ fn empty_document(world: &mut IdWorld) {
 }
 
 #[when("I append two shapes")]
-fn append_two_shapes(world: &mut IdWorld) {
-    append_shapes(world, 2, false);
-}
+fn append_two_shapes(world: &mut IdWorld) { append_shapes(world, 2, false); }
 
 #[when("I reorder the first shape to the end")]
 fn reorder_first_shape(world: &mut IdWorld) -> TestSupportResult<()> {
@@ -81,9 +80,7 @@ fn document_contains_same_ids(world: &IdWorld) -> TestSupportResult<()> {
 }
 
 #[when("I append a shape")]
-fn append_shape(world: &mut IdWorld) {
-    append_shapes(world, 1, true);
-}
+fn append_shape(world: &mut IdWorld) { append_shapes(world, 1, true); }
 
 #[when("I convert the shape id to an AccessKit node id")]
 fn convert_shape_id(world: &mut IdWorld) -> TestSupportResult<()> {
@@ -121,14 +118,10 @@ fn reconstructed_id_matches(world: &IdWorld) -> TestSupportResult<()> {
     path = "tests/features/stable_ids.feature",
     name = "Shape IDs remain stable when reordered"
 )]
-fn shape_ids_remain_stable_when_reordered(world: IdWorld) {
-    let _ = world;
-}
+fn shape_ids_remain_stable_when_reordered(world: IdWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/stable_ids.feature",
     name = "AccessKit node IDs round trip"
 )]
-fn accesskit_node_ids_round_trip(world: IdWorld) {
-    let _ = world;
-}
+fn accesskit_node_ids_round_trip(world: IdWorld) { let _ = world; }

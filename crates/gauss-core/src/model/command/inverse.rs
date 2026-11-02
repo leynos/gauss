@@ -1,19 +1,28 @@
 //! Inverse command definitions and application.
 
-use crate::model::Document;
-
-use super::anchor::{apply_remove_anchor, apply_reopen_path, apply_restore_anchors};
-use super::delete_shapes::apply_restore_shapes;
-use super::error::UserError;
-use super::insert_shape::apply_remove_shape;
-use super::movement::{apply_move_anchor_back, apply_move_handle_back, apply_move_shapes_back};
-use super::reorder::apply_reverse_reorder;
-use super::segment::apply_restore_segment_kinds;
-use super::style::apply_restore_styles;
-use super::types::{
-    AnchorMovement, AnchorRestoration, DeletedShape, HandleMovement, ReorderOp, SegmentChange,
-    ShapeInsertion, ShapeMovement, ShapeReplacement, StyleChange,
+use super::{
+    anchor::{apply_remove_anchor, apply_reopen_path, apply_restore_anchors},
+    delete_shapes::apply_restore_shapes,
+    error::UserError,
+    insert_shape::apply_remove_shape,
+    movement::{apply_move_anchor_back, apply_move_handle_back, apply_move_shapes_back},
+    reorder::apply_reverse_reorder,
+    segment::apply_restore_segment_kinds,
+    style::apply_restore_styles,
+    types::{
+        AnchorMovement,
+        AnchorRestoration,
+        DeletedShape,
+        HandleMovement,
+        ReorderOp,
+        SegmentChange,
+        ShapeInsertion,
+        ShapeMovement,
+        ShapeReplacement,
+        StyleChange,
+    },
 };
+use crate::model::Document;
 
 /// The inverse of an applied command, used for undo.
 ///

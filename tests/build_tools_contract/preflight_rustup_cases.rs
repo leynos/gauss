@@ -3,8 +3,14 @@
 //! Each toolchain check issues its own list and component query, so the cases
 //! stay here in call order and keep `preflight_cases` within its line budget.
 
-use super::super::install_oracles as oracle;
-use super::{CallOccurrence, CheckFailureCase, Failure, FailureTrace, InvocationSelection};
+use super::{
+    super::install_oracles as oracle,
+    CallOccurrence,
+    CheckFailureCase,
+    Failure,
+    FailureTrace,
+    InvocationSelection,
+};
 
 /// The declared Rustup toolchain-list query fails before its component query.
 pub(crate) const DECLARED_TOOLCHAIN_LIST_FAILURE: CheckFailureCase = CheckFailureCase {

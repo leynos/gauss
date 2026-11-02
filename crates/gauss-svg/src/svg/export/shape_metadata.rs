@@ -1,9 +1,12 @@
 //! Shape-level Gauss metadata attribute serialization helpers.
 
-use super::write_fmt;
-use crate::model::{GaussAttribute, Shape};
-use crate::svg::metadata::shape_id_to_hex;
 use slotmap::Key;
+
+use super::write_fmt;
+use crate::{
+    model::{GaussAttribute, Shape},
+    svg::metadata::shape_id_to_hex,
+};
 
 pub(super) fn write_shape_gauss_metadata(out: &mut String, shape: &Shape) {
     if !shape.id.is_null() {

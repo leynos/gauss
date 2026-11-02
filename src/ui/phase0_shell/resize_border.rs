@@ -9,11 +9,10 @@
 //! (which handles the window shadow area), so this module returns an empty
 //! vector to avoid overlapping hitboxes.
 
-#[cfg(not(target_os = "linux"))]
-use gpui::{AnyElement, CursorStyle, MouseButton, ResizeEdge, Window, div, prelude::*, px};
-
 #[cfg(target_os = "linux")]
 use gpui::AnyElement;
+#[cfg(not(target_os = "linux"))]
+use gpui::{AnyElement, CursorStyle, MouseButton, ResizeEdge, Window, div, prelude::*, px};
 
 /// Width/height of the invisible resize edge region in pixels.
 #[cfg(not(target_os = "linux"))]
@@ -43,9 +42,7 @@ const RESIZE_CORNER_SIZE: f32 = 12.0;
 ///     .children(resize_borders())
 /// ```
 #[cfg(target_os = "linux")]
-pub(super) const fn resize_borders() -> Vec<AnyElement> {
-    Vec::new()
-}
+pub(super) const fn resize_borders() -> Vec<AnyElement> { Vec::new() }
 
 /// Render resize border regions around the window content.
 ///

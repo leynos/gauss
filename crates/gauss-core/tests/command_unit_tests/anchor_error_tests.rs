@@ -4,14 +4,22 @@
 //! operating on out-of-range indices.
 
 use gauss_core::model::{
-    AnchorDeletion, AnchorDeletionResult, AnchorRestoration, AnchorRestorationKind, Command,
-    CommandInverse, Document, ShapeReplacement,
+    AnchorDeletion,
+    AnchorDeletionResult,
+    AnchorRestoration,
+    AnchorRestorationKind,
+    Command,
+    CommandInverse,
+    Document,
+    ShapeReplacement,
 };
 use rstest::rstest;
 use test_support::shapes::{sample_shape, shape_id};
 
 use super::{
-    assert_fails_with_invalid_operation, assert_inverse_fails_with_invalid_operation, empty_doc,
+    assert_fails_with_invalid_operation,
+    assert_inverse_fails_with_invalid_operation,
+    empty_doc,
 };
 
 /// Verify `InsertAnchor` returns an error for out-of-range shape indices.

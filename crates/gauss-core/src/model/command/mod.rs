@@ -10,13 +10,12 @@
 //!
 //! Command errors are separated into two categories:
 //!
-//! - **[`UserError`]**: Semantic errors that should be presented to users
-//!   (e.g., empty selection, shape not found). These are returned from
-//!   [`prepare_command`] and command application methods.
+//! - **[`UserError`]**: Semantic errors that should be presented to users (e.g., empty selection,
+//!   shape not found). These are returned from [`prepare_command`] and command application methods.
 //!
-//! - **Internal errors**: Dispatcher bugs and invariant violations that
-//!   indicate programming errors. These use `unreachable!()` or `debug_assert!()`
-//!   to fail fast during development while maintaining safety in release builds.
+//! - **Internal errors**: Dispatcher bugs and invariant violations that indicate programming
+//!   errors. These use `unreachable!()` or `debug_assert!()` to fail fast during development while
+//!   maintaining safety in release builds.
 //!
 //! This separation clarifies error handling responsibilities: UI code handles
 //! [`UserError`] gracefully, while internal errors are caught during testing.
@@ -25,10 +24,10 @@
 //!
 //! Commands are implemented as an enum rather than a trait for several reasons:
 //!
-//! - **Exhaustive matching**: All command variants can be matched exhaustively,
-//!   making dispatch tables complete and verifiable at compile time.
-//! - **Serialization**: Enums are trivially serializable, enabling future macro
-//!   recording and playback (see roadmap §0.1.2).
+//! - **Exhaustive matching**: All command variants can be matched exhaustively, making dispatch
+//!   tables complete and verifiable at compile time.
+//! - **Serialization**: Enums are trivially serializable, enabling future macro recording and
+//!   playback (see roadmap §0.1.2).
 //! - **Simplicity**: No type erasure or dynamic dispatch complexity.
 //! - **Consistency**: Matches the Action enum design from task 0.1.1.
 //!
@@ -79,7 +78,18 @@ pub use error::UserError;
 pub use inverse::CommandInverse;
 pub use prepare::prepare_command;
 pub use types::{
-    AnchorDeletion, AnchorDeletionResult, AnchorMovement, AnchorRestoration, AnchorRestorationKind,
-    DeletedShape, HandleKind, HandleMovement, ReorderOp, SegmentChange, ShapeInsertion,
-    ShapeMovement, ShapeReplacement, StyleChange,
+    AnchorDeletion,
+    AnchorDeletionResult,
+    AnchorMovement,
+    AnchorRestoration,
+    AnchorRestorationKind,
+    DeletedShape,
+    HandleKind,
+    HandleMovement,
+    ReorderOp,
+    SegmentChange,
+    ShapeInsertion,
+    ShapeMovement,
+    ShapeReplacement,
+    StyleChange,
 };

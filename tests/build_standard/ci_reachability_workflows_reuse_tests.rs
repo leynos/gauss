@@ -2,8 +2,7 @@
 
 use rstest::rstest;
 
-use super::super::ACTION_REVISION;
-use super::{INSTALLED, fixture_inventory, replace_once};
+use super::{super::ACTION_REVISION, INSTALLED, fixture_inventory, replace_once};
 
 /// A local reusable workflow is inspected transitively, with its own installer boundary.
 #[test]

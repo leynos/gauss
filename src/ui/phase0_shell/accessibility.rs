@@ -105,44 +105,32 @@ pub mod shortcut_hints {
     /// Return the minimize shortcut hint for the current platform.
     #[cfg(target_os = "macos")]
     #[must_use]
-    pub const fn minimize_for_platform() -> &'static str {
-        MINIMIZE_MACOS
-    }
+    pub const fn minimize_for_platform() -> &'static str { MINIMIZE_MACOS }
 
     /// Return the minimize shortcut hint for the current platform.
     #[cfg(not(target_os = "macos"))]
     #[must_use]
-    pub const fn minimize_for_platform() -> &'static str {
-        MINIMIZE
-    }
+    pub const fn minimize_for_platform() -> &'static str { MINIMIZE }
 
     /// Return the close shortcut hint for the current platform.
     #[cfg(target_os = "macos")]
     #[must_use]
-    pub const fn close_for_platform() -> &'static str {
-        CLOSE_MACOS
-    }
+    pub const fn close_for_platform() -> &'static str { CLOSE_MACOS }
 
     /// Return the close shortcut hint for the current platform.
     #[cfg(not(target_os = "macos"))]
     #[must_use]
-    pub const fn close_for_platform() -> &'static str {
-        CLOSE
-    }
+    pub const fn close_for_platform() -> &'static str { CLOSE }
 
     /// Return the fullscreen shortcut hint for the current platform.
     #[cfg(target_os = "macos")]
     #[must_use]
-    pub const fn fullscreen_for_platform() -> &'static str {
-        FULLSCREEN_MACOS
-    }
+    pub const fn fullscreen_for_platform() -> &'static str { FULLSCREEN_MACOS }
 
     /// Return the fullscreen shortcut hint for the current platform.
     #[cfg(not(target_os = "macos"))]
     #[must_use]
-    pub const fn fullscreen_for_platform() -> &'static str {
-        FULLSCREEN
-    }
+    pub const fn fullscreen_for_platform() -> &'static str { FULLSCREEN }
 }
 
 /// Return canonical semantics for chrome button nodes in deterministic order.

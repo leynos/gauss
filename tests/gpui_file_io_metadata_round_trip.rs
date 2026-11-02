@@ -18,9 +18,11 @@ use std::path::Path;
 
 use common::{ensure_initial_draw, init_test_app};
 use durable_shell::DurableShell;
-use gauss::model::ShapeId;
-use gauss::svg::metadata::GAUSS_METADATA_NAMESPACE;
-use gauss::ui::{OpenSvg, Phase0Shell, SaveSvg};
+use gauss::{
+    model::ShapeId,
+    svg::metadata::GAUSS_METADATA_NAMESPACE,
+    ui::{OpenSvg, Phase0Shell, SaveSvg},
+};
 use gauss_core::test_helpers::shape_id_from_seed;
 use gpui::TestAppContext;
 use rstest_bdd_macros::{given, scenario, then, when};

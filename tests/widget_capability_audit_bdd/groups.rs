@@ -1,7 +1,8 @@
 //! Inclusion groups for control assertions.
 
-use crate::{AuditWorld, assert_includes_substrings};
 use test_support::TestSupportResult;
+
+use crate::{AuditWorld, assert_includes_substrings};
 
 /// Inclusion groups for control assertions.
 #[derive(Clone, Copy)]

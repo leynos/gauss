@@ -6,7 +6,14 @@
 use std::process::Command;
 
 use super::{
-    Controls, Failure, Host, InjectedFunction, InjectionMode, PayloadMode, Probe, ProbeRequest,
+    Controls,
+    Failure,
+    Host,
+    InjectedFunction,
+    InjectionMode,
+    PayloadMode,
+    Probe,
+    ProbeRequest,
     Request,
     model::{ChildFixture, RawOutput},
     process_inputs::apply_environment_changes,

@@ -15,8 +15,10 @@
     reason = "selection overlays use floating-point layout and padding"
 )]
 
-use crate::model::{Document, Selection, Shape, Vec2, Viewport, shape_world_bounds};
-use crate::ui::selection_utils::selected_shape_ids;
+use crate::{
+    model::{Document, Selection, Shape, Vec2, Viewport, shape_world_bounds},
+    ui::selection_utils::selected_shape_ids,
+};
 
 /// A line segment in screen-space pixels.
 #[derive(Clone, Copy, Debug, PartialEq)]

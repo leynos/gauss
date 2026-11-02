@@ -3,9 +3,8 @@
 //! This module is model-layer and deterministic so selection transitions can be
 //! validated via unit and behaviour tests without GPUI dependencies.
 
-use crate::model::{SelItem, Selection, ShapeId};
-
 use super::{SelectHandleHit, SelectHandleHitKind, SelectPointerHit, SelectShapeHit};
+use crate::model::{SelItem, Selection, ShapeId};
 
 /// Resolve the next selection for a pointer hit in manipulate mode.
 ///

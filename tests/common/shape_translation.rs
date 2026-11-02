@@ -29,7 +29,8 @@ pub fn assert_shape_translated_by_delta(
         let diff = current.pos.sub(expected);
         if diff.distance_squared(Vec2::ZERO) > 0.0001 {
             return Err(TestSupportError::expectation(format!(
-                "anchor did not move by expected delta: {context}; start={:?} expected={:?} got={:?} delta={:?}",
+                "anchor did not move by expected delta: {context}; start={:?} expected={:?} \
+                 got={:?} delta={:?}",
                 start.pos, expected, current.pos, delta
             )));
         }

@@ -42,8 +42,16 @@
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use gauss_core::model::{
-    Action, Command, CommandInverse, DeletedShape, Document, EngineState, SelItem, Selection,
-    UserError, prepare_command,
+    Action,
+    Command,
+    CommandInverse,
+    DeletedShape,
+    Document,
+    EngineState,
+    SelItem,
+    Selection,
+    UserError,
+    prepare_command,
 };
 use rstest::rstest;
 use test_support::shapes::{sample_shape, shape_id};

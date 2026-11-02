@@ -1,9 +1,10 @@
 //! Shared keyboard-action step definitions for GPUI tooling scenarios.
 
-use crate::{common, state};
 use gpui::TestAppContext;
 use rstest_bdd_macros::when;
 use test_support::TestSupportError;
+
+use crate::{common, state};
 
 /// Connects the scenario binary's marker to its typed scratch data.
 pub(crate) trait SharedStepStateMarker {

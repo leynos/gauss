@@ -2,14 +2,12 @@
 
 use gpui::{div, prelude::*};
 
-use crate::i18n::MessageId;
-use crate::ui::UiIcon;
-
 use super::{
     Phase0Shell,
     chrome_palette::{chrome_border, chrome_muted_text, chrome_panel, chrome_text},
     icon_button::{IconButtonState, icon_button},
 };
+use crate::{i18n::MessageId, ui::UiIcon};
 
 impl Phase0Shell {
     /// Build the document header panel.

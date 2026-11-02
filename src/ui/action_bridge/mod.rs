@@ -10,8 +10,7 @@
 //! The model layer's [`Action`] enum is GPUI-independent for testability. This
 //! bridge module provides:
 //!
-//! - GPUI Action structs for each model [`Action`] variant that needs keyboard
-//!   dispatch
+//! - GPUI Action structs for each model [`Action`] variant that needs keyboard dispatch
 //! - Registration functions to bind these actions to keyboard shortcuts
 //!
 //! The view layer wires `.on_action()` handlers that dispatch to the
@@ -38,10 +37,9 @@ mod tests;
 mod keystroke;
 
 use gpui::KeyBinding;
+pub use keystroke::keystroke_to_gpui_string;
 
 use crate::model::{Action, KeyContext, default_bindings};
-
-pub use keystroke::keystroke_to_gpui_string;
 
 // === GPUI Action structs ===
 

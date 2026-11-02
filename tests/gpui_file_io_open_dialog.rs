@@ -19,9 +19,11 @@ use std::path::Path;
 
 use common::{ensure_initial_draw, init_test_app};
 use durable_shell::DurableShell;
-use gauss::model::Paint;
-use gauss::svg::metadata::GAUSS_METADATA_PREFIX;
-use gauss::ui::{OpenSvg, Phase0Shell};
+use gauss::{
+    model::Paint,
+    svg::metadata::GAUSS_METADATA_PREFIX,
+    ui::{OpenSvg, Phase0Shell},
+};
 use gpui::TestAppContext;
 use path_prompt::{assert_no_path_prompt, assert_path_prompt};
 use rstest_bdd_macros::{scenario, then, when};

@@ -3,7 +3,11 @@
 //! This module owns the complete evidence model used by the install cases.
 
 use super::{
-    FAKE_MOLD, Invocation, Observation, PrefixState, protocol::comparison_evidence,
+    FAKE_MOLD,
+    Invocation,
+    Observation,
+    PrefixState,
+    protocol::comparison_evidence,
     support::Scratch,
 };
 

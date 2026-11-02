@@ -4,11 +4,11 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use accesskit::{Action, Node, NodeId, Role};
 
-use crate::i18n::MessageId;
-use crate::ui::phase0_shell::accessibility;
-use crate::ui::phase0_shell::i18n_helpers::localized_status_label;
-
 use super::{A11yServiceError, A11ySnapshot};
+use crate::{
+    i18n::MessageId,
+    ui::phase0_shell::{accessibility, i18n_helpers::localized_status_label},
+};
 
 pub(super) const ROOT_NODE_ID: NodeId = NodeId(0x1000);
 pub(super) const CANVAS_NODE_ID: NodeId = NodeId(0x1007);

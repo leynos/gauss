@@ -9,7 +9,13 @@
 )]
 
 use crate::model::{
-    Anchor, CubicSegment, SegmentKind, Shape, Vec2, cubic_point, shape_world_bounds,
+    Anchor,
+    CubicSegment,
+    SegmentKind,
+    Shape,
+    Vec2,
+    cubic_point,
+    shape_world_bounds,
 };
 
 /// Test whether the cursor falls inside a shape's world-space bounds plus tolerance.

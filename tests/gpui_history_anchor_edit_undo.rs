@@ -15,11 +15,20 @@ mod history_bdd_support;
 mod history_bdd_support_open;
 
 use common::{
-    anchor_to_canvas_point, assert_vec2_close, canvas_bounds, click_canvas_and_wait, read_document,
-    read_history_len, require_draw_shape, simulate_escape, simulate_key,
+    anchor_to_canvas_point,
+    assert_vec2_close,
+    canvas_bounds,
+    click_canvas_and_wait,
+    read_document,
+    read_history_len,
+    require_draw_shape,
+    simulate_escape,
+    simulate_key,
 };
-use gauss::model::{SelItem, Shape, ShapeId, Vec2};
-use gauss::ui::Phase0Shell;
+use gauss::{
+    model::{SelItem, Shape, ShapeId, Vec2},
+    ui::Phase0Shell,
+};
 use gpui::{Modifiers, MouseButton, VisualTestContext, point, px};
 use test_support::{TestSupportError, TestSupportResult, math};
 #[derive(Clone, Copy, Debug)]

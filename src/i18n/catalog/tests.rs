@@ -4,7 +4,10 @@ use std::collections::HashMap;
 
 use rstest::{fixture, rstest};
 
-use super::*;
+use super::{
+    super::{I18nError, Locale},
+    *,
+};
 
 #[test]
 fn catalog_from_messages_creates_correctly() {
@@ -100,9 +103,7 @@ fn localizer_add_catalog_works(fr_test_catalog: Catalog) {
     assert_eq!(result.expect("Should have found message"), "test_fr");
 }
 
-fn default_catalog() -> Catalog {
-    Catalog::default_en_gb()
-}
+fn default_catalog() -> Catalog { Catalog::default_en_gb() }
 
 #[test]
 fn catalog_default_en_gb_contains_chrome_messages() {

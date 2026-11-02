@@ -21,8 +21,10 @@ use std::{path::Path, rc::Rc};
 
 use common::{ensure_initial_draw, init_test_app};
 use durable_shell::DurableShell;
-use gauss::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
-use gauss::ui::{ExportSvgWebReady, Phase0Shell, SaveSvg};
+use gauss::{
+    svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX},
+    ui::{ExportSvgWebReady, Phase0Shell, SaveSvg},
+};
 use gpui::TestAppContext;
 use path_prompt::{assert_no_path_prompt, assert_path_prompt};
 use rstest_bdd_macros::{scenario, then, when};

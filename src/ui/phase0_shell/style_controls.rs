@@ -7,10 +7,11 @@
 use gpui::{AppContext as _, Context, Hsla, ParentElement as _, Styled as _, Window, div};
 use gpui_component::color_picker::{ColorPicker, ColorPickerEvent, ColorPickerState};
 
-use crate::i18n::MessageId;
-use crate::model::{Command, Paint, PaintStyle, Rgba, SelItem, ShapeId, StyleChange};
-
 use super::Phase0Shell;
+use crate::{
+    i18n::MessageId,
+    model::{Command, Paint, PaintStyle, Rgba, SelItem, ShapeId, StyleChange},
+};
 
 impl Phase0Shell {
     /// Lazily initialise stroke and fill colour picker state.

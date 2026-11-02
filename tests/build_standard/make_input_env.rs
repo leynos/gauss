@@ -289,7 +289,8 @@ impl Drop for Scratch {
     }
 }
 
-/// Runs a contract with fallible normal cleanup and a best-effort drop on early errors or unwinding.
+/// Runs a contract with fallible normal cleanup and a best-effort drop on early errors or
+/// unwinding.
 pub(super) fn with_scratch<T>(
     operation: impl FnOnce(&Scratch) -> Result<T, String>,
 ) -> Result<T, String> {
@@ -306,9 +307,7 @@ pub(super) fn with_scratch<T>(
 }
 
 /// Quotes a path as one shell word for the fake executable variable.
-fn shell_word(path: &Utf8Path) -> String {
-    format!("'{}'", path.as_str().replace('\'', "'\\''"))
-}
+fn shell_word(path: &Utf8Path) -> String { format!("'{}'", path.as_str().replace('\'', "'\\''")) }
 
 /// Parses the tab-delimited recorder output, refusing absent or unknown fields.
 fn parse_calls(log: &str) -> Result<Vec<Invocation>, String> {

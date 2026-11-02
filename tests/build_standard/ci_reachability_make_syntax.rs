@@ -40,9 +40,7 @@ enum QuoteState {
 impl QuoteState {
     /// Reports whether a delimiter is active.
     /// For example, `Open` returns `true` and `Closed` returns `false`.
-    const fn is_open(self) -> bool {
-        matches!(self, Self::Open { .. })
-    }
+    const fn is_open(self) -> bool { matches!(self, Self::Open { .. }) }
 
     /// Reports whether the active delimiter is a single quote.
     /// For example, an open `'` delimiter returns `true`.
@@ -58,9 +56,7 @@ impl QuoteState {
 
     /// Reports whether this word has opened or closed a quote.
     /// For example, both `Open` and `Closed` return `true`.
-    const fn is_quoted(self) -> bool {
-        matches!(self, Self::Open { .. } | Self::Closed)
-    }
+    const fn is_quoted(self) -> bool { matches!(self, Self::Open { .. } | Self::Closed) }
 
     /// Checks whether an active delimiter matches one character.
     /// For example, an open `"` delimiter matches `"` but not `'`.
@@ -266,9 +262,7 @@ impl Tokenizer {
 }
 
 /// Recognizes a shell word prefix that names a variable assignment.
-fn assignment_prefix(word: &str) -> bool {
-    word.strip_suffix('=').is_some_and(valid_variable_name)
-}
+fn assignment_prefix(word: &str) -> bool { word.strip_suffix('=').is_some_and(valid_variable_name) }
 
 /// Restricts assignment names to literal Make variable identifiers.
 pub(super) fn valid_variable_name(name: &str) -> bool {

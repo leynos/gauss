@@ -8,8 +8,9 @@
 //! NOTE: These tests validate the audit inventory structure and metadata,
 //! not the runtime GPUI behavior (which requires the full common test helpers).
 
-use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase};
 use std::path::Path;
+
+use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase};
 
 #[test]
 fn controls_with_evidence_have_valid_paths() {

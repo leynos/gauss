@@ -43,15 +43,11 @@ impl ShapeWorldBounds {
 
     /// Return the minimum corner.
     #[must_use]
-    pub const fn min(self) -> Vec2 {
-        self.min
-    }
+    pub const fn min(self) -> Vec2 { self.min }
 
     /// Return the maximum corner.
     #[must_use]
-    pub const fn max(self) -> Vec2 {
-        self.max
-    }
+    pub const fn max(self) -> Vec2 { self.max }
 
     /// Test whether a point lies within these bounds, expanded by `tolerance`
     /// in every direction.

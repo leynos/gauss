@@ -10,12 +10,19 @@
 
 use gpui::{MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels};
 
-use crate::model::{
-    HitTestIndex, SelectDragDocumentSnapshot, SelectPointerDownInput, SelectPointerMoveInput,
-    SelectPointerUpInput, SelectTool, SelectToolState, Tool, ToolInputEvent, Vec2,
-};
-
 use super::{HoverCache, Phase0Shell, draw::ToolMode};
+use crate::model::{
+    HitTestIndex,
+    SelectDragDocumentSnapshot,
+    SelectPointerDownInput,
+    SelectPointerMoveInput,
+    SelectPointerUpInput,
+    SelectTool,
+    SelectToolState,
+    Tool,
+    ToolInputEvent,
+    Vec2,
+};
 
 /// Default hit-test tolerance in screen pixels.
 const HIT_TOLERANCE_PX: f32 = 4.0;

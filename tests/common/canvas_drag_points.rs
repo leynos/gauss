@@ -1,8 +1,9 @@
 //! Canvas-drag scenario for tests that only need endpoints.
 
-use super::canvas_drag_values::{CanvasDragValues, canvas_drag_values};
 use gpui::{Pixels, Point, VisualTestContext};
 use test_support::TestSupportResult;
+
+use super::canvas_drag_values::{CanvasDragValues, canvas_drag_values};
 
 /// Opposing padded canvas points used by drag-based tests.
 #[derive(Clone, Copy, Debug)]

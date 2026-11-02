@@ -3,13 +3,15 @@
 #[path = "a11y_service_bdd/support.rs"]
 mod a11y_service_bdd_support;
 
+use a11y_service_bdd_support::*;
 use accesskit::{Action, ActionRequest, NodeId, TreeId};
 use gauss::ui::phase0_shell::{
-    A11yActionRequestError, A11yRequestedAction, A11yWindowAction, accessibility,
+    A11yActionRequestError,
+    A11yRequestedAction,
+    A11yWindowAction,
+    accessibility,
 };
 use rstest_bdd_macros::{scenario, then, when};
-
-use a11y_service_bdd_support::*;
 
 const UNKNOWN_NODE_ID: u64 = 0xbeef;
 
@@ -157,14 +159,10 @@ fn close_button_click_request_routes_to_the_existing_close_action(world: A11yWor
     path = "tests/features/a11y_service.feature",
     name = "Unsupported close button action request is rejected"
 )]
-fn unsupported_close_button_action_request_is_rejected(world: A11yWorld) {
-    let _ = world;
-}
+fn unsupported_close_button_action_request_is_rejected(world: A11yWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/a11y_service.feature",
     name = "Unknown accessibility node request is rejected"
 )]
-fn unknown_accessibility_node_request_is_rejected(world: A11yWorld) {
-    let _ = world;
-}
+fn unknown_accessibility_node_request_is_rejected(world: A11yWorld) { let _ = world; }

@@ -4,13 +4,20 @@
 //! when shape fixtures or style defaults evolve.
 
 use crate::model::{
-    Anchor, Paint, PaintStyle, PathGeom, Rgba, SegmentKind, SelItem, Selection, Shape, ShapeId,
+    Anchor,
+    Paint,
+    PaintStyle,
+    PathGeom,
+    Rgba,
+    SegmentKind,
+    SelItem,
+    Selection,
+    Shape,
+    ShapeId,
     Vec2,
 };
 
-pub(super) fn shape_id(raw: u64) -> ShapeId {
-    ShapeId::from_accesskit_node_id(raw)
-}
+pub(super) fn shape_id(raw: u64) -> ShapeId { ShapeId::from_accesskit_node_id(raw) }
 
 pub(super) fn default_style() -> PaintStyle {
     PaintStyle {

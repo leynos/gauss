@@ -1,9 +1,15 @@
 //! Shared helpers for command editing integration tests.
 
 use gauss_core::model::{
-    Anchor, Document, PaintStyle, PathGeom, SegmentKind, Shape, ShapeId, Vec2,
+    Anchor,
+    Document,
+    PaintStyle,
+    PathGeom,
+    SegmentKind,
+    Shape,
+    ShapeId,
+    Vec2,
 };
-
 pub use test_support::shapes::shape_with_handles;
 
 /// Build a shape with three anchors and mixed segments.
@@ -42,15 +48,11 @@ pub fn shape_with_three_anchors(id: ShapeId) -> Shape {
 
 /// Fetch a shape by index from a document.
 #[must_use]
-pub fn shape_at(doc: &Document, index: usize) -> Option<&Shape> {
-    doc.shape_at(index)
-}
+pub fn shape_at(doc: &Document, index: usize) -> Option<&Shape> { doc.shape_at(index) }
 
 /// Fetch an anchor by index from a shape.
 #[must_use]
-pub fn anchor_at(shape: &Shape, index: usize) -> Option<&Anchor> {
-    shape.path.anchors.get(index)
-}
+pub fn anchor_at(shape: &Shape, index: usize) -> Option<&Anchor> { shape.path.anchors.get(index) }
 
 /// Fetch a segment kind by index from a shape.
 #[must_use]

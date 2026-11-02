@@ -28,12 +28,20 @@
 //! let state = EngineState::with_document(doc);
 //! assert_eq!(state.document_history_len(), 0);
 //! ```
-use crate::model::{
-    Command, Document, EdgeMode, PaintStyle, ResizeAnchor, Rgba, Selection, ShapeId, ToolMode,
-    UserError, Viewport,
-};
-
 use super::{DocumentUndoHistory, HistoryError, ResourceStore, StyleStore};
+use crate::model::{
+    Command,
+    Document,
+    EdgeMode,
+    PaintStyle,
+    ResizeAnchor,
+    Rgba,
+    Selection,
+    ShapeId,
+    ToolMode,
+    UserError,
+    Viewport,
+};
 #[cfg(feature = "test-support")]
 #[path = "engine_state/test_history.rs"]
 mod test_history;
@@ -211,48 +219,37 @@ impl EngineState {
     }
 
     /// Clear all document-history entries and any active group.
-    pub fn clear_document_history(&mut self) {
-        self.document_history.clear();
-    }
+    pub fn clear_document_history(&mut self) { self.document_history.clear(); }
 
     /// Return whether document undo is currently available.
     #[must_use]
-    pub fn can_undo_document(&self) -> bool {
-        self.document_history.can_undo()
-    }
+    pub fn can_undo_document(&self) -> bool { self.document_history.can_undo() }
 
     /// Return whether document redo is currently available.
     #[must_use]
-    pub fn can_redo_document(&self) -> bool {
-        self.document_history.can_redo()
-    }
+    pub fn can_redo_document(&self) -> bool { self.document_history.can_redo() }
 
     /// Return realized document-history depth.
     #[must_use]
-    pub fn document_history_len(&self) -> usize {
-        self.document_history.len()
-    }
+    pub fn document_history_len(&self) -> usize { self.document_history.len() }
 }
 
 impl Default for EngineState {
-    fn default() -> Self {
-        Self::new()
-    }
+    fn default() -> Self { Self::new() }
 }
 
 /// Return the default style for new shapes.
 ///
 /// Black stroke (2px width), no fill.
-const fn default_style() -> PaintStyle {
-    PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None)
-}
+const fn default_style() -> PaintStyle { PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 2.0, None) }
 
 #[cfg(test)]
 mod tests {
     //! Tests for engine state defaults and helpers.
 
-    use super::*;
     use rstest::{fixture, rstest};
+
+    use super::*;
 
     #[fixture]
     fn sample_shape() -> crate::model::Shape {

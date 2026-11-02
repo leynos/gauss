@@ -4,13 +4,24 @@
 //! Actions to undoable document mutations.
 
 use gauss_core::model::{
-    Action, Command, CommandInverse, Document, EngineState, HistoryError, SelItem, Selection,
-    UserError, prepare_command,
+    Action,
+    Command,
+    CommandInverse,
+    Document,
+    EngineState,
+    HistoryError,
+    SelItem,
+    Selection,
+    UserError,
+    prepare_command,
 };
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
-use test_support::shapes::{sample_shape, shape_id};
-use test_support::{TestSupportError, TestSupportResult};
+use test_support::{
+    TestSupportError,
+    TestSupportResult,
+    shapes::{sample_shape, shape_id},
+};
 
 /// World state for command BDD tests.
 #[derive(Default)]
@@ -23,6 +34,7 @@ struct CommandWorld {
 
 #[fixture]
 fn world() -> CommandWorld {
+    // Each scenario starts with an empty command world.
     CommandWorld::default()
 }
 
@@ -276,73 +288,55 @@ fn get_command(world: &CommandWorld) -> TestSupportResult<&Command> {
     path = "tests/features/command.feature",
     name = "Delete selection produces valid command"
 )]
-fn delete_selection_produces_valid_command(world: CommandWorld) {
-    let _ = world;
-}
+fn delete_selection_produces_valid_command(world: CommandWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/command.feature",
     name = "Delete selection command removes shape"
 )]
-fn delete_selection_command_removes_shape(world: CommandWorld) {
-    let _ = world;
-}
+fn delete_selection_command_removes_shape(world: CommandWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/command.feature",
     name = "Delete selection is undoable"
 )]
-fn delete_selection_is_undoable(world: CommandWorld) {
-    let _ = world;
-}
+fn delete_selection_is_undoable(world: CommandWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/command.feature",
     name = "Delete selection requires selection"
 )]
-fn delete_selection_requires_selection(world: CommandWorld) {
-    let _ = world;
-}
+fn delete_selection_requires_selection(world: CommandWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/command.feature",
     name = "Command has human-readable name"
 )]
-fn command_has_human_readable_name(world: CommandWorld) {
-    let _ = world;
-}
+fn command_has_human_readable_name(world: CommandWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/command.feature",
     name = "Raise selection produces reorder command"
 )]
-fn raise_selection_produces_reorder_command(world: CommandWorld) {
-    let _ = world;
-}
+fn raise_selection_produces_reorder_command(world: CommandWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/command.feature",
     name = "Inverse command has matching name"
 )]
-fn inverse_command_has_matching_name(world: CommandWorld) {
-    let _ = world;
-}
+fn inverse_command_has_matching_name(world: CommandWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/command.feature",
     name = "Empty history undo is safe"
 )]
-fn empty_history_undo_is_safe(world: CommandWorld) {
-    let _ = world;
-}
+fn empty_history_undo_is_safe(world: CommandWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/command.feature",
     name = "EngineState history delete-selection round trip"
 )]
-fn engine_state_history_delete_selection_round_trip(world: CommandWorld) {
-    let _ = world;
-}
+fn engine_state_history_delete_selection_round_trip(world: CommandWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/command.feature",

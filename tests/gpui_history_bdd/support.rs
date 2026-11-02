@@ -7,11 +7,10 @@
 #[path = "../common/durable_shell.rs"]
 mod common_durable_shell;
 
+pub use common_durable_shell::DurableShell;
 use gauss::ui::Phase0Shell;
 use gpui::{Entity, TestAppContext, VisualTestContext};
 use test_support::{TestSupportError, TestSupportResult};
-
-pub use common_durable_shell::DurableShell;
 
 impl DurableShell {
     /// Rebuild a visual context for the current history BDD step.

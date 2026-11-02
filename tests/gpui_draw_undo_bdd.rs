@@ -48,12 +48,25 @@ mod common;
 use std::cell::RefCell;
 
 use common::{
-    canvas_points, click_canvas_and_wait, ensure_initial_draw, find_draw_shape, init_test_app,
-    read_document, require_draw_shape, simulate_document_redo, simulate_document_undo,
+    canvas_points,
+    click_canvas_and_wait,
+    ensure_initial_draw,
+    find_draw_shape,
+    init_test_app,
+    read_document,
+    require_draw_shape,
+    simulate_document_redo,
+    simulate_document_undo,
 };
 use gauss::ui::Phase0Shell;
 use gpui::{
-    AnyWindowHandle, Entity, Pixels, Point, TestAppContext, VisualContext, VisualTestContext,
+    AnyWindowHandle,
+    Entity,
+    Pixels,
+    Point,
+    TestAppContext,
+    VisualContext,
+    VisualTestContext,
 };
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
@@ -97,9 +110,7 @@ fn reset_state_before_assignment() {
 struct ScenarioStateCleanup;
 
 impl Drop for ScenarioStateCleanup {
-    fn drop(&mut self) {
-        reset_state_after_scenario();
-    }
+    fn drop(&mut self) { reset_state_after_scenario(); }
 }
 
 #[fixture]

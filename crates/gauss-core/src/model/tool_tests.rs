@@ -1,9 +1,17 @@
 //! Unit tests for the tool FSM model surface.
 
-use super::{
-    Command, EdgeMode, Tool, ToolCommand, ToolInputEvent, ToolMode, ToolModeFsm, ToolTransition,
-};
 use rstest::rstest;
+
+use super::{
+    Command,
+    EdgeMode,
+    Tool,
+    ToolCommand,
+    ToolInputEvent,
+    ToolMode,
+    ToolModeFsm,
+    ToolTransition,
+};
 
 #[rstest]
 fn tool_mode_has_label() {

@@ -28,11 +28,19 @@ use std::cell::RefCell;
 use accesskit::{Action, ActionRequest, TreeId};
 use expect_equal_support::expect_equal;
 use expect_true_support::expect_true;
-use gauss::model::{SelItem, Selection, ShapeId, Vec2};
-use gauss::ui::Phase0Shell;
-use gauss::ui::phase0_shell::{
-    A11yActionRequestError, A11yRequestedAction, A11yUpdateKind, A11yWindowAction, CloseWindow,
-    accessibility,
+use gauss::{
+    model::{SelItem, Selection, ShapeId, Vec2},
+    ui::{
+        Phase0Shell,
+        phase0_shell::{
+            A11yActionRequestError,
+            A11yRequestedAction,
+            A11yUpdateKind,
+            A11yWindowAction,
+            CloseWindow,
+            accessibility,
+        },
+    },
 };
 use gpui::TestAppContext;
 use rstest_bdd_macros::{given, scenario, then, when};

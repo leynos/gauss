@@ -2,9 +2,8 @@
 //!
 //! Extracted from the main export module to keep file sizes manageable.
 
-use crate::model::{GradientKind, PatternResource, ResourceStore, SymbolResource, format_hex_rgb};
-
 use super::{opacity_from_alpha, write_fmt};
+use crate::model::{GradientKind, PatternResource, ResourceStore, SymbolResource, format_hex_rgb};
 
 /// Write the `<defs>` block for shared resources.
 pub(super) fn write_defs(

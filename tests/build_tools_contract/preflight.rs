@@ -5,10 +5,20 @@
 use rstest::rstest;
 
 use super::{
-    Entry, EnvironmentChange, Host, Request, install_oracles as oracle, preflight_cases as cases,
+    Entry,
+    EnvironmentChange,
+    Host,
+    Request,
+    install_oracles as oracle,
+    preflight_cases as cases,
     preflight_oracles::{
-        CheckFailureCase, MissingRequirement, verify_boot_failure, verify_check_failure,
-        verify_host_failure, verify_install_then_check, verify_missing_requirements,
+        CheckFailureCase,
+        MissingRequirement,
+        verify_boot_failure,
+        verify_check_failure,
+        verify_host_failure,
+        verify_install_then_check,
+        verify_missing_requirements,
         verify_missing_rustup,
     },
     support::with_scratch,
@@ -212,6 +222,4 @@ fn nightly_rustup_discovery_failure_propagates(
 }
 
 #[test]
-fn missing_rustup_reports_all_toolchain_checks() -> Result<(), String> {
-    verify_missing_rustup()
-}
+fn missing_rustup_reports_all_toolchain_checks() -> Result<(), String> { verify_missing_rustup() }

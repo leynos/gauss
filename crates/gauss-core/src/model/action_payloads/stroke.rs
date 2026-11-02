@@ -21,15 +21,11 @@ impl StrokeWidth {
 
     /// Return the stroke width value.
     #[must_use]
-    pub const fn value(&self) -> f32 {
-        self.0
-    }
+    pub const fn value(&self) -> f32 { self.0 }
 }
 
 impl std::hash::Hash for StrokeWidth {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.to_bits().hash(state);
-    }
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) { self.0.to_bits().hash(state); }
 }
 
 impl Eq for StrokeWidth {}
@@ -53,15 +49,11 @@ impl Rotation {
 
     /// Return the rotation value in degrees.
     #[must_use]
-    pub const fn value(&self) -> f32 {
-        self.0
-    }
+    pub const fn value(&self) -> f32 { self.0 }
 }
 
 impl std::hash::Hash for Rotation {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.to_bits().hash(state);
-    }
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) { self.0.to_bits().hash(state); }
 }
 
 impl Eq for Rotation {}

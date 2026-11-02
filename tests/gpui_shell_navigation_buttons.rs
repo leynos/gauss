@@ -21,15 +21,28 @@ mod support;
 use std::cell::RefCell;
 
 use common::{
-    anchor_to_canvas_point, canvas_bounds, draw_point, require_draw_shape, shift_secondary,
+    anchor_to_canvas_point,
+    canvas_bounds,
+    draw_point,
+    require_draw_shape,
+    shift_secondary,
     simulate_escape,
 };
 use expect_equal_support::expect_equal;
 use expect_true_support::expect_true;
 use gauss::model::{Document, Paint, PaintStyle, Rgba, Selection, Vec2};
 use gpui::{
-    Bounds, Hsla, Modifiers, MouseButton, NavigationDirection, Pixels, Point, TestAppContext,
-    VisualTestContext, point, px,
+    Bounds,
+    Hsla,
+    Modifiers,
+    MouseButton,
+    NavigationDirection,
+    Pixels,
+    Point,
+    TestAppContext,
+    VisualTestContext,
+    point,
+    px,
 };
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;

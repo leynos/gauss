@@ -1,11 +1,13 @@
-//! Gauss composes its own `RUST_FLAGS` variable into the `RUSTFLAGS` its recipes assign. A caller who
-//! overrides it on the `make` command line must still see the override reach every recipe that
+//! Gauss composes its own `RUST_FLAGS` variable into the `RUSTFLAGS` its recipes assign. A caller
+//! who overrides it on the `make` command line must still see the override reach every recipe that
 //! builds, tests or lints, beside the caller's inherited `RUSTFLAGS` and the standard flags.
 
 use std::process::Command as Process;
 
-use super::make::{Command, Host, commands_with_text};
-use super::make_input_env::{COMPETING_RUST_FLAGS, Invocation, NEXTEST_OPTIONS, arguments};
+use super::{
+    make::{Command, Host, commands_with_text},
+    make_input_env::{COMPETING_RUST_FLAGS, Invocation, NEXTEST_OPTIONS, arguments},
+};
 
 /// A distinctive value no recipe or configuration contains by default.
 const MARKER: &str = "--cfg=gauss_rust_flags_marker";
@@ -34,8 +36,8 @@ fn composes_rust_flags(text: &str) -> bool {
     .any(|tool| text.contains(tool))
 }
 
-/// Returns the complaints about the commands of a target: each command that composes `RUST_FLAGS` must
-/// carry the marker, and a `RUSTFLAGS` assignment must keep the caller's own flags before it.
+/// Returns the complaints about the commands of a target: each command that composes `RUST_FLAGS`
+/// must carry the marker, and a `RUSTFLAGS` assignment must keep the caller's own flags before it.
 fn problems(target: &str, commands: &[Command], expected: usize) -> Vec<String> {
     let composing: Vec<&Command> = commands
         .iter()
@@ -327,8 +329,7 @@ mod fixtures {
     //! The override check over fixtures: a compliant recipe passes, a dropped override, a dropped
     //! caller's flags and a missing command are each refused.
 
-    use super::super::make::commands_with_text;
-    use super::{MARKER, problems};
+    use super::{super::make::commands_with_text, MARKER, problems};
 
     fn run(text: &str, expected: usize) -> usize {
         let commands = commands_with_text(text).unwrap_or_default();
@@ -337,7 +338,8 @@ mod fixtures {
 
     fn compliant() -> String {
         format!(
-            "RUSTFLAGS=\"${{RUSTFLAGS:+$RUSTFLAGS }}{MARKER} -Clink-arg=-fuse-ld=mold\" cargo nextest run\n"
+            "RUSTFLAGS=\"${{RUSTFLAGS:+$RUSTFLAGS }}{MARKER} -Clink-arg=-fuse-ld=mold\" cargo \
+             nextest run\n"
         )
     }
 

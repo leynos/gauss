@@ -26,9 +26,7 @@ const UNSUPPORTED_SELECTOR: &str =
     include_str!("fixtures/ci_reachability/make_unsupported_selector/Makefile");
 
 /// Appends one source mutation to the reviewed Make baseline.
-fn append_make_mutation(addition: &str) -> String {
-    format!("{CURRENT_MAKE_SOURCE}\n{addition}")
-}
+fn append_make_mutation(addition: &str) -> String { format!("{CURRENT_MAKE_SOURCE}\n{addition}") }
 
 /// Returns one exact Make source gap after requiring the current baseline to pass.
 fn syntax_gap(addition: &str) -> Result<String, String> {

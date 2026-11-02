@@ -1,26 +1,39 @@
 //! BDD step wiring for `SelectTool` scenarios.
 
-use super::SelectToolWorld;
-use super::helpers::{
-    self, PointerDownEventInput, pointer_down_event, resolve_drag_setup, resolve_state,
-    resolve_up_position, set_drag_state_from_hit,
-};
 use gauss_core::model::{
-    SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput, SelectShapeHit, SelectTool,
-    SelectToolState, Selection, Tool, ToolInputEvent, ToolMode, Vec2,
+    SelectPointerHit,
+    SelectPointerMoveInput,
+    SelectPointerUpInput,
+    SelectShapeHit,
+    SelectTool,
+    SelectToolState,
+    Selection,
+    Tool,
+    ToolInputEvent,
+    ToolMode,
+    Vec2,
 };
 use rstest_bdd_macros::{given, then, when};
 use test_support::TestSupportResult;
 
+use super::{
+    SelectToolWorld,
+    helpers::{
+        self,
+        PointerDownEventInput,
+        pointer_down_event,
+        resolve_drag_setup,
+        resolve_state,
+        resolve_up_position,
+        set_drag_state_from_hit,
+    },
+};
+
 #[given("the select tool mode is Manipulate")]
-fn given_mode_manipulate(world: &mut SelectToolWorld) {
-    world.mode = ToolMode::Manipulate;
-}
+fn given_mode_manipulate(world: &mut SelectToolWorld) { world.mode = ToolMode::Manipulate; }
 
 #[given("the select tool mode is Draw")]
-fn given_mode_draw(world: &mut SelectToolWorld) {
-    world.mode = ToolMode::Draw;
-}
+fn given_mode_draw(world: &mut SelectToolWorld) { world.mode = ToolMode::Draw; }
 
 fn pointer_down_on_shape(world: &mut SelectToolWorld, is_shift_held: bool) {
     world.input_event = Some(pointer_down_event(
@@ -57,7 +70,8 @@ fn given_active_dragging_state(
 }
 
 #[given(
-    "the select tool event is pointer move with {state:word} state and has_primary_button {has_primary_button:bool}"
+    "the select tool event is pointer move with {state:word} state and has_primary_button \
+     {has_primary_button:bool}"
 )]
 fn given_pointer_move(
     world: &mut SelectToolWorld,
@@ -76,7 +90,8 @@ fn given_pointer_move(
 }
 
 #[given(
-    "the select tool event is pointer up at {position:word} with {state:word} state and is_primary_button {is_primary_button:bool}"
+    "the select tool event is pointer up at {position:word} with {state:word} state and \
+     is_primary_button {is_primary_button:bool}"
 )]
 fn given_pointer_up(
     world: &mut SelectToolWorld,

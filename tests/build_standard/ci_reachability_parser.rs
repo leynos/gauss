@@ -2,8 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use super::Value;
-use super::lines;
+use super::{Value, lines};
 
 /// Keeps block-scalar decoding beside the shared physical-line reader.
 #[path = "ci_reachability_parser_blocks.rs"]

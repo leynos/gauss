@@ -13,11 +13,18 @@ mod init_app;
 mod initial_draw;
 
 use common::{
-    anchor_to_canvas_point, click_canvas_and_wait, read_document, read_history_len,
-    require_draw_shape, simulate_document_undo, simulate_escape,
+    anchor_to_canvas_point,
+    click_canvas_and_wait,
+    read_document,
+    read_history_len,
+    require_draw_shape,
+    simulate_document_undo,
+    simulate_escape,
 };
-use gauss::model::{Paint, Rgba, SelItem, ShapeId, Vec2};
-use gauss::ui::Phase0Shell;
+use gauss::{
+    model::{Paint, Rgba, SelItem, ShapeId, Vec2},
+    ui::Phase0Shell,
+};
 use gpui::{Hsla, Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px};
 use init_app::init_test_app;
 use initial_draw::ensure_initial_draw;

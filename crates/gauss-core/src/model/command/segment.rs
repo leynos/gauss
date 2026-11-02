@@ -4,12 +4,8 @@
 //! handles for line-to-cubic transitions and clearing handles when switching
 //! back to lines.
 
+use super::{Command, error::UserError, inverse::CommandInverse, types::SegmentChange};
 use crate::model::{Document, EngineState, SegmentKind, SelItem, Shape, Vec2};
-
-use super::Command;
-use super::error::UserError;
-use super::inverse::CommandInverse;
-use super::types::SegmentChange;
 
 /// Prepare changes that toggle each selected segment between line and cubic form.
 ///

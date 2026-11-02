@@ -2,11 +2,17 @@
 
 use rstest::rstest;
 
-use crate::model::document::Document;
-use crate::model::history::{DocumentUndoHistory, HistoryError};
-use crate::model::{Command, CommandInverse, ReorderOp, ShapeId, ShapeMovement, Vec2};
-
 use super::{apply_move, doc_with_one_shape};
+use crate::model::{
+    Command,
+    CommandInverse,
+    ReorderOp,
+    ShapeId,
+    ShapeMovement,
+    Vec2,
+    document::Document,
+    history::{DocumentUndoHistory, HistoryError},
+};
 
 #[rstest]
 fn grouped_commands_collapse_to_one_entry_and_undo_redo_as_a_batch(

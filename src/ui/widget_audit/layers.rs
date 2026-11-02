@@ -11,8 +11,16 @@
 //! the Phase 0 shell implements the required layer panel functionality.
 
 use super::types::{
-    AccessibilityRequirements, ActionCommandLinkage, ControlStates, ControlSurface,
-    CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
+    AccessibilityRequirements,
+    ActionCommandLinkage,
+    ControlStates,
+    ControlSurface,
+    CurrentShellEvidence,
+    KeyboardRequirements,
+    Phase,
+    RequiredControl,
+    RequirementSource,
+    UserJob,
 };
 
 pub(super) fn controls() -> Vec<RequiredControl> {

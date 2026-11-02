@@ -6,8 +6,7 @@
 
 mod steps;
 
-use gauss::model::history::HistoryError;
-use gauss::model::{Command, Document, DocumentUndoHistory};
+use gauss::model::{Command, Document, DocumentUndoHistory, history::HistoryError};
 use rstest::fixture;
 use rstest_bdd_macros::scenario;
 use test_support::{TestSupportError, TestSupportResult};
@@ -95,81 +94,61 @@ pub(crate) fn apply_and_record(world: &mut EntryCountWorld, cmd: Command) -> Tes
     path = "tests/features/undo_entry_count.feature",
     name = "MoveShapes command produces single undo entry"
 )]
-fn move_shapes_command_produces_single_undo_entry(world: EntryCountWorld) {
-    let _ = world;
-}
+fn move_shapes_command_produces_single_undo_entry(world: EntryCountWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/undo_entry_count.feature",
     name = "MoveAnchor command produces single undo entry"
 )]
-fn move_anchor_command_produces_single_undo_entry(world: EntryCountWorld) {
-    let _ = world;
-}
+fn move_anchor_command_produces_single_undo_entry(world: EntryCountWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/undo_entry_count.feature",
     name = "MoveHandle command produces single undo entry"
 )]
-fn move_handle_command_produces_single_undo_entry(world: EntryCountWorld) {
-    let _ = world;
-}
+fn move_handle_command_produces_single_undo_entry(world: EntryCountWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/undo_entry_count.feature",
     name = "InsertShape command produces single undo entry"
 )]
-fn insert_shape_command_produces_single_undo_entry(world: EntryCountWorld) {
-    let _ = world;
-}
+fn insert_shape_command_produces_single_undo_entry(world: EntryCountWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/undo_entry_count.feature",
     name = "DeleteShapes command produces single undo entry"
 )]
-fn delete_shapes_command_produces_single_undo_entry(world: EntryCountWorld) {
-    let _ = world;
-}
+fn delete_shapes_command_produces_single_undo_entry(world: EntryCountWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/undo_entry_count.feature",
     name = "ClosePath command produces single undo entry"
 )]
-fn close_path_command_produces_single_undo_entry(world: EntryCountWorld) {
-    let _ = world;
-}
+fn close_path_command_produces_single_undo_entry(world: EntryCountWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/undo_entry_count.feature",
     name = "InsertAnchor command produces single undo entry"
 )]
-fn insert_anchor_command_produces_single_undo_entry(world: EntryCountWorld) {
-    let _ = world;
-}
+fn insert_anchor_command_produces_single_undo_entry(world: EntryCountWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/undo_entry_count.feature",
     name = "SetSegmentKind command produces single undo entry"
 )]
-fn set_segment_kind_command_produces_single_undo_entry(world: EntryCountWorld) {
-    let _ = world;
-}
+fn set_segment_kind_command_produces_single_undo_entry(world: EntryCountWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/undo_entry_count.feature",
     name = "Reorder command produces single undo entry"
 )]
-fn reorder_command_produces_single_undo_entry(world: EntryCountWorld) {
-    let _ = world;
-}
+fn reorder_command_produces_single_undo_entry(world: EntryCountWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/undo_entry_count.feature",
     name = "SetStyle command produces single undo entry"
 )]
-fn set_style_command_produces_single_undo_entry(world: EntryCountWorld) {
-    let _ = world;
-}
+fn set_style_command_produces_single_undo_entry(world: EntryCountWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/undo_entry_count.feature",
@@ -183,9 +162,7 @@ fn multiple_sequential_commands_produce_matching_undo_count(world: EntryCountWor
     path = "tests/features/undo_entry_count.feature",
     name = "Grouped commands collapse to one undo entry"
 )]
-fn grouped_commands_collapse_to_one_undo_entry(world: EntryCountWorld) {
-    let _ = world;
-}
+fn grouped_commands_collapse_to_one_undo_entry(world: EntryCountWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/undo_entry_count.feature",

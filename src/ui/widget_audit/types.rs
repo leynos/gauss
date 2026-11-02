@@ -171,25 +171,17 @@ pub struct RequiredControl {
 impl RequiredControl {
     /// Returns the control's name.
     #[must_use]
-    pub const fn name(&self) -> &'static str {
-        self.name
-    }
+    pub const fn name(&self) -> &'static str { self.name }
 
     /// Returns the phase requiring this control.
     #[must_use]
-    pub const fn phase(&self) -> Phase {
-        self.phase
-    }
+    pub const fn phase(&self) -> Phase { self.phase }
 
     /// Returns the surface this control appears on.
     #[must_use]
-    pub const fn surface(&self) -> ControlSurface {
-        self.surface
-    }
+    pub const fn surface(&self) -> ControlSurface { self.surface }
 
     /// Checks if current shell evidence exists for this control.
     #[must_use]
-    pub const fn has_current_evidence(&self) -> bool {
-        self.current_evidence.exists
-    }
+    pub const fn has_current_evidence(&self) -> bool { self.current_evidence.exists }
 }

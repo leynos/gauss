@@ -1,10 +1,11 @@
 //! Step definitions for toggling a selected segment and undoing the change.
 
-use crate::{common, state};
 use gauss::model::{SegmentKind, SelItem, Shape, ShapeId, Vec2};
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 use rstest_bdd_macros::{given, then, when};
 use test_support::{TestSupportError, TestSupportResult, math};
+
+use crate::{common, state};
 
 struct ToggleSegmentState {
     start: Vec2,

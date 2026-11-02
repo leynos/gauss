@@ -1,9 +1,10 @@
 //! Canvas-drag scenario for handle movement tests.
 
-use super::canvas_drag_values::{CanvasDragValues, canvas_drag_values};
 use gauss::model::Vec2;
 use gpui::{Bounds, Pixels, Point, VisualTestContext};
 use test_support::TestSupportResult;
+
+use super::canvas_drag_values::{CanvasDragValues, canvas_drag_values};
 
 /// Canvas geometry and displacement used to exercise handle dragging.
 #[derive(Clone, Copy, Debug)]

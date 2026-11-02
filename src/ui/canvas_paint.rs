@@ -10,12 +10,27 @@
 )]
 
 use gpui::{
-    App, Bounds, Path, PathBuilder, Pixels, Styled as _, Window, canvas, fill, point, px, rgba,
+    App,
+    Bounds,
+    Path,
+    PathBuilder,
+    Pixels,
+    Styled as _,
+    Window,
+    canvas,
+    fill,
+    point,
+    px,
+    rgba,
 };
 
-use crate::model::{Document, Rgba as ModelRgba, SegmentKind, Selection, Shape, Viewport};
-use crate::ui::selection_overlays::{OverlayMarker, SelectionOverlays, compute_selection_overlays};
-use crate::ui::selection_utils::selected_shape_ids;
+use crate::{
+    model::{Document, Rgba as ModelRgba, SegmentKind, Selection, Shape, Viewport},
+    ui::{
+        selection_overlays::{OverlayMarker, SelectionOverlays, compute_selection_overlays},
+        selection_utils::selected_shape_ids,
+    },
+};
 
 #[derive(Clone, Debug)]
 struct CanvasState {
@@ -237,9 +252,7 @@ struct DashPattern {
 }
 
 impl DashPattern {
-    const fn new(dash: f32, gap: f32) -> Self {
-        Self { dash, gap }
-    }
+    const fn new(dash: f32, gap: f32) -> Self { Self { dash, gap } }
 }
 
 fn add_dashed_line(

@@ -1,12 +1,15 @@
 //! Step definitions for keybinding registration and action dispatch.
 
-use crate::{common, state};
-use gauss::model::{Document, SelItem, ShapeId, Vec2};
-use gauss::ui::{GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeselectAll, GpuiSelectAll};
+use gauss::{
+    model::{Document, SelItem, ShapeId, Vec2},
+    ui::{GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeselectAll, GpuiSelectAll},
+};
 use gauss_core::test_helpers::square_shape;
 use gpui::TestAppContext;
 use rstest_bdd_macros::{given, then, when};
 use test_support::TestSupportError;
+
+use crate::{common, state};
 
 enum KeybindingState {
     Registration,

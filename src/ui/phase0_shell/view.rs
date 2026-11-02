@@ -4,13 +4,17 @@ use std::path::Path;
 
 use gpui::{Window, div, prelude::*, white};
 
-use crate::i18n::MessageId;
-use crate::ui::action_bridge::context_for_tool_mode;
-
 use super::{
-    ExportSvgWebReady, OpenSvg, Phase0Shell, SaveSvg, ToggleEdgeMode,
-    chrome_palette::chrome_border, draw, file_dialogs,
+    ExportSvgWebReady,
+    OpenSvg,
+    Phase0Shell,
+    SaveSvg,
+    ToggleEdgeMode,
+    chrome_palette::chrome_border,
+    draw,
+    file_dialogs,
 };
+use crate::{i18n::MessageId, ui::action_bridge::context_for_tool_mode};
 
 /// File status variants for status line display.
 ///

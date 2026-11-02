@@ -34,15 +34,11 @@ impl Position {
 
     /// Return the x coordinate.
     #[must_use]
-    pub const fn x(&self) -> f32 {
-        self.x
-    }
+    pub const fn x(&self) -> f32 { self.x }
 
     /// Return the y coordinate.
     #[must_use]
-    pub const fn y(&self) -> f32 {
-        self.y
-    }
+    pub const fn y(&self) -> f32 { self.y }
 }
 
 impl std::hash::Hash for Position {
@@ -92,15 +88,11 @@ impl Size {
 
     /// Return the width.
     #[must_use]
-    pub const fn width(&self) -> f32 {
-        self.width
-    }
+    pub const fn width(&self) -> f32 { self.width }
 
     /// Return the height.
     #[must_use]
-    pub const fn height(&self) -> f32 {
-        self.height
-    }
+    pub const fn height(&self) -> f32 { self.height }
 }
 
 impl std::hash::Hash for Size {

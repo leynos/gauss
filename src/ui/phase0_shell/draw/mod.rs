@@ -5,19 +5,25 @@
 //! - Click appends anchors to an open path.
 //! - Clicking near the first anchor closes the path.
 //! - Each click is one undo step.
-//! - When in "Bezier (auto)" mode, we synthesise cubic handles using a
-//!   Catmull–Rom-to-cubic conversion.
-
-use crate::model::{
-    Command, EdgeMode, PenTool, PenToolActiveShape, PenToolClickInput, Tool, ToolCommand,
-    ToolInputEvent, UserError, Vec2,
-};
+//! - When in "Bezier (auto)" mode, we synthesise cubic handles using a Catmull–Rom-to-cubic
+//!   conversion.
 
 use super::Phase0Shell;
-
 // Re-export tool types for backward compatibility within the UI layer.
 // These are now defined in src/model/tool.rs for GPUI-independence.
 pub(crate) use crate::model::ToolMode;
+use crate::model::{
+    Command,
+    EdgeMode,
+    PenTool,
+    PenToolActiveShape,
+    PenToolClickInput,
+    Tool,
+    ToolCommand,
+    ToolInputEvent,
+    UserError,
+    Vec2,
+};
 
 /// Type alias for backward compatibility during migration.
 ///

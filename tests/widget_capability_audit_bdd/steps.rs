@@ -1,10 +1,16 @@
 //! Then step definitions for widget capability audit BDD tests.
 
-use crate::groups::{InclusionGroup, assert_includes_group};
-use crate::{AuditWorld, assert_each_control, assert_includes, assert_includes_substrings};
 use gauss::ui::widget_audit::ControlSurface;
 use rstest_bdd_macros::then;
 use test_support::TestSupportResult;
+
+use crate::{
+    AuditWorld,
+    assert_each_control,
+    assert_includes,
+    assert_includes_substrings,
+    groups::{InclusionGroup, assert_includes_group},
+};
 
 #[then("the inventory includes a Selection Tool")]
 pub(crate) fn then_includes_selection_tool(world: &AuditWorld) -> TestSupportResult<()> {

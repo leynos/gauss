@@ -10,7 +10,11 @@ mod history_bdd_support_open;
 mod scenario_state;
 
 use common::{
-    anchor_to_canvas_point, canvas_bounds, click_left_and_wait, draw_point, require_draw_shape,
+    anchor_to_canvas_point,
+    canvas_bounds,
+    click_left_and_wait,
+    draw_point,
+    require_draw_shape,
     simulate_escape,
 };
 use gauss::model::{Document, Selection};

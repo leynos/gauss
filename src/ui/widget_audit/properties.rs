@@ -1,8 +1,17 @@
 //! Properties panel control definitions.
 
 use super::{
-    AccessibilityRequirements, ActionCommandLinkage, AuditAction, ControlStates, ControlSurface,
-    CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
+    AccessibilityRequirements,
+    ActionCommandLinkage,
+    AuditAction,
+    ControlStates,
+    ControlSurface,
+    CurrentShellEvidence,
+    KeyboardRequirements,
+    Phase,
+    RequiredControl,
+    RequirementSource,
+    UserJob,
 };
 
 #[derive(Clone, Copy)]
