@@ -99,13 +99,17 @@ lint: ## Run Clippy with warnings denied
 typecheck:
 	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(CARGO) check $(CARGO_FLAGS)
 
+# `.rustfmt.toml` uses nightly-only options, so the formatter runs on a pinned
+# nightly that is installed beside the build toolchain rather than replacing it.
+RUSTFMT_TOOLCHAIN ?= nightly-2026-08-07
+
 fmt: ## Format Rust and Markdown sources
-	$(CARGO) fmt --all
+	$(CARGO) +$(RUSTFMT_TOOLCHAIN) fmt --all
 	$(MDTABLEFIX) --in-place $(MDTABLEFIX_SELECT) $(MDTABLEFIX_RULES)
 	$(MDLINT) --fix "**/*.md"
 
 check-fmt: ## Verify formatting
-	$(CARGO) fmt --all -- --check
+	$(CARGO) +$(RUSTFMT_TOOLCHAIN) fmt --all -- --check
 	$(MDTABLEFIX) --check $(MDTABLEFIX_SELECT) $(MDTABLEFIX_RULES)
 
 markdownlint: spelling check-integration-test-inventory ## Lint Markdown files and enforce repository spelling

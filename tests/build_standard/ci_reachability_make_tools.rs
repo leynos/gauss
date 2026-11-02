@@ -62,6 +62,7 @@ pub(super) fn classify_words(words: &[String], controlled: bool) -> Result<Route
         ),
         "markdownlint-cli2" => classify_markdownlint(arguments),
         "nixie" => exact_non_suite(arguments, &["--no-sandbox"], "nixie"),
+        "rustup" => classify_rustup(arguments),
         "apt-get" => classify_apt(arguments),
         "sudo" => classify_sudo(arguments),
         other => Err(format!("unresolved executable route: {other}")),
@@ -105,26 +106,67 @@ pub(super) fn classify_workspace_words(
     Ok(route)
 }
 
+/// The pinned formatter toolchain that `make fmt` and `make check-fmt` select.
+pub(super) const RUSTFMT_TOOLCHAIN: &str = "nightly-2026-08-07";
+
 /// Separates suite invocations from reviewed Cargo build, lint and documentation commands.
 fn classify_cargo(arguments: &[String]) -> Result<Route, String> {
-    match arguments.first().map(String::as_str) {
-        Some("nextest") if arguments.get(1).is_some_and(|word| word == "--version") => {
-            if arguments.len() == 2 {
+    let subcommand_arguments = after_pinned_formatter_toolchain(arguments);
+    match subcommand_arguments.first().map(String::as_str) {
+        Some("nextest")
+            if subcommand_arguments
+                .get(1)
+                .is_some_and(|word| word == "--version") =>
+        {
+            if subcommand_arguments.len() == 2 {
                 Ok(Route::NonSuite)
             } else {
                 Err("unresolved Nextest probe arguments".to_owned())
             }
         }
-        Some("nextest") if arguments.get(1).is_some_and(|word| word == "run") => {
-            executing_suite(arguments.get(2..).map_or(&[], |rest| rest))
+        Some("nextest")
+            if subcommand_arguments
+                .get(1)
+                .is_some_and(|word| word == "run") =>
+        {
+            executing_suite(subcommand_arguments.get(2..).map_or(&[], |rest| rest))
         }
-        Some("test") => executing_suite(arguments.get(1..).map_or(&[], |rest| rest)),
+        Some("test") => executing_suite(subcommand_arguments.get(1..).map_or(&[], |rest| rest)),
         Some("build" | "check" | "clean" | "clippy" | "doc" | "fmt" | "metadata" | "package") => {
             Ok(Route::NonSuite)
         }
         Some(other) => Err(format!("unresolved Cargo subcommand: {other}")),
         None => Err("Cargo executable has no subcommand".to_owned()),
     }
+}
+
+/// Strips only the exact pinned formatter toolchain, leaving every other prefix unresolved.
+///
+/// For example, `+nightly-2026-08-07 fmt` reaches the `fmt` route, while
+/// `+nightly fmt` still fails as an unresolved Cargo subcommand.
+fn after_pinned_formatter_toolchain(arguments: &[String]) -> &[String] {
+    let pinned = format!("+{RUSTFMT_TOOLCHAIN}");
+    match arguments.split_first() {
+        Some((toolchain, rest)) if *toolchain == pinned => rest,
+        _ => arguments,
+    }
+}
+
+/// Accepts only the exact pinned formatter installation performed by CI.
+fn classify_rustup(arguments: &[String]) -> Result<Route, String> {
+    exact_non_suite(
+        arguments,
+        &[
+            "toolchain",
+            "install",
+            RUSTFMT_TOOLCHAIN,
+            "--profile",
+            "minimal",
+            "--component",
+            "rustfmt",
+        ],
+        "rustup",
+    )
 }
 
 /// Rejects Cargo switches that print or compile tests without executing them.

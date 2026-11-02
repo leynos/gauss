@@ -1,4 +1,5 @@
-//! Specifies reviewed Python identities and the historical Whitaker source gap.
+//! Specifies reviewed Python identities, the historical Whitaker source gap, and
+//! the exact Cargo and `rustup` routes added for the pinned formatter.
 
 use rstest::rstest;
 
@@ -139,6 +140,103 @@ fn reviewed_python_source_content_drift_is_a_specific_gap() {
         4,
         "the reviewed source boundary is finite"
     );
+}
+
+/// Copies a reviewed command into the owned words the classifier consumes.
+fn owned_words(command: &[&str]) -> Vec<String> {
+    command.iter().map(|word| (*word).to_owned()).collect()
+}
+
+/// The formatter toolchain prefix is exact: only the pinned nightly is stripped.
+///
+/// For example, `+nightly-2026-08-07 nextest run` reaches the suite route, while
+/// `+nightly fmt` remains an unresolved Cargo subcommand.
+#[test]
+fn cargo_accepts_only_the_pinned_formatter_toolchain_prefix() {
+    let pinned_suite = ["cargo", "+nightly-2026-08-07", "nextest", "run"];
+    assert_eq!(
+        classify_words(&owned_words(&pinned_suite), false),
+        Ok(Route::Suite),
+        "the pinned prefix must not hide a suite invocation"
+    );
+
+    let pinned_format = [
+        "cargo",
+        "+nightly-2026-08-07",
+        "fmt",
+        "--all",
+        "--",
+        "--check",
+    ];
+    assert_eq!(
+        classify_words(&owned_words(&pinned_format), false),
+        Ok(Route::NonSuite)
+    );
+
+    for prefix in ["+nightly", "+stable", "+nightly-2026-08-06"] {
+        let words = owned_words(&["cargo", prefix, "fmt", "--all"]);
+        assert_eq!(
+            classify_words(&words, false),
+            Err(format!("unresolved Cargo subcommand: {prefix}")),
+            "only the pinned formatter toolchain may be stripped: {prefix}"
+        );
+    }
+}
+
+/// `rustup` exposes one reviewed installation route and nothing else.
+///
+/// For example, adding `--default` changes the active toolchain, so it must fail
+/// rather than being treated as a formatter installation.
+#[test]
+fn rustup_accepts_only_the_pinned_formatter_install() {
+    let install = [
+        "rustup",
+        "toolchain",
+        "install",
+        "nightly-2026-08-07",
+        "--profile",
+        "minimal",
+        "--component",
+        "rustfmt",
+    ];
+    assert_eq!(
+        classify_words(&owned_words(&install), false),
+        Ok(Route::NonSuite)
+    );
+
+    let mutations: &[&[&str]] = &[
+        &["rustup", "toolchain", "install", "nightly"],
+        &["rustup", "toolchain", "install", "stable"],
+        &["rustup", "toolchain", "install", "nightly-2026-08-07"],
+        &[
+            "rustup",
+            "toolchain",
+            "install",
+            "nightly-2026-08-07",
+            "--profile",
+            "minimal",
+        ],
+        &[
+            "rustup",
+            "toolchain",
+            "install",
+            "nightly-2026-08-07",
+            "--profile",
+            "minimal",
+            "--component",
+            "rustfmt",
+            "--default",
+        ],
+        &["rustup", "update"],
+        &["rustup", "default", "nightly-2026-08-07"],
+    ];
+    for command in mutations {
+        assert_eq!(
+            classify_words(&owned_words(command), false),
+            Err("unresolved rustup arguments".to_owned()),
+            "only the reviewed formatter install is admissible: {command:?}"
+        );
+    }
 }
 
 /// Accepts only the complete lowercase hexadecimal form emitted by Git.
