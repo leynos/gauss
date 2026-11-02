@@ -1,0 +1,9 @@
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_NOTE: "release #42"
+    steps:
+      - name: Echo a quoted hash and expression
+        run: echo "note #42; ${{ github.ref }}"

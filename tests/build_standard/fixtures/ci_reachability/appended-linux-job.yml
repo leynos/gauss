@@ -1,0 +1,13 @@
+on: push
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: leynos/shared-actions/.github/actions/setup-rust@6e99f225cb06684f9e6f89b63a7ca4a04095c067
+        with:
+          install-mold: true
+      - run: cargo nextest run --workspace
+  added:
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - run: cargo nextest run --workspace

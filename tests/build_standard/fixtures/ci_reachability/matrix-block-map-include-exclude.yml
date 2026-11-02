@@ -1,0 +1,17 @@
+on: pull_request
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        include:
+          - os: ubuntu-latest
+            profile: debug
+        exclude:
+          - os: macos-latest
+    steps:
+      - run: make test-ci
