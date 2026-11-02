@@ -22,6 +22,8 @@ mod process;
 /// Validates controlled environment inputs before child launch.
 mod process_inputs;
 mod protocol;
+/// Configures fake `rustup` responses per subcommand call ordinal.
+mod rustup;
 mod support;
 
 use model::{
