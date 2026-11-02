@@ -3,12 +3,19 @@
 use super::SvgImportError;
 use crate::model::{Anchor, PathGeom, SegmentKind, Vec2};
 
+/// Lexical token produced while scanning an SVG path-data string.
 #[derive(Clone, Debug, PartialEq)]
 enum PathToken {
+    /// A path command letter such as `M`, `L`, `C`, or `Z`.
     Command(char),
+    /// A numeric coordinate or control-point component.
     Number(f32),
 }
 
+/// Parse an SVG `d` attribute into path geometry.
+///
+/// Only the absolute command subset emitted by Gauss export is accepted;
+/// relative commands and unknown letters yield an error.
 pub(super) fn parse_path_data(d: &str) -> Result<PathGeom, SvgImportError> {
     let tokens = tokenize_path_data(d)?;
     let mut it = tokens.into_iter().peekable();
@@ -33,6 +40,7 @@ pub(super) fn parse_path_data(d: &str) -> Result<PathGeom, SvgImportError> {
     Ok(geom)
 }
 
+/// Consume the next two number tokens and pair them as a 2D point.
 fn next_vec2<I>(it: &mut I) -> Result<Vec2, SvgImportError>
 where
     I: Iterator<Item = PathToken>,
@@ -42,6 +50,7 @@ where
     Ok(Vec2::new(x, y))
 }
 
+/// Handle `M`: append a fresh anchor with no outgoing handles.
 fn parse_move_command<I>(it: &mut I, geom: &mut PathGeom) -> Result<(), SvgImportError>
 where
     I: Iterator<Item = PathToken>,
@@ -50,6 +59,7 @@ where
     Ok(())
 }
 
+/// Handle `L`: record a line segment and append its end anchor.
 fn parse_line_command<I>(it: &mut I, geom: &mut PathGeom) -> Result<SegmentKind, SvgImportError>
 where
     I: Iterator<Item = PathToken>,
@@ -59,6 +69,10 @@ where
     Ok(SegmentKind::Line)
 }
 
+/// Handle `C`: attach the outgoing handle to the previous anchor and append a
+/// cubic segment ending at a new anchor carrying the incoming handle.
+///
+/// Fails when no previous anchor exists to receive the outgoing handle.
 fn parse_cubic_command<I>(it: &mut I, geom: &mut PathGeom) -> Result<SegmentKind, SvgImportError>
 where
     I: Iterator<Item = PathToken>,
@@ -81,11 +95,15 @@ where
     Ok(SegmentKind::Cubic)
 }
 
+/// Handle `Z`: mark the path closed, remembering the segment type to close with.
+///
+/// A path closed before any segment defaults to a line-closing segment.
 fn close_path(geom: &mut PathGeom, last_segment: Option<SegmentKind>) {
     geom.closed = true;
     geom.closing_segment = last_segment.unwrap_or(SegmentKind::Line);
 }
 
+/// Consume the next token, requiring it to be a number.
 fn next_number<I>(it: &mut I) -> Result<f32, SvgImportError>
 where
     I: Iterator<Item = PathToken>,
@@ -96,6 +114,7 @@ where
     }
 }
 
+/// Parse and emit any buffered number text, then clear the buffer.
 fn flush_number(
     number_buf: &mut String,
     tokens: &mut Vec<PathToken>,
@@ -112,18 +131,26 @@ fn flush_number(
     Ok(())
 }
 
+/// Report whether a character separates path tokens.
 const fn is_separator(ch: char) -> bool { ch.is_ascii_whitespace() || ch == ',' }
 
 // This importer currently supports the absolute command subset emitted by
 // Gauss export (`M`, `L`, `C`, `Z`) and rejects relative commands.
+/// Report whether a character is a supported path command letter.
 const fn is_command(ch: char) -> bool { matches!(ch, 'M' | 'L' | 'C' | 'Z') }
 
+/// Report whether a character may appear within a number token.
 const fn is_number_char(ch: char) -> bool { ch.is_ascii_digit() || matches!(ch, '-' | '+' | '.') }
 
+/// Report whether a sign starts a new number, as in `10-5`, rather than
+/// continuing the buffered one.
 const fn is_implicit_number_separator(ch: char, number_buf: &str) -> bool {
     !number_buf.is_empty() && matches!(ch, '-' | '+')
 }
 
+/// Split path-data text into command and number tokens.
+///
+/// Numbers may be separated by whitespace, commas, or a leading sign.
 fn tokenize_path_data(d: &str) -> Result<Vec<PathToken>, SvgImportError> {
     let mut tokens = Vec::new();
     let mut number_buf = String::new();

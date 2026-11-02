@@ -2,6 +2,7 @@
 
 use crate::model::{SelItem, Selection, ShapeId};
 
+/// Iterate the shape identifiers from a selection, ignoring other item kinds.
 pub(crate) fn selected_shape_ids(selection: &Selection) -> impl Iterator<Item = ShapeId> + '_ {
     selection.items.iter().filter_map(|item| match item {
         SelItem::Shape(id) => Some(*id),

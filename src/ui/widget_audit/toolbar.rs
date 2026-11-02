@@ -34,20 +34,33 @@ use super::types::{
 /// customization for tools with unique state requirements.
 #[derive(Clone, Copy)]
 struct ToolbarControlSpec {
+    /// Display name of the tool.
     name: &'static str,
+    /// Roadmap phase that requires the tool.
     phase: Phase,
+    /// User job the tool supports.
     description: &'static str,
+    /// Single-key shortcut that activates the tool.
     shortcut: &'static str,
+    /// Interaction states the tool must expose.
     states: &'static [&'static str],
+    /// Notes on how activation must be announced.
     a11y_notes: &'static str,
+    /// Action emitted when the tool is activated.
     action_name: &'static str,
+    /// Roadmap section requiring the tool.
     roadmap_ref: &'static str,
+    /// Feature plan that schedules the tool.
     feature_plan: &'static str,
+    /// Whether the current shell already provides this tool.
     evidence_exists: bool,
+    /// Path to the shell implementation; required when `evidence_exists`.
     evidence_path: Option<&'static str>,
+    /// Current evidence status for this tool.
     evidence_notes: &'static str,
 }
 
+/// Builds a Phase 1 or Phase 2 toolbar entry from its specification.
 fn make_toolbar_tool(spec: ToolbarControlSpec) -> RequiredControl {
     RequiredControl {
         name: spec.name,
@@ -95,6 +108,7 @@ pub(super) fn controls() -> Vec<RequiredControl> {
     TOOL_SPECS.iter().copied().map(make_toolbar_tool).collect()
 }
 
+/// Specifications for every toolbar tool, in display order.
 const TOOL_SPECS: &[ToolbarControlSpec] = &[
     ToolbarControlSpec {
         name: "Selection Tool",

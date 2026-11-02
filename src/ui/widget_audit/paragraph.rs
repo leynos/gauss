@@ -25,6 +25,7 @@ pub(super) fn controls() -> Vec<RequiredControl> {
     ]
 }
 
+/// Builds the field entry for paragraph spacing before and after text.
 fn paragraph_spacing_field() -> RequiredControl {
     RequiredControl {
         name: "Paragraph Spacing Field",
@@ -64,6 +65,7 @@ fn paragraph_spacing_field() -> RequiredControl {
     }
 }
 
+/// Builds the field entry for leading (line height).
 fn line_spacing_field() -> RequiredControl {
     RequiredControl {
         name: "Line Spacing Field",
@@ -103,6 +105,7 @@ fn line_spacing_field() -> RequiredControl {
     }
 }
 
+/// Builds the entry covering left, right, and first-line indent settings.
 fn indentation_controls() -> RequiredControl {
     RequiredControl {
         name: "Indentation Controls",

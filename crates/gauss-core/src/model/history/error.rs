@@ -50,6 +50,7 @@ pub enum HistoryError {
     },
 }
 
+/// Direction a command is replayed in, selecting the matching error variant.
 #[derive(Clone, Copy)]
 pub(super) enum ReplayDirection {
     /// Build an error for a failed reverse application.

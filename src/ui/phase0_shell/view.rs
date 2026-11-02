@@ -23,17 +23,35 @@ use crate::{i18n::MessageId, ui::action_bridge::context_for_tool_mode};
 #[derive(Debug, Clone, PartialEq)]
 pub(super) enum FileStatus<'a> {
     /// History operation error (highest priority).
-    HistoryError { error: &'a str },
+    HistoryError {
+        /// Error text reported by the history operation.
+        error: &'a str,
+    },
     /// Generic shell operation error.
-    ShellError { error: &'a str },
+    ShellError {
+        /// Error text reported by the shell.
+        error: &'a str,
+    },
     /// Save operation failed.
-    SaveFailed { error: &'a str },
+    SaveFailed {
+        /// Error text reported by the save pipeline.
+        error: &'a str,
+    },
     /// Open operation failed.
-    OpenFailed { error: &'a str },
+    OpenFailed {
+        /// Error text reported by the open pipeline.
+        error: &'a str,
+    },
     /// File was saved successfully.
-    Saved { path: &'a Path },
+    Saved {
+        /// Path the document was written to.
+        path: &'a Path,
+    },
     /// File was opened successfully.
-    Opened { path: &'a Path },
+    Opened {
+        /// Path the document was read from.
+        path: &'a Path,
+    },
 }
 
 impl FileStatus<'_> {
@@ -85,6 +103,7 @@ impl FileStatus<'_> {
     }
 }
 
+/// Look up a localized status template, falling back to `fallback` on failure.
 fn lookup_template(shell: &Phase0Shell, id: &MessageId, fallback: &str) -> String {
     shell
         .localizer
@@ -134,6 +153,7 @@ impl Phase0Shell {
         }
     }
 
+    /// Return the localized label for the active tool mode.
     fn localized_tool_mode_label(&self) -> String {
         super::i18n_helpers::localized_tool_mode_label(
             self.state.tool_mode,
@@ -142,6 +162,7 @@ impl Phase0Shell {
         )
     }
 
+    /// Return the localized label for the active edge mode.
     fn localized_edge_mode_label(&self) -> String {
         super::i18n_helpers::localized_edge_mode_label(
             self.state.edge_mode,
@@ -231,6 +252,7 @@ impl Phase0Shell {
             ))
     }
 
+    /// Forward a canvas mouse-down to the shell and repaint on change.
     fn canvas_mouse_down(
         shell: &mut Self,
         event: &gpui::MouseDownEvent,
@@ -242,6 +264,7 @@ impl Phase0Shell {
         }
     }
 
+    /// Forward a navigation press, repainting and stopping propagation on change.
     fn canvas_navigate_mouse_down(
         shell: &mut Self,
         event: &gpui::MouseDownEvent,
@@ -254,6 +277,7 @@ impl Phase0Shell {
         }
     }
 
+    /// Forward a canvas mouse-move to the shell and repaint on change.
     fn canvas_mouse_move(
         shell: &mut Self,
         event: &gpui::MouseMoveEvent,
@@ -265,6 +289,7 @@ impl Phase0Shell {
         }
     }
 
+    /// Forward a canvas mouse-up to the shell and repaint on change.
     fn canvas_mouse_up(
         shell: &mut Self,
         event: &gpui::MouseUpEvent,
@@ -276,6 +301,7 @@ impl Phase0Shell {
         }
     }
 
+    /// Forward a canvas click, repainting and stopping propagation on change.
     fn canvas_click(
         shell: &mut Self,
         event: &gpui::ClickEvent,
@@ -288,6 +314,7 @@ impl Phase0Shell {
         }
     }
 
+    /// Apply scroll-wheel zoom or pan and repaint on change.
     fn canvas_scroll_wheel(
         shell: &mut Self,
         event: &gpui::ScrollWheelEvent,

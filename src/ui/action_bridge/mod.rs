@@ -149,19 +149,33 @@ pub struct GpuiToggleSegmentKind;
 /// enabling batch registration with `app.bind_keys()`.
 #[derive(Default)]
 struct CollectedBindings {
+    /// Bindings for deleting the current selection.
     delete_selection: Vec<KeyBinding>,
+    /// Bindings for selecting every shape in the document.
     select_all: Vec<KeyBinding>,
+    /// Bindings for clearing the current selection.
     deselect_all: Vec<KeyBinding>,
+    /// Bindings for switching to the pen tool.
     activate_pen_tool: Vec<KeyBinding>,
+    /// Bindings for switching to the select tool.
     activate_select_tool: Vec<KeyBinding>,
+    /// Bindings for undoing document edits.
     undo: Vec<KeyBinding>,
+    /// Bindings for redoing document edits.
     redo: Vec<KeyBinding>,
+    /// Bindings for undoing selection-only changes.
     selection_undo: Vec<KeyBinding>,
+    /// Bindings for redoing selection-only changes.
     selection_redo: Vec<KeyBinding>,
+    /// Bindings for inserting an anchor on the selected segment.
     insert_anchor_on_segment: Vec<KeyBinding>,
+    /// Bindings for deleting selected anchors.
     delete_selected_anchors: Vec<KeyBinding>,
+    /// Bindings for raising the selection in the z-order.
     raise_selection: Vec<KeyBinding>,
+    /// Bindings for lowering the selection in the z-order.
     lower_selection: Vec<KeyBinding>,
+    /// Bindings for toggling the selected segment's kind.
     toggle_segment_kind: Vec<KeyBinding>,
 }
 

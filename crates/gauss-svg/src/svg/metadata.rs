@@ -14,6 +14,7 @@ pub const GAUSS_METADATA_PREFIX: &str = "gauss";
 /// Canonical namespace URI for Gauss metadata.
 pub const GAUSS_METADATA_NAMESPACE: &str = "https://gauss.dev/ns/metadata/1";
 
+/// Lazily built canonical `xmlns:gauss` declaration returned to callers.
 static GAUSS_NAMESPACE_DECLARATION: LazyLock<String> =
     LazyLock::new(|| format!(r#"xmlns:{GAUSS_METADATA_PREFIX}="{GAUSS_METADATA_NAMESPACE}""#));
 
@@ -90,6 +91,7 @@ pub fn validate_namespace_policy(svg: &str) -> Result<(), NamespacePolicyError> 
     Ok(())
 }
 
+/// Report whether an element, or one of its attributes, uses the Gauss namespace.
 fn node_uses_gauss_namespace(node: roxmltree::Node<'_, '_>) -> bool {
     node.is_element()
         && (node.tag_name().namespace() == Some(GAUSS_METADATA_NAMESPACE)
@@ -98,6 +100,9 @@ fn node_uses_gauss_namespace(node: roxmltree::Node<'_, '_>) -> bool {
                 .any(|attribute| attribute.namespace() == Some(GAUSS_METADATA_NAMESPACE)))
 }
 
+/// Return the first `gauss` prefix binding that does not use the canonical URI.
+///
+/// Checks every node so descendant rebindings are caught, not just the root.
 fn first_non_canonical_gauss_binding(document: &roxmltree::Document<'_>) -> Option<String> {
     document
         .descendants()

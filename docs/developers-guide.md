@@ -79,6 +79,40 @@ policy.
 `make test`, `make test-ci` and `make test-quick`. It does not affect the
 Nextest availability probe, the `cargo test` fallback or doctests.
 
+## Lint baseline
+
+The authoritative lint configuration lives in the root `Cargo.toml`, in the
+`[workspace.lints.clippy]`, `[workspace.lints.rust]` and
+`[workspace.lints.rustdoc]` tables. Every workspace member inherits them with:
+
+```toml
+[lints]
+workspace = true
+```
+
+Do not add a member-local `[lints.*]` table unless the member must be stricter
+than the workspace; state the reason in the manifest. The thresholds that
+Clippy cannot express as lint levels live in `clippy.toml`: cognitive
+complexity 9, arguments 4, function length 70 and nesting 4. It also records
+the environment-injection policy: direct `std::env` access is a disallowed
+method, so code takes an injected reader instead.
+
+The baseline is the estate Clippy `pedantic` group plus the restriction,
+nursery and error-handling rules listed in `Cargo.toml`. Local extensions are
+limited to `unexpected_cfgs` for the coverage `cfg` values and the
+`disallowed-methods` list in `clippy.toml`.
+
+Fix a finding at its source. When a suppression is genuinely required, use
+`#[expect(lint, reason = "...")]` scoped to the smallest item that needs it;
+`allow_attributes` denies bare `#[allow]`, and an unfulfilled expectation fails
+the build. Fixtures and helpers outside a test body do not inherit
+`allow-expect-in-tests`, so they return `Result` rather than panicking.
+
+The toolchain components are installed from `rust-toolchain.toml`: `rustfmt`,
+`clippy` and `rust-analyzer` for the pinned stable compiler. Formatting
+additionally uses the pinned nightly formatter named by `RUSTFMT_TOOLCHAIN` in
+the `Makefile`.
+
 ## Colour API migration
 
 The paint type and action variants use British spelling in Rust. Update crate

@@ -25,24 +25,34 @@ use crate::{
     },
 };
 
+/// Channel that yields the path chosen by a save prompt.
 type SavePathPromptReceiver = oneshot::Receiver<gpui::Result<Option<PathBuf>>>;
+/// Channel that yields the paths chosen by an open prompt.
 type OpenPathsPromptReceiver = oneshot::Receiver<gpui::Result<Option<Vec<PathBuf>>>>;
+/// Channel that yields a single path from the test-only new-path prompt.
 #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
 type OpenPathPromptReceiver = SavePathPromptReceiver;
 
+/// Pending open prompt, whose shape depends on the active prompt mode.
 enum OpenPromptReceiver {
+    /// Pending multi-path picker used by the native prompt.
     Paths(OpenPathsPromptReceiver),
+    /// Pending new-path prompt used by the test-only mode.
     #[cfg(any(test, feature = "test-support", coverage, coverage_nightly))]
     NewPath(OpenPathPromptReceiver),
 }
 
+/// Which SVG export variant a save request should produce.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum SaveIntent {
+    /// Export preserving Gauss metadata for later reload.
     PreserveMetadata,
+    /// Export a web-ready SVG with resources inlined.
     WebReady,
 }
 
 impl SaveIntent {
+    /// Default file name offered for this export variant.
     const fn suggested_name(self) -> &'static str {
         match self {
             Self::PreserveMetadata => "gauss.svg",
@@ -51,6 +61,7 @@ impl SaveIntent {
     }
 }
 
+/// Strategy used to prompt for a document to open.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum OpenPromptMode {
     /// Use the platform file picker for selecting existing paths.
@@ -67,6 +78,7 @@ pub(super) enum OpenPromptMode {
 }
 
 impl OpenPromptMode {
+    /// Issue the prompt for this mode and return its pending receiver.
     fn prompt(self, cx: &mut Context<Phase0Shell>) -> OpenPromptReceiver {
         match self {
             Self::Native => OpenPromptReceiver::Paths(cx.prompt_for_paths(PathPromptOptions {
@@ -83,6 +95,7 @@ impl OpenPromptMode {
     }
 }
 
+/// Show an open prompt and load the chosen document once the user responds.
 pub(super) fn request_open(
     mode: OpenPromptMode,
     window: &mut Window,
@@ -100,14 +113,17 @@ pub(super) fn request_open(
     .detach();
 }
 
+/// Show a save prompt for the metadata-preserving SVG export.
 pub(super) fn request_save(window: &mut Window, cx: &mut Context<Phase0Shell>) {
     request_save_for_intent(window, cx, SaveIntent::PreserveMetadata);
 }
 
+/// Show a save prompt for the web-ready SVG export.
 pub(super) fn request_web_ready_export(window: &mut Window, cx: &mut Context<Phase0Shell>) {
     request_save_for_intent(window, cx, SaveIntent::WebReady);
 }
 
+/// Prompt for a destination path and start the export for `intent`.
 fn request_save_for_intent(window: &mut Window, cx: &mut Context<Phase0Shell>, intent: SaveIntent) {
     // Use a trivial initial directory for Phase 0. Once we have document state,
     // this can be "current document directory" or similar.
@@ -123,16 +139,19 @@ fn request_save_for_intent(window: &mut Window, cx: &mut Context<Phase0Shell>, i
     .detach();
 }
 
+/// Await a save prompt, returning `None` on cancellation or prompt failure.
 async fn receive_save_path(rx: SavePathPromptReceiver) -> Option<PathBuf> {
     let prompt_result = rx.await.ok()?;
     prompt_result.ok()?
 }
 
+/// Await an open prompt, returning `None` on cancellation or prompt failure.
 async fn receive_open_paths(rx: OpenPathsPromptReceiver) -> Option<Vec<PathBuf>> {
     let prompt_result = rx.await.ok()?;
     prompt_result.ok()?
 }
 
+/// Await an open prompt and return the first chosen path, if any.
 async fn receive_open_path(receiver: OpenPromptReceiver) -> Option<PathBuf> {
     match receiver {
         OpenPromptReceiver::Paths(paths_rx) => {
@@ -143,6 +162,7 @@ async fn receive_open_path(receiver: OpenPromptReceiver) -> Option<PathBuf> {
     }
 }
 
+/// Export the document to the chosen path and record the outcome on the shell.
 async fn apply_save_path(
     this: WeakEntity<Phase0Shell>,
     mut cx: AsyncWindowContext,
@@ -188,6 +208,7 @@ async fn apply_save_path(
     });
 }
 
+/// Load the chosen document and reset history, selection, and transient state.
 async fn apply_open_prompt(
     this: WeakEntity<Phase0Shell>,
     mut cx: AsyncWindowContext,

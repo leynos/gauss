@@ -44,6 +44,7 @@ pub use types::{
 
 /// Complete inventory of required controls for Phase 1-2.
 pub struct ControlInventory {
+    /// Every control required by the Phase 1-2 roadmap, in module order.
     controls: Vec<RequiredControl>,
 }
 

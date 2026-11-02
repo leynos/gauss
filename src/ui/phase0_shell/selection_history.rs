@@ -9,15 +9,21 @@ use gpui_component::history::HistoryItem;
 use super::Phase0Shell;
 use crate::model::{SelectToolState, Selection};
 
+/// A single selection transition recorded for undo and redo.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct SelectionChange {
+    /// Selection before the change.
     pub(super) from: Selection,
+    /// Selection after the change.
     pub(super) to: Selection,
 }
 
+/// History entry wrapping a selection change with its group version.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct SelectionHistoryItem {
+    /// Version assigned by the history container; zero until grouped.
     version: usize,
+    /// Selection transition this entry replays.
     pub(super) change: SelectionChange,
 }
 
@@ -28,10 +34,12 @@ impl HistoryItem for SelectionHistoryItem {
 }
 
 impl SelectionHistoryItem {
+    /// Create an unversioned history item for `change`.
     pub(super) const fn new(change: SelectionChange) -> Self { Self { version: 0, change } }
 }
 
 impl Phase0Shell {
+    /// Record a selection transition, ignoring no-op changes.
     pub(super) fn record_selection_change(&mut self, from: Selection, to: Selection) {
         if from == to {
             return;
@@ -41,6 +49,9 @@ impl Phase0Shell {
             .push(SelectionHistoryItem::new(SelectionChange { from, to }));
     }
 
+    /// Restore the selection preceding the last recorded change.
+    ///
+    /// Resets the select tool to idle; does nothing when history is empty.
     pub(super) fn undo_selection(&mut self) {
         let Some(group) = self.selection_history.undo() else {
             return;
@@ -53,6 +64,9 @@ impl Phase0Shell {
         self.select_tool_state = SelectToolState::Idle;
     }
 
+    /// Reapply the selection following the last undone change.
+    ///
+    /// Resets the select tool to idle; does nothing when nothing is undone.
     pub(super) fn redo_selection(&mut self) {
         let Some(group) = self.selection_history.redo() else {
             return;

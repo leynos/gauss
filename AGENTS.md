@@ -121,27 +121,35 @@ project:
   - `make check-fmt` executes:
 
     ```sh
-    cargo fmt --workspace -- --check
+    cargo +nightly-2026-08-07 fmt --all -- --check
     ```
 
     validating formatting across the entire workspace without modifying files.
+    The nightly formatter is pinned by `RUSTFMT_TOOLCHAIN` because
+    `.rustfmt.toml` uses unstable options.
   - `make lint` executes:
 
     ```sh
+    cargo doc --workspace --no-deps
     cargo clippy --workspace --all-targets --all-features -- -D warnings
+    whitaker --all -- --workspace --all-targets --all-features
     ```
 
-    linting every target with all features enabled and denying all Clippy
-    warnings.
+    building the documentation, linting every target with all features
+    enabled, and applying the Whitaker Dylint rules.
   - `make test` executes:
 
     ```sh
-    cargo test --workspace
+    cargo nextest run --profile default
+    cargo test --workspace --doc --all-features
     ```
 
-    running the full workspace test suite. Use `make fmt`
-    (`cargo fmt --workspace`) to apply formatting fixes reported by the
-    formatter check.
+    running the full workspace test suite and the doctests. Use `make fmt`
+    (`cargo +nightly-2026-08-07 fmt --all`) to apply formatting fixes reported
+    by the formatter check.
+- The authoritative lint tables, thresholds and suppression policy are
+  described in the [Lint baseline](docs/developers-guide.md#lint-baseline)
+  section of the developer's guide.
 - Clippy warnings MUST be disallowed.
 - Fix any warnings emitted during tests in the code itself rather than
   silencing them.

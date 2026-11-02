@@ -28,6 +28,10 @@ use crate::model::{
 const HIT_TOLERANCE_PX: f32 = 4.0;
 
 impl Phase0Shell {
+    /// Route a left-button canvas press to the select tool.
+    ///
+    /// Ignored outside manipulate mode or for non-left buttons; returns
+    /// whether the resulting commands changed the document.
     pub(super) fn handle_canvas_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
         if self.state.tool_mode != ToolMode::Manipulate {
             return false;
@@ -61,6 +65,10 @@ impl Phase0Shell {
         self.apply_tool_commands(transition.commands)
     }
 
+    /// Update hover state and forward drag movement to the select tool.
+    ///
+    /// Hover is skipped while the left button is held, so dragging does not
+    /// churn the hover cache. Returns whether hover or document state changed.
     pub(super) fn handle_canvas_mouse_move(&mut self, event: &MouseMoveEvent) -> bool {
         let did_update_hover = event.pressed_button != Some(MouseButton::Left)
             && self.update_hover_hit(event.position);
@@ -80,6 +88,9 @@ impl Phase0Shell {
         did_update_hover || did_apply_pointer_move
     }
 
+    /// Complete a select-tool drag on left-button release.
+    ///
+    /// Returns whether the resulting commands changed the document.
     pub(super) fn handle_canvas_mouse_up(&mut self, event: &MouseUpEvent) -> bool {
         let select_tool_state = self.select_tool_state.clone();
         self.handle_pointer_event(
@@ -95,10 +106,14 @@ impl Phase0Shell {
         )
     }
 
+    /// Build a hit-test index over the current document.
     const fn hit_test_index(&self) -> HitTestIndex<'_> {
         HitTestIndex::from_document(&self.state.document)
     }
 
+    /// Recompute the hovered item, reusing the cache when it is still valid.
+    ///
+    /// Returns whether the hovered item changed.
     fn update_hover_hit(&mut self, position: gpui::Point<Pixels>) -> bool {
         if self.state.tool_mode != ToolMode::Manipulate {
             return false;
@@ -137,6 +152,10 @@ impl Phase0Shell {
         true
     }
 
+    /// Translate a pointer event into a select-tool transition and apply it.
+    ///
+    /// `create_event` receives the world-space cursor. Returns `false` outside
+    /// manipulate mode or when the button is not valid.
     fn handle_pointer_event<F>(
         &mut self,
         position: gpui::Point<Pixels>,
@@ -166,6 +185,7 @@ impl Phase0Shell {
     }
 }
 
+/// Convert a screen-space pointer position into world coordinates.
 fn cursor_world(viewport: &crate::model::Viewport, position: gpui::Point<Pixels>) -> Vec2 {
     let cursor_screen = Vec2::new(f32::from(position.x), f32::from(position.y));
     viewport.screen_to_world(cursor_screen)

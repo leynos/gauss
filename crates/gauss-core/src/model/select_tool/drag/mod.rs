@@ -131,6 +131,7 @@ pub struct HandleDragState {
     pub original_handle: Vec2,
 }
 
+/// Inputs needed to begin a drag from a pointer hit.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct SelectDragStartParams {
     /// Cursor position that anchors the gesture's movement delta.

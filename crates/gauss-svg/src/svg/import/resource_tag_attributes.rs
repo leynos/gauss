@@ -19,6 +19,10 @@ pub(super) fn collect_extra_attributes(
     .unwrap_or_default()
 }
 
+/// Run `map` over the first element of an XML fragment.
+///
+/// A fragment that is not well-formed XML on its own is retried inside a
+/// wrapper element, so bare opening tags can still be inspected.
 fn with_first_element<T>(
     fragment: &str,
     map: impl FnOnce(roxmltree::Node<'_, '_>) -> T,

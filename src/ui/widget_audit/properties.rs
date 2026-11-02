@@ -14,12 +14,16 @@ use super::{
     UserJob,
 };
 
+/// Accessibility label and notes for a numeric property field.
 #[derive(Clone, Copy)]
 struct A11ySpec {
+    /// Accessible label announced for the field.
     label: &'static str,
+    /// How the field's value must be announced and edited.
     notes: &'static str,
 }
 
+/// Builds a Phase 1 numeric property field entry.
 fn make_numeric_field(
     name: &'static str,
     description: &'static str,

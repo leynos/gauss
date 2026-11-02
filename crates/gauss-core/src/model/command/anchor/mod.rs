@@ -280,6 +280,10 @@ pub(super) fn apply_restore_anchors(
 
 shape_replacement_command!(apply_close_path, ReopenPath);
 
+/// Apply a shape replacement recorded for reopening a closed path.
+///
+/// Shares the generic replacement logic so the reopen and close commands undo
+/// through the same restoration path.
 pub(super) fn apply_reopen_path(
     doc: &mut Document,
     replacement: &ShapeReplacement,

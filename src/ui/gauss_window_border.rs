@@ -44,12 +44,16 @@ use gpui::{
 };
 use gpui_component::ActiveTheme;
 
+/// Width of the drop shadow and resize hit zone; zero where the OS draws them.
 #[cfg(not(target_os = "linux"))]
 const SHADOW_SIZE: Pixels = px(0.0);
+/// Width of the drop shadow and resize hit zone; zero where the OS draws them.
 #[cfg(target_os = "linux")]
 const SHADOW_SIZE: Pixels = px(12.0);
 
+/// Thickness of the window border stroke.
 const BORDER_SIZE: Pixels = px(1.0);
+/// Corner radius applied to window edges that are not tiled.
 const BORDER_RADIUS: Pixels = px(0.0);
 
 /// Apply corner rounding based on tiling state.
@@ -79,10 +83,12 @@ pub const fn gauss_window_border() -> GaussWindowBorder { GaussWindowBorder::new
 /// targets from blocking button clicks.
 #[derive(IntoElement, Default)]
 pub struct GaussWindowBorder {
+    /// Content rendered inside the border.
     children: Vec<AnyElement>,
 }
 
 impl GaussWindowBorder {
+    /// Create an empty window border ready to receive children.
     pub const fn new() -> Self {
         Self {
             children: Vec::new(),
@@ -255,9 +261,13 @@ fn apply_border_styling(div: Div, tiling: Tiling, cx: &App) -> Div {
     reason = "four independent bools naturally represent the four window edge zones"
 )]
 struct EdgeZones {
+    /// Whether the pointer is within the top resize zone.
     top: bool,
+    /// Whether the pointer is within the bottom resize zone.
     bottom: bool,
+    /// Whether the pointer is within the left resize zone.
     left: bool,
+    /// Whether the pointer is within the right resize zone.
     right: bool,
 }
 
@@ -319,6 +329,7 @@ fn resize_edge(pos: Point<Pixels>, shadow_size: Pixels, size: Size<Pixels>) -> O
 /// exists solely to satisfy that constraint while delegating all layout
 /// to `GaussWindowBorder`.
 pub struct GaussRoot {
+    /// Root view whose content is wrapped in the custom border.
     view: AnyView,
 }
 

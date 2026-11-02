@@ -73,6 +73,7 @@ pub(super) fn compute_selection_overlays(
     overlays
 }
 
+/// Accumulate the padded bounding box and handle overlays for one shape.
 fn add_shape_overlays(overlays: &mut SelectionOverlays, shape: &Shape, viewport: Viewport) {
     let Some((bbox_min, bbox_max)) = shape_screen_bbox(shape, viewport) else {
         return;
@@ -86,6 +87,9 @@ fn add_shape_overlays(overlays: &mut SelectionOverlays, shape: &Shape, viewport:
     add_anchor_and_handle_overlays(overlays, shape, viewport);
 }
 
+/// Convert a shape's world-space bounds into screen-space min and max points.
+///
+/// Returns `None` when the shape has no drawable geometry.
 fn shape_screen_bbox(shape: &Shape, viewport: Viewport) -> Option<(Vec2, Vec2)> {
     let bounds = shape_world_bounds(shape)?;
     let screen_min = viewport.world_to_screen(bounds.min());
@@ -93,6 +97,7 @@ fn shape_screen_bbox(shape: &Shape, viewport: Viewport) -> Option<(Vec2, Vec2)> 
     Some((screen_min, screen_max))
 }
 
+/// Append the four axis-aligned edges of the bounding box to `overlays`.
 fn add_bbox_edges(overlays: &mut SelectionOverlays, min: Vec2, max: Vec2) {
     let top_left = min;
     let top_right = Vec2::new(max.x, min.y);
@@ -119,6 +124,7 @@ fn add_bbox_edges(overlays: &mut SelectionOverlays, min: Vec2, max: Vec2) {
     ]);
 }
 
+/// Append anchor markers plus connector lines and markers for present handles.
 fn add_anchor_and_handle_overlays(
     overlays: &mut SelectionOverlays,
     shape: &Shape,

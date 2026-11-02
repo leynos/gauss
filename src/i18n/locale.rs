@@ -18,6 +18,7 @@ use std::fmt;
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Locale {
+    /// BCP 47 tag, canonicalized to lowercase for lookup stability.
     language_tag: String,
 }
 

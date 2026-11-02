@@ -1,5 +1,9 @@
 //! Domain-specific string wrappers for SVG import parsing.
 
+/// Define a borrowed string newtype for a specific SVG parsing role.
+///
+/// Each generated type is a `Copy` wrapper with `new`, `as_str`, `From<&str>`,
+/// and `AsRef<str>` so role confusion between unrelated strings is prevented.
 macro_rules! string_wrapper {
     ($name:ident) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq)]

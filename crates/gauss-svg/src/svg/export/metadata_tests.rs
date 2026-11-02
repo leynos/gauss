@@ -17,6 +17,7 @@ use crate::{
         PathGeom,
         PatternResource,
         Rgba,
+        SegmentKind,
         Shape,
         Vec2,
     },

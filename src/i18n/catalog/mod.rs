@@ -29,6 +29,7 @@ pub use localizer::Localizer;
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Catalog {
+    /// Localized strings keyed by message identifier.
     messages: HashMap<String, String>,
 }
 
@@ -99,6 +100,7 @@ impl Catalog {
         Self::from_messages(messages)
     }
 
+    /// Add tool mode, edge mode, and mode status template strings.
     fn insert_tool_mode_messages(messages: &mut HashMap<String, String>) {
         messages.insert("tool_mode.draw".to_owned(), "Draw".to_owned());
         messages.insert("tool_mode.manipulate".to_owned(), "Manipulate".to_owned());
@@ -114,6 +116,7 @@ impl Catalog {
         messages.insert("tool.status.mode".to_owned(), "Mode: {tool}".to_owned());
     }
 
+    /// Add file, settings, edit, and window chrome strings.
     fn insert_chrome_messages(messages: &mut HashMap<String, String>) {
         messages.insert("chrome.file.new".to_owned(), "New".to_owned());
         messages.insert("chrome.file.open".to_owned(), "Open".to_owned());
@@ -132,6 +135,7 @@ impl Catalog {
         messages.insert("chrome.window.close".to_owned(), "Close Window".to_owned());
     }
 
+    /// Add tooltip strings for the drawing tool buttons.
     fn insert_tool_tooltip_messages(messages: &mut HashMap<String, String>) {
         // Tool tooltip strings
         messages.insert("tool.tooltip.select".to_owned(), "Select".to_owned());
@@ -150,6 +154,7 @@ impl Catalog {
         );
     }
 
+    /// Add status bar labels and their template strings.
     fn insert_status_messages(messages: &mut HashMap<String, String>) {
         // Status bar strings
         messages.insert("status.zoom_out".to_owned(), "Zoom Out".to_owned());
@@ -181,6 +186,7 @@ impl Catalog {
         messages.insert("status.zoom_ratio_1_1".to_owned(), "1:1".to_owned());
     }
 
+    /// Add labels for the six alignment buttons.
     fn insert_align_messages(messages: &mut HashMap<String, String>) {
         // Alignment button strings
         messages.insert("align.left".to_owned(), "Align Left".to_owned());
@@ -191,6 +197,7 @@ impl Catalog {
         messages.insert("align.bottom".to_owned(), "Align Bottom".to_owned());
     }
 
+    /// Add stroke and fill control labels, including loading states.
     fn insert_style_messages(messages: &mut HashMap<String, String>) {
         // Style control strings
         messages.insert("style.stroke".to_owned(), "Stroke".to_owned());
@@ -205,11 +212,13 @@ impl Catalog {
         );
     }
 
+    /// Add document header strings, such as the untitled document name.
     fn insert_doc_messages(messages: &mut HashMap<String, String>) {
         // Document header strings
         messages.insert("doc.untitled".to_owned(), "untitled".to_owned());
     }
 
+    /// Add accessible names and labels for canvas, shapes, and window chrome.
     fn insert_a11y_messages(messages: &mut HashMap<String, String>) {
         for (key, value) in [
             ("a11y.canvas", "Drawing canvas"),

@@ -13,22 +13,36 @@ use super::types::{
     UserJob,
 };
 
+/// Descriptive metadata for one character-panel control.
 #[derive(Clone, Copy)]
 struct CharacterControlSpec {
+    /// Display name of the control.
     name: &'static str,
+    /// User job the control supports.
     description: &'static str,
+    /// Optional keyboard shortcut, if the control has one.
     shortcut: Option<&'static str>,
+    /// Keyboard-only operation requirements.
     keyboard_notes: &'static str,
+    /// Interaction states the control must expose.
     control_states: &'static [&'static str],
+    /// Accessibility role, such as `TextInput` or `ToggleButton`.
     a11y_role: &'static str,
+    /// Accessible label announced to assistive technology.
     a11y_label: &'static str,
+    /// Accessibility states the control must report.
     a11y_states: &'static [&'static str],
+    /// Notes on how state changes must be announced.
     a11y_notes: &'static str,
+    /// Action emitted when the control changes.
     action_name: &'static str,
+    /// Undo and routing notes for the emitted action.
     action_notes: &'static str,
+    /// Current evidence status for this control.
     evidence_notes: &'static str,
 }
 
+/// Builds a Phase 2 character-panel entry from its specification.
 fn make_character_control(spec: CharacterControlSpec) -> RequiredControl {
     RequiredControl {
         name: spec.name,
@@ -78,6 +92,7 @@ pub(super) fn controls() -> Vec<RequiredControl> {
     v
 }
 
+/// Returns the font family selector and font size field controls.
 fn font_property_controls() -> Vec<RequiredControl> {
     vec![
         make_character_control(CharacterControlSpec {
@@ -111,6 +126,7 @@ fn font_property_controls() -> Vec<RequiredControl> {
     ]
 }
 
+/// Returns the bold, italic, alignment, and colour controls.
 fn text_style_controls() -> Vec<RequiredControl> {
     vec![
         make_character_control(CharacterControlSpec {

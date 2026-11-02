@@ -36,6 +36,10 @@ pub(super) fn parse_resources(
     Ok(())
 }
 
+/// Import every `<linearGradient>` block into the resource store.
+///
+/// Missing coordinates fall back to the SVG defaults for a left-to-right
+/// gradient.
 fn parse_linear_gradients(
     svg: SvgContent<'_>,
     resources: &mut ResourceStore,
@@ -73,6 +77,10 @@ fn parse_linear_gradients(
     Ok(())
 }
 
+/// Import every `<radialGradient>` block into the resource store.
+///
+/// A focal point coinciding with the centre is stored as `None`, matching the
+/// exporter's omission of `fx`/`fy`.
 fn parse_radial_gradients(
     svg: SvgContent<'_>,
     resources: &mut ResourceStore,
@@ -106,6 +114,7 @@ fn parse_radial_gradients(
     Ok(())
 }
 
+/// Import every `<pattern>` block, preserving attributes other than `id`.
 fn parse_patterns(svg: SvgContent<'_>, resources: &mut ResourceStore) {
     parse_resource_blocks(
         svg,
@@ -121,6 +130,7 @@ fn parse_patterns(svg: SvgContent<'_>, resources: &mut ResourceStore) {
     );
 }
 
+/// Import every `<symbol>` block, treating `id` and `viewBox` as typed fields.
 fn parse_symbols(svg: SvgContent<'_>, resources: &mut ResourceStore) {
     parse_resource_blocks(
         svg,
@@ -138,6 +148,11 @@ fn parse_symbols(svg: SvgContent<'_>, resources: &mut ResourceStore) {
     );
 }
 
+/// Walk blocks of one resource tag, extracting the shared fields and delegating
+/// insertion to `insert_fn`.
+///
+/// `excluded_attributes` names attributes consumed as typed fields, so they are
+/// not duplicated into the preserved extra attributes.
 fn parse_resource_blocks<F>(
     svg: SvgContent<'_>,
     tag_name: TagName<'_>,
@@ -196,6 +211,9 @@ pub(super) fn extract_block_tags(svg: SvgContent<'_>, tag_name: TagName<'_>) -> 
     extract_matching_tags(svg, |node| node.tag_name().name() == tag_name.as_str())
 }
 
+/// Collect the source text of every element accepted by `is_match`.
+///
+/// Returns an empty vector when the fragment cannot be parsed.
 fn extract_matching_tags(
     svg: SvgContent<'_>,
     is_match: impl Fn(roxmltree::Node<'_, '_>) -> bool,
@@ -211,6 +229,9 @@ fn extract_matching_tags(
     .unwrap_or_default()
 }
 
+/// Return the raw inner XML of a block, excluding its own tags.
+///
+/// An empty or unparsable block yields an empty string.
 fn inner_tag_body(block: SvgContent<'_>) -> String {
     with_parsed_document(block.as_str(), |source, document| {
         let root = document.root_element();
@@ -231,12 +252,19 @@ fn inner_tag_body(block: SvgContent<'_>) -> String {
     .unwrap_or_default()
 }
 
+/// Report whether a node sits inside a resource container (`defs`, `pattern`,
+/// or `symbol`), where shapes are definitions rather than drawable output.
 fn has_resource_ancestor(node: roxmltree::Node<'_, '_>) -> bool {
     node.ancestors().skip(1).any(|ancestor| {
         ancestor.is_element() && matches!(ancestor.tag_name().name(), "defs" | "pattern" | "symbol")
     })
 }
 
+/// Parse a fragment and pass it, with its source text, to `map`.
+///
+/// Fragments that are not well-formed on their own are retried inside a
+/// namespace-declaring wrapper, and `map` receives the wrapped source so byte
+/// ranges still line up.
 fn with_parsed_document<T>(
     fragment: &str,
     map: impl FnOnce(&str, &roxmltree::Document<'_>) -> T,

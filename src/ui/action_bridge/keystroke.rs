@@ -28,6 +28,10 @@ pub fn keystroke_to_gpui_string(keystroke: &Keystroke) -> String {
     parts.join("-")
 }
 
+/// Map a model [`Modifier`] to its GPUI keybinding token.
+///
+/// GPUI spells the platform-secondary modifier as `secondary`; the remaining
+/// tokens match the model names in lowercase.
 const fn gpui_modifier_token(modifier: Modifier) -> &'static str {
     match modifier {
         Modifier::Control => "ctrl",

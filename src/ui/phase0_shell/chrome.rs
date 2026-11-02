@@ -74,6 +74,7 @@ impl Phase0Shell {
             .child(self.status_bar(self.mode_status_line(), self.file_status_line()))
     }
 
+    /// Build the top bar, widening its insets while maximized.
     fn top_bar(&mut self, is_maximized: bool, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         let (pt, pr) = if is_maximized {
             (TOP_BAR_PAD_Y_MAXIMIZED, TOP_BAR_PAD_X_MAXIMIZED)
@@ -144,6 +145,8 @@ impl Phase0Shell {
         el
     }
 
+    /// Build the right side of the top bar: file and edit actions, settings,
+    /// style picker, and window controls.
     fn top_bar_right(&mut self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         div()
             .flex()
@@ -161,6 +164,9 @@ impl Phase0Shell {
             .child(self.window_controls(cx))
     }
 
+    /// Build the new, open, save, and web-export file buttons.
+    ///
+    /// New is a placeholder; the remaining buttons open their dialogs.
     fn top_bar_file_actions(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         div()
             .flex()
@@ -213,6 +219,10 @@ impl Phase0Shell {
             )
     }
 
+    /// Build the undo and redo buttons.
+    ///
+    /// Each button is disabled, and its click handler omitted, when the
+    /// corresponding history operation is unavailable.
     fn top_bar_edit_actions(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         let can_undo = self.state.can_undo_document();
         let undo_state = if can_undo {
@@ -263,6 +273,7 @@ impl Phase0Shell {
             .child(redo_button)
     }
 
+    /// Build the minimize, maximize, and quit window control buttons.
     fn window_controls(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         div()
             .flex()
@@ -295,6 +306,7 @@ impl Phase0Shell {
             .child(self.quit_button(cx))
     }
 
+    /// Build the document panel containing the header and canvas area.
     fn editor_panel(&mut self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         div()
             .flex()
@@ -304,6 +316,7 @@ impl Phase0Shell {
             .child(div().flex().flex_1().p_4().child(self.canvas_area(cx)))
     }
 
+    /// Build the close button that records the quit request and exits.
     fn quit_button(&self, cx: &mut Context<Self>) -> impl gpui::IntoElement {
         icon_button(
             "quit-button",

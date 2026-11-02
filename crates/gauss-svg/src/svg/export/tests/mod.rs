@@ -18,6 +18,7 @@ use crate::{
         PatternId,
         PatternResource,
         Rgba,
+        SegmentKind,
         Shape,
         SymbolResource,
         Vec2,
