@@ -111,7 +111,7 @@ rstest = "0.28.0"
 rstest-bdd = "0.6.0"
 rstest-bdd-macros = "0.6.0"
 rstest-bdd-harness-gpui = "0.6.0"
-serial_test = "3"
+serial_test = "4"
 test_support = { path = "crates/test_support" }
 uuid = { version = "1.21.0", features = ["v4"] }
 
