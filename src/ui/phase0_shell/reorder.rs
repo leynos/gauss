@@ -2,9 +2,8 @@
 //!
 //! Raise and lower are routed through Commands so undo/redo is consistent.
 
-use crate::model::{Action, prepare_command};
-
 use super::{Phase0Shell, draw::ToolMode};
+use crate::model::{Action, prepare_command};
 
 impl Phase0Shell {
     pub(super) fn raise_selected_shapes(&mut self) -> bool {

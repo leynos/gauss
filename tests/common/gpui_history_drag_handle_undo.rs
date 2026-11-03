@@ -18,8 +18,7 @@ mod initial_draw;
 mod vec2_assertion;
 
 pub use anchor_point::anchor_to_canvas_point;
-pub use canvas_drag_handle::CanvasDragScenario;
-pub use canvas_drag_handle::canvas_drag_scenario;
+pub use canvas_drag_handle::{CanvasDragScenario, canvas_drag_scenario};
 pub use document::read_document;
 pub use document_undo::simulate_document_undo;
 pub use draw_shape::require_draw_shape;

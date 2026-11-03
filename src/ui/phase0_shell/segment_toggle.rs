@@ -2,9 +2,8 @@
 //!
 //! Segment toggles are routed through Commands so undo/redo remains consistent.
 
-use crate::model::{Action, prepare_command};
-
 use super::Phase0Shell;
+use crate::model::{Action, prepare_command};
 
 impl Phase0Shell {
     pub(super) fn toggle_selected_segments_kind(&mut self) -> bool {

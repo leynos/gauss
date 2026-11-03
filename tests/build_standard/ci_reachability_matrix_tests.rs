@@ -21,9 +21,7 @@ fn fixture_job(source: &str) -> Result<Value, String> {
 }
 
 /// Resolves every runner row in one workflow fixture without filtering unknown rows.
-fn fixture_hosts(source: &str) -> Result<Vec<Host>, String> {
-    runner::hosts(&fixture_job(source)?)
-}
+fn fixture_hosts(source: &str) -> Result<Vec<Host>, String> { runner::hosts(&fixture_job(source)?) }
 
 /// Expands a supplied matrix body in a minimal workflow with a matrix runner expression.
 fn matrix_rows(body: &str) -> Result<Vec<BTreeMap<String, String>>, String> {

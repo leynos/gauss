@@ -11,8 +11,7 @@ use std::collections::HashMap;
 
 use slotmap::{SlotMap, new_key_type};
 
-use crate::model::PaintStyle;
-use crate::model::unique_string::make_unique_string;
+use crate::model::{PaintStyle, unique_string::make_unique_string};
 
 new_key_type! {
     /// Identifier for a named style in [`StyleStore`].
@@ -65,27 +64,19 @@ impl PartialEq for StyleStore {
 impl StyleStore {
     /// Construct an empty style store.
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
+    pub fn new() -> Self { Self::default() }
 
     /// Return whether no styles exist.
     #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.styles.is_empty()
-    }
+    pub fn is_empty(&self) -> bool { self.styles.is_empty() }
 
     /// Return the number of stored styles.
     #[must_use]
-    pub fn style_count(&self) -> usize {
-        self.styles.len()
-    }
+    pub fn style_count(&self) -> usize { self.styles.len() }
 
     /// Return the default style identifier, if configured.
     #[must_use]
-    pub const fn default_style(&self) -> Option<StyleId> {
-        self.default_style
-    }
+    pub const fn default_style(&self) -> Option<StyleId> { self.default_style }
 
     /// Set the default style. Returns `true` when the style exists.
     pub fn set_default_style(&mut self, id: StyleId) -> bool {
@@ -108,21 +99,15 @@ impl StyleStore {
 
     /// Return a style by identifier.
     #[must_use]
-    pub fn style(&self, id: StyleId) -> Option<&NamedStyle> {
-        self.styles.get(id)
-    }
+    pub fn style(&self, id: StyleId) -> Option<&NamedStyle> { self.styles.get(id) }
 
     /// Return a mutable style by identifier.
     #[must_use]
-    pub fn style_mut(&mut self, id: StyleId) -> Option<&mut NamedStyle> {
-        self.styles.get_mut(id)
-    }
+    pub fn style_mut(&mut self, id: StyleId) -> Option<&mut NamedStyle> { self.styles.get_mut(id) }
 
     /// Return a style identifier for a given name.
     #[must_use]
-    pub fn style_id_for_name(&self, name: &str) -> Option<StyleId> {
-        self.names.get(name).copied()
-    }
+    pub fn style_id_for_name(&self, name: &str) -> Option<StyleId> { self.names.get(name).copied() }
 
     /// Rename a style while preserving uniqueness.
     pub fn rename(&mut self, id: StyleId, requested_name: &str) -> bool {
@@ -150,18 +135,17 @@ impl StyleStore {
     }
 
     /// Iterate stored styles as `(id, style)` tuples.
-    pub fn iter(&self) -> impl Iterator<Item = (StyleId, &NamedStyle)> + '_ {
-        self.styles.iter()
-    }
+    pub fn iter(&self) -> impl Iterator<Item = (StyleId, &NamedStyle)> + '_ { self.styles.iter() }
 }
 
 #[cfg(test)]
 mod tests {
     //! Tests for style storage behaviour.
 
+    use rstest::{fixture, rstest};
+
     use super::*;
     use crate::model::Rgba;
-    use rstest::{fixture, rstest};
 
     #[fixture]
     fn sample_style() -> impl Fn(&str, f32) -> NamedStyle {

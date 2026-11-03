@@ -1,10 +1,9 @@
 //! Opposing canvas points for GPUI integration tests.
 
-use super::canvas::CANVAS_PADDING_PX;
 use gpui::{Pixels, Point, VisualTestContext, point, px};
 use test_support::TestSupportResult;
 
-use super::canvas_bounds::canvas_bounds;
+use super::{canvas::CANVAS_PADDING_PX, canvas_bounds::canvas_bounds};
 
 /// Returns opposing canvas points inset by [`CANVAS_PADDING_PX`].
 ///

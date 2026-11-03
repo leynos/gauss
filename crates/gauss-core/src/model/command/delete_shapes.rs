@@ -1,10 +1,7 @@
 //! Delete shapes command implementation.
 
+use super::{Command, CommandInverse, error::UserError, types::DeletedShape};
 use crate::model::{Document, Selection, ShapeId};
-
-use super::error::UserError;
-use super::types::DeletedShape;
-use super::{Command, CommandInverse};
 
 /// Prepare a `DeleteShapes` command from the current selection.
 ///

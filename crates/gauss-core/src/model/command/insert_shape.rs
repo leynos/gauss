@@ -24,18 +24,13 @@
 //!
 //! # Integration
 //!
-//! - [`Command::InsertShape`](super::Command::InsertShape) uses
-//!   [`apply_insert_shape`] to insert shapes and produce a
-//!   [`CommandInverse::RemoveShape`](super::CommandInverse::RemoveShape).
-//! - [`CommandInverse::RemoveShape`](super::CommandInverse::RemoveShape)
-//!   uses [`apply_remove_shape`] to restore the document state before
-//!   insertion.
+//! - [`Command::InsertShape`](super::Command::InsertShape) uses [`apply_insert_shape`] to insert
+//!   shapes and produce a [`CommandInverse::RemoveShape`](super::CommandInverse::RemoveShape).
+//! - [`CommandInverse::RemoveShape`](super::CommandInverse::RemoveShape) uses
+//!   [`apply_remove_shape`] to restore the document state before insertion.
 
+use super::{CommandInverse, error::UserError, types::ShapeInsertion};
 use crate::model::Document;
-
-use super::CommandInverse;
-use super::error::UserError;
-use super::types::ShapeInsertion;
 
 /// Apply the `InsertShape` command, returning the inverse for undo.
 ///

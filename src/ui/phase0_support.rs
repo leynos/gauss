@@ -11,12 +11,13 @@
 
 use std::path::Path;
 
+use camino::{Utf8Path, Utf8PathBuf};
+use cap_std::{ambient_authority, fs_utf8::Dir};
+
 use crate::{
     model::{Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2},
     svg::import::{ImportedSvg, import_svg_with_resources},
 };
-use camino::{Utf8Path, Utf8PathBuf};
-use cap_std::{ambient_authority, fs_utf8::Dir};
 
 /// Write an SVG string to the provided filesystem path.
 ///

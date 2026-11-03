@@ -22,13 +22,12 @@ pub(crate) struct AuditWorld {
 
 #[fixture]
 fn world() -> AuditWorld {
+    // Each scenario starts with an empty audit world.
     AuditWorld::default()
 }
 
 #[scenario("tests/features/widget_capability_audit.feature")]
-fn widget_capability_audit(world: AuditWorld) {
-    let _ = world;
-}
+fn widget_capability_audit(world: AuditWorld) { let _ = world; }
 
 // === Helper functions ===
 

@@ -3,13 +3,22 @@
 //! This module keeps tool state transitions and command application out of the
 //! chrome layout module so each module remains small and focused.
 
+use super::{Phase0Shell, draw::DrawEdgeMode};
 use crate::model::{
-    Command, SelectPointerHit, SelectToolState, Selection, ShapeId, Tool, ToolCommand,
-    ToolInputEvent, ToolMode, ToolModeFsm, UserError, apply_select_drag_preview,
+    Command,
+    SelectPointerHit,
+    SelectToolState,
+    Selection,
+    ShapeId,
+    Tool,
+    ToolCommand,
+    ToolInputEvent,
+    ToolMode,
+    ToolModeFsm,
+    UserError,
+    apply_select_drag_preview,
     restore_select_drag_preview,
 };
-
-use super::{Phase0Shell, draw::DrawEdgeMode};
 
 impl Phase0Shell {
     /// Activate draw mode with an optional edge mode override.

@@ -1,7 +1,8 @@
 //! Tests for keystroke module.
 
-use super::*;
 use rstest::rstest;
+
+use super::*;
 
 // === Modifiers tests ===
 

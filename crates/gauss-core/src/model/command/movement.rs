@@ -1,10 +1,11 @@
 //! Shape, anchor, and handle movement command helpers.
 
+use super::{
+    error::UserError,
+    inverse::CommandInverse,
+    types::{AnchorMovement, HandleKind, HandleMovement, ShapeMovement},
+};
 use crate::model::{Anchor, Document, Vec2};
-
-use super::error::UserError;
-use super::inverse::CommandInverse;
-use super::types::{AnchorMovement, HandleKind, HandleMovement, ShapeMovement};
 
 /// Translate an anchor position and its handles by the given delta.
 #[expect(clippy::missing_const_for_fn, reason = "uses mutable reference")]

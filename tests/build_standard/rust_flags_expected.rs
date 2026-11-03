@@ -1,10 +1,17 @@
 //! Pure expected-row queries for controlled Make invocation contracts.
 
-use super::super::super::make_input_env::{
-    self as make_input, INHERITED_RUSTDOCFLAGS, INHERITED_RUSTFLAGS, Invocation,
-    RESTATED_RUSTDOCFLAGS, RunRequest, RustFlagsInput,
+use super::super::{
+    super::make_input_env::{
+        self as make_input,
+        INHERITED_RUSTDOCFLAGS,
+        INHERITED_RUSTFLAGS,
+        Invocation,
+        RESTATED_RUSTDOCFLAGS,
+        RunRequest,
+        RustFlagsInput,
+    },
+    RUST_FLAGS_INPUT,
 };
-use super::super::RUST_FLAGS_INPUT;
 
 /// Returns expected recorder rows for every invocation in one controlled Make route.
 pub(crate) fn expected_calls(request: &RunRequest<'_>) -> Result<Vec<Invocation>, String> {

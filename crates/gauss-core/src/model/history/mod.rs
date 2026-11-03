@@ -10,9 +10,10 @@
 
 use undo_2::Action;
 
-use super::command::Command;
-use super::command::CommandInverse;
-use super::document::Document;
+use super::{
+    command::{Command, CommandInverse},
+    document::Document,
+};
 
 mod error;
 #[cfg(feature = "test-support")]
@@ -20,14 +21,16 @@ mod test_support;
 #[cfg(test)]
 mod tests;
 
+use self::error::ReplayDirection;
 pub use self::error::{
-    GROUPING_ERROR_GROUP_ALREADY_ACTIVE, GROUPING_ERROR_NO_ACTIVE_GROUP,
-    GROUPING_ERROR_REDO_WHILE_GROUP_ACTIVE, GROUPING_ERROR_UNDO_WHILE_GROUP_ACTIVE, HistoryError,
+    GROUPING_ERROR_GROUP_ALREADY_ACTIVE,
+    GROUPING_ERROR_NO_ACTIVE_GROUP,
+    GROUPING_ERROR_REDO_WHILE_GROUP_ACTIVE,
+    GROUPING_ERROR_UNDO_WHILE_GROUP_ACTIVE,
+    HistoryError,
 };
 #[cfg(feature = "test-support")]
 pub use self::test_support::DocumentHistoryState;
-
-use self::error::ReplayDirection;
 
 /// Default maximum number of commands retained in the undo history.
 ///
@@ -70,8 +73,7 @@ impl HistoryEntry {
 /// # Examples
 ///
 /// ```rust
-/// use gauss_core::model::history::DocumentUndoHistory;
-/// use gauss_core::model::{Command, Document};
+/// use gauss_core::model::{Command, Document, history::DocumentUndoHistory};
 ///
 /// let mut doc = Document::default();
 /// let mut history = DocumentUndoHistory::new();
@@ -128,9 +130,7 @@ impl DocumentUndoHistory {
 
     /// Return the configured maximum history depth.
     #[must_use]
-    pub const fn max_depth(&self) -> usize {
-        self.max_depth
-    }
+    pub const fn max_depth(&self) -> usize { self.max_depth }
 
     /// Begin recording a grouped undo transaction.
     ///
@@ -225,9 +225,7 @@ impl DocumentUndoHistory {
 
     /// Return whether there is at least one action that can be undone.
     #[must_use]
-    pub fn can_undo(&self) -> bool {
-        self.commands.iter_realized().next().is_some()
-    }
+    pub fn can_undo(&self) -> bool { self.commands.iter_realized().next().is_some() }
 
     /// Return whether there is at least one action that can be redone.
     ///
@@ -237,9 +235,7 @@ impl DocumentUndoHistory {
     /// `Commands::is_undoing()` checks exactly that condition, so it
     /// is the correct predicate for "can redo".
     #[must_use]
-    pub fn can_redo(&self) -> bool {
-        self.commands.is_undoing()
-    }
+    pub fn can_redo(&self) -> bool { self.commands.is_undoing() }
 
     /// Return the number of realized (non-undone) history entries.
     ///
@@ -263,9 +259,7 @@ impl DocumentUndoHistory {
     /// assert_eq!(history.len(), 0);
     /// ```
     #[must_use]
-    pub fn len(&self) -> usize {
-        self.commands.iter_realized().count()
-    }
+    pub fn len(&self) -> usize { self.commands.iter_realized().count() }
 
     /// Return whether the history contains no realized entries.
     ///
@@ -278,9 +272,7 @@ impl DocumentUndoHistory {
     /// assert!(history.is_empty());
     /// ```
     #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
+    pub fn is_empty(&self) -> bool { self.len() == 0 }
 
     /// Apply a collected list of `(Action, &HistoryEntry)` pairs to the
     /// document.
@@ -386,7 +378,5 @@ impl DocumentUndoHistory {
 }
 
 impl Default for DocumentUndoHistory {
-    fn default() -> Self {
-        Self::new()
-    }
+    fn default() -> Self { Self::new() }
 }

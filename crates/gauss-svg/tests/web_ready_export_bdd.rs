@@ -1,14 +1,31 @@
 //! Behaviour tests for web-ready SVG export.
 
 use gauss_core::model::{
-    Document, GaussAttribute, Gradient, GradientId, GradientKind, GradientStop, LinearGradient,
-    Paint, PaintStyle, PatternId, PatternResource, ResourceStore, Rgba, Shape, Vec2,
+    Document,
+    GaussAttribute,
+    Gradient,
+    GradientId,
+    GradientKind,
+    GradientStop,
+    LinearGradient,
+    Paint,
+    PaintStyle,
+    PatternId,
+    PatternResource,
+    ResourceStore,
+    Rgba,
+    Shape,
+    Vec2,
 };
-use gauss_svg::svg::export::{
-    CanvasSize, SvgExportError, export_svg_with_resources_web_ready,
-    export_svg_with_resources_web_ready_checked,
+use gauss_svg::svg::{
+    export::{
+        CanvasSize,
+        SvgExportError,
+        export_svg_with_resources_web_ready,
+        export_svg_with_resources_web_ready_checked,
+    },
+    import::{ImportedSvg, SvgImportError, import_svg_with_resources},
 };
-use gauss_svg::svg::import::{ImportedSvg, SvgImportError, import_svg_with_resources};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult, line_shape};
@@ -26,6 +43,7 @@ struct WebReadyWorld {
 
 #[fixture]
 fn world() -> WebReadyWorld {
+    // Each scenario starts with an empty export world.
     WebReadyWorld::default()
 }
 
@@ -308,9 +326,7 @@ fn then_imported_shape_keeps_renderable_data(world: &WebReadyWorld) -> TestSuppo
     path = "tests/features/web_ready_export.feature",
     name = "Web-ready export strips Gauss metadata artefacts"
 )]
-fn web_ready_export_strips_gauss_metadata_artefacts(world: WebReadyWorld) {
-    let _ = world;
-}
+fn web_ready_export_strips_gauss_metadata_artefacts(world: WebReadyWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/web_ready_export.feature",
@@ -332,6 +348,4 @@ fn checked_web_ready_export_reports_missing_pattern_references(world: WebReadyWo
     path = "tests/features/web_ready_export.feature",
     name = "Web-ready output imports as plain SVG metadata defaults"
 )]
-fn web_ready_output_imports_as_plain_svg_metadata_defaults(world: WebReadyWorld) {
-    let _ = world;
-}
+fn web_ready_output_imports_as_plain_svg_metadata_defaults(world: WebReadyWorld) { let _ = world; }

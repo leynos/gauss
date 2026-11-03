@@ -5,8 +5,7 @@ use cap_std::{ambient_authority, fs_utf8::Dir};
 use rstest::rstest;
 use uuid::Uuid;
 
-use super::super::rust_flags::replace_once;
-use super::{Coverage, Workspace, inspect};
+use super::{super::rust_flags::replace_once, Coverage, Workspace, inspect};
 
 /// Keeps strict YAML scalar and block-body regression cases with the parser boundary.
 #[cfg(test)]
@@ -100,9 +99,7 @@ fn staged_inventory<T>(
 ///
 /// For example, `suite.yml` has no separator, while `nested/suite.yml` and
 /// `nested\\suite.yml` do.
-fn contains_path_separator(name: &str) -> bool {
-    name.contains('/') || name.contains('\\')
-}
+fn contains_path_separator(name: &str) -> bool { name.contains('/') || name.contains('\\') }
 
 /// The real repository must expose a non-empty measured suite topology.
 #[test]

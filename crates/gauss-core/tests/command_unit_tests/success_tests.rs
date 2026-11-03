@@ -4,8 +4,21 @@
 //! inverse operations also succeed.
 
 use gauss_core::model::{
-    Action, Command, CommandInverse, Document, EngineState, PaintStyle, ReorderOp, SegmentChange,
-    SegmentKind, SelItem, Shape, ShapeMovement, StyleChange, Vec2, prepare_command,
+    Action,
+    Command,
+    CommandInverse,
+    Document,
+    EngineState,
+    PaintStyle,
+    ReorderOp,
+    SegmentChange,
+    SegmentKind,
+    SelItem,
+    Shape,
+    ShapeMovement,
+    StyleChange,
+    Vec2,
+    prepare_command,
 };
 use rstest::rstest;
 use test_support::shapes::{sample_shape, shape_id, shape_with_handles};

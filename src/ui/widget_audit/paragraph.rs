@@ -1,8 +1,16 @@
 //! Paragraph panel control definitions.
 
 use super::types::{
-    AccessibilityRequirements, ActionCommandLinkage, ControlStates, ControlSurface,
-    CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
+    AccessibilityRequirements,
+    ActionCommandLinkage,
+    ControlStates,
+    ControlSurface,
+    CurrentShellEvidence,
+    KeyboardRequirements,
+    Phase,
+    RequiredControl,
+    RequirementSource,
+    UserJob,
 };
 
 /// Returns the paragraph panel control inventory.

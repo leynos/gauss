@@ -11,12 +11,37 @@
 //! - Drop shadow is still rendered (controlled by tiling state)
 
 use gpui::{
-    AnyElement, AnyView, App, Bounds, Context, CursorStyle, Decorations, Div, Entity,
-    HitboxBehavior, Hsla, InteractiveElement as _, IntoElement, MouseButton, ParentElement, Pixels,
-    Point, Render, RenderOnce, ResizeEdge, Size, Stateful, Styled as _, Tiling, Window, canvas,
-    div, point, prelude::FluentBuilder as _, px,
+    AnyElement,
+    AnyView,
+    App,
+    Bounds,
+    Context,
+    CursorStyle,
+    Decorations,
+    Div,
+    Entity,
+    HitboxBehavior,
+    Hsla,
+    InteractiveElement as _,
+    IntoElement,
+    MouseButton,
+    ParentElement,
+    Pixels,
+    Point,
+    Render,
+    RenderOnce,
+    ResizeEdge,
+    Size,
+    Stateful,
+    Styled as _,
+    Tiling,
+    Window,
+    canvas,
+    div,
+    point,
+    prelude::FluentBuilder as _,
+    px,
 };
-
 use gpui_component::ActiveTheme;
 
 #[cfg(not(target_os = "linux"))]
@@ -45,9 +70,7 @@ fn apply_corner_rounding<E: gpui::Styled + gpui::prelude::FluentBuilder>(
 }
 
 /// Create a new Gauss window border with maximized-aware resize zones.
-pub const fn gauss_window_border() -> GaussWindowBorder {
-    GaussWindowBorder::new()
-}
+pub const fn gauss_window_border() -> GaussWindowBorder { GaussWindowBorder::new() }
 
 /// Window border that renders drop shadow and resize zones on Linux.
 ///

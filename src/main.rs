@@ -4,9 +4,15 @@
 //! `gpui-component` integration builds on the pinned toolchain.
 
 use gauss::ui::{GaussRoot, Phase0Shell};
-use gpui::Point;
 use gpui::{
-    App, AppContext as _, Application, Pixels, TitlebarOptions, WindowDecorations, WindowOptions,
+    App,
+    AppContext as _,
+    Application,
+    Pixels,
+    Point,
+    TitlebarOptions,
+    WindowDecorations,
+    WindowOptions,
     px,
 };
 

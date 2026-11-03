@@ -8,8 +8,7 @@ use std::collections::HashMap;
 
 use slotmap::{SlotMap, new_key_type};
 
-use crate::model::unique_string::make_unique_string;
-use crate::model::{Rgba, Vec2};
+use crate::model::{Rgba, Vec2, unique_string::make_unique_string};
 
 new_key_type! {
     /// Identifier for a gradient definition in [`ResourceStore`].
@@ -32,9 +31,7 @@ pub struct GradientStop {
 impl GradientStop {
     /// Construct a gradient stop.
     #[must_use]
-    pub const fn new(offset: f32, colour: Rgba) -> Self {
-        Self { offset, colour }
-    }
+    pub const fn new(offset: f32, colour: Rgba) -> Self { Self { offset, colour } }
 }
 
 /// Parameters for a linear gradient.
@@ -219,9 +216,7 @@ impl PartialEq for ResourceStore {
 impl ResourceStore {
     /// Construct an empty resource store.
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
+    pub fn new() -> Self { Self::default() }
 
     /// Return whether all resource collections are empty.
     #[must_use]
@@ -231,21 +226,15 @@ impl ResourceStore {
 
     /// Return the number of gradients.
     #[must_use]
-    pub fn gradient_count(&self) -> usize {
-        self.gradients.len()
-    }
+    pub fn gradient_count(&self) -> usize { self.gradients.len() }
 
     /// Return the number of patterns.
     #[must_use]
-    pub fn pattern_count(&self) -> usize {
-        self.patterns.len()
-    }
+    pub fn pattern_count(&self) -> usize { self.patterns.len() }
 
     /// Return the number of symbols.
     #[must_use]
-    pub fn symbol_count(&self) -> usize {
-        self.symbols.len()
-    }
+    pub fn symbol_count(&self) -> usize { self.symbols.len() }
 
     /// Insert a gradient, normalizing duplicate SVG IDs.
     pub fn insert_gradient(&mut self, mut gradient: Gradient) -> GradientId {
@@ -259,9 +248,7 @@ impl ResourceStore {
 
     /// Return a gradient by typed identifier.
     #[must_use]
-    pub fn gradient(&self, id: GradientId) -> Option<&Gradient> {
-        self.gradients.get(id)
-    }
+    pub fn gradient(&self, id: GradientId) -> Option<&Gradient> { self.gradients.get(id) }
 
     /// Return a gradient identifier by SVG ID.
     #[must_use]
@@ -292,9 +279,7 @@ impl ResourceStore {
 
     /// Return a pattern by typed identifier.
     #[must_use]
-    pub fn pattern(&self, id: PatternId) -> Option<&PatternResource> {
-        self.patterns.get(id)
-    }
+    pub fn pattern(&self, id: PatternId) -> Option<&PatternResource> { self.patterns.get(id) }
 
     /// Return a pattern identifier by SVG ID.
     #[must_use]
@@ -325,9 +310,7 @@ impl ResourceStore {
 
     /// Return a symbol by typed identifier.
     #[must_use]
-    pub fn symbol(&self, id: SymbolId) -> Option<&SymbolResource> {
-        self.symbols.get(id)
-    }
+    pub fn symbol(&self, id: SymbolId) -> Option<&SymbolResource> { self.symbols.get(id) }
 
     /// Return a symbol identifier by SVG ID.
     #[must_use]

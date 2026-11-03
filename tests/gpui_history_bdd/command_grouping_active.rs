@@ -154,7 +154,8 @@ fn assert_document_and_history_unchanged(
         let actual_history = read_history_state(visual_cx, view);
         if actual_history != history_before {
             return Err(TestSupportError::expectation(format!(
-                "expected {context} to preserve history state; expected {history_before:?}, got {actual_history:?}"
+                "expected {context} to preserve history state; expected {history_before:?}, got \
+                 {actual_history:?}"
             )));
         }
         let actual_document = read_document(visual_cx, view);

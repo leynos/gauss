@@ -16,8 +16,13 @@ mod history_bdd_support;
 mod history_bdd_support_open;
 
 use common::{
-    anchor_to_canvas_point, canvas_bounds, draw_point, read_document, read_history_len,
-    require_draw_shape, simulate_document_undo,
+    anchor_to_canvas_point,
+    canvas_bounds,
+    draw_point,
+    read_document,
+    read_history_len,
+    require_draw_shape,
+    simulate_document_undo,
 };
 use gpui::{Bounds, Pixels, point, px};
 fn triangle_points(

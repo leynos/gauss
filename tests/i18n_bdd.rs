@@ -16,6 +16,7 @@ struct I18nTestContext {
 
 #[fixture]
 fn ctx() -> I18nTestContext {
+    // Each scenario starts with no localizer or lookup result.
     I18nTestContext::default()
 }
 
@@ -123,9 +124,7 @@ fn test_french_catalog() -> Catalog {
     ])
 }
 
-fn create_en_catalog() -> Catalog {
-    Catalog::default_en_gb()
-}
+fn create_en_catalog() -> Catalog { Catalog::default_en_gb() }
 
 // Test functions for each scenario in the feature file
 #[scenario(
@@ -140,30 +139,22 @@ fn successful_lookup_in_default_catalog(ctx: I18nTestContext) {
     path = "tests/features/i18n.feature",
     name = "Successful message lookup in alternate catalog"
 )]
-fn successful_lookup_in_alternate_catalog(ctx: I18nTestContext) {
-    let _ = ctx;
-}
+fn successful_lookup_in_alternate_catalog(ctx: I18nTestContext) { let _ = ctx; }
 
 #[scenario(
     path = "tests/features/i18n.feature",
     name = "Fallback to English when locale is unsupported"
 )]
-fn fallback_to_english_unsupported_locale(ctx: I18nTestContext) {
-    let _ = ctx;
-}
+fn fallback_to_english_unsupported_locale(ctx: I18nTestContext) { let _ = ctx; }
 
 #[scenario(
     path = "tests/features/i18n.feature",
     name = "Error when message key is unavailable"
 )]
-fn error_for_unavailable_key(ctx: I18nTestContext) {
-    let _ = ctx;
-}
+fn error_for_unavailable_key(ctx: I18nTestContext) { let _ = ctx; }
 
 #[scenario(
     path = "tests/features/i18n.feature",
     name = "Edge mode message lookup"
 )]
-fn edge_mode_message_lookup(ctx: I18nTestContext) {
-    let _ = ctx;
-}
+fn edge_mode_message_lookup(ctx: I18nTestContext) { let _ = ctx; }

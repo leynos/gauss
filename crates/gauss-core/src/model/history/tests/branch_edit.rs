@@ -2,11 +2,8 @@
 
 use rstest::rstest;
 
-use crate::model::ShapeId;
-use crate::model::document::Document;
-use crate::model::history::DocumentUndoHistory;
-
 use super::{apply_move, doc_with_one_shape};
+use crate::model::{ShapeId, document::Document, history::DocumentUndoHistory};
 
 /// Do A, do B, undo B, do C — then undo walks through C and the
 /// historical branch containing B.

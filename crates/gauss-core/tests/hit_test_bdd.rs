@@ -1,7 +1,9 @@
 //! Behaviour tests for the shared hit-test service.
 
-use gauss_core::model::{Document, HitTestIndex, SelectPointerHit, ShapeId, Vec2};
-use gauss_core::test_helpers::square_shape_with_out_handle;
+use gauss_core::{
+    model::{Document, HitTestIndex, SelectPointerHit, ShapeId, Vec2},
+    test_helpers::square_shape_with_out_handle,
+};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};
@@ -18,12 +20,11 @@ struct HitTestWorld {
 
 #[fixture]
 fn world() -> HitTestWorld {
+    // Each scenario starts with an empty hit-test world.
     HitTestWorld::default()
 }
 
-fn shape_id(raw: u64) -> ShapeId {
-    ShapeId::from_accesskit_node_id(raw)
-}
+fn shape_id(raw: u64) -> ShapeId { ShapeId::from_accesskit_node_id(raw) }
 
 const fn index(world: &HitTestWorld) -> HitTestIndex<'_> {
     HitTestIndex::from_document(&world.document)
@@ -90,9 +91,7 @@ fn given_tolerance(world: &mut HitTestWorld, tolerance: f32) {
 }
 
 #[given("the hit-test tolerance is NaN")]
-fn given_nan_tolerance(world: &mut HitTestWorld) {
-    world.tolerance_world = Some(f32::NAN);
-}
+fn given_nan_tolerance(world: &mut HitTestWorld) { world.tolerance_world = Some(f32::NAN); }
 
 #[when("I run a pointer hit-test query")]
 fn when_run_pointer_query(world: &mut HitTestWorld) -> TestSupportResult<()> {
@@ -228,38 +227,28 @@ fn then_pointer_and_hover_match(world: &HitTestWorld) -> TestSupportResult<()> {
     path = "tests/features/hit_test.feature",
     name = "Handle hits have highest priority"
 )]
-fn handle_hits_have_highest_priority(world: HitTestWorld) {
-    let _ = world;
-}
+fn handle_hits_have_highest_priority(world: HitTestWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/hit_test.feature",
     name = "Segment hits win over shape-body fallback"
 )]
-fn segment_hits_win_over_shape_fallback(world: HitTestWorld) {
-    let _ = world;
-}
+fn segment_hits_win_over_shape_fallback(world: HitTestWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/hit_test.feature",
     name = "Hover and pointer queries match"
 )]
-fn hover_and_pointer_queries_match(world: HitTestWorld) {
-    let _ = world;
-}
+fn hover_and_pointer_queries_match(world: HitTestWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/hit_test.feature",
     name = "Overlapping shapes resolve to the topmost shape"
 )]
-fn overlapping_shapes_resolve_to_topmost(world: HitTestWorld) {
-    let _ = world;
-}
+fn overlapping_shapes_resolve_to_topmost(world: HitTestWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/hit_test.feature",
     name = "Non-finite tolerance produces no hit"
 )]
-fn non_finite_tolerance_produces_no_hit(world: HitTestWorld) {
-    let _ = world;
-}
+fn non_finite_tolerance_produces_no_hit(world: HitTestWorld) { let _ = world; }

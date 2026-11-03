@@ -6,17 +6,38 @@
 use accesskit::ActionRequest;
 use gpui::{InteractiveElement, Window};
 
-use crate::model::Action as GaussAction;
-use crate::ui::action_bridge::{
-    GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeleteSelectedAnchors, GpuiDeleteSelection,
-    GpuiDeselectAll, GpuiInsertAnchorOnSegment, GpuiLowerSelection, GpuiRaiseSelection, GpuiRedo,
-    GpuiSelectAll, GpuiSelectionRedo, GpuiSelectionUndo, GpuiToggleSegmentKind, GpuiUndo,
-};
-
-use super::{A11yActionRequestError, A11yRequestedAction};
 use super::{
-    A11yWindowAction, CloseWindow, MinimizeWindow, Phase0Shell, ShowWindowMenu, StartWindowMove,
-    StartWindowResize, ToggleFullscreen, ToggleMaximize, window_controls,
+    A11yActionRequestError,
+    A11yRequestedAction,
+    A11yWindowAction,
+    CloseWindow,
+    MinimizeWindow,
+    Phase0Shell,
+    ShowWindowMenu,
+    StartWindowMove,
+    StartWindowResize,
+    ToggleFullscreen,
+    ToggleMaximize,
+    window_controls,
+};
+use crate::{
+    model::Action as GaussAction,
+    ui::action_bridge::{
+        GpuiActivatePenTool,
+        GpuiActivateSelectTool,
+        GpuiDeleteSelectedAnchors,
+        GpuiDeleteSelection,
+        GpuiDeselectAll,
+        GpuiInsertAnchorOnSegment,
+        GpuiLowerSelection,
+        GpuiRaiseSelection,
+        GpuiRedo,
+        GpuiSelectAll,
+        GpuiSelectionRedo,
+        GpuiSelectionUndo,
+        GpuiToggleSegmentKind,
+        GpuiUndo,
+    },
 };
 
 macro_rules! bind_gpui_model_actions {
@@ -119,7 +140,8 @@ impl Phase0Shell {
             GaussAction::ActivateSelectTool => self.activate_select_tool(),
             #[expect(
                 clippy::unreachable,
-                reason = "wildcard arm must panic in all builds when a non-tool action is dispatched"
+                reason = "wildcard arm must panic in all builds when a non-tool action is \
+                          dispatched"
             )]
             _ => {
                 unreachable!("execute_tool_action called with non-tool action: {action:?}")
@@ -138,7 +160,8 @@ impl Phase0Shell {
             GaussAction::SelectionRedo => self.redo_selection(),
             #[expect(
                 clippy::unreachable,
-                reason = "wildcard arm must panic in all builds when a non-history action is dispatched"
+                reason = "wildcard arm must panic in all builds when a non-history action is \
+                          dispatched"
             )]
             _ => {
                 unreachable!("execute_history_action called with non-history action: {action:?}")

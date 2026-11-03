@@ -1,13 +1,27 @@
 //! Unit tests for `SelectTool` manipulate transitions.
 
-use super::{
-    Command, Document, EdgeMode, SelectDragDocumentSnapshot, SelectPointerDownInput,
-    SelectPointerHit, SelectPointerMoveInput, SelectPointerUpInput, SelectShapeHit, SelectTool,
-    SelectToolState, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, Vec2,
-};
 use rstest::rstest;
 
-use super::select_tool_test_helpers::{selection_for_shape, shape_id, square_shape};
+use super::{
+    Command,
+    Document,
+    EdgeMode,
+    SelectDragDocumentSnapshot,
+    SelectPointerDownInput,
+    SelectPointerHit,
+    SelectPointerMoveInput,
+    SelectPointerUpInput,
+    SelectShapeHit,
+    SelectTool,
+    SelectToolState,
+    ShapeId,
+    Tool,
+    ToolCommand,
+    ToolInputEvent,
+    ToolMode,
+    Vec2,
+    select_tool_test_helpers::{selection_for_shape, shape_id, square_shape},
+};
 
 fn pointer_down_input(
     doc: &Document,

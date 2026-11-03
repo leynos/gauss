@@ -1,14 +1,13 @@
 //! Scenario entrypoints bound to `tests/features/select_tool.feature`.
 
-use super::*;
 use rstest_bdd_macros::scenario;
+
+use super::*;
 
 macro_rules! select_tool_scenario {
     ($fn_name:ident, $name:literal) => {
         #[scenario(path = "tests/features/select_tool.feature", name = $name)]
-        fn $fn_name(world: SelectToolWorld) {
-            let _ = world;
-        }
+        fn $fn_name(world: SelectToolWorld) { let _ = world; }
     };
 }
 

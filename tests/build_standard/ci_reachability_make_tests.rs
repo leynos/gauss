@@ -4,7 +4,15 @@ use rstest::rstest;
 
 use self::route_tests::{expected_cargo_rows, require_ordered_cargo_rows};
 use super::{
-    Host, Invocation, Route, make_output, make_routes, make_source, make_syntax, make_tools, tests,
+    Host,
+    Invocation,
+    Route,
+    make_output,
+    make_routes,
+    make_source,
+    make_syntax,
+    make_tools,
+    tests,
 };
 
 /// The production Make source used as the suite-evaluation baseline.
@@ -57,9 +65,7 @@ struct MakeCase<'a> {
 }
 
 /// Appends one named source mutation without altering the production fixture.
-fn append_fixture(addition: &str) -> String {
-    format!("{CURRENT_MAKE}\n{addition}")
-}
+fn append_fixture(addition: &str) -> String { format!("{CURRENT_MAKE}\n{addition}") }
 
 /// Extracts one fixture recipe and substitutes only its reviewed Make tool variable.
 fn fixture_recipe(source: &str) -> Result<String, String> {
@@ -211,7 +217,8 @@ fn workflow_token_presence_near_misses_have_specific_gaps(
     assert_eq!(error, expected);
 }
 
-/// The shell classifier preserves conditional delimiters and rejects noncanonical suite control flow.
+/// The shell classifier preserves conditional delimiters and rejects noncanonical suite control
+/// flow.
 #[rstest]
 #[case::make_condition_swallow(CONDITION_SWALLOW, "shell conditional has no else")]
 #[case::make_sequential_swallow(SEQUENTIAL_SWALLOW, "shell sequence can hide a command failure")]
@@ -361,29 +368,10 @@ fn implicit_only_goal_is_a_gap_while_repository_pattern_rule_remains_available()
     );
 }
 
-/// Direct Cargo suite classification refuses nonexecuting switches and unknown subcommands.
-#[rstest]
-#[case::make_test_help(&["cargo", "test", "--help"], "--help")]
-#[case::make_test_no_run(&["cargo", "test", "--no-run"], "--no-run")]
-#[case::make_test_list(&["cargo", "test", "--", "--list"], "--list")]
-#[case::make_nextest_list(&["cargo", "nextest", "list"], "unresolved Cargo subcommand: nextest")]
-fn cargo_nonexecution_modifiers_are_gaps(#[case] words: &[&str], #[case] diagnostic: &str) {
-    let baseline = ["cargo", "test", "--workspace"].map(str::to_owned);
-    assert_eq!(
-        make_tools::classify_words(&baseline, false),
-        Ok(Route::Suite)
-    );
-    let mutated = words
-        .iter()
-        .map(|word| (*word).to_owned())
-        .collect::<Vec<_>>();
-    let error = make_tools::classify_words(&mutated, false)
-        .expect_err("nonexecuting or unknown Cargo route must not count as a suite");
-    assert!(
-        error.contains(diagnostic),
-        "wrong Cargo route diagnostic: {error}"
-    );
-}
+/// Keeps direct Cargo route cases beside the shared classification helpers.
+#[cfg(test)]
+#[path = "ci_reachability_make_cargo_tests.rs"]
+mod cargo_tests;
 
 /// Keeps evaluated Make route cases beside the shared fixture helpers.
 #[cfg(test)]

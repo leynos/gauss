@@ -1,10 +1,13 @@
 //! Drag preview helpers extracted from `drag` to keep modules focused.
 
-use crate::model::{Anchor, Document, Shape, Vec2};
-
 use super::{
-    AnchorDragState, HandleDragState, SelectDragState, SelectHandleHitKind, ShapesDragState,
+    AnchorDragState,
+    HandleDragState,
+    SelectDragState,
+    SelectHandleHitKind,
+    ShapesDragState,
 };
+use crate::model::{Anchor, Document, Shape, Vec2};
 
 /// Move the document geometry to the position implied by the current cursor.
 ///

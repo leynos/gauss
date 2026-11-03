@@ -1,12 +1,24 @@
 //! Tests for selection overlay geometry helpers.
 
-use super::*;
-use crate::model::{
-    Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, SelItem, Selection, Shape, Vec2,
-    Viewport,
-};
-use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::rstest;
+
+use super::*;
+use crate::{
+    model::{
+        Anchor,
+        Document,
+        PaintStyle,
+        PathGeom,
+        Rgba,
+        SegmentKind,
+        SelItem,
+        Selection,
+        Shape,
+        Vec2,
+        Viewport,
+    },
+    test_helpers::shape_id_from_seed as shape_id,
+};
 
 fn two_anchor_cubic_shape() -> Shape {
     Shape {

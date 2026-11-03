@@ -2,10 +2,16 @@
 
 use rstest::rstest;
 
-use super::super::make_routes;
 use super::{
-    AssignmentOperator, MakeAssignment, MakeSelector, assignment_parts, controls::condition,
-    required_selectors, source_assignment, validate,
+    super::make_routes,
+    AssignmentOperator,
+    MakeAssignment,
+    MakeSelector,
+    assignment_parts,
+    controls::condition,
+    required_selectors,
+    source_assignment,
+    validate,
 };
 
 /// Production Make source used as the source-guard baseline.
@@ -15,9 +21,7 @@ const IGNORED_FAILURE: &str =
     include_str!("fixtures/ci_reachability/make_ignored_failure/Makefile");
 
 /// Appends one focused source mutation after the known passing Makefile.
-fn append_fixture(addition: &str) -> String {
-    format!("{CURRENT_MAKE}\n{addition}")
-}
+fn append_fixture(addition: &str) -> String { format!("{CURRENT_MAKE}\n{addition}") }
 
 /// Every physical recipe line is bound so later ignored-error prefixes cannot escape.
 #[test]

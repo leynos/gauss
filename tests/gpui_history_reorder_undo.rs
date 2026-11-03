@@ -16,10 +16,16 @@ mod reorder;
 mod scenario_state;
 
 use common::{
-    click_canvas_and_wait, demo_shape_id, read_document, read_selection, simulate_escape,
+    click_canvas_and_wait,
+    demo_shape_id,
+    read_document,
+    read_selection,
+    simulate_escape,
 };
-use gauss::model::{Document, SelItem, Selection, ShapeId};
-use gauss::ui::Phase0Shell;
+use gauss::{
+    model::{Document, SelItem, Selection, ShapeId},
+    ui::Phase0Shell,
+};
 use gpui::{Modifiers, MouseButton, VisualTestContext, point, px};
 use test_support::{TestSupportError, TestSupportResult};
 

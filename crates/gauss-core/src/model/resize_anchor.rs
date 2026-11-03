@@ -43,8 +43,9 @@ impl ResizeAnchor {
 mod tests {
     //! Tests for resize anchor normalization.
 
-    use super::*;
     use rstest::rstest;
+
+    use super::*;
 
     #[rstest]
     #[case(ResizeAnchor::TopLeft, (0.0, 0.0))]

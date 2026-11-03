@@ -4,15 +4,17 @@ use std::collections::{BTreeSet, HashMap};
 
 use rstest::{fixture, rstest};
 
-use crate::i18n::{Catalog, Locale, Localizer};
-use crate::model::{EdgeMode, ToolMode};
-use crate::ui::phase0_shell::a11y_service::{
-    A11yShapeSnapshot, A11ySnapshot,
-    tree_builder::{STATUS_NODE_ID, build_node_map},
-};
-
 // Import shape_id from parent module
 use super::shape_id;
+use crate::{
+    i18n::{Catalog, Locale, Localizer},
+    model::{EdgeMode, ToolMode},
+    ui::phase0_shell::a11y_service::{
+        A11yShapeSnapshot,
+        A11ySnapshot,
+        tree_builder::{STATUS_NODE_ID, build_node_map},
+    },
+};
 
 /// Creates a French tool mode catalog.
 #[fixture]

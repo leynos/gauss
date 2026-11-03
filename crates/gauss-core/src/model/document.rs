@@ -37,9 +37,7 @@ impl Document {
         reason = "Vec::len() is not const in stable Rust"
     )]
     #[must_use]
-    pub fn len(&self) -> usize {
-        self.shapes.len()
-    }
+    pub fn len(&self) -> usize { self.shapes.len() }
 
     /// Allocate a new stable shape identifier.
     pub fn allocate_shape_id(&mut self) -> ShapeId {
@@ -57,14 +55,10 @@ impl Document {
         reason = "Vec::is_empty() is not const in stable Rust"
     )]
     #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.shapes.is_empty()
-    }
+    pub fn is_empty(&self) -> bool { self.shapes.is_empty() }
 
     /// Return an iterator over shapes in draw order.
-    pub fn iter_in_draw_order(&self) -> std::slice::Iter<'_, Shape> {
-        self.shapes.iter()
-    }
+    pub fn iter_in_draw_order(&self) -> std::slice::Iter<'_, Shape> { self.shapes.iter() }
 
     /// Return an iterator over shape IDs in draw order.
     pub fn iter_ids_in_draw_order(&self) -> impl Iterator<Item = ShapeId> + '_ {
@@ -93,9 +87,7 @@ impl Document {
 
     /// Return the shape at the given draw-order index.
     #[must_use]
-    pub fn shape_at(&self, index: usize) -> Option<&Shape> {
-        self.shapes.get(index)
-    }
+    pub fn shape_at(&self, index: usize) -> Option<&Shape> { self.shapes.get(index) }
 
     /// Return a mutable reference to the shape at the given draw-order index.
     #[must_use]
@@ -201,32 +193,27 @@ impl Document {
 
 // `PartialEq` compares visual content only; registry state is ignored.
 impl PartialEq for Document {
-    fn eq(&self, other: &Self) -> bool {
-        self.visually_eq(other)
-    }
+    fn eq(&self, other: &Self) -> bool { self.visually_eq(other) }
 }
 
 impl Document {
     /// Compare documents by visual content (shape order and properties).
     #[must_use]
-    pub fn visually_eq(&self, other: &Self) -> bool {
-        self.shapes == other.shapes
-    }
+    pub fn visually_eq(&self, other: &Self) -> bool { self.shapes == other.shapes }
 }
 
 impl Default for Document {
-    fn default() -> Self {
-        Self::new()
-    }
+    fn default() -> Self { Self::new() }
 }
 
 #[cfg(test)]
 mod tests {
     //! Tests for document ID management and ordering.
 
+    use rstest::rstest;
+
     use super::Document;
     use crate::model::{PaintStyle, PathGeom, Shape, ShapeId};
-    use rstest::rstest;
 
     fn sample_shape(id: ShapeId) -> Shape {
         Shape {

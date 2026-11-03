@@ -3,27 +3,36 @@
 
 use rstest::rstest;
 
-use super::super::tests as shared_tests;
-use super::super::{GitBlobId, Route, make_syntax};
 use super::{
-    LineEnding, REVIEWED_PYTHON_BODIES, RUSTFMT_TOOLCHAIN, classify_words,
-    classify_workspace_words, stage_python_bodies, verify_reviewed_python_sources,
+    super::{GitBlobId, Route, make_syntax, tests as shared_tests},
+    LineEnding,
+    REVIEWED_PYTHON_BODIES,
+    RUSTFMT_TOOLCHAIN,
+    classify_words,
+    classify_workspace_words,
+    stage_python_bodies,
+    verify_reviewed_python_sources,
 };
 
 /// The exact historical contract route whose production script is missing.
 const WHITAKER: &str = include_str!("fixtures/ci_reachability/make_whitaker_contracts/Makefile");
+
 /// A contract route that adds a second, unreviewed Python script.
 const WHITAKER_EXTRA: &str =
     include_str!("fixtures/ci_reachability/make_whitaker_extra_script/Makefile");
+
 /// A contract route that omits its required `PyYAML` pin.
 const WHITAKER_NO_PYYAML: &str =
     include_str!("fixtures/ci_reachability/make_whitaker_missing_pyyaml/Makefile");
+
 /// An opaque Python wrapper that cannot be source-identified.
 const WHITAKER_OPAQUE: &str =
     include_str!("fixtures/ci_reachability/make_whitaker_opaque_script/Makefile");
+
 /// A route that names an unreviewed script body.
 const WHITAKER_UNKNOWN: &str =
     include_str!("fixtures/ci_reachability/make_whitaker_unknown_script/Makefile");
+
 /// A contract route that does not pin its required pytest version.
 const WHITAKER_UNPINNED: &str =
     include_str!("fixtures/ci_reachability/make_whitaker_unpinned_pytest/Makefile");

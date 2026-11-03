@@ -5,11 +5,21 @@
 )]
 mod defs;
 mod shape_metadata;
-use crate::model::{
-    Document, GradientId, Paint, PatternId, ResourceStore, SegmentKind, Shape, format_hex_rgb,
-};
-use crate::svg::metadata::gauss_namespace_declaration;
 use std::fmt::{Arguments, Write as _};
+
+use crate::{
+    model::{
+        Document,
+        GradientId,
+        Paint,
+        PatternId,
+        ResourceStore,
+        SegmentKind,
+        Shape,
+        format_hex_rgb,
+    },
+    svg::metadata::gauss_namespace_declaration,
+};
 /// Errors returned by checked SVG export entry points such as
 /// [`export_svg_with_resources_checked`],
 /// [`export_svg_with_resources_web_ready_checked`], and
@@ -89,9 +99,7 @@ pub struct CanvasSize {
 impl CanvasSize {
     /// Create a new canvas size.
     #[must_use]
-    pub const fn new(width: f32, height: f32) -> Self {
-        Self { width, height }
-    }
+    pub const fn new(width: f32, height: f32) -> Self { Self { width, height } }
 }
 
 /// Metadata policy for SVG export.
@@ -104,9 +112,7 @@ pub enum ExportMode {
 }
 impl ExportMode {
     #[must_use]
-    const fn includes_gauss_metadata(self) -> bool {
-        matches!(self, Self::GaussWithMetadata)
-    }
+    const fn includes_gauss_metadata(self) -> bool { matches!(self, Self::GaussWithMetadata) }
 }
 /// Export options for metadata-aware SVG export.
 #[derive(Clone, Copy)]
@@ -211,9 +217,7 @@ pub fn export_svg_with_metadata_checked(
     })
 }
 #[must_use]
-pub(super) const fn opacity_from_alpha(alpha: u8) -> f32 {
-    (alpha as f32) / 255.0
-}
+pub(super) const fn opacity_from_alpha(alpha: u8) -> f32 { (alpha as f32) / 255.0 }
 fn write_svg_header(out: &mut String, canvas_size: CanvasSize, include_gauss_namespace: bool) {
     out.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
     out.push('\n');

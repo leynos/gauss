@@ -69,9 +69,7 @@ fn none_of(problems: &Problems) -> Result<(), String> {
 /// whose workflows do not set up Rust through `setup-rust` lists none, and the
 /// check then reads nothing; a listed workflow must have a step to read.
 #[test]
-fn every_setup_rust_step_installs_linker() -> Result<(), String> {
-    none_of(&workflow_problems())
-}
+fn every_setup_rust_step_installs_linker() -> Result<(), String> { none_of(&workflow_problems()) }
 
 #[test]
 fn every_rustflags_source_is_consistent_with_the_pin() -> Result<(), String> {
@@ -110,8 +108,9 @@ fn coverage_and_release_take_neither_flag() -> Result<(), String> {
     Ok(())
 }
 
-/// The coverage recipe assigns what it recorded besides `RUSTFLAGS`: the LLVM backend, the linker and the
-/// link arguments a measurement needs. A repository with no local coverage recipe records nothing.
+/// The coverage recipe assigns what it recorded besides `RUSTFLAGS`: the LLVM backend, the linker
+/// and the link arguments a measurement needs. A repository with no local coverage recipe records
+/// nothing.
 #[test]
 fn the_coverage_recipe_assigns_its_recorded_environment() -> Result<(), String> {
     none_of(&coverage_recipe_problems(real_make)?)

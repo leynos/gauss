@@ -1,8 +1,21 @@
 //! Behaviour tests for `SelectTool` command emission.
 
 use gauss_core::model::{
-    Anchor, Document, EdgeMode, Paint, PaintStyle, PathGeom, Rgba, SegmentKind, SelectToolState,
-    Shape, ShapeId, ToolInputEvent, ToolMode, ToolTransition, Vec2,
+    Anchor,
+    Document,
+    EdgeMode,
+    Paint,
+    PaintStyle,
+    PathGeom,
+    Rgba,
+    SegmentKind,
+    SelectToolState,
+    Shape,
+    ShapeId,
+    ToolInputEvent,
+    ToolMode,
+    ToolTransition,
+    Vec2,
 };
 use rstest::fixture;
 
@@ -17,9 +30,7 @@ pub(crate) struct SelectToolWorld {
     pub(crate) drag_state: Option<SelectToolState>,
 }
 
-pub(crate) fn make_shape_id(raw: u64) -> ShapeId {
-    ShapeId::from_accesskit_node_id(raw)
-}
+pub(crate) fn make_shape_id(raw: u64) -> ShapeId { ShapeId::from_accesskit_node_id(raw) }
 
 pub(crate) fn square_shape(id: ShapeId) -> Shape {
     let mut first_anchor = Anchor::new(Vec2::new(0.0, 0.0));

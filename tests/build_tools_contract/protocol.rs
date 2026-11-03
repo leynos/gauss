@@ -6,7 +6,9 @@
 use camino::{Utf8Path, Utf8PathBuf};
 
 use super::{
-    Invocation, Observation, PrefixState,
+    Invocation,
+    Observation,
+    PrefixState,
     model::{ComparisonEvidence, RawOutput, Recordings},
 };
 
@@ -257,9 +259,7 @@ pub(super) fn checked_relative(path: &str) -> Result<Utf8PathBuf, String> {
 }
 
 /// Identifies empty paths and paths rooted at the filesystem separator.
-fn invalid_relative_root(path: &str) -> bool {
-    path.is_empty() || path.starts_with('/')
-}
+fn invalid_relative_root(path: &str) -> bool { path.is_empty() || path.starts_with('/') }
 
 /// Identifies separators and components forbidden in a relative scratch path.
 fn invalid_relative_components(path: &str) -> bool {
@@ -272,8 +272,7 @@ mod tests {
 
     use camino::Utf8Path;
 
-    use super::super::Invocation;
-    use super::{normalize_comparison_inputs, parse_log};
+    use super::{super::Invocation, normalize_comparison_inputs, parse_log};
 
     #[test]
     fn log_records_preserve_exact_argv_and_status() {

@@ -15,15 +15,22 @@ mod history_bdd_support;
 mod history_bdd_support_open_for_tests;
 
 use common::{
-    DocumentHistoryState, read_document, read_history_len, read_history_state,
+    DocumentHistoryState,
+    read_document,
+    read_history_len,
+    read_history_state,
     simulate_document_undo,
 };
-use gauss::model::history::HistoryError;
-use gauss::model::{Command, Document, ShapeId, ShapeMovement, Vec2};
-use gauss::ui::Phase0Shell;
+use gauss::{
+    model::{Command, Document, ShapeId, ShapeMovement, Vec2, history::HistoryError},
+    ui::Phase0Shell,
+};
 use gpui::{Entity, VisualTestContext};
-use test_support::shapes::{sample_shape, shape_id};
-use test_support::{TestSupportError, TestSupportResult};
+use test_support::{
+    TestSupportError,
+    TestSupportResult,
+    shapes::{sample_shape, shape_id},
+};
 fn document_with_one_shape(shape: ShapeId) -> Document {
     let mut document = Document::new();
     document.append_shape(sample_shape(shape, 0));

@@ -2,14 +2,29 @@
 
 mod resource_export;
 
-use super::*;
-use crate::model::{
-    Anchor, Gradient, GradientId, GradientKind, GradientStop, LinearGradient, PaintStyle, PathGeom,
-    PatternId, PatternResource, Rgba, Shape, SymbolResource, Vec2,
-};
-use crate::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
-use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::{fixture, rstest};
+
+use super::*;
+use crate::{
+    model::{
+        Anchor,
+        Gradient,
+        GradientId,
+        GradientKind,
+        GradientStop,
+        LinearGradient,
+        PaintStyle,
+        PathGeom,
+        PatternId,
+        PatternResource,
+        Rgba,
+        Shape,
+        SymbolResource,
+        Vec2,
+    },
+    svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX},
+    test_helpers::shape_id_from_seed as shape_id,
+};
 
 struct PathData(String);
 struct CssColor(String);
@@ -20,15 +35,11 @@ struct CssOpacity(String);
 macro_rules! newtype_str {
     ($name:ident) => {
         impl $name {
-            fn new(s: impl Into<String>) -> Self {
-                Self(s.into())
-            }
+            fn new(s: impl Into<String>) -> Self { Self(s.into()) }
         }
 
         impl AsRef<str> for $name {
-            fn as_ref(&self) -> &str {
-                &self.0
-            }
+            fn as_ref(&self) -> &str { &self.0 }
         }
     };
 }

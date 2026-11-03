@@ -6,9 +6,8 @@
 use accesskit::{ActionRequest, TreeId};
 use thiserror::Error;
 
-use crate::model::Action;
-
 use super::A11yService;
+use crate::model::Action;
 
 /// Routed action target for a supported accessibility request.
 #[derive(Clone, Copy, Debug, PartialEq)]

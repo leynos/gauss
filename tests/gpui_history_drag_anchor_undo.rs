@@ -13,11 +13,20 @@ mod history_bdd_support;
 mod history_bdd_support_open;
 
 use common::{
-    CanvasDragScenario, assert_vec2_close, canvas_drag_scenario, draw_point, read_document,
-    read_history_len, require_draw_shape, simulate_document_undo, simulate_escape,
+    CanvasDragScenario,
+    assert_vec2_close,
+    canvas_drag_scenario,
+    draw_point,
+    read_document,
+    read_history_len,
+    require_draw_shape,
+    simulate_document_undo,
+    simulate_escape,
 };
-use gauss::model::{Anchor, SelItem, Shape, ShapeId};
-use gauss::ui::Phase0Shell;
+use gauss::{
+    model::{Anchor, SelItem, Shape, ShapeId},
+    ui::Phase0Shell,
+};
 use gpui::{Modifiers, MouseButton, VisualTestContext};
 use test_support::{TestSupportError, TestSupportResult};
 

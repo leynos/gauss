@@ -6,8 +6,7 @@
 //!
 //! - Defining clear action handlers that can be exposed as AccessKit actions
 //! - Maintaining stable operation semantics across platforms
-//! - Providing state queries (`is_maximized`, `is_fullscreen`) for AccessKit
-//!   nodes
+//! - Providing state queries (`is_maximized`, `is_fullscreen`) for AccessKit nodes
 //!
 //! Note: State query functions are prepared for future AccessKit integration
 //! and may appear unused until that work is complete.
@@ -23,19 +22,13 @@ const WINDOW_MENU_X_OFFSET: Pixels = px(10.0);
 const WINDOW_MENU_Y_OFFSET: Pixels = px(30.0);
 
 /// Minimize the window.
-pub fn minimize(window: &Window) {
-    window.minimize_window();
-}
+pub fn minimize(window: &Window) { window.minimize_window(); }
 
 /// Toggle maximize/restore state.
-pub fn toggle_maximize(window: &Window) {
-    window.zoom_window();
-}
+pub fn toggle_maximize(window: &Window) { window.zoom_window(); }
 
 /// Toggle fullscreen mode.
-pub fn toggle_fullscreen(window: &Window) {
-    window.toggle_fullscreen();
-}
+pub fn toggle_fullscreen(window: &Window) { window.toggle_fullscreen(); }
 
 /// Check if the window is currently maximized.
 #[expect(
@@ -43,9 +36,7 @@ pub fn toggle_fullscreen(window: &Window) {
     reason = "State query prepared for future AccessKit integration"
 )]
 #[must_use]
-pub fn is_maximized(window: &Window) -> bool {
-    window.is_maximized()
-}
+pub fn is_maximized(window: &Window) -> bool { window.is_maximized() }
 
 /// Check if the window is currently in fullscreen mode.
 #[expect(
@@ -53,23 +44,17 @@ pub fn is_maximized(window: &Window) -> bool {
     reason = "State query prepared for future AccessKit integration"
 )]
 #[must_use]
-pub fn is_fullscreen(window: &Window) -> bool {
-    window.is_fullscreen()
-}
+pub fn is_fullscreen(window: &Window) -> bool { window.is_fullscreen() }
 
 /// Start compositor-controlled window move.
 ///
 /// On Linux (Wayland/X11), this delegates to the compositor which handles
 /// the interactive move operation. On macOS, this operation is not
 /// implemented in GPUI 0.2.2 (the call is a no-op).
-pub fn start_move(window: &Window) {
-    window.start_window_move();
-}
+pub fn start_move(window: &Window) { window.start_window_move(); }
 
 /// Start compositor-controlled window resize from the specified edge.
-pub fn start_resize(window: &Window, edge: ResizeEdge) {
-    window.start_window_resize(edge);
-}
+pub fn start_resize(window: &Window, edge: ResizeEdge) { window.start_window_resize(edge); }
 
 /// Show the system window menu at a default location near the top-left.
 pub fn show_window_menu(window: &Window) {

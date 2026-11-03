@@ -1,8 +1,16 @@
 //! Canvas text editor control definitions.
 
 use super::types::{
-    AccessibilityRequirements, ActionCommandLinkage, ControlStates, ControlSurface,
-    CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
+    AccessibilityRequirements,
+    ActionCommandLinkage,
+    ControlStates,
+    ControlSurface,
+    CurrentShellEvidence,
+    KeyboardRequirements,
+    Phase,
+    RequiredControl,
+    RequirementSource,
+    UserJob,
 };
 
 /// Returns the canvas text editor control inventory.

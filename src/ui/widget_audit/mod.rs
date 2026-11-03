@@ -30,8 +30,16 @@ mod types;
 
 pub use action::AuditAction;
 pub use types::{
-    AccessibilityRequirements, ActionCommandLinkage, ControlStates, ControlSurface,
-    CurrentShellEvidence, KeyboardRequirements, Phase, RequiredControl, RequirementSource, UserJob,
+    AccessibilityRequirements,
+    ActionCommandLinkage,
+    ControlStates,
+    ControlSurface,
+    CurrentShellEvidence,
+    KeyboardRequirements,
+    Phase,
+    RequiredControl,
+    RequirementSource,
+    UserJob,
 };
 
 /// Complete inventory of required controls for Phase 1-2.
@@ -58,9 +66,7 @@ impl ControlInventory {
 
     /// Returns all controls in the inventory.
     #[must_use]
-    pub fn all(&self) -> &[RequiredControl] {
-        &self.controls
-    }
+    pub fn all(&self) -> &[RequiredControl] { &self.controls }
 
     /// Returns controls filtered by phase.
     #[must_use]
@@ -79,15 +85,11 @@ impl ControlInventory {
 
     /// Returns controls that have current shell evidence.
     #[must_use]
-    pub fn with_evidence(&self) -> Vec<&RequiredControl> {
-        self.filter_by_evidence(true)
-    }
+    pub fn with_evidence(&self) -> Vec<&RequiredControl> { self.filter_by_evidence(true) }
 
     /// Returns controls without current shell evidence.
     #[must_use]
-    pub fn without_evidence(&self) -> Vec<&RequiredControl> {
-        self.filter_by_evidence(false)
-    }
+    pub fn without_evidence(&self) -> Vec<&RequiredControl> { self.filter_by_evidence(false) }
 
     /// Filter controls by evidence existence.
     fn filter_by_evidence(&self, exists: bool) -> Vec<&RequiredControl> {
@@ -99,7 +101,5 @@ impl ControlInventory {
 }
 
 impl Default for ControlInventory {
-    fn default() -> Self {
-        Self::new()
-    }
+    fn default() -> Self { Self::new() }
 }

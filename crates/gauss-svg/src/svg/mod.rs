@@ -6,8 +6,7 @@
 //!
 //! - Elements: `<path ... />` plus selected `<defs>` resources
 //! - Path commands: `M`, `L`, `C`, `Z` (absolute only)
-//! - Styling attributes: `stroke`, `stroke-width`, `stroke-opacity`, `fill`,
-//!   `fill-opacity`
+//! - Styling attributes: `stroke`, `stroke-width`, `stroke-opacity`, `fill`, `fill-opacity`
 //!
 //! This is sufficient for round-tripping Gauss-produced files and importing
 //! many simple SVGs.

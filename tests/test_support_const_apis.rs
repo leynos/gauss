@@ -41,9 +41,7 @@ const fn construct_temp_file_guard_in_const_context(
     TempFileGuard::new(dir, file_name, path)
 }
 
-fn guarded_path(guard: &TempFileGuard) -> &Utf8Path {
-    guard.path()
-}
+fn guarded_path(guard: &TempFileGuard) -> &Utf8Path { guard.path() }
 
 #[test]
 fn const_apis_compile_in_const_contexts() {

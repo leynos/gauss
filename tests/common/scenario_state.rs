@@ -15,8 +15,8 @@
 /// - `with_state`, which grants exclusive access to the state;
 /// - `reset_state`, which restores the state to its default value;
 /// - `ScenarioStateCleanup`, a guard that resets the state when dropped; and
-/// - `scenario_state_cleanup`, an rstest fixture that resets the state before a
-///   scenario runs and yields the guard so it is reset again afterwards.
+/// - `scenario_state_cleanup`, an rstest fixture that resets the state before a scenario runs and
+///   yields the guard so it is reset again afterwards.
 ///
 /// Paths are fully qualified so the macro does not depend on what the calling
 /// binary happens to have in scope. Invoke it as `crate::scenario_state!(..)`

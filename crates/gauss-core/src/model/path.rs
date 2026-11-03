@@ -24,23 +24,17 @@ new_key_type! {
 impl ShapeId {
     /// Return the underlying key data.
     #[must_use]
-    pub fn as_key_data(self) -> KeyData {
-        self.data()
-    }
+    pub fn as_key_data(self) -> KeyData { self.data() }
 
     /// Convert this ID into a stable AccessKit node identifier.
     #[must_use]
-    pub fn to_accesskit_node_id(self) -> u64 {
-        self.data().as_ffi()
-    }
+    pub fn to_accesskit_node_id(self) -> u64 { self.data().as_ffi() }
 
     /// Reconstruct a shape ID from an AccessKit node identifier.
     ///
     /// The `raw` value must originate from [`ShapeId::to_accesskit_node_id`].
     #[must_use]
-    pub fn from_accesskit_node_id(raw: u64) -> Self {
-        KeyData::from_ffi(raw).into()
-    }
+    pub fn from_accesskit_node_id(raw: u64) -> Self { KeyData::from_ffi(raw).into() }
 }
 
 /// A 2D point or vector in document (“world”) coordinates.
@@ -58,33 +52,23 @@ impl Vec2 {
 
     /// Construct a new vector.
     #[must_use]
-    pub const fn new(x: f32, y: f32) -> Self {
-        Self { x, y }
-    }
+    pub const fn new(x: f32, y: f32) -> Self { Self { x, y } }
 
     /// Add two vectors.
     #[must_use]
-    pub const fn add(self, other: Self) -> Self {
-        Self::new(self.x + other.x, self.y + other.y)
-    }
+    pub const fn add(self, other: Self) -> Self { Self::new(self.x + other.x, self.y + other.y) }
 
     /// Subtract two vectors.
     #[must_use]
-    pub const fn sub(self, other: Self) -> Self {
-        Self::new(self.x - other.x, self.y - other.y)
-    }
+    pub const fn sub(self, other: Self) -> Self { Self::new(self.x - other.x, self.y - other.y) }
 
     /// Multiply by a scalar.
     #[must_use]
-    pub const fn mul(self, scalar: f32) -> Self {
-        Self::new(self.x * scalar, self.y * scalar)
-    }
+    pub const fn mul(self, scalar: f32) -> Self { Self::new(self.x * scalar, self.y * scalar) }
 
     /// Return the squared magnitude of the vector.
     #[must_use]
-    pub const fn magnitude_squared(self) -> f32 {
-        (self.x * self.x) + (self.y * self.y)
-    }
+    pub const fn magnitude_squared(self) -> f32 { (self.x * self.x) + (self.y * self.y) }
 
     /// Return the squared Euclidean distance to `other`.
     #[must_use]
@@ -96,41 +80,31 @@ impl Vec2 {
 
     /// Return the Euclidean distance to `other`.
     #[must_use]
-    pub fn distance(self, other: Self) -> f32 {
-        self.distance_squared(other).sqrt()
-    }
+    pub fn distance(self, other: Self) -> f32 { self.distance_squared(other).sqrt() }
 }
 
 impl Add for Vec2 {
     type Output = Self;
 
-    fn add(self, other: Self) -> Self {
-        self.add(other)
-    }
+    fn add(self, other: Self) -> Self { self.add(other) }
 }
 
 impl Sub for Vec2 {
     type Output = Self;
 
-    fn sub(self, other: Self) -> Self {
-        self.sub(other)
-    }
+    fn sub(self, other: Self) -> Self { self.sub(other) }
 }
 
 impl Mul<f32> for Vec2 {
     type Output = Self;
 
-    fn mul(self, scalar: f32) -> Self {
-        self.mul(scalar)
-    }
+    fn mul(self, scalar: f32) -> Self { self.mul(scalar) }
 }
 
 impl Mul<Vec2> for f32 {
     type Output = Vec2;
 
-    fn mul(self, vec: Vec2) -> Vec2 {
-        vec.mul(self)
-    }
+    fn mul(self, vec: Vec2) -> Vec2 { vec.mul(self) }
 }
 
 /// An RGBA colour in 8-bit per channel sRGB.
@@ -149,9 +123,7 @@ pub struct Rgba {
 impl Rgba {
     /// Construct a new colour from 8-bit channels.
     #[must_use]
-    pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Self { r, g, b, a }
-    }
+    pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self { Self { r, g, b, a } }
 }
 
 /// A paint source used for stroke or fill.
@@ -189,15 +161,11 @@ impl Paint {
 
     /// Construct a fully-opaque gradient paint reference.
     #[must_use]
-    pub const fn gradient(id: GradientId) -> Self {
-        Self::Gradient { id, opacity: 255 }
-    }
+    pub const fn gradient(id: GradientId) -> Self { Self::Gradient { id, opacity: 255 } }
 
     /// Construct a fully-opaque pattern paint reference.
     #[must_use]
-    pub const fn pattern(id: PatternId) -> Self {
-        Self::Pattern { id, opacity: 255 }
-    }
+    pub const fn pattern(id: PatternId) -> Self { Self::Pattern { id, opacity: 255 } }
 
     /// Return a solid colour if this paint variant is solid.
     #[must_use]
@@ -210,9 +178,7 @@ impl Paint {
 
     /// Return whether paint is absent.
     #[must_use]
-    pub const fn is_none(self) -> bool {
-        matches!(self, Self::None)
-    }
+    pub const fn is_none(self) -> bool { matches!(self, Self::None) }
 
     /// Return paint opacity as an alpha byte (`0..=255`).
     #[must_use]
@@ -312,10 +278,9 @@ pub enum SegmentKind {
 ///
 /// Invariants (expected by later code):
 ///
-/// - `segments.len()` should equal `anchors.len().saturating_sub(1)` for open
-///   paths.
-/// - Closed paths still use the same `segments` length, with the closing edge
-///   described by [`Self::closing_segment`].
+/// - `segments.len()` should equal `anchors.len().saturating_sub(1)` for open paths.
+/// - Closed paths still use the same `segments` length, with the closing edge described by
+///   [`Self::closing_segment`].
 #[derive(Clone, Debug, PartialEq)]
 pub struct PathGeom {
     /// Path anchors in draw order.
@@ -348,15 +313,11 @@ impl PathGeom {
 
     /// Return whether the path has no anchors.
     #[must_use]
-    pub const fn is_empty(&self) -> bool {
-        self.anchors.is_empty()
-    }
+    pub const fn is_empty(&self) -> bool { self.anchors.is_empty() }
 }
 
 impl Default for PathGeom {
-    fn default() -> Self {
-        Self::new()
-    }
+    fn default() -> Self { Self::new() }
 }
 
 /// A single drawable path shape in the document.

@@ -11,8 +11,13 @@ mod history_bdd_support;
 mod history_bdd_support_open;
 
 use common::{
-    assert_shape_translated_by_delta, canvas_drag_scenario, draw_point, read_document,
-    read_history_len, require_draw_shape, simulate_document_undo,
+    assert_shape_translated_by_delta,
+    canvas_drag_scenario,
+    draw_point,
+    read_document,
+    read_history_len,
+    require_draw_shape,
+    simulate_document_undo,
     switch_to_manipulate_mode_and_verify,
 };
 use gauss::model::{SelItem, Shape, Vec2};
@@ -101,7 +106,8 @@ fn drag_shape(
         });
         if !is_selected || !visual_cx.read(|app| view.read(app).is_dragging()) {
             return Err(TestSupportError::expectation(format!(
-                "expected mouse down to select the shape and start dragging; selection={selection:?}"
+                "expected mouse down to select the shape and start dragging; \
+                 selection={selection:?}"
             )));
         }
         visual_cx.simulate_mouse_move(end, MouseButton::Left, Modifiers::none());

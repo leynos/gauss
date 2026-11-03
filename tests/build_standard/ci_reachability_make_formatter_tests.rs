@@ -28,9 +28,7 @@ const CHECK_FMT_ARGV: &[&str] = &[
 ];
 
 /// Copies an expected argv slice into owned words for exact comparison.
-fn owned(words: &[&str]) -> Vec<String> {
-    words.iter().map(|word| (*word).to_owned()).collect()
-}
+fn owned(words: &[&str]) -> Vec<String> { words.iter().map(|word| (*word).to_owned()).collect() }
 
 /// Returns the single Cargo invocation an evaluated goal reached.
 fn single_cargo_argv(goal: &str) -> Vec<String> {

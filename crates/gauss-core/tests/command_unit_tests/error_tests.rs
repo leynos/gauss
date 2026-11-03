@@ -4,15 +4,30 @@
 //! on non-existent shapes, anchors, or segments.
 
 use gauss_core::model::{
-    Anchor, AnchorMovement, Command, Document, HandleKind, HandleMovement, PaintStyle, ReorderOp,
-    SegmentChange, SegmentKind, ShapeMovement, StyleChange, UserError, Vec2,
+    Anchor,
+    AnchorMovement,
+    Command,
+    Document,
+    HandleKind,
+    HandleMovement,
+    PaintStyle,
+    ReorderOp,
+    SegmentChange,
+    SegmentKind,
+    ShapeMovement,
+    StyleChange,
+    UserError,
+    Vec2,
 };
 use rstest::rstest;
 use test_support::shapes::shape_id;
 
 use super::{
-    assert_fails_with_anchor_not_found, assert_fails_with_invalid_operation,
-    assert_fails_with_segment_not_found, assert_fails_with_shape_not_found, doc_with_two_shapes,
+    assert_fails_with_anchor_not_found,
+    assert_fails_with_invalid_operation,
+    assert_fails_with_segment_not_found,
+    assert_fails_with_shape_not_found,
+    doc_with_two_shapes,
     empty_doc,
 };
 

@@ -1,8 +1,9 @@
 //! Raw bounded canvas-drag values for domain-specific test scenarios.
-use super::{canvas::CANVAS_PADDING_PX, canvas_bounds::canvas_bounds};
 use gauss::model::Vec2;
 use gpui::{Bounds, Pixels, Point, VisualTestContext, point, px};
 use test_support::TestSupportResult;
+
+use super::{canvas::CANVAS_PADDING_PX, canvas_bounds::canvas_bounds};
 
 /// Raw canvas-drag geometry shared by domain-specific test scenarios.
 ///

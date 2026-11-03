@@ -1,9 +1,13 @@
 //! Behaviour tests for metadata round-trip fidelity.
 
-use gauss_core::model::{Document, GaussAttribute, ResourceStore, Shape};
-use gauss_core::test_helpers::shape_id_from_seed;
-use gauss_svg::svg::export::{CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata};
-use gauss_svg::svg::import::{ImportedSvg, import_svg_with_resources};
+use gauss_core::{
+    model::{Document, GaussAttribute, ResourceStore, Shape},
+    test_helpers::shape_id_from_seed,
+};
+use gauss_svg::svg::{
+    export::{CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata},
+    import::{ImportedSvg, import_svg_with_resources},
+};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult, line_shape};
@@ -19,6 +23,7 @@ struct MetadataWorld {
 
 #[fixture]
 fn world() -> MetadataWorld {
+    // Each scenario starts with an empty metadata world.
     MetadataWorld::default()
 }
 
@@ -275,46 +280,34 @@ fn then_shapes_have_default_metadata(world: &MetadataWorld) -> TestSupportResult
     path = "tests/features/metadata_round_trip.feature",
     name = "Shape IDs survive save and reload"
 )]
-fn shape_ids_survive_save_and_reload(world: MetadataWorld) {
-    let _ = world;
-}
+fn shape_ids_survive_save_and_reload(world: MetadataWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/metadata_round_trip.feature",
     name = "Shape names survive round-trip"
 )]
-fn shape_names_survive_round_trip(world: MetadataWorld) {
-    let _ = world;
-}
+fn shape_names_survive_round_trip(world: MetadataWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/metadata_round_trip.feature",
     name = "Locked and hidden states survive round-trip"
 )]
-fn locked_and_hidden_states_survive_round_trip(world: MetadataWorld) {
-    let _ = world;
-}
+fn locked_and_hidden_states_survive_round_trip(world: MetadataWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/metadata_round_trip.feature",
     name = "Unknown Gauss attributes survive round-trip"
 )]
-fn unknown_gauss_attributes_survive_round_trip(world: MetadataWorld) {
-    let _ = world;
-}
+fn unknown_gauss_attributes_survive_round_trip(world: MetadataWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/metadata_round_trip.feature",
     name = "Metadata block survives round-trip"
 )]
-fn metadata_block_survives_round_trip(world: MetadataWorld) {
-    let _ = world;
-}
+fn metadata_block_survives_round_trip(world: MetadataWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/metadata_round_trip.feature",
     name = "Plain SVG without metadata imports cleanly"
 )]
-fn plain_svg_without_metadata_imports_cleanly(world: MetadataWorld) {
-    let _ = world;
-}
+fn plain_svg_without_metadata_imports_cleanly(world: MetadataWorld) { let _ = world; }

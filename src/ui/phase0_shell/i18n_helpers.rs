@@ -1,7 +1,9 @@
 //! Shared i18n helper functions for localizing UI elements.
 
-use crate::i18n::{Locale, Localizer, MessageId};
-use crate::model::{EdgeMode, ToolMode};
+use crate::{
+    i18n::{Locale, Localizer, MessageId},
+    model::{EdgeMode, ToolMode},
+};
 
 /// Returns the localized label for a tool mode, falling back to the default label.
 pub fn localized_tool_mode_label(

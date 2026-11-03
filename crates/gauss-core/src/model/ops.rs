@@ -215,9 +215,7 @@ fn apply_insert_shape(doc: &mut Document, index: usize, shape: &Shape) {
 
 /// Remove the shape at an index, leaving the document unchanged when it is invalid.
 /// Removing index 1 from `[A, B, C]` leaves `[A, C]`.
-fn apply_remove_shape(doc: &mut Document, index: usize) {
-    let _ = doc.remove_shape(index);
-}
+fn apply_remove_shape(doc: &mut Document, index: usize) { let _ = doc.remove_shape(index); }
 
 /// Set an anchor's position when both its shape and index exist.
 /// An anchor at `(1, 2)` takes the operation's supplied destination.

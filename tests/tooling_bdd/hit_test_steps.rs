@@ -1,12 +1,15 @@
 //! Step definitions for shared hit-test service scenarios.
 
-use crate::{common, state};
-use gauss::model::{Document, SelItem, SelectPointerHit, ShapeId, Vec2};
-use gauss::ui::GpuiActivatePenTool;
+use gauss::{
+    model::{Document, SelItem, SelectPointerHit, ShapeId, Vec2},
+    ui::GpuiActivatePenTool,
+};
 use gauss_core::test_helpers::square_shape_with_out_handle;
 use gpui::{Modifiers, MouseButton, Pixels, Point, TestAppContext, point, px};
 use rstest_bdd_macros::{given, then, when};
 use test_support::TestSupportError;
+
+use crate::{common, state};
 
 const SQUARE_MIN_OFFSET: Vec2 = Vec2::new(20.0, 20.0);
 const SQUARE_MAX_OFFSET: Vec2 = Vec2::new(120.0, 120.0);
@@ -105,7 +108,7 @@ fn hover_identifies_first_handle(
     #[from(rstest_bdd_harness_context)] cx: &mut TestAppContext,
 ) -> Result<(), TestSupportError> {
     state::with_visual_cx(cx, |visual_cx, view, data: &mut HitTestState| {
-        let (shape_id, _, _) = require_square(data, "handle-hover scenario")?;
+        let (shape_id, ..) = require_square(data, "handle-hover scenario")?;
         let hit = visual_cx.read(|app| view.read(app).hover_hit_for_tests());
         if !matches!(hit, SelectPointerHit::Handle(handle)
             if handle.shape_id == *shape_id && handle.anchor_index == 0)

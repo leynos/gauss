@@ -45,7 +45,5 @@ impl ReviewedSource<'_> {
     /// Interprets the stored repository path at the UTF-8 capability boundary.
     ///
     /// For example, `scripts/check.py` becomes the path passed to `Dir::read_to_string`.
-    pub(super) fn path(&self) -> &Utf8Path {
-        Utf8Path::new(self.path)
-    }
+    pub(super) fn path(&self) -> &Utf8Path { Utf8Path::new(self.path) }
 }

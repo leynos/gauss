@@ -3,8 +3,15 @@
 use rstest::{fixture, rstest};
 
 use crate::model::{
-    Gradient, GradientKind, GradientStop, LinearGradient, PatternResource, ResourceStore, Rgba,
-    SymbolResource, Vec2,
+    Gradient,
+    GradientKind,
+    GradientStop,
+    LinearGradient,
+    PatternResource,
+    ResourceStore,
+    Rgba,
+    SymbolResource,
+    Vec2,
 };
 
 #[fixture]

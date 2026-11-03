@@ -1,14 +1,29 @@
 //! Preview/restore edge tests for `SelectTool` drag helpers.
 
-use super::{
-    Document, EdgeMode, SelectAnchorHit, SelectDragDocumentSnapshot, SelectHandleHit,
-    SelectHandleHitKind, SelectPointerDownInput, SelectPointerHit, SelectShapeHit, SelectTool,
-    SelectToolState, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode, Vec2,
-    apply_select_drag_preview, restore_select_drag_preview,
-};
 use rstest::rstest;
 
-use super::select_tool_test_helpers::{selection_for_shape, shape_id, shape_with_handles};
+use super::{
+    Document,
+    EdgeMode,
+    SelectAnchorHit,
+    SelectDragDocumentSnapshot,
+    SelectHandleHit,
+    SelectHandleHitKind,
+    SelectPointerDownInput,
+    SelectPointerHit,
+    SelectShapeHit,
+    SelectTool,
+    SelectToolState,
+    ShapeId,
+    Tool,
+    ToolCommand,
+    ToolInputEvent,
+    ToolMode,
+    Vec2,
+    apply_select_drag_preview,
+    restore_select_drag_preview,
+    select_tool_test_helpers::{selection_for_shape, shape_id, shape_with_handles},
+};
 
 fn extract_drag_state(commands: &[ToolCommand]) -> SelectToolState {
     commands

@@ -6,16 +6,32 @@
 
 use camino::Utf8Path;
 use cap_std::{ambient_authority, fs_utf8::Dir};
-use gauss_core::model::{
-    Anchor, Document, GaussAttribute, PaintStyle, PathGeom, ResourceStore, Rgba, SegmentKind,
-    Shape, ShapeId, Vec2,
+use gauss_core::{
+    model::{
+        Anchor,
+        Document,
+        GaussAttribute,
+        PaintStyle,
+        PathGeom,
+        ResourceStore,
+        Rgba,
+        SegmentKind,
+        Shape,
+        ShapeId,
+        Vec2,
+    },
+    test_helpers::shape_id_from_seed,
 };
-use gauss_core::test_helpers::shape_id_from_seed;
-use gauss_svg::svg::export::{
-    CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata,
-    export_svg_with_resources_web_ready,
+use gauss_svg::svg::{
+    export::{
+        CanvasSize,
+        ExportMode,
+        ExportOptions,
+        export_svg_with_metadata,
+        export_svg_with_resources_web_ready,
+    },
+    import::import_svg_with_resources,
 };
-use gauss_svg::svg::import::import_svg_with_resources;
 use rstest::{fixture, rstest};
 use test_support::{TestSupportError, TestSupportResult};
 
@@ -37,6 +53,7 @@ fn triangle_path() -> PathGeom {
 
 #[fixture]
 fn default_style() -> PaintStyle {
+    // Opaque black at unit width is the round-trip baseline.
     PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None)
 }
 

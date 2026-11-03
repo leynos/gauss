@@ -7,8 +7,8 @@
 //!
 //! ## Guidelines
 //!
-//! - Use dot-separated segments to represent hierarchy (e.g., `tool_mode.draw`,
-//!   `edge_mode.line`, `tool.status.mode_with_edge`)
+//! - Use dot-separated segments to represent hierarchy (e.g., `tool_mode.draw`, `edge_mode.line`,
+//!   `tool.status.mode_with_edge`)
 //! - Prefer consistent dot-separated keys over underscores for separation
 //! - Use underscores only for suffixes when needed (e.g., `mode_with_edge`)
 //! - Group related functionality under common prefixes:
@@ -59,9 +59,7 @@ impl MessageId {
     /// assert_eq!(msg_id.as_str(), "edge_mode.bezier_auto");
     /// ```
     #[must_use]
-    pub fn new(key: impl Into<String>) -> Self {
-        Self { key: key.into() }
-    }
+    pub fn new(key: impl Into<String>) -> Self { Self { key: key.into() } }
 
     /// Return the key string for this message identifier.
     ///
@@ -74,33 +72,23 @@ impl MessageId {
     /// assert_eq!(msg_id.as_str(), "tool_mode.manipulate");
     /// ```
     #[must_use]
-    pub fn as_str(&self) -> &str {
-        &self.key
-    }
+    pub fn as_str(&self) -> &str { &self.key }
 }
 
 impl From<String> for MessageId {
-    fn from(key: String) -> Self {
-        Self { key }
-    }
+    fn from(key: String) -> Self { Self { key } }
 }
 
 impl From<&str> for MessageId {
-    fn from(key: &str) -> Self {
-        Self::new(key)
-    }
+    fn from(key: &str) -> Self { Self::new(key) }
 }
 
 impl AsRef<str> for MessageId {
-    fn as_ref(&self) -> &str {
-        &self.key
-    }
+    fn as_ref(&self) -> &str { &self.key }
 }
 
 impl fmt::Display for MessageId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.key)
-    }
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { write!(f, "{}", self.key) }
 }
 
 // Include factory methods module

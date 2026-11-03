@@ -16,8 +16,14 @@ mod scenario_state;
 mod support;
 
 use common::{
-    canvas_bounds, canvas_drag_scenario, draw_point, read_document, read_history_len,
-    read_selection, require_draw_shape, switch_to_manipulate_mode_and_verify,
+    canvas_bounds,
+    canvas_drag_scenario,
+    draw_point,
+    read_document,
+    read_history_len,
+    read_selection,
+    require_draw_shape,
+    switch_to_manipulate_mode_and_verify,
 };
 use gauss::model::SelItem;
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
@@ -78,7 +84,8 @@ fn drawn_shape_is_selected(
         let selection_before = read_selection(visual_cx, view);
         if !selection_before.contains(&SelItem::Shape(shape_id)) {
             return Err(TestSupportError::expectation(format!(
-                "expected drawn shape {shape_id:?} to be selected before zero-delta drag; selection={selection_before:?}"
+                "expected drawn shape {shape_id:?} to be selected before zero-delta drag; \
+                 selection={selection_before:?}"
             )));
         }
         with_state(|state| state.points.push(drag.first));

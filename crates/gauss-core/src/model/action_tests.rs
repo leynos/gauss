@@ -3,8 +3,20 @@
 use rstest::rstest;
 
 use super::{
-    Action, ActionKind, Colour, Degrees, Dimensions, Opacity, Point, Points, Position, Rgb8,
-    Rotation, Size, StrokeWidth, UnitF32,
+    Action,
+    ActionKind,
+    Colour,
+    Degrees,
+    Dimensions,
+    Opacity,
+    Point,
+    Points,
+    Position,
+    Rgb8,
+    Rotation,
+    Size,
+    StrokeWidth,
+    UnitF32,
 };
 
 #[rstest]

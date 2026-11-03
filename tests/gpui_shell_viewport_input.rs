@@ -22,8 +22,7 @@ use std::cell::RefCell;
 
 use expect_equal_support::expect_equal;
 use expect_true_support::expect_true;
-use gauss::model::Vec2;
-use gauss::ui::Phase0Shell;
+use gauss::{model::Vec2, ui::Phase0Shell};
 use gpui::{Modifiers, ScrollDelta, ScrollWheelEvent, TestAppContext, TouchPhase, point, px};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;

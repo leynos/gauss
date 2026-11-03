@@ -1,13 +1,30 @@
 //! Helper functions for `SelectTool` BDD steps and assertions.
 
-use super::SelectToolWorld;
 use gauss_core::model::{
-    Command, Document, SelItem, SelectAnchorHit, SelectDragDocumentSnapshot, SelectHandleHit,
-    SelectHandleHitKind, SelectPointerDownInput, SelectPointerHit, SelectShapeHit, SelectTool,
-    SelectToolState, Selection, ShapeId, Tool, ToolCommand, ToolInputEvent, ToolMode,
-    ToolTransition, Vec2,
+    Command,
+    Document,
+    SelItem,
+    SelectAnchorHit,
+    SelectDragDocumentSnapshot,
+    SelectHandleHit,
+    SelectHandleHitKind,
+    SelectPointerDownInput,
+    SelectPointerHit,
+    SelectShapeHit,
+    SelectTool,
+    SelectToolState,
+    Selection,
+    ShapeId,
+    Tool,
+    ToolCommand,
+    ToolInputEvent,
+    ToolMode,
+    ToolTransition,
+    Vec2,
 };
 use test_support::{TestSupportError, TestSupportResult};
+
+use super::SelectToolWorld;
 
 pub(crate) struct PointerDownEventInput {
     pub(crate) hit: SelectPointerHit,
@@ -114,7 +131,11 @@ pub(crate) fn set_drag_state_from_hit(
 
     if !matches!(extracted_state, SelectToolState::Dragging(_)) {
         return Err(TestSupportError::expectation(format!(
-            "expected pointer-down transition to yield SelectToolState::Dragging(_); got {extracted_state:?}",
+            concat!(
+                "expected pointer-down transition to yield SelectToolState::Dragging(_); ",
+                "got {extracted_state:?}",
+            ),
+            extracted_state = extracted_state,
         )));
     }
 

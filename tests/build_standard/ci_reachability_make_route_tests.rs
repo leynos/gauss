@@ -3,8 +3,19 @@
 use rstest::rstest;
 
 use super::{
-    Host, MakeCase, ROUTES, Route, SPELLING_SUITE, append_fixture, cargo_rows, evaluate_case,
-    evaluate_current, has_words, make_routes, make_tools, tests,
+    Host,
+    MakeCase,
+    ROUTES,
+    Route,
+    SPELLING_SUITE,
+    append_fixture,
+    cargo_rows,
+    evaluate_case,
+    evaluate_current,
+    has_words,
+    make_routes,
+    make_tools,
+    tests,
 };
 
 /// Lists every expected Cargo argv row, in GNU Make's printed order, for a supported profile.

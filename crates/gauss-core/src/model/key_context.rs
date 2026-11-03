@@ -9,8 +9,8 @@
 //! Key contexts are implemented as an enum rather than raw strings for several
 //! reasons:
 //!
-//! - **Exhaustive matching**: All context variants can be matched exhaustively,
-//!   ensuring dispatch tables are complete and verifiable at compile time.
+//! - **Exhaustive matching**: All context variants can be matched exhaustively, ensuring dispatch
+//!   tables are complete and verifiable at compile time.
 //! - **Type safety**: Prevents typos in context strings.
 //! - **Testability**: Context logic can be tested without GPUI.
 //! - **Consistency**: Matches the established Action/Command enum pattern.
@@ -160,17 +160,16 @@ impl AsRef<str> for KeyContext {
 }
 
 impl fmt::Display for KeyContext {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.name())
-    }
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { write!(f, "{}", self.name()) }
 }
 
 #[cfg(test)]
 mod tests {
     //! Tests for key context naming and formatting.
 
-    use super::*;
     use rstest::rstest;
+
+    use super::*;
 
     #[rstest]
     #[case(KeyContext::Global, "gauss-global")]

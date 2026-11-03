@@ -1,13 +1,27 @@
 //! Tests for Gauss metadata export on `<path>` elements.
 
-use super::*;
-use crate::model::{
-    Anchor, GaussAttribute, Gradient, GradientKind, GradientStop, LinearGradient, Paint,
-    PaintStyle, PathGeom, PatternResource, Rgba, Shape, Vec2,
-};
-use crate::test_helpers::shape_id_from_seed as shape_id;
 use rstest::{fixture, rstest};
 use slotmap::Key;
+
+use super::*;
+use crate::{
+    model::{
+        Anchor,
+        GaussAttribute,
+        Gradient,
+        GradientKind,
+        GradientStop,
+        LinearGradient,
+        Paint,
+        PaintStyle,
+        PathGeom,
+        PatternResource,
+        Rgba,
+        Shape,
+        Vec2,
+    },
+    test_helpers::shape_id_from_seed as shape_id,
+};
 
 #[fixture]
 fn line_shape(#[default(1)] seed: u32) -> Shape {

@@ -1,7 +1,6 @@
 //! Checks reviewed Python source identities and exact UV routes.
 
-use super::super::ReviewedSource;
-use super::{Route, Workspace, exact_words};
+use super::{super::ReviewedSource, Route, Workspace, exact_words};
 
 /// Content identities that authorize the exact current Python inventory and spelling routes.
 pub(in super::super) const REVIEWED_PYTHON_BODIES: &[ReviewedSource<'static>] = &[

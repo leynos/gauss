@@ -17,8 +17,10 @@ use std::path::Path;
 use camino::Utf8PathBuf;
 use cap_std::{ambient_authority, fs_utf8::Dir};
 use common::{TempFileGuard, read_history_len, read_selection};
-use gauss::model::{Command, SelItem, Selection, ShapeMovement, Vec2};
-use gauss::ui::OpenSvg;
+use gauss::{
+    model::{Command, SelItem, Selection, ShapeMovement, Vec2},
+    ui::OpenSvg,
+};
 use gpui::TestAppContext;
 use history_bdd_support::{DurableShell, missing};
 use rstest_bdd::Slot;

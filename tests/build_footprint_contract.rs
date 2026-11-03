@@ -66,9 +66,7 @@ fn pinned_channel() -> Option<String> {
 }
 
 /// Returns whether a `debug` value disables debug information.
-fn disables_debug(setting: Option<&str>) -> bool {
-    matches!(setting, Some("0" | "false"))
-}
+fn disables_debug(setting: Option<&str>) -> bool { matches!(setting, Some("0" | "false")) }
 
 /// Scenario: the default development profile.
 ///

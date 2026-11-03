@@ -156,7 +156,8 @@ fn history_gained(
         let actual = read_history_len(visual_cx, view);
         if actual != expected {
             return Err(TestSupportError::expectation(format!(
-                "expected one realized history entry after grouped command commit; expected {expected}, got {actual}"
+                "expected one realized history entry after grouped command commit; expected \
+                 {expected}, got {actual}"
             )));
         }
         Ok(())
@@ -249,7 +250,8 @@ fn history_is_unchanged(
         let actual = read_history_state(visual_cx, view);
         if actual != expected {
             return Err(TestSupportError::expectation(format!(
-                "expected failed grouping boundary call to leave history unchanged; expected {expected:?}, got {actual:?}"
+                "expected failed grouping boundary call to leave history unchanged; expected \
+                 {expected:?}, got {actual:?}"
             )));
         }
         Ok(())

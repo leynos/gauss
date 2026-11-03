@@ -28,27 +28,19 @@ impl Viewport {
 
     /// Return the current zoom scale factor.
     #[must_use]
-    pub const fn zoom(self) -> f32 {
-        self.zoom
-    }
+    pub const fn zoom(self) -> f32 { self.zoom }
 
     /// Set the zoom scale, clamping values below or above the supported range.
     /// NaN is preserved because neither clamp comparison succeeds.
-    pub const fn set_zoom(&mut self, zoom: f32) {
-        self.zoom = clamp_zoom(zoom);
-    }
+    pub const fn set_zoom(&mut self, zoom: f32) { self.zoom = clamp_zoom(zoom); }
 
     /// Convert world coordinates to screen coordinates.
     #[must_use]
-    pub const fn world_to_screen(self, p: Vec2) -> Vec2 {
-        p.mul(self.zoom).add(self.pan)
-    }
+    pub const fn world_to_screen(self, p: Vec2) -> Vec2 { p.mul(self.zoom).add(self.pan) }
 
     /// Convert screen coordinates to world coordinates.
     #[must_use]
-    pub const fn screen_to_world(self, p: Vec2) -> Vec2 {
-        p.sub(self.pan).mul(1.0 / self.zoom)
-    }
+    pub const fn screen_to_world(self, p: Vec2) -> Vec2 { p.sub(self.pan).mul(1.0 / self.zoom) }
 
     /// Zoom around a cursor position in screen coordinates.
     ///
@@ -73,7 +65,7 @@ impl Viewport {
     /// # Example
     ///
     /// ```
-    /// use gauss_core::model::{Viewport, Vec2};
+    /// use gauss_core::model::{Vec2, Viewport};
     ///
     /// let mut viewport = Viewport::new();
     /// viewport.pan = Vec2::new(50.0, 25.0);
@@ -116,17 +108,16 @@ const fn clamp_zoom(zoom: f32) -> f32 {
 }
 
 impl Default for Viewport {
-    fn default() -> Self {
-        Self::new()
-    }
+    fn default() -> Self { Self::new() }
 }
 
 #[cfg(test)]
 mod tests {
     //! Tests for viewport pan and zoom behaviour.
 
-    use super::*;
     use rstest::rstest;
+
+    use super::*;
 
     #[rstest]
     fn zoom_around_cursor_keeps_world_point_stable() {

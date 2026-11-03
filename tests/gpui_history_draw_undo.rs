@@ -11,8 +11,7 @@ mod history_bdd_support;
 mod history_bdd_support_open;
 
 use common::{canvas_bounds, click_canvas_and_wait, read_document, require_draw_shape};
-use gauss::model::ShapeId;
-use gauss::ui::GpuiActivatePenTool;
+use gauss::{model::ShapeId, ui::GpuiActivatePenTool};
 use gpui::{Pixels, Point, TestAppContext, point, px};
 use history_bdd_support::{DurableShell, missing};
 use rstest_bdd_macros::{given, scenario, then, when};
@@ -198,7 +197,8 @@ fn active_path_tracks_shape(
         let actual = visual_cx.read(|app| view.read(app).draw_active_shape_for_tests());
         if actual != Some(expected) || actual == Some(stale) {
             return Err(TestSupportError::expectation(format!(
-                "expected active path {expected:?} to replace stale path {stale:?}, found {actual:?}"
+                "expected active path {expected:?} to replace stale path {stale:?}, found \
+                 {actual:?}"
             )));
         }
         Ok(())

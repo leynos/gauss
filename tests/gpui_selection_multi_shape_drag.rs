@@ -24,12 +24,17 @@ use rstest_bdd_macros::{given, scenario, then, when};
 use selection_coordinates::viewport_to_screen_point;
 use serial_test::serial;
 use support::{
-    ScenarioContext, ScenarioStateCleanup, require_point, set_scenario_data, with_scenario_data,
-    with_state, with_visual_cx,
+    ScenarioContext,
+    ScenarioStateCleanup,
+    require_point,
+    set_scenario_data,
+    with_scenario_data,
+    with_state,
+    with_visual_cx,
 };
-use test_support::TestSupportError;
-use test_support::selection::{
-    require_selection_contains_shapes, require_shape, shape_bbox_centre,
+use test_support::{
+    TestSupportError,
+    selection::{require_selection_contains_shapes, require_shape, shape_bbox_centre},
 };
 
 struct ScenarioData {

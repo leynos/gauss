@@ -4,8 +4,7 @@
 //! reading. The fragment-based `attribute_value()` in `resource_tags.rs`
 //! loses namespace context, making it unsuitable for `gauss:*` attributes.
 
-use crate::model::GaussAttribute;
-use crate::svg::metadata::GAUSS_METADATA_NAMESPACE;
+use crate::{model::GaussAttribute, svg::metadata::GAUSS_METADATA_NAMESPACE};
 
 /// Gauss-specific metadata extracted from a shape element.
 pub(super) struct ShapeGaussMetadata {

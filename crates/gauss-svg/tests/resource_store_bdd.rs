@@ -1,16 +1,30 @@
 //! Behaviour tests for resource stores and paint references.
 
 use gauss_core::model::{
-    Anchor, Document, Gradient, GradientKind, GradientStop, LinearGradient, Paint, PaintStyle,
-    PathGeom, PatternResource, ResourceStore, Rgba, SegmentKind, Shape, Vec2,
+    Anchor,
+    Document,
+    Gradient,
+    GradientKind,
+    GradientStop,
+    LinearGradient,
+    Paint,
+    PaintStyle,
+    PathGeom,
+    PatternResource,
+    ResourceStore,
+    Rgba,
+    SegmentKind,
+    Shape,
+    Vec2,
 };
-use gauss_svg::svg::export::{CanvasSize, export_svg_with_resources};
-use gauss_svg::svg::import::{ImportedSvg, SvgImportError, import_svg_with_resources};
-use gauss_svg::svg::metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX};
+use gauss_svg::svg::{
+    export::{CanvasSize, export_svg_with_resources},
+    import::{ImportedSvg, SvgImportError, import_svg_with_resources},
+    metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX},
+};
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
-use test_support::shapes::shape_id;
-use test_support::{TestSupportError, TestSupportResult};
+use test_support::{TestSupportError, TestSupportResult, shapes::shape_id};
 
 #[derive(Default)]
 struct ResourceWorld {
@@ -22,6 +36,7 @@ struct ResourceWorld {
 
 #[fixture]
 fn world() -> ResourceWorld {
+    // Each scenario starts with an empty resource world.
     ResourceWorld::default()
 }
 
@@ -241,30 +256,22 @@ fn then_missing_gauss_namespace_error(world: &ResourceWorld) -> TestSupportResul
     path = "tests/features/resource_store.feature",
     name = "Gradient and pattern references round-trip through SVG"
 )]
-fn gradient_and_pattern_references_round_trip_through_svg(world: ResourceWorld) {
-    let _ = world;
-}
+fn gradient_and_pattern_references_round_trip_through_svg(world: ResourceWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/resource_store.feature",
     name = "Missing resource reference is rejected"
 )]
-fn missing_resource_reference_is_rejected(world: ResourceWorld) {
-    let _ = world;
-}
+fn missing_resource_reference_is_rejected(world: ResourceWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/resource_store.feature",
     name = "Exported SVG declares Gauss metadata namespace"
 )]
-fn exported_svg_declares_gauss_metadata_namespace(world: ResourceWorld) {
-    let _ = world;
-}
+fn exported_svg_declares_gauss_metadata_namespace(world: ResourceWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/resource_store.feature",
     name = "Gauss metadata usage requires canonical gauss prefix declaration"
 )]
-fn gauss_metadata_usage_requires_canonical_prefix(world: ResourceWorld) {
-    let _ = world;
-}
+fn gauss_metadata_usage_requires_canonical_prefix(world: ResourceWorld) { let _ = world; }

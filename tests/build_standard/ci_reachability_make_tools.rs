@@ -1,14 +1,13 @@
 //! Classifies exact repository tools and binds UV routes to reviewed Python bodies.
 
-use super::{Route, Workspace};
-
-use python_routes::{classify_uv, is_historical_whitaker, uses_reviewed_python};
-
 /// Stages reviewed bodies for LF/CRLF identity tests.
 #[cfg(test)]
 pub(super) use python_routes::{LineEnding, stage_python_bodies};
 /// Holds the reviewed Python source identities used by workflow routes.
 pub(super) use python_routes::{REVIEWED_PYTHON_BODIES, verify_reviewed_python_sources};
+use python_routes::{classify_uv, is_historical_whitaker, uses_reviewed_python};
+
+use super::{Route, Workspace};
 
 /// Resolves UV commands and ties source-sensitive routes to reviewed Python files.
 #[path = "ci_reachability_make_python_routes.rs"]
@@ -16,14 +15,19 @@ mod python_routes;
 
 /// Probe names are usable only inside Make after its source defaults pass inspection.
 pub(super) const PROBE_CARGO: &str = "__gauss_contract_cargo_2b87";
+
 /// Probe name for UV, never an accepted workflow executable.
 pub(super) const PROBE_UV: &str = "__gauss_contract_uv_2b87";
+
 /// Probe name for the Whitaker executable.
 pub(super) const PROBE_WHITAKER: &str = "__gauss_contract_whitaker_2b87";
+
 /// Probe name for Markdown lint.
 pub(super) const PROBE_MDLINT: &str = "__gauss_contract_mdlint_2b87";
+
 /// Probe name for Markdown formatting.
 pub(super) const PROBE_MDTABLEFIX: &str = "__gauss_contract_mdtablefix_2b87";
+
 /// Probe name for Mermaid validation.
 pub(super) const PROBE_NIXIE: &str = "__gauss_contract_nixie_2b87";
 

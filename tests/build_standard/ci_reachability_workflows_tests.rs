@@ -2,9 +2,7 @@
 
 use rstest::rstest;
 
-use super::super::rust_flags::replace_once;
-use super::tests::fixture_inventory;
-use super::{Coverage, Value, parser};
+use super::{super::rust_flags::replace_once, Coverage, Value, parser, tests::fixture_inventory};
 
 /// Keeps reusable closure and non-vacuity cases together.
 #[cfg(test)]

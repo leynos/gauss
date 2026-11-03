@@ -1,9 +1,10 @@
 //! Canvas-drag scenario for anchor movement tests.
 
-use super::canvas_drag_values::{CanvasDragValues, canvas_drag_values};
 use gauss::model::Vec2;
 use gpui::{Pixels, Point, VisualTestContext};
 use test_support::TestSupportResult;
+
+use super::canvas_drag_values::{CanvasDragValues, canvas_drag_values};
 
 /// Canvas points and displacement used to exercise anchor dragging.
 #[derive(Clone, Copy, Debug)]

@@ -6,10 +6,8 @@
 
 use gpui_component::history::HistoryItem;
 
-use crate::model::SelectToolState;
-use crate::model::Selection;
-
 use super::Phase0Shell;
+use crate::model::{SelectToolState, Selection};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct SelectionChange {
@@ -24,19 +22,13 @@ pub(super) struct SelectionHistoryItem {
 }
 
 impl HistoryItem for SelectionHistoryItem {
-    fn version(&self) -> usize {
-        self.version
-    }
+    fn version(&self) -> usize { self.version }
 
-    fn set_version(&mut self, version: usize) {
-        self.version = version;
-    }
+    fn set_version(&mut self, version: usize) { self.version = version; }
 }
 
 impl SelectionHistoryItem {
-    pub(super) const fn new(change: SelectionChange) -> Self {
-        Self { version: 0, change }
-    }
+    pub(super) const fn new(change: SelectionChange) -> Self { Self { version: 0, change } }
 }
 
 impl Phase0Shell {

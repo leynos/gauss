@@ -44,7 +44,11 @@ impl Colour {
     /// ```
     /// use gauss_core::model::action::{Colour, Rgb8};
     ///
-    /// let colour = Colour::new(Rgb8 { r: 12, g: 34, b: 56 });
+    /// let colour = Colour::new(Rgb8 {
+    ///     r: 12,
+    ///     g: 34,
+    ///     b: 56,
+    /// });
     /// assert_eq!((colour.r, colour.g, colour.b), (12, 34, 56));
     /// ```
     #[must_use]

@@ -58,9 +58,7 @@ impl Locale {
     /// assert_eq!(locale.language_tag(), "fr-fr");
     /// ```
     #[must_use]
-    pub fn language_tag(&self) -> &str {
-        &self.language_tag
-    }
+    pub fn language_tag(&self) -> &str { &self.language_tag }
 
     /// Create a locale for British English (en-GB).
     ///
@@ -75,9 +73,7 @@ impl Locale {
     /// assert_eq!(locale.language_tag(), "en-gb");
     /// ```
     #[must_use]
-    pub fn en_gb() -> Self {
-        Self::from_language_tag("en-GB")
-    }
+    pub fn en_gb() -> Self { Self::from_language_tag("en-GB") }
 
     /// Create a locale for French (fr-FR).
     ///
@@ -92,33 +88,23 @@ impl Locale {
     /// assert_eq!(locale.language_tag(), "fr-fr");
     /// ```
     #[must_use]
-    pub fn fr_fr() -> Self {
-        Self::from_language_tag("fr-FR")
-    }
+    pub fn fr_fr() -> Self { Self::from_language_tag("fr-FR") }
 }
 
 impl Default for Locale {
-    fn default() -> Self {
-        Self::en_gb()
-    }
+    fn default() -> Self { Self::en_gb() }
 }
 
 impl fmt::Display for Locale {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.language_tag)
-    }
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { write!(f, "{}", self.language_tag) }
 }
 
 impl From<&str> for Locale {
-    fn from(tag: &str) -> Self {
-        Self::from_language_tag(tag)
-    }
+    fn from(tag: &str) -> Self { Self::from_language_tag(tag) }
 }
 
 impl AsRef<str> for Locale {
-    fn as_ref(&self) -> &str {
-        &self.language_tag
-    }
+    fn as_ref(&self) -> &str { &self.language_tag }
 }
 
 #[cfg(test)]

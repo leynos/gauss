@@ -4,12 +4,17 @@
 //! locate and change keyboard shortcuts without wading through rendering code.
 
 use gpui::{
-    Context, KeyDownEvent, Keystroke, Modifiers, MouseButton, MouseDownEvent, NavigationDirection,
+    Context,
+    KeyDownEvent,
+    Keystroke,
+    Modifiers,
+    MouseButton,
+    MouseDownEvent,
+    NavigationDirection,
 };
 
-use crate::model::{SelItem, Selection, ToolInputEvent};
-
 use super::Phase0Shell;
+use crate::model::{SelItem, Selection, ToolInputEvent};
 
 /// Key actions handled directly by the Phase 0 shell.
 ///

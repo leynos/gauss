@@ -3,9 +3,12 @@
 //! These tests validate the core undo/redo invariant for the model layer:
 //! applying an operation and then applying its inverse restores the document.
 
-use crate::model::{DocChange, DocOp, Document, PaintStyle, Rgba, SegmentKind, ShapeId, Vec2};
-use crate::test_helpers::sample_shape;
 use rstest::rstest;
+
+use crate::{
+    model::{DocChange, DocOp, Document, PaintStyle, Rgba, SegmentKind, ShapeId, Vec2},
+    test_helpers::sample_shape,
+};
 
 struct SampleDoc {
     doc: Document,

@@ -3,7 +3,14 @@
 use std::{collections::BTreeSet, process::Command};
 
 use super::{
-    Host, Invocation, Route, Workspace, make_output, make_source, make_syntax, make_tools,
+    Host,
+    Invocation,
+    Route,
+    Workspace,
+    make_output,
+    make_source,
+    make_syntax,
+    make_tools,
 };
 
 /// Reads trace source locations without reconstructing Make prerequisite graphs.

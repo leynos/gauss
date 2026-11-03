@@ -1,10 +1,11 @@
 //! Step definitions for committing an open path with Escape.
 
-use crate::{common, state};
 use gauss::model::ShapeId;
 use gpui::{Pixels, Point, TestAppContext, point, px};
 use rstest_bdd_macros::{given, then, when};
 use test_support::TestSupportError;
+
+use crate::{common, state};
 
 pub(crate) struct DrawEscapeState {
     points: [Point<Pixels>; 2],
@@ -104,7 +105,8 @@ fn open_path_remains_unchanged(
             && visual_cx.read(|app| view.read(app).is_manipulate_mode());
         if !unchanged {
             return Err(TestSupportError::expectation(
-                "expected Escape to enter manipulate mode, preserve the same open path and document length, and make the click add nothing",
+                "expected Escape to enter manipulate mode, preserve the same open path and \
+                 document length, and make the click add nothing",
             ));
         }
         Ok(())

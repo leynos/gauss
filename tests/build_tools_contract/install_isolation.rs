@@ -4,8 +4,14 @@
 //! process observations beside the scenario setup.
 
 use super::{
-    Entry, InjectedFunction, InjectionMode, Probe, ProbeRequest, Request,
-    install_oracles as oracle, support::with_scratch,
+    Entry,
+    InjectedFunction,
+    InjectionMode,
+    Probe,
+    ProbeRequest,
+    Request,
+    install_oracles as oracle,
+    support::with_scratch,
 };
 
 /// Verifies unexpected arguments stop before any external tool call.

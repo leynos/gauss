@@ -1,8 +1,7 @@
 //! SVG path-data parsing helpers.
 
-use crate::model::{Anchor, PathGeom, SegmentKind, Vec2};
-
 use super::SvgImportError;
+use crate::model::{Anchor, PathGeom, SegmentKind, Vec2};
 
 #[derive(Clone, Debug, PartialEq)]
 enum PathToken {
@@ -113,19 +112,13 @@ fn flush_number(
     Ok(())
 }
 
-const fn is_separator(ch: char) -> bool {
-    ch.is_ascii_whitespace() || ch == ','
-}
+const fn is_separator(ch: char) -> bool { ch.is_ascii_whitespace() || ch == ',' }
 
 // This importer currently supports the absolute command subset emitted by
 // Gauss export (`M`, `L`, `C`, `Z`) and rejects relative commands.
-const fn is_command(ch: char) -> bool {
-    matches!(ch, 'M' | 'L' | 'C' | 'Z')
-}
+const fn is_command(ch: char) -> bool { matches!(ch, 'M' | 'L' | 'C' | 'Z') }
 
-const fn is_number_char(ch: char) -> bool {
-    ch.is_ascii_digit() || matches!(ch, '-' | '+' | '.')
-}
+const fn is_number_char(ch: char) -> bool { ch.is_ascii_digit() || matches!(ch, '-' | '+' | '.') }
 
 const fn is_implicit_number_separator(ch: char, number_buf: &str) -> bool {
     !number_buf.is_empty() && matches!(ch, '-' | '+')
@@ -169,8 +162,9 @@ fn tokenize_path_data(d: &str) -> Result<Vec<PathToken>, SvgImportError> {
 mod tests {
     //! Tests for path-data tokenization and parsing.
 
-    use super::parse_path_data;
     use rstest::rstest;
+
+    use super::parse_path_data;
 
     #[rstest]
     fn parses_plus_as_number_separator() {

@@ -1,7 +1,15 @@
 //! Square-shape construction for GPUI integration tests.
 
 use gauss::model::{
-    Anchor, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId, Vec2,
+    Anchor,
+    Document,
+    PaintStyle,
+    PathGeom,
+    Rgba,
+    SegmentKind,
+    Shape,
+    ShapeId,
+    Vec2,
 };
 use test_support::{TestSupportError, TestSupportResult};
 

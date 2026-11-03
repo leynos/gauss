@@ -3,9 +3,8 @@
 use gpui::{SharedString, Stateful, div, prelude::*, px};
 use gpui_component::tooltip::Tooltip;
 
-use crate::ui::{UiIcon, icon_element};
-
 use super::chrome_palette::{chrome_active, chrome_border, chrome_muted_text, chrome_text};
+use crate::ui::{UiIcon, icon_element};
 
 const ICON_SIZE: f32 = 16.0;
 const BUTTON_SIZE: f32 = 28.0;

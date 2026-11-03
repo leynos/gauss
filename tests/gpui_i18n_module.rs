@@ -43,16 +43,12 @@ fn with_state<R>(f: impl FnOnce(&mut ScenarioState) -> R) -> R {
     SCENARIO_STATE.with(|cell| f(&mut cell.borrow_mut()))
 }
 
-fn reset_state() {
-    with_state(|state| *state = ScenarioState::default());
-}
+fn reset_state() { with_state(|state| *state = ScenarioState::default()); }
 
 struct ScenarioStateCleanup;
 
 impl Drop for ScenarioStateCleanup {
-    fn drop(&mut self) {
-        reset_state();
-    }
+    fn drop(&mut self) { reset_state(); }
 }
 
 #[fixture]

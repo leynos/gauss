@@ -30,6 +30,7 @@ struct AliasWorld {
 
 #[fixture]
 fn world() -> AliasWorld {
+    // Each scenario starts with an empty alias world.
     AliasWorld::default()
 }
 
@@ -53,6 +54,7 @@ const FIXTURE_SENTINEL: &str = "fixture default";
 /// `TypeId` scan exactly one candidate to override.
 #[fixture]
 fn alias_sentinel() -> AliasSentinel {
+    // The sentinel is shared by every scenario.
     AliasSentinel(FIXTURE_SENTINEL)
 }
 

@@ -23,13 +23,18 @@ const TOP_BAR_PAD_X_MAXIMIZED: Pixels = px(24.0);
 use super::{
     Phase0Shell,
     chrome_palette::{
-        chrome_background, chrome_border, chrome_muted_text, chrome_panel, chrome_text,
+        chrome_background,
+        chrome_border,
+        chrome_muted_text,
+        chrome_panel,
+        chrome_text,
     },
     file_dialogs,
     icon_button::{IconButtonState, icon_button},
-    resize_border, tool_rail, window_controls,
+    resize_border,
+    tool_rail,
+    window_controls,
 };
-
 use crate::i18n::MessageId;
 
 impl Phase0Shell {

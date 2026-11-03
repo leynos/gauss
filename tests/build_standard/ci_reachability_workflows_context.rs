@@ -29,7 +29,8 @@ fn require_event_sequence(events: &[Value]) -> Result<bool, String> {
     Ok(event_root)
 }
 
-/// Requires a literal event identifier; installation inspection covers all events, not just PR events.
+/// Requires a literal event identifier; installation inspection covers all events, not just PR
+/// events.
 fn require_event_name(event: &str) -> Result<(), String> {
     if event == "workflow_run" {
         return Err(

@@ -53,17 +53,15 @@ impl Error for NamespacePolicyError {}
 
 /// Returns canonical `xmlns:gauss="..."` declaration.
 #[must_use]
-pub fn gauss_namespace_declaration() -> &'static str {
-    GAUSS_NAMESPACE_DECLARATION.as_str()
-}
+pub fn gauss_namespace_declaration() -> &'static str { GAUSS_NAMESPACE_DECLARATION.as_str() }
 
 /// Validate Gauss metadata namespace usage for imported SVG content.
 ///
 /// Rules:
 ///
 /// - If `gauss` prefix is declared, it must point to the canonical URI.
-/// - If the Gauss namespace URI is used by any element or attribute,
-///   `xmlns:gauss="..."` must be declared on the SVG root.
+/// - If the Gauss namespace URI is used by any element or attribute, `xmlns:gauss="..."` must be
+///   declared on the SVG root.
 ///
 /// # Errors
 ///
@@ -119,16 +117,14 @@ fn first_non_canonical_gauss_binding(document: &roxmltree::Document<'_>) -> Opti
 /// # Examples
 ///
 /// ```rust
-/// use gauss_svg::svg::metadata::shape_id_to_hex;
 /// use gauss_core::model::ShapeId;
+/// use gauss_svg::svg::metadata::shape_id_to_hex;
 ///
 /// let hex = shape_id_to_hex(ShapeId::default());
 /// assert_eq!(hex.len(), 16);
 /// ```
 #[must_use]
-pub fn shape_id_to_hex(id: ShapeId) -> String {
-    format!("{:016x}", id.data().as_ffi())
-}
+pub fn shape_id_to_hex(id: ShapeId) -> String { format!("{:016x}", id.data().as_ffi()) }
 
 /// Decode a [`ShapeId`] from a hexadecimal string.
 ///
@@ -138,8 +134,8 @@ pub fn shape_id_to_hex(id: ShapeId) -> String {
 /// # Examples
 ///
 /// ```rust
-/// use gauss_svg::svg::metadata::{shape_id_from_hex, shape_id_to_hex};
 /// use gauss_core::model::ShapeId;
+/// use gauss_svg::svg::metadata::{shape_id_from_hex, shape_id_to_hex};
 /// use slotmap::KeyData;
 ///
 /// let id = KeyData::from_ffi(0x0000_0001_0000_0000).into();
@@ -164,14 +160,19 @@ pub fn shape_id_from_hex(hex: &str) -> Option<ShapeId> {
 mod tests {
     //! Unit tests for metadata namespace policy and hex encoding helpers.
 
+    use rstest::rstest;
     use slotmap::{Key, KeyData};
 
     use super::{
-        GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX, NamespacePolicyError,
-        gauss_namespace_declaration, shape_id_from_hex, shape_id_to_hex, validate_namespace_policy,
+        GAUSS_METADATA_NAMESPACE,
+        GAUSS_METADATA_PREFIX,
+        NamespacePolicyError,
+        gauss_namespace_declaration,
+        shape_id_from_hex,
+        shape_id_to_hex,
+        validate_namespace_policy,
     };
     use crate::model::ShapeId;
-    use rstest::rstest;
 
     #[rstest]
     fn namespace_declaration_uses_canonical_prefix_and_uri() {

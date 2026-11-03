@@ -2,9 +2,16 @@
 
 use rstest::rstest;
 
-use super::super::make::Host;
-use super::super::make_input_env::{
-    self as make_input, Invocation, NEXTEST_OPTIONS, Observation, RunRequest, RustFlagsInput,
+use super::super::{
+    make::Host,
+    make_input_env::{
+        self as make_input,
+        Invocation,
+        NEXTEST_OPTIONS,
+        Observation,
+        RunRequest,
+        RustFlagsInput,
+    },
 };
 
 /// Pure expected-row queries for supported Make routes.
@@ -292,8 +299,14 @@ fn mutated_makefile(mutation: Mutation, original: &str) -> Result<String, String
         ),
         Mutation::FailureMask => replace_once(
             original,
-            "$(CARGO) nextest run --profile default $(TEST_FLAGS) $(NEXTEST_FLAGS) $(BUILD_JOBS); \\",
-            "$(CARGO) nextest run --profile default $(TEST_FLAGS) $(NEXTEST_FLAGS) $(BUILD_JOBS) || true; \\",
+            concat!(
+                "$(CARGO) nextest run --profile default $(TEST_FLAGS) ",
+                "$(NEXTEST_FLAGS) $(BUILD_JOBS); \\"
+            ),
+            concat!(
+                "$(CARGO) nextest run --profile default $(TEST_FLAGS) ",
+                "$(NEXTEST_FLAGS) $(BUILD_JOBS) || true; \\"
+            ),
         ),
     }
 }
@@ -321,7 +334,8 @@ fn check_mutated_route(
     }
 }
 
-/// Requires the swallowed-error mutation to reach its failing leaf and report only lost propagation.
+/// Requires the swallowed-error mutation to reach its failing leaf and report only lost
+/// propagation.
 fn check_failure_mask_mutation(
     expected: &[Invocation],
     observation: &Observation,

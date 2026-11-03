@@ -6,9 +6,7 @@ use thiserror::Error;
 ///
 /// Maps -0.0 to 0.0. NaN values should be rejected before calling this.
 #[inline]
-pub const fn normalize_float(value: f32) -> f32 {
-    if value == 0.0 { 0.0 } else { value }
-}
+pub const fn normalize_float(value: f32) -> f32 { if value == 0.0 { 0.0 } else { value } }
 
 /// Helper to validate and normalize a pair of finite f32 values.
 #[inline]
@@ -31,9 +29,7 @@ pub struct Points(pub f32);
 impl Points {
     /// Return the inner value.
     #[must_use]
-    pub const fn value(&self) -> f32 {
-        self.0
-    }
+    pub const fn value(&self) -> f32 { self.0 }
 }
 
 /// Error returned when constructing a [`UnitF32`] from an `f32` fails.
@@ -54,9 +50,7 @@ pub struct UnitF32(f32);
 impl UnitF32 {
     /// Return the inner value.
     #[must_use]
-    pub const fn value(&self) -> f32 {
-        self.0
-    }
+    pub const fn value(&self) -> f32 { self.0 }
 }
 
 impl TryFrom<f32> for UnitF32 {
@@ -85,21 +79,15 @@ impl Opacity {
     /// this constructor always succeeds. Returns `Option` for API consistency
     /// with other payload constructors.
     #[must_use]
-    pub const fn new(value: UnitF32) -> Option<Self> {
-        Some(Self(normalize_float(value.0)))
-    }
+    pub const fn new(value: UnitF32) -> Option<Self> { Some(Self(normalize_float(value.0))) }
 
     /// Return the opacity value.
     #[must_use]
-    pub const fn value(&self) -> f32 {
-        self.0
-    }
+    pub const fn value(&self) -> f32 { self.0 }
 }
 
 impl std::hash::Hash for Opacity {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.to_bits().hash(state);
-    }
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) { self.0.to_bits().hash(state); }
 }
 
 impl Eq for Opacity {}
@@ -115,7 +103,5 @@ pub struct Degrees(pub f32);
 impl Degrees {
     /// Return the inner value.
     #[must_use]
-    pub const fn value(&self) -> f32 {
-        self.0
-    }
+    pub const fn value(&self) -> f32 { self.0 }
 }

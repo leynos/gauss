@@ -3,11 +3,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use accesskit::{Node, NodeId};
-use gauss::model::{EdgeMode, ToolMode};
-use gauss::ui::phase0_shell::{A11yRequestedAction, A11yService, A11yServiceError, A11ySnapshot};
+use gauss::{
+    model::{EdgeMode, ToolMode},
+    ui::phase0_shell::{A11yRequestedAction, A11yService, A11yServiceError, A11ySnapshot},
+};
 use rstest::fixture;
 use rstest_bdd_macros::given;
-
 pub(crate) use test_support::{TestSupportError, TestSupportResult};
 
 pub(crate) struct A11yWorld {

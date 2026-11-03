@@ -20,6 +20,10 @@ mod vec2_assertion;
 pub use document::read_document;
 /// Dispatches document undo and waits for the GPUI event loop to become parked.
 pub use document_undo::simulate_document_undo;
+/// Re-export the test-support document-history snapshot for BDD consumers.
+pub use gauss::ui::DocumentHistoryState;
+use gauss::ui::Phase0Shell;
+use gpui::{Entity, VisualTestContext};
 /// Provides the harness with the shell's current document-history entry count.
 pub use history::read_history_len;
 /// Initializes the Gauss application in the harness's GPUI test context.
@@ -28,12 +32,6 @@ pub use init_app::init_test_app;
 pub use initial_draw::ensure_initial_draw;
 /// Checks that harness-observed vectors are within the helper's tolerance.
 pub use vec2_assertion::assert_vec2_close;
-
-use gauss::ui::Phase0Shell;
-use gpui::{Entity, VisualTestContext};
-
-/// Re-export the test-support document-history snapshot for BDD consumers.
-pub use gauss::ui::DocumentHistoryState;
 
 /// Returns the current entries and cursor availability in the document history.
 pub fn read_history_state(

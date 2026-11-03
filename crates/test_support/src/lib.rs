@@ -1,7 +1,6 @@
 //! Shared error types for test fixtures and helpers.
 
-use std::num::TryFromIntError;
-use std::{io, result};
+use std::{io, num::TryFromIntError, result};
 
 use thiserror::Error;
 

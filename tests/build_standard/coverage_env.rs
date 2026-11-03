@@ -1,12 +1,12 @@
-//! The coverage recipe's own environment: the linker, the backend and the link arguments a measurement
-//! needs, read from the command `make -n coverage` prints.
+//! The coverage recipe's own environment: the linker, the backend and the link arguments a
+//! measurement needs, read from the command `make -n coverage` prints.
 //!
-//! Coverage takes neither standard flag, so its `RUSTFLAGS` is checked as a held-out command by `make`;
-//! what this module adds is the rest of what that recipe assigns before `cargo llvm-cov`, as recorded
-//! when the contract was written: the LLVM backend (Cranelift cannot instrument code), the clang
-//! linker and the lld arguments LLVM's coverage tools expect. Losing or changing any of them, or the
-//! link argument in `RUSTFLAGS`, fails the contract. A repository with no local coverage recipe
-//! records nothing, and this checks nothing.
+//! Coverage takes neither standard flag, so its `RUSTFLAGS` is checked as a held-out command by
+//! `make`; what this module adds is the rest of what that recipe assigns before `cargo llvm-cov`,
+//! as recorded when the contract was written: the LLVM backend (Cranelift cannot instrument code),
+//! the clang linker and the lld arguments LLVM's coverage tools expect. Losing or changing any of
+//! them, or the link argument in `RUSTFLAGS`, fails the contract. A repository with no local
+//! coverage recipe records nothing, and this checks nothing.
 
 use super::{
     config::Problems,
@@ -39,8 +39,8 @@ fn assigned(assignments: &[(String, String)], name: &str) -> Option<String> {
         .map(|(_, value)| value.clone())
 }
 
-/// Returns the complaints about the command that runs `cargo llvm-cov`: each recorded variable must be
-/// assigned its recorded value, and `RUSTFLAGS` must carry the recorded link argument.
+/// Returns the complaints about the command that runs `cargo llvm-cov`: each recorded variable must
+/// be assigned its recorded value, and `RUSTFLAGS` must carry the recorded link argument.
 pub fn coverage_env_problems(command: &Command, expected: &[Env], link: LinkArg) -> Problems {
     let assignments = leading_assignments(&command.text);
     let mut problems: Problems = expected
@@ -79,7 +79,8 @@ fn coverage_command_problems(commands: &[Command], expected: &[Env], link: LinkA
     }
 }
 
-/// Returns the complaints about the repository's coverage recipe: nothing when it records no environment.
+/// Returns the complaints about the repository's coverage recipe: nothing when it records no
+/// environment.
 ///
 /// # Errors
 ///
@@ -88,7 +89,8 @@ pub fn coverage_recipe_problems(runner: MakeRunner) -> Result<Problems, String> 
     recorded_recipe_problems(runner, COVERAGE_ENV, COVERAGE_LINK)
 }
 
-/// Returns the complaints about the coverage recipe against a given record, so a test can supply one.
+/// Returns the complaints about the coverage recipe against a given record, so a test can supply
+/// one.
 fn recorded_recipe_problems(
     runner: MakeRunner,
     expected: &[Env],
@@ -103,11 +105,18 @@ fn recorded_recipe_problems(
 
 #[cfg(test)]
 mod tests {
-    //! The coverage environment reader over fixtures: a compliant command passes, each lost or changed
-    //! variable and a lost link argument are refused, and the number of coverage commands is pinned.
+    //! The coverage environment reader over fixtures: a compliant command passes, each lost or
+    //! changed variable and a lost link argument are refused, and the number of coverage
+    //! commands is pinned.
 
-    use super::super::make::Assignment;
-    use super::{Command, Env, LinkArg, coverage_command_problems, coverage_env_problems};
+    use super::{
+        super::make::Assignment,
+        Command,
+        Env,
+        LinkArg,
+        coverage_command_problems,
+        coverage_env_problems,
+    };
 
     const EXPECTED: &[Env] = &[
         Env {
@@ -128,8 +137,12 @@ mod tests {
         },
     ];
     const LINK: LinkArg = LinkArg("-C link-arg=-fuse-ld=lld");
-    const OK: &str = "CARGO_PROFILE_DEV_CODEGEN_BACKEND=llvm CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=clang \
-        RUSTFLAGS=\"-D warnings -C link-arg=-fuse-ld=lld\" CFLAGS=\"-fuse-ld=lld\" LDFLAGS=\"-fuse-ld=lld\" cargo llvm-cov --lcov";
+    const OK: &str = concat!(
+        "CARGO_PROFILE_DEV_CODEGEN_BACKEND=llvm ",
+        "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=clang ",
+        "RUSTFLAGS=\"-D warnings -C link-arg=-fuse-ld=lld\" ",
+        "CFLAGS=\"-fuse-ld=lld\" LDFLAGS=\"-fuse-ld=lld\" cargo llvm-cov --lcov"
+    );
 
     fn command(text: &str) -> Command {
         Command {
@@ -138,11 +151,10 @@ mod tests {
         }
     }
 
-    fn problems(text: &str) -> usize {
-        coverage_env_problems(&command(text), EXPECTED, LINK).len()
-    }
+    fn problems(text: &str) -> usize { coverage_env_problems(&command(text), EXPECTED, LINK).len() }
 
-    /// Returns the command with one recorded variable's assignment replaced, and removed when empty.
+    /// Returns the command with one recorded variable's assignment replaced, and removed when
+    /// empty.
     fn broken(env: &Env, assignment: &str) -> String {
         command(OK)
             .text

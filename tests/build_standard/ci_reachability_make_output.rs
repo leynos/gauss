@@ -1,14 +1,22 @@
 //! Binds GNU Make trace blocks to shell commands and resolves every invocation.
 
-use super::{
-    Invocation, Route,
-    make_syntax::{self, Token},
-    make_tools,
-};
 use std::ops::Range;
 
 use command_parser::{
-    Follow, Resolved, is_nextest_probe, is_token_presence, keyword, keyword_after, parse_commands,
+    Follow,
+    Resolved,
+    is_nextest_probe,
+    is_token_presence,
+    keyword,
+    keyword_after,
+    parse_commands,
+};
+
+use super::{
+    Invocation,
+    Route,
+    make_syntax::{self, Token},
+    make_tools,
 };
 
 /// Parses command rows and shell status delimiters for the parent classifier.

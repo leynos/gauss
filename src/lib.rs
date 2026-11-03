@@ -6,8 +6,7 @@
 //!
 //! High-level structure:
 //!
-//! - `gauss::model`: re-exported pure editor data structures and logic from
-//!   `gauss-core`.
+//! - `gauss::model`: re-exported pure editor data structures and logic from `gauss-core`.
 //! - `gauss::svg`: re-exported SVG import/export APIs from `gauss-svg`.
 //! - `gauss::ui`: GPUI views and platform wiring for the desktop app.
 //!

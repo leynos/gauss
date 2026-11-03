@@ -19,9 +19,8 @@ use std::path::PathBuf;
 
 use gpui::{Entity, TestAppContext, VisualTestContext};
 
-use crate::model::{Command, ShapeId, ShapeMovement, ToolCommand, Vec2};
-
 use super::Phase0Shell;
+use crate::model::{Command, ShapeId, ShapeMovement, ToolCommand, Vec2};
 
 /// Helper to set up a shell, configure it via a closure, and read `file_status_line()`.
 ///

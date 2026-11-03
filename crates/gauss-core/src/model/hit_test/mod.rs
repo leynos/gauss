@@ -10,11 +10,20 @@
     reason = "hit-testing relies on floating-point distance maths"
 )]
 
-use crate::model::select_tool::{
-    SelectAnchorHit, SelectHandleHit, SelectHandleHitKind, SelectPointerHit, SelectSegmentHit,
-    SelectShapeHit,
+use crate::model::{
+    Document,
+    Shape,
+    ShapeId,
+    Vec2,
+    select_tool::{
+        SelectAnchorHit,
+        SelectHandleHit,
+        SelectHandleHitKind,
+        SelectPointerHit,
+        SelectSegmentHit,
+        SelectShapeHit,
+    },
 };
-use crate::model::{Document, Shape, ShapeId, Vec2};
 
 mod geometry;
 
@@ -126,9 +135,7 @@ impl<'a> HitTestIndex<'a> {
 
     /// Return the active hit-test strategy.
     #[must_use]
-    pub const fn backend(&self) -> HitTestBackend {
-        self.backend
-    }
+    pub const fn backend(&self) -> HitTestBackend { self.backend }
 
     /// Visit shapes from front to back, returning the first result produced by `f`.
     /// Later draw-order shapes are offered to `f` before earlier shapes.

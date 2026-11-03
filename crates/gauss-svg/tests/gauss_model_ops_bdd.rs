@@ -4,7 +4,16 @@
 //! controller/model boundary, without a running GPUI window.
 
 use gauss_core::model::{
-    Anchor, DocChange, DocOp, Document, PaintStyle, PathGeom, Rgba, SegmentKind, Shape, ShapeId,
+    Anchor,
+    DocChange,
+    DocOp,
+    Document,
+    PaintStyle,
+    PathGeom,
+    Rgba,
+    SegmentKind,
+    Shape,
+    ShapeId,
     Vec2,
 };
 use gauss_svg::svg::export::{CanvasSize, export_svg};
@@ -21,6 +30,7 @@ struct DocWorld {
 
 #[fixture]
 fn world() -> DocWorld {
+    // Each scenario starts with an empty document world.
     DocWorld::default()
 }
 
@@ -121,14 +131,10 @@ fn exported_svg_contains(world: &DocWorld, snippet: String) -> TestSupportResult
     path = "tests/features/gauss_model_ops.feature",
     name = "Insert and undo a shape"
 )]
-fn insert_and_undo_shape(world: DocWorld) {
-    let _ = world;
-}
+fn insert_and_undo_shape(world: DocWorld) { let _ = world; }
 
 #[scenario(
     path = "tests/features/gauss_model_ops.feature",
     name = "Export a closed triangle path"
 )]
-fn export_closed_triangle_contains_close_command(world: DocWorld) {
-    let _ = world;
-}
+fn export_closed_triangle_contains_close_command(world: DocWorld) { let _ = world; }

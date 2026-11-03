@@ -2,8 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use super::super::Value;
-use super::Scanner;
+use super::{super::Value, Scanner};
 
 /// Supported YAML double-quoted escape codes and their decoded characters.
 const DOUBLE_QUOTED_ESCAPES: &[(char, char)] = &[
@@ -340,17 +339,11 @@ impl<'a> FlowReader<'a> {
     }
 
     /// Returns the next UTF-8 character without advancing the byte cursor.
-    fn peek(&self) -> Option<char> {
-        self.source.get(self.cursor..)?.chars().next()
-    }
+    fn peek(&self) -> Option<char> { self.source.get(self.cursor..)?.chars().next() }
 
     /// Builds a line-qualified parser error.
-    fn message(&self, message: &str) -> String {
-        format!("line {}: {message}", self.number)
-    }
+    fn message(&self, message: &str) -> String { format!("line {}: {message}", self.number) }
 
     /// Returns one line-qualified failure for a flow parsing branch.
-    fn fail<T>(&self, message: &str) -> Result<T, String> {
-        Err(self.message(message))
-    }
+    fn fail<T>(&self, message: &str) -> Result<T, String> { Err(self.message(message)) }
 }

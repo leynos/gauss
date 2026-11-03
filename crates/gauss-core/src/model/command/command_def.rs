@@ -1,22 +1,34 @@
 //! Command definitions and application.
 
+use super::{
+    anchor::{
+        apply_close_path,
+        apply_delete_anchors,
+        apply_insert_anchor,
+        apply_insert_anchor_on_segment,
+    },
+    delete_shapes::apply_delete_shapes,
+    error::UserError,
+    insert_shape::apply_insert_shape,
+    inverse::CommandInverse,
+    movement::{apply_move_anchor, apply_move_handle, apply_move_shapes},
+    reorder::apply_reorder,
+    segment::apply_set_segment_kind,
+    style::apply_set_style,
+    types::{
+        AnchorDeletion,
+        AnchorMovement,
+        DeletedShape,
+        HandleMovement,
+        ReorderOp,
+        SegmentChange,
+        ShapeInsertion,
+        ShapeMovement,
+        ShapeReplacement,
+        StyleChange,
+    },
+};
 use crate::model::Document;
-
-use super::anchor::{
-    apply_close_path, apply_delete_anchors, apply_insert_anchor, apply_insert_anchor_on_segment,
-};
-use super::delete_shapes::apply_delete_shapes;
-use super::error::UserError;
-use super::insert_shape::apply_insert_shape;
-use super::inverse::CommandInverse;
-use super::movement::{apply_move_anchor, apply_move_handle, apply_move_shapes};
-use super::reorder::apply_reorder;
-use super::segment::apply_set_segment_kind;
-use super::style::apply_set_style;
-use super::types::{
-    AnchorDeletion, AnchorMovement, DeletedShape, HandleMovement, ReorderOp, SegmentChange,
-    ShapeInsertion, ShapeMovement, ShapeReplacement, StyleChange,
-};
 
 /// Concrete, undoable state changes.
 ///

@@ -2,10 +2,8 @@
 //!
 //! These helpers keep selection state in sync with command-driven edits.
 
-use crate::model::SelectToolState;
-use crate::model::{Action, Selection, prepare_command};
-
 use super::Phase0Shell;
+use crate::model::{Action, SelectToolState, Selection, prepare_command};
 
 impl Phase0Shell {
     pub(super) fn delete_selected_shapes(&mut self) -> bool {

@@ -10,8 +10,10 @@
 use rstest::rstest;
 
 use super::*;
-use crate::model::{Action, Keystroke, Modifiers, default_bindings};
-use crate::ui::phase0_shell::draw::ToolMode;
+use crate::{
+    model::{Action, Keystroke, Modifiers, default_bindings},
+    ui::phase0_shell::draw::ToolMode,
+};
 
 // === context_for_tool_mode tests ===
 
@@ -177,7 +179,7 @@ fn bindings_for_action(collected: &CollectedBindings, action: Action) -> &[KeyBi
         Action::ToggleSegmentKind => &collected.toggle_segment_kind,
         #[expect(
             clippy::unreachable,
-            reason = "Action is #[non_exhaustive]; wildcard required but all current variants are handled"
+            reason = "Action is #[non_exhaustive]; wildcard required for all current variants"
         )]
         _ => unreachable!("all Action variants should be explicitly matched above"),
     }

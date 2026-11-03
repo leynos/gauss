@@ -7,6 +7,8 @@
 mod install;
 /// Holds the five detailed Bash isolation procedures for install cases.
 mod install_isolation;
+/// Delegates the isolation and missing-tool cases to those procedures.
+mod install_isolation_cases;
 /// Supplies independent build-tool expectations and fallible observation checks.
 mod install_oracles;
 mod model;
@@ -27,8 +29,22 @@ mod rustup;
 mod support;
 
 use model::{
-    Controls, Entry, EnvironmentChange, Failure, Host, InjectedFunction, InjectionMode, Invocation,
-    Observation, PayloadMode, PrefixState, Probe, ProbeRequest, Program, Request, RustupFixture,
+    Controls,
+    Entry,
+    EnvironmentChange,
+    Failure,
+    Host,
+    InjectedFunction,
+    InjectionMode,
+    Invocation,
+    Observation,
+    PayloadMode,
+    PrefixState,
+    Probe,
+    ProbeRequest,
+    Program,
+    Request,
+    RustupFixture,
 };
 
 const CANDIDATE_FILES: &[&str] = &[

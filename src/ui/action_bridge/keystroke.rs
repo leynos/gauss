@@ -10,8 +10,7 @@ use crate::model::{Keystroke, Modifier};
 /// # Examples
 ///
 /// ```rust,no_run
-/// use gauss::model::Keystroke;
-/// use gauss::ui::action_bridge::keystroke_to_gpui_string;
+/// use gauss::{model::Keystroke, ui::action_bridge::keystroke_to_gpui_string};
 ///
 /// let undo = Keystroke::secondary("z");
 /// assert_eq!(keystroke_to_gpui_string(&undo), "secondary-z");

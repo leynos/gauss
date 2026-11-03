@@ -1,13 +1,17 @@
 //! Tests for Gauss metadata import.
 
+use rstest::{fixture, rstest};
 use slotmap::Key;
 
 use super::*;
-use crate::model::GaussAttribute;
-use crate::svg::export::{CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata};
-use crate::svg::metadata::shape_id_to_hex;
-use crate::test_helpers::shape_id_from_seed;
-use rstest::{fixture, rstest};
+use crate::{
+    model::GaussAttribute,
+    svg::{
+        export::{CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata},
+        metadata::shape_id_to_hex,
+    },
+    test_helpers::shape_id_from_seed,
+};
 
 const GAUSS_NS_DECL: &str = r#"xmlns:gauss="https://gauss.dev/ns/metadata/1""#;
 

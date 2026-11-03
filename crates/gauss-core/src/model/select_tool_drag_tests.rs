@@ -1,14 +1,31 @@
 //! Additional unit tests for `SelectTool` drag-state transitions.
 
-use super::{
-    Command, Document, EdgeMode, SelectAnchorHit, SelectDragDocumentSnapshot, SelectHandleHit,
-    SelectHandleHitKind, SelectPointerDownInput, SelectPointerHit, SelectPointerMoveInput,
-    SelectPointerUpInput, SelectSegmentHit, SelectShapeHit, SelectTool, SelectToolState, ShapeId,
-    Tool, ToolCommand, ToolInputEvent, ToolMode, Vec2,
-};
 use rstest::{fixture, rstest};
 
-use super::select_tool_test_helpers::{selection_for_shape, shape_id, shape_with_handles};
+use super::{
+    Command,
+    Document,
+    EdgeMode,
+    SelectAnchorHit,
+    SelectDragDocumentSnapshot,
+    SelectHandleHit,
+    SelectHandleHitKind,
+    SelectPointerDownInput,
+    SelectPointerHit,
+    SelectPointerMoveInput,
+    SelectPointerUpInput,
+    SelectSegmentHit,
+    SelectShapeHit,
+    SelectTool,
+    SelectToolState,
+    ShapeId,
+    Tool,
+    ToolCommand,
+    ToolInputEvent,
+    ToolMode,
+    Vec2,
+    select_tool_test_helpers::{selection_for_shape, shape_id, shape_with_handles},
+};
 
 fn pointer_down_input(
     doc: &Document,
