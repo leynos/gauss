@@ -364,3 +364,8 @@ fn spelling_goal_with_new_suite_prerequisite_is_reclassified() {
     require_ordered_cargo_rows(&cargo_rows(&evaluation), &expected)
         .expect("the new prerequisite must emit every complete Cargo row");
 }
+
+/// Keeps the production formatter goals and pinned-prefix properties together.
+#[cfg(test)]
+#[path = "ci_reachability_make_formatter_tests.rs"]
+mod formatter_tests;

@@ -85,6 +85,7 @@ impl Scratch {
             "candidate/scripts",
             "candidate/tools/mold",
             "candidate/tools/rust-stable",
+            "candidate/tools/rustfmt-nightly",
             "bin",
             "fake",
             "state",

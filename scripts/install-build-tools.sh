@@ -15,6 +15,7 @@ script_dir=$(cd -- "$(dirname -- "$script_path")" && pwd)
 BUILD_TOOLS_WORKDIR=
 BUILD_TOOLS_MOLD_PIN=
 BUILD_TOOLS_STABLE_PIN=
+BUILD_TOOLS_RUSTFMT_NIGHTLY_PIN=
 
 cleanup_workdir() {
   if [[ -n $BUILD_TOOLS_WORKDIR ]]; then
@@ -145,9 +146,19 @@ install_stable_toolchain() {
   fi
 }
 
+install_rustfmt_nightly_toolchain() {
+  local toolchain=$1
+  require_command rustup
+  note "installing formatter toolchain $toolchain with rustfmt"
+  if ! rustup toolchain install "$toolchain" --profile minimal --component rustfmt; then
+    fail "failed to install formatter toolchain $toolchain with rustfmt"
+  fi
+}
+
 prepare_install_inputs() {
   BUILD_TOOLS_MOLD_PIN=$(mold_version) || return 1
   BUILD_TOOLS_STABLE_PIN=$(stable_toolchain_version) || return 1
+  BUILD_TOOLS_RUSTFMT_NIGHTLY_PIN=$(rustfmt_nightly_version) || return 1
   load_toolchain_configuration || return 1
   detect_host || return 1
   if is_linux && [[ -z $BUILD_TOOLS_PREFIX ]]; then
@@ -160,6 +171,7 @@ main() {
   install_mold "$BUILD_TOOLS_MOLD_PIN"
   install_toolchain "$BUILD_TOOLS_CHANNEL"
   install_stable_toolchain "$BUILD_TOOLS_STABLE_PIN"
+  install_rustfmt_nightly_toolchain "$BUILD_TOOLS_RUSTFMT_NIGHTLY_PIN"
   note 'ready; verify with: bash scripts/check-build-tools.sh'
 }
 

@@ -34,6 +34,13 @@ jobs:
         uses: leynos/shared-actions/.github/actions/install-mdtablefix@6e99f225cb06684f9e6f89b63a7ca4a04095c067
         with:
           version: "0.6.1"
+      - name: Install pinned formatter toolchain
+        # `.rustfmt.toml` uses nightly-only options. Install the pinned nightly
+        # beside the build toolchain; `make check-fmt` selects it explicitly so
+        # the build toolchain in `rust-toolchain.toml` stays authoritative.
+        run: >-
+          rustup toolchain install nightly-2026-08-07 --profile minimal
+          --component rustfmt
       - name: Format
         run: make check-fmt
       - name: Markdown lint

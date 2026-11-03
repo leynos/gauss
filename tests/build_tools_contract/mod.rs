@@ -22,6 +22,8 @@ mod process;
 /// Validates controlled environment inputs before child launch.
 mod process_inputs;
 mod protocol;
+/// Configures fake `rustup` responses per subcommand call ordinal.
+mod rustup;
 mod support;
 
 use model::{
@@ -36,6 +38,7 @@ const CANDIDATE_FILES: &[&str] = &[
     "tools/mold/VERSION",
     "tools/mold/SHA256SUMS",
     "tools/rust-stable/VERSION",
+    "tools/rustfmt-nightly/VERSION",
     "rust-toolchain.toml",
 ];
 

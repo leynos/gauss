@@ -1,12 +1,13 @@
-//! Specifies reviewed Python identities and the historical Whitaker source gap.
+//! Specifies reviewed Python identities, the historical Whitaker source gap, and
+//! the exact Cargo and `rustup` routes added for the pinned formatter.
 
 use rstest::rstest;
 
 use super::super::tests as shared_tests;
 use super::super::{GitBlobId, Route, make_syntax};
 use super::{
-    LineEnding, REVIEWED_PYTHON_BODIES, classify_words, classify_workspace_words,
-    stage_python_bodies, verify_reviewed_python_sources,
+    LineEnding, REVIEWED_PYTHON_BODIES, RUSTFMT_TOOLCHAIN, classify_words,
+    classify_workspace_words, stage_python_bodies, verify_reviewed_python_sources,
 };
 
 /// The exact historical contract route whose production script is missing.
@@ -138,6 +139,116 @@ fn reviewed_python_source_content_drift_is_a_specific_gap() {
         REVIEWED_PYTHON_BODIES.len(),
         4,
         "the reviewed source boundary is finite"
+    );
+}
+
+/// Copies a reviewed command into the owned words the classifier consumes.
+fn owned_words(command: &[&str]) -> Vec<String> {
+    command.iter().map(|word| (*word).to_owned()).collect()
+}
+
+/// The formatter toolchain prefix is exact: only the pinned nightly is stripped.
+///
+/// For example, `+nightly-2026-08-07 nextest run` reaches the suite route, while
+/// `+nightly fmt` remains an unresolved Cargo subcommand.
+#[test]
+fn cargo_accepts_only_the_pinned_formatter_toolchain_prefix() {
+    let pinned_suite = ["cargo", "+nightly-2026-08-07", "nextest", "run"];
+    assert_eq!(
+        classify_words(&owned_words(&pinned_suite), false),
+        Ok(Route::Suite),
+        "the pinned prefix must not hide a suite invocation"
+    );
+
+    let pinned_format = [
+        "cargo",
+        "+nightly-2026-08-07",
+        "fmt",
+        "--all",
+        "--",
+        "--check",
+    ];
+    assert_eq!(
+        classify_words(&owned_words(&pinned_format), false),
+        Ok(Route::NonSuite)
+    );
+
+    for prefix in ["+nightly", "+stable", "+nightly-2026-08-06"] {
+        let words = owned_words(&["cargo", prefix, "fmt", "--all"]);
+        assert_eq!(
+            classify_words(&words, false),
+            Err(format!("unresolved Cargo subcommand: {prefix}")),
+            "only the pinned formatter toolchain may be stripped: {prefix}"
+        );
+    }
+}
+
+/// `rustup` exposes one reviewed installation route and nothing else.
+///
+/// For example, adding `--default` changes the active toolchain, so it must fail
+/// rather than being treated as a formatter installation.
+#[test]
+fn rustup_accepts_only_the_pinned_formatter_install() {
+    let install = [
+        "rustup",
+        "toolchain",
+        "install",
+        "nightly-2026-08-07",
+        "--profile",
+        "minimal",
+        "--component",
+        "rustfmt",
+    ];
+    assert_eq!(
+        classify_words(&owned_words(&install), false),
+        Ok(Route::NonSuite)
+    );
+
+    let mutations: &[&[&str]] = &[
+        &["rustup", "toolchain", "install", "nightly"],
+        &["rustup", "toolchain", "install", "stable"],
+        &["rustup", "toolchain", "install", "nightly-2026-08-07"],
+        &[
+            "rustup",
+            "toolchain",
+            "install",
+            "nightly-2026-08-07",
+            "--profile",
+            "minimal",
+        ],
+        &[
+            "rustup",
+            "toolchain",
+            "install",
+            "nightly-2026-08-07",
+            "--profile",
+            "minimal",
+            "--component",
+            "rustfmt",
+            "--default",
+        ],
+        &["rustup", "update"],
+        &["rustup", "default", "nightly-2026-08-07"],
+    ];
+    for command in mutations {
+        assert_eq!(
+            classify_words(&owned_words(command), false),
+            Err("unresolved rustup arguments".to_owned()),
+            "only the reviewed formatter install is admissible: {command:?}"
+        );
+    }
+}
+
+/// The formatter pin has one source of truth shared by Make and the scripts.
+///
+/// For example, bumping `tools/rustfmt-nightly/VERSION` without updating
+/// `RUSTFMT_TOOLCHAIN` fails here before either gate runs.
+#[test]
+fn formatter_pin_matches_the_provisioning_version_file() {
+    let pinned = include_str!("../../tools/rustfmt-nightly/VERSION").trim();
+    assert_eq!(
+        pinned, RUSTFMT_TOOLCHAIN,
+        "tools/rustfmt-nightly/VERSION must match the Makefile formatter pin"
     );
 }
 

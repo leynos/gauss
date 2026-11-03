@@ -77,11 +77,11 @@ fn valid_components_are_deduplicated_and_preserved(
     with_scratch(|scratch| {
         scratch.write_relative("candidate/rust-toolchain.toml", case.contents.as_bytes())?;
         let mut request = Request::new(Entry::Install);
-        let [declared, _stable] = &mut request.controls.rustup.component_output;
+        let [declared, ..] = &mut request.controls.rustup.component_output;
         *declared = case.component_output.to_owned();
         // The staged toolchain file, not the repository pin, names the channel
         // the fake inventory must report as installed.
-        let [declared_list, _stable_list] = &mut request.controls.rustup.list_output;
+        let [declared_list, ..] = &mut request.controls.rustup.list_output;
         *declared_list = format!("{}\n", case.channel);
         verify_install_then_check(scratch, &mut request, case.channel, case.extras)
     })
@@ -187,7 +187,7 @@ fn dated_channel_remains_pinned(#[case] channel: &str) -> Result<(), String> {
         let contents = format!("[toolchain]\nchannel=\"{channel}\"\ncomponents=[]\n");
         scratch.write_relative("candidate/rust-toolchain.toml", contents.as_bytes())?;
         let mut request = Request::new(Entry::Install);
-        let [declared, _stable] = &mut request.controls.rustup.list_output;
+        let [declared, ..] = &mut request.controls.rustup.list_output;
         *declared = format!("{channel}\n");
         verify_install_then_check(scratch, &mut request, channel, &[])
     })
@@ -202,7 +202,16 @@ fn stable_rustup_discovery_failure_propagates(
     verify_check_failure(case)
 }
 
+#[rstest]
+#[case::toolchain_list(&cases::NIGHTLY_TOOLCHAIN_LIST_FAILURE)]
+#[case::component_list(&cases::NIGHTLY_COMPONENT_LIST_FAILURE)]
+fn nightly_rustup_discovery_failure_propagates(
+    #[case] case: &CheckFailureCase,
+) -> Result<(), String> {
+    verify_check_failure(case)
+}
+
 #[test]
-fn missing_rustup_reports_both_toolchain_checks() -> Result<(), String> {
+fn missing_rustup_reports_all_toolchain_checks() -> Result<(), String> {
     verify_missing_rustup()
 }
