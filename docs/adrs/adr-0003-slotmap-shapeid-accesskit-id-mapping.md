@@ -1,4 +1,4 @@
-# Architectural decision record (ADR) 003: Use slotmap for ShapeId and AccessKit ID mapping
+# Architectural decision record (ADR) 0003: Use slotmap for ShapeId and AccessKit ID mapping
 
 ## Status
 

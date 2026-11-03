@@ -387,11 +387,11 @@ feature plan while integrating the architectural foundations.
 
 (Partially complete. The dual history stack is implemented. Document history
 has been migrated to the model-layer `DocumentUndoHistory` adapter backed by
-`undo_2` — see [ADR-002](adr-002-undo-history-crate-selection.md). History
-depth is bounded by `keep_last()` with a configurable limit, and A/B testing
-infrastructure exists via the `undo_2` API — see ADR-002 for details. Selection
-history remains on `gpui_component::History`.) In scope: grouping audit,
-optional History panel. Out of scope: preview operation interaction with
+`undo_2` — see [ADR-0002](adrs/adr-0002-undo-history-crate-selection.md).
+History depth is bounded by `keep_last()` with a configurable limit, and A/B
+testing infrastructure exists via the `undo_2` API — see ADR-0002 for details.
+Selection history remains on `gpui_component::History`.) In scope: grouping
+audit, optional History panel. Out of scope: preview operation interaction with
 history.
 
 - [ ] 1.6.1. Audit history grouping. Requires 0.3.2.

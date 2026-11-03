@@ -1,4 +1,4 @@
-# Architectural decision record (ADR) 002: Undo history crate selection
+# Architectural decision record (ADR) 0002: Undo history crate selection
 
 ## Status
 

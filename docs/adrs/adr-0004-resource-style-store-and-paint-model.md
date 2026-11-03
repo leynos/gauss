@@ -1,4 +1,4 @@
-# Architectural decision record (ADR) 004: Add typed resource/style stores and paint references
+# Architectural decision record (ADR) 0004: Add typed resource/style stores and paint references
 
 ## Status
 
