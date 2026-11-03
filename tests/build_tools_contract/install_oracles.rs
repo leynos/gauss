@@ -50,20 +50,20 @@ pub(super) const CLANG_SOURCE: &[u8] = b"int main(void) { return 0; }\n";
 
 /// Exact seven published primary mold checksum rows, independent of the candidate copy.
 pub(super) const PRIMARY_ROWS: &str = concat!(
-    "946de2774b06a71346bd59b55fddba610b65b8d93c3a4a1559cc84e103472710  \
-     mold-2.41.0-aarch64-linux.tar.gz\n",
-    "19c877255b52c2d8060ca1229fe139d18ab31a1e5614079b853d3be16bdda647  \
-     mold-2.41.0-arm-linux.tar.gz\n",
-    "16b71ee699ffd6b3dc77bf28f954b50107ce6f16618e6b0725c31967af9f3445  \
-     mold-2.41.0-loongarch64-linux.tar.gz\n",
-    "b1a045d9dcbdb1af523518beca9da38f3ee0f208964851831a0664cafaf9bc70  \
-     mold-2.41.0-ppc64le-linux.tar.gz\n",
-    "9e04298a0444a83fb9864ee8520e2730fb84e89c5617478b87396888a753fa41  \
-     mold-2.41.0-riscv64-linux.tar.gz\n",
-    "e5e42a2685967ad209d7568e29a0b2ea86ec9d462cbf5d4aa7398a8087ee1a9d  \
-     mold-2.41.0-s390x-linux.tar.gz\n",
-    "a3696680d99e692970590a178bc3a33d78d60d1c6dc9db7a11b557b02b751f5d  \
-     mold-2.41.0-x86_64-linux.tar.gz\n",
+    "946de2774b06a71346bd59b55fddba610b65b8d93c3a4a1559cc84e103472710  ",
+    "mold-2.41.0-aarch64-linux.tar.gz\n",
+    "19c877255b52c2d8060ca1229fe139d18ab31a1e5614079b853d3be16bdda647  ",
+    "mold-2.41.0-arm-linux.tar.gz\n",
+    "16b71ee699ffd6b3dc77bf28f954b50107ce6f16618e6b0725c31967af9f3445  ",
+    "mold-2.41.0-loongarch64-linux.tar.gz\n",
+    "b1a045d9dcbdb1af523518beca9da38f3ee0f208964851831a0664cafaf9bc70  ",
+    "mold-2.41.0-ppc64le-linux.tar.gz\n",
+    "9e04298a0444a83fb9864ee8520e2730fb84e89c5617478b87396888a753fa41  ",
+    "mold-2.41.0-riscv64-linux.tar.gz\n",
+    "e5e42a2685967ad209d7568e29a0b2ea86ec9d462cbf5d4aa7398a8087ee1a9d  ",
+    "mold-2.41.0-s390x-linux.tar.gz\n",
+    "a3696680d99e692970590a178bc3a33d78d60d1c6dc9db7a11b557b02b751f5d  ",
+    "mold-2.41.0-x86_64-linux.tar.gz\n",
 );
 
 /// Inputs that independently describe one successful installer trace.

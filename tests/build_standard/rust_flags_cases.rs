@@ -299,10 +299,14 @@ fn mutated_makefile(mutation: Mutation, original: &str) -> Result<String, String
         ),
         Mutation::FailureMask => replace_once(
             original,
-            "$(CARGO) nextest run --profile default $(TEST_FLAGS) $(NEXTEST_FLAGS) $(BUILD_JOBS); \
-             \\",
-            "$(CARGO) nextest run --profile default $(TEST_FLAGS) $(NEXTEST_FLAGS) $(BUILD_JOBS) \
-             || true; \\",
+            concat!(
+                "$(CARGO) nextest run --profile default $(TEST_FLAGS) ",
+                "$(NEXTEST_FLAGS) $(BUILD_JOBS); \\"
+            ),
+            concat!(
+                "$(CARGO) nextest run --profile default $(TEST_FLAGS) ",
+                "$(NEXTEST_FLAGS) $(BUILD_JOBS) || true; \\"
+            ),
         ),
     }
 }

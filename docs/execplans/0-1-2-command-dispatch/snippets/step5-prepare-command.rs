@@ -2,8 +2,10 @@
 // See src/model/command.rs for the full version.
 
 /// Panic message for dispatcher bugs where editor actions reach `prepare_command`.
-const DISPATCHER_BUG_MSG: &str = "dispatcher bug: this action does not produce a command \
-                                  and should be routed directly";
+const DISPATCHER_BUG_MSG: &str = concat!(
+    "dispatcher bug: this action does not produce a command ",
+    "and should be routed directly"
+);
 
 /// Prepare a command from an action and current editor state.
 ///

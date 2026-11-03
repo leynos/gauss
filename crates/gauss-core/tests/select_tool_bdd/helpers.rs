@@ -131,8 +131,11 @@ pub(crate) fn set_drag_state_from_hit(
 
     if !matches!(extracted_state, SelectToolState::Dragging(_)) {
         return Err(TestSupportError::expectation(format!(
-            "expected pointer-down transition to yield SelectToolState::Dragging(_); got \
-             {extracted_state:?}",
+            concat!(
+                "expected pointer-down transition to yield SelectToolState::Dragging(_); ",
+                "got {extracted_state:?}",
+            ),
+            extracted_state = extracted_state,
         )));
     }
 

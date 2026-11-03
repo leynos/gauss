@@ -179,8 +179,7 @@ fn bindings_for_action(collected: &CollectedBindings, action: Action) -> &[KeyBi
         Action::ToggleSegmentKind => &collected.toggle_segment_kind,
         #[expect(
             clippy::unreachable,
-            reason = "Action is #[non_exhaustive]; wildcard required but all current variants are \
-                      handled"
+            reason = "Action is #[non_exhaustive]; wildcard required for all current variants"
         )]
         _ => unreachable!("all Action variants should be explicitly matched above"),
     }

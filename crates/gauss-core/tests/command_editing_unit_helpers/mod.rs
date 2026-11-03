@@ -41,9 +41,21 @@ pub(super) enum CommandEditingTestError {
         expected: Arc<Shape>,
         actual: Arc<Shape>,
     },
+    // `thiserror` needs a literal format string, so the message is built by an
+    // inner `format!("{}")` whose text can stay split across `concat!` fragments.
     #[error(
-        "unexpected anchor/segment counts: expected anchors {expected_anchors}, segments \
-         {expected_segments}, got anchors {actual_anchors}, segments {actual_segments}"
+        "{}",
+        format!(
+            concat!(
+                "unexpected anchor/segment counts: expected anchors {expected_anchors}, ",
+                "segments {expected_segments}, got anchors {actual_anchors}, ",
+                "segments {actual_segments}"
+            ),
+            expected_anchors = expected_anchors,
+            expected_segments = expected_segments,
+            actual_anchors = actual_anchors,
+            actual_segments = actual_segments,
+        )
     )]
     UnexpectedShapeCounts {
         expected_anchors: usize,

@@ -285,8 +285,12 @@ fn then_error_is_exposed_via_last_history_error(
     }
 
     Err(TestSupportError::expectation(format!(
-        "expected last_history_error to contain apply error; apply error: {apply_error}; \
-         last_history_error: {history_error}"
+        concat!(
+            "expected last_history_error to contain apply error; ",
+            "apply error: {apply_error}; last_history_error: {history_error}"
+        ),
+        apply_error = apply_error,
+        history_error = history_error,
     )))
 }
 

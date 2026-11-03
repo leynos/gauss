@@ -338,8 +338,11 @@ mod fixtures {
 
     fn compliant() -> String {
         format!(
-            "RUSTFLAGS=\"${{RUSTFLAGS:+$RUSTFLAGS }}{MARKER} -Clink-arg=-fuse-ld=mold\" cargo \
-             nextest run\n"
+            concat!(
+                "RUSTFLAGS=\"${{RUSTFLAGS:+$RUSTFLAGS }}{MARKER} -Clink-arg=-fuse-ld=mold\" ",
+                "cargo nextest run\n"
+            ),
+            MARKER = MARKER,
         )
     }
 

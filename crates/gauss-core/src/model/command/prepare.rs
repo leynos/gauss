@@ -62,8 +62,7 @@ const DISPATCHER_BUG_MSG: &str = concat!(
 /// ```
 #[expect(
     clippy::panic_in_result_fn,
-    reason = "Panic is intentional fail-fast for dispatcher bugs; editor actions should never \
-              reach this function in correct code"
+    reason = "Panic is intentional fail-fast for dispatcher bugs; editor actions never reach it"
 )]
 pub fn prepare_command(action: Action, state: &EngineState) -> Result<Command, UserError> {
     match action {

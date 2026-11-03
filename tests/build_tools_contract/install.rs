@@ -138,44 +138,61 @@ fn required_override_cannot_skip_linux(
     })
 }
 
+/// One malformed `SHA256SUMS` table and the diagnostic it must draw.
+#[derive(Clone, Copy)]
+struct ChecksumCase {
+    /// File contents written before the install runs; `None` removes the file.
+    contents: Option<&'static str>,
+    /// Prefix of the expected diagnostic, before the separator and path.
+    diagnostic: &'static str,
+}
+
 #[rstest]
-#[case::missing_file(
-    None,
-    "expected exactly one checksum for mold-2.41.0-x86_64-linux.tar.gz; checksum file is missing"
-)]
-#[case::missing_selected(
-    Some(""),
-    "expected exactly one checksum for mold-2.41.0-x86_64-linux.tar.gz in"
-)]
-#[case::duplicate_selected(Some(concat!("a3696680d99e692970590a178bc3a33d78d60d1c6dc9db7a11b557b02b751f5d  mold-2.41.0-x86_64-linux.tar.gz\n", "a3696680d99e692970590a178bc3a33d78d60d1c6dc9db7a11b557b02b751f5d  mold-2.41.0-x86_64-linux.tar.gz\n")), "expected exactly one checksum for mold-2.41.0-x86_64-linux.tar.gz in")]
-#[case::malformed_digest(
-    Some("not-a-digest  mold-2.41.0-x86_64-linux.tar.gz\n"),
-    "invalid SHA-256 checksum recorded for mold-2.41.0-x86_64-linux.tar.gz in"
-)]
-#[case::extra_field(
-    Some(
-        "a3696680d99e692970590a178bc3a33d78d60d1c6dc9db7a11b557b02b751f5d  \
-         mold-2.41.0-x86_64-linux.tar.gz  extra\n"
+#[case::missing_file(ChecksumCase {
+    contents: None,
+    diagnostic: concat!(
+        "expected exactly one checksum for mold-2.41.0-x86_64-linux.tar.gz; ",
+        "checksum file is missing"
     ),
-    "invalid SHA-256 checksum recorded for mold-2.41.0-x86_64-linux.tar.gz in"
-)]
-fn checksum_rows_fail_before_curl(
-    #[case] contents: Option<&str>,
-    #[case] diagnostic: &str,
-) -> Result<(), String> {
+})]
+#[case::missing_selected(ChecksumCase {
+    contents: Some(""),
+    diagnostic: "expected exactly one checksum for mold-2.41.0-x86_64-linux.tar.gz in",
+})]
+#[case::duplicate_selected(ChecksumCase {
+    contents: Some(concat!(
+        "a3696680d99e692970590a178bc3a33d78d60d1c6dc9db7a11b557b02b751f5d  ",
+        "mold-2.41.0-x86_64-linux.tar.gz\n",
+        "a3696680d99e692970590a178bc3a33d78d60d1c6dc9db7a11b557b02b751f5d  ",
+        "mold-2.41.0-x86_64-linux.tar.gz\n"
+    )),
+    diagnostic: "expected exactly one checksum for mold-2.41.0-x86_64-linux.tar.gz in",
+})]
+#[case::malformed_digest(ChecksumCase {
+    contents: Some("not-a-digest  mold-2.41.0-x86_64-linux.tar.gz\n"),
+    diagnostic: "invalid SHA-256 checksum recorded for mold-2.41.0-x86_64-linux.tar.gz in",
+})]
+#[case::extra_field(ChecksumCase {
+    contents: Some(concat!(
+        "a3696680d99e692970590a178bc3a33d78d60d1c6dc9db7a11b557b02b751f5d  ",
+        "mold-2.41.0-x86_64-linux.tar.gz  extra\n"
+    )),
+    diagnostic: "invalid SHA-256 checksum recorded for mold-2.41.0-x86_64-linux.tar.gz in",
+})]
+fn checksum_rows_fail_before_curl(#[case] case: ChecksumCase) -> Result<(), String> {
     with_scratch(|scratch| {
         let path = "candidate/tools/mold/SHA256SUMS";
-        match contents {
+        match case.contents {
             Some(text) => scratch.write_relative(path, text.as_bytes())?,
             None => scratch.remove_relative(path)?,
         }
         let request = Request::new(Entry::Install);
-        let separator = if diagnostic.ends_with(" in") {
+        let separator = if case.diagnostic.ends_with(" in") {
             " "
         } else {
             ": "
         };
-        let full_diagnostic = format!("{diagnostic}{separator}{}", scratch.path.join(path));
+        let full_diagnostic = format!("{}{separator}{}", case.diagnostic, scratch.path.join(path));
         let expected = oracle::expected(
             1,
             oracle::host_calls(scratch, &request),

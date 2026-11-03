@@ -285,8 +285,12 @@ pub fn workflow_problems() -> Problems {
 pub fn coverage_presence_problem(found: usize, recorded: usize) -> Option<String> {
     (found != recorded).then(|| {
         format!(
-            "the listed workflows hold {found} coverage step(s), but the contract records \
-             {recorded}"
+            concat!(
+                "the listed workflows hold {found} coverage step(s), ",
+                "but the contract records {recorded}"
+            ),
+            found = found,
+            recorded = recorded,
         )
     })
 }
