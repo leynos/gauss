@@ -32,13 +32,21 @@ use crate::{
     },
 };
 
+/// Snapshot handed from the canvas layout closure to its paint closure.
+///
+/// GPUI separates layout and painting, so the document and view state must be
+/// owned here rather than borrowed from the view.
 #[derive(Clone, Debug)]
 struct CanvasState {
+    /// Document whose shapes are painted.
     document: Document,
+    /// Selection used to draw overlays and selection outlines.
     selection: Selection,
+    /// Viewport mapping world coordinates to screen pixels.
     viewport: Viewport,
 }
 
+/// Build a flex-filling canvas element that paints `document`.
 pub(super) fn canvas_for_document(
     document: &Document,
     selection: &Selection,
@@ -61,6 +69,7 @@ pub(super) fn canvas_for_document(
     .flex_1()
 }
 
+/// Paint the background, every shape in draw order, then the selection overlays.
 fn paint_document(bounds: Bounds<Pixels>, state: &CanvasState, window: &mut Window) {
     window.paint_quad(fill(bounds, rgba(0xf8f8_f8ff)));
 
@@ -71,6 +80,7 @@ fn paint_document(bounds: Bounds<Pixels>, state: &CanvasState, window: &mut Wind
     paint_selection_overlays(&state.document, &state.selection, state.viewport, window);
 }
 
+/// Paint a single shape's solid fill and stroke, skipping absent paints.
 fn paint_shape(shape: &Shape, viewport: Viewport, window: &mut Window) {
     let (fill_path, stroke_path) = build_paths(shape, viewport);
 
@@ -83,6 +93,10 @@ fn paint_shape(shape: &Shape, viewport: Viewport, window: &mut Window) {
     }
 }
 
+/// Paint bounding boxes, handles, anchors, and selection outlines.
+///
+/// Selection outlines are painted last so they remain visible over the
+/// overlay graphics.
 fn paint_selection_overlays(
     doc: &Document,
     selection: &Selection,
@@ -109,6 +123,10 @@ fn paint_selection_overlays(
     }
 }
 
+/// Build the optional fill and stroke paths for `shape`.
+///
+/// A fill path is produced only for closed paths with a non-empty fill; the
+/// stroke path is omitted when no stroke is set.
 fn build_paths(shape: &Shape, viewport: Viewport) -> (Option<Path<Pixels>>, Option<Path<Pixels>>) {
     let fill_path = if shape.path.closed && !shape.style.fill.is_none() {
         build_path(shape, viewport, PathBuilder::fill())
@@ -129,6 +147,10 @@ fn build_paths(shape: &Shape, viewport: Viewport) -> (Option<Path<Pixels>>, Opti
     (fill_path, stroke_path)
 }
 
+/// Trace `shape` into `builder`, converting anchors to screen space.
+///
+/// Returns `None` when the shape has no anchors or GPUI rejects the built
+/// path. Cubic closing segments are traced before the path is closed.
 fn build_path(shape: &Shape, viewport: Viewport, mut builder: PathBuilder) -> Option<Path<Pixels>> {
     let first = shape.path.anchors.first()?;
     let first_screen = viewport.world_to_screen(first.pos);
@@ -185,6 +207,7 @@ fn build_path(shape: &Shape, viewport: Viewport, mut builder: PathBuilder) -> Op
     builder.build().ok()
 }
 
+/// Paint each bounding-box edge as a dashed translucent line.
 fn paint_bbox_overlays(window: &mut Window, overlays: &SelectionOverlays, pattern: DashPattern) {
     let mut builder = PathBuilder::stroke(px(1.0));
 
@@ -199,6 +222,7 @@ fn paint_bbox_overlays(window: &mut Window, overlays: &SelectionOverlays, patter
     window.paint_path(path, rgba(0xb0b0_b080));
 }
 
+/// Paint the Bézier handle connector lines and their square markers.
 fn paint_handle_overlays(window: &mut Window, overlays: &SelectionOverlays) {
     let mut builder = PathBuilder::stroke(px(1.0));
 
@@ -218,12 +242,14 @@ fn paint_handle_overlays(window: &mut Window, overlays: &SelectionOverlays) {
     }
 }
 
+/// Paint a square marker at each selected anchor position.
 fn paint_anchor_markers(window: &mut Window, overlays: &SelectionOverlays) {
     for marker in &overlays.anchor_markers {
         paint_square_marker(window, marker, 0x1d4e_d8ff);
     }
 }
 
+/// Paint a filled square of `marker.size` centred on the marker position.
 fn paint_square_marker(window: &mut Window, marker: &OverlayMarker, colour: u32) {
     let half = marker.size / 2.0;
     let min_x = marker.centre.x - half;
@@ -245,16 +271,24 @@ fn paint_square_marker(window: &mut Window, marker: &OverlayMarker, colour: u32)
     window.paint_path(path, rgba(colour));
 }
 
+/// Alternating dash and gap lengths, in screen pixels.
 #[derive(Clone, Copy, Debug)]
 struct DashPattern {
+    /// Length of each drawn dash.
     dash: f32,
+    /// Length of each blank gap between dashes.
     gap: f32,
 }
 
 impl DashPattern {
+    /// Create a dash pattern from dash and gap lengths.
     const fn new(dash: f32, gap: f32) -> Self { Self { dash, gap } }
 }
 
+/// Append a dashed straight line from `start` to `end` to `builder`.
+///
+/// Degenerate lines and non-positive step sizes are ignored. Very dense
+/// patterns fall back to a single solid line to avoid thousands of segments.
 fn add_dashed_line(
     builder: &mut PathBuilder,
     start: crate::model::Vec2,
@@ -289,6 +323,7 @@ fn add_dashed_line(
     }
 }
 
+/// Pack a model RGBA colour into the `0xRRGGBBAA` integer GPUI paints expect.
 fn model_rgba_to_hex(color: ModelRgba) -> u32 {
     (u32::from(color.r) << 24)
         | (u32::from(color.g) << 16)

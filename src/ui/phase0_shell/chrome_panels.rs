@@ -103,6 +103,7 @@ impl Phase0Shell {
             .child(right)
     }
 
+    /// Build the row of alignment buttons for the style controls.
     fn alignment_buttons(&self) -> impl gpui::IntoElement {
         let buttons = [
             (

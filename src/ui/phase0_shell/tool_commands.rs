@@ -79,6 +79,7 @@ impl Phase0Shell {
         did_change
     }
 
+    /// Apply one tool command, reporting whether it changed observable state.
     fn apply_tool_command(&mut self, command: ToolCommand) -> Result<bool, UserError> {
         Ok(match command {
             ToolCommand::ApplyDocumentCommand(document_command) => {
@@ -114,17 +115,21 @@ impl Phase0Shell {
         })
     }
 
+    /// Apply a document command and invalidate the hover cache.
     fn apply_document_tool_command(&mut self, command: Command) -> Result<bool, UserError> {
         self.apply_command(command)?;
         self.invalidate_hover_cache();
         Ok(true)
     }
 
+    /// Advance the document generation and drop the cached hover result.
     const fn invalidate_hover_cache(&mut self) {
         self.document_generation = self.document_generation.wrapping_add(1);
         self.hover_cache = None;
     }
 
+    /// Switch tool mode, clearing drag previews and hover when leaving
+    /// manipulate mode.
     fn set_tool_mode_if_changed(&mut self, mode: ToolMode) -> bool {
         let mut did_change = false;
 
@@ -152,6 +157,7 @@ impl Phase0Shell {
         did_change
     }
 
+    /// Set the edge mode, returning whether it differed.
     fn set_edge_mode_if_changed(&mut self, mode: DrawEdgeMode) -> bool {
         if self.state.edge_mode == mode {
             return false;
@@ -160,6 +166,7 @@ impl Phase0Shell {
         true
     }
 
+    /// Set the active path, returning whether it differed.
     fn set_active_path_if_changed(&mut self, path: Option<ShapeId>) -> bool {
         if self.state.active_path == path {
             return false;
@@ -168,6 +175,7 @@ impl Phase0Shell {
         true
     }
 
+    /// Replace the selection, returning whether it differed.
     fn set_selection_if_changed(&mut self, selection: Selection) -> bool {
         if self.state.selection == selection {
             return false;
@@ -176,6 +184,7 @@ impl Phase0Shell {
         true
     }
 
+    /// Record a selection transition unless it is a no-op.
     fn record_selection_change_if_needed(&mut self, from: Selection, to: Selection) -> bool {
         if from == to {
             return false;
@@ -184,6 +193,7 @@ impl Phase0Shell {
         true
     }
 
+    /// Replace the select-tool state, returning whether it differed.
     fn set_select_tool_state_if_changed(&mut self, state: SelectToolState) -> bool {
         if self.select_tool_state == state {
             return false;

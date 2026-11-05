@@ -6,6 +6,10 @@ use super::Phase0Shell;
 use crate::model::{Action, SelectToolState, Selection, prepare_command};
 
 impl Phase0Shell {
+    /// Delete the selected shapes through the command pipeline.
+    ///
+    /// Clears the selection and resets the select tool on success; returns
+    /// `false` when the command cannot be prepared or applied.
     pub(super) fn delete_selected_shapes(&mut self) -> bool {
         let command = match prepare_command(Action::DeleteSelection, &self.state) {
             Ok(command) => command,

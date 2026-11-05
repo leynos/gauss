@@ -62,14 +62,20 @@ use crate::model::{
     history::HistoryError,
 };
 
+/// Cached hover hit-test result and the inputs it was computed from.
 struct HoverCache {
+    /// Cursor position in world coordinates.
     cursor_world: Vec2,
+    /// Hit-test tolerance in world units.
     tolerance_world: f32,
+    /// Document generation the result was computed against.
     generation: u64,
+    /// Hit-test result for those inputs.
     result: SelectPointerHit,
 }
 
 impl HoverCache {
+    /// Report whether the cache still matches these inputs.
     fn matches(&self, cursor_world: Vec2, tolerance_world: f32, generation: u64) -> bool {
         self.cursor_world == cursor_world
             && self.tolerance_world.to_bits() == tolerance_world.to_bits()
@@ -197,36 +203,55 @@ pub struct Phase0Shell {
     state: EngineState,
 
     // GPUI-specific state (cannot move to EngineState due to dependencies)
+    /// Handle used to take and track keyboard focus for the shell.
     focus_handle: gpui::FocusHandle,
+    /// Whether the shell has already requested initial focus.
     did_focus: bool,
+    /// Whether the user requested a quit that is still in progress.
     did_request_quit: bool,
+    /// Strategy used when prompting for a document to open.
     open_prompt_mode: OpenPromptMode,
 
     /// Selection change history (separate from document history).
     selection_history: History<selection_history::SelectionHistoryItem>,
 
     // Interaction state
+    /// Current state of the select tool FSM.
     select_tool_state: SelectToolState,
+    /// Item currently under the pointer, if any.
     hover_hit: SelectPointerHit,
+    /// Counter bumped whenever the document changes, invalidating caches.
     document_generation: u64,
+    /// Cached hover hit-test result, cleared on document change.
     hover_cache: Option<HoverCache>,
+    /// Screen position of the most recent canvas click.
     last_canvas_click_screen: Option<Vec2>,
 
     // File I/O state
+    /// Path of the most recently saved document.
     last_saved_path: Option<PathBuf>,
+    /// Error from the most recent save attempt, if it failed.
     last_save_error: Option<String>,
+    /// Path of the most recently opened document.
     last_opened_path: Option<PathBuf>,
+    /// Error from the most recent open attempt, if it failed.
     last_open_error: Option<String>,
+    /// Rendered history error shown in the status line.
     last_history_error: Option<String>,
+    /// Typed history error retained for callers that inspect the cause.
     last_history_error_typed: Option<HistoryError>,
 
     /// Generic shell status errors (not history-related).
     shell_status_error: Option<String>,
 
     // Style picker entities (GPUI-dependent)
+    /// Lazily created stroke colour picker state.
     stroke_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
+    /// Lazily created fill colour picker state.
     fill_picker: Option<gpui::Entity<gpui_component::color_picker::ColorPickerState>>,
+    /// Subscriptions to colour picker change events, dropped with the shell.
     style_picker_subscriptions: Vec<gpui::Subscription>,
+    /// Whether the colour pickers have been created and subscribed to.
     did_init_style_pickers: bool,
 
     /// Previous canvas size for resize anchoring.

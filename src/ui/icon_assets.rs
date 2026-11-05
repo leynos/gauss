@@ -4,6 +4,10 @@ use std::sync::{Arc, LazyLock};
 
 use gpui::{Image, ImageFormat, IntoElement, Styled as _, img, px};
 
+/// Generate the [`UiIcon`] enum and its lazily decoded SVG image table.
+///
+/// Each entry maps an enum variant to an SVG file under `icons/`; the enum
+/// discriminants must stay aligned with the generated image table indices.
 macro_rules! define_ui_icons {
     ($( $variant:ident => $file:literal ),* $(,)?) => {
         #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -85,6 +89,7 @@ pub(crate) fn icon_element(icon: UiIcon, size: f32) -> impl IntoElement {
     img(image).size(px(size))
 }
 
+/// Decode embedded SVG bytes into a GPUI image.
 fn svg_image(bytes: &'static [u8]) -> Arc<Image> {
     Arc::new(Image::from_bytes(ImageFormat::Svg, bytes.to_vec()))
 }

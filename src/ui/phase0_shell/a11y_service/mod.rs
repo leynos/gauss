@@ -27,7 +27,9 @@ mod tree_builder;
 
 pub use self::action_routing::{A11yActionRequestError, A11yRequestedAction, A11yWindowAction};
 
+/// Maximum queued updates before pending deltas are rebased into one snapshot.
 const MAX_PENDING_UPDATES: usize = 128;
+/// Maximum diagnostic update records retained; older records are discarded.
 const MAX_UPDATE_RECORDS: usize = 512;
 
 /// A compact description of an emitted tree update for tests and diagnostics.
@@ -112,15 +114,23 @@ pub struct A11yShapeSnapshot {
 /// Builds and tracks AccessKit tree updates from shell/document state.
 #[derive(Default)]
 pub struct A11yService {
+    /// Snapshot most recently projected into the tree.
     previous_snapshot: Option<A11ySnapshot>,
+    /// Node map produced by the previous projection, used for diffing.
     previous_nodes: BTreeMap<NodeId, Node>,
+    /// Focus node from the previous projection.
     previous_focus: Option<NodeId>,
+    /// Updates queued for adapter delivery.
     pending_updates: Vec<TreeUpdate>,
+    /// Diagnostic records describing queued updates.
     update_records: Vec<A11yUpdateRecord>,
 }
 
+/// Borrowed node map and focus needed to rebuild a full tree snapshot.
 struct RebaseContext<'a> {
+    /// Current node map to serialize when rebasing.
     nodes: &'a BTreeMap<NodeId, Node>,
+    /// Focus node to carry into the rebased update.
     focus: NodeId,
 }
 
@@ -187,6 +197,7 @@ impl A11yService {
         Ok(self.emit_incremental_snapshot(snapshot, nodes, focus))
     }
 
+    /// Queue a full tree update that initializes the accessibility tree.
     fn emit_initial_snapshot(
         &mut self,
         snapshot: A11ySnapshot,
@@ -217,6 +228,10 @@ impl A11yService {
         self.set_previous_state(snapshot, nodes, focus);
     }
 
+    /// Queue a delta update, returning `false` when nothing changed.
+    ///
+    /// Focus-only or no-op deltas still update the stored previous state so
+    /// later diffs remain anchored to the latest projection.
     fn emit_incremental_snapshot(
         &mut self,
         snapshot: A11ySnapshot,
@@ -260,6 +275,8 @@ impl A11yService {
         true
     }
 
+    /// Queue an update with its diagnostic record, rebasing to a full snapshot
+    /// once [`MAX_PENDING_UPDATES`] is exceeded.
     fn store_emitted_update(
         &mut self,
         update: TreeUpdate,
@@ -283,6 +300,7 @@ impl A11yService {
         truncate_oldest(&mut self.update_records, MAX_UPDATE_RECORDS);
     }
 
+    /// Record the projection that subsequent updates will be diffed against.
     fn set_previous_state(
         &mut self,
         snapshot: A11ySnapshot,
@@ -300,6 +318,10 @@ impl A11yService {
     }
 }
 
+/// Project the current shell state into an accessibility snapshot.
+///
+/// Selected shapes are filtered to those still present in the draw-order
+/// document, so stale selection entries never reach the tree.
 fn snapshot_from_shell(shell: &Phase0Shell) -> A11ySnapshot {
     let shapes = shell
         .state
@@ -333,6 +355,7 @@ fn snapshot_from_shell(shell: &Phase0Shell) -> A11ySnapshot {
     }
 }
 
+/// Drop the oldest entries so that `items` holds at most `max_len` values.
 fn truncate_oldest<T>(items: &mut Vec<T>, max_len: usize) {
     let overflow = items.len().saturating_sub(max_len);
     if overflow > 0 {

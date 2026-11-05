@@ -32,6 +32,9 @@ use crate::model::{
 pub(super) type DrawEdgeMode = EdgeMode;
 
 impl Phase0Shell {
+    /// Handle a canvas click, recording its screen position for later use.
+    ///
+    /// Only acts in draw mode; returns whether the document changed.
     pub(super) fn handle_canvas_click(&mut self, position: gpui::Point<gpui::Pixels>) -> bool {
         let cursor_screen = Vec2::new(f32::from(position.x), f32::from(position.y));
         self.last_canvas_click_screen = Some(cursor_screen);
@@ -44,6 +47,7 @@ impl Phase0Shell {
         self.draw_click_world(cursor_world)
     }
 
+    /// Feed a world-space click to the pen tool and apply its commands.
     fn draw_click_world(&mut self, cursor_world: Vec2) -> bool {
         let active_shape = self.snapshot_active_pen_shape();
         let next_shape_id = active_shape.as_ref().map_or_else(
@@ -72,6 +76,10 @@ impl Phase0Shell {
         self.apply_tool_commands(transition.commands)
     }
 
+    /// Clone the shape behind the active path for pen-tool input.
+    ///
+    /// Clears the active path and returns `None` when it no longer resolves
+    /// to a shape in the document.
     fn snapshot_active_pen_shape(&mut self) -> Option<PenToolActiveShape> {
         let active_path = self.state.active_path?;
         let Some(index) = self.state.document.find_index(active_path) else {
@@ -88,6 +96,7 @@ impl Phase0Shell {
         })
     }
 
+    /// Apply a document command and clear any stale history error on success.
     pub(super) fn apply_command(&mut self, command: Command) -> Result<(), UserError> {
         self.state.apply_document_command(command)?;
         self.last_history_error = None;
@@ -95,6 +104,7 @@ impl Phase0Shell {
         Ok(())
     }
 
+    /// Record or clear the last history error from an undo or redo result.
     fn handle_history_result(&mut self, result: Result<(), crate::model::HistoryError>) {
         match result {
             Ok(()) => {
@@ -109,11 +119,13 @@ impl Phase0Shell {
         }
     }
 
+    /// Undo the most recent document edit, recording any failure.
     pub(super) fn undo_document(&mut self) {
         let result = self.state.undo_document();
         self.handle_history_result(result);
     }
 
+    /// Redo the most recently undone document edit, recording any failure.
     pub(super) fn redo_document(&mut self) {
         let result = self.state.redo_document();
         self.handle_history_result(result);

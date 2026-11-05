@@ -6,7 +6,9 @@ use gpui_component::tooltip::Tooltip;
 use super::chrome_palette::{chrome_active, chrome_border, chrome_muted_text, chrome_text};
 use crate::ui::{UiIcon, icon_element};
 
+/// Edge length of the icon glyph in logical pixels.
 const ICON_SIZE: f32 = 16.0;
+/// Edge length of the square button container in logical pixels.
 const BUTTON_SIZE: f32 = 28.0;
 
 /// Visual and interactive states for an icon button.

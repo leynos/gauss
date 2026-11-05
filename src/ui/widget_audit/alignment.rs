@@ -15,14 +15,16 @@ use super::types::{
 
 /// Returns the alignment panel control inventory.
 ///
-/// Combines alignment buttons (left, centre horizontal, right, top, centre
-/// vertical, bottom) with distribution buttons (horizontal, vertical).
+/// Combines alignment buttons (left, horizontal centre, right, top, vertical
+/// centre, bottom) with distribution buttons (horizontal, vertical).
 pub(super) fn controls() -> Vec<RequiredControl> {
     let mut v = alignment_buttons();
     v.extend(distribution_buttons());
     v
 }
 
+/// Returns the six alignment buttons: left, horizontal centre, right, top,
+/// vertical centre, and bottom.
 fn alignment_buttons() -> Vec<RequiredControl> {
     vec![
         make_alignment_panel_button(
@@ -82,6 +84,7 @@ fn alignment_buttons() -> Vec<RequiredControl> {
     ]
 }
 
+/// Returns the horizontal and vertical distribution buttons.
 fn distribution_buttons() -> Vec<RequiredControl> {
     vec![
         make_alignment_panel_button(
@@ -105,12 +108,16 @@ fn distribution_buttons() -> Vec<RequiredControl> {
     ]
 }
 
+/// Action metadata shared by alignment and distribution buttons.
 #[derive(Clone, Copy)]
 struct AlignmentAction {
+    /// Qualified action name emitted when the button is pressed.
     name: &'static str,
+    /// Accessibility or behaviour notes attached to the action linkage.
     notes: &'static str,
 }
 
+/// Builds a Phase 1 alignment-panel entry from its descriptive metadata.
 fn make_alignment_panel_button(
     name: &'static str,
     description: &'static str,

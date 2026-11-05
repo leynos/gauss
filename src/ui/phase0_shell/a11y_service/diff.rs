@@ -4,10 +4,12 @@ use std::collections::BTreeMap;
 
 use accesskit::{Node, NodeId};
 
+/// Clone every node, preserving the key order of the source map.
 pub(super) fn clone_nodes_in_order(nodes: &BTreeMap<NodeId, Node>) -> Vec<(NodeId, Node)> {
     nodes.iter().map(|(id, node)| (*id, node.clone())).collect()
 }
 
+/// Return the raw IDs present in the old map but absent from the new one.
 pub(super) fn removed_node_ids(
     old_nodes: &BTreeMap<NodeId, Node>,
     new_nodes: &BTreeMap<NodeId, Node>,
@@ -19,6 +21,7 @@ pub(super) fn removed_node_ids(
         .collect()
 }
 
+/// Return the raw IDs present in the new map but absent from the old one.
 pub(super) fn inserted_node_ids(
     old_nodes: &BTreeMap<NodeId, Node>,
     new_nodes: &BTreeMap<NodeId, Node>,
@@ -30,6 +33,7 @@ pub(super) fn inserted_node_ids(
         .collect()
 }
 
+/// Return the raw IDs of nodes present in both maps whose values differ.
 pub(super) fn updated_node_ids(
     old_nodes: &BTreeMap<NodeId, Node>,
     new_nodes: &BTreeMap<NodeId, Node>,
@@ -45,6 +49,10 @@ pub(super) fn updated_node_ids(
         .collect()
 }
 
+/// Clone the nodes that are new or whose value differs from the old map.
+///
+/// A node counts as changed when it is absent from the old map or its
+/// serialized value is not equal to the previous one.
 pub(super) fn changed_nodes(
     old_nodes: &BTreeMap<NodeId, Node>,
     new_nodes: &BTreeMap<NodeId, Node>,

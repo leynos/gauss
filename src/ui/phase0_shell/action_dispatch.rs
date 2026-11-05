@@ -40,6 +40,9 @@ use crate::{
     },
 };
 
+/// Chain GPUI action handlers that forward each action to a model action.
+///
+/// The element is rebound for every pair, so handlers compose in list order.
 macro_rules! bind_gpui_model_actions {
     ($el:expr, $cx:expr, [ $( ($gpui_action:ty, $gauss_action:expr) ),* $(,)? ]) => {{
         let el = $el;
@@ -70,6 +73,11 @@ impl Phase0Shell {
         }
     }
 
+    /// Route a model action to the handler for its category.
+    ///
+    /// Style and transform actions are reported as unsupported until the
+    /// command system supports them; unknown variants are reported as
+    /// unhandled rather than silently dropped.
     pub(super) fn execute_model_action(
         &mut self,
         action: GaussAction,
@@ -121,6 +129,8 @@ impl Phase0Shell {
         }
     }
 
+    /// Delete the current shape selection, or the selected anchors when no
+    /// shape is selected.
     fn execute_delete_selection(&mut self, cx: &mut gpui::Context<Self>) {
         let has_shape_selection = self.state.selection.selected_shapes().next().is_some();
         let did_change = if has_shape_selection {
@@ -133,6 +143,10 @@ impl Phase0Shell {
         }
     }
 
+    /// Activate the tool named by `action`.
+    ///
+    /// Notifies the view when the tool actually changes; the unreachable arm
+    /// guards callers that pass a non-tool action.
     fn execute_tool_action(&mut self, action: GaussAction, cx: &mut gpui::Context<Self>) {
         let error_before = self.last_history_error.clone();
         let did_change = match action {
@@ -152,6 +166,9 @@ impl Phase0Shell {
         }
     }
 
+    /// Apply the undo or redo action named by `action` and notify the view.
+    ///
+    /// The unreachable arm guards callers that pass a non-history action.
     fn execute_history_action(&mut self, action: GaussAction, cx: &mut gpui::Context<Self>) {
         match action {
             GaussAction::Undo => self.undo_document(),
@@ -170,6 +187,9 @@ impl Phase0Shell {
         cx.notify();
     }
 
+    /// Apply a window-control action to the platform window.
+    ///
+    /// Closing marks the shell as a quit request and quits the application.
     pub(super) fn execute_window_action(
         &mut self,
         action: A11yWindowAction,
@@ -200,6 +220,10 @@ impl Phase0Shell {
     // FIXME: remove once the production GPUI event hook is wired — see roadmap §1.9.5
     // Prepared for production AccessKit integration; currently exercised only
     // via test_helpers::handle_accesskit_action_request_for_tests.
+    /// Route an AccessKit action request and return the action that was taken.
+    ///
+    /// Model actions are executed against shell state; window actions are
+    /// applied to the supplied window. Errors from routing propagate unchanged.
     #[cfg_attr(
         not(any(test, feature = "test-support", coverage, coverage_nightly)),
         expect(
@@ -256,6 +280,7 @@ impl Phase0Shell {
         )
     }
 
+    /// Bind every editor model action to the root element.
     pub(super) fn bind_model_actions(el: gpui::Div, cx: &mut gpui::Context<Self>) -> gpui::Div {
         bind_gpui_model_actions!(
             el,

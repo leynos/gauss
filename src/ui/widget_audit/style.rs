@@ -17,18 +17,31 @@ use super::{
 /// Specification for a style panel control.
 #[derive(Clone, Copy)]
 struct StyleControlSpec {
+    /// Display name of the control.
     name: &'static str,
+    /// User job the control supports.
     description: &'static str,
+    /// Interaction states the control must expose.
     states: &'static [&'static str],
+    /// Accessibility role, such as `ColorPicker` or `Slider`.
     control_type: &'static str,
+    /// Accessible label announced to assistive technology.
     label: &'static str,
+    /// Accessibility states the control must report.
     a11y_states: &'static [&'static str],
+    /// Notes on how state changes must be announced.
     a11y_notes: &'static str,
+    /// Command emitted when the control changes.
     action_name: AuditAction,
+    /// Undo and routing notes for the emitted command.
     action_notes: &'static str,
+    /// Requirement sources justifying the control's inclusion.
     sources: &'static [RequirementSource],
+    /// Whether the current shell already provides this control.
     evidence_exists: bool,
+    /// Path to the shell implementation; required when `evidence_exists`.
     evidence_path: Option<&'static str>,
+    /// Current evidence status for this control.
     evidence_notes: &'static str,
 }
 
@@ -85,6 +98,7 @@ pub(super) fn controls() -> Vec<RequiredControl> {
     v
 }
 
+/// Returns the stroke colour, width, and opacity controls.
 fn stroke_controls() -> Vec<RequiredControl> {
     vec![
         make_style_control(StyleControlSpec {
@@ -145,6 +159,7 @@ fn stroke_controls() -> Vec<RequiredControl> {
     ]
 }
 
+/// Returns the fill colour, fill opacity, and no-fill controls.
 fn fill_controls() -> Vec<RequiredControl> {
     vec![
         make_style_control(StyleControlSpec {

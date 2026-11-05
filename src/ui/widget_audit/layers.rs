@@ -23,6 +23,7 @@ use super::types::{
     UserJob,
 };
 
+/// Returns the layers panel control inventory.
 pub(super) fn controls() -> Vec<RequiredControl> {
     vec![
         layer_row(),
@@ -33,6 +34,7 @@ pub(super) fn controls() -> Vec<RequiredControl> {
     ]
 }
 
+/// Builds the layer row entry that represents and selects a layer.
 fn layer_row() -> RequiredControl {
     RequiredControl {
         name: "Layer Row",
@@ -72,6 +74,7 @@ fn layer_row() -> RequiredControl {
     }
 }
 
+/// Builds the toggle entry that shows or hides a layer.
 fn layer_visibility_toggle() -> RequiredControl {
     RequiredControl {
         name: "Layer Visibility Toggle",
@@ -111,6 +114,7 @@ fn layer_visibility_toggle() -> RequiredControl {
     }
 }
 
+/// Builds the toggle entry that locks or unlocks a layer against edits.
 fn layer_lock_toggle() -> RequiredControl {
     RequiredControl {
         name: "Layer Lock Toggle",
@@ -150,6 +154,7 @@ fn layer_lock_toggle() -> RequiredControl {
     }
 }
 
+/// Builds the inline field entry for renaming a layer.
 fn layer_rename_field() -> RequiredControl {
     RequiredControl {
         name: "Layer Rename Field",
@@ -189,6 +194,7 @@ fn layer_rename_field() -> RequiredControl {
     }
 }
 
+/// Builds the drag handle entry for reordering layers in stacking order.
 fn layer_reorder_handle() -> RequiredControl {
     RequiredControl {
         name: "Layer Reorder Handle",

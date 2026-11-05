@@ -31,6 +31,7 @@ pub(super) fn tool_rail(
         .child(tool_rail_buttons(shell_state, cx))
 }
 
+/// Build the select, draw, and placeholder buttons shown in the rail.
 fn tool_rail_buttons(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
@@ -60,21 +61,33 @@ fn tool_rail_buttons(
     ))
 }
 
+/// Description of a tool-mode button used by the shared builder.
 struct ToolModeButtonSpec<F, S> {
+    /// Element ID used for debugging and tests.
     id: &'static str,
+    /// Icon drawn inside the button.
     icon: UiIcon,
+    /// Localized tooltip text.
     tooltip: String,
+    /// Computes the button state from current shell state.
     state_fn: S,
+    /// Applies the tool change when the button is clicked.
     on_click: F,
 }
 
+/// Static description of a draw-mode button and its edge mode.
 struct ToolDrawButtonSpec {
+    /// Element ID used for debugging and tests.
     id: &'static str,
+    /// Icon drawn inside the button.
     icon: UiIcon,
+    /// Message ID used to build the localized tooltip.
     message_id: fn() -> MessageId,
+    /// Edge mode activated by the button.
     edge_mode: DrawEdgeMode,
 }
 
+/// Draw buttons rendered by the tool rail, one per edge mode.
 const DRAW_BUTTON_SPECS: &[ToolDrawButtonSpec] = &[
     ToolDrawButtonSpec {
         id: "tool-draw-line",
@@ -116,6 +129,7 @@ where
     ))
 }
 
+/// Build a draw button that activates the spec's edge mode.
 fn tool_draw_button(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
@@ -140,6 +154,7 @@ fn tool_draw_button(
     )
 }
 
+/// Build the select-tool button.
 fn tool_select_button(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
@@ -160,6 +175,7 @@ fn tool_select_button(
     )
 }
 
+/// Build a disabled placeholder button for a tool that is not implemented.
 fn tool_placeholder_button(
     shell_state: &Phase0Shell,
     id: &'static str,
@@ -170,6 +186,7 @@ fn tool_placeholder_button(
     icon_button(id, icon, IconButtonState::Placeholder, Some(tooltip))
 }
 
+/// Active state for the select button when manipulating, enabled otherwise.
 fn select_button_state(tool_mode: ToolMode) -> IconButtonState {
     if tool_mode == ToolMode::Manipulate {
         IconButtonState::Active
@@ -178,6 +195,7 @@ fn select_button_state(tool_mode: ToolMode) -> IconButtonState {
     }
 }
 
+/// Active state for a draw button when its edge mode is the current one.
 fn draw_button_state(
     tool_mode: ToolMode,
     current_edge_mode: DrawEdgeMode,

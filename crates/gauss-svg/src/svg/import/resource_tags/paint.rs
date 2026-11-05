@@ -28,6 +28,9 @@ pub(in crate::svg::import) fn parse_paint_with_opacity(
     Ok(paint.with_opacity(alpha))
 }
 
+/// Parse all `<stop>` tags in a gradient body into typed gradient stops.
+///
+/// Offsets default to `0.0`, colours to opaque black, and opacity to full.
 pub(super) fn parse_gradient_stops(
     block: SvgContent<'_>,
 ) -> Result<Vec<GradientStop>, SvgImportError> {

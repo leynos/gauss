@@ -135,6 +135,10 @@ pub fn import_svg_with_resources(svg: &str) -> Result<ImportedSvg, SvgImportErro
     })
 }
 
+/// Build a [`Shape`] from one `<path>` tag and its optional Gauss metadata.
+///
+/// The draw-order index becomes the shape's z-order, and a missing
+/// `stroke-width` defaults to `1.0`.
 fn parse_shape_from_tag(
     raw_tag: &str,
     index: usize,
@@ -194,6 +198,7 @@ fn parse_shape_from_tag(
     })
 }
 
+/// Translate a namespace validation failure into the import error surface.
 fn map_namespace_policy_error(error: NamespacePolicyError) -> SvgImportError {
     match error {
         NamespacePolicyError::InvalidXml => SvgImportError::MalformedSvg,

@@ -101,6 +101,7 @@ pub enum HitTarget {
     Shape(ShapeHit),
 }
 
+/// A shape paired with its draw-order index for candidate iteration.
 #[derive(Clone, Copy, Debug)]
 struct IndexedShape<'a> {
     /// Position in the document's draw order, used to preserve hit priority.

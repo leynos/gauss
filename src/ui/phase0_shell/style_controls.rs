@@ -113,11 +113,13 @@ impl Phase0Shell {
         row
     }
 
+    /// Apply a stroke colour given in GPUI colour space.
     fn apply_stroke_colour_inner(&mut self, colour: Option<Hsla>) -> bool {
         let stroke = colour.map(hsla_to_model_rgba);
         self.apply_style_update(StyleUpdate::Stroke(stroke))
     }
 
+    /// Apply a fill colour given in GPUI colour space.
     fn apply_fill_colour_inner(&mut self, colour: Option<Hsla>) -> bool {
         let fill = colour.map(hsla_to_model_rgba);
         self.apply_style_update(StyleUpdate::Fill(fill))
@@ -141,18 +143,27 @@ impl Phase0Shell {
         self.apply_fill_colour_inner(colour)
     }
 
+    /// Apply a stroke colour reported by the stroke colour picker.
     fn handle_stroke_picker_event(&mut self, event: &ColorPickerEvent) -> bool {
         match event {
             ColorPickerEvent::Change(value) => self.apply_stroke_colour_inner(*value),
         }
     }
 
+    /// Apply a fill colour reported by the fill colour picker.
     fn handle_fill_picker_event(&mut self, event: &ColorPickerEvent) -> bool {
         match event {
             ColorPickerEvent::Change(value) => self.apply_fill_colour_inner(*value),
         }
     }
 
+    /// Apply a style change to the selection, or to the current style when
+    /// nothing is selected.
+    ///
+    /// Only shapes whose style actually changes are included in the command.
+    /// With no selection this always returns `true`, even when the requested
+    /// value already matches the current style; otherwise the return value
+    /// reports whether the style-change command succeeded.
     fn apply_style_update(&mut self, update: StyleUpdate) -> bool {
         let selected_shapes = self.selected_shape_ids_for_style();
         if selected_shapes.is_empty() {
@@ -184,6 +195,10 @@ impl Phase0Shell {
         self.apply_command(Command::SetStyle { changes }).is_ok()
     }
 
+    /// Collect the distinct shape IDs referenced by the current selection.
+    ///
+    /// Anchor, handle, and segment selections all resolve to their owning
+    /// shape, so each shape appears at most once.
     fn selected_shape_ids_for_style(&self) -> Vec<ShapeId> {
         use std::collections::HashSet;
 
@@ -199,13 +214,17 @@ impl Phase0Shell {
     }
 }
 
+/// A pending stroke or fill style change.
 #[derive(Clone, Copy, Debug)]
 enum StyleUpdate {
+    /// Replace the stroke paint; `None` leaves it transparent or unset.
     Stroke(Option<Rgba>),
+    /// Replace the fill paint; `None` leaves it transparent or unset.
     Fill(Option<Rgba>),
 }
 
 impl StyleUpdate {
+    /// Write this update into the supplied paint style.
     const fn apply_to_style(self, style: &mut PaintStyle) {
         match self {
             Self::Stroke(stroke) => {
@@ -218,6 +237,7 @@ impl StyleUpdate {
     }
 }
 
+/// Return the shape that owns a selection item.
 const fn shape_id_for_selection_item(item: &SelItem) -> ShapeId {
     match item {
         SelItem::Shape(shape)
@@ -228,6 +248,7 @@ const fn shape_id_for_selection_item(item: &SelItem) -> ShapeId {
     }
 }
 
+/// Convert a model-layer RGBA colour into GPUI's HSLA representation.
 fn model_rgba_to_hsla(color: Rgba) -> Hsla {
     let packed = (u32::from(color.r) << 24)
         | (u32::from(color.g) << 16)
@@ -237,6 +258,7 @@ fn model_rgba_to_hsla(color: Rgba) -> Hsla {
     Hsla::from(rgba)
 }
 
+/// Convert a GPUI HSLA colour into the model-layer RGBA representation.
 fn hsla_to_model_rgba(color: Hsla) -> Rgba {
     let rgba = gpui::Rgba::from(color);
     let packed: u32 = rgba.into();

@@ -24,9 +24,11 @@ use crate::model::{SelItem, Selection, ToolInputEvent};
 /// the keystrokes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum KeyAction {
+    /// Escape cancels the current tool interaction or selection.
     Escape,
 }
 
+/// Map a keystroke to the shell-local action it triggers, if any.
 fn key_action_for(keystroke: &Keystroke) -> Option<KeyAction> {
     if keystroke.key.as_str() == "escape" {
         return Some(KeyAction::Escape);
@@ -36,6 +38,11 @@ fn key_action_for(keystroke: &Keystroke) -> Option<KeyAction> {
 }
 
 impl Phase0Shell {
+    /// Dispatch a key-down event to the shell-local key handler.
+    ///
+    /// Held keys and `Tab` are handled specially: `Tab` stops propagation so
+    /// focused children cannot consume it, while the edge-mode toggle itself
+    /// is dispatched through the keymap.
     pub(super) fn handle_key_down(&mut self, event: &KeyDownEvent, cx: &mut Context<Self>) {
         if event.is_held {
             return;
@@ -65,12 +72,14 @@ impl Phase0Shell {
         cx.stop_propagation();
     }
 
+    /// Toggle the active edge mode in response to the `Tab` action.
     pub(super) fn handle_tab_action(&mut self, cx: &mut Context<Self>) {
         if self.handle_tool_input_event(ToolInputEvent::ToggleEdgeMode) {
             cx.notify();
         }
     }
 
+    /// Handle a mouse down from a navigation button, ignoring other buttons.
     pub(super) fn handle_navigation_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
         let MouseDownEvent {
             button, modifiers, ..
@@ -83,6 +92,10 @@ impl Phase0Shell {
         self.handle_navigation_button(*direction, *modifiers)
     }
 
+    /// Route a navigation button to document or selection history.
+    ///
+    /// Holding shift selects the selection history instead of the document
+    /// history; back undoes and forward redoes.
     fn handle_navigation_button(
         &mut self,
         direction: NavigationDirection,
@@ -110,6 +123,8 @@ impl Phase0Shell {
         }
     }
 
+    /// Run a shell-local key action and report whether the caller should
+    /// notify the view.
     fn apply_key_action(&mut self, action: KeyAction, cx: &mut Context<Self>) -> bool {
         match action {
             KeyAction::Escape => {
@@ -121,6 +136,7 @@ impl Phase0Shell {
         }
     }
 
+    /// Report an escape press to the tool and notify when it changed state.
     fn handle_escape(&mut self, cx: &mut Context<Self>) {
         if self.handle_tool_input_event(ToolInputEvent::EscapePressed) {
             cx.notify();

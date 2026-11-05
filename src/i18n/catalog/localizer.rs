@@ -27,7 +27,9 @@ use crate::i18n::{I18nError, Locale, MessageId};
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Localizer {
+    /// Catalogs keyed by the locale they translate.
     catalogs: HashMap<Locale, Catalog>,
+    /// Locale consulted when the requested locale lacks the message.
     default_locale: Locale,
 }
 
