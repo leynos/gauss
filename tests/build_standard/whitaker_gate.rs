@@ -69,6 +69,16 @@ fn the_lint_goal_chains_its_two_leaves_fail_fast() -> Result<(), String> {
         ));
     }
     let chain = recipe("lint")?.join(" ");
+    require_chained_leaves(&chain)?;
+    if chain.contains("$(MAKE)") {
+        return Err(format!("`make lint` recurses through Make: {chain}"));
+    }
+    require_unmasked("`make lint`", &chain)?;
+    require_shared_definitions()
+}
+
+/// Requires the composite recipe to chain exactly the two shared definitions.
+fn require_chained_leaves(chain: &str) -> Result<(), String> {
     let Some((first, second)) = chain.split_once("&&") else {
         return Err(format!("`make lint` does not chain its leaves: {chain}"));
     };
@@ -78,9 +88,11 @@ fn the_lint_goal_chains_its_two_leaves_fail_fast() -> Result<(), String> {
     if second.trim() != "$(LINT_WHITAKER_COMMANDS)" {
         return Err(format!("`make lint` does not run Whitaker second: {chain}"));
     }
-    if chain.contains("$(MAKE)") {
-        return Err(format!("`make lint` recurses through Make: {chain}"));
-    }
+    Ok(())
+}
+
+/// Requires both leaf command sequences to be present and complete.
+fn require_shared_definitions() -> Result<(), String> {
     let clippy = variable("LINT_CLIPPY_COMMANDS")?;
     if !clippy.contains("$(CARGO) doc --workspace --no-deps")
         || !clippy.contains("$(CARGO) clippy $(CLIPPY_FLAGS)")
@@ -93,15 +105,17 @@ fn the_lint_goal_chains_its_two_leaves_fail_fast() -> Result<(), String> {
             "`LINT_WHITAKER_COMMANDS` is incomplete: {whitaker}"
         ));
     }
-    if let Some(fragment) = MASKING_FRAGMENTS
-        .iter()
-        .find(|fragment| chain.contains(**fragment))
-    {
-        return Err(format!(
-            "`make lint` masks failure with {fragment:?}: {chain}"
-        ));
-    }
     Ok(())
+}
+
+/// Rejects a recipe or definition that could hide a command's exit status.
+fn require_unmasked(label: &str, text: &str) -> Result<(), String> {
+    MASKING_FRAGMENTS
+        .iter()
+        .find(|fragment| text.contains(**fragment))
+        .map_or(Ok(()), |fragment| {
+            Err(format!("{label} masks failure with {fragment:?}: {text}"))
+        })
 }
 
 /// Whitaker audits the whole workspace with the packages named once in a
@@ -135,17 +149,10 @@ fn the_whitaker_recipe_runs_the_suite_and_cannot_mask_failure() -> Result<(), St
             "`make lint-whitaker` does not run the shared definition: {lines:?}"
         ));
     }
-    for line in std::iter::once(commands).chain(lines) {
-        if let Some(fragment) = MASKING_FRAGMENTS
-            .iter()
-            .find(|fragment| line.contains(**fragment))
-        {
-            return Err(format!(
-                "the Whitaker gate masks failure with {fragment:?}: {line}"
-            ));
-        }
-    }
-    Ok(())
+    require_unmasked("the Whitaker gate", commands)?;
+    lines
+        .iter()
+        .try_for_each(|line| require_unmasked("the Whitaker gate", line))
 }
 
 /// Both leaves are goals in their own right, so neither may be an incidental file.
