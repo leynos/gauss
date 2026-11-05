@@ -136,7 +136,9 @@ project:
     ```
 
     building the documentation, linting every target with all features
-    enabled, and applying the Whitaker Dylint rules.
+    enabled, and applying the Whitaker Dylint rules. The composite goal runs
+    these as `lint-clippy` (documentation and Clippy) and then `lint-whitaker`,
+    in that order even under `make -j`; either leaf can be run on its own.
   - `make test` executes:
 
     ```sh

@@ -15,7 +15,7 @@ use cap_std::{ambient_authority, fs_utf8::Dir};
 #[path = "make_input_fixture.rs"]
 mod fixture;
 
-use self::fixture::{CARGO_RECORDER, RECURSIVE_FIXTURE, UV_NOOP};
+use self::fixture::{CARGO_RECORDER, RECURSIVE_FIXTURE, SURROUNDING_MAKE_VARIABLES, UV_NOOP};
 
 /// Synthetic values used to distinguish inherited and recipe-assigned flags.
 pub(super) const INHERITED_RUSTFLAGS: &str = "--cfg=gauss_inherited_rustflags";
@@ -187,10 +187,20 @@ impl Scratch {
 
     /// Evaluates a real Make target while replacing every executable tool with a recorder.
     pub(super) fn run(&self, request: &RunRequest<'_>) -> Result<Observation, String> {
+        self.run_with_jobs(request, 1)
+    }
+
+    /// Evaluates a real Make target with the requested job count, so a contract
+    /// can prove that a composite gate keeps its leaves in order under `-j`.
+    pub(super) fn run_with_jobs(
+        &self,
+        request: &RunRequest<'_>,
+        jobs: usize,
+    ) -> Result<Observation, String> {
         self.directory()?
             .write("calls.log", b"")
             .map_err(|error| format!("resetting recorder log: {error}"))?;
-        let mut command = self.command_for(request);
+        let mut command = self.command_for(request, jobs);
         let output = command
             .output()
             .map_err(|error| format!("running controlled make {}: {error}", request.target))?;
@@ -205,7 +215,7 @@ impl Scratch {
     }
 
     /// Builds the controlled Make command without executing it.
-    fn command_for(&self, request: &RunRequest<'_>) -> Command {
+    fn command_for(&self, request: &RunRequest<'_>, jobs: usize) -> Command {
         let tool = |name: &str| {
             format!(
                 "{name}=sh {}",
@@ -213,7 +223,13 @@ impl Scratch {
             )
         };
         let mut command = Command::new("make");
-        command.args(["--no-print-directory", "-B", "-j1", "-f", "Makefile"]);
+        command.args([
+            "--no-print-directory",
+            "-B",
+            &format!("-j{jobs}"),
+            "-f",
+            "Makefile",
+        ]);
         command.args([
             format!("BUILD_HOST_OS={}", request.host.make_value()),
             tool("CARGO"),
@@ -246,30 +262,7 @@ impl Scratch {
             .env("GAUSS_FAIL_COMMAND", request.failure)
             .env("RUSTFLAGS", INHERITED_RUSTFLAGS)
             .env("RUSTDOCFLAGS", INHERITED_RUSTDOCFLAGS);
-        // A surrounding `make test` owns these inputs. Removing only its Make
-        // forwarding variables isolates this first child; recursive Make then
-        // forwards the controlled command-line assignment generated above.
-        for name in [
-            "MAKEFLAGS",
-            "MAKEOVERRIDES",
-            "MAKEFILES",
-            "GNUMAKEFLAGS",
-            "MFLAGS",
-            "RUST_FLAGS",
-            "CARGO",
-            "UV",
-            "WHITAKER",
-            "TEST_FLAGS",
-            "CARGO_FLAGS",
-            "CLIPPY_FLAGS",
-            "BUILD_JOBS",
-            "RUSTDOC_FLAGS",
-            "NEXTEST_FLAGS",
-            "MDTABLEFIX",
-            "MDLINT",
-            "NIXIE",
-            "TYPOS_CONFIG_BUILDER",
-        ] {
+        for name in SURROUNDING_MAKE_VARIABLES {
             command.env_remove(name);
         }
         if !matches!(request.rust_flags, RustFlagsInput::Default) {

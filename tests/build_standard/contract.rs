@@ -47,6 +47,8 @@ mod reader_cases;
 mod rust_flags;
 #[path = "shell.rs"]
 mod shell;
+#[path = "whitaker_gate.rs"]
+mod whitaker_gate;
 #[path = "workflow_exhaustive.rs"]
 mod workflow_exhaustive;
 use ci_steps::workflow_problems;

@@ -31,7 +31,7 @@ pub(crate) fn expected_calls(request: &RunRequest<'_>) -> Result<Vec<Invocation>
 /// Selects the inherited or recipe-restated rustdoc flags for one recorded call.
 fn expected_rustdocflags(target: &str, index: usize) -> &'static str {
     match (target, index) {
-        ("test", 2) | ("lint", 0) => RESTATED_RUSTDOCFLAGS,
+        ("test", 2) | ("lint" | "lint-clippy", 0) => RESTATED_RUSTDOCFLAGS,
         _ => INHERITED_RUSTDOCFLAGS,
     }
 }
@@ -55,6 +55,11 @@ fn expected_arguments(request: &RunRequest<'_>) -> Result<Vec<Vec<String>>, Stri
             vec!["clippy", test_flags, "--", make_flags],
             vec!["--all --", test_flags],
         ],
+        "lint-clippy" => vec![
+            vec!["doc --workspace --no-deps"],
+            vec!["clippy", test_flags, "--", make_flags],
+        ],
+        "lint-whitaker" => vec![vec!["--all --", test_flags]],
         "typecheck" => vec![vec!["check", test_flags]],
         "build" => vec![vec!["build", jobs]],
         "release" => vec![vec!["build", jobs, "--release"]],
@@ -117,7 +122,7 @@ fn expected_rustflags(request: &RunRequest<'_>, index: usize) -> String {
     };
     let takes_make_flags = match request.target {
         "test" => index != 0,
-        "test-ci" | "test-quick" | "gauss-input-recursive" | "typecheck" => true,
+        "test-ci" | "test-quick" | "gauss-input-recursive" | "typecheck" | "lint-whitaker" => true,
         "lint" => index == 2,
         _ => false,
     };

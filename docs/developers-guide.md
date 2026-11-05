@@ -103,6 +103,16 @@ nursery and error-handling rules listed in `Cargo.toml`. Local extensions are
 limited to `unexpected_cfgs` for the coverage `cfg` values and the
 `disallowed-methods` list in `clippy.toml`.
 
+`make lint` is two leaves. `lint-clippy` builds the documentation with
+`RUSTDOCFLAGS` and runs Clippy with warnings denied; `lint-whitaker` runs the
+Whitaker Dylint suite across `WHITAKER_PACKAGES`, which defaults to
+`--workspace --all-targets --all-features`. The composite goal lists the leaves
+in that order and declares `.NOTPARALLEL: lint`, so `make -j` still runs Clippy
+first and stops before Whitaker when Clippy fails. Either leaf can also be run
+on its own. Scope Whitaker with a command-line `WHITAKER_PACKAGES` override
+rather than editing the recipe; a workspace member that a plain suite build
+cannot check is removed there with the reason recorded beside the removal.
+
 Fix a finding at its source. When a suppression is genuinely required, use
 `#[expect(lint, reason = "...")]` scoped to the smallest item that needs it;
 `allow_attributes` denies bare `#[allow]`, and an unfulfilled expectation fails
