@@ -49,21 +49,28 @@ pub(super) enum FailureCase {
     NextestRun,
     CargoTest,
     Doctest,
+    Clippy,
+    Whitaker,
 }
 
 impl FailureCase {
     /// Returns the recorder protocol token; for example, `Self::Doctest` yields `"doctest"`.
-    const fn as_str(self) -> &'static str {
+    pub(super) const fn as_str(self) -> &'static str {
         match self {
             Self::NextestRun => "nextest-run",
             Self::CargoTest => "cargo-test",
             Self::Doctest => "doctest",
+            Self::Clippy => "clippy",
+            Self::Whitaker => "whitaker",
         }
     }
 }
 
 /// Requires Make to fail after the named fake leaf command returns non-zero.
-fn failure_contract(observation: &Observation, failure: FailureCase) -> Result<(), String> {
+pub(super) fn failure_contract(
+    observation: &Observation,
+    failure: FailureCase,
+) -> Result<(), String> {
     if !observation.status.success() && reached_failure(observation, failure) {
         Ok(())
     } else {
@@ -75,7 +82,7 @@ fn failure_contract(observation: &Observation, failure: FailureCase) -> Result<(
 }
 
 /// Reports whether the named fake failing leaf was recorded.
-fn reached_failure(observation: &Observation, failure: FailureCase) -> bool {
+pub(super) fn reached_failure(observation: &Observation, failure: FailureCase) -> bool {
     observation.calls.iter().any(|call| match failure {
         FailureCase::NextestRun => {
             call.arguments.first().map(String::as_str) == Some("nextest")
@@ -89,18 +96,9 @@ fn reached_failure(observation: &Observation, failure: FailureCase) -> bool {
             call.arguments.first().map(String::as_str) == Some("test")
                 && call.arguments.iter().any(|argument| argument == "--doc")
         }
+        FailureCase::Clippy => call.arguments.first().map(String::as_str) == Some("clippy"),
+        FailureCase::Whitaker => call.arguments.first().map(String::as_str) == Some("--all"),
     })
-}
-
-/// Replaces one unique source fragment in the copied Makefile.
-fn replace_once(source: &str, from: &str, to: &str) -> Result<String, String> {
-    let count = source.matches(from).count();
-    if count != 1 {
-        return Err(format!(
-            "expected one mutation match, found {count}: {from}"
-        ));
-    }
-    Ok(source.replacen(from, to, 1))
 }
 
 /// Names the row mutation used to exercise each compiler environment field.
@@ -193,7 +191,15 @@ fn make_test_inputs_are_unexported_and_restate_recipe_flags(
                 nextest_flags,
                 failure: "",
             };
-            for target in ["test", "lint", "typecheck", "build", "release"] {
+            for target in [
+                "test",
+                "lint",
+                "lint-clippy",
+                "lint-whitaker",
+                "typecheck",
+                "build",
+                "release",
+            ] {
                 make_input::check_target(scratch, &route(target, true, ""))?;
             }
             for target in ["test", "test-ci", "test-quick"] {
@@ -230,147 +236,78 @@ fn make_test_propagates_each_leaf_failure(
     })
 }
 
-/// Proves the source-copy contract rejects representative Makefile mutations.
+/// Requires each lint leaf, and the composite gate, to fail Make when the leaf fails.
 #[rstest]
-#[case::mutation_unexport(Mutation::Unexport)]
-#[case::mutation_nextest_option(Mutation::NextestOption)]
-#[case::mutation_fallback_leak(Mutation::FallbackLeak)]
-#[case::mutation_restatement(Mutation::Restatement)]
-#[case::mutation_failure_mask(Mutation::FailureMask)]
-fn make_test_contract_detects_source_mutations(#[case] mutation: Mutation) -> Result<(), String> {
-    make_input::with_scratch(|scratch| check_source_mutation(scratch, mutation))
+#[case::make_lint_clippy_failure("lint", FailureCase::Clippy)]
+#[case::make_lint_whitaker_failure("lint", FailureCase::Whitaker)]
+#[case::make_lint_clippy_leaf_failure("lint-clippy", FailureCase::Clippy)]
+#[case::make_lint_whitaker_leaf_failure("lint-whitaker", FailureCase::Whitaker)]
+fn make_lint_propagates_each_leaf_failure(
+    #[case] target: &'static str,
+    #[case] failure: FailureCase,
+) -> Result<(), String> {
+    make_input::with_scratch(|scratch| {
+        let observation = scratch.run(&lint_request(target, failure.as_str()))?;
+        failure_contract(&observation, failure)
+    })
 }
 
-/// Runs one source mutation only after its unmodified production route passes.
-fn check_source_mutation(scratch: &make_input::Scratch, mutation: Mutation) -> Result<(), String> {
-    let baseline = mutation_request(mutation, None);
-    make_input::check_target(scratch, &baseline)?;
-    let expected = expected_calls(&baseline)?;
-    if mutation == Mutation::FailureMask {
-        check_failure_mask_baseline(scratch)?;
-    }
-    let changed = mutated_makefile(mutation, &scratch.read_makefile()?)?;
-    scratch.write_makefile(&changed)?;
-    let failure = if mutation == Mutation::FailureMask {
-        Some(FailureCase::NextestRun)
-    } else {
-        None
-    };
-    let observation = scratch.run(&mutation_request(mutation, failure))?;
-    check_mutated_route(mutation, &expected, &observation)
+/// A failing Clippy leaf must stop the composite gate before Whitaker runs.
+#[test]
+fn make_lint_skips_whitaker_after_clippy_failure() -> Result<(), String> {
+    make_input::with_scratch(|scratch| {
+        let observation = scratch.run(&lint_request("lint", FailureCase::Clippy.as_str()))?;
+        if observation.status.success() {
+            return Err("make lint succeeded after a controlled Clippy failure".to_owned());
+        }
+        if observation.calls.iter().any(is_whitaker_call) {
+            return Err("make lint reached Whitaker after Clippy failed".to_owned());
+        }
+        Ok(())
+    })
 }
 
-/// Selects the literal Make route and Nextest branch for one finite mutation name.
-fn mutation_request(mutation: Mutation, failure: Option<FailureCase>) -> RunRequest<'static> {
-    let (target, nextest_available) = match mutation {
-        Mutation::Unexport | Mutation::NextestOption => ("test-ci", true),
-        Mutation::FallbackLeak => ("test", false),
-        Mutation::Restatement => ("typecheck", true),
-        Mutation::FailureMask => ("test", true),
-    };
+/// The composite gate keeps Clippy ahead of Whitaker when Make runs in parallel.
+#[test]
+fn make_lint_orders_clippy_before_whitaker_under_parallel_make() -> Result<(), String> {
+    make_input::with_scratch(|scratch| {
+        let observation = scratch.run_with_jobs(&lint_request("lint", ""), 4)?;
+        let clippy_at = observation.calls.iter().rposition(is_clippy_call);
+        let whitaker_at = observation.calls.iter().position(is_whitaker_call);
+        match (clippy_at, whitaker_at) {
+            (Some(clippy_index), Some(whitaker_index)) if clippy_index < whitaker_index => Ok(()),
+            _ => Err(format!(
+                "make -j4 lint did not order Clippy before Whitaker: {:?}",
+                observation
+                    .calls
+                    .iter()
+                    .map(|call| call.arguments.first().cloned().unwrap_or_default())
+                    .collect::<Vec<_>>()
+            )),
+        }
+    })
+}
+
+/// Builds the controlled request for one lint goal and its injected failure.
+fn lint_request(target: &'static str, failure: &'static str) -> RunRequest<'static> {
     RunRequest {
         target,
         host: Host::Linux,
         rust_flags: RustFlagsInput::CommandLine,
-        nextest_available,
-        nextest_flags: NEXTEST_OPTIONS,
-        failure: failure.map_or("", FailureCase::as_str),
+        nextest_available: true,
+        nextest_flags: "",
+        failure,
     }
 }
 
-/// Applies exactly one uniquely located mutation to the copied candidate Makefile.
-fn mutated_makefile(mutation: Mutation, original: &str) -> Result<String, String> {
-    match mutation {
-        Mutation::Unexport => replace_once(original, "unexport RUST_FLAGS\n", ""),
-        Mutation::NextestOption => replace_once(
-            original,
-            "nextest run --profile ci $(TEST_FLAGS) $(NEXTEST_FLAGS) $(BUILD_JOBS)",
-            "nextest run --profile ci $(TEST_FLAGS) $(BUILD_JOBS)",
-        ),
-        Mutation::FallbackLeak => replace_once(
-            original,
-            "$(CARGO) test $(TEST_FLAGS) $(BUILD_JOBS); \\",
-            "$(CARGO) test $(TEST_FLAGS) $(NEXTEST_FLAGS) $(BUILD_JOBS); \\",
-        ),
-        Mutation::Restatement => replace_once(
-            original,
-            "$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)\" $(CARGO) check",
-            "$(STANDARD_RUSTFLAGS)\" $(CARGO) check",
-        ),
-        Mutation::FailureMask => replace_once(
-            original,
-            concat!(
-                "$(CARGO) nextest run --profile default $(TEST_FLAGS) ",
-                "$(NEXTEST_FLAGS) $(BUILD_JOBS); \\"
-            ),
-            concat!(
-                "$(CARGO) nextest run --profile default $(TEST_FLAGS) ",
-                "$(NEXTEST_FLAGS) $(BUILD_JOBS) || true; \\"
-            ),
-        ),
-    }
+/// Reports whether a recorded call is the Clippy leaf.
+fn is_clippy_call(call: &Invocation) -> bool {
+    call.arguments.first().map(String::as_str) == Some("clippy")
 }
 
-/// Confirms the original recipe propagates the named failing Nextest leaf.
-fn check_failure_mask_baseline(scratch: &make_input::Scratch) -> Result<(), String> {
-    let request = mutation_request(Mutation::FailureMask, Some(FailureCase::NextestRun));
-    let observation = scratch.run(&request)?;
-    failure_contract(&observation, FailureCase::NextestRun)
-}
-
-/// Rejects an unsuccessful mutated route before checking its one intended contract difference.
-fn check_mutated_route(
-    mutation: Mutation,
-    expected: &[Invocation],
-    observation: &Observation,
-) -> Result<(), String> {
-    if !observation.status.success() {
-        return Err(format!("{mutation} mutation made its route fail"));
-    }
-    if mutation == Mutation::FailureMask {
-        check_failure_mask_mutation(expected, observation)
-    } else {
-        check_ordinary_mutation(mutation, expected, observation)
-    }
-}
-
-/// Requires the swallowed-error mutation to reach its failing leaf and report only lost
-/// propagation.
-fn check_failure_mask_mutation(
-    expected: &[Invocation],
-    observation: &Observation,
-) -> Result<(), String> {
-    super::require_calls(expected, &observation.calls, "failure-mask route")?;
-    if !reached_failure(observation, FailureCase::NextestRun) {
-        return Err("failure-mask mutation missed the failing Nextest leaf".to_owned());
-    }
-    match failure_contract(observation, FailureCase::NextestRun) {
-        Err(error) if error == "make did not propagate the controlled nextest-run failure" => {
-            Ok(())
-        }
-        Err(error) => Err(format!(
-            "failure-mask produced an unrelated rejection: {error}"
-        )),
-        Ok(()) => Err("failure-mask was not rejected by the failure contract".to_owned()),
-    }
-}
-
-/// Requires only the exact baseline-row mismatch assigned to a non-failure mutation.
-fn check_ordinary_mutation(
-    mutation: Mutation,
-    expected: &[Invocation],
-    observation: &Observation,
-) -> Result<(), String> {
-    let diagnostic = super::mutation_diagnostic(mutation, expected, &observation.calls)?;
-    match super::require_calls(expected, &observation.calls, &mutation.to_string()) {
-        Err(error) if error == diagnostic => {
-            super::exact_mutation_delta(mutation, expected, &observation.calls)
-        }
-        Err(error) => Err(format!("{mutation} caused an unrelated rejection: {error}")),
-        Ok(()) => Err(format!(
-            "{mutation} was not detected by the baseline contract"
-        )),
-    }
+/// Reports whether a recorded call is the Whitaker suite.
+fn is_whitaker_call(call: &Invocation) -> bool {
+    call.arguments.first().map(String::as_str) == Some("--all")
 }
 
 /// Uses recursive Make to prove command-line values reach the real `test-ci` recipe.

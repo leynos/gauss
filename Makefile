@@ -1,4 +1,5 @@
-.PHONY: help all clean test test-ci test-quick build release lint fmt \
+.PHONY: help all clean test test-ci test-quick build release lint lint-clippy \
+	lint-whitaker fmt \
 	check-fmt check-integration-test-inventory integration-test-inventory-test \
 	integration-test-inventory-format integration-test-inventory-lint \
 	integration-test-inventory-pytest \
@@ -33,6 +34,9 @@ MDTABLEFIX ?= mdtablefix
 MDTABLEFIX_SELECT = --git --include-untracked
 MDTABLEFIX_RULES = --wrap --renumber --breaks --ellipsis --fences
 WHITAKER ?= $(or $(wildcard $(HOME)/.local/bin/whitaker),whitaker)
+# Every workspace package is audited; callers may narrow the scope without
+# editing the recipe.
+WHITAKER_PACKAGES ?= --workspace --all-targets --all-features
 NIXIE ?= nixie
 UV ?= uv
 UV_ENV = UV_CACHE_DIR=.uv-cache UV_TOOL_DIR=.uv-tools
@@ -91,10 +95,22 @@ test-quick: ## Run unit tests only (skip GPUI integration tests)
 target/%/$(TARGET): ## Build binary in debug or release mode
 	$(if $(findstring release,$(@)),RUSTFLAGS="$${RUSTFLAGS-}",RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)") $(CARGO) build $(BUILD_JOBS) $(if $(findstring release,$(@)),--release)
 
-lint: ## Run Clippy with warnings denied
-	RUSTDOCFLAGS="$(RUSTDOC_FLAGS)" RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) doc --workspace --no-deps
-	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) clippy $(CLIPPY_FLAGS)
-	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(WHITAKER) --all -- $(CARGO_FLAGS)
+# Clippy must pass before the Whitaker suite runs. A prerequisite list would be
+# interleaved under `make -j`, and `make -k` would still build the second
+# prerequisite after the first failed. Recursive Make is refused by the build
+# standard, so the composite runs the leaves' commands as one fail-fast shell
+# chain built from these shared definitions. Both leaves remain separate goals.
+LINT_CLIPPY_COMMANDS = RUSTDOCFLAGS="$(RUSTDOC_FLAGS)" RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) doc --workspace --no-deps && RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) clippy $(CLIPPY_FLAGS)
+LINT_WHITAKER_COMMANDS = RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(WHITAKER) --all -- $(WHITAKER_PACKAGES)
+
+lint: ## Run Clippy and Whitaker with warnings denied
+	$(LINT_CLIPPY_COMMANDS) && $(LINT_WHITAKER_COMMANDS)
+
+lint-clippy: ## Run Clippy with warnings denied
+	$(LINT_CLIPPY_COMMANDS)
+
+lint-whitaker: ## Run the Whitaker Dylint suite
+	$(LINT_WHITAKER_COMMANDS)
 
 typecheck:
 	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(CARGO) check $(CARGO_FLAGS)

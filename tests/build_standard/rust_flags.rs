@@ -20,6 +20,8 @@ const COMPOSING_TARGETS: &[(&str, usize)] = &[
     ("test-ci", 1),
     ("test-quick", 1),
     ("lint", 2),
+    ("lint-clippy", 1),
+    ("lint-whitaker", 1),
     ("typecheck", 1),
 ];
 
@@ -71,10 +73,15 @@ fn problems(target: &str, commands: &[Command], expected: usize) -> Vec<String> 
 /// Reads the commands `make -n` prints for a target with the override on its command line.
 fn commands_for(target: &str, host: Host, caller: Option<&str>) -> Result<Vec<Command>, String> {
     let mut process = Process::new("make");
+    // The probe may run under a surrounding `make test`, which exports
+    // `MAKELEVEL`. A sub-make prints directory banners naming the worktree, and
+    // a path containing "cargo" or "whitaker" would then be parsed as a
+    // command, so the probe runs as a top-level make with no banners.
     process
         .args([
             "-n",
             "-B",
+            "--no-print-directory",
             &format!("BUILD_HOST_OS={}", host.make_value()),
             &format!("RUST_FLAGS={RUST_FLAGS_INPUT}"),
             "CARGO=probe-cargo",
@@ -93,10 +100,12 @@ fn commands_for(target: &str, host: Host, caller: Option<&str>) -> Result<Vec<Co
         "MAKEFILES",
         "GNUMAKEFLAGS",
         "MFLAGS",
+        "MAKELEVEL",
         "RUST_FLAGS",
         "RUSTFLAGS",
         "CARGO",
         "WHITAKER",
+        "WHITAKER_PACKAGES",
         "CARGO_FLAGS",
         "TEST_FLAGS",
         "BUILD_JOBS",
@@ -303,6 +312,11 @@ pub(super) fn replace_once(source: &str, from: &str, to: &str) -> Result<String,
 #[cfg(test)]
 #[path = "rust_flags_cases.rs"]
 pub(super) mod cases;
+
+/// Source-mutation contracts for the copied production Makefile.
+#[cfg(test)]
+#[path = "rust_flags_mutations.rs"]
+mod mutations;
 
 #[test]
 fn a_rust_flags_override_reaches_every_recipe_that_composes_it() -> Result<(), String> {

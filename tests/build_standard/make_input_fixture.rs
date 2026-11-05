@@ -24,11 +24,47 @@ if [ "${1-}" = "test" ]; then
     esac
 fi
 
+# The lint gate's leaves share this recorder: Cargo runs `doc` and `clippy`,
+# and Whitaker is invoked with `--all` before the forwarded Cargo arguments.
+if [ "${1-}:${GAUSS_FAIL_COMMAND-}" = "clippy:clippy" ]; then
+    exit 23
+fi
+
+if [ "${1-}:${GAUSS_FAIL_COMMAND-}" = "--all:whitaker" ]; then
+    exit 23
+fi
+
 exit 0
 "#;
 
 /// Shell command that checks spelling setup cannot inherit `RUST_FLAGS`.
 pub(super) const UV_NOOP: &str = "[ \"${RUST_FLAGS+x}\" != \"x\" ]\n";
+/// Make variables a surrounding `make test` may forward to this child.
+///
+/// Removing them isolates the controlled run; recursive Make then forwards the
+/// command-line assignments the controlled run generates for itself.
+pub(super) const SURROUNDING_MAKE_VARIABLES: &[&str] = &[
+    "MAKEFLAGS",
+    "MAKEOVERRIDES",
+    "MAKEFILES",
+    "GNUMAKEFLAGS",
+    "MFLAGS",
+    "RUST_FLAGS",
+    "CARGO",
+    "UV",
+    "WHITAKER",
+    "WHITAKER_PACKAGES",
+    "TEST_FLAGS",
+    "CARGO_FLAGS",
+    "CLIPPY_FLAGS",
+    "BUILD_JOBS",
+    "RUSTDOC_FLAGS",
+    "NEXTEST_FLAGS",
+    "MDTABLEFIX",
+    "MDLINT",
+    "NIXIE",
+    "TYPOS_CONFIG_BUILDER",
+];
 /// Scratch-only goal that recurses through the candidate `test-ci` target.
 pub(super) const RECURSIVE_FIXTURE: &str = concat!(
     "\n.PHONY: gauss-input-recursive\n",
