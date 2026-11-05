@@ -49,7 +49,8 @@ impl Locale {
 
     /// Return the BCP 47 language tag for this locale.
     ///
-    /// The returned tag is lowercase (canonicalised).
+    /// The returned tag is the input lowercased by
+    /// [`Locale::from_language_tag`]; no further canonicalization is applied.
     ///
     /// # Examples
     ///

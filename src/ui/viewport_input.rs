@@ -32,7 +32,9 @@ fn is_shift_vertical_scroll(event: &ScrollWheelEvent, dx: f32, dy: f32) -> bool 
 /// held and panning otherwise.
 ///
 /// Shift plus a purely vertical delta is reinterpreted as horizontal panning.
-/// Returns `true` when the viewport changed and a repaint is required.
+/// Returns `true` when the event was handled, which asks the caller to stop
+/// propagation and repaint. A zoom that lands on the existing zoom limit still
+/// counts as handled even though the viewport is unchanged.
 pub(super) fn apply_scroll_wheel_event(
     viewport: &mut Viewport,
     event: &ScrollWheelEvent,

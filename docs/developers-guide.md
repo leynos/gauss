@@ -90,12 +90,13 @@ The authoritative lint configuration lives in the root `Cargo.toml`, in the
 workspace = true
 ```
 
-Do not add a member-local `[lints.*]` table unless the member must be stricter
-than the workspace; state the reason in the manifest. The thresholds that
-Clippy cannot express as lint levels live in `clippy.toml`: cognitive
-complexity 9, arguments 4, function length 70 and nesting 4. It also records
-the environment-injection policy: direct `std::env` access is a disallowed
-method, so code takes an injected reader instead.
+Cargo rejects a member-local `[lints.*]` table alongside `workspace = true`, so
+a member that must be stricter states the extra rule as a crate-level
+`#![deny(...)]` attribute in its root module and records the reason there. The
+thresholds that Clippy cannot express as lint levels live in `clippy.toml`:
+cognitive complexity 9, arguments 4, function length 70 and nesting 4. It also
+records the environment-injection policy: direct `std::env` access is a
+disallowed method, so code takes an injected reader instead.
 
 The baseline is the estate Clippy `pedantic` group plus the restriction,
 nursery and error-handling rules listed in `Cargo.toml`. Local extensions are
