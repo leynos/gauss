@@ -105,6 +105,7 @@ fn commands_for(target: &str, host: Host, caller: Option<&str>) -> Result<Vec<Co
         "RUSTFLAGS",
         "CARGO",
         "WHITAKER",
+        "WHITAKER_PACKAGES",
         "CARGO_FLAGS",
         "TEST_FLAGS",
         "BUILD_JOBS",

@@ -137,8 +137,10 @@ project:
 
     building the documentation, linting every target with all features
     enabled, and applying the Whitaker Dylint rules. The composite goal runs
-    these as `lint-clippy` (documentation and Clippy) and then `lint-whitaker`,
-    in that order even under `make -j`; either leaf can be run on its own.
+    the Clippy and Whitaker commands as a single fail-fast shell chain rather
+    than as prerequisites, so Whitaker runs only after Clippy succeeds even
+    under `make -j` and `make -k`. The `lint-clippy` and `lint-whitaker` goals
+    share those command definitions and can each be run on their own.
   - `make test` executes:
 
     ```sh

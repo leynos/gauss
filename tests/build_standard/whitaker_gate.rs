@@ -3,8 +3,8 @@
 //! `make -n` prints the same commands whether or not Make may interleave them,
 //! so the ordering guarantee cannot be read from a dry run. These contracts
 //! read the candidate Makefile directly and refuse an edit that drops the
-//! serialization directive, reorders or narrows the prerequisite list, or lets
-//! the Whitaker recipe swallow its own failure.
+//! fail-fast chain, reorders or narrows the leaves, or lets the Whitaker recipe
+//! swallow its own failure.
 
 /// The candidate Makefile, read at compile time from the crate root.
 const MAKEFILE: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/Makefile"));
@@ -33,6 +33,15 @@ fn prerequisites(goal: &str) -> Result<Vec<String>, String> {
     Ok(rest.split_whitespace().map(str::to_owned).collect())
 }
 
+/// Returns the value of a recursive Make variable assignment.
+fn variable(name: &str) -> Result<&'static str, String> {
+    let prefix = format!("{name} = ");
+    MAKEFILE
+        .lines()
+        .find_map(|line| line.strip_prefix(prefix.as_str()))
+        .ok_or_else(|| format!("Makefile no longer defines the `{name}` variable"))
+}
+
 /// Returns the recipe lines indented under a goal.
 fn recipe(goal: &str) -> Result<Vec<&'static str>, String> {
     let mut lines = MAKEFILE.lines();
@@ -46,35 +55,53 @@ fn recipe(goal: &str) -> Result<Vec<&'static str>, String> {
         .collect())
 }
 
-/// The composite gate runs Clippy before Whitaker by listing them in that order.
+/// The composite gate runs Clippy before Whitaker through one fail-fast chain.
+///
+/// A prerequisite list would be interleaved under `make -j`, and `make -k`
+/// would still build the second prerequisite after the first failed, so the
+/// ordering and the stop-on-failure guarantee both come from the shell chain.
 #[test]
-fn the_lint_goal_orders_its_two_leaves() -> Result<(), String> {
+fn the_lint_goal_chains_its_two_leaves_fail_fast() -> Result<(), String> {
     let actual = prerequisites("lint")?;
-    let expected = ["lint-clippy", "lint-whitaker"];
-    if actual == expected {
-        Ok(())
-    } else {
-        Err(format!(
-            "`make lint` prerequisites are {actual:?}, not {expected:?}"
-        ))
+    if !actual.is_empty() {
+        return Err(format!(
+            "`make lint` must not list prerequisites, found {actual:?}"
+        ));
     }
-}
-
-/// Make would interleave an unordered prerequisite list under `-j`, so the goal
-/// must opt out of parallel prerequisite execution.
-#[test]
-fn the_lint_goal_holds_its_leaves_in_order_under_parallel_make() -> Result<(), String> {
-    let count = MAKEFILE
-        .lines()
-        .filter(|line| line.trim_end() == ".NOTPARALLEL: lint")
-        .count();
-    if count == 1 {
-        Ok(())
-    } else {
-        Err(format!(
-            "expected one `.NOTPARALLEL: lint` directive, found {count}"
-        ))
+    let chain = recipe("lint")?.join(" ");
+    let Some((first, second)) = chain.split_once("&&") else {
+        return Err(format!("`make lint` does not chain its leaves: {chain}"));
+    };
+    if first.trim() != "$(LINT_CLIPPY_COMMANDS)" {
+        return Err(format!("`make lint` does not run Clippy first: {chain}"));
     }
+    if second.trim() != "$(LINT_WHITAKER_COMMANDS)" {
+        return Err(format!("`make lint` does not run Whitaker second: {chain}"));
+    }
+    if chain.contains("$(MAKE)") {
+        return Err(format!("`make lint` recurses through Make: {chain}"));
+    }
+    let clippy = variable("LINT_CLIPPY_COMMANDS")?;
+    if !clippy.contains("$(CARGO) doc --workspace --no-deps")
+        || !clippy.contains("$(CARGO) clippy $(CLIPPY_FLAGS)")
+    {
+        return Err(format!("`LINT_CLIPPY_COMMANDS` is incomplete: {clippy}"));
+    }
+    let whitaker = variable("LINT_WHITAKER_COMMANDS")?;
+    if !whitaker.contains("$(WHITAKER) --all -- $(WHITAKER_PACKAGES)") {
+        return Err(format!(
+            "`LINT_WHITAKER_COMMANDS` is incomplete: {whitaker}"
+        ));
+    }
+    if let Some(fragment) = MASKING_FRAGMENTS
+        .iter()
+        .find(|fragment| chain.contains(**fragment))
+    {
+        return Err(format!(
+            "`make lint` masks failure with {fragment:?}: {chain}"
+        ));
+    }
+    Ok(())
 }
 
 /// Whitaker audits the whole workspace with the packages named once in a
@@ -92,28 +119,29 @@ fn whitaker_package_scope_is_declared_once_and_overridable() -> Result<(), Strin
     }
 }
 
-/// The Whitaker recipe must forward the package scope and keep its exit status.
+/// The Whitaker leaf and the composite chain share the same suite command, which
+/// forwards the package scope and keeps its exit status.
 #[test]
 fn the_whitaker_recipe_runs_the_suite_and_cannot_mask_failure() -> Result<(), String> {
-    let lines = recipe("lint-whitaker")?;
-    let invocation = lines
-        .iter()
-        .find(|line| line.contains("$(WHITAKER) --all -- $(WHITAKER_PACKAGES)"));
-    let Some(suite_line) = invocation else {
+    let commands = variable("LINT_WHITAKER_COMMANDS")?;
+    if !commands.contains("$(WHITAKER) --all -- $(WHITAKER_PACKAGES)") {
         return Err(format!(
-            "`make lint-whitaker` does not run the suite with its package scope: {lines:?}"
+            "`LINT_WHITAKER_COMMANDS` does not run the suite with its package scope: {commands}"
         ));
-    };
-    if suite_line.starts_with('-') {
-        return Err("`make lint-whitaker` ignores the suite's exit status".to_owned());
     }
-    for line in lines {
+    let lines = recipe("lint-whitaker")?;
+    if lines != ["$(LINT_WHITAKER_COMMANDS)"] {
+        return Err(format!(
+            "`make lint-whitaker` does not run the shared definition: {lines:?}"
+        ));
+    }
+    for line in std::iter::once(commands).chain(lines) {
         if let Some(fragment) = MASKING_FRAGMENTS
             .iter()
             .find(|fragment| line.contains(**fragment))
         {
             return Err(format!(
-                "`make lint-whitaker` masks failure with {fragment:?}: {line}"
+                "the Whitaker gate masks failure with {fragment:?}: {line}"
             ));
         }
     }

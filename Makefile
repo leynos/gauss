@@ -95,18 +95,22 @@ test-quick: ## Run unit tests only (skip GPUI integration tests)
 target/%/$(TARGET): ## Build binary in debug or release mode
 	$(if $(findstring release,$(@)),RUSTFLAGS="$${RUSTFLAGS-}",RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)") $(CARGO) build $(BUILD_JOBS) $(if $(findstring release,$(@)),--release)
 
-# An unordered prerequisite list is built concurrently under `make -j`, so the
-# two gates are held in order explicitly. Clippy must pass before the Whitaker
-# suite runs, and either failure stops the composite target.
-.NOTPARALLEL: lint
-lint: lint-clippy lint-whitaker ## Run Clippy and Whitaker with warnings denied
+# Clippy must pass before the Whitaker suite runs. A prerequisite list would be
+# interleaved under `make -j`, and `make -k` would still build the second
+# prerequisite after the first failed. Recursive Make is refused by the build
+# standard, so the composite runs the leaves' commands as one fail-fast shell
+# chain built from these shared definitions. Both leaves remain separate goals.
+LINT_CLIPPY_COMMANDS = RUSTDOCFLAGS="$(RUSTDOC_FLAGS)" RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) doc --workspace --no-deps && RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) clippy $(CLIPPY_FLAGS)
+LINT_WHITAKER_COMMANDS = RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(WHITAKER) --all -- $(WHITAKER_PACKAGES)
+
+lint: ## Run Clippy and Whitaker with warnings denied
+	$(LINT_CLIPPY_COMMANDS) && $(LINT_WHITAKER_COMMANDS)
 
 lint-clippy: ## Run Clippy with warnings denied
-	RUSTDOCFLAGS="$(RUSTDOC_FLAGS)" RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) doc --workspace --no-deps
-	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) clippy $(CLIPPY_FLAGS)
+	$(LINT_CLIPPY_COMMANDS)
 
 lint-whitaker: ## Run the Whitaker Dylint suite
-	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(WHITAKER) --all -- $(WHITAKER_PACKAGES)
+	$(LINT_WHITAKER_COMMANDS)
 
 typecheck:
 	RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(CARGO) check $(CARGO_FLAGS)

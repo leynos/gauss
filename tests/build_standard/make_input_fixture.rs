@@ -53,6 +53,7 @@ pub(super) const SURROUNDING_MAKE_VARIABLES: &[&str] = &[
     "CARGO",
     "UV",
     "WHITAKER",
+    "WHITAKER_PACKAGES",
     "TEST_FLAGS",
     "CARGO_FLAGS",
     "CLIPPY_FLAGS",
