@@ -115,6 +115,10 @@ fn parse_radial_gradients(
 }
 
 /// Import every `<pattern>` block, preserving attributes other than `id`.
+///
+/// Preservation covers attributes whose namespace prefixes are declared on the
+/// block itself. An extracted block that relies on an ancestor's prefix
+/// declaration does not parse on its own, so its extra attributes are dropped.
 fn parse_patterns(svg: SvgContent<'_>, resources: &mut ResourceStore) {
     parse_resource_blocks(
         svg,

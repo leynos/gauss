@@ -220,6 +220,10 @@ impl Phase0Shell {
     // FIXME: remove once the production GPUI event hook is wired — see roadmap §1.9.5
     // Prepared for production AccessKit integration; currently exercised only
     // via test_helpers::handle_accesskit_action_request_for_tests.
+    /// Route an AccessKit action request and return the action that was taken.
+    ///
+    /// Model actions are executed against shell state; window actions are
+    /// applied to the supplied window. Errors from routing propagate unchanged.
     #[cfg_attr(
         not(any(test, feature = "test-support", coverage, coverage_nightly)),
         expect(
@@ -227,10 +231,6 @@ impl Phase0Shell {
             reason = "compiled unconditionally for production readiness; no GPUI event hook yet"
         )
     )]
-    /// Route an AccessKit action request and return the action that was taken.
-    ///
-    /// Model actions are executed against shell state; window actions are
-    /// applied to the supplied window. Errors from routing propagate unchanged.
     pub(super) fn handle_accesskit_action_request(
         &mut self,
         request: &ActionRequest,

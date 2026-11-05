@@ -161,7 +161,9 @@ impl Phase0Shell {
     /// nothing is selected.
     ///
     /// Only shapes whose style actually changes are included in the command.
-    /// Returns whether any style changed.
+    /// With no selection this always returns `true`, even when the requested
+    /// value already matches the current style; otherwise the return value
+    /// reports whether the style-change command succeeded.
     fn apply_style_update(&mut self, update: StyleUpdate) -> bool {
         let selected_shapes = self.selected_shape_ids_for_style();
         if selected_shapes.is_empty() {

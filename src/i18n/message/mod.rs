@@ -44,7 +44,8 @@ use std::fmt;
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct MessageId {
-    /// Dot-separated lookup key, such as `tool_mode.draw`.
+    /// Lookup key; dot-separated segments such as `tool_mode.draw` are the
+    /// common convention, but arbitrary strings are preserved.
     key: String,
 }
 

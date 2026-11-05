@@ -1,8 +1,4 @@
 //! SVG export for the Gauss document model.
-#![expect(
-    clippy::float_arithmetic,
-    reason = "SVG export needs floating-point conversions for geometry"
-)]
 mod defs;
 mod paint;
 mod shape_metadata;
@@ -213,6 +209,10 @@ pub fn export_svg_with_metadata_checked(
     })
 }
 /// Convert an 8-bit alpha channel to a unit-interval opacity.
+#[expect(
+    clippy::float_arithmetic,
+    reason = "scaling a byte alpha into the unit interval requires division"
+)]
 #[must_use]
 pub(super) const fn opacity_from_alpha(alpha: u8) -> f32 { (alpha as f32) / 255.0 }
 /// Write the XML declaration and opening `<svg>` element.

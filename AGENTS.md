@@ -140,11 +140,13 @@ project:
   - `make test` executes:
 
     ```sh
-    cargo nextest run --profile default
+    # Primary suite; falls back to `cargo test` when Nextest is unavailable.
+    cargo nextest run --profile default --workspace --all-targets --all-features
     cargo test --workspace --doc --all-features
     ```
 
-    running the full workspace test suite and the doctests. Use `make fmt`
+    running the full workspace test suite, with a `cargo test` fallback when
+    `cargo-nextest` is not installed, and the doctests. Use `make fmt`
     (`cargo +nightly-2026-08-07 fmt --all`) to apply formatting fixes reported
     by the formatter check.
 - The authoritative lint tables, thresholds and suppression policy are

@@ -1,8 +1,4 @@
 //! Shape path and paint rendering for SVG export.
-#![expect(
-    clippy::float_arithmetic,
-    reason = "SVG export needs floating-point conversions for geometry"
-)]
 
 use super::{opacity_from_alpha, shape_metadata, write_fmt};
 use crate::model::{Paint, ResourceStore, SegmentKind, Shape, format_hex_rgb};
@@ -114,6 +110,10 @@ fn format_paint(paint: Paint, resources: &ResourceStore) -> (String, f32) {
 
 /// Append an opacity attribute unless the paint is `none` or nearly opaque.
 /// For example, `none` or opacity near one adds no attribute.
+#[expect(
+    clippy::float_arithmetic,
+    reason = "the near-opaque threshold needs a floating-point subtraction"
+)]
 fn write_optional_opacity(out: &mut String, attr: &str, paint: &str, opacity: f32) {
     const OPACITY_EPSILON: f32 = 1.0e-6;
     if paint == "none" {

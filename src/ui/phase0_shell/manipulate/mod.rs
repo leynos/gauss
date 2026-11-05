@@ -31,7 +31,8 @@ impl Phase0Shell {
     /// Route a left-button canvas press to the select tool.
     ///
     /// Ignored outside manipulate mode or for non-left buttons; returns
-    /// whether the resulting commands changed the document.
+    /// whether the resulting commands changed observable shell or document
+    /// state, including selection and select-tool state.
     pub(super) fn handle_canvas_mouse_down(&mut self, event: &MouseDownEvent) -> bool {
         if self.state.tool_mode != ToolMode::Manipulate {
             return false;
@@ -90,7 +91,8 @@ impl Phase0Shell {
 
     /// Complete a select-tool drag on left-button release.
     ///
-    /// Returns whether the resulting commands changed the document.
+    /// Returns whether the resulting commands changed observable shell or
+    /// document state, including selection and select-tool state.
     pub(super) fn handle_canvas_mouse_up(&mut self, event: &MouseUpEvent) -> bool {
         let select_tool_state = self.select_tool_state.clone();
         self.handle_pointer_event(

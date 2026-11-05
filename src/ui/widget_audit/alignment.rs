@@ -15,16 +15,16 @@ use super::types::{
 
 /// Returns the alignment panel control inventory.
 ///
-/// Combines alignment buttons (left, centre horizontal, right, top, centre
-/// vertical, bottom) with distribution buttons (horizontal, vertical).
+/// Combines alignment buttons (left, horizontal centre, right, top, vertical
+/// centre, bottom) with distribution buttons (horizontal, vertical).
 pub(super) fn controls() -> Vec<RequiredControl> {
     let mut v = alignment_buttons();
     v.extend(distribution_buttons());
     v
 }
 
-/// Returns the six alignment buttons: left, centre horizontal, right, top,
-/// centre vertical, and bottom.
+/// Returns the six alignment buttons: left, horizontal centre, right, top,
+/// vertical centre, and bottom.
 fn alignment_buttons() -> Vec<RequiredControl> {
     vec![
         make_alignment_panel_button(

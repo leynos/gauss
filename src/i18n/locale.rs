@@ -18,14 +18,15 @@ use std::fmt;
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Locale {
-    /// BCP 47 tag, canonicalized to lowercase for lookup stability.
+    /// Lowercase-normalized BCP 47 tag used for lookup stability.
     language_tag: String,
 }
 
 impl Locale {
     /// Create a new locale from a BCP 47 language tag.
     ///
-    /// The tag is canonicalised to lowercase for consistent `HashMap` lookups.
+    /// The tag is lowercased for consistent `HashMap` lookups; it is not otherwise
+    /// validated or canonicalized.
     ///
     /// # Examples
     ///
