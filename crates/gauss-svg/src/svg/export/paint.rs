@@ -1,4 +1,14 @@
 //! Shape path and paint rendering for SVG export.
+//!
+//! The parent exporter supplies each `Shape`, its `ResourceStore`, the metadata
+//! policy and a mutable output string. This module appends path geometry, paint
+//! references, optional opacity attributes and, when requested, shape metadata.
+//! The SVG header, shared `<defs>` and document traversal stay with the parent.
+//!
+//! A shape without anchors appends nothing, and these helpers return no export
+//! error: an unresolved gradient or pattern reference serializes as `none`.
+//! Checked public entry points validate references before calling this
+//! serializer.
 
 use super::{opacity_from_alpha, shape_metadata, write_fmt};
 use crate::model::{Paint, ResourceStore, SegmentKind, Shape, format_hex_rgb};

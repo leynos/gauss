@@ -1,4 +1,15 @@
 //! Paint, colour, and gradient-stop parsing for SVG import.
+//!
+//! The parent `resource_tags` module uses these helpers to interpret paint
+//! attributes, gradient stops and numeric SVG attributes while building
+//! resources. Inputs are raw attribute values and, for references, an existing
+//! `ResourceStore`; outputs are `Paint` values, gradient stops, alpha channels,
+//! numeric values or `SvgImportError`.
+//!
+//! Supported paint forms are `none`, hexadecimal colours and known gradient or
+//! pattern references. Missing referenced resources and malformed colours,
+//! opacity or numbers return the corresponding import error. Resource traversal
+//! and gradient, pattern and symbol construction stay with the parent.
 
 use super::{
     super::{
