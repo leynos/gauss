@@ -13,11 +13,11 @@ mod build_standard_contract;
 #[path = "build_tools_contract/mod.rs"]
 mod build_tools_contract;
 
-/// The coverage publisher's runner. The estate left Namespace on 2026-09-03,
-/// so the former `namespace-profile-default` label would queue the publisher
-/// forever; the job is single-process coverage, so the smallest Ubicloud size
-/// serves it.
-const PUBLISHER_RUNNER: &str = "ubicloud-standard-2";
+/// The coverage publisher's runner. The estate left Namespace on 2026-09-03, so
+/// the former `namespace-profile-default` label would queue the publisher
+/// forever. A main coverage upload blocks no one's work, so it runs on a
+/// GitHub-hosted runner rather than a paid Ubicloud one.
+const PUBLISHER_RUNNER: &str = "ubuntu-latest";
 
 /// Return the YAML block for one named workflow job.
 ///
@@ -49,7 +49,7 @@ fn job_runs_on(workflow: &str, job_name: &str, label: &str) -> bool {
 }
 
 #[test]
-fn main_coverage_uses_the_ubicloud_publisher_runner() {
+fn main_coverage_uses_the_github_hosted_publisher_runner() {
     let workflow = include_str!("../.github/workflows/coverage-main.yml");
     assert!(
         job_runs_on(workflow, "coverage-upload", PUBLISHER_RUNNER),
@@ -61,9 +61,9 @@ fn main_coverage_uses_the_ubicloud_publisher_runner() {
 /// or another form of `runs-on` is refused rather than read as compliant.
 #[rstest]
 #[case::namespace("namespace-profile-default")]
-#[case::larger_size("ubicloud-standard-8")]
-#[case::hosted("ubuntu-latest")]
-#[case::sequence_form("[self-hosted, ubicloud-standard-2]")]
+#[case::ubicloud_larger_size("ubicloud-standard-8")]
+#[case::ubicloud("ubicloud-standard-2")]
+#[case::sequence_form("[self-hosted, ubuntu-latest]")]
 fn publisher_label_is_matched_by_name(#[case] runs_on: &str) {
     let workflow = format!("jobs:\n  coverage-upload:\n    runs-on: {runs_on}\n");
     assert!(
@@ -75,15 +75,12 @@ fn publisher_label_is_matched_by_name(#[case] runs_on: &str) {
 /// Keys before `runs-on`, nested blocks included, stay inside the job, and the
 /// next job's keys stay outside it.
 #[rstest]
-#[case::name_first("    name: Publish\n    runs-on: ubicloud-standard-2\n", true)]
+#[case::name_first("    name: Publish\n    runs-on: ubuntu-latest\n", true)]
 #[case::nested_block_first(
-    "    permissions:\n      contents: read\n    runs-on: ubicloud-standard-2\n",
+    "    permissions:\n      contents: read\n    runs-on: ubuntu-latest\n",
     true
 )]
-#[case::label_in_next_job(
-    "    name: Publish\n  other:\n    runs-on: ubicloud-standard-2\n",
-    false
-)]
+#[case::label_in_next_job("    name: Publish\n  other:\n    runs-on: ubuntu-latest\n", false)]
 fn job_block_ends_at_the_next_job(#[case] job: &str, #[case] expected: bool) {
     let workflow = format!("jobs:\n  coverage-upload:\n{job}");
     assert_eq!(
