@@ -60,7 +60,9 @@ struct ToolbarControlSpec {
     evidence_notes: &'static str,
 }
 
-/// Builds a Phase 1 or Phase 2 toolbar entry from its specification.
+/// Convert a toolbar specification into its audit record.
+/// For example, a spec with shortcut `V` and action name
+/// `ActivateSelectTool` retains both values in the toolbar record.
 fn make_toolbar_tool(spec: ToolbarControlSpec) -> RequiredControl {
     RequiredControl {
         name: spec.name,
