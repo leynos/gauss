@@ -1,78 +1,6 @@
-//! Checks reviewed Python source identities and exact UV routes.
+//! Checks exact UV routes.
 
-use super::{super::ReviewedSource, Route, Workspace, exact_words};
-
-/// Content identities that authorize the exact current Python inventory and spelling routes.
-pub(in super::super) const REVIEWED_PYTHON_BODIES: &[ReviewedSource<'static>] = &[
-    ReviewedSource {
-        path: "scripts/check_integration_test_inventory.py",
-        expected_blob: "cd39d36988b350d9e894485ee00d817b7c90ae6c",
-    },
-    ReviewedSource {
-        path: "scripts/tests/test_integration_test_inventory.py",
-        expected_blob: "b733da1bc156d3e4652c0f0750f51c10c7d15572",
-    },
-    ReviewedSource {
-        path: "scripts/tests/test_integration_test_inventory_cli.py",
-        expected_blob: "f9bc11b560144de122b79ce5affc3081b293c0a6",
-    },
-    ReviewedSource {
-        path: "scripts/tests/test_spelling_exceptions.py",
-        expected_blob: "92253b245f7de1a1808dc4f78da346b32d67f356",
-    },
-];
-
-/// Line endings used to prove universal-newline identity equivalence in owned fixtures.
-#[cfg(test)]
-#[derive(Clone, Copy)]
-pub(in super::super) enum LineEnding {
-    /// Native text-mode input with LF line endings.
-    Lf,
-    /// Equivalent source represented with CRLF line endings.
-    CrLf,
-}
-
-/// Stages every reviewed script body under a fixture capability with the selected line endings.
-#[cfg(test)]
-pub(in super::super) fn stage_python_bodies(
-    workspace: &Workspace<'_>,
-    ending: LineEnding,
-) -> Result<(), String> {
-    let project = super::super::tests::project_directory()?;
-    for reviewed in REVIEWED_PYTHON_BODIES {
-        let path = reviewed.path();
-        let body = project
-            .read_to_string(path)
-            .map_err(|error| format!("reading reviewed Python source {path}: {error}"))?;
-        let normalized = Workspace::normalize_source(&body);
-        let staged = match ending {
-            LineEnding::Lf => normalized,
-            LineEnding::CrLf => normalized.replace('\n', "\r\n"),
-        };
-        let parent = path
-            .parent()
-            .ok_or_else(|| format!("reviewed source has no parent directory: {path}"))?;
-        workspace
-            .directory
-            .create_dir_all(parent)
-            .map_err(|error| format!("creating reviewed source directory: {error}"))?;
-        workspace
-            .directory
-            .write(path, staged)
-            .map_err(|error| format!("staging reviewed Python source {path}: {error}"))?;
-    }
-    Ok(())
-}
-
-/// Keeps the four known body paths tied to reviewed content rather than a filename allowlist.
-pub(in super::super) fn verify_reviewed_python_sources(
-    workspace: &Workspace<'_>,
-) -> Result<(), String> {
-    for reviewed in REVIEWED_PYTHON_BODIES {
-        workspace.verify_source(reviewed)?;
-    }
-    Ok(())
-}
+use super::{Route, exact_words};
 
 /// Recognizes only current exact UV routes; unfamiliar versions and scripts remain gaps.
 pub(super) fn classify_uv(arguments: &[String]) -> Result<Route, String> {
@@ -285,9 +213,4 @@ pub(super) fn is_historical_whitaker(arguments: &[String]) -> bool {
             "no:cacheprovider",
         ],
     )
-}
-
-/// Identifies which exact UV commands consume one or more reviewed Python bodies.
-pub(super) fn uses_reviewed_python(arguments: &[String]) -> bool {
-    is_checker(arguments) || is_python_test(arguments) || is_ruff(arguments)
 }
