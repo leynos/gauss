@@ -1154,6 +1154,28 @@ SVG-native editors extend SVG.
 - Gauss metadata must not change rendering in other viewers
 - Provide an export mode that strips all Gauss metadata (“web-ready SVG”)
 
+**Implemented SVG module ownership.**
+
+`svg::export` keeps document traversal, SVG headers and export policy in
+`export/mod.rs`. That module writes shared definitions through the private
+`export::defs` child, validates resource references for the checked entry
+points, and delegates each shape to the private `export::paint` child, which
+appends path geometry, paint references and opacity to the output string. Gauss
+shape attributes come from the private `export::shape_metadata` child when the
+export mode requests them. The paint child returns no export error: checked
+entry points validate references first, and unchecked serialization renders a
+missing gradient or pattern reference as `none`.
+
+`svg::import` keeps orchestration in `import/mod.rs`.
+`import_svg_with_resources` checks the namespace policy, asks the private
+`resource_tags` module to build the resource store, then parses shape paths
+against those resources. `resource_tags/mod.rs` retains resource traversal and
+gradient, pattern and symbol construction. Its private `resource_tags::paint`
+child interprets paint attributes, gradient stops and numeric attribute values,
+resolves known resource references and returns `SvgImportError` for invalid
+values or missing referenced resources. The extraction changes private
+ownership, not the public SVG entry points.
+
 #### 10.1.1 Gauss metadata namespace policy
 
 Gauss defines one canonical metadata namespace identity:
@@ -1297,8 +1319,14 @@ Gauss document-level metadata.
   `shape_id_from_hex()`.
 - `crates/gauss-svg/src/svg/import/gauss_attrs.rs` — namespace-aware extraction
   via full `roxmltree` parse.
-- `crates/gauss-svg/src/svg/export/mod.rs` — `write_shape_gauss_metadata()`,
-  `write_metadata_block()`, `export_svg_with_metadata()`.
+- `crates/gauss-svg/src/svg/export/mod.rs` — `write_metadata_block()` and
+  `export_svg_with_metadata()`.
+- `crates/gauss-svg/src/svg/export/shape_metadata.rs` —
+  `write_shape_gauss_metadata()`.
+- `crates/gauss-svg/src/svg/export/paint.rs` — private `write_shape_path()`
+  serialization.
+- `crates/gauss-svg/src/svg/import/resource_tags/paint.rs` — private paint,
+  gradient-stop and numeric attribute parsing helpers.
 
 #### 10.1.4 Web-ready export policy
 
