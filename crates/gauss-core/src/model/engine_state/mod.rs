@@ -43,7 +43,6 @@ use crate::model::{
     Viewport,
 };
 #[cfg(feature = "test-support")]
-#[path = "engine_state/test_history.rs"]
 mod test_history;
 
 /// Unified state for the Gauss editor.

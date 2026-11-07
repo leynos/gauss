@@ -288,7 +288,7 @@ This naturally maps to SVG: groups, shapes, and defs.
 
 The `EngineState` struct unifies all editor state into a single source of
 truth, per guiding principle §2.2. It lives in
-`crates/gauss-core/src/model/engine_state.rs` and is GPUI-independent for
+`crates/gauss-core/src/model/engine_state/mod.rs` and is GPUI-independent for
 testability and scripting.
 
 **Design decision:** EngineState consolidates document, selection, viewport,
