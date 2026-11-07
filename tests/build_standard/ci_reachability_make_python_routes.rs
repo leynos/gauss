@@ -216,8 +216,9 @@ fn is_spelling_builder(arguments: &[String]) -> bool {
     )
 }
 
-/// Matches the docstring-coverage gate: a pinned `interrogate` run over plain
-/// target paths with the fixed report and threshold flags, and nothing else.
+/// Matches the docstring-coverage gate: an `interrogate==<version>` run over
+/// plain target paths with the fixed report and threshold flags, and nothing else.
+/// The version itself is not compared; the Makefile owns the pin.
 pub(super) fn is_interrogate(arguments: &[String]) -> bool {
     let words: Vec<&str> = arguments.iter().map(String::as_str).collect();
     let [
