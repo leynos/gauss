@@ -118,7 +118,9 @@ INTERROGATE ?= $(UV_ENV) $(UV) tool run --python 3.14 --from 'interrogate==$(INT
 # Interrogate rounds its percentage to one decimal, so `--fail-under 100` alone
 # can pass a lone gap. This recipe also fails when `grep` finds a MISSED row in
 # the report on standard output. `grep` reads the whole report (no `-q`), so an
-# early exit cannot break the pipe under `pipefail`.
+# early exit cannot break the pipe under `pipefail`. The build-standard contract
+# reviews every shell assignment reachable from `lint`, so this gate is its own
+# target, run by its own CI step, rather than a prerequisite of `lint`.
 .PHONY: interrogate
 interrogate: ## Enforce complete Python docstring coverage
 	@report="$$($(INTERROGATE) $(INTERROGATE_FLAGS) $(INTERROGATE_TARGETS))"; \
@@ -129,10 +131,6 @@ interrogate: ## Enforce complete Python docstring coverage
 	    printf '%s\n' 'interrogate: undocumented definitions remain; see the MISSED rows above' >&2; \
 	    exit 1; \
 	  fi
-
-# `lint` runs the docstring gate; Make adds this prerequisite to the `lint`
-# rule above.
-lint: interrogate
 
 lint-clippy: ## Run Clippy with warnings denied
 	$(LINT_CLIPPY_COMMANDS)

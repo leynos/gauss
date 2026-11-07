@@ -6,11 +6,11 @@ use super::{super::ReviewedSource, Route, Workspace, exact_words};
 pub(in super::super) const REVIEWED_PYTHON_BODIES: &[ReviewedSource<'static>] = &[
     ReviewedSource {
         path: "scripts/check_integration_test_inventory.py",
-        expected_blob: "d5691f3985e588617e986959738fbbbc7f3dc31f",
+        expected_blob: "cd39d36988b350d9e894485ee00d817b7c90ae6c",
     },
     ReviewedSource {
         path: "scripts/tests/test_integration_test_inventory.py",
-        expected_blob: "2eef53e6f542fe5731e72721ba6cec1b1dd30be6",
+        expected_blob: "b733da1bc156d3e4652c0f0750f51c10c7d15572",
     },
     ReviewedSource {
         path: "scripts/tests/test_integration_test_inventory_cli.py",
