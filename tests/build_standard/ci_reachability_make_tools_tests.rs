@@ -285,3 +285,25 @@ fn git_blob_id_requires_complete_lowercase_hex() {
         );
     }
 }
+
+/// The docstring-coverage gate is a reviewed non-suite route, and only in its fixed shape.
+///
+/// For example, dropping the failure threshold or adding an option would let a
+/// different `interrogate` run pass as the gate, so both must stay unresolved.
+#[rstest]
+#[case::gate(&["tool", "run", "--python", "3.14", "--from", "interrogate==1.7.0", "interrogate", "-vv", "--fail-under", "100", "scripts"], true)]
+#[case::several_targets(&["tool", "run", "--python", "3.14", "--from", "interrogate==1.7.0", "interrogate", "-vv", "--fail-under", "100", "scripts", "tests"], true)]
+#[case::other_package(&["tool", "run", "--python", "3.14", "--from", "other==1.7.0", "interrogate", "-vv", "--fail-under", "100", "scripts"], false)]
+#[case::lower_threshold(&["tool", "run", "--python", "3.14", "--from", "interrogate==1.7.0", "interrogate", "-vv", "--fail-under", "50", "scripts"], false)]
+#[case::extra_option(&["tool", "run", "--python", "3.14", "--from", "interrogate==1.7.0", "interrogate", "-vv", "--fail-under", "100", "--exclude", "scripts"], false)]
+#[case::no_target(&["tool", "run", "--python", "3.14", "--from", "interrogate==1.7.0", "interrogate", "-vv", "--fail-under", "100"], false)]
+fn uv_accepts_only_the_interrogate_gate(#[case] command: &[&str], #[case] accepted: bool) {
+    let mut words = vec!["uv"];
+    words.extend_from_slice(command);
+    let result = classify_words(&owned_words(&words), false);
+    if accepted {
+        assert_eq!(result, Ok(Route::NonSuite));
+    } else {
+        assert!(result.is_err(), "unexpected route for {command:?}");
+    }
+}

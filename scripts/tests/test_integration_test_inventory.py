@@ -28,29 +28,35 @@ class InventoryModule(Protocol):
     def cargo_metadata(
         self,
         runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
-    ) -> dict[str, object]: ...
+    ) -> dict[str, object]:
+        """Read the root Cargo metadata, using the given process runner."""
 
-    def root_gauss_package(self, metadata: dict[str, object]) -> dict[str, object]: ...
+    def root_gauss_package(self, metadata: dict[str, object]) -> dict[str, object]:
+        """Select the root gauss package from decoded Cargo metadata."""
 
     def root_gauss_targets(
         self, metadata: dict[str, object]
-    ) -> Iterable[dict[str, object]]: ...
+    ) -> Iterable[dict[str, object]]:
+        """Yield the root package's integration-test target dictionaries."""
 
-    def category_for(self, source: str) -> str: ...
+    def category_for(self, source: str) -> str:
+        """Classify one integration-test source into its category."""
 
     def inventory(
         self,
         metadata_reader: Callable[[], dict[str, object]],
         source_reader: Callable[[Path], str],
-    ) -> dict[str, list[str]]: ...
+    ) -> dict[str, list[str]]:
+        """Group the root integration-test targets by category."""
 
-    def counts(self, targets_by_category: dict[str, list[str]]) -> dict[str, int]: ...
+    def counts(self, targets_by_category: dict[str, list[str]]) -> dict[str, int]:
+        """Derive per-category, GPUI, and total counts from target lists."""
 
-    def documented_counts(self, source: str, document: Path) -> dict[str, int]: ...
+    def documented_counts(self, source: str, document: Path) -> dict[str, int]:
+        """Parse the current-inventory marker from documentation text."""
 
-    def documented_targets(
-        self, source: str, document: Path
-    ) -> dict[str, list[str]]: ...
+    def documented_targets(self, source: str, document: Path) -> dict[str, list[str]]:
+        """Parse the category target lists from consolidation-map text."""
 
     def validate_documentation(
         self,
@@ -58,13 +64,16 @@ class InventoryModule(Protocol):
         documents: tuple[Path, ...],
         target_list_document: Path,
         document_reader: Callable[[Path], str],
-    ) -> None: ...
+    ) -> None:
+        """Check documented counts and target lists against the inventory."""
 
-    def main(self) -> None: ...
+    def main(self) -> None:
+        """Print and validate the current integration-test inventory."""
 
 
 @pytest.fixture(name="inventory_module", scope="module")
 def inventory_module_fixture() -> InventoryModule:
+    """Load the checker script as a module once per test module."""
     module_path = SCRIPT_DIRECTORY / "check_integration_test_inventory.py"
     specification = importlib.util.spec_from_file_location(
         "check_integration_test_inventory", module_path
@@ -77,17 +86,20 @@ def inventory_module_fixture() -> InventoryModule:
 
 
 def root_package(module: InventoryModule, targets: object) -> dict[str, object]:
+    """Return a root gauss package mapping that carries the given targets."""
     root_manifest = str(module.REPOSITORY_ROOT / "Cargo.toml")
     return {"name": "gauss", "manifest_path": root_manifest, "targets": targets}
 
 
 def target_inventory() -> dict[str, list[str]]:
+    """Return one fixed target name for each inventory category."""
     return dict(
         zip(CATEGORY_ORDER, (["gpui_bdd"], ["gpui_raw"], ["non_gpui_bdd"], ["other"]))
     )
 
 
 def count_marker() -> str:
+    """Return a valid inventory marker with one target in each category."""
     return (
         "<!-- integration-test-inventory: total=4 "
         + " ".join(f"{category}=1" for category in CATEGORY_ORDER)
@@ -96,6 +108,7 @@ def count_marker() -> str:
 
 
 def consolidation_map() -> str:
+    """Return consolidation-map text with one target list per category."""
     return "\n\n".join(
         f"### {heading} (1)\n\n- `{target}`"
         for heading, target in (
@@ -108,6 +121,7 @@ def consolidation_map() -> str:
 
 
 def inventory_docs(tmp_path: Path) -> tuple[tuple[Path, ...], Path, dict[Path, str]]:
+    """Return valid inventory document paths and texts, without writing files."""
     documents = tuple(tmp_path / f"inventory-{index}.md" for index in range(4))
     target_list_document = tmp_path / "CONSOLIDATION_MAP.md"
     sources = {document: count_marker() for document in documents}
@@ -118,6 +132,7 @@ def inventory_docs(tmp_path: Path) -> tuple[tuple[Path, ...], Path, dict[Path, s
 def test_root_gauss_package_selects_the_root_manifest(
     inventory_module: InventoryModule,
 ) -> None:
+    """Select the package whose manifest is the repository root Cargo.toml."""
     selected = root_package(inventory_module, [])
     metadata = {
         "packages": [
@@ -133,6 +148,7 @@ def test_root_gauss_package_selects_the_root_manifest(
 def test_root_gauss_package_rejects_non_list_packages(
     inventory_module: InventoryModule,
 ) -> None:
+    """Reject metadata whose packages field is not a list."""
     with pytest.raises(ValueError, match="cargo metadata packages must be a list"):
         inventory_module.root_gauss_package({"packages": {}})
 
@@ -140,6 +156,7 @@ def test_root_gauss_package_rejects_non_list_packages(
 def test_root_gauss_package_rejects_missing_root_package(
     inventory_module: InventoryModule,
 ) -> None:
+    """Reject metadata that has no root gauss package."""
     metadata = {"packages": [{"name": "other", "manifest_path": "Cargo.toml"}]}
     with pytest.raises(
         ValueError,
@@ -151,6 +168,7 @@ def test_root_gauss_package_rejects_missing_root_package(
 def test_root_gauss_targets_rejects_non_list_targets(
     inventory_module: InventoryModule,
 ) -> None:
+    """Reject a root package whose targets field is not a list."""
     metadata = {"packages": [root_package(inventory_module, {})]}
     with pytest.raises(ValueError, match="root gauss package targets must be a list"):
         list(inventory_module.root_gauss_targets(metadata))
@@ -159,6 +177,7 @@ def test_root_gauss_targets_rejects_non_list_targets(
 def test_root_gauss_targets_filters_non_test_and_malformed_targets(
     inventory_module: InventoryModule,
 ) -> None:
+    """Keep only dictionary targets whose kind includes test."""
     test_target = {"name": "integration", "kind": ["test"]}
     metadata = {
         "packages": [
@@ -191,6 +210,7 @@ def test_category_for_uses_registration_markers(
     source: str,
     expected: str,
 ) -> None:
+    """Map each registration marker to its documented category."""
     assert inventory_module.category_for(source) == expected, (
         "registration markers must select the documented category"
     )
@@ -208,6 +228,7 @@ def test_category_for_uses_documented_precedence(
     raw: bool,
     bdd: bool,
 ) -> None:
+    """Apply harness, raw, then BDD precedence across all marker combinations."""
     source = "\n".join(
         marker
         for enabled, marker in (
@@ -238,6 +259,7 @@ def test_category_for_uses_documented_precedence(
 def test_inventory_reads_metadata_and_sources_through_injected_seams(
     inventory_module: InventoryModule,
 ) -> None:
+    """Sort targets by category using injected metadata and source readers."""
     metadata = {
         "packages": [
             root_package(
@@ -275,6 +297,7 @@ def test_counts_conserve_all_category_targets(
     inventory_module: InventoryModule,
     targets_by_category: dict[str, list[str]],
 ) -> None:
+    """Check that totals conserve every target and the GPUI total excludes others."""
     actual = inventory_module.counts(targets_by_category)
     assert actual["total"] == sum(
         len(targets_by_category[category]) for category in CATEGORY_ORDER
@@ -289,6 +312,7 @@ def test_documented_counts_parses_a_complete_marker(
     inventory_module: InventoryModule,
     tmp_path: Path,
 ) -> None:
+    """Parse a complete marker into every documented count."""
     document = tmp_path / "inventory.md"
     source = f"{count_marker()}\n"
     assert inventory_module.documented_counts(source, document) == {
@@ -314,6 +338,7 @@ def test_documented_counts_rejects_invalid_fields(
     marker: str,
     message: str,
 ) -> None:
+    """Reject markers with mismatched fields or duplicated fields."""
     document = tmp_path / "inventory.md"
     source = f"{marker}\n"
     with pytest.raises(ValueError, match=message):
@@ -324,6 +349,7 @@ def test_validate_documentation_rejects_a_target_list_mismatch(
     inventory_module: InventoryModule,
     tmp_path: Path,
 ) -> None:
+    """Reject a consolidation map whose target list differs from the inventory."""
     documents, target_document, sources = inventory_docs(tmp_path)
     sources[target_document] = sources[target_document].replace(
         "gpui_raw", "different_raw"
@@ -341,6 +367,7 @@ def test_documented_targets_delimit_first_and_final_category_sections(
     inventory_module: InventoryModule,
     tmp_path: Path,
 ) -> None:
+    """Read the first and final category lists within their own sections."""
     document = tmp_path / "CONSOLIDATION_MAP.md"
     targets = inventory_module.documented_targets(consolidation_map(), document)
     assert targets["harness_gpui_bdd"] == ["gpui_bdd"]
@@ -369,6 +396,7 @@ def test_documented_targets_rejects_invalid_headings(
     contents: str,
     message: str,
 ) -> None:
+    """Reject category headings with a wrong count, a duplicate, or no list."""
     document = tmp_path / "CONSOLIDATION_MAP.md"
     with pytest.raises(ValueError, match=message):
         inventory_module.documented_targets(contents, document)
@@ -379,6 +407,7 @@ def test_main_prints_the_validated_inventory(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    """Print each category line and the derived totals once validation passes."""
     monkeypatch.setattr(inventory_module, "inventory", target_inventory)
     monkeypatch.setattr(inventory_module, "validate_documentation", lambda _: None)
     inventory_module.main()

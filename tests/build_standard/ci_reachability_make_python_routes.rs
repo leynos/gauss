@@ -6,11 +6,11 @@ use super::{super::ReviewedSource, Route, Workspace, exact_words};
 pub(in super::super) const REVIEWED_PYTHON_BODIES: &[ReviewedSource<'static>] = &[
     ReviewedSource {
         path: "scripts/check_integration_test_inventory.py",
-        expected_blob: "d5691f3985e588617e986959738fbbbc7f3dc31f",
+        expected_blob: "cd39d36988b350d9e894485ee00d817b7c90ae6c",
     },
     ReviewedSource {
         path: "scripts/tests/test_integration_test_inventory.py",
-        expected_blob: "2eef53e6f542fe5731e72721ba6cec1b1dd30be6",
+        expected_blob: "b733da1bc156d3e4652c0f0750f51c10c7d15572",
     },
     ReviewedSource {
         path: "scripts/tests/test_integration_test_inventory_cli.py",
@@ -92,6 +92,7 @@ fn is_reviewed_uv_route(arguments: &[String]) -> bool {
         || is_python_test(arguments)
         || is_ruff(arguments)
         || is_spelling_builder(arguments)
+        || is_interrogate(arguments)
         || is_coverage_contract(arguments)
         || is_historical_whitaker(arguments)
 }
@@ -213,6 +214,32 @@ fn is_spelling_builder(arguments: &[String]) -> bool {
             ".",
         ],
     )
+}
+
+/// Matches the docstring-coverage gate: an `interrogate==<version>` run over
+/// plain target paths with the fixed report and threshold flags, and nothing else.
+/// The version itself is not compared; the Makefile owns the pin.
+pub(super) fn is_interrogate(arguments: &[String]) -> bool {
+    let words: Vec<&str> = arguments.iter().map(String::as_str).collect();
+    let [
+        "tool",
+        "run",
+        "--python",
+        "3.14",
+        "--from",
+        package,
+        "interrogate",
+        "-vv",
+        "--fail-under",
+        "100",
+        targets @ ..,
+    ] = words.as_slice()
+    else {
+        return false;
+    };
+    package.starts_with("interrogate==")
+        && !targets.is_empty()
+        && targets.iter().all(|target| !target.starts_with('-'))
 }
 
 /// Matches the current full-SHA CV-005 contract package and command.

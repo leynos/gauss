@@ -52,6 +52,8 @@ jobs:
         run: make spelling
       - name: Workflow contracts
         run: make workflow-contracts
+      - name: Enforce Python docstring coverage
+        run: make interrogate
       - name: Install Whitaker
         uses: leynos/shared-actions/.github/actions/install-whitaker@5a99aed78ce68dcebd3052b75c31e6f173162b1e
       - name: Lint
