@@ -1,4 +1,4 @@
-# Architectural decision record (ADR) 005: Define Gauss metadata namespace policy
+# Architectural decision record (ADR) 0005: Define Gauss metadata namespace policy
 
 ## Status
 

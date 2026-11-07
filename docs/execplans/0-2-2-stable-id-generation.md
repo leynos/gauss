@@ -24,8 +24,8 @@ GPUI integration) prove the stability and regeneration behaviour.
   section 5.1 and the roadmap item 0.2.2.
 - Use generational IDs (`slotmap` or equivalent) and wrap them in explicit
   newtypes to prevent mixing.
-- Follow ADR 003 ("slotmap for ShapeId and AccessKit ID mapping"). See
-  `docs/adr-003-slotmap-shapeid-accesskit-id-mapping.md`.
+- Follow ADR 0003 ("slotmap for ShapeId and AccessKit ID mapping"). See
+  `docs/adrs/adr-0003-slotmap-shapeid-accesskit-id-mapping.md`.
 - Maintain GPUI independence in `src/model`; any GPUI code lives in `src/ui`.
 - Keep every Rust module under 400 lines; split files if required.
 - Use en-GB-oxendict spelling in documentation and comments.
@@ -105,8 +105,8 @@ GPUI integration) prove the stability and regeneration behaviour.
   `KeyData::as_ffi`/`from_ffi`, with document-owned ID allocation. Rationale:
   `slotmap` provides generational keys without custom plumbing, preserves
   stable IDs across reorder/undo, and offers a stable `u64` mapping for
-  AccessKit node IDs. See ADR 003
-  (`docs/adr-003-slotmap-shapeid-accesskit-id-mapping.md`). Date/Author:
+  AccessKit node IDs. See ADR 0003
+  (`docs/adrs/adr-0003-slotmap-shapeid-accesskit-id-mapping.md`). Date/Author:
   2026-01-18 (assistant)
 
 ## Outcomes & Retrospective

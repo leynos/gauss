@@ -83,7 +83,7 @@ This creates the architectural boundary required by:
   declaration and rejection policy in `tests/resource_store_bdd.rs`.
 - [x] (2026-02-10) Added GPUI open/save tests for namespace happy and unhappy
   paths in `tests/gpui_open_dialog.rs` and `tests/gpui_save_dialog.rs`.
-- [x] (2026-02-10) Added ADR 005 and updated architecture/user documentation.
+- [x] (2026-02-10) Added ADR 0005 and updated architecture/user documentation.
 - [x] (2026-02-10) Marked roadmap item 0.4.1 done.
 - [x] (2026-02-10) Ran full quality gates and captured logs.
 
@@ -136,7 +136,7 @@ Implemented outcomes:
   `tests/features/resource_store.feature`.
 - Added GPUI integration coverage in `tests/gpui_open_dialog.rs` and
   `tests/gpui_save_dialog.rs`.
-- Added ADR 005 and updated architecture (`docs/gauss-architecture-design.md`),
+- Added ADR 0005 and updated architecture (`docs/gauss-architecture-design.md`),
   user guide (`docs/users-guide.md`), and roadmap (`docs/roadmap.md`).
 
 Retrospective:
@@ -166,7 +166,7 @@ The relevant code and documentation surfaces are:
   - `tests/gpui_open_dialog.rs`
   - `tests/gpui_save_dialog.rs`
 - Documentation targets:
-  - `docs/adr-00x-*.md` (new ADR file required)
+  - `docs/adrs/adr-nnnn-title-slug.md` (new ADR file required)
   - `docs/gauss-architecture-design.md`
   - `docs/users-guide.md`
   - `docs/roadmap.md`
@@ -307,7 +307,8 @@ No new external dependencies are expected.
 
 Planned output artefacts:
 
-- New/updated ADR file (`docs/adr-005-gauss-metadata-namespace.md` expected).
+- New/updated ADR file (`docs/adrs/adr-0005-gauss-metadata-namespace.md`
+  expected).
 - Updated users guide section describing metadata namespace behaviour.
 - Updated roadmap checkbox for 0.4.1.
 - Test additions across unit, BDD, and GPUI layers.
