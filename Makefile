@@ -106,6 +106,22 @@ LINT_WHITAKER_COMMANDS = RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(S
 lint: ## Run Clippy and Whitaker with warnings denied
 	$(LINT_CLIPPY_COMMANDS) && $(LINT_WHITAKER_COMMANDS)
 
+# Interrogate scans each target recursively, subject to its default exclusions.
+INTERROGATE_VERSION ?= 1.7.0
+INTERROGATE_TARGETS ?= scripts
+# Level 2 lists each undocumented definition. The scanned set is small enough
+# that one gap is far below 100 per cent, so `--fail-under 100` alone catches it.
+INTERROGATE_FLAGS ?= -vv --fail-under 100
+INTERROGATE ?= $(UV_ENV) $(UV) tool run --python 3.14 --from 'interrogate==$(INTERROGATE_VERSION)' interrogate
+
+# The build-standard contract classifies every command a CI step reaches, so the
+# recipe is the single reviewed `uv` route (see `is_interrogate`), and the gate
+# is its own target, run by its own CI step, rather than a prerequisite of
+# `lint`.
+.PHONY: interrogate
+interrogate: ## Enforce complete Python docstring coverage
+	@$(INTERROGATE) $(INTERROGATE_FLAGS) $(INTERROGATE_TARGETS)
+
 lint-clippy: ## Run Clippy with warnings denied
 	$(LINT_CLIPPY_COMMANDS)
 

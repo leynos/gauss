@@ -51,6 +51,7 @@ TARGET_LIST_HEADINGS = {
 
 
 def _read_target_source(source_path: Path) -> str:
+    """Read an integration-test source, raising ValueError on OS errors."""
     try:
         return source_path.read_text(encoding="utf-8")
     except OSError as error:
@@ -60,6 +61,7 @@ def _read_target_source(source_path: Path) -> str:
 
 
 def _read_document(document: Path) -> str:
+    """Read a documentation file, raising ValueError on OS errors."""
     try:
         return document.read_text(encoding="utf-8")
     except OSError as error:
@@ -276,6 +278,7 @@ def _target_list_section(
     category: str,
     heading: str,
 ) -> str:
+    """Return the body of one category's target list after checking its count."""
     heading_pattern = rf"^### {re.escape(heading)} \((?P<count>\d+)\)$"
     heading_matches = list(re.finditer(heading_pattern, source, re.MULTILINE))
     if not heading_matches:
