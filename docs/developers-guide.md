@@ -30,6 +30,11 @@ own with:
 rustup toolchain install nightly-2026-08-07 --profile minimal --component rustfmt
 ```
 
+The reachability contract classifies the `uv` commands that a CI step reaches
+by their exact arguments. It does not read the Python scripts those commands
+run, so it cannot notice a script that is edited, missing, or that starts other
+commands. Review script changes as ordinary code.
+
 Run the required commit gates sequentially:
 
 ```sh

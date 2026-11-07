@@ -1,4 +1,4 @@
-//! Specifies Make reachability, command classification, and source-backed tool identity.
+//! Specifies Make reachability and command classification.
 
 use rstest::rstest;
 
@@ -114,7 +114,7 @@ fn has_words(actual: &[String], expected: &[&str]) -> bool {
     })
 }
 
-/// Evaluates a requested goal in an exclusive fixture after staging the reviewed script bodies.
+/// Evaluates a requested goal in an exclusive fixture holding the case's Makefile.
 fn evaluate_case(case: &MakeCase<'_>) -> Result<make_output::Evaluation, String> {
     let goals = vec![case.goal.to_owned()];
     let assignments = Vec::new();

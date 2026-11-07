@@ -250,7 +250,7 @@ fn exact_words(actual: &[String], expected: &[&str]) -> bool {
             .all(|(word, expected_word)| word == expected_word)
 }
 
-/// Verifies Python source identities and the current historical script gap.
+/// Verifies the exact tool routes and the current historical script gap.
 #[cfg(test)]
 #[path = "ci_reachability_make_tools_tests.rs"]
 mod tests;
