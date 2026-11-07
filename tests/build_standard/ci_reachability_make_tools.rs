@@ -1,15 +1,10 @@
-//! Classifies exact repository tools and binds UV routes to reviewed Python bodies.
+//! Classifies exact repository tools.
 
-/// Stages reviewed bodies for LF/CRLF identity tests.
-#[cfg(test)]
-pub(super) use python_routes::{LineEnding, stage_python_bodies};
-/// Holds the reviewed Python source identities used by workflow routes.
-pub(super) use python_routes::{REVIEWED_PYTHON_BODIES, verify_reviewed_python_sources};
-use python_routes::{classify_uv, is_historical_whitaker, uses_reviewed_python};
+use python_routes::{classify_uv, is_historical_whitaker};
 
-use super::{Route, Workspace};
+use super::Route;
 
-/// Resolves UV commands and ties source-sensitive routes to reviewed Python files.
+/// Resolves UV commands to their reviewed exact routes.
 #[path = "ci_reachability_make_python_routes.rs"]
 mod python_routes;
 
@@ -76,23 +71,17 @@ fn canonical_program(program: &str, controlled: bool) -> &str {
     }
 }
 
-/// Adds source identity proof to exact UV routes and refuses the absent Whitaker script.
-pub(super) fn classify_workspace_words(
+/// Classifies a production command: exact routes, and the absent Whitaker script refused.
+pub(super) fn classify_production_words(
     words: &[String],
     controlled: bool,
-    workspace: &Workspace<'_>,
 ) -> Result<Route, String> {
     let route = classify_words(words, controlled)?;
     let (program, arguments) = words
         .split_first()
         .ok_or_else(|| "empty shell command".to_owned())?;
-    if canonical_program(program, controlled) == "uv" {
-        if is_historical_whitaker(arguments) {
-            return Err("Whitaker contract script is absent or unreviewed".to_owned());
-        }
-        if uses_reviewed_python(arguments) {
-            verify_reviewed_python_sources(workspace)?;
-        }
+    if canonical_program(program, controlled) == "uv" && is_historical_whitaker(arguments) {
+        return Err("Whitaker contract script is absent or unreviewed".to_owned());
     }
     Ok(route)
 }

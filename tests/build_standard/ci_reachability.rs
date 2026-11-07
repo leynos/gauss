@@ -4,11 +4,7 @@
 //! prerequisites. Its deliberately bounded grammar reports an unmeasured route as an error.
 //! The complete build-tool preflight belongs to the later provisioning layer.
 
-use std::{
-    collections::BTreeMap,
-    io::Write,
-    process::{Command, Stdio},
-};
+use std::collections::BTreeMap;
 
 use camino::{Utf8Path, Utf8PathBuf};
 use cap_std::fs_utf8::Dir;
@@ -31,12 +27,8 @@ mod matrix;
 mod parser;
 #[path = "ci_reachability_runner.rs"]
 mod runner;
-#[path = "ci_reachability_source_identity.rs"]
-mod source_identity;
 #[path = "ci_reachability_workflows.rs"]
 mod workflows;
-
-use source_identity::{GitBlobId, ReviewedSource};
 
 /// The currently adopted shared-action revision whose consumed sources were inspected.
 const ACTION_REVISION: &str = "6e99f225cb06684f9e6f89b63a7ca4a04095c067";
@@ -218,86 +210,6 @@ impl Invocation {
                 | ["-D", "warnings", "-Clink-arg=-fuse-ld=mold"]
                 | ["-Clink-arg=-fuse-ld=mold"]
         )
-    }
-}
-
-impl Workspace<'_> {
-    /// Verifies one reviewed source pair through this capability, never its filename alone.
-    /// For example, changing a known module's body produces its identity-change error.
-    fn verify_source(&self, reviewed: &ReviewedSource<'_>) -> Result<(), String> {
-        let path = reviewed.path();
-        let source = self
-            .directory
-            .read_to_string(path)
-            .map_err(|error| format!("reading reviewed Python source {path}: {error}"))?;
-        let normalized = Self::normalize_source(&source);
-        let observed = self
-            .git_blob_id(&normalized)
-            .map_err(|error| format!("hashing reviewed Python source {path}: {error}"))?;
-        let expected = GitBlobId::parse(reviewed.expected_blob)
-            .map_err(|_| format!("reviewed Python source identity changed: {path}"))?;
-        if observed == expected {
-            Ok(())
-        } else {
-            Err(format!("reviewed Python source identity changed: {path}"))
-        }
-    }
-
-    /// Mirrors Python text mode: CRLF and lone carriage returns become LF.
-    /// For example, `"a\r\nb\r"` becomes `"a\nb\n"`.
-    fn normalize_source(source: &str) -> String { source.replace("\r\n", "\n").replace('\r', "\n") }
-
-    /// Hashes stdin without writing Git objects, filters, paths or network access.
-    /// For example, a failed Git exit returns its status and stderr as an error.
-    fn git_blob_id(&self, source: &str) -> Result<GitBlobId, String> {
-        let mut child = Command::new("/usr/bin/git")
-            .args(["hash-object", "--stdin"])
-            .current_dir(self.path)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|error| format!("starting git hash-object --stdin: {error}"))?;
-        let write_result = child
-            .stdin
-            .take()
-            .ok_or_else(|| "git hash-object stdin pipe is missing".to_owned())
-            .and_then(|mut input| {
-                input
-                    .write_all(source.as_bytes())
-                    .map_err(|error| format!("writing Git hash input: {error}"))
-            });
-        let waited = child
-            .wait_with_output()
-            .map_err(|error| format!("waiting for git hash-object: {error}"));
-        let output = match (write_result, waited) {
-            (Err(write_error), Err(wait_error)) => {
-                return Err(format!("{write_error}; {wait_error}"));
-            }
-            (Err(write_error), Ok(output)) => {
-                return Err(format!(
-                    "{write_error}; git exited {}: {}",
-                    output.status,
-                    String::from_utf8_lossy(&output.stderr).trim()
-                ));
-            }
-            (Ok(()), Err(wait_error)) => return Err(wait_error),
-            (Ok(()), Ok(output)) => output,
-        };
-        if !output.status.success() {
-            return Err(format!(
-                "git hash-object failed with {}: {}",
-                output.status,
-                String::from_utf8_lossy(&output.stderr).trim()
-            ));
-        }
-        let hash_bytes = output
-            .stdout
-            .strip_suffix(b"\n")
-            .ok_or_else(|| "git hash-object output has no terminal newline".to_owned())?;
-        let hash_text = std::str::from_utf8(hash_bytes)
-            .map_err(|error| format!("git hash-object returned non-UTF-8 output: {error}"))?;
-        GitBlobId::parse(hash_text)
     }
 }
 

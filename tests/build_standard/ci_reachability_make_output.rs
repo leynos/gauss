@@ -371,6 +371,6 @@ pub(super) fn resolve(
     }
     workspace.map_or_else(
         || make_tools::classify_words(&invocation.words, controlled),
-        |root| make_tools::classify_workspace_words(&invocation.words, controlled, root),
+        |_| make_tools::classify_production_words(&invocation.words, controlled),
     )
 }

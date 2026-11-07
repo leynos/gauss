@@ -123,7 +123,6 @@ fn evaluate_case(case: &MakeCase<'_>) -> Result<make_output::Evaluation, String>
             .directory
             .write("Makefile", case.source)
             .map_err(|error| format!("writing Make evaluation source: {error}"))?;
-        make_tools::stage_python_bodies(workspace, make_tools::LineEnding::Lf)?;
         make_routes::evaluate_make(
             workspace,
             &make_routes::MakeRequest {

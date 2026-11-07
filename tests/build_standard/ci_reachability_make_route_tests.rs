@@ -132,7 +132,6 @@ fn make_inspects_unknown_prerequisite_after_suite() {
 #[test]
 fn workflow_make_command_reaches_test_prerequisites() {
     let route = tests::with_fixture(&[], |workspace| {
-        make_tools::stage_python_bodies(workspace, make_tools::LineEnding::Lf)?;
         make_routes::classify("make test", workspace, Host::Linux)
     })
     .expect("workflow Make command must resolve its prerequisites");

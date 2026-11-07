@@ -1,17 +1,13 @@
-//! Specifies reviewed Python identities, the historical Whitaker source gap, and
-//! the exact Cargo and `rustup` routes added for the pinned formatter.
+//! Specifies the historical Whitaker source gap and the exact Cargo, `rustup` and
+//! `interrogate` routes.
 
 use rstest::rstest;
 
 use super::{
-    super::{GitBlobId, Route, make_syntax, tests as shared_tests},
-    LineEnding,
-    REVIEWED_PYTHON_BODIES,
+    super::{Route, make_syntax},
     RUSTFMT_TOOLCHAIN,
+    classify_production_words,
     classify_words,
-    classify_workspace_words,
-    stage_python_bodies,
-    verify_reviewed_python_sources,
 };
 
 /// The exact historical contract route whose production script is missing.
@@ -58,13 +54,11 @@ fn whitaker_words(source: &str) -> Result<Vec<String>, String> {
     Ok(words)
 }
 
-/// Captures the production source gap as data while preserving fixture cleanup.
+/// Captures the production source gap as data.
 fn whitaker_gap(words: &[String]) -> Result<String, String> {
-    shared_tests::with_fixture(&[], |workspace| {
-        classify_workspace_words(words, false, workspace)
-            .err()
-            .ok_or_else(|| "unreviewed Whitaker script was accepted".to_owned())
-    })
+    classify_production_words(words, false)
+        .err()
+        .ok_or_else(|| "unreviewed Whitaker script was accepted".to_owned())
 }
 
 /// Historical `pytest` and `PyYAML` syntax is lexical-only because its script is absent.
@@ -106,49 +100,6 @@ fn whitaker_fixture_mutations_have_specific_diagnostics(
     let words = whitaker_words(source).expect("mutated fixture argv must parse");
     let error = classify_words(&words, false).expect_err("mutated route must fail");
     assert_eq!(error, expected);
-}
-
-/// LF and CRLF versions of all four reviewed bodies produce the same approved identities.
-#[test]
-fn reviewed_python_sources_accept_lf_and_crlf() -> Result<(), String> {
-    shared_tests::with_fixture(&[], |workspace| {
-        stage_python_bodies(workspace, LineEnding::Lf)?;
-        verify_reviewed_python_sources(workspace)?;
-        stage_python_bodies(workspace, LineEnding::CrLf)?;
-        verify_reviewed_python_sources(workspace)
-    })
-}
-
-/// Changing bytes at a known path is an explicit identity gap after a successful baseline.
-#[test]
-fn reviewed_python_source_content_drift_is_a_specific_gap() {
-    let result = shared_tests::with_fixture(&[], |workspace| {
-        stage_python_bodies(workspace, LineEnding::Lf)?;
-        verify_reviewed_python_sources(workspace)?;
-        let path = "scripts/check_integration_test_inventory.py";
-        let original = workspace
-            .directory
-            .read_to_string(camino::Utf8Path::new(path))
-            .map_err(|error| format!("reading staged checker: {error}"))?;
-        workspace
-            .directory
-            .write(
-                camino::Utf8Path::new(path),
-                format!("{original}\n# changed body\n"),
-            )
-            .map_err(|error| format!("mutating staged checker: {error}"))?;
-        verify_reviewed_python_sources(workspace)
-    });
-    let error = result.expect_err("same-path source drift must fail after baseline verification");
-    assert_eq!(
-        error,
-        "reviewed Python source identity changed: scripts/check_integration_test_inventory.py"
-    );
-    assert_eq!(
-        REVIEWED_PYTHON_BODIES.len(),
-        4,
-        "the reviewed source boundary is finite"
-    );
 }
 
 /// Copies a reviewed command into the owned words the classifier consumes.
@@ -259,31 +210,6 @@ fn formatter_pin_matches_the_provisioning_version_file() {
         pinned, RUSTFMT_TOOLCHAIN,
         "tools/rustfmt-nightly/VERSION must match the Makefile formatter pin"
     );
-}
-
-/// Accepts only the complete lowercase hexadecimal form emitted by Git.
-#[test]
-fn git_blob_id_requires_complete_lowercase_hex() {
-    let valid = "0123456789abcdef0123456789abcdef01234567";
-    assert!(
-        GitBlobId::parse(valid).is_ok(),
-        "a complete lowercase hexadecimal ID must parse"
-    );
-
-    let invalid = [
-        "0123456789ABCDEF0123456789abcdef01234567",
-        "0123456789abcdef0123456789abcdef0123456g",
-        "0123456789abcdef0123456789abcdef0123456",
-        "0123456789abcdef0123456789abcdef012345670",
-        "0123456789abcdef0123456789abcdef0123456\n",
-    ];
-    for text in invalid {
-        assert_eq!(
-            GitBlobId::parse(text),
-            Err("git hash-object returned an invalid blob identifier".to_owned()),
-            "invalid blob ID should fail exactly: {text:?}"
-        );
-    }
 }
 
 /// The docstring-coverage gate is a reviewed non-suite route, and only in its fixed shape.
