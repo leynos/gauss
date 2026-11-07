@@ -109,28 +109,18 @@ lint: ## Run Clippy and Whitaker with warnings denied
 # Interrogate scans each target recursively, subject to its default exclusions.
 INTERROGATE_VERSION ?= 1.7.0
 INTERROGATE_TARGETS ?= scripts
-# Level 2 prints a MISSED row per undocumented definition, which the
-# `interrogate` recipe below looks for: the rounded percentage alone can pass a
-# lone gap.
+# Level 2 lists each undocumented definition. The scanned set is small enough
+# that one gap is far below 100 per cent, so `--fail-under 100` alone catches it.
 INTERROGATE_FLAGS ?= -vv --fail-under 100
 INTERROGATE ?= $(UV_ENV) $(UV) tool run --python 3.14 --from 'interrogate==$(INTERROGATE_VERSION)' interrogate
 
-# Interrogate rounds its percentage to one decimal, so `--fail-under 100` alone
-# can pass a lone gap. This recipe also fails when `grep` finds a MISSED row in
-# the report on standard output. `grep` reads the whole report (no `-q`), so an
-# early exit cannot break the pipe under `pipefail`. The build-standard contract
-# reviews every shell assignment reachable from `lint`, so this gate is its own
-# target, run by its own CI step, rather than a prerequisite of `lint`.
+# The build-standard contract classifies every command a CI step reaches, so the
+# recipe is the single reviewed `uv` route (see `is_interrogate`), and the gate
+# is its own target, run by its own CI step, rather than a prerequisite of
+# `lint`.
 .PHONY: interrogate
 interrogate: ## Enforce complete Python docstring coverage
-	@report="$$($(INTERROGATE) $(INTERROGATE_FLAGS) $(INTERROGATE_TARGETS))"; \
-	  status=$$?; \
-	  printf '%s\n' "$$report"; \
-	  test "$$status" -eq 0 || exit "$$status"; \
-	  if printf '%s\n' "$$report" | grep '| *MISSED *|' >/dev/null; then \
-	    printf '%s\n' 'interrogate: undocumented definitions remain; see the MISSED rows above' >&2; \
-	    exit 1; \
-	  fi
+	@$(INTERROGATE) $(INTERROGATE_FLAGS) $(INTERROGATE_TARGETS)
 
 lint-clippy: ## Run Clippy with warnings denied
 	$(LINT_CLIPPY_COMMANDS)

@@ -92,6 +92,7 @@ fn is_reviewed_uv_route(arguments: &[String]) -> bool {
         || is_python_test(arguments)
         || is_ruff(arguments)
         || is_spelling_builder(arguments)
+        || is_interrogate(arguments)
         || is_coverage_contract(arguments)
         || is_historical_whitaker(arguments)
 }
@@ -213,6 +214,31 @@ fn is_spelling_builder(arguments: &[String]) -> bool {
             ".",
         ],
     )
+}
+
+/// Matches the docstring-coverage gate: a pinned `interrogate` run over plain
+/// target paths with the fixed report and threshold flags, and nothing else.
+pub(super) fn is_interrogate(arguments: &[String]) -> bool {
+    let words: Vec<&str> = arguments.iter().map(String::as_str).collect();
+    let [
+        "tool",
+        "run",
+        "--python",
+        "3.14",
+        "--from",
+        package,
+        "interrogate",
+        "-vv",
+        "--fail-under",
+        "100",
+        targets @ ..,
+    ] = words.as_slice()
+    else {
+        return false;
+    };
+    package.starts_with("interrogate==")
+        && !targets.is_empty()
+        && targets.iter().all(|target| !target.starts_with('-'))
 }
 
 /// Matches the current full-SHA CV-005 contract package and command.
