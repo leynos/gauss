@@ -57,7 +57,7 @@ jobs:
           persist-credentials: false
       - name: Setup Rust
         uses: >-
-          leynos/shared-actions/.github/actions/setup-rust@6e99f225cb06684f9e6f89b63a7ca4a04095c067
+          leynos/shared-actions/.github/actions/setup-rust@0eabb6bc07148981de5da395e30cd78d83f5c7c2
         with:
           install-mold: 'true'
       - name: Install system dependencies
@@ -75,7 +75,7 @@ jobs:
           # .cargo/config.toml.
           RUSTFLAGS: -D warnings
         uses: >-
-          leynos/shared-actions/.github/actions/generate-coverage@6e99f225cb06684f9e6f89b63a7ca4a04095c067
+          leynos/shared-actions/.github/actions/generate-coverage@0eabb6bc07148981de5da395e30cd78d83f5c7c2
         with:
           features: test-support
           output-path: lcov.info
@@ -93,7 +93,7 @@ jobs:
       - name: Upload coverage data to CodeScene
         if: steps.codescene-token.outputs.available == 'true' && github.ref == 'refs/heads/main'
         uses: >-
-          leynos/shared-actions/.github/actions/upload-codescene-coverage@6e99f225cb06684f9e6f89b63a7ca4a04095c067
+          leynos/shared-actions/.github/actions/upload-codescene-coverage@0eabb6bc07148981de5da395e30cd78d83f5c7c2
         with:
           path: lcov.info
           format: lcov
