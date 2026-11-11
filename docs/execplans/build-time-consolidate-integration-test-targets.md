@@ -30,15 +30,15 @@ from Cargo metadata._
 
 | Category                                                 | Count |
 | -------------------------------------------------------- | ----: |
-| Root `gauss` integration-test targets (`cargo metadata`) | 53    |
+| Root `gauss` integration-test targets (`cargo metadata`) | 54    |
 | Harness-backed GPUI BDD (scenario with `GpuiHarness`)    | 29    |
 | Raw structural GPUI (direct `#[gpui::test]`)             | 5     |
 | Non-GPUI BDD                                             | 5     |
-| Other integration targets                                | 14    |
+| Other integration targets                                | 15    |
 | GPUI targets (harness-backed + raw structural)           | 34    |
 
-<!-- integration-test-inventory: total=53 harness_gpui_bdd=29
-raw_structural_gpui=5 non_gpui_bdd=5 other_integration=14 gpui_target=34 -->
+<!-- integration-test-inventory: total=54 harness_gpui_bdd=29
+raw_structural_gpui=5 non_gpui_bdd=5 other_integration=15 gpui_target=34 -->
 
 ## Purpose / big picture
 

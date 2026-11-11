@@ -2,7 +2,7 @@ error[E0603]: module `catalog` is private
  --> tests/ui/localizer_api/private_module.rs:3:18
   |
 3 | use gauss::i18n::catalog::localizer::Localizer;
-  |                  ^^^^^^^  --------- module `localizer` is not publicly re-exported
+  |                  ^^^^^^^             --------- struct `Localizer` is not publicly re-exported
   |                  |
   |                  private module
   |
