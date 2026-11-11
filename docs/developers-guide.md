@@ -67,6 +67,16 @@ override has no `terminate-after` limit, so a queued nested compilation is not
 terminated by that threshold. The default-profile override also applies to the
 CI profile; other tests keep their configured deadlines and execution policy.
 
+The `gauss` package's `localizer_api` binary runs a `trybuild` contract from
+`tests/localizer_api.rs`. Its public fixture under
+`tests/ui/localizer_api/public_facade.rs` must compile through
+`gauss::i18n::Localizer`; the private-path fixture must fail when importing the
+catalogue implementation, with the diagnostic checked in
+`tests/ui/localizer_api/private_module.stderr`. The matching Nextest override in
+`.config/nextest.toml` sets retries to zero and emits a slow-test warning
+every 60 seconds without an elapsed termination limit. Nested compiler work can
+therefore wait for the shared Cargo lock and compiler admission slots.
+
 A nextest setup script, `fetch-locked`, runs `cargo fetch --locked` once before
 any test starts, so a test that starts its own Cargo build does not resolve
 dependencies while holding the shared package-cache lock. Run the suite online
