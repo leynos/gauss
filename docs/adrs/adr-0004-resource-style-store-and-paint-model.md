@@ -1,4 +1,4 @@
-# Architectural decision record (ADR) 0004: Add typed resource/style stores and paint references
+# Architectural decision record (ADR) 004: Add typed resource/style stores and paint references
 
 ## Status
 
@@ -106,3 +106,9 @@ This decision operationalizes architecture guidance in
 `docs/gauss-architecture-design.md` §5.5 by establishing a typed model spine
 for shared resources and future colour/effect features, while preserving
 incremental migration paths for existing workflows.
+
+## Addenda
+
+- **2026-11-11:** The published serial remains `004`; its canonical filename
+  is `docs/adrs/adr-0004-resource-style-store-and-paint-model.md`. The accepted
+  decision is unchanged.

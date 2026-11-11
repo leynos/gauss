@@ -1,4 +1,4 @@
-# Architectural Decision Record (ADR) 0001: Clarify Command and document operation (DocOp) roles
+# Architectural Decision Record (ADR) 001: Clarify Command and document operation (DocOp) roles
 
 ## Status
 
@@ -94,3 +94,9 @@ Rule of thumb:
 - Decide whether DocChange should be exposed as a public preview interface.
 
 [^issue]: <https://github.com/leynos/gauss/issues/19>
+
+## Addenda
+
+- **2026-11-11:** The published serial remains `001`; its canonical filename
+  is `docs/adrs/adr-0001-command-docop-relationship.md`. The accepted decision
+  is unchanged.

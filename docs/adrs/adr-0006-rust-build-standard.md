@@ -1,4 +1,4 @@
-# Architectural decision record (ADR) 0006: Adopt the Rust build standard for development builds
+# Architectural decision record (ADR) 006: Adopt the Rust build standard for development builds
 
 ## Status
 
@@ -67,3 +67,9 @@ Nextest-only options.
 - A change to a recipe or workflow step that assigns `RUSTFLAGS` must restate
   the flags, and the contract says which clause fails when it does not.
 - Revisit Cranelift when the toolchain or the failing tests change.
+
+## Addenda
+
+- **2026-11-11:** The published serial remains `006`; its canonical filename
+  is `docs/adrs/adr-0006-rust-build-standard.md`. The accepted decision is
+  unchanged.

@@ -1,4 +1,4 @@
-# Architectural decision record (ADR) 0002: Undo history crate selection
+# Architectural decision record (ADR) 002: Undo history crate selection
 
 ## Status
 
@@ -203,3 +203,9 @@ trivial if upstream becomes unmaintained.
   gur crate documentation. <https://docs.rs/gur/latest/gur/>.
 [^gur-versions]:
   gur versions on docs.rs. <https://docs.rs/crate/gur>.
+
+## Addenda
+
+- **2026-11-11:** The published serial remains `002`; its canonical filename
+  is `docs/adrs/adr-0002-undo-history-crate-selection.md`. The accepted
+  decision is unchanged.

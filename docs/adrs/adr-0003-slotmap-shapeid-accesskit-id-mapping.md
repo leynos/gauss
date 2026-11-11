@@ -1,4 +1,4 @@
-# Architectural decision record (ADR) 0003: Use slotmap for ShapeId and AccessKit ID mapping
+# Architectural decision record (ADR) 003: Use slotmap for ShapeId and AccessKit ID mapping
 
 ## Status
 
@@ -71,3 +71,9 @@ keeps conversion helpers explicit, and avoids bespoke mapping tables.
 The decision aligns with the architecture guidance in
 `docs/gauss-architecture-design.md` §5.1 by ensuring stable, generational IDs
 with explicit conversions for accessibility integration.
+
+## Addenda
+
+- **2026-11-11:** The published serial remains `003`; its canonical filename
+  is `docs/adrs/adr-0003-slotmap-shapeid-accesskit-id-mapping.md`. The accepted
+  decision is unchanged.

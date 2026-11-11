@@ -27,17 +27,17 @@ This index groups Gauss documentation by its purpose and audience.
   widget requirements and current coverage.
 - [Widget audit developer guide](widget-audit-developer-guide.md) — Use the
   project workflow for widget capability audits.
-- [ADR 0001](adrs/adr-0001-command-docop-relationship.md) — Understand the
+- [ADR 001](adrs/adr-0001-command-docop-relationship.md) — Understand the
   boundary between user intent and document mutations.
-- [ADR 0002: Undo history crate](adrs/adr-0002-undo-history-crate-selection.md)
+- [ADR 002: Undo history crate](adrs/adr-0002-undo-history-crate-selection.md)
   — Review the decision to use `undo_2` for document history.
-- [ADR 0003](adrs/adr-0003-slotmap-shapeid-accesskit-id-mapping.md) — Understand
+- [ADR 003](adrs/adr-0003-slotmap-shapeid-accesskit-id-mapping.md) — Understand
   the stable identifier mapping for shapes and accessibility.
-- [ADR 0004](adrs/adr-0004-resource-style-store-and-paint-model.md) — Review
+- [ADR 004](adrs/adr-0004-resource-style-store-and-paint-model.md) — Review
   the model for shared SVG resources and paint values.
-- [ADR 0005: Metadata namespace](adrs/adr-0005-gauss-metadata-namespace.md)
+- [ADR 005: Metadata namespace](adrs/adr-0005-gauss-metadata-namespace.md)
   — Find the namespace policy for Gauss SVG metadata.
-- [ADR 0006: Rust build standard](adrs/adr-0006-rust-build-standard.md)
+- [ADR 006: Rust build standard](adrs/adr-0006-rust-build-standard.md)
   — Review the development build and linker policy.
 
 ## Guides and reference
