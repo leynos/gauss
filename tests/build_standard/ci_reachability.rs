@@ -33,8 +33,9 @@ mod workflows;
 /// The currently adopted shared-action revision whose consumed sources were inspected.
 const ACTION_REVISION: &str = "6e99f225cb06684f9e6f89b63a7ca4a04095c067";
 
-/// The Whitaker installer revision, which the Dependabot group does not advance with the rest.
-const WHITAKER_ACTION_REVISION: &str = "5a99aed78ce68dcebd3052b75c31e6f173162b1e";
+/// The Whitaker installer action; its commit advances on its own release cadence, so any full
+/// commit SHA after the `@` is accepted rather than one restated value.
+const WHITAKER_ACTION_PREFIX: &str = "leynos/shared-actions/.github/actions/install-whitaker@";
 
 /// A strict YAML subset retaining every mapping entry before semantic inspection.
 #[derive(Clone, Debug, PartialEq, Eq)]

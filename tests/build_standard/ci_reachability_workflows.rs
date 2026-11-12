@@ -10,7 +10,7 @@ use super::{
     Host,
     Route,
     Value,
-    WHITAKER_ACTION_REVISION,
+    WHITAKER_ACTION_PREFIX,
     Workflow,
     Workspace,
     make_routes,
@@ -180,9 +180,13 @@ fn is_reviewed_non_suite_action(reference: &str) -> bool {
     // The Whitaker installer advances on its own release cadence, so its reviewed
     // revision is tracked separately from the Dependabot group's shared revision.
     if reference
-        == format!(
-            "leynos/shared-actions/.github/actions/install-whitaker@{WHITAKER_ACTION_REVISION}"
-        )
+        .strip_prefix(WHITAKER_ACTION_PREFIX)
+        .is_some_and(|revision| {
+            revision.len() == 40
+                && revision
+                    .bytes()
+                    .all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
+        })
     {
         return true;
     }
