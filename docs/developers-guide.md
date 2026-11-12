@@ -30,6 +30,20 @@ own with:
 rustup toolchain install nightly-2026-08-07 --profile minimal --component rustfmt
 ```
 
+The formatter nightly is a named exception to the toolchain-pin policy
+(DF12-102), which asks that CI hardcode no dated nightly beyond the one in
+`rust-toolchain.toml`. Four sites state it: `tools/rustfmt-nightly/VERSION`
+(the source the provisioning scripts read), the `RUSTFMT_TOOLCHAIN` Make
+variable, the CI formatter-install step in `.github/workflows/ci.yml`, and the
+reachability contract's `RUSTFMT_TOOLCHAIN` constant. The contract accepts only
+the exact `rustup toolchain install` command for the pinned formatter, so CI
+cannot read the version file at run time without loosening that check; a test
+fails when the Makefile and `tools/rustfmt-nightly/VERSION` disagree. Change
+all four together, and update the pinned expectations in
+`tests/build_standard/ci_reachability_make_formatter_tests.rs` and
+`tests/build_standard/ci_reachability_make_tools_tests.rs`, which compare the
+Makefile's formatter command and the classifier against the pin.
+
 The reachability contract classifies the `uv` commands that a CI step reaches
 by their exact arguments. It does not read the Python scripts those commands
 run, so it cannot notice a script that is edited, missing, or that starts other
