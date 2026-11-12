@@ -81,6 +81,16 @@ override has no `terminate-after` limit, so a queued nested compilation is not
 terminated by that threshold. The default-profile override also applies to the
 CI profile; other tests keep their configured deadlines and execution policy.
 
+The `gauss` package's `localizer_api` binary runs a `trybuild` contract from
+`tests/localizer_api.rs`. Its public fixture under
+`tests/ui/localizer_api/public_facade.rs` must compile through
+`gauss::i18n::Localizer`; the private-path fixture must fail when importing the
+catalogue implementation, with the diagnostic checked in
+`tests/ui/localizer_api/private_module.stderr`. The matching Nextest override in
+`.config/nextest.toml` sets retries to zero and emits a slow-test warning
+every 60 seconds without an elapsed termination limit. Nested compiler work can
+therefore wait for the shared Cargo lock and compiler admission slots.
+
 A nextest setup script, `fetch-locked`, runs `cargo fetch --locked` once before
 any test starts, so a test that starts its own Cargo build does not resolve
 dependencies while holding the shared package-cache lock. Run the suite online
@@ -521,6 +531,29 @@ See `tests/gpui_file_io_save_dialog.rs` for the fullest worked example,
 combining a `DurableShell`, a shared `TempSvgFile`, and multiple export
 scenarios, and `tests/features/file_io_*.feature` for the corresponding
 specifications.
+
+## Internationalization module boundary
+
+The public localization API is re-exported from `gauss::i18n`: `Catalog`,
+`Localizer`, `Locale`, `MessageId`, and `I18nError`. The private catalogue
+module stores messages for one locale; its private `localizer` child owns the
+locale-to-catalogue map, default locale, and lookup fallback. The parent
+re-exports `Localizer`, and the public i18n facade re-exports it alongside the
+other public types.
+
+`Catalog` owns message storage and the default en-GB translations. `Localizer`
+owns lookup: it checks the requested locale, then the default locale.
+Construction from a locale-to-catalogue map asserts that the default locale's
+catalogue is present. Adding a catalogue only inserts or replaces the catalogue
+for its locale. If neither catalogue contains the requested message, lookup
+returns `I18nError::MessageNotFound` with the effective locale. The
+construction invariant keeps the fallback catalogue available.
+
+Keep storage and translation population separate from lookup and fallback. The
+focused modules keep the implementation within the 400-line source-file budget
+while making each responsibility easier to maintain. The boundary is
+implemented in `src/i18n/mod.rs`, `src/i18n/catalog/mod.rs`, and
+`src/i18n/catalog/localizer.rs`.
 
 ## The build standard
 

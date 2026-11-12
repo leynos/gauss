@@ -67,6 +67,14 @@ gpui = { max-threads = 1 }
 bdd = { max-threads = 4 }
 
 [[profile.default.overrides]]
+# This facade/privacy test compiles trybuild dependencies inside the test.
+# Keep minute-by-minute warnings without terminating queued compilation;
+# do not automatically repeat this admission-bound test after a failure.
+filter = 'package(=gauss) and binary(=localizer_api) and test(=localizer_public_api_preserves_implementation_privacy)'
+retries = 0
+slow-timeout = { period = "60s" }
+
+[[profile.default.overrides]]
 # This trybuild fixture compiles dependencies while running. A cold build can
 # wait on the shared Cargo cache and compiler admission for longer than the
 # ordinary test deadline. Keep slow warnings without terminating queued builds;
