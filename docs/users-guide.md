@@ -284,8 +284,8 @@ To build Gauss from source, install the pinned Rust toolchain and the platform
 prerequisites described in the
 [developer's guide](developers-guide.md#the-build-standard). That guide
 explains the development build defaults, Make inputs and the coverage and
-release routes. See [ADR 006](adr-006-rust-build-standard.md) for the decision
-rationale.
+release routes. See [ADR 0006](adrs/adr-0006-rust-build-standard.md) for the
+decision rationale.
 
 `RUST_FLAGS` is a Make-only input: recipes that use it compose its value into
 `RUSTFLAGS`, and it is not exported to child processes. Command-line values

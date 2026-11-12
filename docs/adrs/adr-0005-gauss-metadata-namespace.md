@@ -117,3 +117,9 @@ This decision concretizes architecture section 10.1 by making metadata
 namespacing explicit, testable, and deterministic while preserving standard SVG
 compatibility for rendered artwork. It creates the architectural spine required
 to complete roadmap items 0.4.2 and 0.4.3 safely.
+
+## Addenda
+
+- **2026-11-11:** The published serial remains `005`; its canonical filename
+  is `docs/adrs/adr-0005-gauss-metadata-namespace.md`. The accepted decision is
+  unchanged.

@@ -1,4 +1,4 @@
-# ADR-002 undo_2 spike for command-layer undo
+# ADR-0002 undo_2 spike for command-layer undo
 
 This ExecPlan (execution plan) is a living document. The sections `Constraints`,
 `Tolerances`, `Risks`, `Progress`, `Surprises & Discoveries`, `Decision Log`,
@@ -20,7 +20,7 @@ After this work:
 - The UI layer will dispatch actions and render results, but it will no
   longer own document history mechanics.
 - The suitability of `undo_2` for Gauss will be evaluated with evidence and
-  recorded in `docs/adr-002-undo-history-crate-selection.md`.
+  recorded in `docs/adrs/adr-0002-undo-history-crate-selection.md`.
 - The behaviour will be validated by unit tests (`rstest`), behavioural tests
   (`rstest-bdd` v0.5.0), and GPUI integration tests for both happy and unhappy
   paths.
@@ -48,7 +48,7 @@ completed history migration scope.
   `make check-fmt`, `make lint`, `make test`.
 - Update user-facing and architecture documentation in the same change set:
   `docs/users-guide.md`, `docs/gauss-architecture-design.md`,
-  `docs/adr-002-undo-history-crate-selection.md`, and `docs/roadmap.md`.
+  `docs/adrs/adr-0002-undo-history-crate-selection.md`, and `docs/roadmap.md`.
 
 ## Tolerances (exception triggers)
 
@@ -139,14 +139,14 @@ completed history migration scope.
 - Observation: the `undo_2` historical undo model is arguably beneficial for
   Gauss — users never lose work through undo/redo branching. Evidence: spike
   testing confirmed all commands remain navigable after branch edits. Impact:
-  accepted as a positive UX characteristic; documented in ADR-002 and user
+  accepted as a positive UX characteristic; documented in ADR-0002 and user
   guide.
 
 ## Decision log
 
 - Decision: Scope this spike around command-layer document undo first, with
   explicit handling notes for selection history in the same plan. Rationale:
-  ADR-002 problem statement is about command history and GPUI coupling; this
+  ADR-0002 problem statement is about command history and GPUI coupling; this
   keeps the first migration tractable while preventing blind spots.
   Date/Author: 2026-02-12 / Codex
 
@@ -176,7 +176,7 @@ completed history migration scope.
   `gpui_component::History` dependency for document undo.
 - Unit tests for adapter internals including empty history, multi-action
   undo/redo, branch-edit sequences, and error propagation.
-- Updated ADR-002, architecture document, user guide, and roadmap.
+- Updated ADR-0002, architecture document, user guide, and roadmap.
 
 ### What was deferred
 
@@ -219,8 +219,8 @@ Current architecture and code boundaries relevant to this spike:
   command coverage.
 - `tests/gpui_*undo*.rs` and `tests/gpui_selection_history.rs`: GPUI behaviour
   coverage for history flows.
-- `docs/adr-002-undo-history-crate-selection.md`: decision target for crate
-  suitability findings.
+- `docs/adrs/adr-0002-undo-history-crate-selection.md`: decision target for
+  crate suitability findings.
 - `docs/gauss-architecture-design.md`: architecture statement that currently
   ties history exclusion to GPUI dependency.
 - `docs/users-guide.md`: user-visible shortcut and undo semantics.
@@ -295,8 +295,8 @@ Go/no-go: proceed only when targeted suites and full `make test` pass.
 
 Update documentation with implementation reality:
 
-- `docs/adr-002-undo-history-crate-selection.md`: record findings, accept or
-  reject `undo_2`, and capture trade-offs from observed behaviour.
+- `docs/adrs/adr-0002-undo-history-crate-selection.md`: record findings, accept
+  or reject `undo_2`, and capture trade-offs from observed behaviour.
 - `docs/gauss-architecture-design.md`: update history ownership description
   (currently says history stays in view due to GPUI dependency).
 - `docs/users-guide.md`: reflect any user-visible undo/redo semantics changes,
@@ -382,8 +382,8 @@ Acceptance criteria for code and behaviour:
 
 Definition of done for `undo_2` suitability:
 
-- ADR-002 contains explicit findings from tests and implementation experience.
-- ADR-002 status reflects the final decision (accepted or rejected for Gauss).
+- ADR-0002 contains explicit findings from tests and implementation experience.
+- ADR-0002 status reflects the final decision (accepted or rejected for Gauss).
 - If accepted, constraints/known limitations are documented.
 - If rejected, the ADR records why and what replacement is required.
 

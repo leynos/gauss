@@ -234,8 +234,8 @@ opaque newtypes to prevent mixing.
 document allocates IDs via a `SlotMap` registry and keeps them stable across
 reorder and undo. AccessKit node IDs are derived using the key's `as_ffi`
 representation and reconstructed via `from_ffi`, providing stable, reversible
-mapping between document objects and a11y nodes. See ADR 003
-(`docs/adr-003-slotmap-shapeid-accesskit-id-mapping.md`) for the decision
+mapping between document objects and a11y nodes. See ADR 0003
+(`docs/adrs/adr-0003-slotmap-shapeid-accesskit-id-mapping.md`) for the decision
 record.
 
 ### 5.2 Two kinds of state
@@ -324,9 +324,9 @@ boundary while preserving GPUI-independence. History depth is bounded by
 `keep_last()` with a configurable limit (default 500). Selection history
 remains in the view layer using `gpui_component::History` because it has
 different ownership and lifecycle requirements. This split was driven by
-[ADR-002](adr-002-undo-history-crate-selection.md) and the `undo_2` spike.
-`document_history` stays private and is mutated via explicit `EngineState`
-methods to keep the engine/view ownership boundary clear.
+[ADR-0002](adrs/adr-0002-undo-history-crate-selection.md) and the `undo_2`
+spike. `document_history` stays private and is mutated via explicit
+`EngineState` methods to keep the engine/view ownership boundary clear.
 
 **Relationship to prepare_command():** The command system's `prepare_command()`
 function takes `&EngineState` rather than individual state pieces, providing a
@@ -337,8 +337,8 @@ unified entry point for action dispatch.
 Roadmap item 0.2.3 is implemented by introducing concrete `ResourceStore` and
 `StyleStore` types, plus paint references in `PaintStyle`.
 
-Reference: [`ADR-004`](adr-004-resource-style-store-and-paint-model.md) records
-the architectural rationale and consequences for this change.
+Reference: [`ADR-0004`](adrs/adr-0004-resource-style-store-and-paint-model.md)
+records the architectural rationale and consequences for this change.
 
 **Design decision:** model stroke and fill as `Paint` (none, solid colour,
 gradient reference, pattern reference) rather than `Option<Rgba>`. This keeps
@@ -845,7 +845,7 @@ Command implementations may either emit DocOps/DocChanges or mutate the
 document directly for simple cases; both patterns are valid and coexist. The
 undo stack records Commands and their inverses, not individual DocOps. Direct
 mutations must still capture enough data to produce a correct inverse. See
-[ADR 001](adr-001-command-docop-relationship.md) for the formal decision.
+[ADR 0001](adrs/adr-0001-command-docop-relationship.md) for the formal decision.
 
 Rule of thumb:
 
@@ -1194,7 +1194,7 @@ Namespace usage policy:
 - Import rejects Gauss namespace usage when canonical `xmlns:gauss`
   declaration is missing.
 
-This policy is documented in `docs/adr-005-gauss-metadata-namespace.md`.
+This policy is documented in `docs/adrs/adr-0005-gauss-metadata-namespace.md`.
 
 #### 10.1.2 SVG Path Parsing Architecture
 
@@ -1688,7 +1688,7 @@ ______________________________________________________________________
 
 ## 18. Architectural Decision Records (ADRs)
 
-Create `docs/ADR/` and record decisions that affect long-term maintainability.
+Record decisions that affect long-term maintainability in `docs/adrs/`.
 
 Initial ADR candidates:
 
