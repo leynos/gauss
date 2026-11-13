@@ -22,6 +22,7 @@ use gauss_svg::svg::{
     import::{ImportedSvg, SvgImportError, import_svg_with_resources},
     metadata::{GAUSS_METADATA_NAMESPACE, GAUSS_METADATA_PREFIX},
 };
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult, shapes::shape_id};
@@ -34,11 +35,9 @@ struct ResourceWorld {
     import_result: Option<Result<ImportedSvg, SvgImportError>>,
 }
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn world() -> ResourceWorld {
-    // Each scenario starts with an empty resource world.
-    ResourceWorld::default()
-}
+fn world() -> ResourceWorld { ResourceWorld::default() }
 
 #[given("a document with a gradient stroke and pattern fill")]
 fn given_document_with_resource_paints(world: &mut ResourceWorld) {

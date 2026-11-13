@@ -17,6 +17,7 @@ use gauss_core::model::{
     Vec2,
 };
 use gauss_svg::svg::export::{CanvasSize, export_svg};
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};
@@ -28,11 +29,9 @@ struct DocWorld {
     last_svg: Option<String>,
 }
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn world() -> DocWorld {
-    // Each scenario starts with an empty document world.
-    DocWorld::default()
-}
+fn world() -> DocWorld { DocWorld::default() }
 
 #[given("an empty document")]
 fn empty_document(world: &mut DocWorld) {

@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 
 use gauss::i18n::{Catalog, I18nError, Locale, Localizer, MessageId};
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 
@@ -14,11 +15,9 @@ struct I18nTestContext {
     fallback_occurred: bool,
 }
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn ctx() -> I18nTestContext {
-    // Each scenario starts with no localizer or lookup result.
-    I18nTestContext::default()
-}
+fn ctx() -> I18nTestContext { I18nTestContext::default() }
 
 #[given("a default English catalog exists")]
 fn default_catalog_exists(ctx: &mut I18nTestContext) {

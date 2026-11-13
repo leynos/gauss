@@ -4,6 +4,7 @@ use gauss_core::{
     model::{Document, HitTestIndex, SelectPointerHit, ShapeId, Vec2},
     test_helpers::square_shape_with_out_handle,
 };
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};
@@ -18,11 +19,9 @@ struct HitTestWorld {
     hover_hit: Option<SelectPointerHit>,
 }
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn world() -> HitTestWorld {
-    // Each scenario starts with an empty hit-test world.
-    HitTestWorld::default()
-}
+fn world() -> HitTestWorld { HitTestWorld::default() }
 
 fn shape_id(raw: u64) -> ShapeId { ShapeId::from_accesskit_node_id(raw) }
 

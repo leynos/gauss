@@ -2,6 +2,7 @@
 name = "gauss-svg"
 version.workspace = true
 edition.workspace = true
+publish = false
 
 [features]
 test-support = ["gauss-core/test-support"]
@@ -16,6 +17,7 @@ thiserror = "2.0.18"
 camino = "1.1.9"
 cap-std = { version = "4.0.2", features = ["fs_utf8"] }
 gauss-core = { version = "0.1.0", path = "../gauss-core", features = ["test-support"] }
+gauss-test-macros = { path = "../gauss-test-macros" }
 rstest = "0.28.0"
 rstest-bdd = "0.6.0"
 rstest-bdd-macros = "0.6.0"

@@ -2,6 +2,7 @@
 name = "gauss-core"
 version.workspace = true
 edition.workspace = true
+publish = false
 
 [features]
 test-support = []
@@ -13,6 +14,7 @@ undo_2 = "0.2.1"
 
 [dev-dependencies]
 gauss-core = { path = ".", features = ["test-support"] }
+gauss-test-macros = { path = "../gauss-test-macros" }
 rstest = "0.28.0"
 rstest-bdd = "0.6.0"
 rstest-bdd-macros = "0.6.0"

@@ -2,9 +2,15 @@
 name = "gauss"
 version.workspace = true
 edition.workspace = true
+publish = false
 
 [workspace]
-members = ["crates/gauss-core", "crates/gauss-svg", "crates/test_support"]
+members = [
+    "crates/gauss-core",
+    "crates/gauss-svg",
+    "crates/gauss-test-macros",
+    "crates/test_support",
+]
 default-members = [".", "crates/gauss-core", "crates/gauss-svg"]
 
 [workspace.package]
@@ -106,6 +112,7 @@ thiserror = "2.0.18"
 
 [dev-dependencies]
 gauss-core = { version = "0.1.0", path = "crates/gauss-core", features = ["test-support"] }
+gauss-test-macros = { path = "crates/gauss-test-macros" }
 gpui = { version = "0.2.2", features = ["test-support"] }
 proptest = "1.11.0"
 rstest = "0.28.0"

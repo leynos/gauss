@@ -17,6 +17,7 @@
 //! scenario green and leave `#[should_panic]` unsatisfied.
 
 use gauss_core::model::Document;
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};
@@ -28,11 +29,9 @@ struct AliasWorld {
     reached_failure: bool,
 }
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn world() -> AliasWorld {
-    // Each scenario starts with an empty alias world.
-    AliasWorld::default()
-}
+fn world() -> AliasWorld { AliasWorld::default() }
 
 /// A payload type that exists only to make step-return injection observable.
 ///
@@ -52,11 +51,9 @@ const FIXTURE_SENTINEL: &str = "fixture default";
 
 /// The single fixture of type [`AliasSentinel`], giving the framework's
 /// `TypeId` scan exactly one candidate to override.
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn alias_sentinel() -> AliasSentinel {
-    // The sentinel is shared by every scenario.
-    AliasSentinel(FIXTURE_SENTINEL)
-}
+fn alias_sentinel() -> AliasSentinel { AliasSentinel(FIXTURE_SENTINEL) }
 
 #[given("an empty document for alias classification")]
 fn empty_document_for_alias_classification(world: &mut AliasWorld) {

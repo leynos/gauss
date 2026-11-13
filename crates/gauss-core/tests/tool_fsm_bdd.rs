@@ -18,6 +18,7 @@ use gauss_core::model::{
     ToolTransition,
     Vec2,
 };
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};
@@ -101,11 +102,9 @@ struct ToolCommandWorld {
     apply_error: Option<String>,
 }
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn tool_command_world() -> ToolCommandWorld {
-    // Each scenario starts with an empty tool-command world.
-    ToolCommandWorld::default()
-}
+fn tool_command_world() -> ToolCommandWorld { ToolCommandWorld::default() }
 
 // === Given steps ===
 

@@ -4,6 +4,7 @@
 //! categorized for dispatch routing.
 
 use gauss_core::model::{Action, ActionKind};
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then};
 use test_support::{TestSupportError, TestSupportResult};
@@ -14,11 +15,9 @@ struct ActionWorld {
     action: Option<Action>,
 }
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn world() -> ActionWorld {
-    // Each scenario starts with no action selected.
-    ActionWorld::default()
-}
+fn world() -> ActionWorld { ActionWorld::default() }
 
 // === Given steps ===
 
