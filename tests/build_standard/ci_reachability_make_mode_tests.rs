@@ -1,8 +1,17 @@
-//! Specifies that direct Make evaluation enforces the MODE lexical invariant.
+//! Specifies the Make argument grammar enforced before GNU Make starts.
 
 use rstest::rstest;
 
-use super::{CURRENT_MAKE, Host, MakeCase, ROUTES, append_fixture, evaluate_case};
+use super::{
+    CURRENT_MAKE,
+    Host,
+    MakeCase,
+    ROUTES,
+    Route,
+    append_fixture,
+    classify_workflow_command,
+    evaluate_case,
+};
 
 /// The direct evaluator rejects MODE values the workflow adapter already refuses.
 #[rstest]
@@ -41,5 +50,30 @@ fn conditional_source_rejects_nonliteral_mode(#[case] mode: &str) {
     assert!(
         error.contains("MODE has an unresolved value"),
         "unexpected MODE diagnostic: {error}"
+    );
+}
+
+/// Workflow Make spellings outside the literal grammar fail with one specific gap.
+#[rstest]
+#[case::make_option("make -j2 test", "unresolved Make option or goal: -j2")]
+#[case::missing_goal("make", "Make invocation has no explicit goal")]
+#[case::duplicate_mode(
+    "make MODE=coverage MODE=release test",
+    "unresolved Make command-line assignment: MODE"
+)]
+#[case::empty_mode("make MODE= test", "Make selector MODE has an unresolved value: ")]
+fn workflow_make_argument_gaps_are_specific(#[case] command: &str, #[case] expected: &str) {
+    let error = classify_workflow_command(command)
+        .expect_err("a Make command outside the literal grammar must not be evaluated");
+    assert_eq!(error, expected);
+}
+
+/// One literal MODE assignment is admitted and still reaches the Make dry run.
+#[test]
+fn workflow_make_mode_assignment_reaches_the_dry_run() {
+    assert_eq!(
+        classify_workflow_command("make MODE=release test")
+            .expect("a literal MODE assignment must remain evaluable"),
+        Route::Suite
     );
 }

@@ -20,13 +20,66 @@ mod trace;
 /// Inputs that remain explicit while one set of Make goals is evaluated.
 pub(super) struct MakeRequest<'a> {
     /// Literal goals in their original order.
-    pub(super) goals: &'a [String],
+    pub(super) goals: &'a [MakeGoal],
     /// Explicit caller selector; ambient MODE is never consulted.
-    pub(super) mode: Option<&'a str>,
+    pub(super) mode: Option<&'a ModeSelector>,
     /// Reviewed shell assignments attached to this workflow command.
     pub(super) assignments: &'a [String],
     /// Host resolved from the workflow runner row.
     pub(super) host: Host,
+}
+
+/// A Make goal that has passed the literal-goal grammar.
+///
+/// The parser is the only constructor, so every goal that reaches GNU Make is
+/// non-empty and free of computed syntax. This closes the bypass where a
+/// caller could hand an unreviewed goal straight to [`MakeRequest`].
+///
+/// For example, `MakeGoal::parse("test")` succeeds while
+/// `MakeGoal::parse("$(MODE)")` fails.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) struct MakeGoal(String);
+
+impl MakeGoal {
+    /// Parses one goal from the literal grammar accepted by Make.
+    ///
+    /// For example, `check-fmt` and `crates/gauss-core` are literal, while
+    /// `$(shell true)` and an empty goal are not. A Make option such as `-j2`
+    /// is refused by the argument reader before a goal is parsed.
+    pub(super) fn parse(value: &str) -> Result<Self, String> {
+        if literal_goal(value) {
+            Ok(Self(value.to_owned()))
+        } else {
+            Err(format!("unresolved Make option or goal: {value}"))
+        }
+    }
+
+    /// Borrows the goal text exactly as GNU Make must receive it.
+    pub(super) fn as_str(&self) -> &str { &self.0 }
+}
+
+/// A command-line `MODE` value that has passed the literal selector grammar.
+///
+/// Constructing the value is the validation, so no later check has to guard a
+/// caller that builds [`MakeRequest`] directly. For example,
+/// `ModeSelector::parse("release")` succeeds while `parse("a b")` fails.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) struct ModeSelector(String);
+
+impl ModeSelector {
+    /// Parses one `MODE` value from the literal selector grammar.
+    pub(super) fn parse(value: &str) -> Result<Self, String> {
+        if literal_selector(value) {
+            Ok(Self(value.to_owned()))
+        } else {
+            Err(format!(
+                "Make selector MODE has an unresolved value: {value}"
+            ))
+        }
+    }
+
+    /// Borrows the selector text exactly as GNU Make must receive it.
+    pub(super) fn as_str(&self) -> &str { &self.0 }
 }
 
 /// Binds trace rows through the focused source-location reader.
@@ -54,7 +107,6 @@ pub(super) fn evaluate_make(
     make_source::verify_tool_defaults(&source)?;
     let selectors = make_source::required_selectors(&source)?;
     require_explicit_selectors(&selectors, request.mode)?;
-    require_literal_mode(request.mode)?;
     validate_goals(request.goals)?;
     Invocation {
         words: Vec::new(),
@@ -107,7 +159,7 @@ fn classify_invocation(
         let (goals, mode) = make_arguments(arguments)?;
         let request = MakeRequest {
             goals: &goals,
-            mode: mode.as_deref(),
+            mode: mode.as_ref(),
             assignments: &invocation.assignments,
             host,
         };
@@ -119,16 +171,16 @@ fn classify_invocation(
 }
 
 /// Restricts workflow Make arguments to explicit goals and a literal test selector.
-fn make_arguments(arguments: &[String]) -> Result<(Vec<String>, Option<String>), String> {
+fn make_arguments(arguments: &[String]) -> Result<(Vec<MakeGoal>, Option<ModeSelector>), String> {
     let mut goals = Vec::new();
     let mut mode = None;
     for argument in arguments {
         if let Some((name, value)) = argument.split_once('=') {
             accept_mode_assignment(name, value, &mut mode)?;
-        } else if argument.starts_with('-') || !literal_goal(argument) {
+        } else if argument.starts_with('-') {
             return Err(format!("unresolved Make option or goal: {argument}"));
         } else {
-            goals.push(argument.clone());
+            goals.push(MakeGoal::parse(argument)?);
         }
     }
     if goals.is_empty() {
@@ -143,36 +195,19 @@ fn make_arguments(arguments: &[String]) -> Result<(Vec<String>, Option<String>),
 fn accept_mode_assignment(
     name: &str,
     value: &str,
-    mode: &mut Option<String>,
+    mode: &mut Option<ModeSelector>,
 ) -> Result<(), String> {
-    let is_unresolved_assignment = name != "MODE" || mode.is_some() || !literal_selector(value);
-    if is_unresolved_assignment {
+    if name != "MODE" || mode.is_some() {
         return Err(format!("unresolved Make command-line assignment: {name}"));
     }
-    *mode = Some(value.to_owned());
+    *mode = Some(ModeSelector::parse(value)?);
     Ok(())
-}
-
-/// Rejects a supplied MODE value that the workflow adapter would already refuse.
-///
-/// `classify_invocation` reaches `evaluate_make` through `accept_mode_assignment`,
-/// but the fixture caller constructs `MakeRequest` directly and bypasses that
-/// check. Validating here keeps one lexical invariant before GNU Make starts,
-/// including when the Make source has no MODE condition to trigger it.
-/// For example, `Some("")` fails but `Some("release")` passes.
-fn require_literal_mode(mode: Option<&str>) -> Result<(), String> {
-    match mode {
-        Some(value) if !literal_selector(value) => Err(format!(
-            "Make selector MODE has an unresolved value: {value}"
-        )),
-        _ => Ok(()),
-    }
 }
 
 /// Ensures all source conditions are selected by the observed host or a literal caller value.
 fn require_explicit_selectors(
     selectors: &BTreeSet<make_source::MakeSelector>,
-    mode: Option<&str>,
+    mode: Option<&ModeSelector>,
 ) -> Result<(), String> {
     for selector in selectors {
         match selector {
@@ -214,10 +249,12 @@ fn controlled_dry_run(
         format!("UV={}", make_tools::PROBE_UV),
         format!("WHITAKER={}", make_tools::PROBE_WHITAKER),
     ]);
-    if let Some(value) = request.mode {
-        command.arg(format!("MODE={value}"));
+    if let Some(mode) = request.mode {
+        command.arg(format!("MODE={}", mode.as_str()));
     }
-    command.args(request.goals).current_dir(workspace.path);
+    command
+        .args(request.goals.iter().map(MakeGoal::as_str))
+        .current_dir(workspace.path);
     for name in MAKE_ENVIRONMENT_TO_CLEAR {
         command.env_remove(name);
     }
@@ -277,10 +314,13 @@ const MAKE_ENVIRONMENT_TO_CLEAR: &[&str] = &[
     "WHITAKER",
 ];
 
-/// Refuses empty goals and any selector that would require Make to evaluate shell text.
-fn validate_goals(goals: &[String]) -> Result<(), String> {
-    if goals.is_empty() || goals.iter().any(|goal| !literal_goal(goal)) {
-        Err("Make goals are empty or contain computed syntax".to_owned())
+/// Refuses an empty goal list, which would leave GNU Make with no target.
+///
+/// Each stored goal has already passed [`MakeGoal::parse`], so only the
+/// emptiness invariant remains for callers that build [`MakeRequest`] directly.
+fn validate_goals(goals: &[MakeGoal]) -> Result<(), String> {
+    if goals.is_empty() {
+        Err("Make invocation has no explicit goal".to_owned())
     } else {
         Ok(())
     }

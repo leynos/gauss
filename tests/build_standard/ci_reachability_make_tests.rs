@@ -8,7 +8,7 @@ use super::{
     Invocation,
     Route,
     make_output,
-    make_routes,
+    make_routes::{self, MakeGoal, ModeSelector},
     make_source,
     make_syntax,
     make_tools,
@@ -115,8 +115,12 @@ fn has_words(actual: &[String], expected: &[&str]) -> bool {
 }
 
 /// Evaluates a requested goal in an exclusive fixture holding the case's Makefile.
+///
+/// Both spellings are parsed first, so a non-literal case fails with the same
+/// diagnostic the workflow adapter reports and no fixture is created.
 fn evaluate_case(case: &MakeCase<'_>) -> Result<make_output::Evaluation, String> {
-    let goals = vec![case.goal.to_owned()];
+    let goals = vec![MakeGoal::parse(case.goal)?];
+    let mode = case.mode.map(ModeSelector::parse).transpose()?;
     let assignments = Vec::new();
     tests::with_fixture(&[], |workspace| {
         workspace
@@ -127,7 +131,7 @@ fn evaluate_case(case: &MakeCase<'_>) -> Result<make_output::Evaluation, String>
             workspace,
             &make_routes::MakeRequest {
                 goals: &goals,
-                mode: case.mode,
+                mode: mode.as_ref(),
                 assignments: &assignments,
                 host: case.host,
             },

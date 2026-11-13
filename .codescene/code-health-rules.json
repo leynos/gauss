@@ -1,0 +1,54 @@
+{
+  "usage": "Narrow per-file exemptions for the workflow-contract test modules described in docs/developers-guide.md#codescene-string-heavy-arguments.",
+  "rule_sets": [
+    {
+      "matching_content_path": "tests/build_standard/ci_reachability.rs",
+      "matching_content_path_doc": "YAML subset reader: mapping keys and diagnostic contexts are untrusted workflow text, so string arguments are the domain rather than a missing type (issue #257).",
+      "rules": [
+        { "name": "String Heavy Function Arguments", "weight": 0.0 }
+      ]
+    },
+    {
+      "matching_content_path": "tests/build_standard/ci_reachability_make_source.rs",
+      "matching_content_path_doc": "Make source parser: every helper consumes Makefile text, where the string is the input language itself (issue #257).",
+      "rules": [
+        { "name": "String Heavy Function Arguments", "weight": 0.0 }
+      ]
+    },
+    {
+      "matching_content_path": "tests/build_standard/ci_reachability_make_source_controls.rs",
+      "matching_content_path_doc": "Make conditional and control parser: helpers operate on individual Makefile lines (issue #257).",
+      "rules": [
+        { "name": "String Heavy Function Arguments", "weight": 0.0 }
+      ]
+    },
+    {
+      "matching_content_path": "tests/build_standard/ci_reachability_make_tests.rs",
+      "matching_content_path_doc": "Make evaluation fixtures: goals, MODE values, commands and expected argv rows are string literals by construction (issue #257).",
+      "rules": [
+        { "name": "String Heavy Function Arguments", "weight": 0.0 }
+      ]
+    },
+    {
+      "matching_content_path": "tests/build_standard/ci_reachability_make_tools.rs",
+      "matching_content_path_doc": "Workflow argv classifier: reviewed argv tokens are the domain, and a wrapper around the slice would add indirection without an invariant (issue #257).",
+      "rules": [
+        { "name": "String Heavy Function Arguments", "weight": 0.0 }
+      ]
+    },
+    {
+      "matching_content_path": "tests/build_standard/ci_reachability_make_trace.rs",
+      "matching_content_path_doc": "GNU Make trace reader: source lines, rule targets and recipe text are read and compared as strings (issue #257).",
+      "rules": [
+        { "name": "String Heavy Function Arguments", "weight": 0.0 }
+      ]
+    },
+    {
+      "matching_content_path": "tests/build_standard/ci_reachability_workflows_tests.rs",
+      "matching_content_path_doc": "Workflow parser fixtures: each rstest case supplies a command, label, key or YAML snippet as a string literal (issue #257).",
+      "rules": [
+        { "name": "String Heavy Function Arguments", "weight": 0.0 }
+      ]
+    }
+  ]
+}
