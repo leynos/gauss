@@ -62,15 +62,16 @@ fn conditional_source_rejects_nonliteral_mode(#[case] mode: &str) {
     "unresolved Make command-line assignment: MODE"
 )]
 #[case::empty_mode("make MODE= test", "Make selector MODE has an unresolved value: ")]
+#[case::quoted_metacharacter_goal("make 'test;true'", "unresolved Make option or goal: test;true")]
 fn workflow_make_argument_gaps_are_specific(#[case] command: &str, #[case] expected: &str) {
     let error = classify_workflow_command(command)
         .expect_err("a Make command outside the literal grammar must not be evaluated");
     assert_eq!(error, expected);
 }
 
-/// One literal MODE assignment is admitted and still reaches the Make dry run.
+/// One literal MODE assignment is admitted and routes to the suite.
 #[test]
-fn workflow_make_mode_assignment_reaches_the_dry_run() {
+fn workflow_make_literal_mode_assignment_routes_to_the_suite() {
     assert_eq!(
         classify_workflow_command("make MODE=release test")
             .expect("a literal MODE assignment must remain evaluable"),

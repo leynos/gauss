@@ -385,3 +385,8 @@ mod route_tests;
 #[cfg(test)]
 #[path = "ci_reachability_make_mode_tests.rs"]
 mod mode_tests;
+
+/// Keeps the literal goal grammar beside the request it guards.
+#[cfg(test)]
+#[path = "ci_reachability_make_goal_tests.rs"]
+mod goal_tests;
