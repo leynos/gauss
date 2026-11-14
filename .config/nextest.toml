@@ -89,7 +89,7 @@ slow-timeout = { period = "60s" }
 # Cargo build was still queueing on the package cache and build directory. Keep
 # slow warnings without terminating admission-bound compilation, and do not
 # immediately repeat the same queued build after a failure.
-filter = 'package(=gauss-test-macros) and binary(=fixture_lint_attribute) and test(=compacted_fixture_keeps_warnings_denied)'
+filter = 'package(=gauss-test-macros) and binary(=fixture_lint_attribute) and test(=lint_attribute_governs_the_expansion)'
 retries = 0
 slow-timeout = { period = "60s" }
 

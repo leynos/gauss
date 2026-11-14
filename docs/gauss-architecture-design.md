@@ -1685,6 +1685,14 @@ Enforce dependencies:
   dev-dependency of test targets; it has no runtime consumer and therefore no
   place in the shipped dependency graph
 
+Nothing in this workspace is published to a registry. `gauss`, `gauss-core`,
+`gauss-svg` and `gauss-test-macros` each set `publish = false`, and
+`test_support` is built only for tests. Gauss is delivered as a desktop
+application, so the crate boundaries above record internal composition and
+build-time coupling; they are not a public API contract with external
+consumers. Adding a crate therefore needs no SemVer or registry decision, but
+it must still satisfy the dependency rules above.
+
 Plain `cargo build` and `cargo test` do not select `test_support` as a
 top-level workspace member because it is excluded from the workspace
 `default-members` list. Cargo can still build `test_support` when it is a

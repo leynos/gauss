@@ -28,10 +28,20 @@ use syn::{Item, parse_macro_input};
 /// Write it immediately above `#[fixture]` so the suppression wraps the whole
 /// expansion rather than only the original item:
 ///
-/// ```ignore
+/// ```rust
+/// use gauss_test_macros::allow_fixture_expansion_lints;
+/// use rstest::fixture;
+///
+/// struct World;
+///
+/// impl Default for World {
+///     fn default() -> Self { Self }
+/// }
+///
 /// #[allow_fixture_expansion_lints]
 /// #[fixture]
 /// fn world() -> World { World::default() }
+/// # let _ = world;
 /// ```
 ///
 /// The attribute keeps such a fixture compiling under `-D warnings`; without it,
@@ -39,9 +49,16 @@ use syn::{Item, parse_macro_input};
 /// keeps on several lines needs no attribute, because only the compacted
 /// single-expression form triggers the lint.
 ///
-/// The example is `ignore` rather than compiled: this crate is a proc-macro helper
-/// with no rstest dependency, so the annotated fixture belongs to the caller's test
-/// target.
+/// The example compiles because `rstest` is a dev-dependency of this crate, which
+/// is also what lets the retained trybuild fixtures run. A consumer that annotates
+/// a fixture already depends on `rstest` for the fixture itself.
+///
+/// The annotated item is parsed with `syn` before the allowance is emitted. On the
+/// stable compiler an attribute macro is expanded only on an item, so the parse
+/// cannot fail for supported use, and the `parse_macro_input!` error branch has no
+/// reachable input to exercise. The compile-time coverage is therefore the pair of
+/// trybuild fixtures: one with the attribute, which must compile, and one without
+/// it, which must report `unused_braces`.
 #[proc_macro_attribute]
 pub fn allow_fixture_expansion_lints(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let parsed_item = parse_macro_input!(item as Item);

@@ -637,6 +637,16 @@ recorded in [ADR 0006](adrs/adr-0006-rust-build-standard.md). The contract runs
 `make -n`, so a direct `cargo test` needs GNU make on the `PATH`. It fails when
 `make` is missing instead of skipping, so a missing tool cannot read as a pass.
 
+### Workspace packaging
+
+No crate in this workspace is published. `gauss`, `gauss-core`, `gauss-svg` and
+`gauss-test-macros` set `publish = false` in their manifests, and
+`test_support` is built only for tests, because Gauss ships as a desktop
+application rather than as a library. The crate boundaries therefore describe
+internal composition, not a public API with external consumers. The decision,
+and the dependency rules it leaves in force, are recorded in
+[Repository / crate structure](gauss-architecture-design.md) section 17.
+
 ### Development build footprint
 
 The `dev` profile sets `incremental = false` and `debug = 0` in the root

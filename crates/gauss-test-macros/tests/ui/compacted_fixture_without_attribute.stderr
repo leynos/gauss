@@ -1,0 +1,16 @@
+error: unnecessary braces around block return value
+  --> tests/ui/compacted_fixture_without_attribute.rs:22:21
+   |
+22 | fn world() -> World { World::default() }
+   |                     ^^                ^^
+   |
+note: the lint level is defined here
+  --> tests/ui/compacted_fixture_without_attribute.rs:7:9
+   |
+ 7 | #![deny(unused_braces)]
+   |         ^^^^^^^^^^^^^
+help: remove these braces
+   |
+22 - fn world() -> World { World::default() }
+22 + fn world() -> World World::default()
+   |
