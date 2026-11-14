@@ -69,9 +69,9 @@
   the PR or execution record.
 - **Decision history:** Preserve accepted ADR decisions; record subsequent
   changes through the
-  [ADR amendment and supersession process](docs/documentation-style-guide.md#architectural-decision-records-adrs).
-  Capture proof-driven API, representation, and invariant decisions in the
-  design documentation.
+  [ADR amendment and supersession process][adr-amendment-process]. Capture
+  proof-driven API, representation, and invariant decisions in the design
+  documentation.
 - **Completed execplans:** Completed execplans are historical documents and
   should reflect the state of the repository at time of implementation. Do not
   retroactively update completed execplan documents to reflect subsequent
@@ -224,15 +224,17 @@ project:
   - `make lint` executes:
 
     ```sh
-    RUSTDOCFLAGS="$(RUSTDOC_FLAGS)" cargo doc --workspace --no-deps
+    RUSTDOCFLAGS="--cfg docsrs -D warnings" cargo doc --workspace --no-deps
     cargo clippy --workspace --all-targets --all-features -- -D warnings
     whitaker --all -- --workspace --all-targets --all-features
     ```
 
     building the documentation, linting every target with all features
-    enabled, and applying the Whitaker Dylint rules. `RUSTDOC_FLAGS` defaults to
-    `--cfg docsrs -D warnings`, so documentation warnings, Clippy warnings, and
-    Whitaker findings fail the command. The composite goal runs the Clippy and
+    enabled, and applying the Whitaker Dylint rules. The shell block shows the
+    default values; `RUSTDOC_FLAGS` defaults to `--cfg docsrs -D warnings`, so
+    documentation warnings, Clippy warnings, and Whitaker findings fail the
+    command. The recipe composes `RUSTFLAGS` from any inherited value and, on
+    Linux, the `mold` linker flag. The composite goal runs the Clippy and
     Whitaker commands as a single fail-fast shell chain rather than as
     prerequisites, so Whitaker runs only after Clippy succeeds even under
     `make -j` and `make -k`. The `lint-clippy` and `lint-whitaker` goals share
@@ -241,7 +243,7 @@ project:
 
     ```sh
     cargo nextest run --profile default --workspace --all-targets --all-features
-    RUSTDOCFLAGS="$(RUSTDOC_FLAGS)" cargo test --workspace --doc --all-features
+    RUSTDOCFLAGS="--cfg docsrs -D warnings" cargo test --workspace --doc --all-features
     ```
 
     after the `spelling-exceptions-test` prerequisite. The suite runs under
@@ -372,9 +374,10 @@ project:
   `mockable::MockEnv` in tests. A narrow closure seam of the same shape is
   acceptable where a trait object would be disproportionate. Production code
   must not reach for `std::env::var`/`var_os` outside that composition root.
-  This repository does not use `mockable`; it injects a narrow
-  environment-reader port instead, as described in
-  [Inject environment readers](docs/developers-guide.md#inject-environment-readers).
+  **Accepted local form:** this repository does not depend on `mockable`. It
+  injects a narrow environment-reader port at the application boundary and
+  stubs it in tests, as described in [Inject environment readers][env-readers].
+  That port is the accepted substitute for the `mockable` shape above.
 - **Process-wide locks are not an escape hatch.** Serializing environment
   mutation behind a shared `Mutex`, `OnceLock`, or `serial_test` attribute is
   not an accepted fallback. It serializes the suite, defeats property-based
@@ -489,3 +492,6 @@ project:
   request and stack your branch on it, so each review diff stays focused.
 
 <!-- typos-config-builder:agents-md:end -->
+
+[adr-amendment-process]: docs/documentation-style-guide.md#architectural-decision-records-adrs
+[env-readers]: docs/developers-guide.md#inject-environment-readers
