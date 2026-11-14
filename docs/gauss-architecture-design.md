@@ -1663,6 +1663,7 @@ Gauss now uses a workspace that enforces the first crate boundary split:
 /crates
   gauss-core        # document, selection, viewport, commands, tools
   gauss-svg         # svg parse/serialize + gauss metadata
+  gauss-test-macros # private proc-macro: scoped lint allowance for fixture expansion
   test_support      # workspace-private fixtures on gauss-core (excluded from default-members)
 /src
   lib.rs            # re-exports gauss::model and gauss::svg from workspace crates
@@ -1680,6 +1681,17 @@ Enforce dependencies:
 - `gauss-svg` and `gauss` both depend on `gauss-core`; `gauss` additionally
   depends on `gauss-svg` and GPUI-facing crates
 - `test_support` depends on `gauss-core`, not on the app crate
+- `gauss-test-macros` is `publish = false` and is consumed only as a
+  dev-dependency of test targets; it has no runtime consumer and therefore no
+  place in the shipped dependency graph
+
+Nothing in this workspace is published to a registry. `gauss`, `gauss-core`,
+`gauss-svg` and `gauss-test-macros` each set `publish = false`, and
+`test_support` is built only for tests. Gauss is delivered as a desktop
+application, so the crate boundaries above record internal composition and
+build-time coupling; they are not a public API contract with external
+consumers. Adding a crate therefore needs no SemVer or registry decision, but
+it must still satisfy the dependency rules above.
 
 Plain `cargo build` and `cargo test` do not select `test_support` as a
 top-level workspace member because it is excluded from the workspace

@@ -8,6 +8,7 @@ use gauss_svg::svg::{
     export::{CanvasSize, ExportMode, ExportOptions, export_svg_with_metadata},
     import::{ImportedSvg, import_svg_with_resources},
 };
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult, line_shape};
@@ -21,11 +22,9 @@ struct MetadataWorld {
     metadata_block: Option<String>,
 }
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn world() -> MetadataWorld {
-    // Each scenario starts with an empty metadata world.
-    MetadataWorld::default()
-}
+fn world() -> MetadataWorld { MetadataWorld::default() }
 
 // ---------------------------------------------------------------------------
 // Given

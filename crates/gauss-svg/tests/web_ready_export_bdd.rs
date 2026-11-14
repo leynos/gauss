@@ -26,6 +26,7 @@ use gauss_svg::svg::{
     },
     import::{ImportedSvg, SvgImportError, import_svg_with_resources},
 };
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult, line_shape};
@@ -41,11 +42,9 @@ struct WebReadyWorld {
     expected_missing_pattern: Option<PatternId>,
 }
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn world() -> WebReadyWorld {
-    // Each scenario starts with an empty export world.
-    WebReadyWorld::default()
-}
+fn world() -> WebReadyWorld { WebReadyWorld::default() }
 
 // ---------------------------------------------------------------------------
 // Given

@@ -153,6 +153,29 @@ Fix a finding at its source. When a suppression is genuinely required, use
 the build. Fixtures and helpers outside a test body do not inherit
 `allow-expect-in-tests`, so they return `Result` rather than panicking.
 
+### Fixture expansion lint shim
+
+`fn_single_line = true` compacts an `rstest` fixture whose body is a single
+expression. `#[fixture]` then nests that expression in a generated block, so
+the compiler reports `unused_braces` at the fixture and suggests a replacement
+that does not parse. Handwritten `#[allow]` attributes, `#[rustfmt::skip]`, a
+disabled `fn_single_line` and reshaped fixture bodies are all rejected.
+Annotate the fixture instead:
+
+```rust
+#[allow_fixture_expansion_lints]
+#[fixture]
+fn world() -> ActionWorld { ActionWorld::default() }
+```
+
+The attribute comes from `crates/gauss-test-macros`, a `publish = false`
+proc-macro crate that inherits `[lints] workspace = true`. Its implementation
+is taken verbatim from `crates/weaver-test-macros/src/lib.rs` in
+`leynos/weaver` at revision `85b3a0e4e32deebab9276d9033c298e8c83f83bf`. Apply
+it only to fixtures that actually trigger the diagnostic, placed immediately
+above `#[fixture]`; the macro supplies the scoped `allow` and the
+`expect(clippy::allow_attributes)` that keeps the lint baseline satisfied.
+
 The toolchain components are installed from `rust-toolchain.toml`: `rustfmt`,
 `clippy` and `rust-analyzer` for the pinned stable compiler. Formatting
 additionally uses the pinned nightly formatter named by `RUSTFMT_TOOLCHAIN` in
@@ -613,6 +636,16 @@ flag lost through a recipe or workflow edit fails there.
 recorded in [ADR 0006](adrs/adr-0006-rust-build-standard.md). The contract runs
 `make -n`, so a direct `cargo test` needs GNU make on the `PATH`. It fails when
 `make` is missing instead of skipping, so a missing tool cannot read as a pass.
+
+### Workspace packaging
+
+No crate in this workspace is published. `gauss`, `gauss-core`, `gauss-svg` and
+`gauss-test-macros` set `publish = false` in their manifests, and
+`test_support` is built only for tests, because Gauss ships as a desktop
+application rather than as a library. The crate boundaries therefore describe
+internal composition, not a public API with external consumers. The decision,
+and the dependency rules it leaves in force, are recorded in
+[Repository / crate structure](gauss-architecture-design.md) section 17.
 
 ### Development build footprint
 

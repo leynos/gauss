@@ -4,6 +4,7 @@
 //! documents are reordered and when IDs are mapped to AccessKit node IDs.
 
 use gauss_core::model::{Document, PaintStyle, PathGeom, Shape, ShapeId};
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{TestSupportError, TestSupportResult};
@@ -15,11 +16,9 @@ struct IdWorld {
     round_tripped: Option<ShapeId>,
 }
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn world() -> IdWorld {
-    // Each scenario starts with an empty identifier world.
-    IdWorld::default()
-}
+fn world() -> IdWorld { IdWorld::default() }
 
 fn append_shapes(world: &mut IdWorld, count: usize, clear_existing: bool) {
     if clear_existing {

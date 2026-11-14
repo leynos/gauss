@@ -8,6 +8,7 @@ mod groups;
 mod steps;
 
 use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase, RequiredControl};
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use rstest_bdd_macros::{scenario, when};
 use test_support::{TestSupportError, TestSupportResult};
@@ -20,11 +21,9 @@ pub(crate) struct AuditWorld {
     pub(crate) count: usize,
 }
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn world() -> AuditWorld {
-    // Each scenario starts with an empty audit world.
-    AuditWorld::default()
-}
+fn world() -> AuditWorld { AuditWorld::default() }
 
 #[scenario("tests/features/widget_capability_audit.feature")]
 fn widget_capability_audit(world: AuditWorld) { let _ = world; }

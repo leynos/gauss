@@ -83,6 +83,17 @@ filter = 'package(=test_support) and binary(=scenario_state_macro_ui) and test(=
 slow-timeout = { period = "60s" }
 
 [[profile.default.overrides]]
+# This trybuild pass fixture builds its own copy of the proc-macro and its
+# dependencies inside the test. Under coverage instrumentation that cold build
+# outlives the ordinary deadline, so the run was terminated while the nested
+# Cargo build was still queueing on the package cache and build directory. Keep
+# slow warnings without terminating admission-bound compilation, and do not
+# immediately repeat the same queued build after a failure.
+filter = 'package(=gauss-test-macros) and binary(=fixture_lint_attribute) and test(=lint_attribute_governs_the_expansion)'
+retries = 0
+slow-timeout = { period = "60s" }
+
+[[profile.default.overrides]]
 # GPUI tests need more time and serial execution
 filter = 'test(gpui)'
 test-group = 'gpui'

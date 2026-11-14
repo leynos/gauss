@@ -15,6 +15,7 @@ use gauss_core::model::{
     UserError,
     prepare_command,
 };
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use rstest_bdd_macros::{given, scenario, then, when};
 use test_support::{
@@ -32,11 +33,9 @@ struct CommandWorld {
     history_error: Option<HistoryError>,
 }
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn world() -> CommandWorld {
-    // Each scenario starts with an empty command world.
-    CommandWorld::default()
-}
+fn world() -> CommandWorld { CommandWorld::default() }
 
 // === Given steps ===
 

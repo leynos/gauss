@@ -2264,6 +2264,7 @@ dependencies = [
  "futures",
  "gauss-core",
  "gauss-svg",
+ "gauss-test-macros",
  "gpui",
  "gpui-component",
  "log",
@@ -2284,6 +2285,7 @@ name = "gauss-core"
 version = "0.1.0"
 dependencies = [
  "gauss-core",
+ "gauss-test-macros",
  "rstest",
  "rstest-bdd",
  "rstest-bdd-macros",
@@ -2300,6 +2302,7 @@ dependencies = [
  "camino",
  "cap-std",
  "gauss-core",
+ "gauss-test-macros",
  "roxmltree 0.21.2",
  "rstest",
  "rstest-bdd",
@@ -2307,6 +2310,17 @@ dependencies = [
  "slotmap",
  "test_support",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "gauss-test-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "rstest",
+ "syn 3.0.3",
+ "trybuild",
 ]
 
 [[package]]

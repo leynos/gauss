@@ -1,0 +1,20 @@
+[package]
+name = "gauss-test-macros"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "3.0", features = ["full"] }
+
+[dev-dependencies]
+rstest = "0.28.0"
+trybuild = "1.0.116"
+
+[lints]
+workspace = true

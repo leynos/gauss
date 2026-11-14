@@ -32,6 +32,7 @@ use gauss_svg::svg::{
     },
     import::import_svg_with_resources,
 };
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::{fixture, rstest};
 use test_support::{TestSupportError, TestSupportResult};
 
@@ -51,11 +52,10 @@ fn triangle_path() -> PathGeom {
     }
 }
 
+/// Opaque black at unit width is the round-trip baseline.
+#[allow_fixture_expansion_lints]
 #[fixture]
-fn default_style() -> PaintStyle {
-    // Opaque black at unit width is the round-trip baseline.
-    PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None)
-}
+fn default_style() -> PaintStyle { PaintStyle::new(Some(Rgba::new(0, 0, 0, 255)), 1.0, None) }
 
 #[fixture]
 fn minimal_test_shape(

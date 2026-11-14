@@ -19,14 +19,13 @@ use gauss_core::model::{
     ShapeId,
     UserError,
 };
+use gauss_test_macros::allow_fixture_expansion_lints;
 use rstest::fixture;
 use test_support::shapes::{sample_shape, shape_id};
 
+#[allow_fixture_expansion_lints]
 #[fixture]
-pub fn empty_doc() -> Document {
-    // Keep this block multiline: rstest 0.27 nests it; Rust 1.92 flags compact braces.
-    Document::default()
-}
+pub fn empty_doc() -> Document { Document::default() }
 
 #[fixture]
 pub fn doc_with_two_shapes() -> Document {
