@@ -39,8 +39,6 @@
 //! - `prepare_delete_selection_fails_with_empty_selection`: Error on empty selection
 //! - `editor_action_panics`: Verifies dispatcher routing assertions
 
-use std::panic::{AssertUnwindSafe, catch_unwind};
-
 use gauss_core::model::{
     Action,
     Command,
@@ -56,7 +54,7 @@ use gauss_core::model::{
 use rstest::rstest;
 use test_support::shapes::{sample_shape, shape_id};
 
-use super::{doc_with_two_shapes, empty_doc, extract_panic_message, selection_with_first_shape};
+use super::{doc_with_two_shapes, empty_doc, selection_with_first_shape};
 
 #[rstest]
 fn delete_shapes_removes_from_document(mut doc_with_two_shapes: Document) {
@@ -336,17 +334,9 @@ fn user_error_display_shape_not_found() {
 #[case::redo(Action::Redo)]
 #[case::activate_pen_tool(Action::ActivatePenTool)]
 #[case::activate_select_tool(Action::ActivateSelectTool)]
+#[should_panic(expected = "dispatcher bug")]
 fn editor_action_panics(#[case] action: Action) {
     let state = EngineState::new();
 
-    let result = catch_unwind(AssertUnwindSafe(|| {
-        drop(prepare_command(action, &state));
-    }));
-
-    let panic_payload = result.expect_err("expected prepare_command to panic");
-    let message = extract_panic_message(&panic_payload);
-    assert!(
-        message.contains("dispatcher bug"),
-        "expected panic message to contain 'dispatcher bug', got: {message}"
-    );
+    drop(prepare_command(action, &state));
 }
