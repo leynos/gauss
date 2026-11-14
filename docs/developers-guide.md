@@ -158,6 +158,29 @@ The toolchain components are installed from `rust-toolchain.toml`: `rustfmt`,
 additionally uses the pinned nightly formatter named by `RUSTFMT_TOOLCHAIN` in
 the `Makefile`.
 
+### CodeScene string-heavy arguments
+
+CodeScene's `String Heavy Function Arguments` factor flags a module when too
+many of its parameters are strings. The `tests/build_standard`
+workflow-contract modules are covered by
+[issue #257](https://github.com/leynos/gauss/issues/257). Two genuine parse
+boundaries now carry newtypes:
+
+- `MakeGoal` and `ModeSelector` in `ci_reachability_make.rs` are constructed
+  only by their parsers, so `MakeRequest` cannot carry an unreviewed goal or an
+  unresolved `MODE` value.
+- `RunnerLabel` in `ci_reachability_runner.rs` is constructed only from a
+  literal label, so host classification never re-validates a raw scalar.
+
+The remaining helpers take the text they parse: Makefile lines, argv tokens,
+YAML keys and rstest fixtures. The string is the domain there, and a wrapper
+around a slice or a line would add indirection without an invariant. Those
+modules are exempted per file in `.codescene/code-health-rules.json`, with
+`String Heavy Function Arguments` set to weight `0.0`. Each rule set names one
+path and records why, so a new module still reports the factor and a rename
+fails closed rather than widening the exemption silently. Reassess an exemption
+when its module gains a type that models the text it handles.
+
 ## Colour API migration
 
 The paint type and action variants use British spelling in Rust. Update crate

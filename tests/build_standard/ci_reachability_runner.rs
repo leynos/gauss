@@ -21,11 +21,34 @@ pub(super) fn hosts(job: &Value) -> Result<Vec<Host>, String> {
 /// Selects runner-label evidence from the supported scalar, list, or group mapping shapes.
 fn resolve(runner: &Value) -> Result<Host, String> {
     match runner {
-        Value::Scalar(label) => host_from_labels(std::slice::from_ref(label)),
+        Value::Scalar(_) => host_from_values(std::slice::from_ref(runner)),
         Value::Sequence(labels) => host_from_values(labels),
         Value::Mapping(fields) => host_from_group(fields),
         Value::Empty => Err("runs-on is empty".to_owned()),
     }
+}
+
+/// A runner label that has passed the literal-label grammar.
+///
+/// Workflow runner rows are untrusted text, so the host classifier accepts only
+/// values that this parser has already proved non-empty and free of unresolved
+/// expressions. For example, `parse` refuses `" "` and `${{ runner.os }}`
+/// while accepting `ubuntu-latest`.
+struct RunnerLabel<'a>(&'a str);
+
+impl<'a> RunnerLabel<'a> {
+    /// Reads one literal label from a workflow scalar.
+    fn parse(value: &'a Value, context: &str) -> Result<Self, String> {
+        let label = value.text(context)?;
+        if label.trim().is_empty() || contains_runner_expression_marker(label) {
+            Err(format!("{context} is empty or computed"))
+        } else {
+            Ok(Self(label))
+        }
+    }
+
+    /// Resolves the label to the operating system it names, if any.
+    fn host(&self) -> Option<Host> { host_label(self.0) }
 }
 
 /// Resolves a list of required labels as one runner rather than alternative runners.
@@ -35,7 +58,7 @@ fn host_from_values(values: &[Value]) -> Result<Host, String> {
     }
     let labels = values
         .iter()
-        .map(|value| literal_label(value, "runs-on label").map(str::to_owned))
+        .map(|value| RunnerLabel::parse(value, "runs-on label"))
         .collect::<Result<Vec<_>, _>>()?;
     host_from_labels(&labels)
 }
@@ -49,32 +72,15 @@ fn host_from_group(fields: &std::collections::BTreeMap<String, Value>) -> Result
         return Err("runs-on mapping may contain only `group` and `labels`".to_owned());
     }
     if let Some(group) = fields.get("group") {
-        literal_label(group, "runs-on group")?;
+        RunnerLabel::parse(group, "runs-on group")?;
     }
     let labels_value = fields
         .get("labels")
         .ok_or_else(|| "runs-on mapping is missing `labels`".to_owned())?;
     match labels_value {
-        Value::Scalar(label) => host_from_labels(std::slice::from_ref(label)),
+        Value::Scalar(_) => host_from_values(std::slice::from_ref(labels_value)),
         Value::Sequence(values) => host_from_values(values),
         _ => Err("runs-on `labels` must be a scalar or sequence".to_owned()),
-    }
-}
-
-/// Reads a literal non-empty label without accepting unresolved expressions.
-fn literal_label<'a>(value: &'a Value, context: &str) -> Result<&'a str, String> {
-    let label = value.text(context)?;
-    validate_literal_label(label, context)?;
-    Ok(label)
-}
-
-/// Rejects runner labels whose literal value is empty or still computed.
-/// For example, `" "` is rejected, while `ubuntu-latest` passes this lexical check.
-fn validate_literal_label(label: &str, context: &str) -> Result<(), String> {
-    if label.trim().is_empty() || contains_runner_expression_marker(label) {
-        Err(format!("{context} is empty or computed"))
-    } else {
-        Ok(())
     }
 }
 
@@ -86,11 +92,10 @@ fn contains_runner_expression_marker(label: &str) -> bool {
 }
 
 /// Combines known OS labels and refuses conflicting or absent operating-system evidence.
-fn host_from_labels(labels: &[String]) -> Result<Host, String> {
+fn host_from_labels(labels: &[RunnerLabel<'_>]) -> Result<Host, String> {
     let mut found = None;
     for label in labels {
-        validate_literal_label(label, "runs-on label")?;
-        if let Some(host) = host_label(label) {
+        if let Some(host) = label.host() {
             if found.is_some_and(|existing| existing != host) {
                 return Err("runner labels identify conflicting operating systems".to_owned());
             }
