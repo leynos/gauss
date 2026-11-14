@@ -1,4 +1,18 @@
 //! Proc-macros for test fixtures that suppress lints triggered by macro expansion.
+//!
+//! `rstest` fixtures written as a single expression are kept on one line by
+//! `fn_single_line` formatting, and the resulting fixture expansion wraps that
+//! expression in braces the compiler then reports as `unused_braces`. Under the
+//! workspace's `-D warnings` policy the false positive fails the build even
+//! though the source is correctly formatted.
+//!
+//! This crate provides the `allow_fixture_expansion_lints` attribute, which
+//! scopes an `unused_braces` allowance to the expansion of the annotated item.
+//! Keeping the allowance scoped matters: a crate-level or file-level `allow`
+//! would also hide a genuine redundant brace in handwritten test code.
+//!
+//! The crate is workspace-private (`publish = false`) and is consumed only as a
+//! dev-dependency by test targets that annotate compacted fixtures.
 
 use proc_macro::TokenStream;
 use quote::quote;
