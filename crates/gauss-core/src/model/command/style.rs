@@ -16,20 +16,8 @@ pub(super) fn apply_set_style(
     changes: &[StyleChange],
     command_name: &'static str,
 ) -> Result<CommandInverse, UserError> {
-    // Pre-validate: ensure all shapes exist before applying any changes.
-    for change in changes {
-        if doc.find_index(change.shape_id).is_none() {
-            return Err(UserError::ShapeNotFound(change.shape_id));
-        }
-    }
-
-    // Apply changes (safe now that all shapes are validated).
-    for change in changes {
-        let shape = doc
-            .shape_mut(change.shape_id)
-            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
-        shape.style = change.to.clone();
-    }
+    validate_shapes_exist(doc, changes)?;
+    apply_style_changes(doc, changes)?;
 
     // Create inverse with swapped from/to
     let inverse_changes = changes
@@ -59,14 +47,30 @@ pub(super) fn apply_restore_styles(
     doc: &mut Document,
     changes: &[StyleChange],
 ) -> Result<(), UserError> {
-    // Pre-validate: ensure all shapes exist before applying any changes.
-    for change in changes {
-        if doc.find_index(change.shape_id).is_none() {
-            return Err(UserError::ShapeNotFound(change.shape_id));
-        }
-    }
+    validate_shapes_exist(doc, changes)?;
+    apply_style_changes(doc, changes)
+}
 
-    // Apply changes (safe now that all shapes are validated).
+/// Ensure every referenced shape exists before any change is applied.
+///
+/// Validation runs separately from application so a missing shape leaves the
+/// document untouched, preserving the atomicity of the command pair.
+fn validate_shapes_exist(doc: &Document, changes: &[StyleChange]) -> Result<(), UserError> {
+    changes.iter().try_for_each(|change| {
+        if doc.find_index(change.shape_id).is_some() {
+            Ok(())
+        } else {
+            Err(UserError::ShapeNotFound(change.shape_id))
+        }
+    })
+}
+
+/// Write each style change into its shape.
+///
+/// Callers must run [`validate_shapes_exist`] first; the shape lookup here is
+/// infallible in practice but still reports a missing shape rather than
+/// silently skipping the change.
+fn apply_style_changes(doc: &mut Document, changes: &[StyleChange]) -> Result<(), UserError> {
     for change in changes {
         let shape = doc
             .shape_mut(change.shape_id)

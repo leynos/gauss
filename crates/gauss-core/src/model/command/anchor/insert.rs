@@ -54,63 +54,79 @@ fn insert_anchor_into_shape(shape: &Shape, seg_index: usize) -> Option<Shape> {
     let start_anchor = path.anchors.get(seg_index)?;
     let end_anchor = path.anchors.get(seg_index + 1)?;
 
-    let mut new_shape = shape.clone();
-
     match seg_kind {
-        SegmentKind::Line => {
-            // For line segments, insert midpoint with no handles
-            let mid = Vec2::new(
-                f32::midpoint(start_anchor.pos.x, end_anchor.pos.x),
-                f32::midpoint(start_anchor.pos.y, end_anchor.pos.y),
-            );
-            let new_anchor = Anchor {
-                pos: mid,
-                handle_in: None,
-                handle_out: None,
-            };
-            new_shape.path.anchors.insert(seg_index + 1, new_anchor);
-            new_shape
-                .path
-                .segments
-                .insert(seg_index + 1, SegmentKind::Line);
-        }
-        SegmentKind::Cubic => {
-            // For cubic segments, use de Casteljau split at t=0.5
-            let p0 = start_anchor.pos;
-            let p1 = start_anchor.handle_out.unwrap_or(p0);
-            let p2 = end_anchor.handle_in.unwrap_or(end_anchor.pos);
-            let p3 = end_anchor.pos;
-
-            // De Casteljau at t=0.5
-            let q0 = midpoint(p0, p1);
-            let q1 = midpoint(p1, p2);
-            let q2 = midpoint(p2, p3);
-            let r0 = midpoint(q0, q1);
-            let r1 = midpoint(q1, q2);
-            let s = midpoint(r0, r1);
-
-            // Update start anchor's handle_out
-            new_shape.path.anchors.get_mut(seg_index)?.handle_out = Some(q0);
-
-            // Insert new anchor at split point
-            let new_anchor = Anchor {
-                pos: s,
-                handle_in: Some(r0),
-                handle_out: Some(r1),
-            };
-            new_shape.path.anchors.insert(seg_index + 1, new_anchor);
-
-            // Update end anchor's handle_in (now at seg_index + 2 after insert)
-            new_shape.path.anchors.get_mut(seg_index + 2)?.handle_in = Some(q2);
-
-            // Insert new segment
-            new_shape
-                .path
-                .segments
-                .insert(seg_index + 1, SegmentKind::Cubic);
-        }
+        SegmentKind::Line => Some(split_line_segment(
+            shape,
+            seg_index,
+            start_anchor,
+            end_anchor,
+        )),
+        SegmentKind::Cubic => split_cubic_segment(shape, seg_index, start_anchor, end_anchor),
     }
+}
 
+/// Split a line segment at its midpoint, inserting an anchor with no handles.
+fn split_line_segment(
+    shape: &Shape,
+    seg_index: usize,
+    start_anchor: &Anchor,
+    end_anchor: &Anchor,
+) -> Shape {
+    let mid = Vec2::new(
+        f32::midpoint(start_anchor.pos.x, end_anchor.pos.x),
+        f32::midpoint(start_anchor.pos.y, end_anchor.pos.y),
+    );
+    let new_anchor = Anchor {
+        pos: mid,
+        handle_in: None,
+        handle_out: None,
+    };
+
+    let mut new_shape = shape.clone();
+    new_shape.path.anchors.insert(seg_index + 1, new_anchor);
+    new_shape
+        .path
+        .segments
+        .insert(seg_index + 1, SegmentKind::Line);
+    new_shape
+}
+
+/// Split a cubic segment at t=0.5 with a de Casteljau subdivision.
+fn split_cubic_segment(
+    shape: &Shape,
+    seg_index: usize,
+    start_anchor: &Anchor,
+    end_anchor: &Anchor,
+) -> Option<Shape> {
+    let p0 = start_anchor.pos;
+    let p1 = start_anchor.handle_out.unwrap_or(p0);
+    let p2 = end_anchor.handle_in.unwrap_or(end_anchor.pos);
+    let p3 = end_anchor.pos;
+
+    // De Casteljau at t=0.5
+    let q0 = midpoint(p0, p1);
+    let q1 = midpoint(p1, p2);
+    let q2 = midpoint(p2, p3);
+    let r0 = midpoint(q0, q1);
+    let r1 = midpoint(q1, q2);
+    let s = midpoint(r0, r1);
+
+    let mut new_shape = shape.clone();
+    new_shape.path.anchors.get_mut(seg_index)?.handle_out = Some(q0);
+
+    let new_anchor = Anchor {
+        pos: s,
+        handle_in: Some(r0),
+        handle_out: Some(r1),
+    };
+    new_shape.path.anchors.insert(seg_index + 1, new_anchor);
+
+    // The former end anchor moved to `seg_index + 2` after the insert.
+    new_shape.path.anchors.get_mut(seg_index + 2)?.handle_in = Some(q2);
+    new_shape
+        .path
+        .segments
+        .insert(seg_index + 1, SegmentKind::Cubic);
     Some(new_shape)
 }
 
