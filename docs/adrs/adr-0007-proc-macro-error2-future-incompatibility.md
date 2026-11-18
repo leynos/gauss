@@ -251,8 +251,9 @@ diagnostic expectations be re-validated: leaving it on `^0.1.4` would pull the
   `stacksafe-macro 0.1.4` entry loses its checksum and its `proc-macro-error2`
   dependency because it becomes a path package, and the `test_support` entry
   gains `stacksafe` among its dependencies. No package beyond those four should
-  change. Under Option A the removed entries disappear without the
-  `stacksafe-macro` rewrite, and the `test_support` entry still gains
+  change. Under Option A, `proc-macro-error2` and `proc-macro-error-attr2`
+  disappear, the `stacksafe` and `stacksafe-macro` entries move to 0.1.5
+  without the path-package rewrite, and the `test_support` entry still gains
   `stacksafe`.
 - The `stacksafe` and `stacker` runtime behaviour is untouched.
 - GPUI remains pinned at 0.2.2, so the upstream GPUI release constraint
