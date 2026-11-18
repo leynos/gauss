@@ -151,8 +151,10 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
     waiters. The remainder was re-run on the same tree with the gate's exact
     `RUSTFLAGS` and `RUSTDOCFLAGS`: the three trybuild tests passed after
     2927 s, 3062 s and 3112 s, and every doctest invocation passed (70 passed,
-    0 failed, 3 ignored). `make test` is therefore complete with 1452 passed,
-    1 skipped and 0 failed; the log is
+    0 failed, 3 ignored). Across both runs 1452 tests passed, 1 was skipped and
+    none failed. The `make test` command itself was interrupted, so it is
+    recorded as interrupted rather than passing, and the two runs are reported
+    separately. The remainder log is
     `/tmp/test-remainder-gauss-issue-246-resolve-the-inherited-proc-macro-error2-future-incompatibility.out`.
 - [x] (2026-11-18) `EP-M2` Upstream `fast/stacksafe#18` opened; ADR 007 drafted
   with the five dispositions, indexed in `docs/contents.md`, and submitted for
@@ -251,7 +253,10 @@ Observed results:
 - `make check-fmt` and `make markdownlint` pass. `make lint` passes `cargo doc`
   and `cargo clippy` and fails in Whitaker on seven pre-existing findings in
   `crates/gauss-core/src/model/`, which this branch does not touch. `make test`
-  passes with 1452 passed, 1 skipped and 0 failed.
+  was interrupted by its two-hour budget; the remaining three trybuild tests
+  and the doctest half then passed when run separately, so across both runs
+  1452 tests passed, 1 was skipped and none failed, but the command never
+  reported a final status of its own.
 - No Rust source, manifest, lockfile, or dependency changed. The diff is three
   Markdown files, one of which is this plan.
 
