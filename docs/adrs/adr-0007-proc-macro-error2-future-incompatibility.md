@@ -284,3 +284,12 @@ published and the lockfile resolves to them without the patch.
   a pinned Git revision is required until then, and that follow-up belongs in
   discussion #55271 rather than a new issue. That thread is the recorded
   follow-up trigger for revisiting Option C.
+- **2026-11-18:** The baseline evidence was captured and the repository gates
+  were run. `make check-fmt` passes after `make fmt`. `make lint` reaches
+  Whitaker and reports seven pre-existing `bumpy-road-function` findings in
+  `crates/gauss-core/src/model/`, none of which this branch touches.
+  `make test` reached 1449 passing tests with no failures before its two-hour
+  budget expired, with three trybuild tests unreported and the doctests not
+  started; the remainder was re-run separately. The decision gate is still
+  outstanding, so this branch applies no manifest or lockfile change and the
+  status remains Proposed.
