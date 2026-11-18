@@ -121,7 +121,7 @@ impl Phase0Shell {
                 div()
                     .text_sm()
                     .text_color(chrome_muted_text())
-                    .child(self.localize(&MessageId::chrome_titlebar_recent())),
+                    .child(self.localize_or_key(&MessageId::chrome_titlebar_recent())),
             )
             // Double-click to toggle maximize/restore
             .on_click(cx.listener(
@@ -158,7 +158,7 @@ impl Phase0Shell {
                 "settings-button",
                 UiIcon::Settings,
                 IconButtonState::Placeholder,
-                Some(self.localize(&MessageId::chrome_settings())),
+                Some(self.localize_or_key(&MessageId::chrome_settings())),
             ))
             .child(self.style_picker_row())
             .child(self.window_controls(cx))
@@ -176,14 +176,14 @@ impl Phase0Shell {
                 "file-new-button",
                 UiIcon::FileNew,
                 IconButtonState::Placeholder,
-                Some(self.localize(&MessageId::chrome_file_new())),
+                Some(self.localize_or_key(&MessageId::chrome_file_new())),
             ))
             .child(
                 icon_button(
                     "open-button",
                     UiIcon::FileOpen,
                     IconButtonState::Enabled,
-                    Some(self.localize(&MessageId::chrome_file_open())),
+                    Some(self.localize_or_key(&MessageId::chrome_file_open())),
                 )
                 .on_click(cx.listener(
                     |shell: &mut Self, _event: &gpui::ClickEvent, click_window, click_cx| {
@@ -196,7 +196,7 @@ impl Phase0Shell {
                     "save-button",
                     UiIcon::FileSave,
                     IconButtonState::Enabled,
-                    Some(self.localize(&MessageId::chrome_file_save())),
+                    Some(self.localize_or_key(&MessageId::chrome_file_save())),
                 )
                 .on_click(cx.listener(
                     |_shell: &mut Self, _event: &gpui::ClickEvent, click_window, click_cx| {
@@ -209,7 +209,7 @@ impl Phase0Shell {
                     "web-ready-export-button",
                     UiIcon::FileOpen,
                     IconButtonState::Enabled,
-                    Some(self.localize(&MessageId::chrome_file_export_web())),
+                    Some(self.localize_or_key(&MessageId::chrome_file_export_web())),
                 )
                 .on_click(cx.listener(
                     |_shell: &mut Self, _event: &gpui::ClickEvent, click_window, click_cx| {
@@ -241,7 +241,7 @@ impl Phase0Shell {
             "undo-button",
             UiIcon::EditUndo,
             undo_state,
-            Some(self.localize(&MessageId::chrome_edit_undo())),
+            Some(self.localize_or_key(&MessageId::chrome_edit_undo())),
         );
         if can_undo {
             undo_button =
@@ -255,7 +255,7 @@ impl Phase0Shell {
             "redo-button",
             UiIcon::EditRedo,
             redo_state,
-            Some(self.localize(&MessageId::chrome_edit_redo())),
+            Some(self.localize_or_key(&MessageId::chrome_edit_redo())),
         );
         if can_redo {
             redo_button =
@@ -284,7 +284,7 @@ impl Phase0Shell {
                     "window-minimize",
                     UiIcon::WindowMinimize,
                     IconButtonState::Enabled,
-                    Some(self.localize(&MessageId::chrome_window_minimize())),
+                    Some(self.localize_or_key(&MessageId::chrome_window_minimize())),
                 )
                 .on_click(cx.listener(|_: &mut Self, _event, window, view_cx| {
                     window_controls::minimize(window);
@@ -296,7 +296,7 @@ impl Phase0Shell {
                     "window-maximize",
                     UiIcon::WindowMaximize,
                     IconButtonState::Enabled,
-                    Some(self.localize(&MessageId::chrome_window_maximize())),
+                    Some(self.localize_or_key(&MessageId::chrome_window_maximize())),
                 )
                 .on_click(cx.listener(|_: &mut Self, _event, window, view_cx| {
                     window_controls::toggle_maximize(window);
@@ -322,7 +322,7 @@ impl Phase0Shell {
             "quit-button",
             UiIcon::WindowClose,
             IconButtonState::Enabled,
-            Some(self.localize(&MessageId::chrome_window_close())),
+            Some(self.localize_or_key(&MessageId::chrome_window_close())),
         )
         .on_click(cx.listener(|shell: &mut Self, _event, _window, click_cx| {
             shell.did_request_quit = true;

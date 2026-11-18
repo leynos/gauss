@@ -83,10 +83,10 @@ impl Phase0Shell {
     /// Returns loading text for either picker that has not yet been
     /// initialised by [`Self::ensure_style_pickers`].
     pub(super) fn style_picker_row(&self) -> impl gpui::IntoElement {
-        let stroke_label = self.localize(&MessageId::style_stroke());
-        let fill_label = self.localize(&MessageId::style_fill());
-        let stroke_loading = self.localize(&MessageId::style_stroke_loading());
-        let fill_loading = self.localize(&MessageId::style_fill_loading());
+        let stroke_label = self.localize_or_key(&MessageId::style_stroke());
+        let fill_label = self.localize_or_key(&MessageId::style_fill());
+        let stroke_loading = self.localize_or_key(&MessageId::style_stroke_loading());
+        let fill_loading = self.localize_or_key(&MessageId::style_fill_loading());
 
         let stroke_picker = self
             .stroke_picker

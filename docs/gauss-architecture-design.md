@@ -1524,6 +1524,14 @@ for its locale. Lookup checks the requested locale before falling back to the
 default. If neither has the message, it returns `I18nError::MessageNotFound`
 with the effective locale.
 
+The Phase 0 shell renders through a thin adapter in `src/ui/phase0_shell/`.
+`Phase0Shell::localize` returns `Result<String, I18nError>` and never
+substitutes the message key, so callers can distinguish a successful lookup
+from a failure. Render paths that cannot propagate errors use the adjacent
+`localize_or_key` helper, which logs a warning and substitutes the raw message
+identifier. Status-template lookups in `view.rs` and label lookups in the
+accessibility tree builder use explicit caller-supplied fallbacks instead.
+
 ______________________________________________________________________
 
 ## 13. Scriptability Architecture (RustPython + LLM control)

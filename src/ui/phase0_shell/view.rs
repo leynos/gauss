@@ -94,19 +94,20 @@ impl FileStatus<'_> {
     }
 }
 
-/// Look up a localized status template, falling back to `fallback` on failure.
+/// Look up a localized status template through [`Phase0Shell::localize`].
+///
+/// Status templates feed chrome that cannot propagate a lookup error, so a
+/// failed lookup logs a warning and substitutes `fallback`. Each caller
+/// supplies a fallback whose placeholders match the values it substitutes.
 fn lookup_template(shell: &Phase0Shell, id: &MessageId, fallback: &str) -> String {
-    shell
-        .localizer
-        .lookup(&shell.locale, id)
-        .unwrap_or_else(|err| {
-            log::warn!(
-                "i18n template lookup failed for {:?} in locale {:?}: {err}",
-                id.as_str(),
-                shell.locale,
-            );
-            fallback.to_owned()
-        })
+    shell.localize(id).unwrap_or_else(|err| {
+        log::warn!(
+            "i18n template lookup failed for {:?} in locale {:?}: {err}",
+            id.as_str(),
+            shell.locale,
+        );
+        fallback.to_owned()
+    })
 }
 
 impl Phase0Shell {

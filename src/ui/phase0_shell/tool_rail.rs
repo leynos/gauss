@@ -135,7 +135,7 @@ fn tool_draw_button(
     cx: &mut Context<Phase0Shell>,
     spec: &ToolDrawButtonSpec,
 ) -> impl gpui::IntoElement {
-    let tooltip = shell_state.localize(&(spec.message_id)());
+    let tooltip = shell_state.localize_or_key(&(spec.message_id)());
     let edge_mode = spec.edge_mode;
     tool_mode_button(
         shell_state,
@@ -159,7 +159,7 @@ fn tool_select_button(
     shell_state: &Phase0Shell,
     cx: &mut Context<Phase0Shell>,
 ) -> impl gpui::IntoElement {
-    let tooltip = shell_state.localize(&MessageId::tool_tooltip_select());
+    let tooltip = shell_state.localize_or_key(&MessageId::tool_tooltip_select());
     tool_mode_button(
         shell_state,
         cx,
@@ -182,7 +182,7 @@ fn tool_placeholder_button(
     icon: UiIcon,
     message_id: fn() -> MessageId,
 ) -> impl gpui::IntoElement {
-    let tooltip = shell_state.localize(&message_id());
+    let tooltip = shell_state.localize_or_key(&message_id());
     icon_button(id, icon, IconButtonState::Placeholder, Some(tooltip))
 }
 
