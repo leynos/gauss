@@ -1,7 +1,7 @@
 //! Anchor insertion preparation and segment splitting.
 
 use super::super::{Command, error::UserError, types::ShapeReplacement};
-use crate::model::{Anchor, EngineState, SegmentKind, SelItem, Shape, Vec2};
+use crate::model::{Anchor, EngineState, PathGeom, SegmentKind, SelItem, Shape, Vec2};
 
 /// Prepare an insertion command while retaining both shapes for undo.
 /// A selected segment yields a command whose inverse restores its original path.
@@ -58,63 +58,74 @@ fn insert_anchor_into_shape(shape: &Shape, seg_index: usize) -> Option<Shape> {
 
     match seg_kind {
         SegmentKind::Line => {
-            // For line segments, insert midpoint with no handles
-            let mid = Vec2::new(
-                f32::midpoint(start_anchor.pos.x, end_anchor.pos.x),
-                f32::midpoint(start_anchor.pos.y, end_anchor.pos.y),
-            );
-            let new_anchor = Anchor {
-                pos: mid,
-                handle_in: None,
-                handle_out: None,
-            };
-            new_shape.path.anchors.insert(seg_index + 1, new_anchor);
-            new_shape
-                .path
-                .segments
-                .insert(seg_index + 1, SegmentKind::Line);
+            insert_line_midpoint(&mut new_shape.path, seg_index, start_anchor, end_anchor);
         }
         SegmentKind::Cubic => {
-            // For cubic segments, use de Casteljau split at t=0.5
-            let p0 = start_anchor.pos;
-            let p1 = start_anchor.handle_out.unwrap_or(p0);
-            let p2 = end_anchor.handle_in.unwrap_or(end_anchor.pos);
-            let p3 = end_anchor.pos;
-
-            // De Casteljau at t=0.5
-            let q0 = midpoint(p0, p1);
-            let q1 = midpoint(p1, p2);
-            let q2 = midpoint(p2, p3);
-            let r0 = midpoint(q0, q1);
-            let r1 = midpoint(q1, q2);
-            let s = midpoint(r0, r1);
-
-            // Update start anchor's handle_out
-            new_shape.path.anchors.get_mut(seg_index)?.handle_out = Some(q0);
-
-            // Insert new anchor at split point
-            let new_anchor = Anchor {
-                pos: s,
-                handle_in: Some(r0),
-                handle_out: Some(r1),
-            };
-            new_shape.path.anchors.insert(seg_index + 1, new_anchor);
-
-            // Update end anchor's handle_in (now at seg_index + 2 after insert)
-            new_shape.path.anchors.get_mut(seg_index + 2)?.handle_in = Some(q2);
-
-            // Insert new segment
-            new_shape
-                .path
-                .segments
-                .insert(seg_index + 1, SegmentKind::Cubic);
+            insert_cubic_midpoint(&mut new_shape.path, seg_index, start_anchor, end_anchor)?;
         }
     }
 
     Some(new_shape)
 }
 
-/// Return the component-wise midpoint used when splitting a cubic segment.
+/// Splits a straight segment at its midpoint with a handle-free anchor.
+///
+/// A line carries no curvature, so the new anchor needs neither handle.
+fn insert_line_midpoint(path: &mut PathGeom, seg_index: usize, start: &Anchor, end: &Anchor) {
+    let mid = Vec2::new(
+        f32::midpoint(start.pos.x, end.pos.x),
+        f32::midpoint(start.pos.y, end.pos.y),
+    );
+    path.anchors.insert(
+        seg_index + 1,
+        Anchor {
+            pos: mid,
+            handle_in: None,
+            handle_out: None,
+        },
+    );
+    path.segments.insert(seg_index + 1, SegmentKind::Line);
+}
+
+/// Splits a cubic segment at t=0.5 using a de Casteljau subdivision.
+///
+/// The split preserves the original curve exactly: the outer handles of the
+/// two halves are re-aimed at the subdivision points so neither half changes
+/// shape.
+fn insert_cubic_midpoint(
+    path: &mut PathGeom,
+    seg_index: usize,
+    start: &Anchor,
+    end: &Anchor,
+) -> Option<()> {
+    let p0 = start.pos;
+    let p1 = start.handle_out.unwrap_or(p0);
+    let p2 = end.handle_in.unwrap_or(end.pos);
+    let p3 = end.pos;
+
+    let q0 = midpoint(p0, p1);
+    let q1 = midpoint(p1, p2);
+    let q2 = midpoint(p2, p3);
+    let r0 = midpoint(q0, q1);
+    let r1 = midpoint(q1, q2);
+    let split = midpoint(r0, r1);
+
+    path.anchors.get_mut(seg_index)?.handle_out = Some(q0);
+    path.anchors.insert(
+        seg_index + 1,
+        Anchor {
+            pos: split,
+            handle_in: Some(r0),
+            handle_out: Some(r1),
+        },
+    );
+    // The end anchor moves one place to the right when the split anchor lands.
+    path.anchors.get_mut(seg_index + 2)?.handle_in = Some(q2);
+    path.segments.insert(seg_index + 1, SegmentKind::Cubic);
+    Some(())
+}
+
+/// Return the component-wise midpoint of two points.
 /// For points `(0, 0)` and `(2, 4)`, the result is `(1, 2)`.
 const fn midpoint(a: Vec2, b: Vec2) -> Vec2 {
     Vec2::new(f32::midpoint(a.x, b.x), f32::midpoint(a.y, b.y))

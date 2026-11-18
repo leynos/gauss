@@ -184,10 +184,11 @@ the `Makefile`.
 ### CodeScene string-heavy arguments
 
 CodeScene's `String Heavy Function Arguments` factor flags a module when too
-many of its parameters are strings. The `tests/build_standard`
-workflow-contract modules are covered by
-[issue #257](https://github.com/leynos/gauss/issues/257). Two genuine parse
-boundaries now carry newtypes:
+many of its parameters are strings. The repository's decision for the
+`tests/build_standard` workflow-contract modules tracked by
+[issue #257](https://github.com/leynos/gauss/issues/257) is recorded in
+[ADR 0007](adrs/adr-0007-codescene-string-heavy-parser-boundaries.md). Two
+genuine parse boundaries carry newtypes:
 
 - `MakeGoal` and `ModeSelector` in `ci_reachability_make.rs` are constructed
   only by their parsers, so `MakeRequest` cannot carry an unreviewed goal or an
@@ -200,9 +201,17 @@ YAML keys and rstest fixtures. The string is the domain there, and a wrapper
 around a slice or a line would add indirection without an invariant. Those
 modules are exempted per file in `.codescene/code-health-rules.json`, with
 `String Heavy Function Arguments` set to weight `0.0`. Each rule set names one
-path and records why, so a new module still reports the factor and a rename
-fails closed rather than widening the exemption silently. Reassess an exemption
-when its module gains a type that models the text it handles.
+exact path and records why, so a new module still reports the factor and a
+rename fails closed rather than widening the exemption silently.
+`tests/build_standard/codescene_rules.rs` holds that exact path set and rejects
+an added path, a non-zero weight, a threshold override or an inline directive;
+widening the set therefore requires updating ADR 0007 and that contract
+together. Reassess an exemption when its module gains a type that models the
+text it handles.
+
+Locally, `cs rules-config validate` checks the rule file and `cs check <path>`
+measures a module before a pull request. The hosted CodeScene pull-request
+check remains the merge gate; pull-request CI never calls CodeScene.
 
 ## Colour API migration
 

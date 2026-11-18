@@ -39,6 +39,8 @@ This index groups Gauss documentation by its purpose and audience.
   — Find the namespace policy for Gauss SVG metadata.
 - [ADR 006: Rust build standard](adrs/adr-0006-rust-build-standard.md)
   — Review the development build and linker policy.
+- [ADR 007](adrs/adr-0007-codescene-string-heavy-parser-boundaries.md) —
+  Review the exact-path exemption for text-decoder contract modules.
 
 ## Guides and reference
 

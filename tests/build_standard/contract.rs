@@ -15,6 +15,8 @@ mod chain_exhaustive;
 mod ci_reachability;
 #[path = "ci_steps.rs"]
 mod ci_steps;
+#[path = "codescene_rules.rs"]
+mod codescene_rules;
 #[path = "command_reader.rs"]
 mod command_reader;
 #[path = "config.rs"]

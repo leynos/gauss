@@ -16,12 +16,12 @@ use super::{
 };
 
 mod error;
+mod replay;
 #[cfg(feature = "test-support")]
 mod test_support;
 #[cfg(test)]
 mod tests;
 
-use self::error::ReplayDirection;
 pub use self::error::{
     GROUPING_ERROR_GROUP_ALREADY_ACTIVE,
     GROUPING_ERROR_NO_ACTIVE_GROUP,
@@ -31,6 +31,7 @@ pub use self::error::{
 };
 #[cfg(feature = "test-support")]
 pub use self::test_support::DocumentHistoryState;
+use self::{error::ReplayDirection, replay::Replay};
 
 /// Default maximum number of commands retained in the undo history.
 ///
@@ -343,26 +344,12 @@ impl DocumentUndoHistory {
         entries: &[HistoryEntry],
         direction: ReplayDirection,
     ) -> Result<(), HistoryError> {
-        let mut first_error: Option<HistoryError> = None;
+        let mut replay = Replay::new(doc, action, direction);
         match action {
-            Action::Undo => {
-                for entry in entries.iter().rev() {
-                    Self::capture_first_error(
-                        &mut first_error,
-                        Self::apply_entry(doc, action, entry, direction),
-                    );
-                }
-            }
-            Action::Do => {
-                for entry in entries {
-                    Self::capture_first_error(
-                        &mut first_error,
-                        Self::apply_entry(doc, action, entry, direction),
-                    );
-                }
-            }
+            Action::Undo => replay.run(entries.iter().rev()),
+            Action::Do => replay.run(entries.iter()),
         }
-        first_error.map_or(Ok(()), Err)
+        replay.first_error().map_or(Ok(()), Err)
     }
 
     /// Keep the first replay error while allowing the rest of a group to run.

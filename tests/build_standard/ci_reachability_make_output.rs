@@ -239,21 +239,33 @@ where
     let then_at = keyword(tokens, "then", 1)?;
     let else_at = keyword(tokens, "else", then_at + 1)?;
     let fi_at = keyword(tokens, "fi", else_at + 1)?;
+    require_flat_conditional(tokens, fi_at)?;
+    let condition = commands_in(tokens, 1..then_at, controlled, resolver)?;
+    let probe_route = require_probe_route(&condition)?;
+    let then_commands = commands_in(tokens, then_at + 1..else_at, controlled, resolver)?;
+    let else_commands = commands_in(tokens, else_at + 1..fi_at, controlled, resolver)?;
+    let then_route = require_final_suite(&then_commands, "Nextest branch")?;
+    let else_route = require_fallback_suite(&else_commands)?;
+    Ok(probe_route.combine(then_route).combine(else_route))
+}
+
+/// Rejects a conditional whose shape is not the reviewed single-branch form.
+fn require_flat_conditional(tokens: &[Token], fi_at: usize) -> Result<(), String> {
     if fi_at + 1 != tokens.len() || keyword_after(tokens, "if", 1).is_some() {
         return Err("nested or trailing shell conditional is unsupported".to_owned());
     }
-    let condition = commands_in(tokens, 1..then_at, controlled, resolver)?;
+    Ok(())
+}
+
+/// Requires the condition to be exactly one Nextest availability probe.
+fn require_probe_route(condition: &[Resolved]) -> Result<Route, String> {
     let (probe, rest) = condition
         .split_first()
         .ok_or_else(|| "Nextest condition has no probe command".to_owned())?;
     if !rest.is_empty() || !is_nextest_probe(&probe.invocation) {
         return Err("shell conditional is not the exact Nextest availability probe".to_owned());
     }
-    let then_commands = commands_in(tokens, then_at + 1..else_at, controlled, resolver)?;
-    let else_commands = commands_in(tokens, else_at + 1..fi_at, controlled, resolver)?;
-    let then_route = require_final_suite(&then_commands, "Nextest branch")?;
-    let else_route = require_fallback_suite(&else_commands)?;
-    Ok(probe.route.combine(then_route).combine(else_route))
+    Ok(probe.route)
 }
 
 /// Extracts commands between a pair of already located shell keywords.

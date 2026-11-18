@@ -155,11 +155,22 @@ fn the_held_out_policy_runs_against_an_injected_runner() -> Result<(), String> {
         held_out_problems_for(undefined_make, &["synthetic"]).is_err(),
         "a held-out runner error was swallowed",
     )?;
+    require_assigning_held_out_command_accepted()?;
+    require_held_out_exempt_commands_accepted()?;
+    require_unassigned_held_out_command_refused()
+}
+
+/// Requires an assigning held-out command to be accepted and read.
+fn require_assigning_held_out_command_accepted() -> Result<(), String> {
     let (clean, read) = held_out_problems_for(held_out_assigning_make, &["synthetic"])?;
     ensure(
         clean.is_empty() && read == 1,
         &format!("an assigning held-out command raised {clean:?}"),
-    )?;
+    )
+}
+
+/// Requires a coverage measurement and an inspection command to be accepted.
+fn require_held_out_exempt_commands_accepted() -> Result<(), String> {
     let (measuring, _) = held_out_problems_for(release_clearing_make, &["coverage"])?;
     ensure(
         measuring.is_empty(),
@@ -169,7 +180,11 @@ fn the_held_out_policy_runs_against_an_injected_runner() -> Result<(), String> {
     ensure(
         inspecting.is_empty(),
         &format!("an inspection command in a held-out target raised {inspecting:?}"),
-    )?;
+    )
+}
+
+/// Requires an unassigned held-out command to be refused, and the listed targets to run.
+fn require_unassigned_held_out_command_refused() -> Result<(), String> {
     let (unassigned, _) = held_out_problems_for(held_out_unassigned_make, &["synthetic"])?;
     ensure(
         !unassigned.is_empty(),

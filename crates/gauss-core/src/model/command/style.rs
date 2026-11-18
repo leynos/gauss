@@ -16,34 +16,11 @@ pub(super) fn apply_set_style(
     changes: &[StyleChange],
     command_name: &'static str,
 ) -> Result<CommandInverse, UserError> {
-    // Pre-validate: ensure all shapes exist before applying any changes.
-    for change in changes {
-        if doc.find_index(change.shape_id).is_none() {
-            return Err(UserError::ShapeNotFound(change.shape_id));
-        }
-    }
-
-    // Apply changes (safe now that all shapes are validated).
-    for change in changes {
-        let shape = doc
-            .shape_mut(change.shape_id)
-            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
-        shape.style = change.to.clone();
-    }
-
-    // Create inverse with swapped from/to
-    let inverse_changes = changes
-        .iter()
-        .map(|c| StyleChange {
-            shape_id: c.shape_id,
-            from: c.to.clone(),
-            to: c.from.clone(),
-        })
-        .collect();
-
+    validate_style_changes(doc, changes)?;
+    apply_style_changes(doc, changes)?;
     Ok(CommandInverse::RestoreStyles {
         command_name,
-        changes: inverse_changes,
+        changes: inverted_style_changes(changes),
     })
 }
 
@@ -59,14 +36,25 @@ pub(super) fn apply_restore_styles(
     doc: &mut Document,
     changes: &[StyleChange],
 ) -> Result<(), UserError> {
-    // Pre-validate: ensure all shapes exist before applying any changes.
+    validate_style_changes(doc, changes)?;
+    apply_style_changes(doc, changes)
+}
+
+/// Requires every referenced shape to exist.
+///
+/// Both style commands validate the whole batch first, so a failed batch
+/// leaves the document untouched.
+fn validate_style_changes(doc: &Document, changes: &[StyleChange]) -> Result<(), UserError> {
     for change in changes {
         if doc.find_index(change.shape_id).is_none() {
             return Err(UserError::ShapeNotFound(change.shape_id));
         }
     }
+    Ok(())
+}
 
-    // Apply changes (safe now that all shapes are validated).
+/// Applies every change; call [`validate_style_changes`] first.
+fn apply_style_changes(doc: &mut Document, changes: &[StyleChange]) -> Result<(), UserError> {
     for change in changes {
         let shape = doc
             .shape_mut(change.shape_id)
@@ -74,4 +62,16 @@ pub(super) fn apply_restore_styles(
         shape.style = change.to.clone();
     }
     Ok(())
+}
+
+/// Builds the inverse changes, swapping `from` and `to`.
+fn inverted_style_changes(changes: &[StyleChange]) -> Vec<StyleChange> {
+    changes
+        .iter()
+        .map(|c| StyleChange {
+            shape_id: c.shape_id,
+            from: c.to.clone(),
+            to: c.from.clone(),
+        })
+        .collect()
 }

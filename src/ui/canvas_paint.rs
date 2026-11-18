@@ -224,6 +224,14 @@ fn paint_bbox_overlays(window: &mut Window, overlays: &SelectionOverlays, patter
 
 /// Paint the Bézier handle connector lines and their square markers.
 fn paint_handle_overlays(window: &mut Window, overlays: &SelectionOverlays) {
+    paint_handle_lines(window, overlays);
+    for marker in &overlays.handle_markers {
+        paint_square_marker(window, marker, 0x6b72_80ff);
+    }
+}
+
+/// Paint the connector line that joins each handle to its anchor.
+fn paint_handle_lines(window: &mut Window, overlays: &SelectionOverlays) {
     let mut builder = PathBuilder::stroke(px(1.0));
 
     for line in &overlays.handle_lines {
@@ -236,10 +244,6 @@ fn paint_handle_overlays(window: &mut Window, overlays: &SelectionOverlays) {
     };
 
     window.paint_path(path, rgba(0x6b72_80b0));
-
-    for marker in &overlays.handle_markers {
-        paint_square_marker(window, marker, 0x6b72_80ff);
-    }
 }
 
 /// Paint a square marker at each selected anchor position.
