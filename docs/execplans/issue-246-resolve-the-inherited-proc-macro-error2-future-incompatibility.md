@@ -227,9 +227,10 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
 
 - D1. Decision: treat the upstream `stacksafe` 0.1.x backport as the preferred
   end state and the reviewed vendored `stacksafe-macro` 0.1.4 patch as the
-  fallback candidate. Rationale: a 0.1.5 release would make the consumer fix
-  lockfile-only and would require no repository source changes. Until it
-  exists, only a path patch can remove the unmaintained crate while preserving
+  fallback candidate. Rationale: a 0.1.5 release would make the dependency
+  update lockfile-only, with no repository source change, though the fixture
+  dev-dependency and fixtures are still added as `D9` records. Until it exists,
+  only a path patch can remove the unmaintained crate while preserving
   `gpui 0.2.2`. Rejected option: patching `proc-macro-error2` itself. That
   crate is unmaintained under RUSTSEC-2026-0173, and the upstream fix is
   unmerged in an archived repository. Date/Author: 2026-11-18, implementation
