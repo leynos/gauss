@@ -1783,8 +1783,18 @@ workflows and two configuration files own it:
 - `.github/release-staging.toml` maps each target key to the artefacts to
   stage, the staging directory template, and the checksum algorithm.
 - `Cross.toml` and the per-target `docker/Dockerfile.*` images give cross-rs a
-  build environment carrying the X11 and xkbcommon development packages GPUI
-  needs, which the cross-rs 0.2.5 base images do not provide.
+  build environment carrying the xkbcommon development packages GPUI links,
+  which the cross-rs 0.2.5 base images do not provide. `xkbcommon` declares
+  `#[link(name = "xkbcommon")]` and `#[link(name = "xkbcommon-x11")]`, and
+  `x11rb` links `libxcb` because gpui enables `allow-unsafe-code` without
+  `dl-libxcb`. Installing `libxkbcommon-dev` and `libxkbcommon-x11-dev` is
+  therefore sufficient: `libxkbcommon-x11-dev` depends on both `libxcb1-dev` and
+  `libxcb-xkb-dev`, which is where the `libxcb` headers arrive from.
+  `libxcb-xinput-dev` is not needed, because `x11rb`'s `xinput` feature only
+  enables protocol definitions. Both packages come from the repositories the
+  base images already configure, which is why neither Dockerfile rewrites
+  `/etc/apt/sources.list`. The aarch64 image still registers arm64 as a foreign
+  architecture, because the image's native architecture is amd64.
 
 Release modes are never hard-coded per workflow. The `determine-release-modes`
 action normalizes the triggering event into `should_publish`, `dry-run`, and
@@ -1794,6 +1804,20 @@ guarded on `should_publish`, so a dry run builds the artefacts and discards
 them. `ensure-cargo-version` receives `check-tag: ${{ fromJSON(...) }}`, so the
 tag is compared with the manifest version only when the run is allowed to
 publish.
+
+The action's `publish` and `dry-run` inputs are fed from this workflow's
+`inputs` context. That forwarding is what makes the overrides real: a reusable
+workflow inherits the caller's event context, so a caller that sets
+`dry-run: true` from a tag push still presents a `push` event, which the helper
+would read as an instruction to publish. Pairing `inputs` with the event keeps
+the declared inputs in control.
+
+`wix-extension-version` defaults to empty on both workflows, which asks
+`windows-package` to match the installed WiX CLI's major version. A pinned
+default cannot do that: the action installs whatever `dotnet tool` resolves, so
+a literal `6` failed against CLI `7.0.1`. The metadata job reads the value from
+`inputs` rather than the caller's event JSON for the same reason as the release
+modes above.
 
 Every workflow uses the same `leynos/shared-actions` commit. The branch first
 pinned `df81280`, main then moved the whole estate to `81374b6`, and the branch
@@ -1877,11 +1901,21 @@ first, because the installer actions take the staged binary, manual page, and
 licence paths as inputs. The last decision on each branch is the
 workflow-artefact upload gate, which a dry run closes.*
 
-The Linux packaging step passes `man-paths` for a man page that may not exist,
-so the staging configuration marks the manual page optional while the binary
-and the licence file are required. That difference is load-bearing: a missing
+The manual page is genuinely optional on both paths, and each path expresses
+that differently. The staging configuration marks the page optional while the
+binary and the licence file are required, and the man-page step publishes the
+generated path as an output that is empty when `pandoc` is absent.
+`linux-packages` rejects a `man-paths` entry that does not exist, so
+`man-paths` is fed from that output rather than a fixed path: a missing
 `pandoc` yields a warning and a package without a manual page, not a failed
 build.
+
+`rust_build_release` runs with `skip-man-page-discovery: 'true'`. The action
+otherwise requires a page under `target/generated-man/...` or a build-script
+output directory, and this repository has neither a `build.rs` nor a
+`clap_mangen` generator. Packaging reads the `pandoc` output in `dist` instead,
+so the action's own discovery would fail the build looking for a page that
+never exists.
 
 ### 21.2 Trigger-to-release sequence
 

@@ -25,10 +25,11 @@ name: Release Binary
       wix-extension-version:
         description: >-
           Version of the WixToolset.UI.wixext extension to install alongside
-          the WiX CLI.
+          the WiX CLI. Leave empty to let the packaging action match the
+          installed CLI's major version.
         required: false
         type: string
-        default: '6'
+        default: ''
     outputs:
       bin_name:
         description: Binary name extracted from Cargo.toml
@@ -77,6 +78,14 @@ jobs:
         name: Determine release modes
         uses: >-
           leynos/shared-actions/.github/actions/determine-release-modes@81374b6f183e59f0570ad36217ded90d3240fda6
+        with:
+          # Forward the declared inputs. A reusable workflow inherits the
+          # caller's event context, so without these overrides a caller that
+          # sets `dry-run: true` from a tag push would still publish: the
+          # helper treats the inherited `push` event as an instruction to
+          # release, and would never see the override.
+          publish: ${{ inputs.publish }}
+          dry-run: ${{ inputs['dry-run'] }}
       - id: ensure_version
         name: Read package version from Cargo.toml
         uses: >-
@@ -86,17 +95,18 @@ jobs:
       - id: wix_extension_version
         name: Resolve WiX extension version
         shell: bash
+        # Read the declaring workflow's `inputs` context rather than the
+        # caller's event JSON: a reusable workflow keeps the caller's event
+        # payload, so `GITHUB_EVENT_PATH` describes the caller's trigger, not
+        # this workflow's inputs.
+        env:
+          INPUT_WIX_EXTENSION_VERSION: ${{ inputs['wix-extension-version'] }}
         run: |
           set -euo pipefail
-          version=''
-          if [ "${{ github.event_name }}" = 'workflow_call' ]; then
-            version="$(jq -r '.inputs["wix-extension-version"] // empty' \
-              "$GITHUB_EVENT_PATH")"
-          fi
-          if [ -z "$version" ] || [ "$version" = 'null' ]; then
-            version='6'
-          fi
-          echo "value=$version" >>"$GITHUB_OUTPUT"
+          # An empty value asks the packaging action to match the installed
+          # CLI's major version, which is what keeps the extension compatible
+          # with whichever WiX release `dotnet tool` installs.
+          echo "value=${INPUT_WIX_EXTENSION_VERSION}" >>"$GITHUB_OUTPUT"
       - id: manifest_path
         name: Resolve Cargo manifest path
         shell: bash

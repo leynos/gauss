@@ -54,9 +54,11 @@ name: Build and Package
         default: '3.11'
         type: string
       wix-extension-version:
-        description: WiX Toolset extension version for Windows packaging
+        description: >-
+          WiX Toolset extension version for Windows packaging. Empty lets the
+          packaging action match the installed WiX CLI's major version.
         required: false
-        default: '6'
+        default: ''
         type: string
 
 jobs:
@@ -79,18 +81,25 @@ jobs:
           python-version: ${{ inputs['python-version'] }}
 
       - name: Generate man page
+        id: man_page
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
+          path="dist/${BIN_NAME}.1"
           if command -v pandoc &>/dev/null; then
             pandoc docs/users-guide.md -s -t man \
               -M title="${BIN_NAME}" \
               -M section=1 \
               -M header="User Commands" \
-              -o "dist/${BIN_NAME}.1"
+              -o "$path"
+            echo "path=$path" >>"$GITHUB_OUTPUT"
           else
+            # `linux-packages` rejects a `man-paths` entry that does not
+            # exist, so report the absence and let the packager omit the
+            # page rather than failing the build.
             echo "::warning::pandoc not available, skipping man page generation"
+            echo "path=" >>"$GITHUB_OUTPUT"
           fi
 
       - name: Install Linux system dependencies
@@ -119,6 +128,10 @@ jobs:
         with:
           target: ${{ inputs.target }}
           bin-name: ${{ inputs['bin-name'] }}
+          # The man page comes from `pandoc` above, not from `clap_mangen` or a
+          # build script, so the action's own discovery would fail the build
+          # looking for a page that never exists.
+          skip-man-page-discovery: 'true'
 
       - name: Package Linux artefacts
         if: inputs.platform == 'linux'
@@ -131,7 +144,7 @@ jobs:
           target: ${{ inputs.target }}
           version: ${{ inputs.version }}
           formats: deb,rpm
-          man-paths: dist/${{ inputs['bin-name'] }}.1
+          man-paths: ${{ steps.man_page.outputs.path }}
           outdir: dist
 
       - name: Prune packaging metadata
@@ -177,7 +190,11 @@ jobs:
           output-basename: ${{ inputs['bin-name'] }}
           output-directory: dist
           license-plaintext-path: LICENSE
-          upload-artefact: ${{ inputs['should-upload-workflow-artifacts'] }}
+          # The outer "Upload Windows artefacts" step uploads `dist` under an
+          # architecture-specific name. Letting the action also upload would
+          # duplicate the MSI and, because both matrix legs share its default
+          # `msi` name, collide under `upload-artifact@v4`.
+          upload-artefact: 'false'
           wix-extension-version: ${{ inputs['wix-extension-version'] }}
 
       - name: Build macOS installer package
