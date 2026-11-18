@@ -185,7 +185,11 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   exits 0. The nixie log is
   `/tmp/nixie-gauss-issue-246-resolve-the-inherited-proc-macro-error2-future-incompatibility.out`.
 - [x] (2026-11-18) Pull request body records the `build-test` result and the
-  four CodeRabbit passes with the corrections each one produced.
+  CodeRabbit passes with the corrections each one produced.
+- [x] (2026-11-18) GPUI target names confirmed with `cargo metadata --no-deps`.
+  Verifying the `-E` filter with `cargo nextest list` was attempted and stopped
+  at its background budget under a saturated compile queue without producing
+  output, so that check is recorded as unverified rather than passed.
 - [ ] `EP-M4` Candidate validated with fresh report and gates; documentation
   and changelog updated; draft pull request opened.
 
@@ -494,3 +498,11 @@ RUSTFLAGS="-D warnings -Clink-arg=-fuse-ld=mold" \
 Acceptance: every listed gate reports the result `V6` requires, `make lint`
 adds no finding to the seven recorded in the baseline list, and the fresh
 future-incompatibility report satisfies `V5`.
+
+The three target names are confirmed from `cargo metadata --no-deps`, which
+lists them as `test` targets of the root `gauss` package with no required
+features. The `-E` filter expression itself has not been exercised: an attempt
+to confirm the selection with `cargo nextest list` was stopped at its
+background budget while the host compile queue was saturated, and produced no
+output. Confirm the selection when this milestone runs, before treating a
+passing run as covering the named tests.
