@@ -40,18 +40,31 @@ fn check_source_mutation(scratch: &make_input::Scratch, mutation: Mutation) -> R
     let baseline = mutation_request(mutation, None);
     make_input::check_target(scratch, &baseline)?;
     let expected = expected_calls(&baseline)?;
+    check_unmutated_failure_mask(scratch, mutation)?;
+    let changed = mutated_makefile(mutation, &scratch.read_makefile()?)?;
+    scratch.write_makefile(&changed)?;
+    let observation = scratch.run(&mutation_request(mutation, expected_failure(mutation)))?;
+    check_mutated_route(mutation, &expected, &observation)
+}
+
+/// Checks the unmutated route whenever the mutation removes its failure preservation.
+fn check_unmutated_failure_mask(
+    scratch: &make_input::Scratch,
+    mutation: Mutation,
+) -> Result<(), String> {
     if mutation == Mutation::FailureMask {
         check_failure_mask_baseline(scratch)?;
     }
-    let changed = mutated_makefile(mutation, &scratch.read_makefile()?)?;
-    scratch.write_makefile(&changed)?;
-    let failure = if mutation == Mutation::FailureMask {
+    Ok(())
+}
+
+/// Selects the Nextest failure the mutated route must still report.
+fn expected_failure(mutation: Mutation) -> Option<FailureCase> {
+    if mutation == Mutation::FailureMask {
         Some(FailureCase::NextestRun)
     } else {
         None
-    };
-    let observation = scratch.run(&mutation_request(mutation, failure))?;
-    check_mutated_route(mutation, &expected, &observation)
+    }
 }
 
 /// Selects the literal Make route and Nextest branch for one finite mutation name.

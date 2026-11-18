@@ -97,48 +97,11 @@ pub(super) fn apply_set_segment_kind(
     changes: &[SegmentChange],
     command_name: &'static str,
 ) -> Result<CommandInverse, UserError> {
-    // Pre-validate: ensure all shapes and segments exist before applying any changes.
-    for change in changes {
-        let idx = doc
-            .find_index(change.shape_id)
-            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
-        let shape = doc
-            .shape_at(idx)
-            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
-        if shape.path.segments.get(change.segment_index).is_none() {
-            return Err(UserError::SegmentNotFound(
-                change.shape_id,
-                change.segment_index,
-            ));
-        }
-    }
-
-    // Apply changes (safe now that all shapes and segments are validated).
-    for change in changes {
-        let shape = doc
-            .shape_mut(change.shape_id)
-            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
-        apply_segment_change_unchecked(shape, change);
-    }
-
-    // Create inverse with swapped old/new
-    let inverse_changes = changes
-        .iter()
-        .map(|c| SegmentChange {
-            shape_id: c.shape_id,
-            segment_index: c.segment_index,
-            old_kind: c.new_kind,
-            new_kind: c.old_kind,
-            old_start_handle_out: c.new_start_handle_out,
-            new_start_handle_out: c.old_start_handle_out,
-            old_end_handle_in: c.new_end_handle_in,
-            new_end_handle_in: c.old_end_handle_in,
-        })
-        .collect();
-
+    validate_segment_changes(doc, changes)?;
+    apply_segment_changes(doc, changes)?;
     Ok(CommandInverse::RestoreSegmentKinds {
         command_name,
-        changes: inverse_changes,
+        changes: inverted_segment_changes(changes),
     })
 }
 
@@ -155,7 +118,15 @@ pub(super) fn apply_restore_segment_kinds(
     doc: &mut Document,
     changes: &[SegmentChange],
 ) -> Result<(), UserError> {
-    // Pre-validate: ensure all shapes and segments exist before applying any changes.
+    validate_segment_changes(doc, changes)?;
+    apply_segment_changes(doc, changes)
+}
+
+/// Requires every referenced shape and segment to exist.
+///
+/// Both segment commands validate the whole batch first, so a failed batch
+/// leaves the document untouched.
+fn validate_segment_changes(doc: &Document, changes: &[SegmentChange]) -> Result<(), UserError> {
     for change in changes {
         let idx = doc
             .find_index(change.shape_id)
@@ -170,8 +141,11 @@ pub(super) fn apply_restore_segment_kinds(
             ));
         }
     }
+    Ok(())
+}
 
-    // Apply changes (safe now that all shapes and segments are validated).
+/// Applies every change; call [`validate_segment_changes`] first.
+fn apply_segment_changes(doc: &mut Document, changes: &[SegmentChange]) -> Result<(), UserError> {
     for change in changes {
         let shape = doc
             .shape_mut(change.shape_id)
@@ -179,6 +153,23 @@ pub(super) fn apply_restore_segment_kinds(
         apply_segment_change_unchecked(shape, change);
     }
     Ok(())
+}
+
+/// Builds the inverse changes, swapping the old and new values.
+fn inverted_segment_changes(changes: &[SegmentChange]) -> Vec<SegmentChange> {
+    changes
+        .iter()
+        .map(|c| SegmentChange {
+            shape_id: c.shape_id,
+            segment_index: c.segment_index,
+            old_kind: c.new_kind,
+            new_kind: c.old_kind,
+            old_start_handle_out: c.new_start_handle_out,
+            new_start_handle_out: c.old_start_handle_out,
+            old_end_handle_in: c.new_end_handle_in,
+            new_end_handle_in: c.old_end_handle_in,
+        })
+        .collect()
 }
 
 /// Apply a segment change without validation (caller must ensure validity).

@@ -171,27 +171,46 @@ fn the_development_policy_runs_against_an_injected_runner() -> Result<(), String
 #[test]
 fn a_development_command_without_an_assignment_is_refused_and_an_exempt_one_is_not()
 -> Result<(), String> {
-    let pin = Pin::Nightly;
-    let (bare_test, _) = development_problems_expecting(bare_test_make, Host::Linux, pin, &[])?;
-    ensure(
-        !bare_test.is_empty(),
-        "a test command that assigns no RUSTFLAGS passed",
-    )?;
-    let (bare_lint, _) = development_problems_expecting(bare_lint_make, Host::Linux, pin, &[])?;
-    ensure(
-        !bare_lint.is_empty(),
-        "lint commands that assign no RUSTFLAGS passed",
-    )?;
-    let (chained, _) = development_problems_expecting(chained_bare_make, Host::Linux, pin, &[])?;
+    require_unassigned_commands_refused()?;
+    require_chained_unassigned_command_refused()?;
+    require_exempt_commands_accepted()
+}
+
+/// Requires a bare build, test or lint command, standing alone, to be refused.
+fn require_unassigned_commands_refused() -> Result<(), String> {
+    for (make, expectation) in [
+        (
+            bare_test_make as MakeRunner,
+            "a test command that assigns no RUSTFLAGS passed",
+        ),
+        (
+            bare_lint_make,
+            "lint commands that assign no RUSTFLAGS passed",
+        ),
+    ] {
+        let (problems, _) = development_problems_expecting(make, Host::Linux, Pin::Nightly, &[])?;
+        ensure(!problems.is_empty(), expectation)?;
+    }
+    Ok(())
+}
+
+/// Requires a bare command chained beside an assigning probe to be refused.
+fn require_chained_unassigned_command_refused() -> Result<(), String> {
+    let (chained, _) =
+        development_problems_expecting(chained_bare_make, Host::Linux, Pin::Nightly, &[])?;
     ensure(
         !chained.is_empty()
             && chained
                 .iter()
                 .all(|problem| problem.contains("nextest run")),
         &format!("a bare command chained beside an assigning probe raised {chained:?}"),
-    )?;
+    )
+}
+
+/// Requires a formatter, a metadata probe and a documentation build to be accepted.
+fn require_exempt_commands_accepted() -> Result<(), String> {
     let (exempt, exempt_read) =
-        development_problems_expecting(exempt_commands_make, Host::Linux, pin, &[])?;
+        development_problems_expecting(exempt_commands_make, Host::Linux, Pin::Nightly, &[])?;
     ensure(
         exempt.is_empty() && exempt_read > 0,
         &format!("a formatter, probe or doc build raised {exempt:?}"),

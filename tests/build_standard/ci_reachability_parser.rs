@@ -66,6 +66,43 @@ fn is_root_document_boundary(line: &SourceLine) -> bool {
     line.indent == 0 && matches!(line.content.as_str(), "---" | "...")
 }
 
+/// Returns whether `line` closes the block sequence opened at `indent`.
+fn ends_sequence(line: &SourceLine, indent: usize) -> bool {
+    is_root_document_boundary(line) || line.indent < indent
+}
+
+/// Rejects a sequence item indented deeper than the sequence that owns it.
+fn require_sequence_indent(line: &SourceLine, indent: usize) -> Result<(), String> {
+    if line.indent > indent {
+        return Err(format!(
+            "line {}: unexpected sequence indentation",
+            line.number
+        ));
+    }
+    Ok(())
+}
+
+/// Returns whether `line` is still an item of the sequence open at `indent`.
+///
+/// A shallower line closes the sequence rather than continuing it, and a
+/// deeper line is an error because the format has no nested block there.
+fn require_sequence_member(line: &SourceLine, indent: usize) -> Result<bool, String> {
+    if ends_sequence(line, indent) {
+        return Ok(false);
+    }
+    require_sequence_indent(line, indent)?;
+    Ok(true)
+}
+
+/// Returns the decoded block sequence, refusing an empty block.
+fn require_sequence_items(items: Vec<Value>) -> Result<Value, String> {
+    if items.is_empty() {
+        Err("empty block sequence is unsupported; use `[]` explicitly".to_owned())
+    } else {
+        Ok(Value::Sequence(items))
+    }
+}
+
 /// Tracks physical workflow lines while recursively decoding block and flow collections.
 struct Reader {
     /// Source lines retain literal bodies separately from comment-free structure.
@@ -187,33 +224,45 @@ impl Reader {
     /// Decodes sequence items, including the conventional inline mapping form.
     fn sequence(&mut self, indent: usize) -> Result<Value, String> {
         let mut items = Vec::new();
-        while let Some(index) = self.next_significant() {
-            let line = self.line(index)?.clone();
-            if is_root_document_boundary(&line) || line.indent < indent {
-                break;
-            }
-            if line.indent > indent {
-                return Err(format!(
-                    "line {}: unexpected sequence indentation",
-                    line.number
-                ));
-            }
-            let item = sequence_item(&line.content)
-                .ok_or_else(|| format!("line {}: mixed sequence and mapping", line.number))?;
-            self.cursor += 1;
-            let value = if item.is_empty() {
-                self.empty_value(indent)?
-            } else if lines::mapping_separator(item)?.is_some() {
-                self.sequence_mapping(&line)?
-            } else {
-                lines::parse_inline(item, line.number)?
-            };
-            items.push(value);
+        while let Some(line) = self.next_sequence_line(indent)? {
+            items.push(self.sequence_item_value(&line, indent)?);
         }
-        if items.is_empty() {
-            Err("empty block sequence is unsupported; use `[]` explicitly".to_owned())
+        require_sequence_items(items)
+    }
+
+    /// Returns the next line that belongs to the sequence open at `indent`.
+    ///
+    /// `None` means the sequence has closed: a shallower line has started its
+    /// parent node, or the source has ended.
+    fn next_sequence_line(&mut self, indent: usize) -> Result<Option<SourceLine>, String> {
+        let Some(index) = self.next_significant() else {
+            return Ok(None);
+        };
+        let line = self.line(index)?.clone();
+        Ok(require_sequence_member(&line, indent)?.then_some(line))
+    }
+
+    /// Decodes one sequence item line and advances the cursor past it.
+    fn sequence_item_value(&mut self, line: &SourceLine, indent: usize) -> Result<Value, String> {
+        let item = sequence_item(&line.content)
+            .ok_or_else(|| format!("line {}: mixed sequence and mapping", line.number))?;
+        self.cursor += 1;
+        self.sequence_entry(line, item, indent)
+    }
+
+    /// Decodes one sequence entry, including the conventional inline mapping form.
+    fn sequence_entry(
+        &mut self,
+        line: &SourceLine,
+        item: &str,
+        indent: usize,
+    ) -> Result<Value, String> {
+        if item.is_empty() {
+            self.empty_value(indent)
+        } else if lines::mapping_separator(item)?.is_some() {
+            self.sequence_mapping(line)
         } else {
-            Ok(Value::Sequence(items))
+            lines::parse_inline(item, line.number)
         }
     }
 

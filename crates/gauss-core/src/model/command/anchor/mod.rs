@@ -14,7 +14,7 @@ use super::{
         ShapeReplacement,
     },
 };
-use crate::model::{Document, EngineState, PathGeom, SelItem, ShapeId};
+use crate::model::{Document, EngineState, PathGeom, SelItem, Shape, ShapeId};
 
 mod insert;
 
@@ -27,59 +27,80 @@ pub(super) fn prepare_delete_selected_anchors(state: &EngineState) -> Result<Com
         return Err(UserError::EmptySelection);
     }
 
-    // Group selected anchors by shape
+    let anchors_by_shape = selected_anchors_by_shape(state);
+    if anchors_by_shape.is_empty() {
+        return Err(UserError::InvalidOperation("No anchors selected".into()));
+    }
+
+    let deletions = anchors_by_shape
+        .into_iter()
+        .map(|(shape_id, anchor_indices)| prepare_shape_deletion(state, shape_id, anchor_indices))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(Command::DeleteAnchors { deletions })
+}
+
+/// Groups the selected anchor indices by the shape that owns them.
+fn selected_anchors_by_shape(state: &EngineState) -> HashMap<ShapeId, Vec<usize>> {
     let mut anchors_by_shape: HashMap<ShapeId, Vec<usize>> = HashMap::new();
     for item in &state.selection.items {
         if let SelItem::Anchor { shape, anchor } = item {
             anchors_by_shape.entry(*shape).or_default().push(*anchor);
         }
     }
+    anchors_by_shape
+}
 
-    if anchors_by_shape.is_empty() {
-        return Err(UserError::InvalidOperation("No anchors selected".into()));
+/// Builds the deletion record for one shape.
+///
+/// Indices are sorted descending so removing one anchor cannot shift the
+/// position of another still to be removed.
+fn prepare_shape_deletion(
+    state: &EngineState,
+    shape_id: ShapeId,
+    mut anchor_indices: Vec<usize>,
+) -> Result<AnchorDeletion, UserError> {
+    let shape_index = state
+        .document
+        .find_index(shape_id)
+        .ok_or(UserError::ShapeNotFound(shape_id))?;
+    let old_shape = state
+        .document
+        .shape_at(shape_index)
+        .cloned()
+        .ok_or(UserError::ShapeNotFound(shape_id))?;
+
+    anchor_indices.sort_unstable_by(|a, b| b.cmp(a));
+    anchor_indices.dedup();
+
+    let result = shape_after_anchor_deletion(&old_shape, &anchor_indices);
+    Ok(AnchorDeletion {
+        shape_id,
+        shape_index,
+        old_shape,
+        result,
+    })
+}
+
+/// Decides whether the shape survives the deletion and how it changes.
+///
+/// A shape left with fewer than two anchors cannot describe a path, so it is
+/// removed rather than reduced.
+fn shape_after_anchor_deletion(shape: &Shape, anchor_indices: &[usize]) -> AnchorDeletionResult {
+    let remaining_anchors = shape
+        .path
+        .anchors
+        .len()
+        .saturating_sub(anchor_indices.len());
+    if remaining_anchors < 2 {
+        return AnchorDeletionResult::Removed;
     }
 
-    let mut deletions = Vec::new();
-
-    for (shape_id, mut anchor_indices) in anchors_by_shape {
-        let Some(shape_index) = state.document.find_index(shape_id) else {
-            return Err(UserError::ShapeNotFound(shape_id));
-        };
-        let Some(old_shape) = state.document.shape_at(shape_index).cloned() else {
-            return Err(UserError::ShapeNotFound(shape_id));
-        };
-
-        // Sort anchor indices in descending order for safe removal
-        anchor_indices.sort_unstable_by(|a, b| b.cmp(a));
-        anchor_indices.dedup();
-
-        let remaining_anchors = old_shape
-            .path
-            .anchors
-            .len()
-            .saturating_sub(anchor_indices.len());
-
-        let result = if remaining_anchors < 2 {
-            // Shape would have fewer than 2 anchors, remove it entirely
-            AnchorDeletionResult::Removed
-        } else {
-            // Create new shape with anchors removed
-            let mut new_shape = old_shape.clone();
-            for &idx in &anchor_indices {
-                remove_anchor_from_path(&mut new_shape.path, idx);
-            }
-            AnchorDeletionResult::Modified(new_shape)
-        };
-
-        deletions.push(AnchorDeletion {
-            shape_id,
-            shape_index,
-            old_shape,
-            result,
-        });
+    let mut new_shape = shape.clone();
+    for &idx in anchor_indices {
+        remove_anchor_from_path(&mut new_shape.path, idx);
     }
-
-    Ok(Command::DeleteAnchors { deletions })
+    AnchorDeletionResult::Modified(new_shape)
 }
 
 /// Remove an anchor from a path at the given index, along with its corresponding segment.

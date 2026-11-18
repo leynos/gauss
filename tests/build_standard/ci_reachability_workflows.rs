@@ -21,8 +21,12 @@ use super::{
 /// Groups trigger and execution-context checks for this workflow reader.
 #[path = "ci_reachability_workflows_context.rs"]
 mod context;
+/// Groups one runner row's installation state with the steps that advance it.
+#[path = "ci_reachability_workflows_row.rs"]
+mod row;
 
 use context::{jobs, require_execution_context, require_trigger};
+use row::{Provisioning, RowInspection};
 
 /// Reads every YAML workflow through the capability root; a missing inventory is not evidence.
 pub(super) fn read_inventory(workspace: &Workspace<'_>) -> Result<Vec<Workflow>, String> {
@@ -249,15 +253,6 @@ fn step_route(step: &Value, workspace: &Workspace<'_>, host: Host) -> Result<Rou
     }
 }
 
-/// Installation state belongs to one resolved runner row, never another job.
-#[derive(Clone, Copy)]
-struct Provisioning {
-    /// The statically resolved operating system; this does not prove architecture.
-    host: Host,
-    /// Whether an unconditional current installer has already completed in source order.
-    installed: bool,
-}
-
 /// Checks the suite's binding and failure boundary against the row's current installation state.
 fn require_suite_binding(step: &Value, job: &Value, state: Provisioning) -> Result<(), String> {
     require_binding(step, "suite step")?;
@@ -275,24 +270,22 @@ fn require_suite_binding(step: &Value, job: &Value, state: Provisioning) -> Resu
 /// Checks one runner row in source order; an installer in another job or after a suite never
 /// counts.
 fn inspect_row(job: &Value, workspace: &Workspace<'_>, host: Host) -> Result<Route, String> {
+    let steps = require_steps(job)?;
+    let mut inspection = RowInspection::new(job, workspace, host);
+    let mut route = Route::NonSuite;
+    for step in steps {
+        route = route.combine(inspection.step(step)?);
+    }
+    Ok(route)
+}
+
+/// Reads a job's step list, refusing a job that declares none.
+fn require_steps(job: &Value) -> Result<&[Value], String> {
     let steps = job.required("steps", "job")?.sequence("steps")?;
     if steps.is_empty() {
         return Err("job steps is empty".to_owned());
     }
-    let mut state = Provisioning {
-        host,
-        installed: false,
-    };
-    let mut route = Route::NonSuite;
-    for step in steps {
-        state.installed |= installs_mold(step)?;
-        let observed = step_route(step, workspace, host)?;
-        if observed == Route::Suite {
-            require_suite_binding(step, job, state)?;
-        }
-        route = route.combine(observed);
-    }
-    Ok(route)
+    Ok(steps)
 }
 
 /// Measures each resolved row of an ordinary job; reusable declarations are checked via their

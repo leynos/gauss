@@ -76,36 +76,69 @@ pub(super) fn assert_shape_replacement_applies_and_undoes(
     let expected_old = old_shape.clone();
     let expected_new = new_shape.clone();
     let mut doc = Document::new();
-    doc.append_shape(expected_old.clone());
+    doc.append_shape(old_shape.clone());
     let cmd = create_command(ShapeReplacement {
         shape_index,
         old_shape,
         new_shape,
     });
 
-    let inverse = cmd
-        .apply(&mut doc)
-        .map_err(CommandEditingTestError::Apply)?;
-    let updated = shape_at(&doc, 0).ok_or(CommandEditingTestError::ShapeMissing)?;
-    if updated != &expected_new {
-        return Err(CommandEditingTestError::ShapeNotUpdated {
-            expected: Arc::new(expected_new.clone()),
-            actual: Arc::new(updated.clone()),
-        });
-    }
+    let inverse = apply_and_require_shape(&mut doc, &cmd, &expected_new)?;
+    undo_and_require_shape(&mut doc, &inverse, &expected_old)
+}
 
-    inverse
-        .apply(&mut doc)
-        .map_err(CommandEditingTestError::Undo)?;
-    let restored = shape_at(&doc, 0).ok_or(CommandEditingTestError::ShapeMissing)?;
-    if restored != &expected_old {
-        return Err(CommandEditingTestError::ShapeNotRestored {
-            expected: Arc::new(expected_old.clone()),
-            actual: Arc::new(restored.clone()),
-        });
-    }
+/// Applies `command` and requires the document to hold `expected`.
+fn apply_and_require_shape(
+    doc: &mut Document,
+    command: &Command,
+    expected: &Shape,
+) -> Result<CommandInverse, CommandEditingTestError> {
+    let inverse = command.apply(doc).map_err(CommandEditingTestError::Apply)?;
+    require_first_shape(doc, expected, ShapeMismatch::NotUpdated)?;
+    Ok(inverse)
+}
 
-    Ok(())
+/// Applies `inverse` and requires the document to hold `expected` again.
+fn undo_and_require_shape(
+    doc: &mut Document,
+    inverse: &CommandInverse,
+    expected: &Shape,
+) -> Result<(), CommandEditingTestError> {
+    inverse.apply(doc).map_err(CommandEditingTestError::Undo)?;
+    require_first_shape(doc, expected, ShapeMismatch::NotRestored)
+}
+
+/// Which comparison failed, so the caller reports the right error.
+#[derive(Clone, Copy)]
+enum ShapeMismatch {
+    /// The command did not install the expected shape.
+    NotUpdated,
+    /// The inverse did not restore the original shape.
+    NotRestored,
+}
+
+/// Requires the first shape to equal `expected`, reporting via `mismatch`.
+fn require_first_shape(
+    doc: &Document,
+    expected: &Shape,
+    mismatch: ShapeMismatch,
+) -> Result<(), CommandEditingTestError> {
+    let actual = shape_at(doc, 0).ok_or(CommandEditingTestError::ShapeMissing)?;
+    if actual == expected {
+        return Ok(());
+    }
+    let expected_shape = Arc::new(expected.clone());
+    let actual_shape = Arc::new(actual.clone());
+    Err(match mismatch {
+        ShapeMismatch::NotUpdated => CommandEditingTestError::ShapeNotUpdated {
+            expected: expected_shape,
+            actual: actual_shape,
+        },
+        ShapeMismatch::NotRestored => CommandEditingTestError::ShapeNotRestored {
+            expected: expected_shape,
+            actual: actual_shape,
+        },
+    })
 }
 
 pub(super) fn assert_prepare_command_returns_variant(

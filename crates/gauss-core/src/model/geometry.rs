@@ -9,7 +9,7 @@
     reason = "floating-point maths is required for geometry calculations"
 )]
 
-use crate::model::{SegmentKind, Shape, Vec2};
+use crate::model::{PathGeom, SegmentKind, Shape, Vec2};
 
 /// Treat derivative coefficients below this magnitude as numerically zero.
 const CUBIC_EXTREMA_EPSILON: f32 = 1.0e-6;
@@ -188,16 +188,30 @@ pub(crate) fn cubic_point(cubic: CubicSegment, t: f32) -> Vec2 {
 #[must_use]
 pub fn shape_world_bounds(shape: &Shape) -> Option<ShapeWorldBounds> {
     let mut bounds = Bounds::new();
+    extend_with_anchors(&mut bounds, &shape.path);
+    extend_with_segments(&mut bounds, &shape.path);
+    extend_with_closing_segment(&mut bounds, &shape.path);
+    let (min, max) = bounds.to_tuple()?;
+    Some(ShapeWorldBounds::new(min, max))
+}
 
-    for anchor in &shape.path.anchors {
+/// Adds every anchor position to the bounds.
+fn extend_with_anchors(bounds: &mut Bounds, path: &PathGeom) {
+    for anchor in &path.anchors {
         bounds.update(anchor.pos);
     }
+}
 
-    for (index, kind) in shape.path.segments.iter().enumerate() {
-        let Some(start_anchor) = shape.path.anchors.get(index) else {
+/// Adds the extrema of every interior segment to the bounds.
+///
+/// A segment without both of its anchors is skipped, matching the pairing the
+/// path model guarantees for well-formed geometry.
+fn extend_with_segments(bounds: &mut Bounds, path: &PathGeom) {
+    for (index, kind) in path.segments.iter().enumerate() {
+        let Some(start_anchor) = path.anchors.get(index) else {
             break;
         };
-        let Some(end_anchor) = shape.path.anchors.get(index + 1) else {
+        let Some(end_anchor) = path.anchors.get(index + 1) else {
             break;
         };
 
@@ -209,29 +223,26 @@ pub fn shape_world_bounds(shape: &Shape) -> Option<ShapeWorldBounds> {
             SegmentKind::Cubic => {
                 let c1 = start_anchor.handle_out.unwrap_or(start);
                 let c2 = end_anchor.handle_in.unwrap_or(end);
-                extend_bounds_with_cubic(&mut bounds, CubicSegment::new(start, c1, c2, end));
+                extend_bounds_with_cubic(bounds, CubicSegment::new(start, c1, c2, end));
             }
         }
     }
+}
 
-    if shape.path.closed
-        && let (Some(last), Some(first)) = (shape.path.anchors.last(), shape.path.anchors.first())
+/// Adds the closing edge of a closed path to the bounds.
+fn extend_with_closing_segment(bounds: &mut Bounds, path: &PathGeom) {
+    if path.closed
+        && let (Some(last), Some(first)) = (path.anchors.last(), path.anchors.first())
     {
-        match shape.path.closing_segment {
+        match path.closing_segment {
             SegmentKind::Line => {}
             SegmentKind::Cubic => {
                 let c1 = last.handle_out.unwrap_or(last.pos);
                 let c2 = first.handle_in.unwrap_or(first.pos);
-                extend_bounds_with_cubic(
-                    &mut bounds,
-                    CubicSegment::new(last.pos, c1, c2, first.pos),
-                );
+                extend_bounds_with_cubic(bounds, CubicSegment::new(last.pos, c1, c2, first.pos));
             }
         }
     }
-
-    let (min, max) = bounds.to_tuple()?;
-    Some(ShapeWorldBounds::new(min, max))
 }
 
 /// Extend bounds with cubic endpoints and extrema found using a coefficient tolerance.
