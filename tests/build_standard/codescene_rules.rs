@@ -116,7 +116,7 @@ fn only_rule_override(rule_set: &Value, path: &str) -> Result<(), String> {
     let weight = rule
         .get("weight")
         .ok_or_else(|| format!("{path} has no rule weight"))?;
-    if weight != &json!(0.0) {
+    if !is_zero_weight(weight) {
         return Err(format!(
             "{path} must disable `{RULE}` with weight 0.0, found {weight}"
         ));
@@ -138,6 +138,13 @@ fn only_rule_override(rule_set: &Value, path: &str) -> Result<(), String> {
     }
     Ok(())
 }
+
+/// Reports whether a JSON weight disables the rule.
+///
+/// `CodeScene` accepts integer `0` and floating-point `0.0`, and `serde_json`
+/// keeps those two spellings distinct in `Value` equality, so both must be
+/// accepted while any non-numeric value is rejected.
+fn is_zero_weight(weight: &Value) -> bool { *weight == json!(0) || *weight == json!(0.0) }
 
 /// The usage note points readers at the decision and the developer guidance.
 fn usage_document_reference(document: &Value) -> Result<(), String> {
@@ -332,6 +339,24 @@ fn document_validation_rejects_thresholds() -> Result<(), String> {
     Ok(())
 }
 
+/// Both spellings of a zero weight disable the rule.
+///
+/// `serde_json` keeps integer `0` and floating-point `0.0` distinct, so a
+/// contract that compared `Value`s against one spelling only would reject a
+/// configuration `CodeScene` accepts.
+#[test]
+fn zero_weight_accepts_integer_and_float_spellings() -> Result<(), String> {
+    for weight in [json!(0), json!(0.0)] {
+        let rule_set = json!({
+            "matching_content_path": "tests/build_standard/ci_reachability.rs",
+            "matching_content_path_doc": "issue #257",
+            "rules": [{ "name": RULE, "weight": weight }]
+        });
+        only_rule_override(&rule_set, "fixture")?;
+    }
+    Ok(())
+}
+
 /// The per-field guards reject malformed values the document cases omit.
 #[test]
 fn field_guards_reject_malformed_values() -> Result<(), String> {
@@ -351,6 +376,15 @@ fn field_guards_reject_malformed_values() -> Result<(), String> {
     });
     if only_rule_override(&weighted, "fixture").is_ok() {
         return Err("a non-zero weight must be rejected".to_owned());
+    }
+
+    let string_weight = json!({
+        "matching_content_path": "tests/build_standard/ci_reachability.rs",
+        "matching_content_path_doc": "issue #257",
+        "rules": [{ "name": RULE, "weight": "0.0" }]
+    });
+    if only_rule_override(&string_weight, "fixture").is_ok() {
+        return Err("a string weight must be rejected".to_owned());
     }
 
     let other_rule = json!({
