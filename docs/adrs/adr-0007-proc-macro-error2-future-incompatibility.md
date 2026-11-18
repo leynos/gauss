@@ -54,8 +54,8 @@ tracked as [`fast/stacksafe#18`][stacksafe-issue].
 
 The consumer constraint is the reason this is not a lockfile-only update.
 `gpui 0.2.2` requires `stacksafe = "0.1"` (`^0.1`), so the resolver cannot
-select any 1.x release. The latest published `gpui` on crates.io remains
-0.2.2, and `gpui-component 0.5.1` requires `gpui = "0.2.2"`. Zed has merged the
+select any 1.x release. The latest published `gpui` on crates.io remains 0.2.2,
+and `gpui-component 0.5.1` requires `gpui = "0.2.2"`. Zed has merged the
 `stacksafe` bump in its own repository, but has not published a newer crate;
 its maintainers recommend a pinned Git revision until automated releases
 land.[^3]
@@ -78,14 +78,14 @@ Recorded on 18 November 2026 before any manifest or lockfile change:
   `rstest-bdd-harness-gpui v0.6.0`.
 - `proc-macro-error2 2.0.1` requires `proc-macro-error-attr2 2.0.0`,
   `proc-macro2`, `quote`, and `syn 2.0.111`. The unrelated
-  `proc-macro-error3 3.1.1` and `proc-macro-error-attr3 3.1.1` pair stays in the
-  graph for `rstest-bdd-macros`.
-- A `cargo check --locked --workspace --all-targets --all-features
-  --future-incompat-report` run in a fresh target directory finishes in 24m27s,
-  exits 0, and warns that `proc-macro-error2 v2.0.1` contains code the compiler
-  will reject. Cargo assigns report id 1, and
-  `cargo report future-incompatibilities --id 1` prints E0365 at
-  `proc-macro-error2-2.0.1/src/lib.rs:494:13`, naming
+  `proc-macro-error3 3.1.1` and `proc-macro-error-attr3 3.1.1` pair stays in
+  the graph for `rstest-bdd-macros`.
+- The baseline
+  `cargo check --locked --workspace --all-targets --all-features --future-incompat-report`
+  run finishes in 24m27s in a fresh target directory, exits 0, and warns that
+  `proc-macro-error2 v2.0.1` contains code the compiler will reject. Cargo
+  assigns report id 1, and `cargo report future-incompatibilities --id 1`
+  prints E0365 at `proc-macro-error2-2.0.1/src/lib.rs:494:13`, naming
   `rust-lang/rust#127909` as the tracking issue.
 
 ## Decision drivers
@@ -171,8 +171,8 @@ rather than removing the dependency.
 ### Option E: no change
 
 Disclose the warning, leave the issue open, and wait for upstream. This is
-truthful but does not meet the issue's acceptance criterion that the warning
-is gone.
+truthful but does not meet the issue's acceptance criterion that the warning is
+gone.
 
 | Option | Removes the crate | Needs upstream | Source change | Fits `gpui 0.2.2` |
 | ------ | ----------------- | -------------- | ------------- | ----------------- |
@@ -236,8 +236,10 @@ published and the lockfile resolves to them without the patch.
 - Backport request: [`fast/stacksafe#18`][stacksafe-issue].
 - Upstream report: [`GnomedDev/proc-macro-error-2#13`][upstream-issue].
 - Proposed upstream fix: [`GnomedDev/proc-macro-error-2#14`][upstream-pr].
-- Advisory: [RUSTSEC-2026-0173](https://rustsec.org/advisories/RUSTSEC-2026-0173.html).
-- Compiler context: [`rust-lang/rust#127909`](https://github.com/rust-lang/rust/issues/127909).
+- Advisory:
+  [RUSTSEC-2026-0173](https://rustsec.org/advisories/RUSTSEC-2026-0173.html).
+- Compiler context:
+  [`rust-lang/rust#127909`](https://github.com/rust-lang/rust/issues/127909).
 - Prior consumer remedy:
   [`IanTeda/Personal-Ledger#517`](https://github.com/IanTeda/Personal-Ledger/issues/517).
 - 0.1.4 source commit:

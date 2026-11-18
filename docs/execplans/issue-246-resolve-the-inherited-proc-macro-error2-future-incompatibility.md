@@ -7,7 +7,8 @@ be kept up to date as work proceeds.
 
 Status: IN PROGRESS
 
-Branch: `issue-246-resolve-the-inherited-proc-macro-error2-future-incompatibility`
+Branch:
+`issue-246-resolve-the-inherited-proc-macro-error2-future-incompatibility`
 
 Roadmap item: none. The governing issue is
 [leynos/gauss#246](https://github.com/leynos/gauss/issues/246).
@@ -89,38 +90,34 @@ Counts are net lines (additions minus deletions) unless stated otherwise.
   and the owner has not chosen.
 
 No comparable historical ExecPlan in this repository raised these budgets, so
-the values are initial estimates from the surveyed diff (one ~100-line
-vendored macro, one manifest patch, one ADR, and small guide and changelog
-edits).
+the values are initial estimates from the surveyed diff (one ~100-line vendored
+macro, one manifest patch, one ADR, and small guide and changelog edits).
 
 ## Risks
 
 - Risk: the upstream `fast/stacksafe` project does not publish a 0.1.5
-  maintenance release.
-  Severity: high. Likelihood: high in the short term. Mitigation: request the
-  backport, and offer a reviewed vendored `stacksafe-macro` 0.1.4 patch as an
-  explicit fallback with a removal trigger.
+  maintenance release. Severity: high. Likelihood: high in the short term.
+  Mitigation: request the backport, and offer a reviewed vendored
+  `stacksafe-macro` 0.1.4 patch as an explicit fallback with a removal trigger.
 - Risk: a vendored patch drifts from upstream and silently changes macro
-  behaviour.
-  Severity: medium. Likelihood: low. Mitigation: copy the published 0.1.4
-  source, restrict changes to the error-reporting path, compare generated
+  behaviour. Severity: medium. Likelihood: low. Mitigation: copy the published
+  0.1.4 source, restrict changes to the error-reporting path, compare generated
   tokens, and record the upstream 1.0.2 diff as evidence.
 - Risk: the patch leaks into unrelated dependency resolution or duplicates a
-  crate.
-  Severity: medium. Likelihood: low. Mitigation: `[patch.crates-io]` targets
-  only `stacksafe-macro`; verify with `cargo tree -d` and a single
+  crate. Severity: medium. Likelihood: low. Mitigation: `[patch.crates-io]`
+  targets only `stacksafe-macro`; verify with `cargo tree -d` and a single
   `gpui 0.2.2` node.
 - Risk: lockfile churn from unrelated updates.
   Severity: medium. Likelihood: medium. Mitigation: update with `--locked`
   where possible, accept only the targeted entries, and review the diff.
 - Risk: the workspace cannot link GPUI on this host or the full gates are
-  long-running under shared compile admission.
-  Severity: low. Likelihood: medium. Mitigation: use fresh target directories,
-  retain logs, and allow for queueing.
+  long-running under shared compile admission. Severity: low. Likelihood:
+  medium. Mitigation: use fresh target directories, retain logs, and allow for
+  queueing.
 - Risk: `stacksafe` is used only by GPUI here, so the repository has no
-  first-party stack-depth stress test to prove runtime equivalence.
-  Severity: low. Likelihood: high. Mitigation: record the gap; rely on the
-  unchanged generated code and existing GPUI behavioural tests.
+  first-party stack-depth stress test to prove runtime equivalence. Severity:
+  low. Likelihood: high. Mitigation: record the gap; rely on the unchanged
+  generated code and existing GPUI behavioural tests.
 
 ## Progress
 
@@ -128,13 +125,14 @@ edits).
 - [x] (2026-11-18) Recorded baseline revision, lock hash, host triple, tool
   versions, wrapper variables, and the locked dependency graph. The record is
   `/tmp/gauss-246-baseline-record.txt`.
-- [x] (2026-11-18) Baseline future-incompatibility report captured. `cargo
-  check --locked --workspace --all-targets --all-features
-  --future-incompat-report` in `~/.cache/gauss-target/issue-246-baseline`
-  exited 0 after 24m27s and recorded report id 1: `proc-macro-error2 v2.0.1`,
-  E0365 at `src/lib.rs:494:13`, tracking `rust-lang/rust#127909`. The build log
-  is `/tmp/check-baseline-gauss-issue-246.out` and the expanded report is
-  `/tmp/future-incompat-baseline-gauss-issue-246.out`.
+- [x] (2026-11-18) Baseline future-incompatibility report captured.
+      `cargo check --locked --workspace --all-targets --all-features --future-incompat-report`
+      in `~/.cache/gauss-target/issue-246-baseline`
+      exited 0 after 24m27s and recorded report id 1:
+      `proc-macro-error2 v2.0.1`, E0365 at `src/lib.rs:494:13`, tracking
+      `rust-lang/rust#127909`. The build log is
+      `/tmp/check-baseline-gauss-issue-246.out` and the expanded report is
+      `/tmp/future-incompat-baseline-gauss-issue-246.out`.
 - [ ] `EP-M1` Normal baseline gates retained (`make check-fmt`, `make lint`,
   `make test`). In progress through `scrutineer` at revision `8f652cf`.
 - [ ] `EP-M2` Upstream `fast/stacksafe` issue opened; ADR 007 drafted with a
@@ -149,54 +147,46 @@ edits).
 - Observation: `stacksafe-macro 1.0.2` already removed `proc-macro-error2`
   while remaining on Syn 2. It is therefore the exact template for a 0.1.5
   backport; 1.0.3 moved to Syn 3 and added further diagnostics that the issue
-  excludes.
-  Evidence: crates.io index dependency records and the published crate
-  sources compared in `/tmp/gauss-246-crates`.
-  Impact: a 0.1.5 patch can be a small diagnostic-only change rather than a
-  port of the 1.0.3 diagnostics.
+  excludes. Evidence: crates.io index dependency records and the published
+  crate sources compared in `/tmp/gauss-246-crates`. Impact: a 0.1.5 patch can
+  be a small diagnostic-only change rather than a port of the 1.0.3 diagnostics.
 - Observation: no published `gpui` release above `0.2.2` exists on crates.io,
-  and `gpui-component 0.5.1` requires `gpui = "0.2.2"`.
-  Evidence: crates.io index for `gpui` and the `gpui-component 0.5.1`
-  manifest.
-  Impact: upgrading GPUI is not a viable way to reach `stacksafe 1.x` in this
-  workspace today.
+  and `gpui-component 0.5.1` requires `gpui = "0.2.2"`. Evidence: crates.io
+  index for `gpui` and the `gpui-component 0.5.1` manifest. Impact: upgrading
+  GPUI is not a viable way to reach `stacksafe 1.x` in this workspace today.
 - Observation: other consumers already use the same vendored-macro remedy.
   Evidence: `IanTeda/Personal-Ledger#517` describes a `vendor/stacksafe-macro`
   patch for exactly this dependency path; `PORTALSURFER/gpui-embedded#3` moved
-  its GPUI fork to `stacksafe 1.x`.
-  Impact: the fallback is established prior art, not a novel or speculative
-  mechanism.
+  its GPUI fork to `stacksafe 1.x`. Impact: the fallback is established prior
+  art, not a novel or speculative mechanism.
 - Observation: `fast/stacksafe` is actively maintained and dropped
   `proc-macro-error2` in pull request #12, released as `stacksafe-macro` 1.0.2
   on 8 June 2026. Its last push is 22 August 2026. It publishes only `main`;
-  there is no 0.1 maintenance branch and no 0.1.5 release.
-  Evidence: repository branches, tags, pulls and crate versions queried on
-  18 November 2026.
-  Impact: a 0.1.5 backport is plausible rather than hypothetical, and the
-  removal request has a concrete, recently released template.
+  there is no 0.1 maintenance branch and no 0.1.5 release. Evidence: repository
+  branches, tags, pulls and crate versions queried on 18 November 2026. Impact:
+  a 0.1.5 backport is plausible rather than hypothetical, and the removal
+  request has a concrete, recently released template.
 - Observation: `gpui-component` 0.10.0, published 16 November 2026, no longer
   depends on `gpui`. It uses `gpui-base` and `gpui-pre` from
-  `longbridge/gpui-kit`.
-  Evidence: crates.io dependency records for `gpui-component 0.10.0`.
-  Impact: upgrading `gpui-component` is not a route to `stacksafe 1.x`; it
-  would replace the application's GPUI stack.
+  `longbridge/gpui-kit`. Evidence: crates.io dependency records for
+  `gpui-component 0.10.0`. Impact: upgrading `gpui-component` is not a route to
+  `stacksafe 1.x`; it would replace the application's GPUI stack.
 
 ## Decision log
 
 - D1. Decision: treat the upstream `stacksafe` 0.1.x backport as the preferred
   end state and the reviewed vendored `stacksafe-macro` 0.1.4 patch as the
-  fallback candidate.
-  Rationale: a 0.1.5 release would make the consumer fix lockfile-only and
-  would require no repository source changes. Until it exists, only a path
-  patch can remove the unmaintained crate while preserving `gpui 0.2.2`.
-  Rejected option: patching `proc-macro-error2` itself. That crate is
-  unmaintained under RUSTSEC-2026-0173, and the upstream fix is unmerged in an
-  archived repository.
-  Date/Author: 2026-11-18, implementation agent, pending owner approval.
+  fallback candidate. Rationale: a 0.1.5 release would make the consumer fix
+  lockfile-only and would require no repository source changes. Until it
+  exists, only a path patch can remove the unmaintained crate while preserving
+  `gpui 0.2.2`. Rejected option: patching `proc-macro-error2` itself. That
+  crate is unmaintained under RUSTSEC-2026-0173, and the upstream fix is
+  unmerged in an archived repository. Date/Author: 2026-11-18, implementation
+  agent, pending owner approval.
 - D2. Decision: do not upgrade `gpui` or `gpui-component`.
   Rationale: no published `gpui` release admits `stacksafe 1.x`, and
-  `gpui-component 0.5.1` pins `gpui = "0.2.2"`. A fork or Git dependency
-  would be an unreviewed source change and outside the issue's authority.
+  `gpui-component 0.5.1` pins `gpui = "0.2.2"`. A fork or Git dependency would
+  be an unreviewed source change and outside the issue's authority.
   Date/Author: 2026-11-18, implementation agent.
 
 ## Outcomes & retrospective
@@ -208,8 +198,8 @@ results, and any remaining upstream constraint.
 ## Context and orientation
 
 The workspace root is `Cargo.toml`, with members `crates/gauss-core`,
-`crates/gauss-svg`, `crates/gauss-test-macros`, and `crates/test_support`.
-The root package owns the GPUI application and its integration tests.
+`crates/gauss-svg`, `crates/gauss-test-macros`, and `crates/test_support`. The
+root package owns the GPUI application and its integration tests.
 
 `gpui 0.2.2` is declared in the root manifest and is also required by
 `gpui-component 0.5.1` and `rstest-bdd-harness-gpui 0.6.0`. Its manifest
@@ -254,29 +244,27 @@ introduces no runtime state, protocol, or arithmetic invariant. The obligations
 are:
 
 1. `V1` Valid-function expansion is unchanged. The macro must emit the same
-   tokens for a valid function before and after the change.
-   Method: compare the published 0.1.4 source with the candidate source, and
-   exercise GPUI builds and tests that use `#[stacksafe]`. Non-vacuity: at
-   least one valid function must be compiled through the patched macro; the
-   GPUI dependency itself does this.
+   tokens for a valid function before and after the change. Method: compare the
+   published 0.1.4 source with the candidate source, and exercise GPUI builds
+   and tests that use `#[stacksafe]`. Non-vacuity: at least one valid function
+   must be compiled through the patched macro; the GPUI dependency itself does
+   this.
 2. `V2` The call-site and async diagnostics are preserved.
    Method: source inspection against the published 1.0.2 diff, plus compile
    checks of the vendored macro crate. Non-vacuity: the two error branches are
    reachable from a non-function item and an async function.
 3. `V3` `proc-macro-error2` is absent from the resolved graph and lockfile
-   after an approved change.
-   Method: `cargo tree -i proc-macro-error2`, lockfile inspection, and
-   `cargo metadata`. Non-vacuity: the same commands detect the crate on the
-   baseline.
+   after an approved change. Method: `cargo tree -i proc-macro-error2`,
+   lockfile inspection, and `cargo metadata`. Non-vacuity: the same commands
+   detect the crate on the baseline.
 4. `V4` `gpui` remains a single node and the duplicate-crate set does not grow.
-   Method: `cargo tree -i gpui` and `cargo tree -d`, compared with the
-   baseline.
+   Method: `cargo tree -i gpui` and `cargo tree -d`, compared with the baseline.
 5. `V5` The future-incompatibility report no longer names
-   `proc-macro-error2`.
-   Method: a fresh `cargo check --locked --workspace --all-targets
-   --all-features --future-incompat-report` in a new target directory,
-   retaining literal output. Non-vacuity: the baseline run names the crate and
-   the E0365 warning.
+   `proc-macro-error2`. Method: a fresh
+   `cargo check --locked --workspace --all-targets
+   --all-features --future-incompat-report`
+   in a new target directory, retaining literal output. Non-vacuity: the
+   baseline run names the crate and the E0365 warning.
 6. `V6` Workspace gates pass: `make check-fmt`, `make lint`, and `make test`,
    plus the named GPUI behavioural tests with `--features test-support`.
 
