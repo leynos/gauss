@@ -117,6 +117,9 @@ Recorded on 18 November 2026 before any manifest or lockfile change:
 - No unreviewed Git patch.
 - The workspace must keep passing `make check-fmt`, `make lint`, and
   `make test` on Linux with all targets and features.
+- The preserved messages and spans are demonstrated by `trybuild` compile-fail
+  fixtures, added with the approved change, that cover a non-function item and
+  an `async fn`.
 - Any dependency change requires the owner's explicit approval.
 
 ## Options considered

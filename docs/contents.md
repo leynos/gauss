@@ -159,3 +159,8 @@ This index groups Gauss documentation by its purpose and audience.
   — Reduce dependency debuginfo in development builds.
 - [Workspace crate split](execplans/build-time-workspace-crate-split.md) —
   Plan separating core, SVG, and application crates.
+
+### Dependency and toolchain hygiene
+
+- [proc-macro-error2 future incompatibility](execplans/issue-246-resolve-the-inherited-proc-macro-error2-future-incompatibility.md)
+  — Plan the disposition for the inherited `proc-macro-error2` warning.

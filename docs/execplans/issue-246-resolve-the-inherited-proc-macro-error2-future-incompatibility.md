@@ -153,6 +153,11 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
 - [ ] `EP-M3` Owner decision recorded; approved dependency change applied. The
   decision gate is outstanding: `Cargo.toml` and `Cargo.lock` remain untouched
   until the owner approves a disposition.
+- [x] (2026-11-18) Branch pushed over SSH and tracked against `origin`; draft
+  pull request [#317](https://github.com/leynos/gauss/pull/317) opened. First
+  CodeRabbit pass returned two minor findings: index the ExecPlan in
+  `docs/contents.md`, and make the `V2` non-vacuity check exercise both
+  diagnostic branches. Both were adopted; see `D4`.
 - [ ] `EP-M4` Candidate validated with fresh report and gates; documentation
   and changelog updated; draft pull request opened.
 
@@ -209,6 +214,13 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   cannot be attributed to it, and the missing tests are a host-capacity
   artefact rather than a code defect. The remainder is re-run separately and
   reported with its own status. Date/Author: 2026-11-18, implementation agent.
+- D4. Decision: adopt CodeRabbit's correction to `V2`. Rationale: the original
+  method inspected sources and compiled the macro crate, neither of which
+  applies `#[stacksafe]` to invalid input, so neither error branch ran and the
+  non-vacuity claim was unsupported. The `trybuild` compile-fail fixtures need
+  a test target that depends on `stacksafe`, so they belong to the approved
+  change rather than to this documentation change, and must pass before a
+  vendored macro change merges. Date/Author: 2026-11-18, implementation agent.
 
 ## Outcomes & retrospective
 
@@ -271,9 +283,14 @@ are:
    must be compiled through the patched macro; the GPUI dependency itself does
    this.
 2. `V2` The call-site and async diagnostics are preserved.
-   Method: source inspection against the published 1.0.2 diff, plus compile
-   checks of the vendored macro crate. Non-vacuity: the two error branches are
-   reachable from a non-function item and an async function.
+   Method: `trybuild` compile-fail fixtures that apply `#[stacksafe]` to a
+   non-function item and to an `async fn`, each asserting the expected message
+   and the reported span, together with source inspection against the published
+   1.0.2 diff. The fixtures belong to the approved change, because they need a
+   test target that depends on `stacksafe`; both must pass before a vendored
+   macro change is merged. Non-vacuity: the fixtures must fail against an
+   intentionally altered message, and the baseline macro must satisfy them
+   before the change is applied.
 3. `V3` `proc-macro-error2` is absent from the resolved graph and lockfile
    after an approved change. Method: `cargo tree -i proc-macro-error2`,
    lockfile inspection, and `cargo metadata`. Non-vacuity: the same commands
@@ -320,7 +337,8 @@ If a registry release is approved, update the lockfile only. If a vendored
 patch is approved, add `vendor/stacksafe-macro`, a path `[patch.crates-io]`
 entry, and a `workspace.exclude` entry. If the disposition is blocked or
 no-change, do not touch the manifest or lockfile. End state: a candidate that
-matches the approved disposition.
+matches the approved disposition. Acceptance: for a vendored patch, the `V2`
+compile-fail fixtures exist and pass for both diagnostic branches.
 
 ### EP-M4: validation and delivery
 
