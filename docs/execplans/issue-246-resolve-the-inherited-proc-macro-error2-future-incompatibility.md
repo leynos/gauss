@@ -179,6 +179,12 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   `Lint` job on the same seven Whitaker findings. `main` at `740f414` fails the
   same job, so the failure is pre-existing and not caused by this branch, whose
   diff is three Markdown files.
+- [x] (2026-11-18) Documentation gates run: `make markdownlint` reports 0
+  issues in 78 files, and `make nixie` validates every Mermaid diagram and
+  exits 0. The nixie log is
+  `/tmp/nixie-gauss-issue-246-resolve-the-inherited-proc-macro-error2-future-incompatibility.out`.
+- [x] (2026-11-18) Pull request body records the `build-test` result and the
+  four CodeRabbit passes with the corrections each one produced.
 - [ ] `EP-M4` Candidate validated with fresh report and gates; documentation
   and changelog updated; draft pull request opened.
 
@@ -257,6 +263,15 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   `make check-fmt`, `make markdownlint` and `make test`. Rationale: each
   correction removes a way the plan could have claimed evidence it did not
   have. Date/Author: 2026-11-18, implementation agent.
+- D7. Decision: keep `make lint` inside the candidate acceptance set and give
+  it a comparative criterion, superseding the part of `D6` that dropped it.
+  Rationale: removing the gate let a candidate that introduced new lint
+  findings pass acceptance, which the ADR's technical requirement forbids. The
+  gate cannot exit zero until the baseline findings are cleared by a separate
+  change, so acceptance is "no finding beyond the seven recorded baseline
+  findings" and the ADR records that its lint requirement is not yet met. The
+  ADR requirement wording and `V6` were amended together so the two documents
+  cannot disagree. Date/Author: 2026-11-18, implementation agent.
 
 ## Outcomes & retrospective
 
@@ -271,13 +286,14 @@ Observed results:
 - The baseline report still names `proc-macro-error2 v2.0.1` with E0365 at
   `src/lib.rs:494:13`. Nothing was suppressed, masked, or moved to a different
   toolchain.
-- `make check-fmt` and `make markdownlint` pass. `make lint` passes `cargo doc`
-  and `cargo clippy` and fails in Whitaker on seven pre-existing findings in
-  `crates/gauss-core/src/model/`, which this branch does not touch. `make test`
-  was interrupted by its two-hour budget; the remaining three trybuild tests
-  and the doctest half then passed when run separately, so across both runs
-  1452 tests passed, 1 was skipped and none failed, but the command never
-  reported a final status of its own.
+- `make check-fmt`, `make markdownlint` and `make nixie` pass. `make lint`
+  passes `cargo doc` and `cargo clippy` and fails in Whitaker on seven
+  pre-existing findings in `crates/gauss-core/src/model/`, which this branch
+  does not touch, so the ADR's lint requirement is recorded as not yet met.
+  `make test` was interrupted by its two-hour budget; the remaining three
+  trybuild tests and the doctest half then passed when run separately, so
+  across both runs 1452 tests passed, 1 was skipped and none failed, but the
+  command never reported a final status of its own.
 - No Rust source, manifest, lockfile, or dependency changed. The diff is three
   Markdown files, one of which is this plan.
 
@@ -369,17 +385,20 @@ are:
    --all-features --future-incompat-report`
    in a new target directory, retaining literal output. Non-vacuity: the
    baseline run names the crate and the E0365 warning.
-6. `V6` Workspace gates pass: `make check-fmt`, `make markdownlint`, and
-   `make test`, plus the EP-M4 GPUI tests with `--features test-support`.
-   `make lint` is the exception. It fails at the baseline on seven pre-existing
-   `bumpy-road-function` findings in `crates/gauss-core/src/model/`, and the
-   `CI` workflow at `main` revision `740f414` fails the same job for the same
-   reason. That failure must be cleared by a separate change before `make lint`
-   can serve as an acceptance gate; this plan neither fixes nor waives it.
-   Candidate acceptance therefore covers `make check-fmt`, `make markdownlint`
-   and `make test` only, with the `make lint` result recorded alongside them as
-   a pre-existing failure. Non-vacuity: the recorded baseline failure is the
-   witness that the gate is not silently skipped.
+6. `V6` Workspace gates pass: `make check-fmt`, `make markdownlint`,
+   `make nixie`, and `make test`, plus the EP-M4 GPUI tests with
+   `--features test-support`. `make lint` is part of the acceptance set with a
+   different criterion: the candidate's findings must not exceed the seven
+   pre-existing `bumpy-road-function` findings in
+   `crates/gauss-core/src/model/` recorded at the baseline. That gate cannot
+   exit zero here. The `CI` workflow at `main` revision `740f414` fails the
+   same Whitaker stage for the same reason, and clearing those findings is a
+   prerequisite owned by a separate change that this plan neither performs nor
+   waives. The candidate's `make lint` output is therefore compared
+   finding-by-finding against the baseline list, and the ADR's lint requirement
+   is recorded as not yet met until that separate change lands. Non-vacuity:
+   the recorded baseline failure is the witness that the gate is not silently
+   skipped, and a candidate that adds an eighth finding is rejected.
 
 Axioms: Cargo's `[patch.crates-io]` path replacement semantics, the published
 crate contents, the Rust compiler's future-incompatibility reporting, and the
@@ -430,3 +449,7 @@ RUSTFLAGS="-D warnings -Clink-arg=-fuse-ld=mold" \
   cargo nextest run --profile default --features test-support \
   -E 'binary(gpui_draw_undo_bdd) | binary(gpui_shell_chrome_bdd) | binary(gpui_shell_canvas_layout)'
 ```
+
+Acceptance: every listed gate reports the result `V6` requires, `make lint`
+adds no finding to the seven recorded in the baseline list, and the fresh
+future-incompatibility report satisfies `V5`.

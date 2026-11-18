@@ -115,8 +115,14 @@ Recorded on 18 November 2026 before any manifest or lockfile change:
 
 - No lint suppression, `--cap-lints`, `RUSTFLAGS` masking, or toolchain change.
 - No unreviewed Git patch.
-- The workspace must keep passing `make check-fmt`, `make lint`, and
-  `make test` on Linux with all targets and features.
+- The workspace must keep passing `make check-fmt` and `make test` on Linux
+  with all targets and features, and `make lint` must not report any finding
+  beyond the seven pre-existing `bumpy-road-function` findings in
+  `crates/gauss-core/src/model/`. `make lint` cannot pass at the baseline: the
+  `CI` workflow at `main` revision `740f414` fails the same Whitaker stage for
+  the same reason. Clearing those findings is a prerequisite owned by a
+  separate change, so a candidate satisfies this requirement by adding no new
+  findings rather than by making the gate exit zero.
 - The preserved messages and spans are demonstrated by `trybuild` compile-fail
   fixtures in `crates/test_support`, added with the approved change, that cover
   a non-function item and an `async fn`. That crate already hosts `trybuild`
