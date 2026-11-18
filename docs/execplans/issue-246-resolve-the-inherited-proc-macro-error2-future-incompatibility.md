@@ -125,9 +125,10 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   `bumpy-road-function` findings in `crates/gauss-core/src/model/` fail the
   Whitaker stage at the baseline, and the `CI` workflow at `main` revision
   `740f414` fails the same job. Severity: medium. Likelihood: certain.
-  Mitigation: exclude `make lint` from candidate acceptance, record its result
-  without waiving it, and treat clearing the findings as a prerequisite owned
-  by a separate change.
+  Mitigation: hold the candidate to "no finding beyond the seven recorded
+  baseline findings" rather than to a zero exit, record the result without
+  waiving it, and treat clearing the findings as a prerequisite owned by a
+  separate change.
 
 ## Progress
 
