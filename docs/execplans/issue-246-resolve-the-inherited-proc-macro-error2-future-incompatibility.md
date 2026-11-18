@@ -134,11 +134,25 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
       `/tmp/check-baseline-gauss-issue-246.out` and the expanded report is
       `/tmp/future-incompat-baseline-gauss-issue-246.out`.
 - [ ] `EP-M1` Normal baseline gates retained (`make check-fmt`, `make lint`,
-  `make test`). In progress through `scrutineer` at revision `8f652cf`.
-- [ ] `EP-M2` Upstream `fast/stacksafe` issue opened; ADR 007 drafted with a
-  disposition for owner approval. `fast/stacksafe#18` is open; ADR 007 is
-  indexed in `docs/contents.md` and awaits the owner's decision.
-- [ ] `EP-M3` Owner decision recorded; approved dependency change applied.
+  `make test`), run sequentially through `scrutineer` at revision `8f652cf`:
+  - `make check-fmt` failed initially on `mdtablefix --check` for the two new
+    Markdown files. Applying `make fmt` and re-running made it pass at
+    revision `a8e674e`.
+  - `make lint` passed `cargo doc` and `cargo clippy` and failed in the
+    Whitaker stage with seven `bumpy-road-function` findings in
+    `crates/gauss-core/src/model/`. None of those paths is touched by this
+    branch; the failure is pre-existing and is recorded, not waived or fixed
+    here.
+  - `make test` reached 1449 passing tests with no failures before its
+    two-hour budget expired with three trybuild tests unreported and the
+    doctest half not started, under a host-wide compile queue of roughly 270
+    waiters. The remainder is re-run separately on the same tree.
+- [x] (2026-11-18) `EP-M2` Upstream `fast/stacksafe#18` opened; ADR 007 drafted
+  with the five dispositions, indexed in `docs/contents.md`, and submitted for
+  the owner's decision.
+- [ ] `EP-M3` Owner decision recorded; approved dependency change applied. The
+  decision gate is outstanding: `Cargo.toml` and `Cargo.lock` remain untouched
+  until the owner approves a disposition.
 - [ ] `EP-M4` Candidate validated with fresh report and gates; documentation
   and changelog updated; draft pull request opened.
 
@@ -188,6 +202,13 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   `gpui-component 0.5.1` pins `gpui = "0.2.2"`. A fork or Git dependency would
   be an unreviewed source change and outside the issue's authority.
   Date/Author: 2026-11-18, implementation agent.
+- D3. Decision: record the seven Whitaker findings and the truncated test run
+  without fixing or waiving either. Rationale: repository guidance forbids
+  waiving unrelated failures and forbids folding unrelated refactors into this
+  change. `crates/gauss-core` is untouched by this branch, so the findings
+  cannot be attributed to it, and the missing tests are a host-capacity
+  artefact rather than a code defect. The remainder is re-run separately and
+  reported with its own status. Date/Author: 2026-11-18, implementation agent.
 
 ## Outcomes & retrospective
 
