@@ -1763,6 +1763,212 @@ fail-closed handling for unsupported node/action pairs.
 
 ______________________________________________________________________
 
+## 21. Build and release pipeline
+
+Gauss ships Debian packages and RPM packages for Linux, MSI installers for
+Windows, and `.pkg` installers for macOS, all from one reusable pipeline. Three
+workflows and two configuration files own it:
+
+- `.github/workflows/release.yml` (“Release Binary”) runs on a `v*.*.*` tag
+  push, or as a reusable workflow through `workflow_call`. It resolves the
+  crate version and binary name once, fans out to one build per target, and
+  attaches the collected artefacts to the draft GitHub release.
+- `.github/workflows/build-and-package.yml` (“Build and Package”) is the
+  per-platform job body, called once for each entry of the platform matrix.
+- `.github/workflows/release-dry-run.yml` calls `release.yml` on pull requests
+  with `dry-run: true`, so a pull request exercises the full build without
+  publishing. It deliberately does not inherit secrets: a called workflow
+  already receives `secrets.GITHUB_TOKEN`, and inheriting every secret would
+  expose credentials such as `CS_ACCESS_TOKEN` to a pull-request run.
+- `.github/release-staging.toml` maps each target key to the artefacts to
+  stage, the staging directory template, and the checksum algorithm.
+- `Cross.toml` and the per-target `docker/Dockerfile.*` images give cross-rs a
+  build environment carrying the X11 and xkbcommon development packages GPUI
+  needs, which the cross-rs 0.2.5 base images do not provide.
+
+Release modes are never hard-coded per workflow. The `determine-release-modes`
+action normalizes the triggering event into `should_publish`, `dry-run`, and
+`should-upload-workflow-artifacts`: a tag push publishes, a pull request does
+not, and an explicit `dry-run` input overrides both. The `release` job is
+guarded on `should_publish`, so a dry run builds the artefacts and discards
+them. `ensure-cargo-version` receives `check-tag: ${{ fromJSON(...) }}`, so the
+tag is compared with the manifest version only when the run is allowed to
+publish.
+
+Every workflow uses the same `leynos/shared-actions` commit. The branch first
+pinned `df81280`, main then moved the whole estate to `81374b6`, and the branch
+adopted main's pin rather than holding a stale revision: `df81280` is an
+ancestor of `81374b6`, and every action these workflows call exists at the
+newer pin with the inputs they pass. The release workflows are not part of the
+build-standard contract in `tests/build_standard`, which enumerates only
+`ci.yml` and `coverage-main.yml`: a release stays on the platform linker by
+design ([ADR 0006](adrs/adr-0006-rust-build-standard.md)), and its build steps
+assign `RUSTFLAGS` themselves.
+
+### 21.1 Build job flow
+
+For screen readers: the following flowchart follows one call of the
+build-and-package workflow, from checkout through the Linux package branch or
+the non-Linux staging branch, into the per-platform packaging action and the
+conditional workflow-artefact upload, and ends at the end of the build job.
+
+```mermaid
+flowchart TD
+  Start([Start build job])
+  Checkout[Checkout repository]
+  InstallUv["Install uv<br/>when inputs.platform != linux"]
+  GenMan[Generate man page with pandoc if available]
+  RustBuild["rust_build_release<br/>target=inputs.target<br/>bin=inputs.bin_name"]
+
+  IsLinux{inputs.platform == linux}
+  LinuxDeps[Install Linux system dependencies]
+  LinuxPackages["linux_packages<br/>formats=deb,rpm"]
+  PruneLinux[Prune linux packaging metadata]
+
+  StageArtifacts["stage_release_artefacts<br/>using release_staging_toml"]
+  CapturePaths["Capture staged paths<br/>binary_path<br/>man_path<br/>license_path"]
+
+  IsWindows{inputs.platform == windows}
+  WindowsPkg["windows_package<br/>build MSI<br/>upload optional"]
+
+  IsMacos{inputs.platform == macos}
+  MacosPkg["macos_package<br/>build PKG"]
+  RenamePkg[Rename PKG with arch suffix]
+
+  UploadLinux{"inputs.platform == linux<br/>and should_upload_workflow_artifacts"}
+  UploadWindows{"inputs.platform == windows<br/>and should_upload_workflow_artifacts"}
+  UploadMacos{"inputs.platform == macos<br/>and should_upload_workflow_artifacts"}
+
+  UploadLinuxStep[Upload linux artifacts]
+  UploadWindowsStep["Upload windows artifacts<br/>staged dir + MSI"]
+  UploadMacosStep["Upload macOS artifacts<br/>staged dir + PKG"]
+
+  End([End build job])
+
+  Start --> Checkout --> InstallUv
+  InstallUv --> GenMan --> RustBuild --> IsLinux
+
+  IsLinux -- yes --> LinuxDeps --> LinuxPackages --> PruneLinux --> UploadLinux
+  IsLinux -- no --> StageArtifacts --> CapturePaths --> IsWindows
+
+  IsWindows -- yes --> WindowsPkg --> UploadWindows
+  IsWindows -- no --> IsMacos
+
+  IsMacos -- yes --> MacosPkg --> RenamePkg --> UploadMacos
+  IsMacos -- no --> End
+
+  UploadLinux -- yes --> UploadLinuxStep --> End
+  UploadLinux -- no --> End
+
+  UploadWindows -- yes --> UploadWindowsStep --> End
+  UploadWindows -- no --> End
+
+  UploadMacos -- yes --> UploadMacosStep --> End
+  UploadMacos -- no --> End
+```
+
+*Figure 21.1: The build-and-package job for one platform. The steps before the
+first decision run on every platform: `uv` is installed on a checked-out
+repository, and the man page is generated whenever `pandoc` is present. The
+Linux branch then installs the system development packages, packages with
+`linux-packages`, and prunes the intermediate metadata that packaging leaves in
+`dist`. Every other platform stages artefacts from `release-staging.toml`
+first, because the installer actions take the staged binary, manual page, and
+licence paths as inputs. The last decision on each branch is the
+workflow-artefact upload gate, which a dry run closes.*
+
+The Linux packaging step passes `man-paths` for a man page that may not exist,
+so the staging configuration marks the manual page optional while the binary
+and the licence file are required. That difference is load-bearing: a missing
+`pandoc` yields a warning and a package without a manual page, not a failed
+build.
+
+### 21.2 Trigger-to-release sequence
+
+Accessibility caption: this sequence shows both ways the pipeline starts — a
+tag push or a `workflow_call` into the release workflow, and a pull-request dry
+run that reaches the same workflow with `dry-run: true` — and then the metadata
+resolution, the three platform builds running in parallel, and the conditional
+release job that creates a draft release and attaches the downloaded artefacts
+only when `should_publish` is true.
+
+```mermaid
+sequenceDiagram
+  actor Dev as Developer
+  participant GH as GitHub
+  participant ReleaseWF as release_yml
+  participant BuildPkg as build_and_package_yml
+  participant Shared as shared_actions
+  participant Rel as GitHubRelease
+  participant Art as WorkflowArtifacts
+
+  Dev->>GH: Push tag vX.Y.Z or open PR
+
+  alt Tag push or workflow_call
+    GH->>ReleaseWF: Trigger Release Binary workflow
+    ReleaseWF->>Shared: determine_release_modes
+    Shared-->>ReleaseWF: should_publish, dry_run, should_upload_workflow_artifacts
+    ReleaseWF->>Shared: ensure_cargo_version
+    Shared-->>ReleaseWF: crate version
+    ReleaseWF->>Shared: export_cargo_metadata
+    Shared-->>ReleaseWF: bin_name
+
+    par Linux matrix
+      ReleaseWF->>BuildPkg: Call build_and_package_yml platform=linux
+      BuildPkg->>Shared: rust_build_release + linux_packages
+      opt Upload linux artifacts
+        BuildPkg->>Art: upload-artifact dist
+      end
+    and Windows matrix
+      ReleaseWF->>BuildPkg: Call build_and_package_yml platform=windows
+      BuildPkg->>Shared: rust_build_release
+      BuildPkg->>Shared: stage_release_artefacts
+      BuildPkg->>Shared: windows_package
+      opt Upload windows artifacts
+        BuildPkg->>Art: upload-artifact staged dir + msi
+      end
+    and macOS matrix
+      ReleaseWF->>BuildPkg: Call build_and_package_yml platform=macos
+      BuildPkg->>Shared: rust_build_release
+      BuildPkg->>Shared: stage_release_artefacts
+      BuildPkg->>Shared: macos_package
+      opt Upload macOS artifacts
+        BuildPkg->>Art: upload-artifact staged dir + pkg
+      end
+    end
+
+    alt should_publish == true and dry_run == false
+      ReleaseWF->>Rel: Ensure draft release for tag
+      ReleaseWF->>Art: download-artifact repo_name-*
+      ReleaseWF->>Shared: upload_release_assets(dist)
+      Shared-->>Rel: Attach assets to release
+    else dry_run or publish disabled
+      Note over ReleaseWF: Release job skipped
+    end
+
+  else PR dry run
+    GH->>ReleaseWF: Trigger via release_dry_run_yml with dry_run=true
+    ReleaseWF->>Shared: determine_release_modes (dry_run)
+    Shared-->>ReleaseWF: should_publish=false
+    ReleaseWF->>BuildPkg: Execute build jobs only
+    Note over Rel,Art: No release or artifact upload
+  end
+```
+
+*Figure 21.2: Trigger-to-release sequence across the release workflow, the
+build-and-package workflow, and the shared actions they call. The three
+platform builds share no ordering; the release job waits on all of them and
+then attaches every artefact whose name matches `<repo_name>-*`.*
+
+The release job creates the draft release with
+`gh release create --draft --verify-tag` when one does not already exist, so a
+re-run of a failed upload reuses the same release instead of failing on a
+duplicate tag. `upload-release-assets` reports a failure through its
+`upload-error` output rather than by exit status, and a final step turns that
+output into a failed job.
+
+______________________________________________________________________
+
 ### Appendix A: Terminology
 
 - **Action**: an intent (e.g., “Delete Selection”)
