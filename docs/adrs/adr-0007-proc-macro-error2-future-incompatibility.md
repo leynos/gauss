@@ -225,7 +225,12 @@ Manifest changes for Option B are therefore exactly three: the new
 Removal trigger: delete the vendored crate, the `[patch.crates-io]` entry, and
 the `workspace.exclude` entry once `stacksafe` and `stacksafe-macro` 0.1.5 are
 published and the lockfile resolves to them without the patch. The fixture
-dev-dependency stays, because the compile-fail fixtures outlive the patch.
+dev-dependency stays, because the compile-fail fixtures outlive the patch, but
+it moves to the 0.1.5 requirement in the same change. If removal is instead
+triggered by a `gpui` release that admits `stacksafe` 1.x, the fixture
+dependency must move to that line and its diagnostic expectations be
+re-validated: leaving it on `^0.1.4` would pull the 0.1 macro back in and
+either duplicate `stacksafe` or fail to resolve.
 
 ## Consequences
 
@@ -253,7 +258,8 @@ dev-dependency stays, because the compile-fail fixtures outlive the patch.
 - Until upstream publishes 0.1.5, the vendored copy must be reviewed whenever
   the dependency graph changes.
 - Any future `gpui` release that admits `stacksafe 1.x` is a preferred removal
-  route; track Zed issue #66275 and discussion #55271.[^3]
+  route, provided the fixture dev-dependency moves to the same line; track Zed
+  issue #66275 and discussion #55271.[^3]
 
 ## References
 
@@ -322,3 +328,8 @@ dev-dependency stays, because the compile-fail fixtures outlive the patch.
   interrupted rather than passing, and the two results are reported separately.
   The decision gate is still outstanding, so this branch applies no manifest or
   lockfile change and the status remains Proposed.
+- **2026-11-18:** Amended the lint technical requirement while the record is
+  still Proposed. It required `make lint` to pass, which no state of this
+  repository can satisfy yet, so the requirement now reads as "no finding
+  beyond the seven recorded baseline findings" and states that it is not yet
+  met. The ExecPlan's `V6` applies the same criterion.

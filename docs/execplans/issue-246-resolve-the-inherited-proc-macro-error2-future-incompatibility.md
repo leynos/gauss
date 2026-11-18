@@ -273,6 +273,16 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   findings" and the ADR records that its lint requirement is not yet met. The
   ADR requirement wording and `V6` were amended together so the two documents
   cannot disagree. Date/Author: 2026-11-18, implementation agent.
+- D8. Decision: adopt three further review corrections. `V6` requires
+  `cargo doc` and Clippy to pass and Whitaker to have run before the finding
+  comparison applies, because the lint stages are a fail-fast chain and absent
+  Whitaker output would otherwise read as no new findings. `EP-M3`'s
+  registry-release path now carries the `V2` fixtures, since the diagnostics
+  asserted are a property of the released macro rather than of the vendoring.
+  The ADR removal trigger moves the fixture dev-dependency with the patch:
+  leaving it on `^0.1.4` after a 1.x `stacksafe` arrives would pull the 0.1
+  macro back in and either duplicate `stacksafe` or fail to resolve.
+  Date/Author: 2026-11-18, implementation agent.
 
 ## Outcomes & retrospective
 
@@ -395,11 +405,16 @@ are:
    exit zero here. The `CI` workflow at `main` revision `740f414` fails the
    same Whitaker stage for the same reason, and clearing those findings is a
    prerequisite owned by a separate change that this plan neither performs nor
-   waives. The candidate's `make lint` output is therefore compared
-   finding-by-finding against the baseline list, and the ADR's lint requirement
-   is recorded as not yet met until that separate change lands. Non-vacuity:
-   the recorded baseline failure is the witness that the gate is not silently
-   skipped, and a candidate that adds an eighth finding is rejected.
+   waives. `make lint` runs `cargo doc`, then Clippy, then Whitaker as a
+   fail-fast chain, so the comparison applies only once `cargo doc` and Clippy
+   pass and Whitaker has actually run. A failure in either earlier stage fails
+   the gate outright; absent Whitaker output is not "no new findings". The
+   candidate's `make lint` output is therefore compared finding-by-finding
+   against the baseline list, and the ADR's lint requirement is recorded as not
+   yet met until that separate change lands. Non-vacuity: the recorded baseline
+   failure is the witness that the gate is not silently skipped, a candidate
+   that adds an eighth finding is rejected, and a candidate whose earlier stage
+   fails cannot pass by reporting no findings.
 
 Axioms: Cargo's `[patch.crates-io]` path replacement semantics, the published
 crate contents, the Rust compiler's future-incompatibility reporting, and the
@@ -428,14 +443,20 @@ decision. End state: an explicit approved, blocked, or no-change disposition.
 
 ### EP-M3: approved change
 
-If a registry release is approved, update the lockfile only. If a vendored
-patch is approved, add `vendor/stacksafe-macro`, a path `[patch.crates-io]`
-entry, and a `workspace.exclude` entry, and add `stacksafe = "0.1.4"` to the
-`crates/test_support` dev-dependencies so the `V2` fixtures can apply
-`#[stacksafe]`. If the disposition is blocked or no-change, do not touch the
-manifest or lockfile. End state: a candidate that matches the approved
-disposition. Acceptance: for a vendored patch, the `V2` compile-fail fixtures
-exist in `crates/test_support` and pass for both diagnostic branches.
+If a registry release is approved, update the lockfile and make the same
+fixture change: add `stacksafe` at the approved release to the
+`crates/test_support` dev-dependencies and add the `V2` fixtures, then
+regenerate the lockfile accepting only the targeted entries. No Gauss source
+change is needed on this path, but the fixtures are still required, because the
+diagnostics they assert are a property of the released macro rather than of the
+vendoring. If a vendored patch is approved, add `vendor/stacksafe-macro`, a path
+`[patch.crates-io]` entry, and a `workspace.exclude` entry, and add
+`stacksafe = "0.1.4"` to the `crates/test_support` dev-dependencies so the `V2`
+fixtures can apply `#[stacksafe]`. If the disposition is blocked or no-change,
+do not touch the manifest or lockfile. End state: a candidate that matches the
+approved disposition. Acceptance: the `V2` compile-fail fixtures exist in
+`crates/test_support` and pass for both diagnostic branches on whichever
+`stacksafe` release the approved disposition selects.
 
 ### EP-M4: validation and delivery
 
