@@ -343,37 +343,30 @@ impl DocumentUndoHistory {
         entries: &[HistoryEntry],
         direction: ReplayDirection,
     ) -> Result<(), HistoryError> {
-        let mut first_error: Option<HistoryError> = None;
-        match action {
-            Action::Undo => {
-                for entry in entries.iter().rev() {
-                    Self::capture_first_error(
-                        &mut first_error,
-                        Self::apply_entry(doc, action, entry, direction),
-                    );
-                }
-            }
-            Action::Do => {
-                for entry in entries {
-                    Self::capture_first_error(
-                        &mut first_error,
-                        Self::apply_entry(doc, action, entry, direction),
-                    );
-                }
-            }
-        }
+        // Undo must walk the group backwards so the document returns through
+        // the states it reached forwards; redo follows the recorded order.
+        let first_error = match action {
+            Action::Undo => Self::apply_entries(doc, action, entries.iter().rev(), direction),
+            Action::Do => Self::apply_entries(doc, action, entries.iter(), direction),
+        };
         first_error.map_or(Ok(()), Err)
     }
 
-    /// Keep the first replay error while allowing the rest of a group to run.
-    /// For example, a later error does not replace an earlier captured error.
-    fn capture_first_error(
-        first_error: &mut Option<HistoryError>,
-        result: Result<(), HistoryError>,
-    ) {
-        if let Err(error) = result {
-            first_error.get_or_insert(error);
-        }
+    /// Apply every entry in iteration order, returning the first error.
+    ///
+    /// A failure does not stop the remaining entries: `undo_2` has already
+    /// advanced its cursor over the whole group, so skipping them would leave
+    /// the document out of step with the recorded history position.
+    fn apply_entries<'entry>(
+        doc: &mut Document,
+        action: Action,
+        entries: impl Iterator<Item = &'entry HistoryEntry>,
+        direction: ReplayDirection,
+    ) -> Option<HistoryError> {
+        entries.fold(None, |first_error: Option<HistoryError>, entry| {
+            let result = Self::apply_entry(doc, action, entry, direction);
+            first_error.or_else(|| result.err())
+        })
     }
 }
 
