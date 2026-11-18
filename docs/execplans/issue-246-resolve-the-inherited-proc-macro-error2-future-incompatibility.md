@@ -133,7 +133,7 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
       `rust-lang/rust#127909`. The build log is
       `/tmp/check-baseline-gauss-issue-246.out` and the expanded report is
       `/tmp/future-incompat-baseline-gauss-issue-246.out`.
-- [ ] `EP-M1` Normal baseline gates retained (`make check-fmt`, `make lint`,
+- [x] `EP-M1` Normal baseline gates retained (`make check-fmt`, `make lint`,
   `make test`), run sequentially through `scrutineer` at revision `8f652cf`:
   - `make check-fmt` failed initially on `mdtablefix --check` for the two new
     Markdown files. Applying `make fmt` and re-running made it pass at
@@ -146,7 +146,12 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   - `make test` reached 1449 passing tests with no failures before its
     two-hour budget expired with three trybuild tests unreported and the
     doctest half not started, under a host-wide compile queue of roughly 270
-    waiters. The remainder is re-run separately on the same tree.
+    waiters. The remainder was re-run on the same tree with the gate's exact
+    `RUSTFLAGS` and `RUSTDOCFLAGS`: the three trybuild tests passed after
+    2927 s, 3062 s and 3112 s, and every doctest invocation passed (70 passed,
+    0 failed, 3 ignored). `make test` is therefore complete with 1452 passed,
+    1 skipped and 0 failed; the log is
+    `/tmp/test-remainder-gauss-issue-246-resolve-the-inherited-proc-macro-error2-future-incompatibility.out`.
 - [x] (2026-11-18) `EP-M2` Upstream `fast/stacksafe#18` opened; ADR 007 drafted
   with the five dispositions, indexed in `docs/contents.md`, and submitted for
   the owner's decision.

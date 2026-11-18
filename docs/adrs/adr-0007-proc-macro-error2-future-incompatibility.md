@@ -293,6 +293,8 @@ published and the lockfile resolves to them without the patch.
   `crates/gauss-core/src/model/`, none of which this branch touches.
   `make test` reached 1449 passing tests with no failures before its two-hour
   budget expired, with three trybuild tests unreported and the doctests not
-  started; the remainder was re-run separately. The decision gate is still
-  outstanding, so this branch applies no manifest or lockfile change and the
-  status remains Proposed.
+  started. The remainder was then re-run with the gate's own `RUSTFLAGS` and
+  `RUSTDOCFLAGS`: all three trybuild tests passed and every doctest invocation
+  passed, so `make test` is complete at 1452 passed, 1 skipped and 0 failed.
+  The decision gate is still outstanding, so this branch applies no manifest or
+  lockfile change and the status remains Proposed.
