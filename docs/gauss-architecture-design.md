@@ -1796,6 +1796,31 @@ workflows and two configuration files own it:
   `/etc/apt/sources.list`. The aarch64 image still registers arm64 as a foreign
   architecture, because the image's native architecture is amd64.
 
+  Two further gaps only surface once the build gets past dependency
+  installation, so they were found by building the workspace rather than by
+  reading the images. First, `.cargo/config.toml` pins `linker = "clang"` for
+  `x86_64-unknown-linux-gnu`, and the images ship neither `clang` nor `mold`.
+  Cross exports a linker for the *target* triple only, so build scripts, which
+  compile for the container's native x86_64 triple, kept resolving `clang` and
+  failed before any project crate was reached. Each Dockerfile therefore sets
+  `CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc`. The override is scoped to
+  the build images: host builds keep the `clang` the Cargo configuration
+  selects, and the release path links with the platform linker as ADR 0006
+  requires. The images have no `mold` either, which is harmless because the
+  release action exports `RUSTFLAGS`, and a set `RUSTFLAGS` shadows the
+  configuration's `rustflags` table.
+
+  Second, the images' Xenial `libxcb1` is 1.11.1, which predates
+  `xcb_send_request_with_fds64`; `x11rb`'s `xcb_ffi` backend references that
+  symbol, so the final link of the `gauss` binary failed with an undefined
+  reference even though every crate had compiled. `libxcb1-dev` pins
+  `libxcb1 (= 1.11.1-1ubuntu1)` exactly, so the pair has to move together. The
+  images install the Bionic 1.13 pair from `ports.ubuntu.com` directly, which
+  declares only `libc6 (>= 2.17)` and so installs cleanly on the image's glibc
+  2.23. Bionic is used for these two packages alone; the rest of the sysroot
+  stays as the base image built it, because replacing `libc6` would
+  desynchronize the compiler's sysroot.
+
 Release modes are never hard-coded per workflow. The `determine-release-modes`
 action normalizes the triggering event into `should_publish`, `dry-run`, and
 `should-upload-workflow-artifacts`: a tag push publishes, a pull request does

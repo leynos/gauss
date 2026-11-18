@@ -15,11 +15,28 @@ FROM ghcr.io/cross-rs/aarch64-unknown-linux-gnu:0.2.5
 # to add Focal entries. That duplicated the `[arch=...]` options already
 # present on those lines, which apt rejects as "Malformed entry", and Focal's
 # libc6 could not coexist with the image's glibc 2.23 sysroot anyway.
+#
+# Xenial's `libxcb1` is 1.11.1, which predates `xcb_send_request_with_fds64`.
+# `x11rb`'s `xcb_ffi` backend references that symbol, so the final link of the
+# `gauss` binary fails with an undefined reference even after every crate
+# compiles. `libxcb1-dev` pins `libxcb1 (= 1.11.1-1ubuntu1)` exactly, so the
+# runtime and its headers must be replaced together. Bionic's 1.13 pair
+# declares only `libc6 (>= 2.17)`, so it installs on the image's glibc 2.23;
+# fetching the two `.deb` files keeps the change to these packages, leaving the
+# rest of the base image's sysroot untouched. `curl` is already present in the
+# base image, so this adds no download tool of its own.
 RUN dpkg --add-architecture arm64 && \
     apt-get update && \
     apt-get install --assume-yes --no-install-recommends \
         libxkbcommon-dev:arm64 \
         libxkbcommon-x11-dev:arm64 && \
+    xcb_base="http://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxcb" && \
+    curl --fail --silent --show-error --output /tmp/libxcb1.deb \
+        "$xcb_base/libxcb1_1.13-2~ubuntu18.04_arm64.deb" && \
+    curl --fail --silent --show-error --output /tmp/libxcb1-dev.deb \
+        "$xcb_base/libxcb1-dev_1.13-2~ubuntu18.04_arm64.deb" && \
+    dpkg --install /tmp/libxcb1.deb /tmp/libxcb1-dev.deb && \
+    rm -f /tmp/libxcb1.deb /tmp/libxcb1-dev.deb && \
     rm -rf /var/lib/apt/lists/*
 
 # `.cargo/config.toml` pins `linker = "clang"` for the x86_64 host triple, and
