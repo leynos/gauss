@@ -5,7 +5,9 @@ This ExecPlan (execution plan) is a living document. The sections `Constraints`,
 `Outcomes & retrospective`, `Conformance basis`, and `Verification plan` must
 be kept up to date as work proceeds.
 
-Status: IN PROGRESS
+Status: BLOCKED — the dependency disposition awaits the owner's explicit
+approval. The documentation change is complete and delivered as draft pull
+request [#317](https://github.com/leynos/gauss/pull/317).
 
 Branch:
 `issue-246-resolve-the-inherited-proc-macro-error2-future-incompatibility`
@@ -226,12 +228,45 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   a test target that depends on `stacksafe`, so they belong to the approved
   change rather than to this documentation change, and must pass before a
   vendored macro change merges. Date/Author: 2026-11-18, implementation agent.
+- D5. Decision: correct the ADR statement of expected lockfile churn. A path
+  patch rewrites the `stacksafe-macro 0.1.4` entry as well as removing
+  `proc-macro-error2` and `proc-macro-error-attr2`, because a path package has
+  no checksum and lists fewer dependencies. Requiring "no other package change"
+  would have made the accepted diff fail its own criterion. Date/Author:
+  2026-11-18, implementation agent.
 
 ## Outcomes & retrospective
 
-To be completed when the disposition is known. The final entry must state
-whether `proc-macro-error2` remains, which option was approved, the gate
-results, and any remaining upstream constraint.
+The dependency disposition is blocked, not decided. Option B is prepared
+outside the repository, but a dependency change requires the owner's explicit
+approval and none was given, so the recorded outcome is Option E: the E0365
+warning stays disclosed, `Cargo.toml` and `Cargo.lock` are unchanged, and
+`leynos/gauss#246` stays open.
+
+Observed results:
+
+- The baseline report still names `proc-macro-error2 v2.0.1` with E0365 at
+  `src/lib.rs:494:13`. Nothing was suppressed, masked, or moved to a different
+  toolchain.
+- `make check-fmt` and `make markdownlint` pass. `make lint` passes `cargo doc`
+  and `cargo clippy` and fails in Whitaker on seven pre-existing findings in
+  `crates/gauss-core/src/model/`, which this branch does not touch. `make test`
+  passes with 1452 passed, 1 skipped and 0 failed.
+- No Rust source, manifest, lockfile, or dependency changed. The diff is three
+  Markdown files, one of which is this plan.
+
+Lessons:
+
+- The 0.1 line is abandoned in practice. `fast/stacksafe` publishes 1.0.x only,
+  and `gpui 0.2.2` pins its consumers to `^0.1`, so no consumer-side registry
+  update exists until one side moves.
+- A 0.1.5 backport is the smallest unblocking change. It is requested as
+  `fast/stacksafe#18`, and the `stacksafe-macro 1.0.2` change is its exact
+  template, so the request asks for a known patch rather than a design.
+- A plan's verification claims deserve the same review as code. The first `V2`
+  wording asserted that both error branches were reachable without exercising
+  either, and review caught it; the corrected obligation now names the fixtures
+  and a negative control.
 
 ## Context and orientation
 

@@ -212,8 +212,10 @@ published and the lockfile resolves to them without the patch.
 
 - Option B makes the workspace depend on a reviewed local copy of a
   third-party macro crate until upstream releases.
-- `Cargo.lock` loses `proc-macro-error2` and `proc-macro-error-attr2`; no other
-  package should change.
+- `Cargo.lock` loses `proc-macro-error2` and `proc-macro-error-attr2`, and the
+  `stacksafe-macro 0.1.4` entry changes because a path package carries no
+  checksum and no longer lists `proc-macro-error2` as a dependency. No package
+  beyond those three should change.
 - The `stacksafe` and `stacker` runtime behaviour is untouched.
 - GPUI remains pinned at 0.2.2, so the upstream GPUI release constraint
   remains open.
