@@ -48,11 +48,6 @@ name: Build and Package
         description: Suffix appended to macOS package filenames
         required: false
         type: string
-      python-version:
-        description: Python version to install with uv on non-Linux platforms
-        required: false
-        default: '3.11'
-        type: string
       wix-extension-version:
         description: >-
           WiX Toolset extension version for Windows packaging. Empty lets the
@@ -77,8 +72,10 @@ jobs:
         if: inputs.platform != 'linux'
         uses: astral-sh/setup-uv@4cda7d73322c50eac316ad623a716f09a2db2ac7
         # v3.1.2
-        with:
-          python-version: ${{ inputs['python-version'] }}
+        # No `python-version` input: this revision does not declare one, so
+        # passing it only produced an "Unexpected input(s)" warning. The
+        # packaging actions create their own uv environments and pin the
+        # interpreter they need, so this step only has to put `uv` on PATH.
 
       - name: Generate man page
         id: man_page
