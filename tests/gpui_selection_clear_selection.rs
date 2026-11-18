@@ -16,8 +16,10 @@ mod scenario_state;
 mod support;
 
 use common::{canvas_bounds, click_left_and_wait, read_selection};
-use gauss::model::{Document, SelItem, Selection, ShapeId, Vec2};
-use gauss_core::test_helpers::square_shape;
+use gauss::{
+    model::{Document, SelItem, Selection, ShapeId, Vec2},
+    test_helpers::square_shape,
+};
 use gpui::{TestAppContext, point, px};
 use rstest_bdd_macros::{given, scenario, then, when};
 use serial_test::serial;
