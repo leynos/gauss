@@ -22,7 +22,7 @@ const RULES: &str = include_str!(concat!(
 /// The single rule this repository overrides.
 const RULE: &str = "String Heavy Function Arguments";
 
-/// The exact paths authorised by ADR 0007.
+/// The exact paths authorized by ADR 0007.
 ///
 /// Adding or removing a path means changing the decision record and this list
 /// together; the rule file alone is not sufficient.
@@ -121,14 +121,20 @@ fn only_rule_override(rule_set: &Value, path: &str) -> Result<(), String> {
             "{path} must disable `{RULE}` with weight 0.0, found {weight}"
         ));
     }
-    let has_thresholds = rule_set
-        .get("thresholds")
-        .and_then(Value::as_array)
-        .is_some_and(|thresholds| !thresholds.is_empty());
-    if has_thresholds {
-        return Err(format!(
-            "{path} must not override thresholds; ADR 0007 authorises exact-path rule weights only"
-        ));
+    match rule_set.get("thresholds") {
+        None => {}
+        Some(Value::Array(thresholds)) if thresholds.is_empty() => {}
+        Some(Value::Array(_)) => {
+            return Err(format!(
+                "{path} must not override thresholds; ADR 0007 authorizes exact-path rule weights \
+                 only"
+            ));
+        }
+        Some(other) => {
+            return Err(format!(
+                "{path} has a `thresholds` field that is not an array: {other}"
+            ));
+        }
     }
     Ok(())
 }
@@ -144,23 +150,18 @@ fn usage_document_reference(document: &Value) -> Result<(), String> {
     Ok(())
 }
 
-/// Every rule set names one exact, existing module with a recorded reason.
+/// Validates the rule document and returns the exact path set it declares.
 ///
-/// The expected path set is compared exactly, so a new exemption cannot be
-/// added to the rule file without updating ADR 0007 and this contract.
-#[test]
-fn rule_sets_are_exact_documented_and_authorised() -> Result<(), String> {
-    let document = rule_document()?;
-    usage_document_reference(&document)?;
-    let directory = project_directory()?;
+/// This is the document-only boundary: it checks the usage note, every rule
+/// set, duplicate paths and the authorized path set without touching the
+/// filesystem, so the guards can be exercised against mutated fixtures.
+fn validated_paths(document: &Value) -> Result<BTreeSet<&str>, String> {
+    usage_document_reference(document)?;
     let mut seen = BTreeSet::new();
-    for rule_set in rule_sets(&document)? {
+    for rule_set in rule_sets(document)? {
         let path = exact_path(rule_set)?;
         rationale(rule_set, path)?;
         only_rule_override(rule_set, path)?;
-        directory
-            .read_to_string(path)
-            .map_err(|error| format!("the exempt module {path} is not readable: {error}"))?;
         if !seen.insert(path) {
             return Err(format!("{path} is exempted more than once"));
         }
@@ -172,6 +173,22 @@ fn rule_sets_are_exact_documented_and_authorised() -> Result<(), String> {
              {seen:?}"
         ));
     }
+    Ok(seen)
+}
+
+/// Every authorized module exists, so no exemption outlives its source.
+///
+/// The expected path set is compared exactly, so a new exemption cannot be
+/// added to the rule file without updating ADR 0007 and this contract.
+#[test]
+fn rule_sets_are_exact_documented_and_authorized() -> Result<(), String> {
+    let document = rule_document()?;
+    let directory = project_directory()?;
+    for path in validated_paths(&document)? {
+        directory
+            .read_to_string(path)
+            .map_err(|error| format!("the exempt module {path} is not readable: {error}"))?;
+    }
     Ok(())
 }
 
@@ -179,7 +196,7 @@ fn rule_sets_are_exact_documented_and_authorised() -> Result<(), String> {
 ///
 /// `String Heavy Function Arguments` is module-level, and `CodeScene` directives
 /// apply only to function-level smells. A directive here would be an
-/// unauthorised suppression that does not even target the reported factor.
+/// unauthorized suppression that does not even target the reported factor.
 #[test]
 fn exempt_modules_carry_no_inline_directive() -> Result<(), String> {
     let directory = project_directory()?;
@@ -189,7 +206,7 @@ fn exempt_modules_carry_no_inline_directive() -> Result<(), String> {
             .map_err(|error| format!("the exempt module {path} is not readable: {error}"))?;
         if source.contains("@codescene") {
             return Err(format!(
-                "{path} carries an inline CodeScene directive; ADR 0007 authorises exact-path \
+                "{path} carries an inline CodeScene directive; ADR 0007 authorizes exact-path \
                  rule weights only"
             ));
         }
@@ -197,12 +214,127 @@ fn exempt_modules_carry_no_inline_directive() -> Result<(), String> {
     Ok(())
 }
 
-/// The contract itself must detect a widened or malformed override set.
+/// A valid fixture document holding exactly the authorized rule sets.
+fn valid_document() -> Value {
+    let rule_sets: Vec<Value> = EXEMPT_PATHS
+        .into_iter()
+        .map(|path| {
+            json!({
+                "matching_content_path": path,
+                "matching_content_path_doc": "authorized for issue #257",
+                "rules": [{ "name": RULE, "weight": 0.0 }]
+            })
+        })
+        .collect();
+    json!({
+        "usage": "See docs/developers-guide.md#codescene-string-heavy-arguments.",
+        "rule_sets": rule_sets
+    })
+}
+
+/// Returns the mutable rule set array of a fixture document.
+fn fixture_rule_sets(document: &mut Value) -> Result<&mut Vec<Value>, String> {
+    document
+        .get_mut("rule_sets")
+        .and_then(Value::as_array_mut)
+        .ok_or_else(|| "the fixture has no `rule_sets` array".to_owned())
+}
+
+/// Returns the first mutable rule set of a fixture document.
+fn first_rule_set_mut(document: &mut Value) -> Result<&mut Value, String> {
+    fixture_rule_sets(document)?
+        .first_mut()
+        .ok_or_else(|| "the fixture has no rule set".to_owned())
+}
+
+/// Requires document validation to reject a mutated fixture.
+fn expect_rejection(
+    description: &str,
+    document: &Value,
+    validate: fn(&Value) -> Result<BTreeSet<&str>, String>,
+) -> Result<(), String> {
+    validate(document).map_or_else(
+        |_| Ok(()),
+        |paths| {
+            Err(format!(
+                "validation must reject {description}, but accepted {paths:?}"
+            ))
+        },
+    )
+}
+
+/// Document validation rejects every change to the authorized path set.
 ///
-/// These cases exercise the guards above so the suite cannot pass by checking
-/// nothing if the rule file shape changes.
+/// The cases mutate a valid document, so they fail if the exact set
+/// comparison or the duplicate check is removed.
 #[test]
-fn contract_rejects_malformed_overrides() -> Result<(), String> {
+fn document_validation_rejects_path_set_changes() -> Result<(), String> {
+    validated_paths(&valid_document())?;
+
+    let mut added = valid_document();
+    fixture_rule_sets(&mut added)?.push(json!({
+        "matching_content_path": "tests/build_standard/unauthorized.rs",
+        "matching_content_path_doc": "issue #257",
+        "rules": [{ "name": RULE, "weight": 0.0 }]
+    }));
+    expect_rejection("an added path", &added, validated_paths)?;
+
+    let mut missing = valid_document();
+    if fixture_rule_sets(&mut missing)?.pop().is_none() {
+        return Err("the fixture has no rule set to remove".to_owned());
+    }
+    expect_rejection("a missing path", &missing, validated_paths)?;
+
+    let mut duplicated = valid_document();
+    let rule_sets = fixture_rule_sets(&mut duplicated)?;
+    let first = rule_sets
+        .first()
+        .cloned()
+        .ok_or_else(|| "the fixture has no rule set to duplicate".to_owned())?;
+    rule_sets.push(first);
+    expect_rejection("a duplicated path", &duplicated, validated_paths)?;
+    Ok(())
+}
+
+/// Document validation rejects any threshold field except an empty array.
+#[test]
+fn document_validation_rejects_thresholds() -> Result<(), String> {
+    let cases = [
+        (
+            "a threshold override",
+            json!([{ "name": "function_nesting_depth_warning", "value": 99 }]),
+        ),
+        (
+            "an object-typed thresholds field",
+            json!({ "name": "function_nesting_depth_warning", "value": 99 }),
+        ),
+        (
+            "a string-typed thresholds field",
+            json!("function_nesting_depth_warning"),
+        ),
+        ("a null thresholds field", Value::Null),
+    ];
+    for (description, thresholds) in cases {
+        let mut document = valid_document();
+        first_rule_set_mut(&mut document)?
+            .as_object_mut()
+            .ok_or_else(|| "the fixture rule set is not an object".to_owned())?
+            .insert("thresholds".to_owned(), thresholds);
+        expect_rejection(description, &document, validated_paths)?;
+    }
+
+    let mut empty = valid_document();
+    first_rule_set_mut(&mut empty)?
+        .as_object_mut()
+        .ok_or_else(|| "the fixture rule set is not an object".to_owned())?
+        .insert("thresholds".to_owned(), json!([]));
+    validated_paths(&empty)?;
+    Ok(())
+}
+
+/// The per-field guards reject malformed values the document cases omit.
+#[test]
+fn field_guards_reject_malformed_values() -> Result<(), String> {
     let globbed = json!({
         "matching_content_path": "tests/build_standard/**",
         "matching_content_path_doc": "issue #257",

@@ -6,7 +6,7 @@ Accepted on 18 November 2026. `String Heavy Function Arguments` is repaired at
 genuine parse boundaries by validating newtypes, and is exempted by exact path
 for workflow-contract modules whose parameters are the text they decode. No
 inline directive, threshold change, global profile edit, or cosmetic wrapper is
-authorised.
+authorized.
 
 ## Date
 
@@ -55,7 +55,7 @@ CodeScene factor, not an implementation detail that the code states by itself.
    and removes raw rejection fixtures from direct use.
 2. Relax the threshold or change the profile for all test code. Rejected: it
    hides future genuine findings in every module and applies beyond the paths
-   this issue assessed. The issue authorises no profile change.
+   this issue assessed. The issue authorizes no profile change.
 3. Add `@codescene(disable:"String Heavy Function Arguments")` directives.
    Rejected: directives apply only to function-level smells, so they cannot
    address this module-level factor. They would also be an inline suppression,
@@ -110,7 +110,7 @@ module-level, so a directive cannot target it. The JSON rule set is therefore
 the only mechanism that can scope the factor to the paths where the string is
 the domain, and it keeps the override visible: the file is version-controlled,
 each path carries its reason, CodeScene lists every override in Scope, and the
-contract test refuses a widened set. The owner authorises this exact-path
+contract test refuses a widened set. The owner authorizes this exact-path
 disposition as the issue's option (b); it is not a blanket waiver, and any
 widening needs a new decision.
 
@@ -119,7 +119,7 @@ widening needs a new decision.
 - **Decision owner:** the repository owner, [@leynos][leynos], on behalf of
   issue [#257][issue-257]. This ADR records that decision; the pull request
   that introduces it is the review gate. Any widening still needs separate
-  authorisation.
+  authorization.
 - **Rule semantics:** CodeScene `String Heavy Function Arguments`, a
   module-level factor measured as the share of string parameters, with a
   reported threshold of 39%. The override names only this factor, so no
@@ -131,7 +131,7 @@ widening needs a new decision.
 - **Policy owner:** the hosted CodeScene project and its profile belong to the
   repository owner. This decision changes only the repository-local rule file,
   so it needs no service-side action and no escalation; changing the hosted
-  profile or a global rule set would be a separate authorisation.
+  profile or a global rule set would be a separate authorization.
 - **Local pre-flight:** `cs` 1.0.56, build
   `8b49281a77374d072db8470c5c53d348bcad3ef3`, built 2026-11-02.
   `cs rules-config validate` checks the file and `cs check <path>` measures one
@@ -199,7 +199,7 @@ file is the smallest set that clears the measured gate.
 - Removing an exemption because the source no longer trips the factor is
   expected: the rule file shrinks with the source.
 - The functional suite, not the health factor, remains the evidence that the
-  decoders accept, reject and normalise text correctly.
+  decoders accept, reject and normalize text correctly.
 
 ## References
 
