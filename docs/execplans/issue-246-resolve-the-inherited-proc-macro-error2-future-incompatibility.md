@@ -301,6 +301,14 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   publication alone does not prove `proc-macro-error2` was removed, so the old
   wording could have restored the warning. Date/Author: 2026-11-18,
   implementation agent.
+- D10. Decision: adopt one review correction and record another as already
+  resolved. `EP-M4` now has acceptance for the blocked or no-change
+  disposition, which cannot satisfy `V5` by construction, so the plan states
+  that the fresh report must still name `proc-macro-error2` on that path rather
+  than claiming the warning is gone. The other finding asked Option A's
+  consequence to record both version changes; the committed text already said
+  that the `stacksafe` and `stacksafe-macro` entries move to 0.1.5, so no
+  further edit was needed. Date/Author: 2026-11-18, implementation agent.
 
 ## Outcomes & retrospective
 
@@ -496,9 +504,15 @@ RUSTFLAGS="-D warnings -Clink-arg=-fuse-ld=mold" \
   -E 'binary(gpui_draw_undo_bdd) | binary(gpui_shell_chrome_bdd) | binary(gpui_shell_canvas_layout)'
 ```
 
-Acceptance: every listed gate reports the result `V6` requires, `make lint`
-adds no finding to the seven recorded in the baseline list, and the fresh
-future-incompatibility report satisfies `V5`.
+Acceptance, for an approved dependency change: every listed gate reports the
+result `V6` requires, `make lint` adds no finding to the seven recorded in the
+baseline list, and the fresh future-incompatibility report satisfies `V5`.
+Acceptance, for the blocked or no-change disposition: the same gates report the
+result `V6` requires and `make lint` adds no finding, while `V5` is recorded as
+not met. On that path the fresh report must still name `proc-macro-error2`, the
+warning stays disclosed, `Cargo.lock` is unchanged, and the issue stays open
+until an approved change lands. Delivering a blocked disposition is not a
+failure of this milestone; reporting `V5` as satisfied on that path would be.
 
 The three target names are confirmed from `cargo metadata --no-deps`, which
 lists them as `test` targets of the root `gauss` package with no required
