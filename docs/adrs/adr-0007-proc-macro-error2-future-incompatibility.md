@@ -139,8 +139,9 @@ Ask `fast/stacksafe` to publish 0.1.5 releases of `stacksafe` and
 `stacksafe-macro` that backport the `stacksafe-macro 1.0.2` diagnostic change
 to the 0.1 line. The change removes `proc-macro-error2`, keeps Syn 2, and
 preserves generated code. Because `gpui 0.2.2` already admits `^0.1`, the
-consumer fix would then be a lockfile-only update. This is the smallest
-supported end state and requires no source changes in Gauss.
+consumer fix would then be a lockfile update plus the fixture dependency and
+compile-fail fixtures that the technical requirements already demand; no Gauss
+source change is needed. This is the smallest supported end state.
 
 The option depends on an upstream release that does not exist today. It also
 needs a maintenance branch: upstream publishes only `main`, and the 0.1.4
@@ -188,7 +189,7 @@ gone.
 
 | Option | Removes the crate | Needs upstream | Source change | Fits `gpui 0.2.2` |
 | ------ | ----------------- | -------------- | ------------- | ----------------- |
-| A      | Yes, at 0.1.5     | Yes            | None          | Yes               |
+| A      | Yes, at 0.1.5     | Yes            | Fixtures only | Yes               |
 | B      | Yes, immediately  | No             | Vendored      | Yes               |
 | C      | Yes               | Yes            | Large         | No release        |
 | D      | No                | No             | Vendored      | Yes               |
@@ -199,9 +200,10 @@ _Table 1: Dependency disposition options._
 ## Decision outcome / proposed direction
 
 The preferred end state is Option A: an upstream 0.1.5 maintenance release,
-followed by a lockfile-only consumer update. Because no such release exists,
-the owner is asked to approve Option B as the interim consumer change, with
-Option A as the removal trigger. If the owner does not approve B, the recorded
+followed by a lockfile update plus the same fixture dependency and compile-fail
+fixtures, with no Gauss source change. Because no such release exists, the
+owner is asked to approve Option B as the interim consumer change, with Option
+A as the removal trigger. If the owner does not approve B, the recorded
 disposition is Option E and the issue remains open with the warning disclosed.
 
 Option B is limited to the diagnostic path:
@@ -236,11 +238,14 @@ either duplicate `stacksafe` or fail to resolve.
 
 - Option B makes the workspace depend on a reviewed local copy of a
   third-party macro crate until upstream releases.
-- `Cargo.lock` changes in exactly four entries: `proc-macro-error2` and
-  `proc-macro-error-attr2` disappear, the `stacksafe-macro 0.1.4` entry loses
-  its checksum and its `proc-macro-error2` dependency because it becomes a path
-  package, and the `test_support` entry gains `stacksafe` among its
-  dependencies. No package beyond those four should change.
+- Under Option B, `Cargo.lock` changes in exactly four entries:
+  `proc-macro-error2` and `proc-macro-error-attr2` disappear, the
+  `stacksafe-macro 0.1.4` entry loses its checksum and its `proc-macro-error2`
+  dependency because it becomes a path package, and the `test_support` entry
+  gains `stacksafe` among its dependencies. No package beyond those four should
+  change. Under Option A the removed entries disappear without the
+  `stacksafe-macro` rewrite, and the `test_support` entry still gains
+  `stacksafe`.
 - The `stacksafe` and `stacker` runtime behaviour is untouched.
 - GPUI remains pinned at 0.2.2, so the upstream GPUI release constraint
   remains open.

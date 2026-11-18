@@ -273,7 +273,7 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   findings" and the ADR records that its lint requirement is not yet met. The
   ADR requirement wording and `V6` were amended together so the two documents
   cannot disagree. Date/Author: 2026-11-18, implementation agent.
-- D8. Decision: adopt three further review corrections. `V6` requires
+- D8. Decision: adopt four further review corrections. `V6` requires
   `cargo doc` and Clippy to pass and Whitaker to have run before the finding
   comparison applies, because the lint stages are a fail-fast chain and absent
   Whitaker output would otherwise read as no new findings. `EP-M3`'s
@@ -281,8 +281,10 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   asserted are a property of the released macro rather than of the vendoring.
   The ADR removal trigger moves the fixture dev-dependency with the patch:
   leaving it on `^0.1.4` after a 1.x `stacksafe` arrives would pull the 0.1
-  macro back in and either duplicate `stacksafe` or fail to resolve.
-  Date/Author: 2026-11-18, implementation agent.
+  macro back in and either duplicate `stacksafe` or fail to resolve. Option A
+  is consequently no longer described as lockfile-only, and the ADR states the
+  lockfile consequence separately for each option. Date/Author: 2026-11-18,
+  implementation agent.
 
 ## Outcomes & retrospective
 
