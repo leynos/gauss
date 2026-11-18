@@ -10,7 +10,10 @@
 //! - All controls that should have keyboard shortcuts do have them
 //! - All controls have proper accessibility requirements
 
-use gauss::ui::widget_audit::{ControlInventory, ControlSurface, Phase, RequiredControl};
+use gauss::{
+    model::Action,
+    ui::widget_audit::{ControlInventory, ControlSurface, Phase, RequiredControl},
+};
 use rstest::rstest;
 
 fn assert_all_controls_satisfy(label: &str, predicate: fn(&RequiredControl) -> bool) {
@@ -128,6 +131,22 @@ fn test_controls_requiring_actions_have_linkage_notes() {
             );
         }
     }
+}
+
+#[test]
+fn selection_tool_uses_runtime_action_identifier() {
+    let inventory = ControlInventory::new();
+    let selection_tool = inventory
+        .by_surface(ControlSurface::Toolbar)
+        .into_iter()
+        .find(|control| control.name() == "Selection Tool")
+        .expect("toolbar inventory must include the Selection Tool record");
+
+    assert_eq!(
+        selection_tool.action_linkage.action_name,
+        Some(Action::ActivateSelectTool.identifier()),
+        "Selection Tool must link to the runtime ActivateSelectTool action"
+    );
 }
 
 #[test]
