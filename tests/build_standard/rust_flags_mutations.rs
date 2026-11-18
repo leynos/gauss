@@ -40,18 +40,30 @@ fn check_source_mutation(scratch: &make_input::Scratch, mutation: Mutation) -> R
     let baseline = mutation_request(mutation, None);
     make_input::check_target(scratch, &baseline)?;
     let expected = expected_calls(&baseline)?;
+    require_failure_mask_baseline(scratch, mutation)?;
+    let changed = mutated_makefile(mutation, &scratch.read_makefile()?)?;
+    scratch.write_makefile(&changed)?;
+    let observation = scratch.run(&mutation_request(mutation, failure_for(mutation)))?;
+    check_mutated_route(mutation, &expected, &observation)
+}
+
+/// Run the extra unmutated assertion that only the failure-mask contract needs.
+fn require_failure_mask_baseline(
+    scratch: &make_input::Scratch,
+    mutation: Mutation,
+) -> Result<(), String> {
     if mutation == Mutation::FailureMask {
         check_failure_mask_baseline(scratch)?;
     }
-    let changed = mutated_makefile(mutation, &scratch.read_makefile()?)?;
-    scratch.write_makefile(&changed)?;
-    let failure = if mutation == Mutation::FailureMask {
-        Some(FailureCase::NextestRun)
-    } else {
-        None
-    };
-    let observation = scratch.run(&mutation_request(mutation, failure))?;
-    check_mutated_route(mutation, &expected, &observation)
+    Ok(())
+}
+
+/// Select the Nextest failure branch a mutation exercises, if it needs one.
+const fn failure_for(mutation: Mutation) -> Option<FailureCase> {
+    match mutation {
+        Mutation::FailureMask => Some(FailureCase::NextestRun),
+        _ => None,
+    }
 }
 
 /// Selects the literal Make route and Nextest branch for one finite mutation name.

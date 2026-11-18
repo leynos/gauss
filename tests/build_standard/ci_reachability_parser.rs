@@ -187,33 +187,60 @@ impl Reader {
     /// Decodes sequence items, including the conventional inline mapping form.
     fn sequence(&mut self, indent: usize) -> Result<Value, String> {
         let mut items = Vec::new();
-        while let Some(index) = self.next_significant() {
-            let line = self.line(index)?.clone();
-            if is_root_document_boundary(&line) || line.indent < indent {
-                break;
-            }
-            if line.indent > indent {
-                return Err(format!(
-                    "line {}: unexpected sequence indentation",
-                    line.number
-                ));
-            }
-            let item = sequence_item(&line.content)
-                .ok_or_else(|| format!("line {}: mixed sequence and mapping", line.number))?;
-            self.cursor += 1;
-            let value = if item.is_empty() {
-                self.empty_value(indent)?
-            } else if lines::mapping_separator(item)?.is_some() {
-                self.sequence_mapping(&line)?
-            } else {
-                lines::parse_inline(item, line.number)?
-            };
-            items.push(value);
+        while let Some(line) = self.next_sequence_line(indent)? {
+            items.push(self.sequence_item_value(&line, indent)?);
         }
-        if items.is_empty() {
-            Err("empty block sequence is unsupported; use `[]` explicitly".to_owned())
+        require_items(items)
+    }
+
+    /// Return the next significant line that still belongs to this sequence.
+    fn next_sequence_line(&mut self, indent: usize) -> Result<Option<SourceLine>, String> {
+        let Some(index) = self.next_significant() else {
+            return Ok(None);
+        };
+        self.sequence_line_at(index, indent)
+    }
+
+    /// Return the line at `index` unless it closes or leaves the sequence.
+    fn sequence_line_at(
+        &mut self,
+        index: usize,
+        indent: usize,
+    ) -> Result<Option<SourceLine>, String> {
+        let line = self.line(index)?.clone();
+        if is_root_document_boundary(&line) || line.indent < indent {
+            return Ok(None);
+        }
+        Ok(Some(line))
+    }
+
+    /// Decode one sequence line after checking its indentation and marker.
+    fn sequence_item_value(&mut self, line: &SourceLine, indent: usize) -> Result<Value, String> {
+        if line.indent > indent {
+            return Err(format!(
+                "line {}: unexpected sequence indentation",
+                line.number
+            ));
+        }
+        let item = sequence_item(&line.content)
+            .ok_or_else(|| format!("line {}: mixed sequence and mapping", line.number))?;
+        self.cursor += 1;
+        self.sequence_value(item, line, indent)
+    }
+
+    /// Decode one sequence item, choosing between an empty, mapping, or inline form.
+    fn sequence_value(
+        &mut self,
+        item: &str,
+        line: &SourceLine,
+        indent: usize,
+    ) -> Result<Value, String> {
+        if item.is_empty() {
+            self.empty_value(indent)
+        } else if lines::mapping_separator(item)?.is_some() {
+            self.sequence_mapping(line)
         } else {
-            Ok(Value::Sequence(items))
+            lines::parse_inline(item, line.number)
         }
     }
 
@@ -321,6 +348,15 @@ impl Reader {
         } else {
             Ok(Value::Empty)
         }
+    }
+}
+
+/// Refuse an empty block sequence rather than decoding it as an absent value.
+fn require_items(items: Vec<Value>) -> Result<Value, String> {
+    if items.is_empty() {
+        Err("empty block sequence is unsupported; use `[]` explicitly".to_owned())
+    } else {
+        Ok(Value::Sequence(items))
     }
 }
 

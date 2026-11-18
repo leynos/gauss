@@ -74,6 +74,13 @@ fn expand_axis(
     let mut rows = axis_rows(axis, values)?;
     apply_exclusions(&mut rows, axis, exclude)?;
     apply_inclusions(&mut rows, axis, include)?;
+    require_rows(rows)
+}
+
+/// Refuse an expansion whose exclusions removed every row.
+fn require_rows(
+    rows: Vec<BTreeMap<String, String>>,
+) -> Result<Vec<BTreeMap<String, String>>, String> {
     if rows.is_empty() {
         Err("matrix expansion is empty".to_owned())
     } else {
@@ -106,20 +113,53 @@ fn apply_exclusions(
     let Some(exclusion) = exclude else {
         return Ok(());
     };
-    let exclusions = unique_scalar_rows(
-        exclusion.sequence("matrix.exclude")?,
-        "matrix.exclude",
-        "matrix exclusion",
-    )?;
+    remove_exclusions(rows, axis, exclusion)
+}
+
+/// Decode the deduplicated scalar rows listed under one matrix key.
+fn scalar_rows(
+    value: &Value,
+    context: &str,
+    row_context: &str,
+) -> Result<Vec<BTreeMap<String, String>>, String> {
+    unique_scalar_rows(value.sequence(context)?, context, row_context)
+}
+
+/// Apply every exclusion row decoded from `exclusion`.
+fn remove_exclusions(
+    rows: &mut Vec<BTreeMap<String, String>>,
+    axis: &str,
+    exclusion: &Value,
+) -> Result<(), String> {
+    let exclusions = scalar_rows(exclusion, "matrix.exclude", "matrix exclusion")?;
+    remove_exclusion_rows(rows, axis, exclusions)
+}
+
+/// Remove each decoded exclusion row from `rows`.
+fn remove_exclusion_rows(
+    rows: &mut Vec<BTreeMap<String, String>>,
+    axis: &str,
+    exclusions: Vec<BTreeMap<String, String>>,
+) -> Result<(), String> {
     for fields in exclusions {
-        if fields.len() != 1 || !fields.contains_key(axis) {
-            return Err("matrix exclusions must name only the scalar axis".to_owned());
-        }
-        let value = fields
-            .get(axis)
-            .ok_or_else(|| format!("matrix exclusion omits `{axis}`"))?;
-        rows.retain(|row| row.get(axis) != Some(value));
+        remove_excluded_rows(rows, axis, &fields)?;
     }
+    Ok(())
+}
+
+/// Remove every row selected by one exclusion map, refusing ambiguous maps.
+fn remove_excluded_rows(
+    rows: &mut Vec<BTreeMap<String, String>>,
+    axis: &str,
+    exclusion: &BTreeMap<String, String>,
+) -> Result<(), String> {
+    if exclusion.len() != 1 || !exclusion.contains_key(axis) {
+        return Err("matrix exclusions must name only the scalar axis".to_owned());
+    }
+    let value = exclusion
+        .get(axis)
+        .ok_or_else(|| format!("matrix exclusion omits `{axis}`"))?;
+    rows.retain(|row| row.get(axis) != Some(value));
     Ok(())
 }
 
@@ -132,25 +172,49 @@ fn apply_inclusions(
     let Some(inclusion) = include else {
         return Ok(());
     };
-    let inclusions = unique_scalar_rows(
-        inclusion.sequence("matrix.include")?,
-        "matrix.include",
-        "matrix inclusion",
-    )?;
+    merge_inclusions(rows, axis, inclusion)
+}
+
+/// Merge every include row decoded from `inclusion`.
+fn merge_inclusions(
+    rows: &mut Vec<BTreeMap<String, String>>,
+    axis: &str,
+    inclusion: &Value,
+) -> Result<(), String> {
+    let inclusions = scalar_rows(inclusion, "matrix.include", "matrix inclusion")?;
+    merge_include_rows(rows, axis, inclusions)
+}
+
+/// Merge each decoded include row into `rows`.
+fn merge_include_rows(
+    rows: &mut Vec<BTreeMap<String, String>>,
+    axis: &str,
+    inclusions: Vec<BTreeMap<String, String>>,
+) -> Result<(), String> {
     for fields in inclusions {
-        let axis_value = fields
-            .get(axis)
-            .ok_or_else(|| format!("matrix inclusion must name `{axis}`"))?;
-        let mut matched = false;
-        for row in rows.iter_mut() {
-            if row.get(axis) == Some(axis_value) {
-                merge_include(row, &fields, axis)?;
-                matched = true;
-            }
+        merge_or_push_include(rows, axis, fields)?;
+    }
+    Ok(())
+}
+
+/// Merge one include into every matching row, appending it when none match.
+fn merge_or_push_include(
+    rows: &mut Vec<BTreeMap<String, String>>,
+    axis: &str,
+    fields: BTreeMap<String, String>,
+) -> Result<(), String> {
+    let axis_value = fields
+        .get(axis)
+        .ok_or_else(|| format!("matrix inclusion must name `{axis}`"))?;
+    let mut matched = false;
+    for row in rows.iter_mut() {
+        if row.get(axis) == Some(axis_value) {
+            merge_include(row, &fields, axis)?;
+            matched = true;
         }
-        if !matched {
-            rows.push(fields);
-        }
+    }
+    if !matched {
+        rows.push(fields);
     }
     Ok(())
 }

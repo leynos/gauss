@@ -151,30 +151,60 @@ fn a_release_command_is_accepted_only_when_it_keeps_the_callers_rustflags() -> R
 /// runner error reaches the caller.
 #[test]
 fn the_held_out_policy_runs_against_an_injected_runner() -> Result<(), String> {
+    require_held_out_runner_error_surfaces()?;
+    require_assigning_held_out_command_is_accepted()?;
+    require_coverage_build_may_clear_flags()?;
+    require_inspection_command_is_accepted()?;
+    require_unassigned_held_out_command_is_refused()?;
+    require_listed_held_out_targets_are_run()
+}
+
+/// Require a held-out runner error to reach the caller rather than reading as clean.
+fn require_held_out_runner_error_surfaces() -> Result<(), String> {
     ensure(
         held_out_problems_for(undefined_make, &["synthetic"]).is_err(),
         "a held-out runner error was swallowed",
-    )?;
-    let (clean, read) = held_out_problems_for(held_out_assigning_make, &["synthetic"])?;
+    )
+}
+
+/// Require an assigning held-out command to be read once and accepted.
+fn require_assigning_held_out_command_is_accepted() -> Result<(), String> {
+    let (problems, read) = held_out_problems_for(held_out_assigning_make, &["synthetic"])?;
     ensure(
-        clean.is_empty() && read == 1,
-        &format!("an assigning held-out command raised {clean:?}"),
-    )?;
-    let (measuring, _) = held_out_problems_for(release_clearing_make, &["coverage"])?;
+        problems.is_empty() && read == 1,
+        &format!("an assigning held-out command raised {problems:?}"),
+    )
+}
+
+/// Require a coverage build to be allowed to ignore the caller's `RUSTFLAGS`.
+fn require_coverage_build_may_clear_flags() -> Result<(), String> {
+    let (problems, _) = held_out_problems_for(release_clearing_make, &["coverage"])?;
     ensure(
-        measuring.is_empty(),
-        &format!("a coverage build that ignores the caller's RUSTFLAGS raised {measuring:?}"),
-    )?;
-    let (inspecting, _) = held_out_problems_for(held_out_inspecting_make, &["synthetic"])?;
+        problems.is_empty(),
+        &format!("a coverage build that ignores the caller's RUSTFLAGS raised {problems:?}"),
+    )
+}
+
+/// Require an inspection command in a held-out target to be accepted.
+fn require_inspection_command_is_accepted() -> Result<(), String> {
+    let (problems, _) = held_out_problems_for(held_out_inspecting_make, &["synthetic"])?;
     ensure(
-        inspecting.is_empty(),
-        &format!("an inspection command in a held-out target raised {inspecting:?}"),
-    )?;
-    let (unassigned, _) = held_out_problems_for(held_out_unassigned_make, &["synthetic"])?;
+        problems.is_empty(),
+        &format!("an inspection command in a held-out target raised {problems:?}"),
+    )
+}
+
+/// Require a held-out command that assigns no `RUSTFLAGS` to be refused.
+fn require_unassigned_held_out_command_is_refused() -> Result<(), String> {
+    let (problems, _) = held_out_problems_for(held_out_unassigned_make, &["synthetic"])?;
     ensure(
-        !unassigned.is_empty(),
+        !problems.is_empty(),
         "a held-out command that assigns no RUSTFLAGS passed",
-    )?;
+    )
+}
+
+/// Require the check to exercise the listed held-out targets when the repository defines any.
+fn require_listed_held_out_targets_are_run() -> Result<(), String> {
     ensure(
         held_out_target_count() == 0 || held_out_problems(undefined_make).is_err(),
         "the listed held-out targets were not run",

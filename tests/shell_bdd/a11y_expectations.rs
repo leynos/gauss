@@ -40,6 +40,15 @@ pub(super) fn expect_initial_tree_metadata_and_buttons(
         update.tree.is_some(),
         "initial update includes tree metadata",
     )?;
+    expect_titlebar(update)?;
+    for expected in accessibility::chrome_button_semantics(false) {
+        expect_chrome_button(update, &expected)?;
+    }
+    Ok(())
+}
+
+/// Check the titlebar node's presence, role, and label.
+fn expect_titlebar(update: &TreeUpdate) -> TestSupportResult<()> {
     let titlebar =
         accessibility::chrome_node_from_update(update, accessibility::node_ids::TITLEBAR)
             .ok_or_else(|| TestSupportError::missing("titlebar node", "initial update"))?;
@@ -48,9 +57,5 @@ pub(super) fn expect_initial_tree_metadata_and_buttons(
         &titlebar.label(),
         &Some(accessibility::accessible_names::TITLEBAR),
         "titlebar label",
-    )?;
-    for expected in accessibility::chrome_button_semantics(false) {
-        expect_chrome_button(update, &expected)?;
-    }
-    Ok(())
+    )
 }
