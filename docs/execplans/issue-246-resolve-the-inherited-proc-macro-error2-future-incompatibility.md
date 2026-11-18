@@ -5,9 +5,11 @@ This ExecPlan (execution plan) is a living document. The sections `Constraints`,
 `Outcomes & retrospective`, `Conformance basis`, and `Verification plan` must
 be kept up to date as work proceeds.
 
-Status: BLOCKED — the dependency disposition awaits the owner's explicit
-approval. The documentation change is complete and delivered as draft pull
-request [#317](https://github.com/leynos/gauss/pull/317).
+Status: BLOCKED — two owner dispositions are outstanding. The dependency change
+awaits explicit approval, and the documentation budget is exceeded by seven
+lines, which `D11` records and recommends raising to 400. The documentation
+change itself is complete and delivered as draft pull request
+[#317](https://github.com/leynos/gauss/pull/317).
 
 Branch:
 `issue-246-resolve-the-inherited-proc-macro-error2-future-incompatibility`
@@ -80,7 +82,11 @@ Counts are net lines (additions minus deletions) unless stated otherwise.
 - Code: more than 250 net lines of code, including the vendored macro copy.
 - Configuration: more than 30 net lines across `Cargo.toml`,
   `Cargo.lock`, and any workspace-exclusion entry.
-- Documentation: more than 350 net lines excluding ExecPlan files.
+- Documentation: more than 350 net lines excluding ExecPlan files. This budget
+  is currently exceeded: at revision `cda0d05` the branch adds 349 lines to ADR
+  007 and 8 to `docs/contents.md`, 357 in total, seven over the threshold. The
+  breach is recorded in `D11` and awaits the owner's disposition; the budget
+  has not been revised unilaterally.
 - Dependencies: any dependency change beyond `stacksafe-macro 0.1.4`, a
   published `stacksafe`/`stacksafe-macro` 0.1.5, or the `stacksafe` fixture
   dev-dependency in `crates/test_support` requires escalation.
@@ -190,6 +196,9 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   Verifying the `-E` filter with `cargo nextest list` was attempted and stopped
   at its background budget under a saturated compile queue without producing
   output, so that check is recorded as unverified rather than passed.
+- [ ] Documentation budget escalation: 357 net documentation lines against a
+  350-line tolerance. Recorded in `D11` with a recommendation to revise the
+  budget to 400; awaits the owner's acceptance.
 - [ ] `EP-M4` Candidate validated with fresh report and gates; documentation
   and changelog updated; draft pull request opened.
 
@@ -309,6 +318,20 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   consequence to record both version changes; the committed text already said
   that the `stacksafe` and `stacksafe-macro` entries move to 0.1.5, so no
   further edit was needed. Date/Author: 2026-11-18, implementation agent.
+- D11. Decision: escalate the documentation budget breach rather than amend the
+  budget. Measured at revision `cda0d05`, the branch adds 349 net lines to ADR
+  007 and 8 to `docs/contents.md`: 357 lines excluding the ExecPlan, seven over
+  the 350-line tolerance. The ADR grew because review asked for the baseline
+  evidence, the five dispositions, per-option lockfile consequences, the
+  removal-verification conditions and the amendment record, and each of those
+  is required content rather than padding. Options: trim seven lines of
+  required content, which would remove either evidence or a stated condition;
+  or revise the documentation budget to 400 lines. Recommendation: revise the
+  budget, because the excess is 2% of a value that was itself an initial
+  estimate with no historical comparison. Impact: none on code, manifests or
+  the dependency disposition. This is a deviation from the approved tolerance,
+  so the plan stays `BLOCKED` until the owner accepts it; the budget is not
+  changed here. Date/Author: 2026-11-18, implementation agent.
 
 ## Outcomes & retrospective
 
