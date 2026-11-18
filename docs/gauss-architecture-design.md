@@ -1821,6 +1821,26 @@ workflows and two configuration files own it:
   stays as the base image built it, because replacing `libc6` would
   desynchronize the compiler's sysroot.
 
+  Because that fetch bypasses apt's signature checking, the images download
+  over HTTPS and verify each file against a pinned SHA-256 before installing
+  it. A plain HTTP fetch would let a network attacker substitute the package
+  that ends up inside the release binary. The digests are the ones Ubuntu's
+  signed `bionic-updates` index publishes for version `1.13-2~ubuntu18.04`, so
+  the pinned values are corroborated against the distribution's own metadata
+  rather than only against this repository.
+
+The Linux packager derives no dependencies of its own: with no `deb-depends` or
+`rpm-depends` supplied, the generated DEB and RPM metadata declares an empty
+dependency list, and a clean system then installs a binary that cannot start.
+`build-and-package.yml` therefore passes the SONAME-owning packages for both
+families. The release binary links `libxcb.so.1`, `libxcb-xkb.so.1`,
+`libxkbcommon.so.0`, `libxkbcommon-x11.so.0` and `libz.so.1`. Debian splits XCB
+per extension, so `libxcb-xkb1` carries the XKB SONAME; Fedora and EL9 keep it
+inside the single `libxcb` package, and both provide `libz.so.1` from `zlib`.
+Those package names are the ones each family actually ships, checked against
+the distributions' package indexes rather than inferred by analogy between the
+two naming schemes.
+
 Release modes are never hard-coded per workflow. The `determine-release-modes`
 action normalizes the triggering event into `should_publish`, `dry-run`, and
 `should-upload-workflow-artifacts`: a tag push publishes, a pull request does

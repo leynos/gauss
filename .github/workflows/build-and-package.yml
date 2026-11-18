@@ -73,9 +73,12 @@ jobs:
         uses: astral-sh/setup-uv@4cda7d73322c50eac316ad623a716f09a2db2ac7
         # v3.1.2
         # No `python-version` input: this revision does not declare one, so
-        # passing it only produced an "Unexpected input(s)" warning. The
-        # packaging actions create their own uv environments and pin the
-        # interpreter they need, so this step only has to put `uv` on PATH.
+        # passing it only produced an "Unexpected input(s)" warning. Nothing
+        # here consumed the value either. The Windows action sets up its own
+        # interpreter (`actions/setup-python` pinned to 3.12, then `pip`), and
+        # the macOS scripts declare `requires-python = ">=3.12"` and run under
+        # `uv`, which resolves a compatible interpreter itself. This step only
+        # has to put `uv` on PATH.
 
       - name: Generate man page
         id: man_page
@@ -143,6 +146,22 @@ jobs:
           formats: deb,rpm
           man-paths: ${{ steps.man_page.outputs.path }}
           outdir: dist
+          # The packager derives no dependencies of its own, so without these
+          # the generated metadata declares none and a clean system installs a
+          # binary that cannot start. These are the shared libraries the
+          # release binary actually links: `libxcb.so.1`,
+          # `libxkbcommon.so.0`, `libxkbcommon-x11.so.0` and `libxcb-xkb.so.1`
+          # from the X11 stack GPUI uses, plus `libz.so.1`.
+          #
+          # The two families package those SONAMEs differently, and the names
+          # below are the ones each actually ships rather than guesses. Debian
+          # splits XCB per extension, so `libxcb-xkb1` carries
+          # `libxcb-xkb.so.1`. Fedora and EL9 keep `libxcb-xkb.so.1` inside the
+          # single `libxcb` package, and both provide `libz.so.1` from `zlib`.
+          deb-depends: >-
+            libxcb1, libxcb-xkb1, libxkbcommon0, libxkbcommon-x11-0, zlib1g
+          rpm-depends: >-
+            libxcb, libxkbcommon, libxkbcommon-x11, zlib
 
       - name: Prune packaging metadata
         if: inputs.platform == 'linux'

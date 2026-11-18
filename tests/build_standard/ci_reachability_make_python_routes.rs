@@ -65,10 +65,10 @@ fn is_checker(arguments: &[String]) -> bool {
     )
 }
 
-/// Recognizes only the two repository-pinned pytest routes and their complete selectors.
+/// Recognizes only the repository-pinned pytest routes and their complete selectors.
 ///
-/// Both routes share one pinned dependency set; only the reviewed script list
-/// differs, so a new or unpinned dependency changes both routes at once.
+/// Every route shares one pinned dependency set; only the reviewed script list
+/// differs, so a new or unpinned dependency changes all routes at once.
 fn is_python_test(arguments: &[String]) -> bool {
     let head = [
         "run",
@@ -84,30 +84,70 @@ fn is_python_test(arguments: &[String]) -> bool {
         "pytest",
     ];
     let tail = ["-c", "/dev/null", "--rootdir=.", "-p", "no:cacheprovider"];
-    let reviewed_routes = [
-        ["scripts/tests/test_spelling_exceptions.py"].as_slice(),
-        [
-            "scripts/tests/test_integration_test_inventory.py",
-            "scripts/tests/test_integration_test_inventory_cli.py",
-        ]
-        .as_slice(),
-    ];
-    reviewed_routes.into_iter().any(|scripts| {
-        exact_words(
-            arguments,
-            &[head.as_slice(), scripts, tail.as_slice()].concat(),
-        )
-    })
+    is_pinned_pytest(arguments, &head, &tail, REVIEWED_PYTEST_SCRIPTS)
 }
 
-/// Matches only isolated Ruff format and lint commands over the reviewed inventory sources.
-fn is_ruff(arguments: &[String]) -> bool {
-    let head = ["tool", "run", "ruff@0.15.12"];
-    let [checker, inventory_tests, cli_tests] = [
+/// Every reviewed pytest script set, each one an exact route.
+///
+/// A set is admitted only as written: adding a script to a route, or
+/// introducing a route whose scripts are not listed here, remains a gap. The
+/// release publish-intent route earns its place because that resolver gates
+/// the release job's `if:`, so a silent regression there would upload assets.
+const REVIEWED_PYTEST_SCRIPTS: &[&[&str]] = &[
+    &["scripts/tests/test_spelling_exceptions.py"],
+    &[
+        "scripts/tests/test_integration_test_inventory.py",
+        "scripts/tests/test_integration_test_inventory_cli.py",
+    ],
+    &["scripts/tests/test_release_publish_intent.py"],
+];
+
+/// Matches a pytest route built from the shared prefix, a reviewed script set,
+/// and the shared selector tail.
+fn is_pinned_pytest(
+    arguments: &[String],
+    head: &[&str],
+    tail: &[&str],
+    reviewed_routes: &[&[&str]],
+) -> bool {
+    reviewed_routes
+        .iter()
+        .any(|scripts| exact_words(arguments, &[head, *scripts, tail].concat()))
+}
+
+/// Every source set a reviewed Ruff command may cover, each one exact.
+///
+/// The inventory checker and the publish-intent resolver are formatted and
+/// linted in their own targets, so each target contributes its own set. Both
+/// modes of both routes are reviewed per set rather than as one union, which
+/// keeps a source added to one target from silently widening the other.
+const REVIEWED_RUFF_SOURCES: &[&[&str]] = &[
+    &[
         "scripts/check_integration_test_inventory.py",
         "scripts/tests/test_integration_test_inventory.py",
         "scripts/tests/test_integration_test_inventory_cli.py",
-    ];
+    ],
+    &[
+        "scripts/release_publish_intent.py",
+        "scripts/tests/test_release_publish_intent.py",
+    ],
+];
+
+/// Matches only isolated Ruff format and lint commands over the reviewed sources.
+fn is_ruff(arguments: &[String]) -> bool {
+    REVIEWED_RUFF_SOURCES
+        .iter()
+        .any(|sources| is_pinned_ruff(arguments, sources))
+}
+
+/// Matches one Ruff route: the pinned release, a reviewed mode, and an exact
+/// source set.
+///
+/// `format` carries `--check` because the formatter gate verifies rather than
+/// rewrites; `check` has no such flag. Keeping both spellings here means a new
+/// source set cannot accidentally acquire a route the Makefile does not run.
+fn is_pinned_ruff(arguments: &[String], sources: &[&str]) -> bool {
+    let head = ["tool", "run", "ruff@0.15.12"];
     ["format", "check"].iter().any(|mode| {
         let mut tail = if *mode == "format" {
             vec![
@@ -120,7 +160,7 @@ fn is_ruff(arguments: &[String]) -> bool {
         } else {
             vec!["check", "--isolated", "--target-version", "py313"]
         };
-        tail.extend([checker, inventory_tests, cli_tests]);
+        tail.extend_from_slice(sources);
         exact_words(arguments, &[head.as_slice(), tail.as_slice()].concat())
     })
 }

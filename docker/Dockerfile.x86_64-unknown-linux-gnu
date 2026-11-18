@@ -19,17 +19,29 @@ FROM ghcr.io/cross-rs/x86_64-unknown-linux-gnu:0.2.5
 # runtime and its headers must be replaced together. Bionic's 1.13 pair
 # declares only `libc6 (>= 2.17)`, so it installs on the image's glibc 2.23;
 # fetching the two `.deb` files keeps the change to these packages, leaving the
-# rest of the base image's sysroot untouched. `curl` is already present in the
-# base image, so this adds no download tool of its own.
+# rest of the base image's sysroot untouched. `curl` and the CA certificates
+# are already present in the base image, so this adds no download tool.
+#
+# These are fetched over HTTPS and pinned by SHA-256 rather than by apt alone:
+# an unauthenticated HTTP fetch would let a network attacker substitute the
+# package that ends up in the release binary. The digests are the ones the
+# signed `bionic-updates` index publishes for this version, so the check ties
+# each download to Ubuntu's own metadata rather than only to this file.
 RUN apt-get update && \
     apt-get install --assume-yes --no-install-recommends \
         libxkbcommon-dev \
         libxkbcommon-x11-dev && \
-    xcb_base="http://archive.ubuntu.com/ubuntu/pool/main/libx/libxcb" && \
+    xcb_base="https://archive.ubuntu.com/ubuntu/pool/main/libx/libxcb" && \
     curl --fail --silent --show-error --output /tmp/libxcb1.deb \
         "$xcb_base/libxcb1_1.13-2~ubuntu18.04_amd64.deb" && \
     curl --fail --silent --show-error --output /tmp/libxcb1-dev.deb \
         "$xcb_base/libxcb1-dev_1.13-2~ubuntu18.04_amd64.deb" && \
+    printf '%s  %s\n' \
+        "9a29e9ff0598a2bde15de5f53152247607515183548b342eea7f397a5df4cf38" \
+        "/tmp/libxcb1.deb" \
+        "3b308d513bdedf949b67b8a1679ff6093085c7cea34b339292902651108ab270" \
+        "/tmp/libxcb1-dev.deb" \
+        | sha256sum --check --strict && \
     dpkg --install /tmp/libxcb1.deb /tmp/libxcb1-dev.deb && \
     rm -f /tmp/libxcb1.deb /tmp/libxcb1-dev.deb && \
     rm -rf /var/lib/apt/lists/*
