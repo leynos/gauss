@@ -118,8 +118,11 @@ Recorded on 18 November 2026 before any manifest or lockfile change:
 - The workspace must keep passing `make check-fmt`, `make lint`, and
   `make test` on Linux with all targets and features.
 - The preserved messages and spans are demonstrated by `trybuild` compile-fail
-  fixtures, added with the approved change, that cover a non-function item and
-  an `async fn`.
+  fixtures in `crates/test_support`, added with the approved change, that cover
+  a non-function item and an `async fn`. That crate already hosts `trybuild`
+  fixtures via `scenario_state_macro_ui`, and it is a normal library crate, so
+  the fixtures exercise the macro in a consumer-shaped context rather than
+  inside a procedural-macro crate.
 - Any dependency change requires the owner's explicit approval.
 
 ## Options considered
@@ -202,20 +205,31 @@ Option B is limited to the diagnostic path:
 - the `proc-macro-error2` dependency is removed;
 - `syn` stays on 2.x with the `full` feature;
 - valid-function generated code is unchanged;
-- both diagnostics keep their previous messages and spans.
+- both diagnostics keep their previous messages and spans;
+- `crates/test_support` gains `stacksafe = "0.1.4"` as a dev-dependency, so the
+  compile-fail fixtures can apply `#[stacksafe]`. No crate in the workspace
+  depends on `stacksafe` today, and the macro is not reachable through `gpui`,
+  so the fixture host needs the direct declaration. This is a further
+  dependency change and falls under the same approval.
+
+Manifest changes for Option B are therefore exactly three: the new
+`[patch.crates-io]` entry and the `workspace.exclude` entry in the root
+`Cargo.toml`, and the dev-dependency in `crates/test_support/Cargo.toml`.
 
 Removal trigger: delete the vendored crate, the `[patch.crates-io]` entry, and
 the `workspace.exclude` entry once `stacksafe` and `stacksafe-macro` 0.1.5 are
-published and the lockfile resolves to them without the patch.
+published and the lockfile resolves to them without the patch. The fixture
+dev-dependency stays, because the compile-fail fixtures outlive the patch.
 
 ## Consequences
 
 - Option B makes the workspace depend on a reviewed local copy of a
   third-party macro crate until upstream releases.
-- `Cargo.lock` loses `proc-macro-error2` and `proc-macro-error-attr2`, and the
-  `stacksafe-macro 0.1.4` entry changes because a path package carries no
-  checksum and no longer lists `proc-macro-error2` as a dependency. No package
-  beyond those three should change.
+- `Cargo.lock` changes in exactly four entries: `proc-macro-error2` and
+  `proc-macro-error-attr2` disappear, the `stacksafe-macro 0.1.4` entry loses
+  its checksum and its `proc-macro-error2` dependency because it becomes a path
+  package, and the `test_support` entry gains `stacksafe` among its
+  dependencies. No package beyond those four should change.
 - The `stacksafe` and `stacker` runtime behaviour is untouched.
 - GPUI remains pinned at 0.2.2, so the upstream GPUI release constraint
   remains open.

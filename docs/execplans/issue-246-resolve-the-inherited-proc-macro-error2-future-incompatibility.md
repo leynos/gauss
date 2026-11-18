@@ -81,8 +81,9 @@ Counts are net lines (additions minus deletions) unless stated otherwise.
 - Configuration: more than 30 net lines across `Cargo.toml`,
   `Cargo.lock`, and any workspace-exclusion entry.
 - Documentation: more than 350 net lines excluding ExecPlan files.
-- Dependencies: any dependency change beyond `stacksafe-macro 0.1.4` (or a
-  published `stacksafe`/`stacksafe-macro` 0.1.5) requires escalation.
+- Dependencies: any dependency change beyond `stacksafe-macro 0.1.4`, a
+  published `stacksafe`/`stacksafe-macro` 0.1.5, or the `stacksafe` fixture
+  dev-dependency in `crates/test_support` requires escalation.
 - Interface: any public Gauss API change, or any change to `#[stacksafe]`
   output for valid functions.
 - Iterations: three failed attempts at the same gate without a new,
@@ -120,6 +121,13 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   first-party stack-depth stress test to prove runtime equivalence. Severity:
   low. Likelihood: high. Mitigation: record the gap; rely on the unchanged
   generated code and existing GPUI behavioural tests.
+- Risk: `make lint` cannot pass anywhere in this repository yet. Seven
+  `bumpy-road-function` findings in `crates/gauss-core/src/model/` fail the
+  Whitaker stage at the baseline, and the `CI` workflow at `main` revision
+  `740f414` fails the same job. Severity: medium. Likelihood: certain.
+  Mitigation: exclude `make lint` from candidate acceptance, record its result
+  without waiving it, and treat clearing the findings as a prerequisite owned
+  by a separate change.
 
 ## Progress
 
@@ -167,6 +175,10 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   CodeRabbit pass returned two minor findings: index the ExecPlan in
   `docs/contents.md`, and make the `V2` non-vacuity check exercise both
   diagnostic branches. Both were adopted; see `D4`.
+- [x] (2026-11-18) CI observed: pull request `#317` fails `build-test` in the
+  `Lint` job on the same seven Whitaker findings. `main` at `740f414` fails the
+  same job, so the failure is pre-existing and not caused by this branch, whose
+  diff is three Markdown files.
 - [ ] `EP-M4` Candidate validated with fresh report and gates; documentation
   and changelog updated; draft pull request opened.
 
@@ -236,6 +248,15 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   no checksum and lists fewer dependencies. Requiring "no other package change"
   would have made the accepted diff fail its own criterion. Date/Author:
   2026-11-18, implementation agent.
+- D6. Decision: adopt three further review corrections. The `V2` fixtures have
+  no host, because no workspace crate depends on `stacksafe`;
+  `crates/test_support` becomes the host and gains a `stacksafe`
+  dev-dependency, which adds a fourth `Cargo.lock` entry and a third manifest
+  change to Option B's scope. `V6` stops treating `make lint` as a passing
+  gate, because the repository cannot pass it yet; the acceptance set is
+  `make check-fmt`, `make markdownlint` and `make test`. Rationale: each
+  correction removes a way the plan could have claimed evidence it did not
+  have. Date/Author: 2026-11-18, implementation agent.
 
 ## Outcomes & retrospective
 
@@ -348,8 +369,17 @@ are:
    --all-features --future-incompat-report`
    in a new target directory, retaining literal output. Non-vacuity: the
    baseline run names the crate and the E0365 warning.
-6. `V6` Workspace gates pass: `make check-fmt`, `make lint`, and `make test`,
-   plus the named GPUI behavioural tests with `--features test-support`.
+6. `V6` Workspace gates pass: `make check-fmt`, `make markdownlint`, and
+   `make test`, plus the EP-M4 GPUI tests with `--features test-support`.
+   `make lint` is the exception. It fails at the baseline on seven pre-existing
+   `bumpy-road-function` findings in `crates/gauss-core/src/model/`, and the
+   `CI` workflow at `main` revision `740f414` fails the same job for the same
+   reason. That failure must be cleared by a separate change before `make lint`
+   can serve as an acceptance gate; this plan neither fixes nor waives it.
+   Candidate acceptance therefore covers `make check-fmt`, `make markdownlint`
+   and `make test` only, with the `make lint` result recorded alongside them as
+   a pre-existing failure. Non-vacuity: the recorded baseline failure is the
+   witness that the gate is not silently skipped.
 
 Axioms: Cargo's `[patch.crates-io]` path replacement semantics, the published
 crate contents, the Rust compiler's future-incompatibility reporting, and the
@@ -380,13 +410,23 @@ decision. End state: an explicit approved, blocked, or no-change disposition.
 
 If a registry release is approved, update the lockfile only. If a vendored
 patch is approved, add `vendor/stacksafe-macro`, a path `[patch.crates-io]`
-entry, and a `workspace.exclude` entry. If the disposition is blocked or
-no-change, do not touch the manifest or lockfile. End state: a candidate that
-matches the approved disposition. Acceptance: for a vendored patch, the `V2`
-compile-fail fixtures exist and pass for both diagnostic branches.
+entry, and a `workspace.exclude` entry, and add `stacksafe = "0.1.4"` to the
+`crates/test_support` dev-dependencies so the `V2` fixtures can apply
+`#[stacksafe]`. If the disposition is blocked or no-change, do not touch the
+manifest or lockfile. End state: a candidate that matches the approved
+disposition. Acceptance: for a vendored patch, the `V2` compile-fail fixtures
+exist in `crates/test_support` and pass for both diagnostic branches.
 
 ### EP-M4: validation and delivery
 
-Repeat the baseline report in a new target directory, run all gates, run the
-named GPUI tests, update the ADR and GPUI guide and changelog if a dependency
-change landed, run Markdown and Mermaid gates, and open the draft pull request.
+Repeat the baseline report in a new target directory, run all gates, update the
+ADR and GPUI guide and changelog if a dependency change landed, run the
+Markdown and Mermaid gates, and open the draft pull request. The GPUI tests
+named by the issue are the `gpui_draw_undo_bdd`, `gpui_shell_chrome_bdd` and
+`gpui_shell_canvas_layout` targets of the root `gauss` package. Run them with:
+
+```sh
+RUSTFLAGS="-D warnings -Clink-arg=-fuse-ld=mold" \
+  cargo nextest run --profile default --features test-support \
+  -E 'binary(gpui_draw_undo_bdd) | binary(gpui_shell_chrome_bdd) | binary(gpui_shell_canvas_layout)'
+```
