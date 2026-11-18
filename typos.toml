@@ -61,6 +61,7 @@ extend-ignore-re = [
     "`mold`",
     "`resize_canvas_not_present_when_maximised`",
     "`resize_canvas_present_when_not_maximised`",
+    "`should-upload-workflow-artifacts`",
     "`var\\.iamge_id` instead of `var\\.image_id`",
     "currentColor",
     "el inventario contiene una calabaza",
