@@ -5,7 +5,7 @@ name: Build and Package
   workflow_call:
     inputs:
       platform:
-        description: Target platform identifier (linux, windows, or macos)
+        description: Target platform identifier (linux or windows or macos)
         required: true
         type: string
       runner:
@@ -143,7 +143,7 @@ jobs:
           bin-name: ${{ inputs['bin-name'] }}
           target: ${{ inputs.target }}
           version: ${{ inputs.version }}
-          formats: deb,rpm
+          formats: "deb,rpm"
           man-paths: ${{ steps.man_page.outputs.path }}
           outdir: dist
           # The packager derives no dependencies of its own, so without these
