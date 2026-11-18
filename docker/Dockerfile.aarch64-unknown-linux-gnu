@@ -21,3 +21,17 @@ RUN dpkg --add-architecture arm64 && \
         libxkbcommon-dev:arm64 \
         libxkbcommon-x11-dev:arm64 && \
     rm -rf /var/lib/apt/lists/*
+
+# `.cargo/config.toml` pins `linker = "clang"` for the x86_64 host triple, and
+# this image has no clang. Cross only exports a linker for its *target* triple
+# (here `aarch64-linux-gnu-gcc`), so build scripts, which compile for the
+# container's x86_64 host, still resolve `clang` and die with "linker `clang`
+# not found" before any crate that needs the libraries above is reached.
+#
+# Overriding the host triple's linker to `gcc` is deliberately local to this
+# image: host builds keep the `clang` the Cargo configuration selects, and the
+# release path links with the platform linker rather than `mold`, as ADR 0006
+# requires. The image has no `mold` either, which does not matter here because
+# the release action exports `RUSTFLAGS`, and a set `RUSTFLAGS` shadows the
+# configuration's `rustflags` table.
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc

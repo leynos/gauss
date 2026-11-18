@@ -16,3 +16,15 @@ RUN apt-get update && \
         libxkbcommon-dev \
         libxkbcommon-x11-dev && \
     rm -rf /var/lib/apt/lists/*
+
+# `.cargo/config.toml` pins `linker = "clang"` for this very triple, and the
+# cross-rs 0.2.5 image ships no clang. Cross exports a linker only for the
+# target it was asked to build, so build scripts — which compile for the
+# container's host, this same triple — resolve `clang` and fail with "linker
+# `clang` not found". Pointing the host triple at `gcc`, which the image does
+# have, keeps that link working without adding a toolchain the image lacks.
+#
+# Host builds outside cross are unaffected: the override lives in the build
+# image, not in `.cargo/config.toml`, so local development keeps the `clang`
+# the configuration selects.
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
