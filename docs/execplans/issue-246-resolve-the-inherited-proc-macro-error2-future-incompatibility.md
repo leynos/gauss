@@ -128,11 +128,15 @@ edits).
 - [x] (2026-11-18) Recorded baseline revision, lock hash, host triple, tool
   versions, wrapper variables, and the locked dependency graph. The record is
   `/tmp/gauss-246-baseline-record.txt`.
-- [ ] `EP-M1` Baseline future-incompatibility report and normal gates retained.
-  The `cargo check --future-incompat-report` run is in progress in
-  `~/.cache/gauss-target/issue-246-baseline`, logging to
-  `/tmp/check-baseline-gauss-issue-246.out`. It is queued behind other agents'
-  builds under shared compile admission.
+- [x] (2026-11-18) Baseline future-incompatibility report captured. `cargo
+  check --locked --workspace --all-targets --all-features
+  --future-incompat-report` in `~/.cache/gauss-target/issue-246-baseline`
+  exited 0 after 24m27s and recorded report id 1: `proc-macro-error2 v2.0.1`,
+  E0365 at `src/lib.rs:494:13`, tracking `rust-lang/rust#127909`. The build log
+  is `/tmp/check-baseline-gauss-issue-246.out` and the expanded report is
+  `/tmp/future-incompat-baseline-gauss-issue-246.out`.
+- [ ] `EP-M1` Normal baseline gates retained (`make check-fmt`, `make lint`,
+  `make test`). In progress through `scrutineer` at revision `8f652cf`.
 - [ ] `EP-M2` Upstream `fast/stacksafe` issue opened; ADR 007 drafted with a
   disposition for owner approval. `fast/stacksafe#18` is open; ADR 007 is
   indexed in `docs/contents.md` and awaits the owner's decision.
