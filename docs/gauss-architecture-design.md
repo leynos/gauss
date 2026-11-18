@@ -1837,6 +1837,35 @@ workflow inherits the caller's event context, so a caller that sets
 would read as an instruction to publish. Pairing `inputs` with the event keeps
 the declared inputs in control.
 
+Forwarding alone does not cover `publish`, because the pinned helper checks
+`dry-run` first and then returns `true` for any `push` event *before* it reads
+its own `publish` input. A caller that sets `publish: false` from a tag push is
+therefore told to publish, and a caller that merely omits the input gets the
+declared `false` default, which has the same effect.
+`scripts/release_publish_intent.py` closes that gap. It narrows the action's
+verdict using the workflow's `inputs` context, which GitHub populates only when
+the workflow was invoked through `workflow_call`: an empty `publish` means a
+direct run, so the event-derived verdict stands and a direct tag push still
+publishes; a populated value is the caller's instruction and is authoritative.
+The resolver runs after the action and can only turn publishing *off*, so it
+never enables a release the action declined and a dry run stays a dry run
+whatever a caller asks for.
+
+The resolver keys on the `inputs` context rather than on `GITHUB_EVENT_NAME`. A
+called workflow reports the caller's event name, and the runner reserves that
+variable: a step-level `env:` assignment does not shadow it, which was verified
+on a scratch workflow and rules out the event as a discriminator.
+
+Because the pinned helper models only `push`, `pull_request`, and
+`workflow_call`, a caller that runs on any other event makes it raise. The
+`workflow_dispatch` case is reachable without this workflow declaring that
+trigger, since a manually started caller can invoke it through `workflow_call`.
+The metadata job therefore checks the inherited event before calling the action
+and fails with a message naming the restriction, rather than surfacing an
+opaque traceback. Only `push` and `pull_request` callers are supported; the
+declared `publish` and `dry-run` inputs are the supported way to override a
+tag-push caller's behaviour.
+
 `wix-extension-version` defaults to empty on both workflows, which asks
 `windows-package` to match the installed WiX CLI's major version. A pinned
 default cannot do that: the action installs whatever `dotnet tool` resolves, so

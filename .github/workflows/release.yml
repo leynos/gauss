@@ -22,6 +22,13 @@ name: Release Binary
         required: false
         type: boolean
         default: false
+      # A reusable workflow inherits the caller's event context, so this
+      # workflow sees whatever event the caller ran on rather than
+      # `workflow_call`. The pinned `determine-release-modes` action only
+      # understands `push`, `pull_request`, and `workflow_call`, and raises on
+      # anything else. Only `push` and `pull_request` callers are supported;
+      # `workflow_dispatch` is not, and the metadata job fails with a message
+      # naming this restriction rather than an opaque traceback.
       wix-extension-version:
         description: >-
           Version of the WixToolset.UI.wixext extension to install alongside
@@ -62,7 +69,7 @@ jobs:
     outputs:
       version: ${{ steps.ensure_version.outputs['crate-version'] }}
       bin_name: ${{ steps.bin_name.outputs['bin-name'] }}
-      should_publish: ${{ steps.release_modes.outputs['should-publish'] }}
+      should_publish: ${{ steps.publish_intent.outputs.value }}
       dry_run: ${{ steps.release_modes.outputs['dry-run'] }}
       should_upload_workflow_artifacts: >-
         ${{ steps.release_modes.outputs['should-upload-workflow-artifacts'] }}
@@ -74,6 +81,29 @@ jobs:
       - id: repo_name
         name: Determine repository name
         run: echo "value=${GITHUB_REPOSITORY#*/}" >>"$GITHUB_OUTPUT"
+      - id: supported_event
+        name: Check the inherited event is supported
+        shell: bash
+        # The pinned action raises on an event it does not model, which
+        # surfaces as an opaque traceback. Naming the restriction here turns
+        # that into an actionable message, and documents the scope in the
+        # workflow itself. `workflow_call` is listed because a direct
+        # invocation of this file reports it when dispatched from the
+        # Actions UI.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          case "$EVENT_NAME" in
+            push|pull_request|workflow_call) ;;
+            *)
+              echo "::error title=Unsupported trigger::This workflow was" \
+                "triggered by '${EVENT_NAME}', which it does not support." \
+                "A reusable workflow inherits its caller's event, so a" \
+                "caller must itself run on 'push' or 'pull_request'." >&2
+              exit 1
+              ;;
+          esac
       - id: release_modes
         name: Determine release modes
         uses: >-
@@ -86,12 +116,37 @@ jobs:
           # release, and would never see the override.
           publish: ${{ inputs.publish }}
           dry-run: ${{ inputs['dry-run'] }}
+      - id: publish_intent
+        name: Resolve publish intent
+        shell: bash
+        # The pinned action returns `true` for any `push` before it reads its
+        # `publish` input, so a reusable caller's `publish: false` is ignored
+        # when the caller runs on a tag push. The resolver narrows that
+        # verdict using this workflow's `inputs` context, which is populated
+        # only for a reusable call. It can only turn publishing off, so a
+        # direct tag push keeps publishing and a dry run stays a dry run.
+        env:
+          PINNED_SHOULD_PUBLISH: >-
+            ${{ steps.release_modes.outputs['should-publish'] }}
+          PUBLISH_INPUT: ${{ inputs.publish }}
+          DRY_RUN_INPUT: ${{ inputs['dry-run'] }}
+        # The module is stdlib-only, so this uses the runner's built-in Python
+        # rather than `uv`. `uv` happens to be present because the pinned
+        # `determine-release-modes` action installs it, but depending on a
+        # third-party action's side effect would make this step fail the day
+        # that action stops installing it.
+        run: |
+          set -euo pipefail
+          python3 scripts/release_publish_intent.py \
+            --pinned-should-publish "$PINNED_SHOULD_PUBLISH" \
+            --publish-input "$PUBLISH_INPUT" \
+            --dry-run-input "$DRY_RUN_INPUT"
       - id: ensure_version
         name: Read package version from Cargo.toml
         uses: >-
           leynos/shared-actions/.github/actions/ensure-cargo-version@81374b6f183e59f0570ad36217ded90d3240fda6
         with:
-          check-tag: ${{ fromJSON(steps.release_modes.outputs['should-publish']) }}
+          check-tag: ${{ fromJSON(steps.publish_intent.outputs.value) }}
       - id: wix_extension_version
         name: Resolve WiX extension version
         shell: bash
