@@ -139,9 +139,11 @@ Ask `fast/stacksafe` to publish 0.1.5 releases of `stacksafe` and
 `stacksafe-macro` that backport the `stacksafe-macro 1.0.2` diagnostic change
 to the 0.1 line. The change removes `proc-macro-error2`, keeps Syn 2, and
 preserves generated code. Because `gpui 0.2.2` already admits `^0.1`, the
-consumer fix would then be a lockfile update plus the fixture dependency and
-compile-fail fixtures that the technical requirements already demand; no Gauss
-source change is needed. This is the smallest supported end state.
+dependency update itself is lockfile-only. The approved change is still not
+confined to the lockfile: the technical requirements also add the `stacksafe`
+fixture dev-dependency to `crates/test_support/Cargo.toml` and the compile-fail
+fixtures beside it. No Gauss source change is needed. This is the smallest
+supported end state.
 
 The option depends on an upstream release that does not exist today. It also
 needs a maintenance branch: upstream publishes only `main`, and the 0.1.4
@@ -226,13 +228,19 @@ Manifest changes for Option B are therefore exactly three: the new
 
 Removal trigger: delete the vendored crate, the `[patch.crates-io]` entry, and
 the `workspace.exclude` entry once `stacksafe` and `stacksafe-macro` 0.1.5 are
-published and the lockfile resolves to them without the patch. The fixture
-dev-dependency stays, because the compile-fail fixtures outlive the patch, but
-it moves to the 0.1.5 requirement in the same change. If removal is instead
-triggered by a `gpui` release that admits `stacksafe` 1.x, the fixture
-dependency must move to that line and its diagnostic expectations be
-re-validated: leaving it on `^0.1.4` would pull the 0.1 macro back in and
-either duplicate `stacksafe` or fail to resolve.
+published and the lockfile resolves to them without the patch. A 0.1.5 release
+is necessary but not sufficient: the release must actually drop
+`proc-macro-error2`, so removal also requires `cargo tree` to show no
+`proc-macro-error2` node, the compile-fail diagnostics to still match, and a
+fresh
+`cargo check --locked --workspace --all-targets --all-features
+--future-incompat-report`
+to stop naming the crate. The fixture dev-dependency stays, because the
+compile-fail fixtures outlive the patch, but it moves to the 0.1.5 requirement
+in the same change. If removal is instead triggered by a `gpui` release that
+admits `stacksafe` 1.x, the fixture dependency must move to that line and its
+diagnostic expectations be re-validated: leaving it on `^0.1.4` would pull the
+0.1 macro back in and either duplicate `stacksafe` or fail to resolve.
 
 ## Consequences
 

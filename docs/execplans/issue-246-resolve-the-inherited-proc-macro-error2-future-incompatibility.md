@@ -285,6 +285,17 @@ macro, one manifest patch, one ADR, and small guide and changelog edits).
   is consequently no longer described as lockfile-only, and the ADR states the
   lockfile consequence separately for each option. Date/Author: 2026-11-18,
   implementation agent.
+- D9. Decision: adopt three review corrections about scope and verification
+  boundaries. Option A now states that only the dependency update is
+  lockfile-only while the approved change still touches the test manifest and
+  adds fixtures. `EP-M3` gives separate acceptance for an approved dependency
+  change and for the blocked or no-change path, because a blocked disposition
+  selects no `stacksafe` release to fixture against. The ADR removal trigger
+  requires the resolved graph, the diagnostics and a fresh
+  future-incompatibility report to pass before the patch is deleted: a 0.1.5
+  publication alone does not prove `proc-macro-error2` was removed, so the old
+  wording could have restored the warning. Date/Author: 2026-11-18,
+  implementation agent.
 
 ## Outcomes & retrospective
 
@@ -455,10 +466,16 @@ vendoring. If a vendored patch is approved, add `vendor/stacksafe-macro`, a path
 `[patch.crates-io]` entry, and a `workspace.exclude` entry, and add
 `stacksafe = "0.1.4"` to the `crates/test_support` dev-dependencies so the `V2`
 fixtures can apply `#[stacksafe]`. If the disposition is blocked or no-change,
-do not touch the manifest or lockfile. End state: a candidate that matches the
-approved disposition. Acceptance: the `V2` compile-fail fixtures exist in
-`crates/test_support` and pass for both diagnostic branches on whichever
-`stacksafe` release the approved disposition selects.
+do not touch the manifest or lockfile and add no fixtures: there is no selected
+`stacksafe` release for them to apply, and the planned outcome for that path is
+the disclosed warning with the issue left open. End state: a candidate that
+matches the approved disposition. Acceptance, for either approved path only: the
+`V2` compile-fail fixtures exist in `crates/test_support` and pass for both
+diagnostic branches against the `stacksafe` release the approved disposition
+selects, with `cargo tree` showing no `proc-macro-error2` node. Acceptance, for
+the blocked or no-change path: `Cargo.toml` and `Cargo.lock` are unchanged,
+this plan records the disposition, and the issue stays open with the warning
+disclosed.
 
 ### EP-M4: validation and delivery
 
