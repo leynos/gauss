@@ -193,6 +193,18 @@ pub fn shape_world_bounds(shape: &Shape) -> Option<ShapeWorldBounds> {
         bounds.update(anchor.pos);
     }
 
+    extend_bounds_with_open_segments(&mut bounds, shape);
+    extend_bounds_with_closing_segment(&mut bounds, shape);
+
+    let (min, max) = bounds.to_tuple()?;
+    Some(ShapeWorldBounds::new(min, max))
+}
+
+/// Extend bounds with the extrema of every open segment in the path.
+///
+/// A path with mismatched anchor and segment counts is treated as ending at
+/// the last complete segment rather than reporting an error.
+fn extend_bounds_with_open_segments(bounds: &mut Bounds, shape: &Shape) {
     for (index, kind) in shape.path.segments.iter().enumerate() {
         let Some(start_anchor) = shape.path.anchors.get(index) else {
             break;
@@ -209,29 +221,29 @@ pub fn shape_world_bounds(shape: &Shape) -> Option<ShapeWorldBounds> {
             SegmentKind::Cubic => {
                 let c1 = start_anchor.handle_out.unwrap_or(start);
                 let c2 = end_anchor.handle_in.unwrap_or(end);
-                extend_bounds_with_cubic(&mut bounds, CubicSegment::new(start, c1, c2, end));
+                extend_bounds_with_cubic(bounds, CubicSegment::new(start, c1, c2, end));
             }
         }
     }
+}
 
-    if shape.path.closed
-        && let (Some(last), Some(first)) = (shape.path.anchors.last(), shape.path.anchors.first())
-    {
-        match shape.path.closing_segment {
-            SegmentKind::Line => {}
-            SegmentKind::Cubic => {
-                let c1 = last.handle_out.unwrap_or(last.pos);
-                let c2 = first.handle_in.unwrap_or(first.pos);
-                extend_bounds_with_cubic(
-                    &mut bounds,
-                    CubicSegment::new(last.pos, c1, c2, first.pos),
-                );
-            }
+/// Extend bounds with the extrema of the closing segment, when present.
+fn extend_bounds_with_closing_segment(bounds: &mut Bounds, shape: &Shape) {
+    if !shape.path.closed {
+        return;
+    }
+    let (Some(last), Some(first)) = (shape.path.anchors.last(), shape.path.anchors.first()) else {
+        return;
+    };
+
+    match shape.path.closing_segment {
+        SegmentKind::Line => {}
+        SegmentKind::Cubic => {
+            let c1 = last.handle_out.unwrap_or(last.pos);
+            let c2 = first.handle_in.unwrap_or(first.pos);
+            extend_bounds_with_cubic(bounds, CubicSegment::new(last.pos, c1, c2, first.pos));
         }
     }
-
-    let (min, max) = bounds.to_tuple()?;
-    Some(ShapeWorldBounds::new(min, max))
 }
 
 /// Extend bounds with cubic endpoints and extrema found using a coefficient tolerance.

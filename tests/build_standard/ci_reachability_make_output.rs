@@ -236,24 +236,37 @@ fn classify_conditional<F>(
 where
     F: FnMut(&Invocation, bool) -> Result<Route, String>,
 {
+    let (then_at, else_at, fi_at) = conditional_bounds(tokens)?;
+    let condition = commands_in(tokens, 1..then_at, controlled, resolver)?;
+    let probe = nextest_probe(&condition)?;
+    let then_commands = commands_in(tokens, then_at + 1..else_at, controlled, resolver)?;
+    let else_commands = commands_in(tokens, else_at + 1..fi_at, controlled, resolver)?;
+    let then_route = require_final_suite(&then_commands, "Nextest branch")?;
+    let else_route = require_fallback_suite(&else_commands)?;
+    Ok(probe.route.combine(then_route).combine(else_route))
+}
+
+/// Locate the `then`, `else`, and `fi` keywords, refusing nested conditionals.
+fn conditional_bounds(tokens: &[Token]) -> Result<(usize, usize, usize), String> {
     let then_at = keyword(tokens, "then", 1)?;
     let else_at = keyword(tokens, "else", then_at + 1)?;
     let fi_at = keyword(tokens, "fi", else_at + 1)?;
     if fi_at + 1 != tokens.len() || keyword_after(tokens, "if", 1).is_some() {
         return Err("nested or trailing shell conditional is unsupported".to_owned());
     }
-    let condition = commands_in(tokens, 1..then_at, controlled, resolver)?;
+    Ok((then_at, else_at, fi_at))
+}
+
+/// Require the condition to be exactly the Nextest availability probe.
+fn nextest_probe(condition: &[Resolved]) -> Result<&Resolved, String> {
     let (probe, rest) = condition
         .split_first()
         .ok_or_else(|| "Nextest condition has no probe command".to_owned())?;
-    if !rest.is_empty() || !is_nextest_probe(&probe.invocation) {
-        return Err("shell conditional is not the exact Nextest availability probe".to_owned());
+    if rest.is_empty() && is_nextest_probe(&probe.invocation) {
+        Ok(probe)
+    } else {
+        Err("shell conditional is not the exact Nextest availability probe".to_owned())
     }
-    let then_commands = commands_in(tokens, then_at + 1..else_at, controlled, resolver)?;
-    let else_commands = commands_in(tokens, else_at + 1..fi_at, controlled, resolver)?;
-    let then_route = require_final_suite(&then_commands, "Nextest branch")?;
-    let else_route = require_fallback_suite(&else_commands)?;
-    Ok(probe.route.combine(then_route).combine(else_route))
 }
 
 /// Extracts commands between a pair of already located shell keywords.

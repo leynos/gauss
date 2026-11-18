@@ -275,24 +275,44 @@ fn require_suite_binding(step: &Value, job: &Value, state: Provisioning) -> Resu
 /// Checks one runner row in source order; an installer in another job or after a suite never
 /// counts.
 fn inspect_row(job: &Value, workspace: &Workspace<'_>, host: Host) -> Result<Route, String> {
-    let steps = job.required("steps", "job")?.sequence("steps")?;
-    if steps.is_empty() {
-        return Err("job steps is empty".to_owned());
-    }
+    let steps = job_steps(job)?;
     let mut state = Provisioning {
         host,
         installed: false,
     };
     let mut route = Route::NonSuite;
     for step in steps {
-        state.installed |= installs_mold(step)?;
-        let observed = step_route(step, workspace, host)?;
-        if observed == Route::Suite {
-            require_suite_binding(step, job, state)?;
-        }
+        let observed = inspect_step(step, job, workspace, &mut state)?;
         route = route.combine(observed);
     }
     Ok(route)
+}
+
+/// Return a job's declared steps, refusing an empty list.
+fn job_steps(job: &Value) -> Result<&[Value], String> {
+    let steps = job.required("steps", "job")?.sequence("steps")?;
+    if steps.is_empty() {
+        return Err("job steps is empty".to_owned());
+    }
+    Ok(steps)
+}
+
+/// Inspect one step in source order, recording installers and binding suite rows.
+///
+/// The row's host is read from `state`, which already owns the static host
+/// evidence for this row.
+fn inspect_step(
+    step: &Value,
+    job: &Value,
+    workspace: &Workspace<'_>,
+    state: &mut Provisioning,
+) -> Result<Route, String> {
+    state.installed |= installs_mold(step)?;
+    let observed = step_route(step, workspace, state.host)?;
+    if observed == Route::Suite {
+        require_suite_binding(step, job, *state)?;
+    }
+    Ok(observed)
 }
 
 /// Measures each resolved row of an ordinary job; reusable declarations are checked via their
@@ -305,10 +325,7 @@ fn inspect_job(job: &Value, context: &str, workspace: &Workspace<'_>) -> Result<
         ));
     }
     if job.field("uses").is_some() {
-        return Ok(Coverage {
-            suite_jobs: 0,
-            linux_rows: 0,
-        });
+        return Ok(Coverage::default());
     }
     let hosts = runner::hosts(job).map_err(|error| format!("{context}: {error}"))?;
     let mut suite = Route::NonSuite;
@@ -336,10 +353,7 @@ pub(super) fn inspect_inventory(
         return Err("workflow inventory is empty".to_owned());
     }
     let reachable = event_reachable_workflows(inventory)?;
-    let mut coverage = Coverage {
-        suite_jobs: 0,
-        linux_rows: 0,
-    };
+    let mut coverage = Coverage::default();
     for workflow in inventory {
         let measured = inspect_workflow(workflow, workspace, reachable.contains(&workflow.path))?;
         coverage.suite_jobs += measured.suite_jobs;
@@ -373,10 +387,7 @@ fn inspect_workflow(
     workspace: &Workspace<'_>,
     is_reachable: bool,
 ) -> Result<Coverage, String> {
-    let mut coverage = Coverage {
-        suite_jobs: 0,
-        linux_rows: 0,
-    };
+    let mut coverage = Coverage::default();
     for (job_id, job) in jobs(workflow)? {
         let context = format!("{}:{job_id}", workflow.path);
         let measured = inspect_job(job, &context, workspace)?;

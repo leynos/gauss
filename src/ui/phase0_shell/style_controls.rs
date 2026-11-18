@@ -83,31 +83,26 @@ impl Phase0Shell {
     /// Returns loading text for either picker that has not yet been
     /// initialised by [`Self::ensure_style_pickers`].
     pub(super) fn style_picker_row(&self) -> impl gpui::IntoElement {
-        let stroke_label = self.localize(&MessageId::style_stroke());
-        let fill_label = self.localize(&MessageId::style_fill());
-        let stroke_loading = self.localize(&MessageId::style_stroke_loading());
-        let fill_loading = self.localize(&MessageId::style_fill_loading());
-
-        let stroke_picker = self
-            .stroke_picker
-            .as_ref()
-            .map(|state| ColorPicker::new(state).label(stroke_label));
-        let fill_picker = self
-            .fill_picker
-            .as_ref()
-            .map(|state| ColorPicker::new(state).label(fill_label));
+        // Resolve only the text each picker displays, so a missing loading
+        // message cannot warn when its picker is already initialised.
+        let stroke_picker = self.stroke_picker.as_ref().map(|state| {
+            ColorPicker::new(state).label(self.localize_or_key(&MessageId::style_stroke()))
+        });
+        let fill_picker = self.fill_picker.as_ref().map(|state| {
+            ColorPicker::new(state).label(self.localize_or_key(&MessageId::style_fill()))
+        });
 
         let mut row = div().flex().items_center().gap_2();
         if let Some(picker) = stroke_picker {
             row = row.child(picker);
         } else {
-            row = row.child(stroke_loading);
+            row = row.child(self.localize_or_key(&MessageId::style_stroke_loading()));
         }
 
         if let Some(picker) = fill_picker {
             row = row.child(picker);
         } else {
-            row = row.child(fill_loading);
+            row = row.child(self.localize_or_key(&MessageId::style_fill_loading()));
         }
 
         row

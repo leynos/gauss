@@ -224,7 +224,7 @@ struct Workflow {
 }
 
 /// Non-vacuous inspection counts, returned only after every inventory entry has been resolved.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 struct Coverage {
     /// Number of event-reachable jobs with a suite route, including non-Linux jobs.
     suite_jobs: usize,

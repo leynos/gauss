@@ -27,7 +27,12 @@ use gpui::{
 use crate::{
     model::{Document, Rgba as ModelRgba, SegmentKind, Selection, Shape, Viewport},
     ui::{
-        selection_overlays::{OverlayMarker, SelectionOverlays, compute_selection_overlays},
+        selection_overlays::{
+            OverlayLine,
+            OverlayMarker,
+            SelectionOverlays,
+            compute_selection_overlays,
+        },
         selection_utils::selected_shape_ids,
     },
 };
@@ -224,9 +229,18 @@ fn paint_bbox_overlays(window: &mut Window, overlays: &SelectionOverlays, patter
 
 /// Paint the Bézier handle connector lines and their square markers.
 fn paint_handle_overlays(window: &mut Window, overlays: &SelectionOverlays) {
+    paint_handle_connectors(window, &overlays.handle_lines);
+
+    for marker in &overlays.handle_markers {
+        paint_square_marker(window, marker, 0x6b72_80ff);
+    }
+}
+
+/// Paint the straight connectors that link each Bézier handle to its anchor.
+fn paint_handle_connectors(window: &mut Window, lines: &[OverlayLine]) {
     let mut builder = PathBuilder::stroke(px(1.0));
 
-    for line in &overlays.handle_lines {
+    for line in lines {
         builder.move_to(point(px(line.start.x), px(line.start.y)));
         builder.line_to(point(px(line.end.x), px(line.end.y)));
     }
@@ -236,10 +250,6 @@ fn paint_handle_overlays(window: &mut Window, overlays: &SelectionOverlays) {
     };
 
     window.paint_path(path, rgba(0x6b72_80b0));
-
-    for marker in &overlays.handle_markers {
-        paint_square_marker(window, marker, 0x6b72_80ff);
-    }
 }
 
 /// Paint a square marker at each selected anchor position.

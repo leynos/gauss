@@ -97,29 +97,8 @@ pub(super) fn apply_set_segment_kind(
     changes: &[SegmentChange],
     command_name: &'static str,
 ) -> Result<CommandInverse, UserError> {
-    // Pre-validate: ensure all shapes and segments exist before applying any changes.
-    for change in changes {
-        let idx = doc
-            .find_index(change.shape_id)
-            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
-        let shape = doc
-            .shape_at(idx)
-            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
-        if shape.path.segments.get(change.segment_index).is_none() {
-            return Err(UserError::SegmentNotFound(
-                change.shape_id,
-                change.segment_index,
-            ));
-        }
-    }
-
-    // Apply changes (safe now that all shapes and segments are validated).
-    for change in changes {
-        let shape = doc
-            .shape_mut(change.shape_id)
-            .ok_or(UserError::ShapeNotFound(change.shape_id))?;
-        apply_segment_change_unchecked(shape, change);
-    }
+    validate_segment_changes(doc, changes)?;
+    apply_segment_changes(doc, changes)?;
 
     // Create inverse with swapped old/new
     let inverse_changes = changes
@@ -155,13 +134,21 @@ pub(super) fn apply_restore_segment_kinds(
     doc: &mut Document,
     changes: &[SegmentChange],
 ) -> Result<(), UserError> {
-    // Pre-validate: ensure all shapes and segments exist before applying any changes.
+    validate_segment_changes(doc, changes)?;
+    apply_segment_changes(doc, changes)
+}
+
+/// Ensure every referenced shape and segment exists before applying changes.
+///
+/// Validation runs separately from application so a missing shape or segment
+/// leaves the document untouched, preserving the atomicity of the command pair.
+fn validate_segment_changes(doc: &Document, changes: &[SegmentChange]) -> Result<(), UserError> {
     for change in changes {
-        let idx = doc
+        let index = doc
             .find_index(change.shape_id)
             .ok_or(UserError::ShapeNotFound(change.shape_id))?;
         let shape = doc
-            .shape_at(idx)
+            .shape_at(index)
             .ok_or(UserError::ShapeNotFound(change.shape_id))?;
         if shape.path.segments.get(change.segment_index).is_none() {
             return Err(UserError::SegmentNotFound(
@@ -170,8 +157,13 @@ pub(super) fn apply_restore_segment_kinds(
             ));
         }
     }
+    Ok(())
+}
 
-    // Apply changes (safe now that all shapes and segments are validated).
+/// Write each segment change into its shape.
+///
+/// Callers must run [`validate_segment_changes`] first.
+fn apply_segment_changes(doc: &mut Document, changes: &[SegmentChange]) -> Result<(), UserError> {
     for change in changes {
         let shape = doc
             .shape_mut(change.shape_id)

@@ -86,26 +86,33 @@ pub(super) fn assert_shape_replacement_applies_and_undoes(
     let inverse = cmd
         .apply(&mut doc)
         .map_err(CommandEditingTestError::Apply)?;
-    let updated = shape_at(&doc, 0).ok_or(CommandEditingTestError::ShapeMissing)?;
-    if updated != &expected_new {
-        return Err(CommandEditingTestError::ShapeNotUpdated {
-            expected: Arc::new(expected_new.clone()),
-            actual: Arc::new(updated.clone()),
-        });
-    }
+    expect_shape_equals(&doc, &expected_new, |expected, actual| {
+        CommandEditingTestError::ShapeNotUpdated { expected, actual }
+    })?;
 
     inverse
         .apply(&mut doc)
         .map_err(CommandEditingTestError::Undo)?;
-    let restored = shape_at(&doc, 0).ok_or(CommandEditingTestError::ShapeMissing)?;
-    if restored != &expected_old {
-        return Err(CommandEditingTestError::ShapeNotRestored {
-            expected: Arc::new(expected_old.clone()),
-            actual: Arc::new(restored.clone()),
-        });
-    }
+    expect_shape_equals(&doc, &expected_old, |expected, actual| {
+        CommandEditingTestError::ShapeNotRestored { expected, actual }
+    })
+}
 
-    Ok(())
+/// Compare the shape at index zero with `expected`, reporting `mismatch` on a
+/// difference so callers can distinguish a failed apply from a failed undo.
+fn expect_shape_equals(
+    doc: &Document,
+    expected: &Shape,
+    mismatch: impl Fn(Arc<Shape>, Arc<Shape>) -> CommandEditingTestError,
+) -> Result<(), CommandEditingTestError> {
+    let actual = shape_at(doc, 0).ok_or(CommandEditingTestError::ShapeMissing)?;
+    if actual == expected {
+        return Ok(());
+    }
+    Err(mismatch(
+        Arc::new(expected.clone()),
+        Arc::new(actual.clone()),
+    ))
 }
 
 pub(super) fn assert_prepare_command_returns_variant(

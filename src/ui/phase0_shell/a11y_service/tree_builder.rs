@@ -88,6 +88,7 @@ fn insert_canvas_and_status_nodes(nodes: &mut BTreeMap<NodeId, Node>, snapshot: 
                 "a11y i18n lookup failed for {:?}: {err}",
                 MessageId::a11y_canvas().as_str()
             );
+            // Fallback: English canvas label when the label lookup fails.
             "Drawing canvas".to_owned()
         });
     canvas.set_label(canvas_label);
@@ -114,6 +115,7 @@ fn insert_shape_list_nodes(
 ) -> Result<(), A11yServiceError> {
     let mut shape_list = Node::new(Role::List);
     let mut shape_node_ids = Vec::with_capacity(snapshot.shapes.len());
+    // Fallback: English template for unnamed shapes when the template lookup fails.
     let unnamed_shape_template =
         localized_a11y_label(snapshot, &MessageId::a11y_shape_item(), "Shape {index}");
     for (index, shape) in snapshot.shapes.iter().enumerate() {
@@ -146,6 +148,7 @@ fn insert_shape_list_nodes(
                 "a11y i18n lookup failed for {:?}: {err}",
                 MessageId::a11y_shape_list().as_str()
             );
+            // Fallback: English shape-list label when the label lookup fails.
             "Shapes".to_owned()
         });
     shape_list.set_label(shape_list_label);
@@ -193,6 +196,7 @@ fn insert_root_node(nodes: &mut BTreeMap<NodeId, Node>, snapshot: &A11ySnapshot)
                 "a11y i18n lookup failed for {:?}: {err}",
                 MessageId::a11y_window_title().as_str()
             );
+            // Fallback: application name when the label lookup fails.
             "Gauss".to_owned()
         });
     root.set_label(window_title);
@@ -269,6 +273,10 @@ fn localized_chrome_button_label(
 
 /// Look up a localized accessibility label, logging and using the fallback
 /// text when the lookup fails.
+///
+/// Accessibility labels are built away from the shell and cannot propagate a
+/// lookup error, so callers pass an `accessible_names::*` constant or an
+/// English template literal as the explicit fallback.
 fn localized_a11y_label(snapshot: &A11ySnapshot, id: &MessageId, fallback: &str) -> String {
     snapshot
         .localizer

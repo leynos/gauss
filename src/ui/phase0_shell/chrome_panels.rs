@@ -28,7 +28,7 @@ impl Phase0Shell {
             .child(
                 div()
                     .text_sm()
-                    .child(self.localize(&MessageId::doc_untitled())),
+                    .child(self.localize_or_key(&MessageId::doc_untitled())),
             )
             .child(self.alignment_buttons())
     }
@@ -51,25 +51,25 @@ impl Phase0Shell {
                 "zoom-out",
                 UiIcon::ZoomOut,
                 IconButtonState::Placeholder,
-                Some(self.localize(&MessageId::status_zoom_out())),
+                Some(self.localize_or_key(&MessageId::status_zoom_out())),
             ))
             .child(icon_button(
                 "zoom-in",
                 UiIcon::ZoomIn,
                 IconButtonState::Placeholder,
-                Some(self.localize(&MessageId::status_zoom_in())),
+                Some(self.localize_or_key(&MessageId::status_zoom_in())),
             ))
             .child(icon_button(
                 "zoom-area",
                 UiIcon::ZoomArea,
                 IconButtonState::Placeholder,
-                Some(self.localize(&MessageId::status_zoom_area())),
+                Some(self.localize_or_key(&MessageId::status_zoom_area())),
             ))
             .child(icon_button(
                 "snap-to-grid",
                 UiIcon::SnapToGrid,
                 IconButtonState::Placeholder,
-                Some(self.localize(&MessageId::status_snap_grid())),
+                Some(self.localize_or_key(&MessageId::status_snap_grid())),
             ));
 
         let mut right = div()
@@ -85,8 +85,8 @@ impl Phase0Shell {
         }
 
         right = right
-            .child(self.localize(&MessageId::status_zoom_ratio_1_1()))
-            .child(self.localize(&MessageId::status_plain_text()));
+            .child(self.localize_or_key(&MessageId::status_zoom_ratio_1_1()))
+            .child(self.localize_or_key(&MessageId::status_plain_text()));
 
         div()
             .id("status-bar")
@@ -140,7 +140,7 @@ impl Phase0Shell {
 
         let mut row = div().flex().items_center().gap_2();
         for (id, icon, msg_id) in buttons {
-            let tooltip = self.localize(&msg_id);
+            let tooltip = self.localize_or_key(&msg_id);
             row = row.child(icon_button(
                 id,
                 icon,

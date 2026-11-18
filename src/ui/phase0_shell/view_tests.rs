@@ -22,6 +22,11 @@ use gpui::{Entity, TestAppContext, VisualTestContext};
 use super::Phase0Shell;
 use crate::model::{Command, ShapeId, ShapeMovement, ToolCommand, Vec2};
 
+// `view_tests.rs` is loaded through `#[path]`, so name the nested test module
+// explicitly rather than relying on directory inference.
+#[path = "view_tests/localization.rs"]
+mod localization;
+
 /// Helper to set up a shell, configure it via a closure, and read `file_status_line()`.
 ///
 /// Reduces boilerplate for tests that only need a single state configuration.

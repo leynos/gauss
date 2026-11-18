@@ -6,7 +6,7 @@
 use std::fmt::Write as _;
 
 use super::{
-    config::{Pin, THREADS_FLAG},
+    config::{Pin, Problems, THREADS_FLAG},
     development::{Tools, development_problems_expecting},
     make::{Host, MakeRunner, Target},
 };
@@ -172,29 +172,53 @@ fn the_development_policy_runs_against_an_injected_runner() -> Result<(), String
 fn a_development_command_without_an_assignment_is_refused_and_an_exempt_one_is_not()
 -> Result<(), String> {
     let pin = Pin::Nightly;
-    let (bare_test, _) = development_problems_expecting(bare_test_make, Host::Linux, pin, &[])?;
-    ensure(
-        !bare_test.is_empty(),
+    require_bare_command_is_refused(
+        bare_test_make,
+        pin,
         "a test command that assigns no RUSTFLAGS passed",
     )?;
-    let (bare_lint, _) = development_problems_expecting(bare_lint_make, Host::Linux, pin, &[])?;
-    ensure(
-        !bare_lint.is_empty(),
+    require_bare_command_is_refused(
+        bare_lint_make,
+        pin,
         "lint commands that assign no RUSTFLAGS passed",
     )?;
-    let (chained, _) = development_problems_expecting(chained_bare_make, Host::Linux, pin, &[])?;
+    require_chained_bare_command_is_refused(pin)?;
+    require_exempt_commands_are_accepted(pin)
+}
+
+/// Report the problems raised when a fake runner's commands omit `RUSTFLAGS`.
+fn development_problems_for(runner: MakeRunner, pin: Pin) -> Result<(Problems, usize), String> {
+    development_problems_expecting(runner, Host::Linux, pin, &[])
+}
+
+/// Require at least one problem for a fake runner whose commands assign no `RUSTFLAGS`.
+fn require_bare_command_is_refused(
+    runner: MakeRunner,
+    pin: Pin,
+    message: &str,
+) -> Result<(), String> {
+    let (problems, _) = development_problems_for(runner, pin)?;
+    ensure(!problems.is_empty(), message)
+}
+
+/// Require the chained bare command to be reported as the Nextest run it drops flags for.
+fn require_chained_bare_command_is_refused(pin: Pin) -> Result<(), String> {
+    let (problems, _) = development_problems_for(chained_bare_make, pin)?;
     ensure(
-        !chained.is_empty()
-            && chained
+        !problems.is_empty()
+            && problems
                 .iter()
                 .all(|problem| problem.contains("nextest run")),
-        &format!("a bare command chained beside an assigning probe raised {chained:?}"),
-    )?;
-    let (exempt, exempt_read) =
-        development_problems_expecting(exempt_commands_make, Host::Linux, pin, &[])?;
+        &format!("a bare command chained beside an assigning probe raised {problems:?}"),
+    )
+}
+
+/// Require formatters, metadata probes, and documentation builds to be accepted.
+fn require_exempt_commands_are_accepted(pin: Pin) -> Result<(), String> {
+    let (problems, read) = development_problems_for(exempt_commands_make, pin)?;
     ensure(
-        exempt.is_empty() && exempt_read > 0,
-        &format!("a formatter, probe or doc build raised {exempt:?}"),
+        problems.is_empty() && read > 0,
+        &format!("a formatter, probe or doc build raised {problems:?}"),
     )
 }
 
