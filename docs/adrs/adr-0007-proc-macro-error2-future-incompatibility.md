@@ -70,7 +70,7 @@ Recorded on 18 November 2026 before any manifest or lockfile change:
   `cargo 1.99.1 (5f94df478 2026-08-27)`. Builds pass through the shared compile
   admission wrapper (`RUSTC_WRAPPER=build-limits-rustc`,
   `RUSTDOC=build-limits-rustdoc`) with `RUSTFLAGS` unset.
-- `bash scripts/check-build-tools.sh` exits 0 with `mold 2.41.0`, a usable
+- `bash scripts/check-build-tools.sh` exits 0 with `mold` 2.41.0, a usable
   `clang`, and the 1.92.0, 1.99.1 and `nightly-2026-08-07` toolchains present.
 - The locked inverse tree resolves `proc-macro-error2 v2.0.1` through
   `stacksafe-macro v0.1.4` (`proc-macro`), `stacksafe v0.1.4`, and
@@ -81,9 +81,12 @@ Recorded on 18 November 2026 before any manifest or lockfile change:
   `proc-macro-error3 3.1.1` and `proc-macro-error-attr3 3.1.1` pair stays in the
   graph for `rstest-bdd-macros`.
 - A `cargo check --locked --workspace --all-targets --all-features
-  --future-incompat-report` run in a fresh target directory reports E0365 for
-  `proc-macro-error2 2.0.1` at `src/lib.rs:494:13`, naming
-  `rust-lang/rust#127909` as the tracking issue. The run exits 0.
+  --future-incompat-report` run in a fresh target directory finishes in 24m27s,
+  exits 0, and warns that `proc-macro-error2 v2.0.1` contains code the compiler
+  will reject. Cargo assigns report id 1, and
+  `cargo report future-incompatibilities --id 1` prints E0365 at
+  `proc-macro-error2-2.0.1/src/lib.rs:494:13`, naming
+  `rust-lang/rust#127909` as the tracking issue.
 
 ## Decision drivers
 
