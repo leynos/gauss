@@ -1897,83 +1897,89 @@ Every workflow uses the same `leynos/shared-actions` commit. The branch first
 pinned `df81280`, main then moved the whole estate to `81374b6`, and the branch
 adopted main's pin rather than holding a stale revision: `df81280` is an
 ancestor of `81374b6`, and every action these workflows call exists at the
-newer pin with the inputs they pass. The release workflows are not part of the
-build-standard contract in `tests/build_standard`, which enumerates only
-`ci.yml` and `coverage-main.yml`: a release stays on the platform linker by
-design ([ADR 0006](adrs/adr-0006-rust-build-standard.md)), and its build steps
-assign `RUSTFLAGS` themselves.
+newer pin with the inputs they pass. The release workflows are outside the
+build standard's suite-provisioning rules: a release stays on the platform
+linker by design ([ADR 0006](adrs/adr-0006-rust-build-standard.md)), and its
+build steps assign `RUSTFLAGS` themselves. Two contracts bound them. The CI
+half of the standard in `tests/build_standard/ci_steps.rs` enumerates only
+`ci.yml` and `coverage-main.yml`, so it never reads a release workflow. The
+reachability contract in `tests/build_standard/ci_reachability_workflows.rs`
+does sweep every file in `.github/workflows`, so it grants the three release
+and packaging workflows an exemption keyed to their exact paths. The exemption
+is not a blanket skip: `exempt_release_workflow` still requires every job to
+declare a provable literal runner and rejects any step that reaches a test
+suite, so a release workflow that starts testing fails the contract. A new or
+renamed workflow inherits nothing and is inspected in full.
 
 ### 21.1 Build job flow
 
 For screen readers: the following flowchart follows one call of the
-build-and-package workflow, from checkout through the Linux package branch or
-the non-Linux staging branch, into the per-platform packaging action and the
-conditional workflow-artefact upload, and ends at the end of the build job.
+build-and-package workflow, which selects a single platform job from
+`inputs.platform` and then runs that platform's build, packaging, and
+conditional workflow-artefact upload.
+
+The workflow declares one job per platform, and each names its runner
+literally. The build standard's reachability contract proves which operating
+system every job executes on, and it accepts only a literal label or an exact
+`${{ matrix.<field> }}`. A runner supplied through `workflow_call` is
+unprovable by construction, so there is no `runner` input: a job-level `if`
+selects the job from `inputs.platform` and the others skip. The macOS job keeps
+one matrix row per architecture because the two need different hosts —
+`macos-15` is Apple silicon, and `macos-15-intel` is the only image that builds
+x86_64 natively — and each row runs only for the target the caller asked for.
 
 ```mermaid
 flowchart TD
-  Start([Start build job])
-  Checkout[Checkout repository]
-  InstallUv["Install uv<br/>when inputs.platform != linux"]
-  GenMan[Generate man page with pandoc if available]
-  RustBuild["rust_build_release<br/>target=inputs.target<br/>bin=inputs.bin_name"]
+  Start([Start build-and-package call])
+  Pick{inputs.platform}
 
-  IsLinux{inputs.platform == linux}
-  LinuxDeps[Install Linux system dependencies]
-  LinuxPackages["linux_packages<br/>formats=deb,rpm"]
-  PruneLinux[Prune linux packaging metadata]
+  Start --> Pick
 
-  StageArtifacts["stage_release_artefacts<br/>using release_staging_toml"]
-  CapturePaths["Capture staged paths<br/>binary_path<br/>man_path<br/>license_path"]
+  Pick -- linux --> LCheckout[Checkout repository]
+  LCheckout --> LGenMan[Generate man page with pandoc if available]
+  LGenMan --> LDeps[Install Linux system dependencies]
+  LDeps --> LBuild["rust_build_release<br/>target=inputs.target"]
+  LBuild --> LPackages["linux_packages<br/>formats=deb,rpm"]
+  LPackages --> LPrune[Prune linux packaging metadata]
+  LPrune --> LUpload{"should_upload_workflow_artifacts"}
+  LUpload -- yes --> LUploadStep[Upload linux artifacts]
+  LUpload -- no --> End([End call])
 
-  IsWindows{inputs.platform == windows}
-  WindowsPkg["windows_package<br/>build MSI<br/>upload optional"]
+  Pick -- windows --> WCheckout[Checkout repository]
+  WCheckout --> WUv[Install uv]
+  WUv --> WBuild["rust_build_release<br/>target=inputs.target"]
+  WBuild --> WStage["stage_release_artefacts<br/>using release_staging_toml"]
+  WStage --> WCapture["Capture staged paths<br/>binary_path<br/>man_path<br/>license_path"]
+  WCapture --> WPkg["windows_package<br/>build MSI"]
+  WPkg --> WUpload{"should_upload_workflow_artifacts"}
+  WUpload -- yes --> WUploadStep["Upload windows artifacts<br/>staged dir + MSI"]
+  WUpload -- no --> End
 
-  IsMacos{inputs.platform == macos}
-  MacosPkg["macos_package<br/>build PKG"]
-  RenamePkg[Rename PKG with arch suffix]
+  Pick -- macos --> MRow{inputs.target<br/>== matrix.target}
+  MRow -- yes --> MCheckout[Checkout repository]
+  MCheckout --> MUv[Install uv]
+  MUv --> MBuild["rust_build_release<br/>target=inputs.target"]
+  MBuild --> MStage["stage_release_artefacts<br/>using release_staging_toml"]
+  MStage --> MCapture[Capture staged paths]
+  MCapture --> MPkg["macos_package<br/>build PKG"]
+  MPkg --> MRename[Rename PKG with arch suffix]
+  MRename --> MUpload{"should_upload_workflow_artifacts"}
+  MUpload -- yes --> MUploadStep["Upload macOS artifacts<br/>staged dir + PKG"]
+  MUpload -- no --> End
+  MRow -- no --> End
 
-  UploadLinux{"inputs.platform == linux<br/>and should_upload_workflow_artifacts"}
-  UploadWindows{"inputs.platform == windows<br/>and should_upload_workflow_artifacts"}
-  UploadMacos{"inputs.platform == macos<br/>and should_upload_workflow_artifacts"}
-
-  UploadLinuxStep[Upload linux artifacts]
-  UploadWindowsStep["Upload windows artifacts<br/>staged dir + MSI"]
-  UploadMacosStep["Upload macOS artifacts<br/>staged dir + PKG"]
-
-  End([End build job])
-
-  Start --> Checkout --> InstallUv
-  InstallUv --> GenMan --> RustBuild --> IsLinux
-
-  IsLinux -- yes --> LinuxDeps --> LinuxPackages --> PruneLinux --> UploadLinux
-  IsLinux -- no --> StageArtifacts --> CapturePaths --> IsWindows
-
-  IsWindows -- yes --> WindowsPkg --> UploadWindows
-  IsWindows -- no --> IsMacos
-
-  IsMacos -- yes --> MacosPkg --> RenamePkg --> UploadMacos
-  IsMacos -- no --> End
-
-  UploadLinux -- yes --> UploadLinuxStep --> End
-  UploadLinux -- no --> End
-
-  UploadWindows -- yes --> UploadWindowsStep --> End
-  UploadWindows -- no --> End
-
-  UploadMacos -- yes --> UploadMacosStep --> End
-  UploadMacos -- no --> End
+  LUploadStep --> End
+  WUploadStep --> End
+  MUploadStep --> End
 ```
 
-*Figure 21.1: The build-and-package job for one platform. The steps before the
-first decision run on every platform: `uv` is installed on a checked-out
-repository, and the man page is generated whenever `pandoc` is present. The
-Linux branch then installs the system development packages, packages with
-`linux-packages`, and prunes the intermediate metadata that packaging leaves in
-`dist`. Every other platform stages artefacts from `release-staging.toml`
-first, because the installer actions take the staged binary, manual page, and
-licence paths as inputs. The last decision on each branch is the
-workflow-artefact upload gate, which a dry run closes.*
+*Figure 21.1: The build-and-package workflow, showing how `inputs.platform`
+selects one of three literal-runner jobs. The Linux job installs the system
+development packages, packages with `linux-packages`, and prunes the
+intermediate metadata that packaging leaves in `dist`. The Windows and macOS
+jobs stage artefacts from `release-staging.toml` first, because the installer
+actions take the staged binary, manual page, and licence paths as inputs. Every
+job ends at the workflow-artefact upload gate, which a dry run closes.*
 
 The manual page is genuinely optional on both paths, and each path expresses
 that differently. The staging configuration marks the page optional while the

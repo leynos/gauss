@@ -8,10 +8,6 @@ name: Build and Package
         description: Target platform identifier (linux or windows or macos)
         required: true
         type: string
-      runner:
-        description: Runner label that should execute the job
-        required: true
-        type: string
       target:
         description: Rust target triple to compile for
         required: true
@@ -32,10 +28,6 @@ name: Build and Package
         description: Whether workflow artefacts should be uploaded
         required: true
         type: boolean
-      package-arch:
-        description: Linux package architecture identifier (e.g. amd64)
-        required: false
-        type: string
       stage-target:
         description: Key used to look up staged artefacts
         required: false
@@ -56,29 +48,25 @@ name: Build and Package
         default: ''
         type: string
 
+# There is no `runner` input. The build standard's reachability contract proves
+# which operating system each job runs on, and it accepts only a literal label
+# or an exact `${{ matrix.<field> }}`. A runner supplied through
+# `workflow_call` cannot be proven, so each platform is its own job with a
+# literal label, and a job-level `if` selects it from `inputs.platform`. The
+# macOS job keeps one matrix row per architecture because the two need
+# different hosts: `macos-15` is Apple silicon and `macos-15-intel` is the only
+# image that builds x86_64 natively.
 jobs:
-  build:
-    name: Build ${{ inputs.platform }} artefacts
-    runs-on: ${{ inputs.runner }}
+  build-linux:
+    if: inputs.platform == 'linux'
+    name: Build linux artefacts
+    runs-on: ubuntu-latest
     env:
       BIN_NAME: ${{ inputs['bin-name'] }}
       VERSION: ${{ inputs.version }}
-      MAN_ARCH: ${{ inputs['package-arch'] != '' && inputs['package-arch'] || 'unknown' }}
     steps:
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
         # v4.1.2
-
-      - name: Install uv
-        if: inputs.platform != 'linux'
-        uses: astral-sh/setup-uv@4cda7d73322c50eac316ad623a716f09a2db2ac7
-        # v3.1.2
-        # No `python-version` input: this revision does not declare one, so
-        # passing it only produced an "Unexpected input(s)" warning. Nothing
-        # here consumed the value either. The Windows action sets up its own
-        # interpreter (`actions/setup-python` pinned to 3.12, then `pip`), and
-        # the macOS scripts declare `requires-python = ">=3.12"` and run under
-        # `uv`, which resolves a compatible interpreter itself. This step only
-        # has to put `uv` on PATH.
 
       - name: Generate man page
         id: man_page
@@ -103,7 +91,6 @@ jobs:
           fi
 
       - name: Install Linux system dependencies
-        if: inputs.platform == 'linux'
         shell: bash
         run: |
           set -euo pipefail
@@ -134,7 +121,6 @@ jobs:
           skip-man-page-discovery: 'true'
 
       - name: Package Linux artefacts
-        if: inputs.platform == 'linux'
         uses: >-
           leynos/shared-actions/.github/actions/linux-packages@81374b6f183e59f0570ad36217ded90d3240fda6
         with:
@@ -164,22 +150,57 @@ jobs:
             libxcb, libxkbcommon, libxkbcommon-x11, zlib
 
       - name: Prune packaging metadata
-        if: inputs.platform == 'linux'
         shell: bash
         run: rm -rf dist/.man dist/nfpm.yaml
 
+      - name: Upload Linux artefacts
+        if: inputs['should-upload-workflow-artifacts']
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        # v4
+        with:
+          name: ${{ inputs['artifact-name'] }}
+          path: dist
+
+  build-windows:
+    if: inputs.platform == 'windows'
+    name: Build windows artefacts
+    runs-on: windows-latest
+    env:
+      BIN_NAME: ${{ inputs['bin-name'] }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+        # v4.1.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@4cda7d73322c50eac316ad623a716f09a2db2ac7
+        # v3.1.2
+        # No `python-version` input: this revision does not declare one, so
+        # passing it only produced an "Unexpected input(s)" warning. Nothing
+        # here consumed the value either. The Windows action sets up its own
+        # interpreter (`actions/setup-python` pinned to 3.12, then `pip`), and
+        # the macOS scripts declare `requires-python = ">=3.12"` and run under
+        # `uv`, which resolves a compatible interpreter itself. This step only
+        # has to put `uv` on PATH.
+
+      - name: Build release binary
+        uses: >-
+          leynos/shared-actions/.github/actions/rust-build-release@81374b6f183e59f0570ad36217ded90d3240fda6
+        with:
+          target: ${{ inputs.target }}
+          bin-name: ${{ inputs['bin-name'] }}
+          skip-man-page-discovery: 'true'
+
       - name: Stage artefacts
-        if: inputs.platform != 'linux'
         id: stage
         uses: >-
           leynos/shared-actions/.github/actions/stage-release-artefacts@81374b6f183e59f0570ad36217ded90d3240fda6
         with:
           config-file: .github/release-staging.toml
           target: ${{ inputs['stage-target'] }}
-          normalize-windows-paths: ${{ inputs.platform == 'windows' }}
+          normalize-windows-paths: 'true'
 
       - name: Capture staged paths
-        if: inputs.platform != 'linux'
         id: stage_paths
         shell: bash
         run: |
@@ -191,7 +212,6 @@ jobs:
           } >>"$GITHUB_OUTPUT"
 
       - name: Build Windows installer package
-        if: inputs.platform == 'windows'
         id: package_windows
         uses: >-
           leynos/shared-actions/.github/actions/windows-package@81374b6f183e59f0570ad36217ded90d3240fda6
@@ -213,8 +233,80 @@ jobs:
           upload-artefact: 'false'
           wix-extension-version: ${{ inputs['wix-extension-version'] }}
 
+      # Both installers are written to `dist`, and staging also places its
+      # directory there (see `dist_dir` in `.github/release-staging.toml`).
+      # A literal `dist` path also lets the CV-005 contract prove the upload
+      # cannot select a coverage report; an `${{ steps.*.outputs.* }}` path
+      # is unresolvable, so the contract refuses it.
+      - name: Upload Windows artefacts
+        if: inputs['should-upload-workflow-artifacts']
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        # v4
+        with:
+          name: ${{ inputs['artifact-name'] }}
+          path: dist
+
+  build-macos:
+    if: inputs.platform == 'macos'
+    name: Build macos artefacts
+    strategy:
+      matrix:
+        include:
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+          - runner: macos-15
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.runner }}
+    env:
+      BIN_NAME: ${{ inputs['bin-name'] }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      # Each architecture is built only for the target the caller asked for.
+      # Both rows would otherwise run for any macOS call and rebuild the same
+      # artefact twice, on the wrong host for one of them.
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+        if: inputs.target == matrix.target
+        # v4.1.2
+
+      - name: Install uv
+        if: inputs.target == matrix.target
+        uses: astral-sh/setup-uv@4cda7d73322c50eac316ad623a716f09a2db2ac7
+        # v3.1.2
+        # See the Windows job's note: this revision takes no `python-version`.
+
+      - name: Build release binary
+        if: inputs.target == matrix.target
+        uses: >-
+          leynos/shared-actions/.github/actions/rust-build-release@81374b6f183e59f0570ad36217ded90d3240fda6
+        with:
+          target: ${{ inputs.target }}
+          bin-name: ${{ inputs['bin-name'] }}
+          skip-man-page-discovery: 'true'
+
+      - name: Stage artefacts
+        if: inputs.target == matrix.target
+        id: stage
+        uses: >-
+          leynos/shared-actions/.github/actions/stage-release-artefacts@81374b6f183e59f0570ad36217ded90d3240fda6
+        with:
+          config-file: .github/release-staging.toml
+          target: ${{ inputs['stage-target'] }}
+          normalize-windows-paths: 'false'
+
+      - name: Capture staged paths
+        if: inputs.target == matrix.target
+        id: stage_paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "binary_path=${{ steps.stage.outputs['binary-path'] }}"
+            echo "man_path=${{ steps.stage.outputs['man-path'] }}"
+            echo "license_path=${{ steps.stage.outputs['license-path'] }}"
+          } >>"$GITHUB_OUTPUT"
+
       - name: Build macOS installer package
-        if: inputs.platform == 'macos'
+        if: inputs.target == matrix.target
         id: package_macos
         uses: >-
           leynos/shared-actions/.github/actions/macos-package@81374b6f183e59f0570ad36217ded90d3240fda6
@@ -227,7 +319,7 @@ jobs:
           version: ${{ inputs.version }}
 
       - name: Stamp architecture into package name
-        if: inputs.platform == 'macos'
+        if: inputs.target == matrix.target
         id: rename_macos_pkg
         shell: bash
         env:
@@ -239,29 +331,8 @@ jobs:
           mkdir -p "$(dirname "$dest")"
           mv "$PKG_PATH" "$dest"
 
-      - name: Upload Linux artefacts
-        if: inputs.platform == 'linux' && inputs['should-upload-workflow-artifacts']
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        # v4
-        with:
-          name: ${{ inputs['artifact-name'] }}
-          path: dist
-
-      # Both installers are written to `dist`, and staging also places its
-      # directory there (see `dist_dir` in `.github/release-staging.toml`).
-      # A literal `dist` path also lets the CV-005 contract prove the upload
-      # cannot select a coverage report; an `${{ steps.*.outputs.* }}` path
-      # is unresolvable, so the contract refuses it.
-      - name: Upload Windows artefacts
-        if: inputs.platform == 'windows' && inputs['should-upload-workflow-artifacts']
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        # v4
-        with:
-          name: ${{ inputs['artifact-name'] }}
-          path: dist
-
       - name: Upload macOS artefacts
-        if: inputs.platform == 'macos' && inputs['should-upload-workflow-artifacts']
+        if: inputs.target == matrix.target && inputs['should-upload-workflow-artifacts']
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         # v4
         with:
