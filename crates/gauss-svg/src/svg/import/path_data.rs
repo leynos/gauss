@@ -174,7 +174,9 @@ const fn is_number_char(ch: char) -> bool { ch.is_ascii_digit() || matches!(ch, 
 /// Treats a sign as a boundary when it follows buffered number text.
 ///
 /// In `10+5`, `+` flushes `10` and begins the next number; with an empty
-/// buffer, a sign starts a number instead.
+/// buffer, a sign starts a number instead. This is consulted only once a
+/// character has qualified as number text, so every sign reaching it is
+/// already one the tokenizer would otherwise append.
 const fn is_implicit_number_separator(ch: char, number_buf: &str) -> bool {
     !number_buf.is_empty() && matches!(ch, '-' | '+')
 }
@@ -191,27 +193,20 @@ fn tokenize_path_data(d: &str) -> Result<Vec<PathToken>, SvgImportError> {
     for ch in d.chars() {
         if is_separator(ch) {
             flush_number(&mut number_buf, &mut tokens)?;
-            continue;
-        }
-
-        if is_command(ch) {
+        } else if is_command(ch) {
             flush_number(&mut number_buf, &mut tokens)?;
             tokens.push(PathToken::Command(ch));
-            continue;
-        }
-
-        if is_implicit_number_separator(ch, number_buf.as_str()) {
-            flush_number(&mut number_buf, &mut tokens)?;
+        } else if is_number_char(ch) {
+            // A sign only separates when a number is already buffered, so the
+            // boundary rule sits where it applies rather than as its own
+            // branch competing with the number branch it overlaps.
+            if is_implicit_number_separator(ch, number_buf.as_str()) {
+                flush_number(&mut number_buf, &mut tokens)?;
+            }
             number_buf.push(ch);
-            continue;
+        } else {
+            return Err(SvgImportError::InvalidPathData);
         }
-
-        if is_number_char(ch) {
-            number_buf.push(ch);
-            continue;
-        }
-
-        return Err(SvgImportError::InvalidPathData);
     }
 
     flush_number(&mut number_buf, &mut tokens)?;
@@ -224,7 +219,7 @@ mod tests {
 
     use rstest::rstest;
 
-    use super::parse_path_data;
+    use super::{PathToken, parse_path_data, tokenize_path_data};
 
     #[rstest]
     fn parses_plus_as_number_separator() {
@@ -235,5 +230,56 @@ mod tests {
         };
         assert_eq!(anchor.pos.x.to_bits(), 10.0_f32.to_bits());
         assert_eq!(anchor.pos.y.to_bits(), 5.0_f32.to_bits());
+    }
+
+    /// Tokenizes a sample, reporting its tokens rather than panicking on failure.
+    fn tokens_of(source: &str) -> Result<String, String> {
+        tokenize_path_data(source)
+            .map(|tokens| {
+                tokens
+                    .iter()
+                    .map(|token| match token {
+                        PathToken::Command(ch) => ch.to_string(),
+                        PathToken::Number(value) => value.to_string(),
+                    })
+                    .collect::<Vec<_>>()
+                    .join(",")
+            })
+            .map_err(|error| error.to_string())
+    }
+
+    /// Separators, commands, signs and number text keep their distinct roles.
+    ///
+    /// These cases pin the branch structure a refactor is most likely to
+    /// collapse: `10+5` must split, while a leading `+` or `-` must not.
+    #[rstest]
+    #[case::leading_sign("+5", "5")]
+    #[case::leading_negative("-5", "-5")]
+    #[case::sign_after_number("10+5", "10,5")]
+    #[case::sign_after_command("M-5", "M,-5")]
+    #[case::comma_separator("0,0", "0,0")]
+    #[case::repeated_separator("0,,0", "0,0")]
+    #[case::command_between_numbers("0M1", "0,M,1")]
+    #[case::empty_input("", "")]
+    fn tokenizer_keeps_roles_distinct(#[case] source: &str, #[case] expected: &str) {
+        let observed = tokens_of(source).expect("the sample must tokenize");
+        assert_eq!(
+            observed, expected,
+            "tokenizing {source:?} should yield {expected:?}"
+        );
+    }
+
+    /// Unsupported characters are rejected rather than silently buffered.
+    #[rstest]
+    #[case::lowercase_command("m 0 0")]
+    #[case::exponent("1e5")]
+    #[case::unknown_letter("M 0 0 Q 1 1")]
+    #[case::invalid_number("M 1 2 3-")]
+    fn unsupported_path_text_is_rejected(#[case] source: &str) {
+        let error = tokens_of(source).expect_err("unsupported path text must be rejected");
+        assert!(
+            error.contains("invalid path data"),
+            "unexpected diagnostic for {source:?}: {error}"
+        );
     }
 }
