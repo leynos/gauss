@@ -9,7 +9,7 @@
     reason = "floating-point maths is required for geometry calculations"
 )]
 
-use crate::model::{SegmentKind, Shape, Vec2};
+use crate::model::{Anchor, PathGeom, SegmentKind, Shape, Vec2};
 
 /// Treat derivative coefficients below this magnitude as numerically zero.
 const CUBIC_EXTREMA_EPSILON: f32 = 1.0e-6;
@@ -193,45 +193,62 @@ pub fn shape_world_bounds(shape: &Shape) -> Option<ShapeWorldBounds> {
         bounds.update(anchor.pos);
     }
 
-    for (index, kind) in shape.path.segments.iter().enumerate() {
-        let Some(start_anchor) = shape.path.anchors.get(index) else {
-            break;
-        };
-        let Some(end_anchor) = shape.path.anchors.get(index + 1) else {
-            break;
-        };
-
-        let start = start_anchor.pos;
-        let end = end_anchor.pos;
-
-        match kind {
-            SegmentKind::Line => {}
-            SegmentKind::Cubic => {
-                let c1 = start_anchor.handle_out.unwrap_or(start);
-                let c2 = end_anchor.handle_in.unwrap_or(end);
-                extend_bounds_with_cubic(&mut bounds, CubicSegment::new(start, c1, c2, end));
-            }
-        }
-    }
-
-    if shape.path.closed
-        && let (Some(last), Some(first)) = (shape.path.anchors.last(), shape.path.anchors.first())
-    {
-        match shape.path.closing_segment {
-            SegmentKind::Line => {}
-            SegmentKind::Cubic => {
-                let c1 = last.handle_out.unwrap_or(last.pos);
-                let c2 = first.handle_in.unwrap_or(first.pos);
-                extend_bounds_with_cubic(
-                    &mut bounds,
-                    CubicSegment::new(last.pos, c1, c2, first.pos),
-                );
-            }
-        }
-    }
+    extend_bounds_with_segments(&mut bounds, &shape.path);
+    extend_bounds_with_closing_segment(&mut bounds, &shape.path);
 
     let (min, max) = bounds.to_tuple()?;
     Some(ShapeWorldBounds::new(min, max))
+}
+
+/// Extend bounds with every interior segment of `path`.
+///
+/// A segment whose end anchor is missing is skipped together with the rest of
+/// the path, matching the malformed-path tolerance the walk has always had.
+fn extend_bounds_with_segments(bounds: &mut Bounds, path: &PathGeom) {
+    for (index, kind) in path.segments.iter().enumerate() {
+        let Some((start_anchor, end_anchor)) = adjacent_anchors(path, index) else {
+            break;
+        };
+        extend_bounds_with_segment(bounds, *kind, start_anchor, end_anchor);
+    }
+}
+
+/// Return the anchor pair spanning the segment at `index`, if both ends exist.
+fn adjacent_anchors(path: &PathGeom, index: usize) -> Option<(&Anchor, &Anchor)> {
+    let start_anchor = path.anchors.get(index)?;
+    let end_anchor = path.anchors.get(index + 1)?;
+    Some((start_anchor, end_anchor))
+}
+
+/// Extend bounds with one segment, ignoring straight lines.
+///
+/// The closing edge uses the same rule as an interior one, so it is handled by
+/// passing the last anchor as the start and the first as the end.
+fn extend_bounds_with_segment(
+    bounds: &mut Bounds,
+    kind: SegmentKind,
+    start_anchor: &Anchor,
+    end_anchor: &Anchor,
+) {
+    let SegmentKind::Cubic = kind else {
+        return;
+    };
+    let start = start_anchor.pos;
+    let end = end_anchor.pos;
+    let control_a = start_anchor.handle_out.unwrap_or(start);
+    let control_b = end_anchor.handle_in.unwrap_or(end);
+    extend_bounds_with_cubic(bounds, CubicSegment::new(start, control_a, control_b, end));
+}
+
+/// Extend bounds with the closing edge, when the path is closed.
+fn extend_bounds_with_closing_segment(bounds: &mut Bounds, path: &PathGeom) {
+    if !path.closed {
+        return;
+    }
+    let (Some(last), Some(first)) = (path.anchors.last(), path.anchors.first()) else {
+        return;
+    };
+    extend_bounds_with_segment(bounds, path.closing_segment, last, first);
 }
 
 /// Extend bounds with cubic endpoints and extrema found using a coefficient tolerance.
@@ -306,3 +323,7 @@ fn add_cubic_extrema_ts(axis: CubicAxis, out: &mut Vec<f32>) {
         out.push(t2);
     }
 }
+
+#[cfg(test)]
+#[path = "geometry_tests.rs"]
+mod tests;
