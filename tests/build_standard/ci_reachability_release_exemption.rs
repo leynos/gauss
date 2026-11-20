@@ -6,7 +6,7 @@
 //! module owns that boundary and, crucially, still proves the exempt workflows
 //! cannot reach a test suite, so the exemption cannot quietly become a hole.
 
-use super::{Workflow, context::jobs, require_execution_context, runner};
+use super::{super::Value, Workflow, context::jobs, require_execution_context, runner};
 
 /// The release and packaging workflows, which build and package artefacts but
 /// never run a test suite.
@@ -48,18 +48,29 @@ pub(super) fn exempt_release_workflow(workflow: &Workflow) -> Result<(), String>
             continue;
         }
         runner::hosts(job).map_err(|error| format!("{context}: {error}"))?;
-        for step in job.required("steps", "job")?.sequence("steps")? {
-            let names_suite = step
-                .optional_text("uses", "step uses")?
-                .is_some_and(names_suite_action)
-                || step
-                    .optional_text("run", "step run")?
-                    .is_some_and(names_suite_command);
-            if names_suite {
-                return Err(format!(
-                    "{context}: exempt release workflow must not run a test suite"
-                ));
-            }
+        reject_suite_step(job, &context)?;
+    }
+    Ok(())
+}
+
+/// Fails when any step in the job names a suite route.
+///
+/// The exemption widens which actions may appear in a release workflow, so the
+/// suite check stays per step rather than per job. It is a separate function
+/// because the job walk's other work is unrelated, and keeping the two
+/// together reads as one long ladder.
+fn reject_suite_step(job: &Value, context: &str) -> Result<(), String> {
+    for step in job.required("steps", "job")?.sequence("steps")? {
+        let names_suite = step
+            .optional_text("uses", "step uses")?
+            .is_some_and(names_suite_action)
+            || step
+                .optional_text("run", "step run")?
+                .is_some_and(names_suite_command);
+        if names_suite {
+            return Err(format!(
+                "{context}: exempt release workflow must not run a test suite"
+            ));
         }
     }
     Ok(())
