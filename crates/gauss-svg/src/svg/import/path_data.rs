@@ -191,26 +191,48 @@ fn tokenize_path_data(d: &str) -> Result<Vec<PathToken>, SvgImportError> {
     let mut number_buf = String::new();
 
     for ch in d.chars() {
-        if is_separator(ch) {
-            flush_number(&mut number_buf, &mut tokens)?;
-        } else if is_command(ch) {
-            flush_number(&mut number_buf, &mut tokens)?;
-            tokens.push(PathToken::Command(ch));
-        } else if is_number_char(ch) {
-            // A sign only separates when a number is already buffered, so the
-            // boundary rule sits where it applies rather than as its own
-            // branch competing with the number branch it overlaps.
-            if is_implicit_number_separator(ch, number_buf.as_str()) {
-                flush_number(&mut number_buf, &mut tokens)?;
-            }
-            number_buf.push(ch);
-        } else {
-            return Err(SvgImportError::InvalidPathData);
-        }
+        absorb_char(ch, &mut number_buf, &mut tokens)?;
     }
 
     flush_number(&mut number_buf, &mut tokens)?;
     Ok(tokens)
+}
+
+/// Applies one character's classification to the in-progress token list.
+///
+/// Separators and commands close any buffered number; number text extends the
+/// buffer, splitting first when a sign follows digits. Anything else is
+/// rejected. Keeping the classification here leaves the scanning loop in
+/// [`tokenize_path_data`] linear, and it puts the sign rule beside the number
+/// branch it overlaps instead of in a competing branch.
+///
+/// For example, `' '` flushes buffered text while `'+'` after `10` splits it,
+/// so `10+5` becomes two numbers rather than one malformed token.
+fn absorb_char(
+    ch: char,
+    number_buf: &mut String,
+    tokens: &mut Vec<PathToken>,
+) -> Result<(), SvgImportError> {
+    if is_separator(ch) {
+        flush_number(number_buf, tokens)?;
+        return Ok(());
+    }
+
+    if is_command(ch) {
+        flush_number(number_buf, tokens)?;
+        tokens.push(PathToken::Command(ch));
+        return Ok(());
+    }
+
+    if is_number_char(ch) {
+        if is_implicit_number_separator(ch, number_buf.as_str()) {
+            flush_number(number_buf, tokens)?;
+        }
+        number_buf.push(ch);
+        return Ok(());
+    }
+
+    Err(SvgImportError::InvalidPathData)
 }
 
 #[cfg(test)]
