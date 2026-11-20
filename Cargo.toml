@@ -111,6 +111,9 @@ log = "0.4.29"
 thiserror = "2.0.18"
 
 [dev-dependencies]
+# Enabling the facade's `test-support` feature here keeps integration tests on
+# the public `gauss::test_helpers` path without requiring command-line flags.
+gauss = { path = ".", features = ["test-support"] }
 gauss-core = { version = "0.1.0", path = "crates/gauss-core", features = ["test-support"] }
 gauss-test-macros = { path = "crates/gauss-test-macros" }
 gpui = { version = "0.2.2", features = ["test-support"] }

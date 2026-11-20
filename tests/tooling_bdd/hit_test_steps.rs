@@ -2,9 +2,9 @@
 
 use gauss::{
     model::{Document, SelItem, SelectPointerHit, ShapeId, Vec2},
+    test_helpers::square_shape_with_out_handle,
     ui::GpuiActivatePenTool,
 };
-use gauss_core::test_helpers::square_shape_with_out_handle;
 use gpui::{Modifiers, MouseButton, Pixels, Point, TestAppContext, point, px};
 use rstest_bdd_macros::{given, then, when};
 use test_support::TestSupportError;

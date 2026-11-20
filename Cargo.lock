@@ -2262,6 +2262,7 @@ dependencies = [
  "camino",
  "cap-std",
  "futures",
+ "gauss",
  "gauss-core",
  "gauss-svg",
  "gauss-test-macros",
