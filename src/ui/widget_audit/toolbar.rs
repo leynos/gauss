@@ -15,17 +15,20 @@
 //! Each tool specifies its own states via `ControlStates`, allowing tools
 //! like the Type Tool to define custom state lists as needed.
 
-use super::types::{
-    AccessibilityRequirements,
-    ActionCommandLinkage,
-    ControlStates,
-    ControlSurface,
-    CurrentShellEvidence,
-    KeyboardRequirements,
-    Phase,
-    RequiredControl,
-    RequirementSource,
-    UserJob,
+use super::{
+    action::AuditAction,
+    types::{
+        AccessibilityRequirements,
+        ActionCommandLinkage,
+        ControlStates,
+        ControlSurface,
+        CurrentShellEvidence,
+        KeyboardRequirements,
+        Phase,
+        RequiredControl,
+        RequirementSource,
+        UserJob,
+    },
 };
 
 /// Specification for a toolbar tool control.
@@ -119,7 +122,7 @@ const TOOL_SPECS: &[ToolbarControlSpec] = &[
         shortcut: "V",
         states: STANDARD_TOOL_STATES,
         a11y_notes: "Must announce tool activation",
-        action_name: "ActivateSelectionTool",
+        action_name: AuditAction::ActivateSelectTool.identifier(),
         roadmap_ref: "1.2.2",
         feature_plan: "Phase 1: Selection Tools",
         evidence_exists: true,
