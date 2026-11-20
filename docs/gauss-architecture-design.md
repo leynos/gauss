@@ -1763,6 +1763,326 @@ fail-closed handling for unsupported node/action pairs.
 
 ______________________________________________________________________
 
+## 21. Build and release pipeline
+
+Gauss ships Debian packages and RPM packages for Linux, MSI installers for
+Windows, and `.pkg` installers for macOS, all from one reusable pipeline. Three
+workflows and two configuration files own it:
+
+- `.github/workflows/release.yml` (“Release Binary”) runs on a `v*.*.*` tag
+  push, or as a reusable workflow through `workflow_call`. It resolves the
+  crate version and binary name once, fans out to one build per target, and
+  attaches the collected artefacts to the draft GitHub release.
+- `.github/workflows/build-and-package.yml` (“Build and Package”) is the
+  per-platform job body, called once for each entry of the platform matrix.
+- `.github/workflows/release-dry-run.yml` calls `release.yml` on pull requests
+  with `dry-run: true`, so a pull request exercises the full build without
+  publishing. It deliberately does not inherit secrets: a called workflow
+  already receives `secrets.GITHUB_TOKEN`, and inheriting every secret would
+  expose credentials such as `CS_ACCESS_TOKEN` to a pull-request run.
+- `.github/release-staging.toml` maps each target key to the artefacts to
+  stage, the staging directory template, and the checksum algorithm.
+- `Cross.toml` and the per-target `docker/Dockerfile.*` images give cross-rs a
+  build environment carrying the xkbcommon development packages GPUI links,
+  which the cross-rs 0.2.5 base images do not provide. `xkbcommon` declares
+  `#[link(name = "xkbcommon")]` and `#[link(name = "xkbcommon-x11")]`, and
+  `x11rb` links `libxcb` because gpui enables `allow-unsafe-code` without
+  `dl-libxcb`. Installing `libxkbcommon-dev` and `libxkbcommon-x11-dev` is
+  therefore sufficient: `libxkbcommon-x11-dev` depends on both `libxcb1-dev` and
+  `libxcb-xkb-dev`, which is where the `libxcb` headers arrive from.
+  `libxcb-xinput-dev` is not needed, because `x11rb`'s `xinput` feature only
+  enables protocol definitions. Both packages come from the repositories the
+  base images already configure, which is why neither Dockerfile rewrites
+  `/etc/apt/sources.list`. The aarch64 image still registers arm64 as a foreign
+  architecture, because the image's native architecture is amd64.
+
+  Two further gaps only surface once the build gets past dependency
+  installation, so they were found by building the workspace rather than by
+  reading the images. First, `.cargo/config.toml` pins `linker = "clang"` for
+  `x86_64-unknown-linux-gnu`, and the images ship neither `clang` nor `mold`.
+  Cross exports a linker for the *target* triple only, so build scripts, which
+  compile for the container's native x86_64 triple, kept resolving `clang` and
+  failed before any project crate was reached. Each Dockerfile therefore sets
+  `CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc`. The override is scoped to
+  the build images: host builds keep the `clang` the Cargo configuration
+  selects, and the release path links with the platform linker as ADR 0006
+  requires. The images have no `mold` either, which is harmless because the
+  release action exports `RUSTFLAGS`, and a set `RUSTFLAGS` shadows the
+  configuration's `rustflags` table.
+
+  Second, the images' Xenial `libxcb1` is 1.11.1, which predates
+  `xcb_send_request_with_fds64`; `x11rb`'s `xcb_ffi` backend references that
+  symbol, so the final link of the `gauss` binary failed with an undefined
+  reference even though every crate had compiled. `libxcb1-dev` pins
+  `libxcb1 (= 1.11.1-1ubuntu1)` exactly, so the pair has to move together. The
+  images install the Bionic 1.13 pair from `ports.ubuntu.com` directly, which
+  declares only `libc6 (>= 2.17)` and so installs cleanly on the image's glibc
+  2.23. Bionic is used for these two packages alone; the rest of the sysroot
+  stays as the base image built it, because replacing `libc6` would
+  desynchronize the compiler's sysroot.
+
+  Because that fetch bypasses apt's signature checking, the images download
+  over HTTPS and verify each file against a pinned SHA-256 before installing
+  it. A plain HTTP fetch would let a network attacker substitute the package
+  that ends up inside the release binary. The digests are the ones Ubuntu's
+  signed `bionic-updates` index publishes for version `1.13-2~ubuntu18.04`, so
+  the pinned values are corroborated against the distribution's own metadata
+  rather than only against this repository.
+
+The Linux packager derives no dependencies of its own: with no `deb-depends` or
+`rpm-depends` supplied, the generated DEB and RPM metadata declares an empty
+dependency list, and a clean system then installs a binary that cannot start.
+`build-and-package.yml` therefore passes the SONAME-owning packages for both
+families. The release binary links `libxcb.so.1`, `libxcb-xkb.so.1`,
+`libxkbcommon.so.0`, `libxkbcommon-x11.so.0` and `libz.so.1`. Debian splits XCB
+per extension, so `libxcb-xkb1` carries the XKB SONAME; Fedora and EL9 keep it
+inside the single `libxcb` package, and both provide `libz.so.1` from `zlib`.
+Those package names are the ones each family actually ships, checked against
+the distributions' package indexes rather than inferred by analogy between the
+two naming schemes.
+
+Release modes are never hard-coded per workflow. The `determine-release-modes`
+action normalizes the triggering event into `should_publish`, `dry-run`, and
+`should-upload-workflow-artifacts`: a tag push publishes, a pull request does
+not, and an explicit `dry-run` input overrides both. The `release` job is
+guarded on `should_publish`, so a dry run builds the artefacts and discards
+them. `ensure-cargo-version` receives `check-tag: ${{ fromJSON(...) }}`, so the
+tag is compared with the manifest version only when the run is allowed to
+publish.
+
+The action's `publish` and `dry-run` inputs are fed from this workflow's
+`inputs` context. That forwarding is what makes the overrides real: a reusable
+workflow inherits the caller's event context, so a caller that sets
+`dry-run: true` from a tag push still presents a `push` event, which the helper
+would read as an instruction to publish. Pairing `inputs` with the event keeps
+the declared inputs in control.
+
+Forwarding alone does not cover `publish`, because the pinned helper checks
+`dry-run` first and then returns `true` for any `push` event *before* it reads
+its own `publish` input. A caller that sets `publish: false` from a tag push is
+therefore told to publish, and a caller that merely omits the input gets the
+declared `false` default, which has the same effect.
+`scripts/release_publish_intent.py` closes that gap. It narrows the action's
+verdict using the workflow's `inputs` context, which GitHub populates only when
+the workflow was invoked through `workflow_call`: an empty `publish` means a
+direct run, so the event-derived verdict stands and a direct tag push still
+publishes; a populated value is the caller's instruction and is authoritative.
+The resolver runs after the action and can only turn publishing *off*, so it
+never enables a release the action declined and a dry run stays a dry run
+whatever a caller asks for.
+
+The resolver keys on the `inputs` context rather than on `GITHUB_EVENT_NAME`. A
+called workflow reports the caller's event name, and the runner reserves that
+variable: a step-level `env:` assignment does not shadow it, which was verified
+on a scratch workflow and rules out the event as a discriminator.
+
+Because the pinned helper models only `push`, `pull_request`, and
+`workflow_call`, a caller that runs on any other event makes it raise. The
+`workflow_dispatch` case is reachable without this workflow declaring that
+trigger, since a manually started caller can invoke it through `workflow_call`.
+The metadata job therefore checks the inherited event before calling the action
+and fails with a message naming the restriction, rather than surfacing an
+opaque traceback. Only `push` and `pull_request` callers are supported; the
+declared `publish` and `dry-run` inputs are the supported way to override a
+tag-push caller's behaviour.
+
+`wix-extension-version` defaults to empty on both workflows, which asks
+`windows-package` to match the installed WiX CLI's major version. A pinned
+default cannot do that: the action installs whatever `dotnet tool` resolves, so
+a literal `6` failed against CLI `7.0.1`. The metadata job reads the value from
+`inputs` rather than the caller's event JSON for the same reason as the release
+modes above.
+
+Every workflow uses the same `leynos/shared-actions` commit. The branch first
+pinned `df81280`, main then moved the whole estate to `81374b6`, and the branch
+adopted main's pin rather than holding a stale revision: `df81280` is an
+ancestor of `81374b6`, and every action these workflows call exists at the
+newer pin with the inputs they pass. The release workflows are outside the
+build standard's suite-provisioning rules: a release stays on the platform
+linker by design ([ADR 0006](adrs/adr-0006-rust-build-standard.md)), and its
+build steps assign `RUSTFLAGS` themselves. Two contracts bound them. The CI
+half of the standard in `tests/build_standard/ci_steps.rs` enumerates only
+`ci.yml` and `coverage-main.yml`, so it never reads a release workflow. The
+reachability contract in `tests/build_standard/ci_reachability_workflows.rs`
+does sweep every file in `.github/workflows`, so it grants the three release
+and packaging workflows an exemption keyed to their exact paths. The exemption
+is not a blanket skip: `exempt_release_workflow` still requires every job to
+declare a provable literal runner and rejects any step that reaches a test
+suite, so a release workflow that starts testing fails the contract. A new or
+renamed workflow inherits nothing and is inspected in full.
+
+### 21.1 Build job flow
+
+For screen readers: the following flowchart follows one call of the
+build-and-package workflow, which selects a single platform job from
+`inputs.platform` and then runs that platform's build, packaging, and
+conditional workflow-artefact upload.
+
+The workflow declares one job per platform, and each names its runner
+literally. The build standard's reachability contract proves which operating
+system every job executes on, and it accepts only a literal label or an exact
+`${{ matrix.<field> }}`. A runner supplied through `workflow_call` is
+unprovable by construction, so there is no `runner` input: a job-level `if`
+selects the job from `inputs.platform` and the others skip. The macOS job keeps
+one matrix row per architecture because the two need different hosts —
+`macos-15` is Apple silicon, and `macos-15-intel` is the only image that builds
+x86_64 natively — and each row runs only for the target the caller asked for.
+
+```mermaid
+flowchart TD
+  Start([Start build-and-package call])
+  Pick{inputs.platform}
+
+  Start --> Pick
+
+  Pick -- linux --> LCheckout[Checkout repository]
+  LCheckout --> LGenMan[Generate man page with pandoc if available]
+  LGenMan --> LDeps[Install Linux system dependencies]
+  LDeps --> LBuild["rust_build_release<br/>target=inputs.target"]
+  LBuild --> LPackages["linux_packages<br/>formats=deb,rpm"]
+  LPackages --> LPrune[Prune linux packaging metadata]
+  LPrune --> LUpload{"should_upload_workflow_artifacts"}
+  LUpload -- yes --> LUploadStep[Upload linux artifacts]
+  LUpload -- no --> End([End call])
+
+  Pick -- windows --> WCheckout[Checkout repository]
+  WCheckout --> WUv[Install uv]
+  WUv --> WBuild["rust_build_release<br/>target=inputs.target"]
+  WBuild --> WStage["stage_release_artefacts<br/>using release_staging_toml"]
+  WStage --> WCapture["Capture staged paths<br/>binary_path<br/>man_path<br/>license_path"]
+  WCapture --> WPkg["windows_package<br/>build MSI"]
+  WPkg --> WUpload{"should_upload_workflow_artifacts"}
+  WUpload -- yes --> WUploadStep["Upload windows artifacts<br/>staged dir + MSI"]
+  WUpload -- no --> End
+
+  Pick -- macos --> MRow{inputs.target<br/>== matrix.target}
+  MRow -- yes --> MCheckout[Checkout repository]
+  MCheckout --> MUv[Install uv]
+  MUv --> MBuild["rust_build_release<br/>target=inputs.target"]
+  MBuild --> MStage["stage_release_artefacts<br/>using release_staging_toml"]
+  MStage --> MCapture[Capture staged paths]
+  MCapture --> MPkg["macos_package<br/>build PKG"]
+  MPkg --> MRename[Rename PKG with arch suffix]
+  MRename --> MUpload{"should_upload_workflow_artifacts"}
+  MUpload -- yes --> MUploadStep["Upload macOS artifacts<br/>staged dir + PKG"]
+  MUpload -- no --> End
+  MRow -- no --> End
+
+  LUploadStep --> End
+  WUploadStep --> End
+  MUploadStep --> End
+```
+
+*Figure 21.1: The build-and-package workflow, showing how `inputs.platform`
+selects one of three literal-runner jobs. The Linux job installs the system
+development packages, packages with `linux-packages`, and prunes the
+intermediate metadata that packaging leaves in `dist`. The Windows and macOS
+jobs stage artefacts from `release-staging.toml` first, because the installer
+actions take the staged binary, manual page, and licence paths as inputs. Every
+job ends at the workflow-artefact upload gate, which a dry run closes.*
+
+The manual page is genuinely optional on both paths, and each path expresses
+that differently. The staging configuration marks the page optional while the
+binary and the licence file are required, and the man-page step publishes the
+generated path as an output that is empty when `pandoc` is absent.
+`linux-packages` rejects a `man-paths` entry that does not exist, so
+`man-paths` is fed from that output rather than a fixed path: a missing
+`pandoc` yields a warning and a package without a manual page, not a failed
+build.
+
+`rust_build_release` runs with `skip-man-page-discovery: 'true'`. The action
+otherwise requires a page under `target/generated-man/...` or a build-script
+output directory, and this repository has neither a `build.rs` nor a
+`clap_mangen` generator. Packaging reads the `pandoc` output in `dist` instead,
+so the action's own discovery would fail the build looking for a page that
+never exists.
+
+### 21.2 Trigger-to-release sequence
+
+Accessibility caption: this sequence shows both ways the pipeline starts — a
+tag push or a `workflow_call` into the release workflow, and a pull-request dry
+run that reaches the same workflow with `dry-run: true` — and then the metadata
+resolution, the three platform builds running in parallel, and the conditional
+release job that creates a draft release and attaches the downloaded artefacts
+only when `should_publish` is true.
+
+```mermaid
+sequenceDiagram
+  actor Dev as Developer
+  participant GH as GitHub
+  participant ReleaseWF as release_yml
+  participant BuildPkg as build_and_package_yml
+  participant Shared as shared_actions
+  participant Rel as GitHubRelease
+  participant Art as WorkflowArtifacts
+
+  Dev->>GH: Push tag vX.Y.Z or open PR
+
+  alt Tag push or workflow_call
+    GH->>ReleaseWF: Trigger Release Binary workflow
+    ReleaseWF->>Shared: determine_release_modes
+    Shared-->>ReleaseWF: should_publish, dry_run, should_upload_workflow_artifacts
+    ReleaseWF->>Shared: ensure_cargo_version
+    Shared-->>ReleaseWF: crate version
+    ReleaseWF->>Shared: export_cargo_metadata
+    Shared-->>ReleaseWF: bin_name
+
+    par Linux matrix
+      ReleaseWF->>BuildPkg: Call build_and_package_yml platform=linux
+      BuildPkg->>Shared: rust_build_release + linux_packages
+      opt Upload linux artifacts
+        BuildPkg->>Art: upload-artifact dist
+      end
+    and Windows matrix
+      ReleaseWF->>BuildPkg: Call build_and_package_yml platform=windows
+      BuildPkg->>Shared: rust_build_release
+      BuildPkg->>Shared: stage_release_artefacts
+      BuildPkg->>Shared: windows_package
+      opt Upload windows artifacts
+        BuildPkg->>Art: upload-artifact staged dir + msi
+      end
+    and macOS matrix
+      ReleaseWF->>BuildPkg: Call build_and_package_yml platform=macos
+      BuildPkg->>Shared: rust_build_release
+      BuildPkg->>Shared: stage_release_artefacts
+      BuildPkg->>Shared: macos_package
+      opt Upload macOS artifacts
+        BuildPkg->>Art: upload-artifact staged dir + pkg
+      end
+    end
+
+    alt should_publish == true and dry_run == false
+      ReleaseWF->>Rel: Ensure draft release for tag
+      ReleaseWF->>Art: download-artifact repo_name-*
+      ReleaseWF->>Shared: upload_release_assets(dist)
+      Shared-->>Rel: Attach assets to release
+    else dry_run or publish disabled
+      Note over ReleaseWF: Release job skipped
+    end
+
+  else PR dry run
+    GH->>ReleaseWF: Trigger via release_dry_run_yml with dry_run=true
+    ReleaseWF->>Shared: determine_release_modes (dry_run)
+    Shared-->>ReleaseWF: should_publish=false
+    ReleaseWF->>BuildPkg: Execute build jobs only
+    Note over Rel,Art: No release or artifact upload
+  end
+```
+
+*Figure 21.2: Trigger-to-release sequence across the release workflow, the
+build-and-package workflow, and the shared actions they call. The three
+platform builds share no ordering; the release job waits on all of them and
+then attaches every artefact whose name matches `<repo_name>-*`.*
+
+The release job creates the draft release with
+`gh release create --draft --verify-tag` when one does not already exist, so a
+re-run of a failed upload reuses the same release instead of failing on a
+duplicate tag. `upload-release-assets` reports a failure through its
+`upload-error` output rather than by exit status, and a final step turns that
+output into a failed job.
+
+______________________________________________________________________
+
 ### Appendix A: Terminology
 
 - **Action**: an intent (e.g., “Delete Selection”)

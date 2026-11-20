@@ -24,6 +24,9 @@ ignore = [
     "`resize_canvas_present_when_not_maximised`",
     "flavor = \"current_thread\"",
     "rust-analyzer",
+    # The `determine-release-modes` output keeps the shared action's American
+    # spelling, so the design doc names it verbatim inside a code span.
+    "`should-upload-workflow-artifacts`",
     # The mold linker, named in flags, workflow steps and build notes.
     "-fuse-ld=mold",
     "`mold`",

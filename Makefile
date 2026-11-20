@@ -3,7 +3,8 @@
 	check-fmt check-integration-test-inventory integration-test-inventory-test \
 	integration-test-inventory-format integration-test-inventory-lint \
 	integration-test-inventory-pytest \
-	markdownlint nixie typecheck spelling workflow-contracts spelling-exceptions-test
+	markdownlint nixie typecheck spelling workflow-contracts spelling-exceptions-test \
+	release-publish-intent-test
 
 
 TARGET ?= libgauss.rlib
@@ -60,6 +61,15 @@ INTEGRATION_TEST_INVENTORY_FILES = \
 	scripts/tests/test_integration_test_inventory_cli.py
 INTEGRATION_TEST_INVENTORY_TESTS = $(filter scripts/tests/%, $(INTEGRATION_TEST_INVENTORY_FILES))
 
+# The release publish-intent resolver sits between the pinned
+# `determine-release-modes` action and the release job's `if:` guard, so a
+# regression in it uploads release assets rather than merely misreporting.
+RELEASE_PUBLISH_INTENT_FILES = \
+	scripts/release_publish_intent.py \
+	scripts/tests/test_release_publish_intent.py
+RELEASE_PUBLISH_INTENT_TESTS = \
+	$(filter scripts/tests/%, $(RELEASE_PUBLISH_INTENT_FILES))
+
 # The development build standard (concordat rule `rust-build-defaults`):
 # the mold linker on Linux. The pin is stable, so the nightly-only parallel
 # frontend flag is not used. An assigned RUSTFLAGS replaces every
@@ -77,7 +87,7 @@ all: check-fmt lint test spelling workflow-contracts ## Perform a comprehensive 
 clean: ## Remove build artifacts
 	$(CARGO) clean
 
-test: spelling-exceptions-test ## Run tests (nextest if available, otherwise cargo test)
+test: spelling-exceptions-test release-publish-intent-test ## Run tests (nextest if available, otherwise cargo test)
 	@if RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(STANDARD_RUSTFLAGS)" $(CARGO) nextest --version >/dev/null 2>&1; then \
 		RUSTFLAGS="$${RUSTFLAGS:+$$RUSTFLAGS }$(RUST_FLAGS) $(STANDARD_RUSTFLAGS)" $(CARGO) nextest run --profile default $(TEST_FLAGS) $(NEXTEST_FLAGS) $(BUILD_JOBS); \
 	else \
@@ -178,6 +188,23 @@ spelling-exceptions-test: ## Test that local spelling exceptions are exact patte
 		--with pytest==9.0.2 --with hypothesis==6.151.9 \
 		python -m pytest scripts/tests/test_spelling_exceptions.py \
 		-c /dev/null --rootdir=. -p no:cacheprovider
+
+.PHONY: release-publish-intent-test release-publish-intent-format \
+	release-publish-intent-lint
+release-publish-intent-test: release-publish-intent-format release-publish-intent-lint ## Test the release publish-intent resolver
+	@PYTHONPATH=scripts HYPOTHESIS_STORAGE_DIRECTORY=/tmp/gauss-hypothesis \
+		$(UV_ENV) $(UV) run --no-project --python 3.13 \
+		--with pytest==9.0.2 --with hypothesis==6.151.9 \
+		python -m pytest $(RELEASE_PUBLISH_INTENT_TESTS) \
+		-c /dev/null --rootdir=. -p no:cacheprovider
+
+release-publish-intent-format: ## Check publish-intent resolver formatting
+	@$(UV_ENV) $(UV) tool run ruff@$(RUFF_VERSION) format --isolated \
+		--target-version py313 --check $(RELEASE_PUBLISH_INTENT_FILES)
+
+release-publish-intent-lint: ## Lint the publish-intent resolver
+	@$(UV_ENV) $(UV) tool run ruff@$(RUFF_VERSION) check --isolated \
+		--target-version py313 $(RELEASE_PUBLISH_INTENT_FILES)
 
 spelling: ## Enforce en-GB-oxendict spelling
 	$(TYPOS_CONFIG_BUILDER) gate --repository .

@@ -49,6 +49,13 @@
       "rules": [
         { "name": "String Heavy Function Arguments", "weight": 0.0 }
       ]
+    },
+    {
+      "matching_content_path": "tests/build_standard/ci_reachability_make_python_routes.rs",
+      "matching_content_path_doc": "UV route classifier: reviewed argv tokens are the domain, and a wrapper around the slice would add indirection without an invariant (issue #257).",
+      "rules": [
+        { "name": "String Heavy Function Arguments", "weight": 0.0 }
+      ]
     }
   ]
 }

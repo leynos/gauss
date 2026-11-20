@@ -1,0 +1,66 @@
+FROM ghcr.io/cross-rs/aarch64-unknown-linux-gnu:0.2.5
+
+# GPUI links `xkbcommon` and `xkbcommon-x11` when the x11 feature is enabled
+# (see `#[link(name = ...)]` in the `xkbcommon` crate). The cross-rs 0.2.5
+# base image ships neither library in its arm64 sysroot, so the linker fails
+# without them. `libxkbcommon-dev` pulls in the `libxcb-xkb-dev` headers that
+# `xkbcommon-x11.pc` requires.
+#
+# Everything needed is present in the Xenial ports repository that the base
+# image already configures for arm64. Registering arm64 as a foreign
+# architecture is still required, because the image's native architecture is
+# amd64 and apt will not resolve an `:arm64` suffix otherwise.
+#
+# Earlier revisions of this file additionally rewrote `/etc/apt/sources.list`
+# to add Focal entries. That duplicated the `[arch=...]` options already
+# present on those lines, which apt rejects as "Malformed entry", and Focal's
+# libc6 could not coexist with the image's glibc 2.23 sysroot anyway.
+#
+# Xenial's `libxcb1` is 1.11.1, which predates `xcb_send_request_with_fds64`.
+# `x11rb`'s `xcb_ffi` backend references that symbol, so the final link of the
+# `gauss` binary fails with an undefined reference even after every crate
+# compiles. `libxcb1-dev` pins `libxcb1 (= 1.11.1-1ubuntu1)` exactly, so the
+# runtime and its headers must be replaced together. Bionic's 1.13 pair
+# declares only `libc6 (>= 2.17)`, so it installs on the image's glibc 2.23;
+# fetching the two `.deb` files keeps the change to these packages, leaving the
+# rest of the base image's sysroot untouched. `curl` and the CA certificates
+# are already present in the base image, so this adds no download tool.
+#
+# These are fetched over HTTPS and pinned by SHA-256 rather than by apt alone:
+# an unauthenticated HTTP fetch would let a network attacker substitute the
+# package that ends up in the release binary. The digests are the ones the
+# signed `bionic-updates` index publishes for this version, so the check ties
+# each download to Ubuntu's own metadata rather than only to this file.
+RUN dpkg --add-architecture arm64 && \
+    apt-get update && \
+    apt-get install --assume-yes --no-install-recommends \
+        libxkbcommon-dev:arm64 \
+        libxkbcommon-x11-dev:arm64 && \
+    xcb_base="https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxcb" && \
+    curl --fail --silent --show-error --output /tmp/libxcb1.deb \
+        "$xcb_base/libxcb1_1.13-2~ubuntu18.04_arm64.deb" && \
+    curl --fail --silent --show-error --output /tmp/libxcb1-dev.deb \
+        "$xcb_base/libxcb1-dev_1.13-2~ubuntu18.04_arm64.deb" && \
+    printf '%s  %s\n' \
+        "db6b8b2d90da8f8a4ea7ba468bd09a7e47bda8f86cf2e88a967579798db6967a" \
+        "/tmp/libxcb1.deb" \
+        "35feb194a9499f463611d9039e7b21daa5c558a76c78ad40869e407d71c218d2" \
+        "/tmp/libxcb1-dev.deb" \
+        | sha256sum --check --strict && \
+    dpkg --install /tmp/libxcb1.deb /tmp/libxcb1-dev.deb && \
+    rm -f /tmp/libxcb1.deb /tmp/libxcb1-dev.deb && \
+    rm -rf /var/lib/apt/lists/*
+
+# `.cargo/config.toml` pins `linker = "clang"` for the x86_64 host triple, and
+# this image has no clang. Cross only exports a linker for its *target* triple
+# (here `aarch64-linux-gnu-gcc`), so build scripts, which compile for the
+# container's x86_64 host, still resolve `clang` and die with "linker `clang`
+# not found" before any crate that needs the libraries above is reached.
+#
+# Overriding the host triple's linker to `gcc` is deliberately local to this
+# image: host builds keep the `clang` the Cargo configuration selects, and the
+# release path links with the platform linker rather than `mold`, as ADR 0006
+# requires. The image has no `mold` either, which does not matter here because
+# the release action exports `RUSTFLAGS`, and a set `RUSTFLAGS` shadows the
+# configuration's `rustflags` table.
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc

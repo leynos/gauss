@@ -22,6 +22,10 @@ use super::{
 #[path = "ci_reachability_workflows_context.rs"]
 mod context;
 
+/// Bounds the release-workflow exemption without exempting it from the suite check.
+#[path = "ci_reachability_release_exemption.rs"]
+mod release_exemption;
+
 use context::{jobs, require_execution_context, require_trigger};
 
 /// Reads every YAML workflow through the capability root; a missing inventory is not evidence.
@@ -341,6 +345,10 @@ pub(super) fn inspect_inventory(
         linux_rows: 0,
     };
     for workflow in inventory {
+        if release_exemption::is_release_workflow(workflow.path.as_str()) {
+            release_exemption::exempt_release_workflow(workflow)?;
+            continue;
+        }
         let measured = inspect_workflow(workflow, workspace, reachable.contains(&workflow.path))?;
         coverage.suite_jobs += measured.suite_jobs;
         coverage.linux_rows += measured.linux_rows;

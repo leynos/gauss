@@ -1,0 +1,32 @@
+[common]
+bin_name = "gauss"
+dist_dir = "dist"
+checksum_algorithm = "sha256"
+staging_dir_template = "{bin_name}_{platform}_{arch}"
+artefacts = [
+  { source = "target/{target}/release/{bin_name}{bin_ext}", required = true, output = "binary_path" },
+  { source = "dist/{bin_name}.1", required = false, output = "man_path" },
+  { source = "LICENSE", required = true, output = "license_path" },
+]
+
+[targets.windows-x86_64]
+platform = "windows"
+arch = "amd64"
+target = "x86_64-pc-windows-msvc"
+bin_ext = ".exe"
+
+[targets.windows-aarch64]
+platform = "windows"
+arch = "arm64"
+target = "aarch64-pc-windows-msvc"
+bin_ext = ".exe"
+
+[targets.macos-x86_64]
+platform = "macos"
+arch = "x86_64"
+target = "x86_64-apple-darwin"
+
+[targets.macos-aarch64]
+platform = "macos"
+arch = "arm64"
+target = "aarch64-apple-darwin"
