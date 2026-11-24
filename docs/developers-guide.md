@@ -123,9 +123,14 @@ Cargo rejects a member-local `[lints.*]` table alongside `workspace = true`, so
 a member that must be stricter states the extra rule as a crate-level
 `#![deny(...)]` attribute in its root module and records the reason there. The
 thresholds that Clippy cannot express as lint levels live in `clippy.toml`:
-cognitive complexity 9, arguments 4, function length 70 and nesting 4. It also
-records the environment-injection policy: direct `std::env` access is a
-disallowed method, so code takes an injected reader instead.
+arguments 4, function length 70 and nesting 4. It also records the
+environment-injection policy: direct `std::env` access is a disallowed method,
+so code takes an injected reader instead. Cognitive complexity is not gated by
+Clippy, which scores after macro expansion and so counts branching a macro
+generated. Whitaker's experimental `macro_aware_cognitive_complexity` gates it
+at `max_complexity = 9`, CodeScene's ceiling; `dylint.toml` opts in with
+`[whitaker] experimental = ["macro_aware_cognitive_complexity"]`. Fix a finding
+by extracting named helpers, never by raising the threshold.
 
 The baseline is the estate Clippy `pedantic` group plus the restriction,
 nursery and error-handling rules listed in `Cargo.toml`. Local extensions are
