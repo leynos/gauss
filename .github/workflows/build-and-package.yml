@@ -111,7 +111,7 @@ jobs:
 
       - name: Build release binary
         uses: >-
-          leynos/shared-actions/.github/actions/rust-build-release@81374b6f183e59f0570ad36217ded90d3240fda6
+          leynos/shared-actions/.github/actions/rust-build-release@ab6505246c6b043b742a225e428e00448c0a37af
         with:
           target: ${{ inputs.target }}
           bin-name: ${{ inputs['bin-name'] }}
@@ -122,7 +122,7 @@ jobs:
 
       - name: Package Linux artefacts
         uses: >-
-          leynos/shared-actions/.github/actions/linux-packages@81374b6f183e59f0570ad36217ded90d3240fda6
+          leynos/shared-actions/.github/actions/linux-packages@ab6505246c6b043b742a225e428e00448c0a37af
         with:
           project-dir: .
           package-name: ${{ inputs['bin-name'] }}
@@ -185,7 +185,7 @@ jobs:
 
       - name: Build release binary
         uses: >-
-          leynos/shared-actions/.github/actions/rust-build-release@81374b6f183e59f0570ad36217ded90d3240fda6
+          leynos/shared-actions/.github/actions/rust-build-release@ab6505246c6b043b742a225e428e00448c0a37af
         with:
           target: ${{ inputs.target }}
           bin-name: ${{ inputs['bin-name'] }}
@@ -194,7 +194,7 @@ jobs:
       - name: Stage artefacts
         id: stage
         uses: >-
-          leynos/shared-actions/.github/actions/stage-release-artefacts@81374b6f183e59f0570ad36217ded90d3240fda6
+          leynos/shared-actions/.github/actions/stage-release-artefacts@ab6505246c6b043b742a225e428e00448c0a37af
         with:
           config-file: .github/release-staging.toml
           target: ${{ inputs['stage-target'] }}
@@ -214,7 +214,7 @@ jobs:
       - name: Build Windows installer package
         id: package_windows
         uses: >-
-          leynos/shared-actions/.github/actions/windows-package@81374b6f183e59f0570ad36217ded90d3240fda6
+          leynos/shared-actions/.github/actions/windows-package@ab6505246c6b043b742a225e428e00448c0a37af
         with:
           product-name: ${{ inputs['bin-name'] }}
           manufacturer: df12 Productions
@@ -277,7 +277,7 @@ jobs:
       - name: Build release binary
         if: inputs.target == matrix.target
         uses: >-
-          leynos/shared-actions/.github/actions/rust-build-release@81374b6f183e59f0570ad36217ded90d3240fda6
+          leynos/shared-actions/.github/actions/rust-build-release@ab6505246c6b043b742a225e428e00448c0a37af
         with:
           target: ${{ inputs.target }}
           bin-name: ${{ inputs['bin-name'] }}
@@ -287,7 +287,7 @@ jobs:
         if: inputs.target == matrix.target
         id: stage
         uses: >-
-          leynos/shared-actions/.github/actions/stage-release-artefacts@81374b6f183e59f0570ad36217ded90d3240fda6
+          leynos/shared-actions/.github/actions/stage-release-artefacts@ab6505246c6b043b742a225e428e00448c0a37af
         with:
           config-file: .github/release-staging.toml
           target: ${{ inputs['stage-target'] }}
@@ -309,7 +309,7 @@ jobs:
         if: inputs.target == matrix.target
         id: package_macos
         uses: >-
-          leynos/shared-actions/.github/actions/macos-package@81374b6f183e59f0570ad36217ded90d3240fda6
+          leynos/shared-actions/.github/actions/macos-package@ab6505246c6b043b742a225e428e00448c0a37af
         with:
           name: ${{ inputs['bin-name'] }}
           identifier: net.df12.${{ inputs['bin-name'] }}
