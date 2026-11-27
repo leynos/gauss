@@ -39,6 +39,9 @@ This index groups Gauss documentation by its purpose and audience.
   — Find the namespace policy for Gauss SVG metadata.
 - [ADR 006: Rust build standard](adrs/adr-0006-rust-build-standard.md)
   — Review the development build and linker policy.
+- [ADR 007](adrs/adr-0007-proc-macro-error2-future-incompatibility.md)
+  — Review the disposition for the inherited `proc-macro-error2`
+  future-incompatibility warning.
 
 ## Guides and reference
 
@@ -156,3 +159,8 @@ This index groups Gauss documentation by its purpose and audience.
   — Reduce dependency debuginfo in development builds.
 - [Workspace crate split](execplans/build-time-workspace-crate-split.md) —
   Plan separating core, SVG, and application crates.
+
+### Dependency and toolchain hygiene
+
+- [proc-macro-error2 future incompatibility](execplans/issue-246-resolve-the-inherited-proc-macro-error2-future-incompatibility.md)
+  — Plan the disposition for the inherited `proc-macro-error2` warning.
