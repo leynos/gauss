@@ -2,9 +2,9 @@
 
 use gauss::{
     model::{Document, SelItem, ShapeId, Vec2},
+    test_helpers::square_shape,
     ui::{GpuiActivatePenTool, GpuiActivateSelectTool, GpuiDeselectAll, GpuiSelectAll},
 };
-use gauss_core::test_helpers::square_shape;
 use gpui::TestAppContext;
 use rstest_bdd_macros::{given, then, when};
 use test_support::TestSupportError;

@@ -18,8 +18,10 @@ mod scenario_state;
 mod support;
 
 use common::{canvas_bounds, read_selection};
-use gauss::model::{Document, SelItem, Selection, ShapeId, Vec2};
-use gauss_core::test_helpers::square_shape;
+use gauss::{
+    model::{Document, SelItem, Selection, ShapeId, Vec2},
+    test_helpers::square_shape,
+};
 use gpui::{Modifiers, MouseButton, TestAppContext, point, px};
 use mutable_scenario_data::with_mut_scenario_data;
 use rstest_bdd_macros::{given, scenario, then, when};
